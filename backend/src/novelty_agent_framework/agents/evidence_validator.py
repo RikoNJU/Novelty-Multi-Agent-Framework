@@ -6,8 +6,8 @@ import re
 from dataclasses import dataclass
 from typing import Sequence
 
-from .ports import ValidationResult
-from .schemas import EvidenceCard, ResearchTask
+from ..models import EvidenceCard, ResearchTask
+from ..ports import ValidationResult
 
 
 @dataclass(frozen=True)

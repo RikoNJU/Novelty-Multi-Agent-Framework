@@ -7,10 +7,9 @@ import json
 from pathlib import Path
 from typing import Sequence
 
-from .demo import DemoCoordinator, DemoResearchAgent
-from .schemas import PaperInput
-from .state import NoveltyWorkflowServices
-from .workflow import NoveltyWorkflow
+from .agents import DemoCoordinator, DemoResearchAgent
+from .models import PaperInput
+from .workflows import NoveltyWorkflow, NoveltyWorkflowServices
 
 
 def build_parser() -> argparse.ArgumentParser:

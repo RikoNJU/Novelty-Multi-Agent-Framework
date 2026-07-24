@@ -12,7 +12,8 @@ from pydantic import ValidationError
 
 from novelty_agent_framework.core.errors import WorkflowExecutionError
 
-from .schemas import (
+from ..agents import DefaultEvidenceValidator
+from ..models import (
     EvidenceCard,
     IssueSeverity,
     NoveltyBrief,
@@ -24,7 +25,6 @@ from .schemas import (
     WorkflowIssue,
 )
 from .state import NoveltyState, NoveltyWorkflowConfig, NoveltyWorkflowServices
-from .validators import DefaultEvidenceValidator
 
 T = TypeVar("T")
 

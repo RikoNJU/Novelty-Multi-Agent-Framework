@@ -6,15 +6,7 @@ from dataclasses import dataclass
 from operator import add
 from typing import Annotated, TypedDict
 
-from .ports import (
-    EvidenceValidator,
-    FullTextTool,
-    LiteratureResearchAgent,
-    MetadataTool,
-    NoveltyCoordinator,
-    SearchTool,
-)
-from .schemas import (
+from ..models import (
     EvidenceCard,
     NoveltyBrief,
     NoveltyReport,
@@ -22,6 +14,14 @@ from .schemas import (
     RejectedEvidence,
     ResearchTask,
     WorkflowIssue,
+)
+from ..ports import (
+    EvidenceValidator,
+    FullTextTool,
+    LiteratureResearchAgent,
+    MetadataTool,
+    NoveltyCoordinator,
+    SearchTool,
 )
 
 

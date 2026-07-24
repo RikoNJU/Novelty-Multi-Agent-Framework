@@ -37,7 +37,7 @@ def run() -> None:
 
     settings = NoveltyWebSettings.from_env()
     uvicorn.run(
-        "app.backend.main:app",
+        "novelty_agent_framework.main:app",
         host=settings.host,
         port=settings.port,
         reload=False,

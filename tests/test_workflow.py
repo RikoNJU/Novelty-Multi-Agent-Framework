@@ -5,17 +5,20 @@ from __future__ import annotations
 import asyncio
 from collections.abc import Sequence
 
-from novelty_agent_framework.demo import DemoCoordinator, DemoResearchAgent
+from novelty_agent_framework.agents import DemoCoordinator, DemoResearchAgent
 from novelty_agent_framework.ports import FullTextTool, MetadataTool, SearchTool
-from novelty_agent_framework.schemas import (
+from novelty_agent_framework.models import (
     ConclusionLevel,
     EvidenceCard,
     EvidenceSource,
     PaperInput,
     ResearchTask,
 )
-from novelty_agent_framework.state import NoveltyWorkflowConfig, NoveltyWorkflowServices
-from novelty_agent_framework.workflow import NoveltyWorkflow
+from novelty_agent_framework.workflows import (
+    NoveltyWorkflow,
+    NoveltyWorkflowConfig,
+    NoveltyWorkflowServices,
+)
 
 
 def make_paper(claims: int = 2) -> PaperInput:

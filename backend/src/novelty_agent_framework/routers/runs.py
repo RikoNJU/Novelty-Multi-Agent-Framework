@@ -2,8 +2,8 @@
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 
-from novelty_agent_framework.schemas import PaperInput
-from novelty_agent_framework.web import RunSnapshot
+from novelty_agent_framework.models import PaperInput
+from novelty_agent_framework.services.jobs import RunSnapshot
 
 from ..services import NoveltyWorkflowService, get_novelty_workflow_service
 

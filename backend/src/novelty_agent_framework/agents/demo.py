@@ -6,8 +6,7 @@ import asyncio
 from collections import defaultdict
 from collections.abc import Sequence
 
-from .ports import FullTextTool, MetadataTool, SearchTool
-from .schemas import (
+from ..models import (
     ConclusionLevel,
     EvidenceCard,
     EvidenceSource,
@@ -18,6 +17,7 @@ from .schemas import (
     PaperInput,
     ResearchTask,
 )
+from ..ports import FullTextTool, MetadataTool, SearchTool
 
 
 class DemoCoordinator:

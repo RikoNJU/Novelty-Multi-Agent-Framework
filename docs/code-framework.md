@@ -6,7 +6,7 @@
 
 当前代码是可运行骨架，不绑定具体大模型、Prompt 或学术数据库。
 
-`app/` 用于分类存放 Prompt、配置、适配器和可选接口，不属于当前查新算法核心。
+当前后端代码统一放在 `backend/src/novelty_agent_framework/`，并在包内按职责拆分目录，避免核心逻辑堆在少数单文件里。
 
 ## 2. 运行流程
 
@@ -24,13 +24,15 @@
 
 ## 3. 核心模块
 
-| 文件 | 职责 |
+| 目录 | 职责 |
 |---|---|
-| `schemas.py` | 定义论文、查新点、调研任务、Evidence Card 和查新报告 |
-| `ports.py` | 定义 Coordinator、Research Agent 及文献工具接口 |
-| `workflow.py` | 编排并行调研、证据校验、补充检索和报告生成 |
-| `validators.py` | 拒绝无来源、低相关性、低置信度或重复证据 |
-| `demo.py` | 提供不调用真实模型的确定性演示实现 |
+| `models/` | 定义论文、查新点、调研任务、Evidence Card 和查新报告 |
+| `ports/` | 定义 Coordinator、Research Agent 及文献工具接口 |
+| `agents/` | 放置 Demo Agent 和证据校验 Agent，后续替换真实模型实现 |
+| `workflows/` | 编排并行调研、证据校验、补充检索和报告生成 |
+| `adapters/` | 装配具体 Agent、模型和外部工具 |
+| `routers/` | 提供可选 API 入口 |
+| `services/` | 管理任务生命周期和运行状态 |
 
 ## 4. 输入与输出
 
@@ -55,7 +57,7 @@
 ```powershell
 conda activate langgraph
 cd D:\novelty-multi-agent-framework
-pip install -e . --no-deps
+pip install -e ".[dev,web]"
 novelty-demo --input examples\paper.json --output output\result.json
 ```
 
