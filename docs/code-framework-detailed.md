@@ -52,29 +52,101 @@ backend/src/novelty_agent_framework/
 
 ### 3.1 目录内容说明
 
-`agents/` 存放真正执行智能任务或规则判断的模块。当前包含 Demo Coordinator、Demo Research Agent 和证据校验器。未来接入真实模型时，论文理解、查新点拆解、文献调研、证据判断等 Agent 实现都应放在这里。该目录不处理 HTTP 请求，也不负责保存任务状态。
+#### `agents/`
 
-`adapters/` 存放系统装配和外部能力接入代码。当前只有 `workflow_factory.py`，用于把 Demo Agent 组装成可运行工作流。未来接入真实 LLM、学术搜索 API、全文解析器、元数据服务、数据库或原有系统能力时，应优先在这里完成依赖装配。
+该目录存放“真正执行某类智能任务或规则判断”的模块。当前包含 `demo.py` 和 `evidence_validator.py`：前者用确定性规则模拟 Coordinator 与 Research Agent，后者负责证据质量门控。
 
-`config/` 存放后端运行配置。当前包括环境变量读取逻辑和示例配置。端口、API 前缀、CORS、模型服务地址、检索服务地址等运行参数都应放在这里，而不是散落在业务代码中。
+未来真实系统中，论文理解 Agent、查新点拆解 Agent、文献调研 Agent、证据对比 Agent、引用查证 Agent 等具体实现都应放在这里。它们可以调用 LLM、RAG 或外部工具，但对外必须返回 `models/` 中定义的结构化对象。
 
-`core/` 存放框架级公共能力。当前只包含工作流异常类型。未来如果出现跨目录复用的基础错误、日志上下文、运行标识或通用常量，可以放在这里，但不应放具体业务逻辑。
+该目录不应该处理 HTTP 请求，不应该管理任务状态，也不应该决定整体调用顺序。它只回答“某个 Agent 如何完成自己的专业任务”。
 
-`data/` 是后端运行数据占位目录。它适合存放本地缓存、临时索引、调试数据或小规模 demo 数据。生产环境中的数据库文件、向量索引和运行输出一般不应直接提交到 Git。
+#### `adapters/`
 
-`models/` 存放数据结构和数据校验规则。所有 Agent 之间传递的核心对象，例如论文输入、查新点、调研任务、证据卡和查新报告，都应先在这里定义。该目录是系统输入输出稳定性的基础。
+该目录存放“把外部能力接入框架”的装配代码。当前 `workflow_factory.py` 负责创建 `NoveltyWorkflow`，并把 Demo Coordinator、Demo Research Agent 注入工作流。
 
-`ports/` 存放能力接口，而不是能力实现。它规定系统需要哪些能力，例如检索、全文获取、元数据解析、Coordinator 规划和 Research Agent 调研。这样 Workflow 可以依赖抽象接口，而不是依赖某一个具体模型或数据库。
+未来接入真实系统时，OpenAI 或其他模型 SDK、学术搜索 API、全文解析服务、元数据查证服务、向量数据库、原有业务系统函数，都应通过 Adapter 进入框架。Adapter 的重点是完成依赖组装和实现替换。
 
-`prompts/` 存放 Prompt 模板和 Prompt 管理说明。真实 Agent 的系统提示词、任务提示词、输出格式约束都应集中放在这里，便于版本管理、评审和迭代。不要把长 Prompt 直接写进路由或工作流节点。
+该目录不应该定义业务数据结构，也不应该写复杂工作流逻辑。它的职责是“把谁接进来”，不是“流程怎么跑”。
 
-`routers/` 存放 API 路由。它只负责接收请求、调用 Service、返回响应。该目录不应该直接写 Agent 调用逻辑，也不应该直接操作数据库或任务状态细节。
+#### `config/`
 
-`services/` 存放应用服务和任务状态管理。它连接 API 层和 Workflow 层，负责创建任务、执行任务、记录成功或失败结果。当前使用内存任务存储，后续可替换为 Redis、数据库或任务队列。
+该目录存放后端运行配置。当前 `settings.py` 从环境变量读取应用名、host、port、API 前缀和 CORS；`settings.example.json` 提供示例配置。
 
-`web/` 当前只作为 Web 相关兼容出口，帮助旧导入路径过渡。随着结构稳定，新的 Web 任务状态逻辑应优先放到 `services/`，不要继续扩大 `web/` 的职责。
+未来模型服务地址、检索服务地址、数据库连接信息、日志级别、超时参数、最大并发数等运行参数，都应优先放在配置层，而不是硬编码到 Agent、Router 或 Workflow 中。
 
-`workflows/` 存放 Multi-Agent 协作流程。这里定义 LangGraph 节点、节点之间的边、条件路由、补充检索和终止条件。该目录是“Agent 如何协作”的核心，但不直接实现具体模型能力。
+该目录不应该保存真实密钥。API Key、数据库密码、Token 等敏感信息应通过环境变量或安全配置系统注入。
+
+#### `core/`
+
+该目录存放框架级公共能力。当前只有 `WorkflowExecutionError`，用于表示工作流执行过程中的框架级失败。
+
+未来如果出现多个目录都要复用的异常类型、日志上下文、运行 ID、通用枚举、基础工具函数，可以放在这里。但只有“全局基础能力”适合进入 `core/`。
+
+具体查新业务逻辑不应放入 `core/`。如果某段代码只服务于证据校验，应放在 `agents/`；如果只服务于任务状态，应放在 `services/`。
+
+#### `data/`
+
+该目录是后端运行数据的占位目录。当前只保留 `.gitignore`，表示目录存在，但默认不提交运行时数据。
+
+未来可临时存放本地缓存、小规模 demo 数据、调试索引、下载的候选文献片段等。生产环境中的向量索引、数据库文件、批量运行结果一般不应提交到 Git。
+
+该目录不应存放源码、Prompt 或正式配置。它主要服务于运行时和调试。
+
+#### `models/`
+
+该目录存放系统最重要的数据结构和校验规则。当前 `schemas.py` 定义论文输入、查新点、调研任务、Evidence Card、查新报告和运行结果；`api.py` 定义健康检查响应；`__init__.py` 统一导出常用模型。
+
+Agent 之间传递的数据必须优先在这里建模。例如新增“引用查证结果”“文献相似度结果”“检索覆盖度报告”，都应先定义 Pydantic 模型，再进入 Workflow 或 Agent。
+
+该目录不应该调用模型接口、数据库或外部服务。它只定义“数据长什么样、哪些字段必须存在、哪些字段不允许乱填”。
+
+#### `ports/`
+
+该目录存放能力接口协议。当前 `interfaces.py` 定义了 `NoveltyCoordinator`、`LiteratureResearchAgent`、`SearchTool`、`FullTextTool`、`MetadataTool` 和 `EvidenceValidator`。
+
+Port 的作用是让 Workflow 只依赖抽象能力，不依赖具体实现。比如 Workflow 只知道需要一个 `SearchTool.search()`，但不关心背后是 Semantic Scholar、Google Scholar、Crossref、学校数据库还是本地索引。
+
+该目录不应该写真实 API 调用代码。真实实现应放在 `agents/` 或 `adapters/`，并遵守这里定义的输入输出协议。
+
+#### `prompts/`
+
+该目录存放 Prompt 模板和 Prompt 管理说明。当前按照 `coordinator/` 和 `research/` 拆分，分别对应主 Agent 和文献调研 Agent。
+
+未来真实 Agent 的系统提示词、任务提示词、输出 JSON 约束、失败重试提示词、补充检索提示词，都应集中放在这里，便于版本管理、评审和调参。
+
+该目录不应该保存业务运行结果，也不应该把 Prompt 分散写进 `routers/` 或 `workflows/`。这样做可以避免后期难以追踪“某次输出变化到底来自代码还是 Prompt”。
+
+#### `routers/`
+
+该目录存放 FastAPI 路由。当前 `health.py` 提供健康检查接口，`runs.py` 提供查新任务提交和查询接口。
+
+Router 的职责是处理 HTTP 层问题，例如请求体校验、依赖注入、状态码、错误响应和返回模型。它把外部请求转交给 `services/`，不直接调 Agent。
+
+该目录不应该写 Multi-Agent 调度逻辑，不应该直接访问模型 SDK，也不应该直接操作底层存储。否则 API 层会和业务流程耦合。
+
+#### `services/`
+
+该目录存放应用服务和任务生命周期管理。当前 `workflow_service.py` 负责创建任务、调用 Workflow、记录成功或失败；`jobs.py` 提供进程内任务状态存储。
+
+Service 是 Router 和 Workflow 之间的中间层。它知道“某个请求对应哪个任务、任务现在是什么状态、结果在哪里”，但不关心每个 Agent 内部如何推理。
+
+当前 `InMemoryRunStore` 只适合 demo 和单进程开发。未来如果系统上线，应在该层替换为 Redis、数据库、消息队列或后台任务系统。
+
+#### `web/`
+
+该目录当前只保留 Web 相关兼容出口，用于导出任务状态相关类，减少旧代码迁移时的导入断裂。
+
+随着框架稳定，新的 Web 任务管理逻辑应优先放入 `services/` 和 `routers/`。`web/` 不应继续膨胀成另一个业务层。
+
+如果未来确认没有兼容需求，可以逐步移除该目录，或只保留非常薄的对外导出。
+
+#### `workflows/`
+
+该目录存放 Multi-Agent 协作流程。当前 `novelty.py` 定义 LangGraph 节点和路由，`state.py` 定义共享状态、配置和依赖容器。
+
+Workflow 负责回答“Agent 之间如何协作”：先由 Coordinator 规划，再并行调用 Research Agent，随后进行证据校验和覆盖度判断，必要时补充检索，最后生成报告。
+
+该目录不应该直接写具体模型调用、数据库查询或长 Prompt。它应依赖 `ports/` 中的抽象接口，并使用 `models/` 中的数据结构来保证流程稳定。
 
 ## 4. Python 文件功能、输入输出与系统作用
 
