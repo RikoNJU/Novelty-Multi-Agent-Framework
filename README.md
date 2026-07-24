@@ -1,8 +1,43 @@
 # 论文查新 Multi-Agent 框架
 
-独立的论文查新框架，使用 LangGraph 实现“全局规划—并行文献调研—证据汇总”的总分总流程。
+本项目是一个面向论文查新任务的 Multi-Agent 后端代码框架，使用 LangGraph 实现“全局规划—并行文献调研—证据校验—报告生成”的总分总流程。
+
+## Multi-Agent 设计简介
+
+Multi-Agent 不是简单顺序调用多个 Prompt，而是把复杂任务拆给多个职责明确的智能体，并设计它们之间的信息共享、任务协作、结果验证和失败恢复机制。
+
+在论文查新任务中，单一模型容易把“论文理解、检索规划、文献对比、证据判断、结论汇总”混在一起，导致输出难追溯、难验证。该框架将任务拆为：
+
+```text
+Coordinator 负责全局规划和最终汇总
+Research Agent 负责并行文献调研
+Evidence Validator 负责证据质量门控
+Workflow 负责调度、补检和终止控制
+```
+
+这样的设计可以让查新结论基于可追溯证据，而不是只依赖模型的自由判断。
 
 ![论文查新流程](assets/workflow.svg)
+
+## 代码框架简介
+
+框架采用后端工程结构：
+
+```text
+backend/src/novelty_agent_framework/
+```
+
+包内按职责拆分为 Agent、Workflow、Model、Port、Adapter、Service、Router 等目录。核心思想是：
+
+- `models/` 定义数据长什么样；
+- `ports/` 定义系统需要什么能力；
+- `agents/` 放具体 Agent 实现；
+- `workflows/` 编排 Multi-Agent 协作流程；
+- `adapters/` 装配真实模型、RAG、数据库或 Demo 实现；
+- `services/` 管理任务生命周期；
+- `routers/` 提供 API 入口。
+
+这种结构可以让后续开发者在不重写整体流程的前提下，逐步替换真实 LLM、学术检索工具、全文解析工具和元数据查证工具。
 
 ## 项目结构
 
@@ -32,6 +67,7 @@ python -m novelty_agent_framework.main
 ```
 
 - [代码框架说明](docs/code-framework.md)
+- [代码框架详细说明](docs/code-framework-detailed.md)
 - [V0 设计方案](docs/design-v0.md)
 
 当前 Adapter 装配确定性的 Demo Agent，只用于验证框架闭环。
