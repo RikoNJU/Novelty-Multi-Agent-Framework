@@ -1,7 +1,9 @@
 """将具体 Agent、模型和工具装配为查新工作流。"""
 
 from novelty_agent_framework.agents import DemoCoordinator, DemoResearchAgent
-from novelty_agent_framework.workflows import NoveltyWorkflow, NoveltyWorkflowServices
+
+from .novelty import NoveltyWorkflow
+from .state import NoveltyWorkflowServices
 
 
 def build_novelty_workflow() -> NoveltyWorkflow:

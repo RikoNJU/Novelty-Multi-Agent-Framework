@@ -32,8 +32,7 @@ backend/src/novelty_agent_framework/
 - `models/` 定义数据长什么样；
 - `ports/` 定义系统需要什么能力；
 - `agents/` 放具体 Agent 实现；
-- `workflows/` 编排 Multi-Agent 协作流程；
-- `adapters/` 装配真实模型、RAG、数据库或 Demo 实现；
+- `workflows/` 编排 Multi-Agent 协作流程，并提供默认工作流装配入口；
 - `services/` 管理任务生命周期；
 - `routers/` 提供 API 入口。
 

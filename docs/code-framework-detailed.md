@@ -38,7 +38,6 @@ backend/src/novelty_agent_framework/
 | 目录 | 存放文件 | 作用 |
 |---|---|---|
 | `agents/` | `demo.py`、`evidence_validator.py` | 存放具体 Agent 或可替换智能能力实现 |
-| `adapters/` | `workflow_factory.py` | 装配 Agent、工具和 Workflow |
 | `config/` | `settings.py`、`settings.example.json` | 管理 API 前缀、端口、CORS 等配置 |
 | `core/` | `errors.py` | 存放核心异常和基础公共能力 |
 | `data/` | `.gitignore` | 后端运行数据目录占位 |
@@ -48,7 +47,7 @@ backend/src/novelty_agent_framework/
 | `routers/` | `health.py`、`runs.py` | FastAPI 路由入口 |
 | `services/` | `workflow_service.py`、`jobs.py` | 管理任务生命周期和运行状态 |
 | `web/` | `__init__.py` | Web 相关兼容出口 |
-| `workflows/` | `novelty.py`、`state.py` | 定义 LangGraph 工作流和共享状态 |
+| `workflows/` | `novelty.py`、`state.py`、`workflow_factory.py` | 定义 LangGraph 工作流、共享状态和默认工作流装配 |
 
 ### 3.1 目录内容说明
 
@@ -59,14 +58,6 @@ backend/src/novelty_agent_framework/
 未来真实系统中，论文理解 Agent、查新点拆解 Agent、文献调研 Agent、证据对比 Agent、引用查证 Agent 等具体实现都应放在这里。它们可以调用 LLM、RAG 或外部工具，但对外必须返回 `models/` 中定义的结构化对象。
 
 该目录不应该处理 HTTP 请求，不应该管理任务状态，也不应该决定整体调用顺序。它只回答“某个 Agent 如何完成自己的专业任务”。
-
-#### `adapters/`
-
-该目录存放“把外部能力接入框架”的装配代码。当前 `workflow_factory.py` 负责创建 `NoveltyWorkflow`，并把 Demo Coordinator、Demo Research Agent 注入工作流。
-
-未来接入真实系统时，OpenAI 或其他模型 SDK、学术搜索 API、全文解析服务、元数据查证服务、向量数据库、原有业务系统函数，都应通过 Adapter 进入框架。Adapter 的重点是完成依赖组装和实现替换。
-
-该目录不应该定义业务数据结构，也不应该写复杂工作流逻辑。它的职责是“把谁接进来”，不是“流程怎么跑”。
 
 #### `config/`
 
@@ -106,7 +97,7 @@ Agent 之间传递的数据必须优先在这里建模。例如新增“引用�
 
 Port 的作用是让 Workflow 只依赖抽象能力，不依赖具体实现。比如 Workflow 只知道需要一个 `SearchTool.search()`，但不关心背后是 Semantic Scholar、Google Scholar、Crossref、学校数据库还是本地索引。
 
-该目录不应该写真实 API 调用代码。真实实现应放在 `agents/` 或 `adapters/`，并遵守这里定义的输入输出协议。
+该目录不应该写真实 API 调用代码。真实实现应放在 `agents/`，默认工作流装配应放在 `workflows/workflow_factory.py`，并遵守这里定义的输入输出协议。
 
 #### `prompts/`
 
@@ -142,7 +133,7 @@ Service 是 Router 和 Workflow 之间的中间层。它知道“某个请求对
 
 #### `workflows/`
 
-该目录存放 Multi-Agent 协作流程。当前 `novelty.py` 定义 LangGraph 节点和路由，`state.py` 定义共享状态、配置和依赖容器。
+该目录存放 Multi-Agent 协作流程。当前 `novelty.py` 定义 LangGraph 节点和路由，`state.py` 定义共享状态、配置和依赖容器，`workflow_factory.py` 定义默认工作流装配方式。
 
 Workflow 负责回答“Agent 之间如何协作”：先由 Coordinator 规划，再并行调用 Research Agent，随后进行证据校验和覆盖度判断，必要时补充检索，最后生成报告。
 
@@ -240,14 +231,13 @@ plan
 | `_plan_supplement` | coverage gaps | 补充 research tasks | 针对缺口追加检索 |
 | `_synthesize_report` | 全部有效证据和缺口 | `NoveltyReport` | 形成最终查新结论 |
 
-### 4.6 `adapters/`
+### 4.6 `workflows/workflow_factory.py`
 
 | 文件 | 功能 | 输入 | 输出 | 系统作用 |
 |---|---|---|---|---|
-| `adapters/workflow_factory.py` | 装配工作流依赖 | 无直接业务输入 | `NoveltyWorkflow` | 决定当前使用 Demo 实现还是真实实现 |
-| `adapters/__init__.py` | 导出 factory | 无直接输入 | `build_novelty_workflow` | 给 service 层提供统一构造入口 |
+| `workflows/workflow_factory.py` | 装配默认工作流依赖 | 无直接业务输入 | `NoveltyWorkflow` | 指定当前固定使用的 Agent，并给 service 层提供统一构造入口 |
 
-当前 `build_novelty_workflow` 装配的是 `DemoCoordinator` 和 `DemoResearchAgent`。生产环境应在这里替换为真实 LLM Agent、搜索工具、全文工具和元数据工具。
+当前 `build_novelty_workflow` 装配的是 `DemoCoordinator` 和 `DemoResearchAgent`。因为本项目假设 Agent 组合相对固定，所以默认装配逻辑并入 `workflows/`，不再单独保留 `adapters/` 目录。
 
 ### 4.7 `services/`
 
@@ -306,7 +296,7 @@ GET  /api/novelty/runs/{task_id}
 HTTP 请求
 → routers/runs.py
 → services/workflow_service.py
-→ adapters/workflow_factory.py
+→ workflows/workflow_factory.py
 → workflows/novelty.py
 → agents/demo.py 或真实 Agent
 → ports/interfaces.py 约束外部能力
@@ -326,12 +316,12 @@ examples/paper.json
 ## 6. 开发规范
 
 1. 新业务数据结构必须先写入 `models/`，不要在 Agent 或路由里临时拼 dict。
-2. 新外部能力必须先在 `ports/` 定义接口，再在 `adapters/` 或 `agents/` 中实现。
+2. 新外部能力必须先在 `ports/` 定义接口，再在 `agents/` 中实现，并在 `workflows/workflow_factory.py` 中装配。
 3. `workflows/` 只负责流程编排，不直接写具体模型 SDK、数据库连接或复杂 Prompt。
 4. `agents/` 负责专业判断和结构化输出，不处理 HTTP 请求和任务状态。
 5. `routers/` 只做请求校验、依赖注入和响应返回，不写业务流程。
 6. `services/` 负责任务生命周期，不直接实现查新逻辑。
-7. `adapters/` 负责装配真实能力，是替换 Demo 实现的主要入口。
+7. `workflows/workflow_factory.py` 负责装配固定 Agent 组合，是调整默认运行能力的主要入口。
 8. Prompt 放在 `prompts/`，需要版本化、可追踪，不要散落到多个 Python 文件中。
 9. 所有 Agent 输出必须经过 Pydantic 模型校验，不能让自由文本直接进入后续流程。
 10. 证据型结论必须保留来源、位置、URL 或 DOI，不能只依赖模型判断。
@@ -345,7 +335,7 @@ examples/paper.json
 优先替换以下位置：
 
 ```text
-adapters/workflow_factory.py
+workflows/workflow_factory.py
 ```
 
 把当前 Demo 实现替换为：

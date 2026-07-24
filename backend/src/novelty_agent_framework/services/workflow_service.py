@@ -8,7 +8,7 @@ from novelty_agent_framework.models import PaperInput
 from novelty_agent_framework.services.jobs import InMemoryRunStore, RunSnapshot
 from novelty_agent_framework.workflows import NoveltyWorkflow
 
-from ..adapters import build_novelty_workflow
+from ..workflows import build_novelty_workflow
 
 
 class NoveltyWorkflowService:

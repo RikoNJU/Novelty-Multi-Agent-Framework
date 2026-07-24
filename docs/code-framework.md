@@ -29,8 +29,7 @@
 | `models/` | 定义论文、查新点、调研任务、Evidence Card 和查新报告 |
 | `ports/` | 定义 Coordinator、Research Agent 及文献工具接口 |
 | `agents/` | 放置 Demo Agent 和证据校验 Agent，后续替换真实模型实现 |
-| `workflows/` | 编排并行调研、证据校验、补充检索和报告生成 |
-| `adapters/` | 装配具体 Agent、模型和外部工具 |
+| `workflows/` | 编排并行调研、证据校验、补充检索和报告生成，并装配默认工作流 |
 | `routers/` | 提供可选 API 入口 |
 | `services/` | 管理任务生命周期和运行状态 |
 
