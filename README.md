@@ -27,11 +27,12 @@ Workflow 负责调度、补检和终止控制
 backend/src/novelty_agent_framework/
 ```
 
-包内按职责拆分为 Agent、Workflow、Model、Port、Adapter、Service、Router 等目录。核心思想是：
+包内按职责拆分为 Agent、Workflow、Model、Port、Service、Router 等目录。核心思想是：
 
 - `models/` 定义数据长什么样；
 - `ports/` 定义系统需要什么能力；
 - `agents/` 放具体 Agent 实现；
+- `backend/env/` 统一模型配置、消息格式和调用入口；
 - `workflows/` 编排 Multi-Agent 协作流程，并提供默认工作流装配入口；
 - `services/` 管理任务生命周期；
 - `routers/` 提供 API 入口。
@@ -41,7 +42,7 @@ backend/src/novelty_agent_framework/
 ## 项目结构
 
 ```text
-backend/src/novelty_agent_framework/   后端源码，按职责拆分 Agent、模型、工作流、接口和适配器
+backend/src/novelty_agent_framework/   后端源码，按职责拆分 Agent、模型、工作流、接口和服务
 frontend/                              预留前端资源
 examples/                      示例论文输入
 tests/                         工作流与接口测试
@@ -69,4 +70,4 @@ python -m novelty_agent_framework.main
 - [代码框架详细说明](docs/code-framework-detailed.md)
 - [V0 设计方案](docs/design-v0.md)
 
-当前 Adapter 装配确定性的 Demo Agent，只用于验证框架闭环。
+当前默认工作流装配确定性的 Demo Agent，只用于验证框架闭环。

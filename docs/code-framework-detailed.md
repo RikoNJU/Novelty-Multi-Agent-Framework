@@ -17,6 +17,7 @@
 | 目录或文件 | 存放内容 | 作用 |
 |---|---|---|
 | `backend/` | 后端工程主体 | 存放正式源码、配置、Prompt 和后端说明 |
+| `backend/env/` | 模型调用约定说明 | 约束多人开发时统一模型配置和调用方式 |
 | `backend/src/novelty_agent_framework/` | Python 包源码 | Multi-Agent 框架的核心代码 |
 | `frontend/` | 前端预留目录 | 后续扩展 Web 界面时使用 |
 | `docs/` | 设计文档和代码说明 | 用于汇报、交接和开发参考 |
@@ -37,7 +38,7 @@ backend/src/novelty_agent_framework/
 
 | 目录 | 存放文件 | 作用 |
 |---|---|---|
-| `agents/` | `demo.py`、`evidence_validator.py` | 存放具体 Agent 或可替换智能能力实现 |
+| `agents/` | `coordinator.py`、`research.py`、`demo.py`、`evidence_validator.py` | 存放具体 Agent 或可替换智能能力实现 |
 | `config/` | `settings.py`、`settings.example.json` | 管理 API 前缀、端口、CORS 等配置 |
 | `core/` | `errors.py` | 存放核心异常和基础公共能力 |
 | `data/` | `.gitignore` | 后端运行数据目录占位 |
@@ -53,9 +54,9 @@ backend/src/novelty_agent_framework/
 
 #### `agents/`
 
-该目录存放“真正执行某类智能任务或规则判断”的模块。当前包含 `demo.py` 和 `evidence_validator.py`：前者用确定性规则模拟 Coordinator 与 Research Agent，后者负责证据质量门控。
+该目录存放“真正执行某类智能任务或规则判断”的模块。当前包含真实实现骨架、确定性 Demo 和证据质量门控。
 
-未来真实系统中，论文理解 Agent、查新点拆解 Agent、文献调研 Agent、证据对比 Agent、引用查证 Agent 等具体实现都应放在这里。它们可以调用 LLM、RAG 或外部工具，但对外必须返回 `models/` 中定义的结构化对象。
+未来真实系统中，论文理解、查新点拆解、补检规划、文献调研和证据对比等 Agent 实现都应放在这里。它们可以调用 LLM、RAG 或外部工具，但对外必须返回 `models/` 中定义的结构化对象。
 
 该目录不应该处理 HTTP 请求，不应该管理任务状态，也不应该决定整体调用顺序。它只回答“某个 Agent 如何完成自己的专业任务”。
 
@@ -98,6 +99,14 @@ Agent 之间传递的数据必须优先在这里建模。例如新增“引用�
 Port 的作用是让 Workflow 只依赖抽象能力，不依赖具体实现。比如 Workflow 只知道需要一个 `SearchTool.search()`，但不关心背后是 Semantic Scholar、Google Scholar、Crossref、学校数据库还是本地索引。
 
 该目录不应该写真实 API 调用代码。真实实现应放在 `agents/`，固定 Agent 装配应放在 `workflows/novelty.py` 的默认构造函数中，并遵守这里定义的输入输出协议。
+
+#### `backend/env/`
+
+该目录位于 `backend/env/`，不放在 `backend/src/novelty_agent_framework/` 内部。当前 `model_client.py` 定义 `ModelRuntimeConfig`、`ChatMessage`、`ModelCallOptions`、`ModelResponse` 和 `OpenAICompatibleChatClient`，用于规范真实 Agent 调用大模型时的配置读取、消息格式、超时参数和响应结构。
+
+多人开发时，Agent 不应各自读取 API Key、拼接 HTTP 请求或自定义返回结构，而应优先通过 `build_model_client()` 获取模型客户端。这样可以保证同一项目内不同 Agent 使用一致的模型供应商、模型名、base_url、温度和超时规则。
+
+该目录不应该放 Prompt、不应该写论文查新业务判断，也不应该保存真实密钥。业务 Prompt 仍放在 `prompts/`，专业判断仍放在 `agents/`，密钥通过环境变量或安全配置注入。
 
 #### `prompts/`
 
@@ -192,15 +201,28 @@ PaperInput
 
 | 文件 | 功能 | 输入 | 输出 | 系统作用 |
 |---|---|---|---|---|
+| `agents/coordinator.py` | 查新主 Agent | `PaperInput`、已有证据、证据缺口、轮次 | `NoveltyBrief`、`NoveltyReport` | 组织论文理解、查新点拆解、补检规划、模型 JSON 调用和 Pydantic 输出校验 |
+| `agents/research.py` | 文献调研 Agent 骨架 | `ResearchTask`、`PaperInput`、检索/全文/元数据工具 | `EvidenceCard` 列表 | 后续实现检索、阅读、重合点和差异点抽取 |
 | `agents/demo.py` | 提供确定性 Demo Agent | `PaperInput`、`ResearchTask`、证据列表 | `NoveltyBrief`、`EvidenceCard`、`NoveltyReport` | 在没有真实 LLM 和数据库时跑通框架 |
 | `agents/evidence_validator.py` | 证据质量门控 | 候选 `EvidenceCard`、`ResearchTask` | `ValidationResult` | 拒绝无来源、低相关性、低置信度、重复或任务不匹配的证据 |
-| `agents/__init__.py` | 聚合导出 Agent | 无直接输入 | Demo Agent 和验证器类 | 统一 Agent 导入路径 |
+| `agents/__init__.py` | 聚合导出 Agent | 无直接输入 | 真实 Agent 骨架、Demo Agent 和验证器类 | 统一 Agent 导入路径 |
 
 `DemoCoordinator` 负责模拟查新主 Agent：理解论文、生成查新点、规划补充检索、生成报告。  
 `DemoResearchAgent` 负责模拟文献调研子 Agent：根据任务返回合成证据卡。  
 `DefaultEvidenceValidator` 负责把模型生成内容变成可审计证据，而不是让模型结论直接进入报告。
 
-### 4.5 `workflows/`
+`NoveltyCoordinatorAgent` 是后续接真实模型时的主 Agent 入口。它已经预留 `plan`、`plan_supplement` 和 `synthesize` 三个核心方法，并统一通过 `backend/env/model_client.py` 调用模型。每次模型返回后都会进行 JSON 解析和 Pydantic 校验，防止自由文本直接进入工作流。
+
+### 4.5 `backend/env/`
+
+| 文件 | 功能 | 输入 | 输出 | 系统作用 |
+|---|---|---|---|---|
+| `backend/env/model_client.py` | 统一模型调用协议和 OpenAI-compatible 客户端 | 环境变量、`ChatMessage` 列表、调用参数 | `ModelResponse` | 让不同 Agent 使用一致的模型配置和调用方式 |
+| `backend/env/__init__.py` | 聚合导出模型调用对象 | 无直接输入 | `ModelRuntimeConfig`、`build_model_client` 等 | 给真实 Agent 提供统一导入路径 |
+
+模型配置优先读取 `NOVELTY_*`，并回退到通用 `LLM_*`。例如 `NOVELTY_MODEL`、`NOVELTY_BASE_URL`、`NOVELTY_API_KEY`、`NOVELTY_TEMPERATURE` 和 `NOVELTY_TIMEOUT_SECONDS`。
+
+### 4.6 `workflows/`
 
 | 文件 | 功能 | 输入 | 输出 | 系统作用 |
 |---|---|---|---|---|
@@ -231,7 +253,7 @@ plan
 | `_plan_supplement` | coverage gaps | 补充 research tasks | 针对缺口追加检索 |
 | `_synthesize_report` | 全部有效证据和缺口 | `NoveltyReport` | 形成最终查新结论 |
 
-### 4.6 `workflows/novelty.py` 中的默认装配
+### 4.7 `workflows/novelty.py` 中的默认装配
 
 | 文件 | 功能 | 输入 | 输出 | 系统作用 |
 |---|---|---|---|---|
@@ -239,7 +261,7 @@ plan
 
 当前 `NoveltyWorkflow.default()` 位于 `novelty.py`，装配的是 `DemoCoordinator` 和 `DemoResearchAgent`。因为本项目假设 Agent 组合相对固定，所以默认装配逻辑直接并入主工作流类，不再单独保留独立装配文件。
 
-### 4.7 `services/`
+### 4.8 `services/`
 
 | 文件 | 功能 | 输入 | 输出 | 系统作用 |
 |---|---|---|---|---|
@@ -255,7 +277,7 @@ queued → running → succeeded / failed
 
 当前使用 `InMemoryRunStore`，只适合开发和 demo。生产环境应替换为 Redis、数据库或任务队列。
 
-### 4.8 `routers/`
+### 4.9 `routers/`
 
 | 文件 | 功能 | 输入 | 输出 | 系统作用 |
 |---|---|---|---|---|
@@ -271,7 +293,7 @@ POST /api/novelty/runs
 GET  /api/novelty/runs/{task_id}
 ```
 
-### 4.9 `config/`
+### 4.10 `config/`
 
 | 文件 | 功能 | 输入 | 输出 | 系统作用 |
 |---|---|---|---|---|
@@ -279,7 +301,7 @@ GET  /api/novelty/runs/{task_id}
 | `config/settings.example.json` | 示例配置 | 无 | JSON 示例 | 给部署和联调提供参考 |
 | `config/__init__.py` | 聚合导出配置 | 无直接输入 | `NoveltyWebSettings` | 统一配置导入路径 |
 
-### 4.10 `core/`、`web/`、`prompts/`、`data/`
+### 4.11 `core/`、`web/`、`prompts/`、`data/`
 
 | 目录或文件 | 功能 | 输入 | 输出 | 系统作用 |
 |---|---|---|---|---|
@@ -298,6 +320,7 @@ HTTP 请求
 → services/workflow_service.py
 → workflows/novelty.py
 → agents/demo.py 或真实 Agent
+→ backend/env/model_client.py 统一真实模型调用
 → ports/interfaces.py 约束外部能力
 → models/schemas.py 约束输入输出
 ```
@@ -322,12 +345,13 @@ examples/paper.json
 6. `services/` 负责任务生命周期，不直接实现查新逻辑。
 7. `workflows/novelty.py` 同时负责固定 Agent 组合装配和流程编排，调整默认运行能力时应修改其中的 `NoveltyWorkflow.default()`。
 8. Prompt 放在 `prompts/`，需要版本化、可追踪，不要散落到多个 Python 文件中。
-9. 所有 Agent 输出必须经过 Pydantic 模型校验，不能让自由文本直接进入后续流程。
-10. 证据型结论必须保留来源、位置、URL 或 DOI，不能只依赖模型判断。
-11. 本地运行输出、缓存、索引和 `.egg-info` 不提交到 Git。
-12. 中文文档和源码统一使用 UTF-8 编码。
-13. 新增功能要补充最小测试，至少覆盖正常路径和一个失败/降级路径。
-14. 生产环境密钥必须通过环境变量或安全配置注入，禁止写入仓库。
+9. 真实 Agent 调用模型时统一使用 `backend/env/model_client.py`，不要在 Agent 内部重复拼接模型 HTTP 请求。
+10. 所有 Agent 输出必须经过 Pydantic 模型校验，不能让自由文本直接进入后续流程。
+11. 证据型结论必须保留来源、位置、URL 或 DOI，不能只依赖模型判断。
+12. 本地运行输出、缓存、索引和 `.egg-info` 不提交到 Git。
+13. 中文文档和源码统一使用 UTF-8 编码。
+14. 新增功能要补充最小测试，至少覆盖正常路径和一个失败/降级路径。
+15. 生产环境密钥必须通过环境变量或安全配置注入，禁止写入仓库。
 
 ## 7. 后续扩展建议
 
