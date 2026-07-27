@@ -6,7 +6,7 @@ import re
 from dataclasses import dataclass
 from typing import Sequence
 
-from ..models import EvidenceCard, ResearchTask
+from ..schemas import EvidenceCard, ResearchTask
 from ..ports import ValidationResult
 
 

@@ -1,5 +1,5 @@
 from .api import HealthResponse
-from .schemas import (
+from .domain import (
     ConclusionLevel,
     EvidenceCard,
     EvidenceSource,

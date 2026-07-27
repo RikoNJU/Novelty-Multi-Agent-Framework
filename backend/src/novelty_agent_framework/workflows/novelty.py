@@ -13,7 +13,7 @@ from pydantic import ValidationError
 from novelty_agent_framework.core.errors import WorkflowExecutionError
 
 from ..agents import DefaultEvidenceValidator, DemoCoordinator, DemoResearchAgent
-from ..models import (
+from ..schemas import (
     EvidenceCard,
     IssueSeverity,
     NoveltyBrief,

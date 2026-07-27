@@ -26,7 +26,7 @@
 
 | 目录 | 职责 |
 |---|---|
-| `models/` | 定义论文、查新点、调研任务、Evidence Card 和查新报告 |
+| `schemas/` | 定义论文、查新点、调研任务、Evidence Card 和查新报告 |
 | `ports/` | 定义 Coordinator、Research Agent 及文献工具接口 |
 | `agents/` | 放置查新主 Agent、文献调研 Agent、Demo Agent 和证据校验 Agent |
 | `backend/env/` | 统一模型配置、消息格式和调用入口，避免不同 Agent 各自实现模型请求 |

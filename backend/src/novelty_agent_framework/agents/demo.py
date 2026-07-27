@@ -6,7 +6,7 @@ import asyncio
 from collections import defaultdict
 from collections.abc import Sequence
 
-from ..models import (
+from ..schemas import (
     ConclusionLevel,
     EvidenceCard,
     EvidenceSource,

@@ -1,5 +1,5 @@
 from backend.env import ModelResponse
-from novelty_agent_framework.models import PaperInput
+from novelty_agent_framework.schemas import PaperInput
 from novelty_agent_framework.agents import (
     NoveltyCoordinatorAgent,
     NoveltyResearchAgent,

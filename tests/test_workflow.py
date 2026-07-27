@@ -7,7 +7,7 @@ from collections.abc import Sequence
 
 from novelty_agent_framework.agents import DemoCoordinator, DemoResearchAgent
 from novelty_agent_framework.ports import FullTextTool, MetadataTool, SearchTool
-from novelty_agent_framework.models import (
+from novelty_agent_framework.schemas import (
     ConclusionLevel,
     EvidenceCard,
     EvidenceSource,

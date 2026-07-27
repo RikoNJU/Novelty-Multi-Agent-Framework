@@ -27,9 +27,9 @@ Workflow 负责调度、补检和终止控制
 backend/src/novelty_agent_framework/
 ```
 
-包内按职责拆分为 Agent、Workflow、Model、Port、Service、Router 等目录。核心思想是：
+包内按职责拆分为 Agent、Workflow、Schema、Port、Service、Router 等目录。核心思想是：
 
-- `models/` 定义数据长什么样；
+- `schemas/` 定义数据长什么样；
 - `ports/` 定义系统需要什么能力；
 - `agents/` 放具体 Agent 实现；
 - `backend/env/` 统一模型配置、消息格式和调用入口；

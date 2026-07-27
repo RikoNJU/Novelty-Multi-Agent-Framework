@@ -9,7 +9,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Protocol, Sequence
 
-from ..models import (
+from ..schemas import (
     EvidenceCard,
     EvidenceSource,
     NoveltyBrief,

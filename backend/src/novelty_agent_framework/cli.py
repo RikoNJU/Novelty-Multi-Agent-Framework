@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Sequence
 
 from .agents import DemoCoordinator, DemoResearchAgent
-from .models import PaperInput
+from .schemas import PaperInput
 from .workflows import NoveltyWorkflow, NoveltyWorkflowServices
 
 

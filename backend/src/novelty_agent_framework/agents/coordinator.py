@@ -14,7 +14,7 @@ from typing import Any
 from pydantic import ValidationError
 
 from backend.env import ChatMessage, ModelCallOptions, ModelClient
-from ..models import EvidenceCard, NoveltyBrief, NoveltyReport, PaperInput
+from ..schemas import EvidenceCard, NoveltyBrief, NoveltyReport, PaperInput
 from ..ports import NoveltyCoordinator
 
 

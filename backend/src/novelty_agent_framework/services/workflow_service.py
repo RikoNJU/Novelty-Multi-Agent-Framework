@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from functools import lru_cache
 
-from novelty_agent_framework.models import PaperInput
+from novelty_agent_framework.schemas import PaperInput
 from novelty_agent_framework.services.jobs import InMemoryRunStore, RunSnapshot
 from novelty_agent_framework.workflows import NoveltyWorkflow
 

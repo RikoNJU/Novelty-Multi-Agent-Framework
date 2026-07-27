@@ -42,7 +42,7 @@ backend/src/novelty_agent_framework/
 | `config/` | `settings.py`、`settings.example.json` | 管理 API 前缀、端口、CORS 等配置 |
 | `core/` | `errors.py` | 存放核心异常和基础公共能力 |
 | `data/` | `.gitignore` | 后端运行数据目录占位 |
-| `models/` | `schemas.py`、`api.py` | 定义业务数据结构和 API 响应模型 |
+| `schemas/` | `domain.py`、`api.py` | 定义业务数据结构和 API 响应结构 |
 | `ports/` | `interfaces.py` | 定义可替换能力接口 |
 | `prompts/` | `coordinator/`、`research/` | 存放未来真实 Agent 的 Prompt 模板 |
 | `routers/` | `health.py`、`runs.py` | FastAPI 路由入口 |
@@ -56,7 +56,7 @@ backend/src/novelty_agent_framework/
 
 该目录存放“真正执行某类智能任务或规则判断”的模块。当前包含真实实现骨架、确定性 Demo 和证据质量门控。
 
-未来真实系统中，论文理解、查新点拆解、补检规划、文献调研和证据对比等 Agent 实现都应放在这里。它们可以调用 LLM、RAG 或外部工具，但对外必须返回 `models/` 中定义的结构化对象。
+未来真实系统中，论文理解、查新点拆解、补检规划、文献调研和证据对比等 Agent 实现都应放在这里。它们可以调用 LLM、RAG 或外部工具，但对外必须返回 `schemas/` 中定义的结构化对象。
 
 该目录不应该处理 HTTP 请求，不应该管理任务状态，也不应该决定整体调用顺序。它只回答“某个 Agent 如何完成自己的专业任务”。
 
@@ -84,9 +84,9 @@ backend/src/novelty_agent_framework/
 
 该目录不应存放源码、Prompt 或正式配置。它主要服务于运行时和调试。
 
-#### `models/`
+#### `schemas/`
 
-该目录存放系统最重要的数据结构和校验规则。当前 `schemas.py` 定义论文输入、查新点、调研任务、Evidence Card、查新报告和运行结果；`api.py` 定义健康检查响应；`__init__.py` 统一导出常用模型。
+该目录存放系统最重要的数据结构和校验规则。当前 `domain.py` 定义论文输入、查新点、调研任务、Evidence Card、查新报告和运行结果；`api.py` 定义健康检查响应；`__init__.py` 统一导出常用数据结构。
 
 Agent 之间传递的数据必须优先在这里建模。例如新增“引用查证结果”“文献相似度结果”“检索覆盖度报告”，都应先定义 Pydantic 模型，再进入 Workflow 或 Agent。
 
@@ -146,7 +146,7 @@ Service 是 Router 和 Workflow 之间的中间层。它知道“某个请求对
 
 Workflow 负责回答“Agent 之间如何协作”：先由 Coordinator 规划，再并行调用 Research Agent，随后进行证据校验和覆盖度判断，必要时补充检索，最后生成报告。
 
-该目录不应该直接写具体模型调用、数据库查询或长 Prompt。它应依赖 `ports/` 中的抽象接口，并使用 `models/` 中的数据结构来保证流程稳定。
+该目录不应该直接写具体模型调用、数据库查询或长 Prompt。它应依赖 `ports/` 中的抽象接口，并使用 `schemas/` 中的数据结构来保证流程稳定。
 
 ## 4. Python 文件功能、输入输出与系统作用
 
@@ -158,13 +158,13 @@ Workflow 负责回答“Agent 之间如何协作”：先由 Coordinator 规划�
 | `main.py` | 创建 FastAPI 应用 | `NoveltyWebSettings` 或环境变量 | `FastAPI` 实例 | API 服务入口，挂载健康检查和任务接口 |
 | `cli.py` | 命令行 demo 入口 | 示例论文 JSON 路径、输出路径 | 查新结果 JSON | 用于本地验证完整查新流程 |
 
-### 4.2 `models/`
+### 4.2 `schemas/`
 
 | 文件 | 功能 | 输入 | 输出 | 系统作用 |
 |---|---|---|---|---|
-| `models/schemas.py` | 定义查新工作流核心数据模型 | 论文、查新点、调研任务、证据卡、报告字段 | Pydantic 模型 | 约束 Agent 之间传递的数据格式，避免输出漂移 |
-| `models/api.py` | 定义 API 健康检查响应 | 服务名、版本、状态 | `HealthResponse` | 让 API 返回稳定健康检查结构 |
-| `models/__init__.py` | 聚合导出模型 | 无直接输入 | `PaperInput`、`EvidenceCard`、`NoveltyReport` 等 | 统一模型导入路径 |
+| `schemas/domain.py` | 定义查新工作流核心数据结构 | 论文、查新点、调研任务、证据卡、报告字段 | Pydantic 数据结构 | 约束 Agent 之间传递的数据格式，避免输出漂移 |
+| `schemas/api.py` | 定义 API 健康检查响应 | 服务名、版本、状态 | `HealthResponse` | 让 API 返回稳定健康检查结构 |
+| `schemas/__init__.py` | 聚合导出数据结构 | 无直接输入 | `PaperInput`、`EvidenceCard`、`NoveltyReport` 等 | 统一数据结构导入路径 |
 
 主要数据流：
 
@@ -322,7 +322,7 @@ HTTP 请求
 → agents/demo.py 或真实 Agent
 → backend/env/model_client.py 统一真实模型调用
 → ports/interfaces.py 约束外部能力
-→ models/schemas.py 约束输入输出
+→ schemas/domain.py 约束输入输出
 ```
 
 CLI 调用关系：
@@ -337,7 +337,7 @@ examples/paper.json
 
 ## 6. 开发规范
 
-1. 新业务数据结构必须先写入 `models/`，不要在 Agent 或路由里临时拼 dict。
+1. 新业务数据结构必须先写入 `schemas/`，不要在 Agent 或路由里临时拼 dict。
 2. 新外部能力必须先在 `ports/` 定义接口，再在 `agents/` 中实现，并在 `workflows/novelty.py` 中装配。
 3. `workflows/` 只负责流程编排，不直接写具体模型 SDK、数据库连接或复杂 Prompt。
 4. `agents/` 负责专业判断和结构化输出，不处理 HTTP 请求和任务状态。
@@ -372,4 +372,4 @@ workflows/novelty.py
 生产级任务存储
 ```
 
-只要这些实现遵守 `ports/` 中的接口，`workflows/` 和 `models/` 通常不需要重写。
+只要这些实现遵守 `ports/` 中的接口，`workflows/` 和 `schemas/` 通常不需要重写。

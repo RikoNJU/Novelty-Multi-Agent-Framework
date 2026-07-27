@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from operator import add
 from typing import Annotated, TypedDict
 
-from ..models import (
+from ..schemas import (
     EvidenceCard,
     NoveltyBrief,
     NoveltyReport,
