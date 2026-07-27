@@ -40,6 +40,20 @@ async def _resolve(value: T | Awaitable[T]) -> T:
 class NoveltyWorkflow:
     """把规划、并行调研、证据门控和汇总组织成可运行闭环。"""
 
+    @classmethod
+    def default(cls) -> "NoveltyWorkflow":
+        """构造默认查新工作流。
+
+        当前项目采用固定 Agent 组合，因此默认装配逻辑直接放在工作流类中。
+        """
+
+        return cls(
+            NoveltyWorkflowServices(
+                coordinator=DemoCoordinator(),
+                research_agent=DemoResearchAgent(),
+            )
+        )
+
     def __init__(
         self,
         services: NoveltyWorkflowServices,
@@ -290,17 +304,3 @@ class NoveltyWorkflow:
         except RuntimeError:
             return asyncio.run(self.arun(paper))
         raise RuntimeError("检测到正在运行的事件循环，请改用 await workflow.arun(...) ")
-
-
-def build_novelty_workflow() -> NoveltyWorkflow:
-    """构造默认查新工作流。
-
-    当前项目采用固定 Agent 组合，因此默认装配逻辑直接放在工作流文件中。
-    """
-
-    return NoveltyWorkflow(
-        NoveltyWorkflowServices(
-            coordinator=DemoCoordinator(),
-            research_agent=DemoResearchAgent(),
-        )
-    )

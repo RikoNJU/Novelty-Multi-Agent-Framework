@@ -8,8 +8,6 @@ from novelty_agent_framework.models import PaperInput
 from novelty_agent_framework.services.jobs import InMemoryRunStore, RunSnapshot
 from novelty_agent_framework.workflows import NoveltyWorkflow
 
-from ..workflows import build_novelty_workflow
-
 
 class NoveltyWorkflowService:
     def __init__(
@@ -17,7 +15,7 @@ class NoveltyWorkflowService:
         workflow: NoveltyWorkflow | None = None,
         store: InMemoryRunStore | None = None,
     ) -> None:
-        self.workflow = workflow or build_novelty_workflow()
+        self.workflow = workflow or NoveltyWorkflow.default()
         self.store = store or InMemoryRunStore()
 
     def create_run(self) -> RunSnapshot:
