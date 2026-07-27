@@ -1,5 +1,4 @@
-from .workflow_factory import build_novelty_workflow
-from .novelty import NoveltyWorkflow
+from .novelty import NoveltyWorkflow, build_novelty_workflow
 from .state import NoveltyState, NoveltyWorkflowConfig, NoveltyWorkflowServices
 
 __all__ = [

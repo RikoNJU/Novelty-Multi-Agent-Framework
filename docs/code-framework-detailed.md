@@ -47,7 +47,7 @@ backend/src/novelty_agent_framework/
 | `routers/` | `health.py`、`runs.py` | FastAPI 路由入口 |
 | `services/` | `workflow_service.py`、`jobs.py` | 管理任务生命周期和运行状态 |
 | `web/` | `__init__.py` | Web 相关兼容出口 |
-| `workflows/` | `novelty.py`、`state.py`、`workflow_factory.py` | 定义 LangGraph 工作流、共享状态和默认工作流装配 |
+| `workflows/` | `novelty.py`、`state.py` | 定义 LangGraph 工作流、共享状态和固定 Agent 装配 |
 
 ### 3.1 目录内容说明
 
@@ -97,7 +97,7 @@ Agent 之间传递的数据必须优先在这里建模。例如新增“引用�
 
 Port 的作用是让 Workflow 只依赖抽象能力，不依赖具体实现。比如 Workflow 只知道需要一个 `SearchTool.search()`，但不关心背后是 Semantic Scholar、Google Scholar、Crossref、学校数据库还是本地索引。
 
-该目录不应该写真实 API 调用代码。真实实现应放在 `agents/`，默认工作流装配应放在 `workflows/workflow_factory.py`，并遵守这里定义的输入输出协议。
+该目录不应该写真实 API 调用代码。真实实现应放在 `agents/`，固定 Agent 装配应放在 `workflows/novelty.py` 的默认构造函数中，并遵守这里定义的输入输出协议。
 
 #### `prompts/`
 
@@ -133,7 +133,7 @@ Service 是 Router 和 Workflow 之间的中间层。它知道“某个请求对
 
 #### `workflows/`
 
-该目录存放 Multi-Agent 协作流程。当前 `novelty.py` 定义 LangGraph 节点和路由，`state.py` 定义共享状态、配置和依赖容器，`workflow_factory.py` 定义默认工作流装配方式。
+该目录存放 Multi-Agent 协作流程。当前 `novelty.py` 定义 LangGraph 节点、路由和默认 Agent 装配方式，`state.py` 定义共享状态、配置和依赖容器。
 
 Workflow 负责回答“Agent 之间如何协作”：先由 Coordinator 规划，再并行调用 Research Agent，随后进行证据校验和覆盖度判断，必要时补充检索，最后生成报告。
 
@@ -231,13 +231,13 @@ plan
 | `_plan_supplement` | coverage gaps | 补充 research tasks | 针对缺口追加检索 |
 | `_synthesize_report` | 全部有效证据和缺口 | `NoveltyReport` | 形成最终查新结论 |
 
-### 4.6 `workflows/workflow_factory.py`
+### 4.6 `workflows/novelty.py` 中的默认装配
 
 | 文件 | 功能 | 输入 | 输出 | 系统作用 |
 |---|---|---|---|---|
-| `workflows/workflow_factory.py` | 装配默认工作流依赖 | 无直接业务输入 | `NoveltyWorkflow` | 指定当前固定使用的 Agent，并给 service 层提供统一构造入口 |
+| `workflows/novelty.py` | 编排查新流程并装配默认工作流依赖 | 无直接业务输入 | `NoveltyWorkflow` | 指定当前固定使用的 Agent，并给 service 层提供统一构造入口 |
 
-当前 `build_novelty_workflow` 装配的是 `DemoCoordinator` 和 `DemoResearchAgent`。因为本项目假设 Agent 组合相对固定，所以默认装配逻辑并入 `workflows/`，不再单独保留 `adapters/` 目录。
+当前 `build_novelty_workflow` 位于 `novelty.py`，装配的是 `DemoCoordinator` 和 `DemoResearchAgent`。因为本项目假设 Agent 组合相对固定，所以默认装配逻辑直接并入主工作流文件，不再单独保留独立装配文件。
 
 ### 4.7 `services/`
 
@@ -296,7 +296,6 @@ GET  /api/novelty/runs/{task_id}
 HTTP 请求
 → routers/runs.py
 → services/workflow_service.py
-→ workflows/workflow_factory.py
 → workflows/novelty.py
 → agents/demo.py 或真实 Agent
 → ports/interfaces.py 约束外部能力
@@ -316,12 +315,12 @@ examples/paper.json
 ## 6. 开发规范
 
 1. 新业务数据结构必须先写入 `models/`，不要在 Agent 或路由里临时拼 dict。
-2. 新外部能力必须先在 `ports/` 定义接口，再在 `agents/` 中实现，并在 `workflows/workflow_factory.py` 中装配。
+2. 新外部能力必须先在 `ports/` 定义接口，再在 `agents/` 中实现，并在 `workflows/novelty.py` 中装配。
 3. `workflows/` 只负责流程编排，不直接写具体模型 SDK、数据库连接或复杂 Prompt。
 4. `agents/` 负责专业判断和结构化输出，不处理 HTTP 请求和任务状态。
 5. `routers/` 只做请求校验、依赖注入和响应返回，不写业务流程。
 6. `services/` 负责任务生命周期，不直接实现查新逻辑。
-7. `workflows/workflow_factory.py` 负责装配固定 Agent 组合，是调整默认运行能力的主要入口。
+7. `workflows/novelty.py` 同时负责固定 Agent 组合装配和流程编排，调整默认运行能力时应修改其中的 `build_novelty_workflow`。
 8. Prompt 放在 `prompts/`，需要版本化、可追踪，不要散落到多个 Python 文件中。
 9. 所有 Agent 输出必须经过 Pydantic 模型校验，不能让自由文本直接进入后续流程。
 10. 证据型结论必须保留来源、位置、URL 或 DOI，不能只依赖模型判断。
@@ -335,7 +334,7 @@ examples/paper.json
 优先替换以下位置：
 
 ```text
-workflows/workflow_factory.py
+workflows/novelty.py
 ```
 
 把当前 Demo 实现替换为：
