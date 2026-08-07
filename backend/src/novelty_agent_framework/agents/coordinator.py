@@ -13,8 +13,21 @@ from typing import Any
 
 from pydantic import ValidationError
 
-from backend.env import ChatMessage, ModelCallOptions, ModelClient
-from ..schemas import EvidenceCard, NoveltyBrief, NoveltyReport, PaperInput
+from backend.env import (
+    ChatMessage,
+    ModelCallOptions,
+    ModelClient,
+    ModelRegistry,
+    PromptLibrary,
+)
+from ..schemas import (
+    EvidenceCard,
+    NoveltyBrief,
+    NoveltyPoint,
+    NoveltyReport,
+    PaperInput,
+    ResearchTask,
+)
 from ..ports import NoveltyCoordinator
 
 
@@ -34,47 +47,72 @@ class NoveltyCoordinatorAgent(NoveltyCoordinator):
         self,
         model_client: ModelClient | None = None,
         *,
+        prompts: PromptLibrary | None = None,
+        models: ModelRegistry | None = None,
+        model_alias: str | None = None,
         temperature: float = 0.2,
     ) -> None:
         self.model_client = model_client
+        self._prompts = prompts
+        self._models = models
+        self._model_alias = model_alias
         self.temperature = temperature
 
     def plan(
         self,
         paper: PaperInput,
         *,
-        previous_brief: NoveltyBrief | None,
-        existing_evidence: Sequence[EvidenceCard],
-        coverage_gaps: Sequence[str],
+        points: Sequence[NoveltyPoint],
         attempt: int,
     ) -> NoveltyBrief:
-        """生成初始查新计划。
+        """把查新点转化为调研任务并组装查新规划。
 
-        输入是论文全文信息和上一轮上下文；输出必须是 `NoveltyBrief`，供
-        workflow 写入 shared state，并分发给多个 Research Agent。
+        查新点由提取 Agent 预先生成；本方法只负责任务分配与 NoveltyBrief 装配。
         """
 
         payload = {
             "paper": paper.model_dump(mode="json"),
-            "previous_brief": (
-                previous_brief.model_dump(mode="json") if previous_brief else None
-            ),
-            "existing_evidence": [
-                item.model_dump(mode="json") for item in existing_evidence
-            ],
-            "coverage_gaps": list(coverage_gaps),
+            "points": [point.model_dump(mode="json") for point in points],
             "attempt": attempt,
         }
         data = self._complete_json(
-            system_prompt=self._system_prompt(),
-            user_prompt=(
-                "请理解论文并生成查新计划。输出必须是 NoveltyBrief JSON，"
-                "包含 paper_summary、research_problem、novelty_points、keywords_zh、"
-                "keywords_en 和 research_tasks。"
-            ),
+            prompt_name="coordinator/plan",
+            variables={
+                "paper_json": json.dumps(payload["paper"], ensure_ascii=False),
+                "points_json": json.dumps(payload["points"], ensure_ascii=False),
+                "attempt": attempt,
+                "task_schema": json.dumps(
+                    ResearchTask.model_json_schema(), ensure_ascii=False
+                ),
+            },
             payload=payload,
+            system_prompt=self._system_prompt(),
+            fallback_user_prompt=(
+                "请为给定查新点生成 ResearchTask 列表（JSON 数组）。"
+            ),
         )
-        return self._validate_brief(data, action="生成查新计划")
+        if not isinstance(data, list):
+            raise ValueError("Coordinator plan 输出顶层必须是 ResearchTask 列表")
+        allowed_ids = {point.point_id for point in points}
+        tasks: list[ResearchTask] = []
+        for index, item in enumerate(data):
+            try:
+                task = ResearchTask.model_validate(item)
+            except ValidationError as exc:
+                raise ValueError(f"plan 第 {index + 1} 个任务格式错误：{exc}") from exc
+            if task.novelty_point_id not in allowed_ids:
+                raise ValueError(
+                    f"plan 任务 {task.task_id} 引用了未知查新点 {task.novelty_point_id}"
+                )
+            tasks.append(task)
+        return NoveltyBrief(
+            paper_summary=paper.abstract or paper.title,
+            research_problem=paper.title,
+            novelty_points=list(points),
+            keywords_zh=[paper.title] if paper.title else [],
+            keywords_en=[],
+            research_tasks=tasks,
+        )
 
     def plan_supplement(
         self,
@@ -101,13 +139,30 @@ class NoveltyCoordinatorAgent(NoveltyCoordinator):
             "attempt": attempt,
         }
         data = self._complete_json(
+            prompt_name="coordinator/plan_supplement",
+            variables={
+                "paper_json": json.dumps(payload["paper"], ensure_ascii=False),
+                "brief_json": json.dumps(payload["brief"], ensure_ascii=False),
+                "existing_evidence_json": json.dumps(
+                    payload["existing_evidence"], ensure_ascii=False
+                ),
+                "coverage_gaps_json": json.dumps(
+                    payload["coverage_gaps"], ensure_ascii=False
+                ),
+                "attempt": attempt,
+                "brief_schema": json.dumps(
+                    NoveltyBrief.model_json_schema(), ensure_ascii=False
+                ),
+            },
+            payload=payload,
             system_prompt=self._system_prompt(),
-            user_prompt=(
+            fallback_user_prompt=(
                 "请只针对 coverage_gaps 生成补充调研任务。保持原有 novelty_points "
                 "稳定，不要随意新增或改写查新点。输出完整 NoveltyBrief JSON。"
             ),
-            payload=payload,
         )
+        if not isinstance(data, dict):
+            raise ValueError("Coordinator plan_supplement 输出顶层必须是对象")
         return self._validate_brief(data, action="生成补充查新计划")
 
     def synthesize(
@@ -133,34 +188,58 @@ class NoveltyCoordinatorAgent(NoveltyCoordinator):
             "coverage_gaps": list(coverage_gaps),
         }
         data = self._complete_json(
+            prompt_name="coordinator/synthesize",
+            variables={
+                "paper_json": json.dumps(payload["paper"], ensure_ascii=False),
+                "brief_json": json.dumps(payload["brief"], ensure_ascii=False),
+                "evidence_json": json.dumps(payload["evidence"], ensure_ascii=False),
+                "rejected_evidence_json": json.dumps(
+                    payload["rejected_evidence"], ensure_ascii=False
+                ),
+                "coverage_gaps_json": json.dumps(
+                    payload["coverage_gaps"], ensure_ascii=False
+                ),
+                "report_schema": json.dumps(
+                    NoveltyReport.model_json_schema(), ensure_ascii=False
+                ),
+            },
+            payload=payload,
             system_prompt=self._system_prompt(),
-            user_prompt=(
+            fallback_user_prompt=(
                 "请基于有效 EvidenceCard 生成最终 NoveltyReport JSON。每个结论必须"
                 "绑定 supporting_card_ids 或明确标记证据不足，不得编造文献。"
             ),
-            payload=payload,
         )
+        if not isinstance(data, dict):
+            raise ValueError("Coordinator synthesize 输出顶层必须是对象")
         return self._validate_report(data, paper_id=paper.paper_id)
 
     def _complete_json(
         self,
         *,
-        system_prompt: str,
-        user_prompt: str,
+        prompt_name: str,
+        variables: dict[str, Any],
         payload: dict[str, Any],
-    ) -> dict[str, Any]:
-        """调用统一模型客户端，并把模型回复解析为 JSON dict。"""
+        system_prompt: str,
+        fallback_user_prompt: str,
+    ) -> Any:
+        """渲染提示词并调用统一模型客户端，把回复解析为 JSON。"""
 
-        if self.model_client is None:
-            raise NotImplementedError("NoveltyCoordinatorAgent 需要注入 ModelClient")
+        client = self._client()
+        if self._prompts is not None:
+            rendered = self._prompts.render(prompt_name, **variables)
+            system, user = rendered.system, rendered.user
+        else:
+            system = system_prompt
+            user = (
+                f"{fallback_user_prompt}\n\n输入数据：\n"
+                f"{json.dumps(payload, ensure_ascii=False)}"
+            )
 
-        response = self.model_client.complete(
+        response = client.complete(
             [
-                ChatMessage(role="system", content=system_prompt),
-                ChatMessage(
-                    role="user",
-                    content=f"{user_prompt}\n\n输入数据：\n{json.dumps(payload, ensure_ascii=False)}",
-                ),
+                ChatMessage(role="system", content=system),
+                ChatMessage(role="user", content=user),
             ],
             options=ModelCallOptions(
                 temperature=self.temperature,
@@ -171,9 +250,16 @@ class NoveltyCoordinatorAgent(NoveltyCoordinator):
             data = json.loads(response.content)
         except json.JSONDecodeError as exc:
             raise ValueError("NoveltyCoordinatorAgent 返回内容不是合法 JSON") from exc
-        if not isinstance(data, dict):
-            raise ValueError("NoveltyCoordinatorAgent 返回 JSON 顶层必须是对象")
         return data
+
+    def _client(self) -> ModelClient:
+        if self.model_client is not None:
+            return self.model_client
+        if self._models is not None:
+            return self._models.client_for(self._model_alias or "coordinator")
+        raise NotImplementedError(
+            "NoveltyCoordinatorAgent 需要注入 ModelClient 或 ModelRegistry"
+        )
 
     @staticmethod
     def _validate_brief(data: dict[str, Any], *, action: str) -> NoveltyBrief:

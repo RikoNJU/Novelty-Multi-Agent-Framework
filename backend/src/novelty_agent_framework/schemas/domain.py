@@ -25,6 +25,40 @@ class PaperInput(StrictModel):
     metadata: dict[str, str] = Field(default_factory=dict)
 
 
+class PaperPage(StrictModel):
+    """论文处理模块的单页文本，page 从 1 开始。"""
+
+    page: int = Field(ge=1)
+    text: str = ""
+
+
+class PaperDocument(StrictModel):
+    """论文处理模块的结构化产物（PDF → 文本 → 章节切分）。"""
+
+    paper_id: str = Field(min_length=1)
+    title: str = ""
+    abstract: str = ""
+    full_text: str = ""
+    references: list[str] = Field(default_factory=list)
+    claimed_contributions: list[str] = Field(default_factory=list)
+    metadata: dict[str, str] = Field(default_factory=dict)
+    sections: dict[str, str] = Field(default_factory=dict)
+    pages: list[PaperPage] = Field(default_factory=list)
+    source: str = ""
+    parse_warnings: list[str] = Field(default_factory=list)
+
+
+class PaperDigest(StrictModel):
+    """供查新点提取的精简论文摘要视图。"""
+
+    paper_id: str = Field(min_length=1)
+    title: str = ""
+    abstract: str = ""
+    claimed_contributions: list[str] = Field(default_factory=list)
+    references: list[str] = Field(default_factory=list)
+    full_text_excerpt: str = ""
+
+
 class NoveltyPoint(StrictModel):
     """可检索、可比较的单个查新点。"""
 

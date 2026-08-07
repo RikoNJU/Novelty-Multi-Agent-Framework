@@ -7,13 +7,17 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Protocol, Sequence
 
 from ..schemas import (
     EvidenceCard,
     EvidenceSource,
     NoveltyBrief,
+    NoveltyPoint,
     NoveltyReport,
+    PaperDigest,
+    PaperDocument,
     PaperInput,
     ResearchTask,
 )
@@ -71,12 +75,10 @@ class NoveltyCoordinator(Protocol):
         self,
         paper: PaperInput,
         *,
-        previous_brief: NoveltyBrief | None,
-        existing_evidence: Sequence[EvidenceCard],
-        coverage_gaps: Sequence[str],
+        points: Sequence[NoveltyPoint],
         attempt: int,
     ) -> NoveltyBrief:
-        """理解论文并生成本轮文献调研任务。"""
+        """把查新点转化为可并行执行的文献调研任务并组装查新规划。"""
 
     def plan_supplement(
         self,
@@ -135,3 +137,32 @@ class ValidationResult:
     accepted: tuple[EvidenceCard, ...]
     rejected: tuple[tuple[str, str], ...]
     issues: tuple[tuple[str, str, str, str | None], ...] = ()
+
+
+class PaperProcessor(Protocol):
+    """论文 PDF 处理能力：解析为结构化 PaperDocument，并提供工作流兼容视图。"""
+
+    def process(
+        self,
+        source: str | Path,
+        *,
+        force_ocr: bool = False,
+        paper_id: str | None = None,
+    ) -> PaperDocument:
+        """把 PDF 处理为结构化论文文档。"""
+
+    def to_paper_input(self, document: PaperDocument) -> PaperInput:
+        """把 PaperDocument 转换为工作流兼容的 PaperInput。"""
+
+
+class NoveltyPointExtractor(Protocol):
+    """查新点提取 Agent 的能力边界。"""
+
+    def extract(
+        self,
+        digest: PaperDigest,
+        *,
+        previous_brief: NoveltyBrief | None,
+        attempt: int,
+    ) -> Sequence[NoveltyPoint]:
+        """从论文摘要视图提取可检索、可比较的查新点。"""

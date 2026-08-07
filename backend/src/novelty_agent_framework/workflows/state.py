@@ -9,6 +9,7 @@ from typing import Annotated, TypedDict
 from ..schemas import (
     EvidenceCard,
     NoveltyBrief,
+    NoveltyPoint,
     NoveltyReport,
     PaperInput,
     RejectedEvidence,
@@ -21,6 +22,7 @@ from ..ports import (
     LiteratureResearchAgent,
     MetadataTool,
     NoveltyCoordinator,
+    NoveltyPointExtractor,
     SearchTool,
 )
 
@@ -29,6 +31,7 @@ class NoveltyState(TypedDict, total=False):
     """一次查新任务在图中的共享状态。"""
 
     paper: PaperInput
+    novelty_points: list[NoveltyPoint]
     brief: NoveltyBrief
     research_tasks: list[ResearchTask]
     all_research_tasks: list[ResearchTask]
@@ -64,6 +67,7 @@ class NoveltyWorkflowServices:
 
     coordinator: NoveltyCoordinator
     research_agent: LiteratureResearchAgent
+    point_extractor: NoveltyPointExtractor | None = None
     validator: EvidenceValidator | None = None
     search_tool: SearchTool | None = None
     full_text_tool: FullTextTool | None = None

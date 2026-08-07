@@ -29,10 +29,23 @@
 | `schemas/` | 定义论文、查新点、调研任务、Evidence Card 和查新报告 |
 | `ports/` | 定义 Coordinator、Research Agent 及文献工具接口 |
 | `agents/` | 放置查新主 Agent、文献调研 Agent、Demo Agent 和证据校验 Agent |
-| `backend/env/` | 统一模型配置、消息格式和调用入口，避免不同 Agent 各自实现模型请求 |
+| `backend/env/` | 统一模型配置、消息格式、多模型注册表和 Prompt 渲染，避免不同 Agent 各自实现模型请求 |
+| `prompts/` | 生产 Agent 的版本化提示词模板（front matter + 变量占位符） |
+| `config/` | Web 设置与组合根 `build_workflow()`：从 `models` / `agents` 配置装配工作流 |
 | `workflows/` | 编排并行调研、证据校验、补充检索和报告生成，并装配默认工作流 |
 | `routers/` | 提供可选 API 入口 |
 | `services/` | 管理任务生命周期和运行状态 |
+
+## 3.1 多模型与提示词配置
+
+`settings.example.json` 中 `models` 注册模型别名（provider、base_url、model、
+api_key_env、context_window、supported_params、defaults），`agents` 为每个角色
+指定使用的模型别名、温度和提示词文件。组合根 `build_workflow()` 读取配置，
+构建 `ModelRegistry` 与 `PromptLibrary`，再按角色装配 Agent。
+
+环境变量可按角色覆盖模型：`NOVELTY_COORDINATOR_MODEL`、`NOVELTY_RESEARCH_MODEL`。
+厂商私有参数（如 `enable_thinking`）通过 `ModelCallOptions.extra_body` 透传，
+发送前按 `supported_params` 白名单过滤，换模型不会因多余参数失败。
 
 ## 4. 输入与输出
 

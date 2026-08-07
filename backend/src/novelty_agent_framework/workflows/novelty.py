@@ -11,12 +11,20 @@ from langgraph.graph import END, START, StateGraph
 from pydantic import ValidationError
 
 from novelty_agent_framework.core.errors import WorkflowExecutionError
+from novelty_agent_framework.persistence import persist_novelty_points
 
-from ..agents import DefaultEvidenceValidator, DemoCoordinator, DemoResearchAgent
+from ..agents import (
+    DefaultEvidenceValidator,
+    DemoCoordinator,
+    DemoPointExtractor,
+    DemoResearchAgent,
+    build_paper_digest,
+)
 from ..schemas import (
     EvidenceCard,
     IssueSeverity,
     NoveltyBrief,
+    NoveltyPoint,
     NoveltyReport,
     NoveltyRunResult,
     PaperInput,
@@ -51,6 +59,7 @@ class NoveltyWorkflow:
             NoveltyWorkflowServices(
                 coordinator=DemoCoordinator(),
                 research_agent=DemoResearchAgent(),
+                point_extractor=DemoPointExtractor(),
             )
         )
 
@@ -62,10 +71,12 @@ class NoveltyWorkflow:
         self.services = services
         self.config = config or NoveltyWorkflowConfig()
         self.validator = services.validator or DefaultEvidenceValidator()
+        self.point_extractor = services.point_extractor or DemoPointExtractor()
         self.graph = self._build_graph()
 
     def _build_graph(self) -> Any:
         builder = StateGraph(NoveltyState)
+        builder.add_node("extract_points", self._extract_points)
         builder.add_node("plan", self._plan)
         builder.add_node("parallel_research", self._parallel_research)
         builder.add_node("validate_evidence", self._validate_evidence)
@@ -73,7 +84,8 @@ class NoveltyWorkflow:
         builder.add_node("plan_supplement", self._plan_supplement)
         builder.add_node("synthesize_report", self._synthesize_report)
 
-        builder.add_edge(START, "plan")
+        builder.add_edge(START, "extract_points")
+        builder.add_edge("extract_points", "plan")
         builder.add_edge("plan", "parallel_research")
         builder.add_edge("parallel_research", "validate_evidence")
         builder.add_edge("validate_evidence", "assess_coverage")
@@ -89,13 +101,34 @@ class NoveltyWorkflow:
         builder.add_edge("synthesize_report", END)
         return builder.compile()
 
+    async def _extract_points(self, state: NoveltyState) -> dict[str, Any]:
+        try:
+            digest = build_paper_digest(state["paper"])
+            points_value = self.point_extractor.extract(
+                digest,
+                previous_brief=None,
+                attempt=1,
+            )
+            points = list(await _resolve(points_value))
+            validated = [
+                point
+                if isinstance(point, NoveltyPoint)
+                else NoveltyPoint.model_validate(point)
+                for point in points
+            ]
+        except (ValidationError, TypeError, ValueError) as exc:
+            raise WorkflowExecutionError(f"查新点提取失败：{exc}") from exc
+        if not validated:
+            raise WorkflowExecutionError("查新点提取结果为空")
+        # 测试版持久化：把查新点写入固定目录（后续替换为数据库存储）
+        persist_novelty_points(state["paper"], validated)
+        return {"novelty_points": validated}
+
     async def _plan(self, state: NoveltyState) -> dict[str, Any]:
         try:
             brief_value = self.services.coordinator.plan(
                 state["paper"],
-                previous_brief=None,
-                existing_evidence=(),
-                coverage_gaps=(),
+                points=state.get("novelty_points", []),
                 attempt=1,
             )
             brief = NoveltyBrief.model_validate(await _resolve(brief_value))

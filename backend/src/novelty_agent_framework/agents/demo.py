@@ -27,27 +27,15 @@ class DemoCoordinator:
         self,
         paper: PaperInput,
         *,
-        previous_brief: NoveltyBrief | None,
-        existing_evidence: Sequence[EvidenceCard],
-        coverage_gaps: Sequence[str],
+        points: Sequence[NoveltyPoint],
         attempt: int,
     ) -> NoveltyBrief:
-        claims = paper.claimed_contributions or [paper.abstract or paper.title]
-        points = [
-            NoveltyPoint(
-                point_id=f"NP-{index}",
-                claim=claim,
-                technical_features=[claim],
-                source_locations=["claimed_contributions"],
-            )
-            for index, claim in enumerate(claims, start=1)
-        ]
         tasks = [self._task_for(point, attempt) for point in points]
         return NoveltyBrief(
             paper_summary=paper.abstract or paper.title,
             research_problem=paper.title,
-            novelty_points=points,
-            keywords_zh=[paper.title],
+            novelty_points=list(points),
+            keywords_zh=[paper.title] if paper.title else [],
             keywords_en=[],
             research_tasks=tasks,
         )

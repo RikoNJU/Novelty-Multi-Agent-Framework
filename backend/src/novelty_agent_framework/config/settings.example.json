@@ -13,5 +13,85 @@
     "max_rounds": 2,
     "max_concurrency": 4,
     "minimum_evidence_per_point": 1
+  },
+  "models": {
+    "glm4.7": {
+      "provider": "openai_compatible",
+      "base_url": "https://api.siliconflow.cn/v1",
+      "model": "Pro/zai-org/GLM-4.7",
+      "api_key_env": "SILICONFLOW_API_KEY",
+      "context_window": 200000,
+      "supported_params": ["enable_thinking", "thinking_budget"],
+      "defaults": {
+        "temperature": 0.2,
+        "max_tokens": 8192
+      }
+    },
+    "deepseek-flash": {
+      "provider": "openai_compatible",
+      "base_url": "https://api.siliconflow.cn/v1",
+      "model": "deepseek-ai/DeepSeek-V4-Flash",
+      "api_key_env": "SILICONFLOW_API_KEY",
+      "context_window": 128000,
+      "supported_params": ["enable_thinking", "thinking_budget", "reasoning_effort"],
+      "defaults": {
+        "temperature": 0.3,
+        "max_tokens": 4096
+      }
+    },
+    "r1-qwen3-8b": {
+      "provider": "openai_compatible",
+      "base_url": "https://api.siliconflow.cn/v1",
+      "model": "deepseek-ai/DeepSeek-R1-0528-Qwen3-8B",
+      "api_key_env": "SILICONFLOW_API_KEY",
+      "context_window": 128000,
+      "supported_params": ["enable_thinking", "thinking_budget"],
+      "defaults": {
+        "temperature": 0.2,
+        "max_tokens": 4096
+      }
+    },
+    "deepseek-ocr": {
+      "provider": "openai_compatible",
+      "base_url": "https://api.siliconflow.cn/v1",
+      "model": "deepseek-ai/DeepSeek-OCR",
+      "api_key_env": "SILICONFLOW_API_KEY",
+      "context_window": 128000,
+      "supported_params": [],
+      "defaults": {
+        "max_tokens": 4096
+      }
+    }
+  },
+  "agents": {
+    "coordinator": {
+      "model": "glm4.7",
+      "temperature": 0.2,
+      "prompts": [
+        "coordinator/plan",
+        "coordinator/plan_supplement",
+        "coordinator/synthesize"
+      ]
+    },
+    "research": {
+      "model": "deepseek-flash",
+      "temperature": 0.3,
+      "prompts": [
+        "research/literature_review"
+      ]
+    },
+    "point_extractor": {
+      "model": "r1-qwen3-8b",
+      "temperature": 0.2,
+      "prompts": [
+        "extractor/extract_points"
+      ]
+    }
+  },
+  "processing": {
+    "dpi": 200,
+    "quality_min_chars_per_page": 200,
+    "ocr_model": "deepseek-ocr",
+    "llm_model": "r1-qwen3-8b"
   }
 }
