@@ -25,6 +25,8 @@ def clean_section(text: str, section_type: str) -> str:
     text = clean_text(text)
     if section_type == "abstract":
         text = re.sub(r"(?m)^\s*中文摘要\s*$", "", text)
+    if section_type == "english_abstract":
+        text = re.sub(r"(?im)^\s*(?:英文摘要|Abstract)\s*$", "", text)
     if section_type == "conclusion":
         text = re.sub(
             r"(?m)^\s*第[一二三四五六七八九十\d]+章\s*(?:结论|总结|总结与展望|展望)\s*$",

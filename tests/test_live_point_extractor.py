@@ -43,7 +43,7 @@ def test_live_r1_extracts_points() -> None:
 
     points = agent.extract(digest, previous_brief=None, attempt=1)
 
-    assert 1 <= len(points) <= 8
+    assert 1 <= len(points) <= 3
     assert all(point.claim for point in points)
     print("\n提取到", len(points), "个查新点：")
     for point in points:

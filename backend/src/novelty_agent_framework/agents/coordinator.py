@@ -91,6 +91,7 @@ class NoveltyCoordinatorAgent(NoveltyCoordinator):
                 "请为给定查新点生成 ResearchTask 列表（JSON 数组）。"
             ),
         )
+        data = _normalize_task_list(data)
         if not isinstance(data, list):
             raise ValueError("Coordinator plan 输出顶层必须是 ResearchTask 列表")
         allowed_ids = {point.point_id for point in points}
@@ -109,8 +110,9 @@ class NoveltyCoordinatorAgent(NoveltyCoordinator):
             paper_summary=paper.abstract or paper.title,
             research_problem=paper.title,
             novelty_points=list(points),
-            keywords_zh=[paper.title] if paper.title else [],
-            keywords_en=[],
+            keywords_zh=list(paper.keywords_zh)
+            or ([paper.title] if paper.title else []),
+            keywords_en=list(paper.keywords_en),
             research_tasks=tasks,
         )
 
@@ -139,7 +141,7 @@ class NoveltyCoordinatorAgent(NoveltyCoordinator):
             "attempt": attempt,
         }
         data = self._complete_json(
-            prompt_name="coordinator/plan_supplement",
+            prompt_name="coordinator/supplement",
             variables={
                 "paper_json": json.dumps(payload["paper"], ensure_ascii=False),
                 "brief_json": json.dumps(payload["brief"], ensure_ascii=False),
@@ -296,3 +298,14 @@ class NoveltyCoordinatorAgent(NoveltyCoordinator):
             "你不能编造文献、DOI、URL 或证据位置；证据不足时必须显式说明。"
             "你的输出必须严格符合调用方要求的 JSON schema。"
         )
+
+
+def _normalize_task_list(data: Any) -> Any:
+    """兼容模型输出包装形态：单任务对象或含 research_tasks 键的对象 → 列表。"""
+
+    if isinstance(data, dict):
+        for key in ("research_tasks", "tasks"):
+            if isinstance(data.get(key), list):
+                return data[key]
+        return [data]
+    return data

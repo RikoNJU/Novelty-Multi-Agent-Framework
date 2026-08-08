@@ -1,6 +1,10 @@
+import pytest
+
 from novelty_agent_framework.processing.sections import (
     SECTION_ORDER,
+    extract_keywords_en,
     listify_references,
+    parse_keywords_zh,
     split_sections,
 )
 
@@ -11,6 +15,11 @@ STANDARD_TEXT = """
 这是摘要内容。
 
 关键词：A；B
+
+## 英文摘要
+Abstract
+English abstract content.
+Keywords: alpha, beta
 
 ## 引言
 引言内容。
@@ -40,6 +49,7 @@ def test_chain_split_all_sections():
     assert "这是摘要内容" in sections["abstract"]
     assert "关键词" not in sections["abstract"]
     assert "A；B" in sections["keywords"]
+    assert "English abstract content." in sections["english_abstract"]
     assert "引言内容" in sections["introduction"]
     assert "参考文献" not in sections["reference"]
     assert not [w for w in warnings if "未检测到" in w]
@@ -114,3 +124,80 @@ def test_listify_references_multiline():
         "[1] 作者1. 标题1[J]. 期刊, 2020. 续行内容。",
         "[2] 作者2. 标题2.",
     ]
+
+
+BILINGUAL_TEXT = """
+# Page 1
+## 摘要
+这是中文摘要内容。
+
+关键词：图表示学习；深度学习；图神经网络；分布式技术
+
+# Page 2
+南京大学研究生毕业论文英文摘要首页用纸
+Abstract
+This is the English abstract about graph representation learning.
+keywords: graph representation learning,deep learning,graph neural network, distributed
+
+# Page 3
+目
+录
+中文摘要· · · · · · · · · · · · · · · · · · · · 1
+第一章 绪论 · · · · · · · · · · · · · · · · · · · 5
+
+# Page 4
+第一章 绪论
+绪论内容。
+"""
+
+
+def test_bilingual_sections_split():
+    sections, warnings = split_sections(BILINGUAL_TEXT)
+
+    assert "这是中文摘要内容" in sections["abstract"]
+    assert "图表示学习；深度学习" in sections["keywords"]
+    assert "This is the English abstract" in sections["english_abstract"]
+    assert "中文摘要· · · ·" not in sections["english_abstract"]  # 目录被截断在外
+    assert "绪论内容" in sections["introduction"]
+    assert not any("english_abstract" in warning for warning in warnings)
+
+
+def test_english_only_paper_keeps_abstract_section():
+    text = "# Page 1\nAbstract\nEnglish abstract body.\n\nKeywords: A, B\n\nIntroduction\nBody."
+
+    sections, _ = split_sections(text)
+
+    assert "English abstract body." in sections["abstract"]
+    assert "english_abstract" not in sections
+
+
+@pytest.mark.parametrize(
+    "keywords_line",
+    [
+        "Keywords: A, B, C",
+        "keywords: A, B, C",
+        "KEY WORDS: A, B, C",
+        "Key words: A, B, C",
+        "Keywords：A，B，C",
+    ],
+)
+def test_extract_keywords_en_variants(keywords_line):
+    text = f"Abstract\nSome English text.\n{keywords_line}\n"
+
+    assert extract_keywords_en(text) == ["A", "B", "C"]
+
+
+def test_extract_keywords_en_missing_returns_empty():
+    assert extract_keywords_en("Abstract\nNo keywords line.\n") == []
+    assert extract_keywords_en("") == []
+
+
+def test_parse_keywords_zh_splits_separators():
+    assert parse_keywords_zh("图表示学习；深度学习；图神经网络；分布式技术") == [
+        "图表示学习",
+        "深度学习",
+        "图神经网络",
+        "分布式技术",
+    ]
+    assert parse_keywords_zh("A, B, C") == ["A", "B", "C"]
+    assert parse_keywords_zh("") == []

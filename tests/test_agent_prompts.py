@@ -104,6 +104,67 @@ def test_coordinator_renders_prompt_from_library():
     assert options.response_format == {"type": "json_object"}
 
 
+def test_coordinator_plan_fills_keywords_from_paper():
+    paper = make_paper()
+    paper.keywords_zh = ["图神经网络"]
+    paper.keywords_en = ["graph neural network"]
+    agent = NoveltyCoordinatorAgent(
+        model_client=RecordingModelClient(TASKS_JSON),
+        prompts=PromptLibrary(PROMPTS_ROOT),
+    )
+
+    brief = agent.plan(paper, points=POINTS, attempt=1)
+
+    assert brief.keywords_zh == ["图神经网络"]
+    assert brief.keywords_en == ["graph neural network"]
+
+
+def test_coordinator_supplement_renders_prompt_from_library():
+    """补充检索应能加载 prompts/coordinator/supplement.md（曾因文件名不匹配失败）。"""
+
+    from novelty_agent_framework.schemas import NoveltyBrief
+
+    brief = NoveltyBrief(
+        paper_summary="测试论文摘要",
+        research_problem="测试论文",
+        novelty_points=list(POINTS),
+        research_tasks=[],
+    )
+    brief_json = {
+        "paper_summary": "测试论文摘要",
+        "research_problem": "测试论文",
+        "novelty_points": [point.model_dump(mode="json") for point in POINTS],
+        "keywords_zh": [],
+        "keywords_en": [],
+        "research_tasks": [
+            {
+                "task_id": "TASK-NP-1-R2",
+                "novelty_point_id": "NP-1",
+                "queries": ["补充检索词"],
+                "context": "补充上下文",
+                "attempt": 2,
+            }
+        ],
+    }
+    client = RecordingModelClient(json.dumps(brief_json))
+    agent = NoveltyCoordinatorAgent(
+        model_client=client,
+        prompts=PromptLibrary(PROMPTS_ROOT),
+    )
+
+    result = agent.plan_supplement(
+        make_paper(),
+        brief=brief,
+        existing_evidence=[],
+        coverage_gaps=["NP-1: 仅有 0 条有效证据，至少需要 1 条"],
+        attempt=2,
+    )
+
+    assert result.research_tasks[0].task_id == "TASK-NP-1-R2"
+    messages, _ = client.calls[0]
+    assert "证据缺口" in messages[1].content  # supplement.md 模板内容已渲染
+
+
 def test_research_renders_prompt_and_validates_cards():
     client = RecordingModelClient(json.dumps([CARD_JSON]))
     agent = NoveltyResearchAgent(
@@ -126,6 +187,7 @@ def test_research_renders_prompt_and_validates_cards():
     system, user = messages[0].content, messages[1].content
     assert "文献调研 Agent" in system
     assert '"task_id": "TASK-NP-1-R1"' in user
+    assert "候选文献" in user  # v2 提示词新增候选文献变量
 
 
 def test_research_rejects_malformed_card():

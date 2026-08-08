@@ -210,7 +210,7 @@ def test_extractor_rejects_non_list():
         )
 
 
-def test_extractor_truncates_over_eight():
+def test_extractor_caps_at_three():
     ten = [
         dict(POINT_ITEM, point_id=f"X-{index}", claim=f"查新点{index}")
         for index in range(1, 11)
@@ -223,8 +223,8 @@ def test_extractor_truncates_over_eight():
         attempt=1,
     )
 
-    assert len(points) == 8
-    assert points[-1].point_id == "NP-8"
+    assert len(points) == 3  # 需求固定 3 条，模型多输出也截断到 3
+    assert points[-1].point_id == "NP-3"
 
 
 def test_extractor_accepts_object_wrapper():
@@ -335,6 +335,97 @@ def test_build_paper_digest_truncates():
     assert digest.references == []  # 当前不向提取模型提供参考文献
     assert digest.full_text_excerpt.endswith("…[截断]")
     assert len(digest.full_text_excerpt) <= 2000 + len("…[截断]")
+
+
+def test_build_paper_digest_includes_english_fields():
+    paper = PaperInput(
+        paper_id="p",
+        title="t",
+        abstract="中文摘要",
+        english_abstract="English abstract",
+        full_text="x",
+        keywords_zh=["图神经网络"],
+        keywords_en=["graph neural network"],
+    )
+
+    digest = build_paper_digest(paper)
+
+    assert digest.english_abstract == "English abstract"
+    assert digest.keywords_zh == ["图神经网络"]
+    assert digest.keywords_en == ["graph neural network"]
+
+
+def test_build_paper_digest_excerpt_skips_cover():
+    paper = PaperInput(
+        paper_id="p",
+        title="t",
+        abstract="摘要正文。",
+        full_text=(
+            "# Page 1\n研究生毕业论文封面信息\n\n# Page 3\n摘 要\n"
+            "摘要正文。\n后续正文内容。"
+        ),
+    )
+
+    digest = build_paper_digest(paper)
+
+    assert digest.full_text_excerpt.startswith("摘要正文。")
+    assert "封面信息" not in digest.full_text_excerpt
+
+
+def test_extractor_keeps_bilingual_fields():
+    bilingual = [
+        dict(
+            POINT_ITEM,
+            point_id=f"X-{index}",
+            claim=f"查新点{index}",
+            claim_en=f"novelty point {index}",
+            technical_features_en=["feature"],
+        )
+        for index in range(1, 4)
+    ]
+    client = SequencedClient([json.dumps(bilingual), json.dumps(bilingual)])
+
+    points = make_agent(client).extract(
+        build_paper_digest(make_paper()),
+        previous_brief=None,
+        attempt=1,
+    )
+
+    assert [point.point_id for point in points] == ["NP-1", "NP-2", "NP-3"]
+    assert points[0].claim_en == "novelty point 1"
+    assert points[0].technical_features_en == ["feature"]
+    assert points[0].claim == "查新点1"
+
+
+def test_extractor_accepts_missing_english():
+    client = SequencedClient([json.dumps(three_items()), json.dumps(three_items())])
+
+    points = make_agent(client).extract(
+        build_paper_digest(make_paper()),
+        previous_brief=None,
+        attempt=1,
+    )
+
+    assert len(points) == 3  # 英文缺失按降级接受，不抛错
+    assert points[0].claim_en == ""
+    assert points[0].technical_features_en == []
+
+
+def test_demo_extractor_caps_at_three():
+    digest = PaperDigest(
+        paper_id="p",
+        title="标题",
+        abstract=(
+            "第一句创新点内容。第二句创新点内容。第三句创新点内容。"
+            "第四句创新点内容。第五句创新点内容。"
+        ),
+        claimed_contributions=[],
+    )
+
+    points = DemoPointExtractor().extract(digest, previous_brief=None, attempt=1)
+
+    assert len(points) == 3
+    assert [point.point_id for point in points] == ["NP-1", "NP-2", "NP-3"]
 
 
 def test_persist_novelty_points_writes_file(tmp_path):

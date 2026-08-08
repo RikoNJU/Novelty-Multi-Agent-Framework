@@ -49,10 +49,20 @@ def build_paper_digest(paper: PaperInput) -> PaperDigest:
         paper_id=paper.paper_id,
         title=paper.title,
         abstract=paper.abstract,
+        english_abstract=paper.english_abstract,
         claimed_contributions=list(paper.claimed_contributions),
+        keywords_zh=list(paper.keywords_zh),
+        keywords_en=list(paper.keywords_en),
         references=[],  # 暂不向提取模型提供参考文献，避免引入噪声
-        full_text_excerpt=_truncate(paper.full_text, EXCERPT_CHAR_LIMIT),
+        full_text_excerpt=_truncate(_body_excerpt(paper.full_text), EXCERPT_CHAR_LIMIT),
     )
+
+
+def _body_excerpt(full_text: str) -> str:
+    """跳过封面页，从中文摘要标题之后开始截取正文片段。"""
+
+    match = re.search(r"(?m)^\s*摘\s*要\s*$", full_text)
+    return full_text[match.end():] if match else full_text
 
 
 class NoveltyPointExtractorAgent(NoveltyPointExtractor):
@@ -60,8 +70,8 @@ class NoveltyPointExtractorAgent(NoveltyPointExtractor):
 
     生成步：单次生成 ≥ MIN_POINTS 条直接使用（不合并）；否则重试至多
     MAX_ATTEMPTS 次，最后合并所有查新点。审查步只调用一次模型做去重。
-    固定中文输出，编号统一重排为 NP-1..NP-n（不信任模型编号），超过
-    MAX_POINTS 截断。
+    数量按需求固定为 MIN_POINTS（3）条，编号统一重排为 NP-1..NP-n
+    （不信任模型编号）。
     """
 
     def __init__(
@@ -146,12 +156,12 @@ class NoveltyPointExtractorAgent(NoveltyPointExtractor):
                 last_error = exc
                 candidates = []
             if not aggregated and len(candidates) >= MIN_POINTS:
-                return candidates[:MAX_POINTS]  # 单次合格，不合并
+                return candidates[:MIN_POINTS]  # 单次合格，不合并，按需求固定 3 条
             for point in candidates:
                 aggregated.setdefault(point.claim.strip(), point)
             if len(aggregated) >= MIN_POINTS:
                 break
-        selected = list(aggregated.values())[:MAX_POINTS]
+        selected = list(aggregated.values())[:MIN_POINTS]
         if not selected and last_error is not None:
             raise last_error
         return selected
@@ -191,7 +201,7 @@ class NoveltyPointExtractorAgent(NoveltyPointExtractor):
         ]
         if not kept and candidates:
             kept = list(candidates)  # 安全兜底：不允许删空
-        return renumber_points(kept[:MAX_POINTS])
+        return renumber_points(kept[:MIN_POINTS])
 
     def _complete_json(
         self,
@@ -268,13 +278,14 @@ class DemoPointExtractor(NoveltyPointExtractor):
                 technical_features=[claim.strip()],
                 source_locations=[source],
             )
-            for index, claim in enumerate(claims[:MAX_POINTS], start=1)
+            for index, claim in enumerate(claims[:MIN_POINTS], start=1)
         ]
 
 
 def _split_sentences(text: str) -> list[str]:
-    parts = re.split(r"[。；\n]+", text)
-    return [part.strip() for part in parts if len(part.strip()) >= 8][:MAX_POINTS]
+    compact = re.sub(r"\s+", "", text)
+    parts = re.split(r"[。；]+", compact)
+    return [part for part in parts if len(part) >= 8][:MIN_POINTS]
 
 
 def _extract_points_list(data: Any) -> list[Any] | None:

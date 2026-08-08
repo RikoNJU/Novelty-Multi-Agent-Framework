@@ -35,8 +35,9 @@ class DemoCoordinator:
             paper_summary=paper.abstract or paper.title,
             research_problem=paper.title,
             novelty_points=list(points),
-            keywords_zh=[paper.title] if paper.title else [],
-            keywords_en=[],
+            keywords_zh=list(paper.keywords_zh)
+            or ([paper.title] if paper.title else []),
+            keywords_en=list(paper.keywords_en),
             research_tasks=tasks,
         )
 
@@ -132,10 +133,14 @@ class DemoCoordinator:
 
     @staticmethod
     def _task_for(point: NoveltyPoint, attempt: int) -> ResearchTask:
+        queries = [point.claim, *point.technical_features]
+        if point.claim_en:
+            queries.append(point.claim_en)
+        queries.extend(feature for feature in point.technical_features_en if feature)
         return ResearchTask(
             task_id=f"TASK-{point.point_id}-R{attempt}",
             novelty_point_id=point.point_id,
-            queries=[point.claim, *point.technical_features],
+            queries=queries,
             context=point.claim,
             attempt=attempt,
         )

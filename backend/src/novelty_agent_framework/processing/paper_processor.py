@@ -50,6 +50,9 @@ class DefaultPaperProcessor(PaperProcessorProtocol):
         marked = textify.assemble_marked_text(pages)
         sections, section_warnings = sections_module.split_sections(marked)
         references = sections_module.listify_references(sections.get("reference", ""))
+        english_abstract = sections.get("english_abstract", "")
+        keywords_zh = sections_module.parse_keywords_zh(sections.get("keywords", ""))
+        keywords_en = sections_module.extract_keywords_en(english_abstract)
 
         title, title_warnings = self._extract_title(path, pages, result.source)
         warnings = list(result.warnings) + section_warnings + title_warnings
@@ -61,9 +64,12 @@ class DefaultPaperProcessor(PaperProcessorProtocol):
             paper_id=paper_id,
             title=title,
             abstract=sections.get("abstract", ""),
+            english_abstract=english_abstract,
             full_text=marked,
             references=references,
             claimed_contributions=[],
+            keywords_zh=keywords_zh,
+            keywords_en=keywords_en,
             metadata={"language": _detect_language(marked)},
             sections=sections,
             pages=pages,
@@ -80,9 +86,12 @@ class DefaultPaperProcessor(PaperProcessorProtocol):
             paper_id=document.paper_id,
             title=document.title or document.paper_id,
             abstract=document.abstract,
+            english_abstract=document.english_abstract,
             full_text=document.full_text,
             references=list(document.references),
             claimed_contributions=list(document.claimed_contributions),
+            keywords_zh=list(document.keywords_zh),
+            keywords_en=list(document.keywords_en),
             metadata=metadata,
         )
 

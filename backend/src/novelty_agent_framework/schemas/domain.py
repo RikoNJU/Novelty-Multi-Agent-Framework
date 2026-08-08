@@ -19,9 +19,12 @@ class PaperInput(StrictModel):
     paper_id: str = Field(min_length=1)
     title: str = Field(min_length=1)
     abstract: str = ""
+    english_abstract: str = ""
     full_text: str = Field(min_length=1)
     references: list[str] = Field(default_factory=list)
     claimed_contributions: list[str] = Field(default_factory=list)
+    keywords_zh: list[str] = Field(default_factory=list)
+    keywords_en: list[str] = Field(default_factory=list)
     metadata: dict[str, str] = Field(default_factory=dict)
 
 
@@ -38,9 +41,12 @@ class PaperDocument(StrictModel):
     paper_id: str = Field(min_length=1)
     title: str = ""
     abstract: str = ""
+    english_abstract: str = ""
     full_text: str = ""
     references: list[str] = Field(default_factory=list)
     claimed_contributions: list[str] = Field(default_factory=list)
+    keywords_zh: list[str] = Field(default_factory=list)
+    keywords_en: list[str] = Field(default_factory=list)
     metadata: dict[str, str] = Field(default_factory=dict)
     sections: dict[str, str] = Field(default_factory=dict)
     pages: list[PaperPage] = Field(default_factory=list)
@@ -54,7 +60,10 @@ class PaperDigest(StrictModel):
     paper_id: str = Field(min_length=1)
     title: str = ""
     abstract: str = ""
+    english_abstract: str = ""
     claimed_contributions: list[str] = Field(default_factory=list)
+    keywords_zh: list[str] = Field(default_factory=list)
+    keywords_en: list[str] = Field(default_factory=list)
     references: list[str] = Field(default_factory=list)
     full_text_excerpt: str = ""
 
@@ -64,7 +73,9 @@ class NoveltyPoint(StrictModel):
 
     point_id: str = Field(min_length=1)
     claim: str = Field(min_length=1)
+    claim_en: str = ""
     technical_features: list[str] = Field(default_factory=list)
+    technical_features_en: list[str] = Field(default_factory=list)
     source_locations: list[str] = Field(default_factory=list)
 
 

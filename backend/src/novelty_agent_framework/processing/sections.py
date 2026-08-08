@@ -9,6 +9,7 @@ from .clean import clean_section
 SECTION_ORDER = (
     "abstract",
     "keywords",
+    "english_abstract",
     "introduction",
     "methods",
     "results",
@@ -26,6 +27,10 @@ SECTION_PATTERNS: dict[str, tuple[str, ...]] = {
     ),
     "keywords": (
         r"(?m)^\s*(?:关键词|关键字|Key\s*words?)\s*[:：]",
+    ),
+    "english_abstract": (
+        r"(?m)^\s*#*\s*英文摘要\s*$",
+        r"(?m)^\s*#*\s*Abstract\s*$",
     ),
     "introduction": (
         r"(?m)^\s*#*\s*(?:第[一二三四五六七八九十\d]+章\s*)?(?:引言|绪论|Introduction)\s*$",
@@ -51,6 +56,12 @@ SECTION_PATTERNS: dict[str, tuple[str, ...]] = {
 MAX_SECTION_CHARS = 20_000
 
 _REF_ITEM = re.compile(r"[\[【]\d+[\]】]")
+_KEYWORDS_EN_RE = re.compile(r"(?im)^\s*key\s*words?\s*[:：]\s*(.+?)\s*$")
+_TOC_PATTERNS = (
+    r"(?m)^\s*目\s*录\s*$",
+    r"(?m)^\s*Table\s+of\s+Contents\s*$",
+    r"(?m)^\s*CONTENTS\s*$",
+)
 
 
 def split_sections(text: str) -> tuple[dict[str, str], list[str]]:
@@ -58,7 +69,16 @@ def split_sections(text: str) -> tuple[dict[str, str], list[str]]:
 
     anchors: dict[str, tuple[int, int]] = {}
     for section in SECTION_ORDER:
-        match = _find_anchor(text, section)
+        if section == "english_abstract":
+            # 英文摘要必须位于中文关键词（或摘要）之后，避免抢占纯英文论文的 abstract
+            boundary = None
+            if "keywords" in anchors:
+                boundary = anchors["keywords"][1]
+            elif "abstract" in anchors:
+                boundary = anchors["abstract"][1]
+            match = _find_anchor(text, section, after=boundary or 0)
+        else:
+            match = _find_anchor(text, section)
         if match is not None:
             anchors[section] = match
 
@@ -76,6 +96,10 @@ def split_sections(text: str) -> tuple[dict[str, str], list[str]]:
                 end = min(end, page_bound)
         if section == "reference":
             end = len(text)  # 参考文献始终延伸到文末
+        if section == "english_abstract":
+            toc_bound = _find_toc_boundary(text, content_start, end)
+            if toc_bound is not None:
+                end = toc_bound  # 英文摘要提前结束于目录标题，避免吞入目录
         cleaned = clean_section(text[content_start:end], section)
         if cleaned:
             sections[section] = cleaned
@@ -94,11 +118,27 @@ def split_sections(text: str) -> tuple[dict[str, str], list[str]]:
     return sections, warnings
 
 
-def _find_anchor(text: str, section: str) -> tuple[int, int] | None:
+def _find_anchor(
+    text: str,
+    section: str,
+    *,
+    after: int = 0,
+) -> tuple[int, int] | None:
     for pattern in SECTION_PATTERNS[section]:
-        match = re.search(pattern, text, re.MULTILINE | re.IGNORECASE)
+        match = re.search(pattern, text[after:], re.MULTILINE | re.IGNORECASE)
         if match:
-            return match.start(), match.end()
+            return after + match.start(), after + match.end()
+    return None
+
+
+def _find_toc_boundary(text: str, start: int, end: int) -> int | None:
+    """在 [start, end) 内查找目录标题位置，作为英文摘要的提前结束边界。"""
+
+    chunk = text[start:end]
+    for pattern in _TOC_PATTERNS:
+        match = re.search(pattern, chunk, re.MULTILINE | re.IGNORECASE)
+        if match:
+            return start + match.start()
     return None
 
 
@@ -152,3 +192,36 @@ def listify_references(ref_text: str) -> list[str]:
     if current:
         items.append(" ".join(current))
     return items
+
+
+def parse_keywords_zh(text: str) -> list[str]:
+    """把中文关键词段文本按分隔符拆成关键词列表。"""
+
+    items = [part.strip() for part in re.split(r"[；;，,]", text) if part.strip()]
+    return _dedupe_keywords(items)
+
+
+def extract_keywords_en(text: str) -> list[str]:
+    """从英文摘要文本中提取 ``keywords:`` 行并解析为关键词列表。"""
+
+    if not text:
+        return []
+    match = _KEYWORDS_EN_RE.search(text)
+    if match is None:
+        return []
+    items = [
+        part.strip()
+        for part in re.split(r"[,，;；]", match.group(1))
+        if part.strip()
+    ]
+    return _dedupe_keywords(items)
+
+
+def _dedupe_keywords(items: list[str]) -> list[str]:
+    seen: set[str] = set()
+    result: list[str] = []
+    for item in items:
+        if item not in seen:
+            seen.add(item)
+            result.append(item)
+    return result

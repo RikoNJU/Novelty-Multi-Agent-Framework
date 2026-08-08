@@ -1,5 +1,8 @@
 import json
 
+import pytest
+from pydantic import ValidationError
+
 from novelty_agent_framework.processing import DefaultPaperProcessor
 from novelty_agent_framework.processing.cli import main as cli_main
 from novelty_agent_framework.schemas import PaperDocument, PaperInput
@@ -23,6 +26,19 @@ def test_text_layer_full_flow():
     PaperDocument.model_validate(doc.model_dump(mode="json"))
 
 
+def test_english_abstract_and_keywords_structured():
+    doc = DefaultPaperProcessor().process(PDF)
+
+    assert "graph representation learning" in doc.english_abstract
+    assert doc.keywords_zh == ["图表示学习", "深度学习", "图神经网络", "分布式技术"]
+    assert doc.keywords_en == [
+        "graph representation learning",
+        "deep learning",
+        "graph neural network",
+        "distributed",
+    ]
+
+
 def test_to_paper_input_roundtrip():
     processor = DefaultPaperProcessor()
     doc = processor.process(PDF)
@@ -32,8 +48,43 @@ def test_to_paper_input_roundtrip():
     PaperInput.model_validate(data)
     assert data["paper_id"] == "MF2033k6lC"
     assert data["title"] == EXPECTED_TITLE
+    assert data["english_abstract"]
+    assert data["keywords_zh"]
+    assert data["keywords_en"]
     assert data["metadata"]["source"] == "text_layer"
     assert data["references"]
+
+
+def test_paper_input_backward_and_forward_compatible():
+    old_shape = {
+        "paper_id": "p",
+        "title": "t",
+        "abstract": "a",
+        "full_text": "f",
+    }
+    loaded_old = PaperInput.model_validate(old_shape)
+
+    assert loaded_old.english_abstract == ""
+    assert loaded_old.keywords_zh == []
+    assert loaded_old.keywords_en == []
+
+    new_shape = {
+        "paper_id": "p",
+        "title": "t",
+        "abstract": "a",
+        "english_abstract": "ea",
+        "full_text": "f",
+        "keywords_zh": ["k1"],
+        "keywords_en": ["k1-en"],
+    }
+    loaded_new = PaperInput.model_validate(new_shape)
+
+    assert loaded_new.english_abstract == "ea"
+    assert loaded_new.keywords_zh == ["k1"]
+    assert loaded_new.keywords_en == ["k1-en"]
+
+    with pytest.raises(ValidationError):
+        PaperInput.model_validate({**new_shape, "unknown": 1})
 
 
 def test_cli_writes_compatible_json_only(tmp_path):

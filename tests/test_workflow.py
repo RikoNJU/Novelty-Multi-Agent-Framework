@@ -79,6 +79,12 @@ def test_demo_runs_total_divide_total_flow() -> None:
     assert result.coverage_gaps == []
 
 
+def test_demo_extraction_marks_missing_english() -> None:
+    result = build_workflow(DemoResearchAgent()).run(make_paper())
+
+    assert any(issue.code == "missing_english_point" for issue in result.issues)
+
+
 class ConcurrencyResearchAgent:
     def __init__(self) -> None:
         self.active = 0

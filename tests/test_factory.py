@@ -89,3 +89,30 @@ def test_registry_resolves_api_key_env(monkeypatch):
     client = registry.client_for("m1")
 
     assert client.profile.api_key == "secret-a"
+
+
+def test_build_tools_disabled_by_default():
+    workflow = build_workflow(BASE_CONFIG)
+
+    assert workflow.services.search_tool is None
+    assert workflow.services.full_text_tool is None
+    assert workflow.services.metadata_tool is None
+
+
+def test_build_workflow_injects_arxiv_tools_when_enabled():
+    config = json.loads(json.dumps(BASE_CONFIG))
+    config["tools"] = {
+        "arxiv": {
+            "enabled": True,
+            "min_interval": 0.0,
+            "timeout": 5.0,
+            "candidate_limit": 5,
+        }
+    }
+
+    workflow = build_workflow(config)
+
+    assert workflow.services.search_tool is not None
+    assert workflow.services.full_text_tool is not None
+    assert workflow.services.metadata_tool is not None
+    assert workflow.services.research_agent.candidate_limit == 5

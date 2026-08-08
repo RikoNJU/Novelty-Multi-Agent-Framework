@@ -122,7 +122,25 @@ class NoveltyWorkflow:
             raise WorkflowExecutionError("查新点提取结果为空")
         # 测试版持久化：把查新点写入固定目录（后续替换为数据库存储）
         persist_novelty_points(state["paper"], validated)
-        return {"novelty_points": validated}
+        missing_english = [
+            point.point_id
+            for point in validated
+            if not point.claim_en or not point.technical_features_en
+        ]
+        issues: list[WorkflowIssue] = []
+        if missing_english:
+            issues.append(
+                WorkflowIssue(
+                    node="extract_points",
+                    code="missing_english_point",
+                    message=(
+                        "以下查新点缺少英文表述，已降级为中文-only："
+                        + ", ".join(missing_english)
+                    ),
+                    severity=IssueSeverity.WARNING,
+                )
+            )
+        return {"novelty_points": validated, "issues": issues}
 
     async def _plan(self, state: NoveltyState) -> dict[str, Any]:
         try:

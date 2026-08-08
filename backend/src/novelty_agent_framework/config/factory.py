@@ -13,6 +13,8 @@ import os
 from pathlib import Path
 from typing import Any, Mapping
 
+import httpx
+
 from backend.env import ModelProfile, ModelRegistry, PromptLibrary
 
 from ..agents import (
@@ -20,6 +22,7 @@ from ..agents import (
     NoveltyPointExtractorAgent,
     NoveltyResearchAgent,
 )
+from ..tools import ArxivFullTextTool, ArxivMetadataTool, ArxivSearchTool
 from ..workflows import NoveltyWorkflow, NoveltyWorkflowConfig, NoveltyWorkflowServices
 
 CONFIG_DIR = Path(__file__).resolve().parent
@@ -66,6 +69,7 @@ def build_agents(
     config: Mapping[str, Any],
     registry: ModelRegistry,
     prompts: PromptLibrary,
+    arxiv_cfg: Mapping[str, Any] | None = None,
 ) -> tuple[
     NoveltyCoordinatorAgent,
     NoveltyResearchAgent,
@@ -75,6 +79,7 @@ def build_agents(
     coordinator_cfg = agents_cfg.get("coordinator", {})
     research_cfg = agents_cfg.get("research", {})
     point_extractor_cfg = agents_cfg.get("point_extractor", {})
+    arxiv_cfg = dict(arxiv_cfg or {})
 
     coordinator = NoveltyCoordinatorAgent(
         prompts=prompts,
@@ -87,6 +92,9 @@ def build_agents(
         models=registry,
         model_alias=research_cfg.get("model", "research"),
         temperature=float(research_cfg.get("temperature", 0.2)),
+        candidate_limit=int(arxiv_cfg.get("candidate_limit", 8)),
+        candidate_excerpt_chars=int(arxiv_cfg.get("candidate_excerpt_chars", 2000)),
+        paper_excerpt_chars=int(arxiv_cfg.get("paper_excerpt_chars", 5000)),
     )
     point_extractor = NoveltyPointExtractorAgent(
         prompts=prompts,
@@ -95,6 +103,26 @@ def build_agents(
         temperature=float(point_extractor_cfg.get("temperature", 0.2)),
     )
     return coordinator, research, point_extractor
+
+
+def build_tools(
+    config: Mapping[str, Any],
+) -> tuple[ArxivSearchTool | None, ArxivFullTextTool | None, ArxivMetadataTool | None]:
+    """按配置构建 arXiv 三工具；未启用时返回 (None, None, None) 保持现状。"""
+
+    arxiv_cfg = config.get("tools", {}).get("arxiv", {})
+    if not arxiv_cfg.get("enabled", False):
+        return None, None, None
+    client = httpx.Client(
+        timeout=float(arxiv_cfg.get("timeout", 20.0)),
+        follow_redirects=True,
+    )
+    search = ArxivSearchTool(
+        client=client,
+        min_interval=float(arxiv_cfg.get("min_interval", 3.0)),
+        max_retries=int(arxiv_cfg.get("max_retries", 2)),
+    )
+    return search, ArxivFullTextTool(client=client), ArxivMetadataTool(client=client)
 
 
 def build_workflow(
@@ -109,7 +137,11 @@ def build_workflow(
 
     registry = build_model_registry(raw)
     prompts = build_prompt_library()
-    coordinator, research, point_extractor = build_agents(raw, registry, prompts)
+    arxiv_cfg = raw.get("tools", {}).get("arxiv", {})
+    coordinator, research, point_extractor = build_agents(
+        raw, registry, prompts, arxiv_cfg=arxiv_cfg
+    )
+    search_tool, full_text_tool, metadata_tool = build_tools(raw)
 
     workflow_cfg = raw.get("workflow", {})
     return NoveltyWorkflow(
@@ -117,6 +149,9 @@ def build_workflow(
             coordinator=coordinator,
             research_agent=research,
             point_extractor=point_extractor,
+            search_tool=search_tool,
+            full_text_tool=full_text_tool,
+            metadata_tool=metadata_tool,
         ),
         config=NoveltyWorkflowConfig(
             max_rounds=int(workflow_cfg.get("max_rounds", 2)),

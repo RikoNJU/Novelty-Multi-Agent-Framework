@@ -14,8 +14,8 @@ from ..ports import ValidationResult
 class EvidenceValidationConfig:
     """证据门槛可以独立调整，不需要修改 Agent Prompt。"""
 
-    minimum_confidence: float = 0.5
-    minimum_relevance: float = 0.4
+    minimum_confidence: float = 0.3
+    minimum_relevance: float = 0.3
     require_direct_quote: bool = True
 
     def __post_init__(self) -> None:
