@@ -8,6 +8,7 @@ from .interfaces import (
     NoveltyPointExtractor,
     PaperProcessor,
     SearchHit,
+    SearchPlanner,
     SearchTool,
     ValidationResult,
 )
@@ -22,6 +23,7 @@ __all__ = [
     "NoveltyPointExtractor",
     "PaperProcessor",
     "SearchHit",
+    "SearchPlanner",
     "SearchTool",
     "ValidationResult",
 ]

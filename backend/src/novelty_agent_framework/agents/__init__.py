@@ -7,6 +7,7 @@ from .point_extractor import (
     build_paper_digest,
 )
 from .research import NoveltyResearchAgent
+from .search_planner import SearchPlannerAgent
 
 __all__ = [
     "DemoPointExtractor",
@@ -17,5 +18,6 @@ __all__ = [
     "NoveltyCoordinatorAgent",
     "NoveltyPointExtractorAgent",
     "NoveltyResearchAgent",
+    "SearchPlannerAgent",
     "build_paper_digest",
 ]

@@ -20,6 +20,7 @@ from ..schemas import (
     PaperDocument,
     PaperInput,
     ResearchTask,
+    SearchPlan,
 )
 
 
@@ -101,6 +102,17 @@ class NoveltyCoordinator(Protocol):
         coverage_gaps: Sequence[str],
     ) -> NoveltyReport:
         """从全局视角汇总证据并形成查新报告。"""
+
+
+class SearchPlanner(Protocol):
+    """把查新点和调研任务转换为数据库无关的检索计划。"""
+
+    def plan(
+        self,
+        point: NoveltyPoint,
+        task: ResearchTask,
+    ) -> SearchPlan:
+        ...
 
 
 class LiteratureResearchAgent(Protocol):
