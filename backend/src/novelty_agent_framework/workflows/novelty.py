@@ -11,7 +11,11 @@ from langgraph.graph import END, START, StateGraph
 from pydantic import ValidationError
 
 from novelty_agent_framework.core.errors import WorkflowExecutionError
-from novelty_agent_framework.persistence import persist_novelty_points
+from novelty_agent_framework.persistence import (
+    persist_evidence_cards,
+    persist_novelty_points,
+    persist_retrieval_plans,
+)
 
 from ..agents import (
     DefaultEvidenceValidator,
@@ -120,7 +124,7 @@ class NoveltyWorkflow:
             raise WorkflowExecutionError(f"查新点提取失败：{exc}") from exc
         if not validated:
             raise WorkflowExecutionError("查新点提取结果为空")
-        # 测试版持久化：把查新点写入固定目录（后续替换为数据库存储）
+        # 测试版持久化：写入该论文独立工作目录（后续可替换为数据库存储）
         persist_novelty_points(state["paper"], validated)
         missing_english = [
             point.point_id
@@ -153,6 +157,12 @@ class NoveltyWorkflow:
         except (ValidationError, TypeError, ValueError) as exc:
             raise WorkflowExecutionError(f"Coordinator 未生成合法 NoveltyBrief：{exc}") from exc
 
+        persist_retrieval_plans(
+            state["paper"],
+            brief.research_tasks,
+            rounds=1,
+            point_order=[point.point_id for point in brief.novelty_points],
+        )
         return {
             "brief": brief,
             "research_tasks": list(brief.research_tasks),
@@ -243,6 +253,12 @@ class NoveltyWorkflow:
             )
             for code, message, severity, task_id in result.issues
         ]
+        persist_evidence_cards(
+            state["paper"],
+            raw_cards=state.get("raw_evidence_cards", []),
+            accepted_cards=result.accepted,
+            rejected_evidence=rejected,
+        )
         return {
             "evidence_cards": list(result.accepted),
             "rejected_evidence": rejected,
@@ -296,10 +312,17 @@ class NoveltyWorkflow:
         for task in brief.research_tasks:
             task_by_id[task.task_id] = task
 
+        all_tasks = list(task_by_id.values())
+        persist_retrieval_plans(
+            state["paper"],
+            all_tasks,
+            rounds=next_round,
+            point_order=[point.point_id for point in brief.novelty_points],
+        )
         return {
             "brief": brief,
             "research_tasks": list(brief.research_tasks),
-            "all_research_tasks": list(task_by_id.values()),
+            "all_research_tasks": all_tasks,
             "rounds": next_round,
         }
 

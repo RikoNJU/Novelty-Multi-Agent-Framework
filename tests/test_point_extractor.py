@@ -436,11 +436,10 @@ def test_persist_novelty_points_writes_file(tmp_path):
         attempt=1,
     )
 
-    path = persist_novelty_points(paper, list(points), output_dir=tmp_path)
+    path = persist_novelty_points(paper, list(points), output_root=tmp_path)
     data = json.loads(path.read_text(encoding="utf-8"))
 
-    assert path.name == "paper-1.points.json"
+    assert path == tmp_path / "paper-1" / "novelty-points.json"
     assert data["paper_id"] == "paper-1"
     assert data["storage"] == "test-version-local-file"
-    assert "后续需替换为数据库" in data["note"]
     assert [point["point_id"] for point in data["novelty_points"]] == ["NP-1", "NP-2"]

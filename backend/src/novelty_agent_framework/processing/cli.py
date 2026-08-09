@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 import argparse
-import json
 from pathlib import Path
 
 from ..config import build_model_registry, load_config
+from ..persistence import persist_paper_input
 from .paper_processor import DefaultPaperProcessor
 
 
@@ -16,8 +16,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--output",
         type=Path,
-        default=Path("output"),
-        help="输出目录（默认 output/）",
+        default=Path("outputs"),
+        help="Paper 工作目录根路径（默认 outputs/）",
     )
     parser.add_argument("--paper-id", default=None, help="覆盖 paper_id（默认取 PDF 文件名）")
     parser.add_argument("--force-ocr", action="store_true", help="强制走 DeepSeek-OCR 路径")
@@ -48,15 +48,8 @@ def main(argv: list[str] | None = None) -> int:
     )
     compatible = processor.to_paper_input(document)
 
-    args.output.mkdir(parents=True, exist_ok=True)
-    stem = args.input.stem
-    compatible_path = args.output / f"{stem}.json"
-    compatible_path.write_text(
-        json.dumps(compatible.model_dump(mode="json"), ensure_ascii=False, indent=2)
-        + "\n",
-        encoding="utf-8",
-    )
-    print(f"论文 JSON：{compatible_path}")
+    workspace = persist_paper_input(document, compatible, output_root=args.output)
+    print(f"Paper 工作目录：{workspace}")
     return 0
 
 

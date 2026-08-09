@@ -17,7 +17,7 @@ from novelty_agent_framework.schemas import PaperInput
 
 pytestmark = pytest.mark.live
 
-PAPER_JSON = Path("output/MF2033k6lC.json")
+PAPER_JSON = Path("outputs/MF2033k6lC/paper-input/others/paper.json")
 PROMPTS_ROOT = Path("backend/src/novelty_agent_framework/prompts")
 
 

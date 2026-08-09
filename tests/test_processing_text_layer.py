@@ -87,10 +87,14 @@ def test_paper_input_backward_and_forward_compatible():
         PaperInput.model_validate({**new_shape, "unknown": 1})
 
 
-def test_cli_writes_compatible_json_only(tmp_path):
+def test_cli_writes_paper_workspace(tmp_path):
     assert cli_main(["--input", PDF, "--output", str(tmp_path)]) == 0
 
-    compatible = tmp_path / "MF2033k6lC.json"
+    workspace = tmp_path / "MF2033k6lC"
+    compatible = workspace / "paper-input" / "others" / "paper.json"
     assert compatible.exists()
-    assert not (tmp_path / "MF2033k6lC.document.json").exists()
+    assert (workspace / "paper-input" / "full.md").exists()
+    assert (workspace / "paper-input" / "content-list.json").exists()
+    assert (workspace / "paper-input" / "images").is_dir()
+    assert (workspace / "report").is_dir()
     PaperInput.model_validate(json.loads(compatible.read_text(encoding="utf-8")))

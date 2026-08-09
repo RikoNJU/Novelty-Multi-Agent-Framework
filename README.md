@@ -48,7 +48,25 @@ examples/                      示例论文输入
 tests/                         工作流与接口测试
 docs/                          设计方案和代码说明
 assets/                        流程图
+outputs/                       按 paper 隔离的本地运行产物（默认不提交）
 ```
+
+每篇论文使用独立工作目录：
+
+```text
+outputs/<paper_id>/
+├── paper-input/
+│   ├── full.md
+│   ├── content-list.json
+│   ├── images/
+│   └── others/paper.json
+├── novelty-points.json
+├── retrieval-plans.json
+├── evidence-cards.json
+└── report/
+```
+
+`retrieval-plans.json` 按查新点序号分组，每组同时保留 ResearchTask 和汇总后的 QueryPlan。`report/` 当前只预留目录，待 Writer 实现后写入 TeX/PDF。
 
 ## 运行
 
