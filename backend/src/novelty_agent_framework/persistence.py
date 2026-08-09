@@ -11,7 +11,7 @@ import json
 import re
 from collections.abc import Iterable
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any, Mapping, Sequence
 
 from .schemas import (
     EvidenceCard,
@@ -21,6 +21,7 @@ from .schemas import (
     PaperInput,
     RejectedEvidence,
     ResearchTask,
+    SearchPlan,
 )
 
 DEFAULT_OUTPUTS_DIR = Path("outputs")
@@ -147,22 +148,35 @@ def persist_retrieval_plans(
     paper: PaperInput,
     tasks: Sequence[ResearchTask],
     *,
+    search_plans: Sequence[SearchPlan] = (),
+    executed_queries: Sequence[Mapping[str, Any]] = (),
     rounds: int,
     point_order: Sequence[str] = (),
     output_root: str | Path = DEFAULT_OUTPUTS_DIR,
 ) -> Path:
-    """按查新点顺序写出 ResearchTask 及汇总 QueryPlan。"""
+    """按查新点写出任务、语义计划及真正执行的数据库 Query。"""
 
     workspace = paper_workspace(paper, output_root=output_root)
     path = workspace / "retrieval-plans.json"
     grouped: dict[str, list[ResearchTask]] = {}
     for task in tasks:
         grouped.setdefault(task.novelty_point_id, []).append(task)
+    grouped_plans: dict[str, list[SearchPlan]] = {}
+    for plan in search_plans:
+        grouped_plans.setdefault(plan.novelty_point_id, []).append(plan)
+    grouped_queries: dict[str, list[Mapping[str, Any]]] = {}
+    for query in executed_queries:
+        point_id = str(query.get("novelty_point_id", ""))
+        grouped_queries.setdefault(point_id, []).append(query)
 
-    ordered_point_ids = list(dict.fromkeys([*point_order, *grouped]))
+    ordered_point_ids = list(
+        dict.fromkeys([*point_order, *grouped, *grouped_plans, *grouped_queries])
+    )
     plans = []
     for sequence, point_id in enumerate(ordered_point_ids, start=1):
         point_tasks = grouped.get(point_id, [])
+        point_plans = grouped_plans.get(point_id, [])
+        point_queries = grouped_queries.get(point_id, [])
         plans.append(
             {
                 "sequence": sequence,
@@ -170,14 +184,13 @@ def persist_retrieval_plans(
                 "research_tasks": [
                     task.model_dump(mode="json") for task in point_tasks
                 ],
+                "search_plans": [
+                    plan.model_dump(mode="json") for plan in point_plans
+                ],
+                "executed_queries": [dict(query) for query in point_queries],
                 "query_plan": {
                     "queries": _unique(
-                        query for task in point_tasks for query in task.queries
-                    ),
-                    "candidate_document_ids": _unique(
-                        document_id
-                        for task in point_tasks
-                        for document_id in task.candidate_document_ids
+                        str(query.get("query", "")) for query in point_queries
                     ),
                     "attempts": sorted({task.attempt for task in point_tasks}),
                 },

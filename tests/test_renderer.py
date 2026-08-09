@@ -23,6 +23,9 @@ from novelty_agent_framework.schemas import (
     NoveltyReport,
     PaperInput,
     ResearchTask,
+    SearchConcept,
+    SearchPlan,
+    SearchStrategy,
 )
 from novelty_agent_framework.tools.renderer import ReportRenderError, render_report
 
@@ -43,7 +46,17 @@ def seed_workspace() -> None:
     task = ResearchTask(
         task_id="T1",
         novelty_point_id="NP-1",
-        queries=["graph learning"],
+        task_type="literature_search",
+        language="en",
+        description="graph learning",
+    )
+    plan = SearchPlan(
+        task_id="T1",
+        novelty_point_id="NP-1",
+        concepts=[
+            SearchConcept(concept_id="C1", name="graph learning", terms=["graph learning"])
+        ],
+        strategies=[SearchStrategy(strategy_id="S1", level="strict", expression="C1")],
     )
     card = EvidenceCard(
         card_id="C1",
@@ -69,7 +82,23 @@ def seed_workspace() -> None:
     )
     persist_workflow_input(paper)
     persist_novelty_points(paper, [point])
-    persist_retrieval_plans(paper, [task], rounds=1, point_order=["NP-1"])
+    persist_retrieval_plans(
+        paper,
+        [task],
+        search_plans=[plan],
+        executed_queries=[
+            {
+                "database": "arxiv",
+                "novelty_point_id": "NP-1",
+                "task_id": "T1",
+                "strategy_id": "S1",
+                "level": "strict",
+                "query": 'all:"graph learning"',
+            }
+        ],
+        rounds=1,
+        point_order=["NP-1"],
+    )
     persist_evidence_cards(
         paper,
         raw_cards=[card],

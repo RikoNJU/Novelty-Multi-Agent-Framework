@@ -10,7 +10,7 @@ from __future__ import annotations
 import pytest
 
 from novelty_agent_framework.config import build_workflow, load_config
-from novelty_agent_framework.schemas import PaperInput, ResearchTask
+from novelty_agent_framework.schemas import NoveltyPoint, ResearchTask
 from novelty_agent_framework.tools import (
     ArxivFullTextTool,
     ArxivMetadataTool,
@@ -46,33 +46,28 @@ def test_live_research_agent_runs_one_point() -> None:
     if workflow.services.search_tool is None:
         pytest.skip("默认配置未启用 tools.arxiv")
 
-    paper = PaperInput(
-        paper_id="live-001",
-        title="Temporal Graph Learning",
-        abstract="We study graph representation learning on temporal graphs.",
-        english_abstract=(
-            "We study graph representation learning on large-scale temporal graphs "
-            "via graph summarization."
-        ),
-        full_text="Temporal graph learning methods for large-scale dynamic graphs.",
-        keywords_en=["graph representation learning", "temporal graph"],
+    point = NoveltyPoint(
+        point_id="NP-1",
+        claim="大规模时序图上的表示学习方法",
+        claim_en="Graph representation learning on large-scale temporal graphs",
+        technical_features_en=["temporal graph", "graph summarization"],
     )
     task = ResearchTask(
         task_id="TASK-NP-1-R1",
         novelty_point_id="NP-1",
-        queries=[
-            "大规模时序图表示学习",
-            "graph representation learning on temporal graphs",
-            "graph summarization",
-        ],
-        context="大规模时序图上的表示学习方法",
+        task_type="literature_search",
+        language="en",
+        description="检索大规模时序图表示学习方法",
         attempt=1,
     )
+    plan = workflow.services.search_planner.plan(point, task)
+    compiled = workflow.services.query_adapter.compile(plan)
+    candidates = workflow.services.search_tool.search(compiled[0].query, limit=3)
     agent = workflow.services.research_agent
     cards = agent.research(
         task,
-        paper,
-        search_tool=workflow.services.search_tool,
+        point,
+        candidates,
         full_text_tool=workflow.services.full_text_tool,
         metadata_tool=workflow.services.metadata_tool,
     )

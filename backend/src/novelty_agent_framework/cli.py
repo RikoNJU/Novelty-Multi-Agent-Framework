@@ -7,9 +7,8 @@ import json
 from pathlib import Path
 from typing import Sequence
 
-from .agents import DemoCoordinator, DemoResearchAgent
 from .schemas import PaperInput
-from .workflows import NoveltyWorkflow, NoveltyWorkflowServices
+from .workflows import NoveltyWorkflow
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -24,12 +23,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     payload = json.loads(args.input.read_text(encoding="utf-8"))
     paper = PaperInput.model_validate(payload)
 
-    workflow = NoveltyWorkflow(
-        NoveltyWorkflowServices(
-            coordinator=DemoCoordinator(),
-            research_agent=DemoResearchAgent(),
-        )
-    )
+    workflow = NoveltyWorkflow.default()
     result_json = workflow.run(paper).model_dump_json(indent=2)
 
     if args.output:

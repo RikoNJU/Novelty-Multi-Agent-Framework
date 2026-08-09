@@ -14,6 +14,7 @@ from ..schemas import (
     PaperInput,
     RejectedEvidence,
     ResearchTask,
+    SearchPlan,
     WorkflowIssue,
 )
 from ..ports import (
@@ -23,8 +24,11 @@ from ..ports import (
     MetadataTool,
     NoveltyCoordinator,
     NoveltyPointExtractor,
+    SearchHit,
+    SearchPlanner,
     SearchTool,
 )
+from ..tools.adapter import CompiledQuery, QueryAdapter
 
 
 class NoveltyState(TypedDict, total=False):
@@ -35,6 +39,11 @@ class NoveltyState(TypedDict, total=False):
     brief: NoveltyBrief
     research_tasks: list[ResearchTask]
     all_research_tasks: list[ResearchTask]
+    search_plans: list[SearchPlan]
+    all_search_plans: list[SearchPlan]
+    executed_queries: list[CompiledQuery]
+    all_executed_queries: list[CompiledQuery]
+    candidates_by_task: dict[tuple[str, str], list[SearchHit]]
     raw_evidence_cards: Annotated[list[EvidenceCard], add]
     evidence_cards: list[EvidenceCard]
     rejected_evidence: list[RejectedEvidence]
@@ -52,6 +61,7 @@ class NoveltyWorkflowConfig:
     max_rounds: int = 2
     max_concurrency: int = 4
     minimum_evidence_per_point: int = 1
+    candidate_limit_per_task: int = 8
 
     def __post_init__(self) -> None:
         if self.max_rounds < 1:
@@ -60,6 +70,8 @@ class NoveltyWorkflowConfig:
             raise ValueError("max_concurrency 必须至少为 1")
         if self.minimum_evidence_per_point < 1:
             raise ValueError("minimum_evidence_per_point 必须至少为 1")
+        if self.candidate_limit_per_task < 1:
+            raise ValueError("candidate_limit_per_task 必须至少为 1")
 
 
 @dataclass(frozen=True)
@@ -68,6 +80,8 @@ class NoveltyWorkflowServices:
 
     coordinator: NoveltyCoordinator
     research_agent: LiteratureResearchAgent
+    search_planner: SearchPlanner
+    query_adapter: QueryAdapter
     point_extractor: NoveltyPointExtractor | None = None
     validator: EvidenceValidator | None = None
     search_tool: SearchTool | None = None

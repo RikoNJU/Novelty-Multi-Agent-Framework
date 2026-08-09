@@ -39,13 +39,15 @@ class DefaultEvidenceValidator:
         *,
         tasks: Sequence[ResearchTask],
     ) -> ValidationResult:
-        task_by_id = {task.task_id: task for task in tasks}
+        task_by_key = {
+            (task.novelty_point_id, task.task_id): task for task in tasks
+        }
         candidates: dict[tuple[str, str], list[EvidenceCard]] = {}
         rejected: list[tuple[str, str]] = []
         issues: list[tuple[str, str, str, str | None]] = []
 
         for card in cards:
-            reason = self._rejection_reason(card, task_by_id)
+            reason = self._rejection_reason(card, task_by_key)
             if reason is not None:
                 rejected.append((card.card_id, reason))
                 issues.append(
@@ -88,9 +90,9 @@ class DefaultEvidenceValidator:
     def _rejection_reason(
         self,
         card: EvidenceCard,
-        task_by_id: dict[str, ResearchTask],
+        task_by_key: dict[tuple[str, str], ResearchTask],
     ) -> str | None:
-        task = task_by_id.get(card.task_id)
+        task = task_by_key.get((card.novelty_point_id, card.task_id))
         if task is None:
             return "task_id 不属于当前工作流"
         if task.novelty_point_id != card.novelty_point_id:

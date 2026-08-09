@@ -3,7 +3,9 @@ import json
 from novelty_agent_framework.agents import (
     NoveltyCoordinatorAgent,
     NoveltyResearchAgent,
+    SearchPlannerAgent,
 )
+from novelty_agent_framework.tools import ArxivQueryAdapter
 from novelty_agent_framework.config import (
     build_model_registry,
     build_workflow,
@@ -52,13 +54,18 @@ def test_build_workflow_wires_role_models(monkeypatch):
     assert workflow.config.max_rounds == 3
     assert workflow.config.max_concurrency == 2
     assert workflow.config.minimum_evidence_per_point == 2
+    assert workflow.config.candidate_limit_per_task == 8
 
     coordinator = workflow.services.coordinator
     research = workflow.services.research_agent
+    search_planner = workflow.services.search_planner
     assert isinstance(coordinator, NoveltyCoordinatorAgent)
     assert isinstance(research, NoveltyResearchAgent)
+    assert isinstance(search_planner, SearchPlannerAgent)
+    assert isinstance(workflow.services.query_adapter, ArxivQueryAdapter)
     assert coordinator._client().profile.model == "model-a"
     assert research._client().profile.model == "model-b"
+    assert search_planner._client().profile.model == "model-b"
     assert coordinator.temperature == 0.1
     assert research.temperature == 0.5
 
@@ -97,6 +104,8 @@ def test_build_tools_disabled_by_default():
     assert workflow.services.search_tool is None
     assert workflow.services.full_text_tool is None
     assert workflow.services.metadata_tool is None
+    assert isinstance(workflow.services.search_planner, SearchPlannerAgent)
+    assert isinstance(workflow.services.query_adapter, ArxivQueryAdapter)
 
 
 def test_build_workflow_injects_arxiv_tools_when_enabled():
@@ -115,4 +124,4 @@ def test_build_workflow_injects_arxiv_tools_when_enabled():
     assert workflow.services.search_tool is not None
     assert workflow.services.full_text_tool is not None
     assert workflow.services.metadata_tool is not None
-    assert workflow.services.research_agent.candidate_limit == 5
+    assert workflow.config.candidate_limit_per_task == 5

@@ -17,6 +17,9 @@ from novelty_agent_framework.schemas import (
     NoveltyReport,
     RejectedEvidence,
     ResearchTask,
+    SearchConcept,
+    SearchPlan,
+    SearchStrategy,
 )
 
 
@@ -32,9 +35,19 @@ def make_task(task_id: str, point_id: str, query: str, attempt: int) -> Research
     return ResearchTask(
         task_id=task_id,
         novelty_point_id=point_id,
-        queries=[query, "shared query"],
-        candidate_document_ids=["doc-1"],
+        task_type="literature_search",
+        language="en",
+        description=query,
         attempt=attempt,
+    )
+
+
+def make_plan(task: ResearchTask, term: str) -> SearchPlan:
+    return SearchPlan(
+        task_id=task.task_id,
+        novelty_point_id=task.novelty_point_id,
+        concepts=[SearchConcept(concept_id="C1", name=term, terms=[term])],
+        strategies=[SearchStrategy(strategy_id="S1", level="strict", expression="C1")],
     )
 
 
@@ -56,6 +69,22 @@ def test_retrieval_plans_group_tasks_by_novelty_point_order(tmp_path) -> None:
     path = persist_retrieval_plans(
         make_paper(),
         tasks,
+        search_plans=[
+            make_plan(tasks[0], "query two"),
+            make_plan(tasks[1], "query one"),
+            make_plan(tasks[2], "query retry"),
+        ],
+        executed_queries=[
+            {
+                "database": "arxiv",
+                "novelty_point_id": task.novelty_point_id,
+                "task_id": task.task_id,
+                "strategy_id": "S1",
+                "level": "strict",
+                "query": query,
+            }
+            for task, query in zip(tasks, ["query two", "query one", "query retry"])
+        ],
         rounds=2,
         point_order=["NP-1", "NP-2", "NP-3"],
         output_root=tmp_path,
@@ -66,10 +95,11 @@ def test_retrieval_plans_group_tasks_by_novelty_point_order(tmp_path) -> None:
     assert [plan["novelty_point_id"] for plan in plans] == ["NP-1", "NP-2", "NP-3"]
     assert [task["task_id"] for task in plans[0]["research_tasks"]] == ["T1", "T1-R2"]
     assert plans[0]["query_plan"] == {
-        "queries": ["query one", "shared query", "query retry"],
-        "candidate_document_ids": ["doc-1"],
+        "queries": ["query one", "query retry"],
         "attempts": [1, 2],
     }
+    assert len(plans[0]["search_plans"]) == 2
+    assert len(plans[0]["executed_queries"]) == 2
     assert plans[2]["research_tasks"] == []
 
 

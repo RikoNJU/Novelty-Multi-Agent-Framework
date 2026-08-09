@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 from collections import defaultdict
 from collections.abc import Sequence
 
@@ -16,8 +17,11 @@ from ..schemas import (
     NoveltyReport,
     PaperInput,
     ResearchTask,
+    SearchConcept,
+    SearchPlan,
+    SearchStrategy,
 )
-from ..ports import FullTextTool, MetadataTool, SearchTool
+from ..ports import FullTextTool, MetadataTool, SearchHit
 
 
 class DemoCoordinator:
@@ -170,29 +174,33 @@ class DemoResearchAgent:
     async def research(
         self,
         task: ResearchTask,
-        paper: PaperInput,
+        point: NoveltyPoint,
+        candidates: Sequence[SearchHit],
         *,
-        search_tool: SearchTool | None = None,
         full_text_tool: FullTextTool | None = None,
         metadata_tool: MetadataTool | None = None,
     ) -> Sequence[EvidenceCard]:
         await asyncio.sleep(0.01)
+        if not candidates:
+            return []
+        candidate = candidates[0]
         slug = task.novelty_point_id.lower()
         return [
             EvidenceCard(
-                card_id=f"CARD-{task.task_id}",
+                card_id=f"CARD-{task.novelty_point_id}-{task.task_id}",
                 task_id=task.task_id,
                 novelty_point_id=task.novelty_point_id,
-                document_title=f"Demo Related Work for {task.novelty_point_id}",
+                document_title=candidate.title,
                 main_contribution="演示文献提出了一个与目标查新点相关的基础方法。",
                 overlaps=["研究问题和核心技术路线存在部分重合"],
                 differences=["目标论文声明了不同的组合方式和适用范围"],
                 sources=[
                     EvidenceSource(
-                        title=f"Demo Related Work for {task.novelty_point_id}",
-                        quote="This synthetic passage is used only to validate the workflow.",
+                        title=candidate.title,
+                        quote=candidate.abstract,
                         location="Section 3, paragraph 1",
-                        url=f"https://example.org/demo/{slug}/round-{task.attempt}",
+                        url=candidate.url
+                        or f"https://example.org/demo/{slug}/round-{task.attempt}",
                     )
                 ],
                 cited_by_paper=False,
@@ -201,3 +209,37 @@ class DemoResearchAgent:
                 confidence=0.78,
             )
         ]
+
+
+class DemoSearchPlanner:
+    """用单个 Concept 确定性生成三档数据库无关检索策略。"""
+
+    def plan(self, point: NoveltyPoint, task: ResearchTask) -> SearchPlan:
+        term = point.claim_en if task.language == "en" and point.claim_en else point.claim
+        concept = SearchConcept(concept_id="C1", name=term, terms=[term])
+        return SearchPlan(
+            task_id=task.task_id,
+            novelty_point_id=point.point_id,
+            concepts=[concept],
+            strategies=[
+                SearchStrategy(strategy_id="S1", level="strict", expression="C1"),
+                SearchStrategy(strategy_id="S2", level="medium", expression="C1"),
+                SearchStrategy(strategy_id="S3", level="broad", expression="C1"),
+            ],
+        )
+
+
+class DemoSearchTool:
+    """返回由查询字符串稳定派生的离线候选文献。"""
+
+    def search(self, query: str, *, limit: int = 10) -> Sequence[SearchHit]:
+        digest = hashlib.sha256(query.encode("utf-8")).hexdigest()[:12]
+        text = "This synthetic passage is used only to validate the workflow."
+        return [
+            SearchHit(
+                document_id=f"demo-{digest}",
+                title=f"Demo Related Work {digest}",
+                abstract=text,
+                url=f"https://example.org/demo/{digest}",
+            )
+        ][:limit]

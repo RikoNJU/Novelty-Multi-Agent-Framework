@@ -21,8 +21,14 @@ from ..agents import (
     NoveltyCoordinatorAgent,
     NoveltyPointExtractorAgent,
     NoveltyResearchAgent,
+    SearchPlannerAgent,
 )
-from ..tools import ArxivFullTextTool, ArxivMetadataTool, ArxivSearchTool
+from ..tools import (
+    AdapterFactory,
+    ArxivFullTextTool,
+    ArxivMetadataTool,
+    ArxivSearchTool,
+)
 from ..workflows import NoveltyWorkflow, NoveltyWorkflowConfig, NoveltyWorkflowServices
 
 CONFIG_DIR = Path(__file__).resolve().parent
@@ -74,11 +80,13 @@ def build_agents(
     NoveltyCoordinatorAgent,
     NoveltyResearchAgent,
     NoveltyPointExtractorAgent,
+    SearchPlannerAgent,
 ]:
     agents_cfg = config.get("agents", {})
     coordinator_cfg = agents_cfg.get("coordinator", {})
     research_cfg = agents_cfg.get("research", {})
     point_extractor_cfg = agents_cfg.get("point_extractor", {})
+    search_planner_cfg = agents_cfg.get("search_planner", {})
     arxiv_cfg = dict(arxiv_cfg or {})
 
     coordinator = NoveltyCoordinatorAgent(
@@ -92,9 +100,7 @@ def build_agents(
         models=registry,
         model_alias=research_cfg.get("model", "research"),
         temperature=float(research_cfg.get("temperature", 0.2)),
-        candidate_limit=int(arxiv_cfg.get("candidate_limit", 8)),
         candidate_excerpt_chars=int(arxiv_cfg.get("candidate_excerpt_chars", 2000)),
-        paper_excerpt_chars=int(arxiv_cfg.get("paper_excerpt_chars", 5000)),
     )
     point_extractor = NoveltyPointExtractorAgent(
         prompts=prompts,
@@ -102,7 +108,15 @@ def build_agents(
         model_alias=point_extractor_cfg.get("model", "point_extractor"),
         temperature=float(point_extractor_cfg.get("temperature", 0.2)),
     )
-    return coordinator, research, point_extractor
+    search_planner = SearchPlannerAgent(
+        prompts=prompts,
+        models=registry,
+        model_alias=search_planner_cfg.get(
+            "model", research_cfg.get("model", "search_planner")
+        ),
+        temperature=float(search_planner_cfg.get("temperature", 0.2)),
+    )
+    return coordinator, research, point_extractor, search_planner
 
 
 def build_tools(
@@ -138,7 +152,7 @@ def build_workflow(
     registry = build_model_registry(raw)
     prompts = build_prompt_library()
     arxiv_cfg = raw.get("tools", {}).get("arxiv", {})
-    coordinator, research, point_extractor = build_agents(
+    coordinator, research, point_extractor, search_planner = build_agents(
         raw, registry, prompts, arxiv_cfg=arxiv_cfg
     )
     search_tool, full_text_tool, metadata_tool = build_tools(raw)
@@ -148,6 +162,8 @@ def build_workflow(
         NoveltyWorkflowServices(
             coordinator=coordinator,
             research_agent=research,
+            search_planner=search_planner,
+            query_adapter=AdapterFactory.create("arxiv"),
             point_extractor=point_extractor,
             search_tool=search_tool,
             full_text_tool=full_text_tool,
@@ -159,6 +175,7 @@ def build_workflow(
             minimum_evidence_per_point=int(
                 workflow_cfg.get("minimum_evidence_per_point", 1)
             ),
+            candidate_limit_per_task=int(arxiv_cfg.get("candidate_limit", 8)),
         ),
     )
 
