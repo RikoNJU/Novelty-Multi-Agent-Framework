@@ -19,3 +19,11 @@
 开发环境可在 `backend/.env` 中写入 `SILICONFLOW_API_KEY=...` 等密钥，
 `model_client.py` 导入时会通过 python-dotenv 自动加载（真实环境变量优先）。
 `.env` 已被 `.gitignore` 排除，不会进入 git；生产部署仍使用环境变量。
+
+首次配置时复制 `backend/.env.example` 为 `backend/.env`，再只在 `.env` 中
+填写真实的 `SILICONFLOW_API_KEY`。不要直接修改 `.env.example` 写入密钥；该文件
+是需要提交到 Git 的空值模板。可在不输出密钥内容的前提下验证加载结果：
+
+```bash
+conda run -n Novelty python -c "from novelty_agent_framework.config import load_config, build_model_registry; registry = build_model_registry(load_config()); print(all(profile.api_key for profile in registry._profiles.values()))"
+```
