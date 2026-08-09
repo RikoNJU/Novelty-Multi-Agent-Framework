@@ -16,6 +16,7 @@ from typing import Any, Sequence
 from .schemas import (
     EvidenceCard,
     NoveltyPoint,
+    NoveltyReport,
     PaperDocument,
     PaperInput,
     RejectedEvidence,
@@ -182,6 +183,20 @@ def persist_evidence_cards(
             ],
         },
     )
+    return path
+
+
+def persist_report(
+    paper: PaperInput,
+    report: NoveltyReport,
+    *,
+    output_root: str | Path = DEFAULT_OUTPUTS_DIR,
+) -> Path:
+    """写出 Coordinator.synthesize() 生成并通过校验的结构化报告。"""
+
+    workspace = paper_workspace(paper, output_root=output_root)
+    path = workspace / "report.json"
+    _write_json(path, report.model_dump(mode="json"))
     return path
 
 

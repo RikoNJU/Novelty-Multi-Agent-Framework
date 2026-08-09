@@ -14,6 +14,7 @@ from novelty_agent_framework.core.errors import WorkflowExecutionError
 from novelty_agent_framework.persistence import (
     persist_evidence_cards,
     persist_novelty_points,
+    persist_report,
     persist_retrieval_plans,
 )
 
@@ -345,6 +346,7 @@ class NoveltyWorkflow:
 
         if report.paper_id != state["paper"].paper_id:
             raise WorkflowExecutionError("NoveltyReport.paper_id 与输入论文不一致")
+        persist_report(state["paper"], report)
         return {"report": report}
 
     async def arun(self, paper: PaperInput | dict[str, Any]) -> NoveltyRunResult:

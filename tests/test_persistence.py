@@ -7,12 +7,14 @@ import json
 from novelty_agent_framework.persistence import (
     paper_workspace,
     persist_evidence_cards,
+    persist_report,
     persist_retrieval_plans,
 )
 from novelty_agent_framework.schemas import (
     EvidenceCard,
     EvidenceSource,
     PaperInput,
+    NoveltyReport,
     RejectedEvidence,
     ResearchTask,
 )
@@ -96,3 +98,14 @@ def test_evidence_cards_keep_raw_accepted_and_rejected_results(tmp_path) -> None
     assert data["raw_evidence_cards"][0]["card_id"] == "C1"
     assert data["accepted_evidence_cards"][0]["card_id"] == "C1"
     assert data["rejected_evidence"] == [{"card_id": "C2", "reason": "low relevance"}]
+
+
+def test_report_is_written_at_paper_workspace_root(tmp_path) -> None:
+    paper = make_paper()
+    report = NoveltyReport(paper_id=paper.paper_id, limitations=["demo limitation"])
+
+    path = persist_report(paper, report, output_root=tmp_path)
+    data = json.loads(path.read_text(encoding="utf-8"))
+
+    assert path == tmp_path / "paper-one" / "report.json"
+    assert data == report.model_dump(mode="json")

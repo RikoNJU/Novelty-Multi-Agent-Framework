@@ -63,10 +63,11 @@ outputs/<paper_id>/
 ├── novelty-points.json
 ├── retrieval-plans.json
 ├── evidence-cards.json
+├── report.json
 └── report/
 ```
 
-`retrieval-plans.json` 按查新点序号分组，每组同时保留 ResearchTask 和汇总后的 QueryPlan。`report/` 当前只预留目录，待 Writer 实现后写入 TeX/PDF。
+`retrieval-plans.json` 按查新点序号分组，每组同时保留 ResearchTask 和汇总后的 QueryPlan。`report.json` 保存 Coordinator 的结构化汇总输出；`report/` 当前只预留目录，待 Writer 实现后写入 TeX/PDF。
 
 ## 运行
 
