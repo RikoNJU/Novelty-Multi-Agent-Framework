@@ -15,6 +15,9 @@ from .domain import (
     PaperPage,
     RejectedEvidence,
     ResearchTask,
+    SearchConcept,
+    SearchPlan,
+    SearchStrategy,
     StrictModel,
     WorkflowIssue,
 )
@@ -36,6 +39,9 @@ __all__ = [
     "PaperPage",
     "RejectedEvidence",
     "ResearchTask",
+    "SearchConcept",
+    "SearchPlan",
+    "SearchStrategy",
     "StrictModel",
     "WorkflowIssue",
 ]

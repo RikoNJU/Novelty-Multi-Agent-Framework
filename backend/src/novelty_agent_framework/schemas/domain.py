@@ -80,14 +80,40 @@ class NoveltyPoint(StrictModel):
 
 
 class ResearchTask(StrictModel):
-    """Coordinator 分配给文献调研 Agent 的任务。"""
+    """某个 NoveltyPoint 下的一条独立调研任务。"""
 
     task_id: str = Field(min_length=1)
     novelty_point_id: str = Field(min_length=1)
-    queries: list[str] = Field(min_length=1)
-    candidate_document_ids: list[str] = Field(default_factory=list)
-    context: str = ""
+    task_type: str = Field(min_length=1)
+    language: str = Field(min_length=1)
+    description: str = ""
     attempt: int = Field(default=1, ge=1)
+
+
+class SearchConcept(StrictModel):
+    """检索中的一个语义概念及其词项表达。"""
+
+    concept_id: str = Field(min_length=1)
+    name: str = Field(min_length=1)
+    terms: list[str] = Field(min_length=1)
+
+
+class SearchStrategy(StrictModel):
+    """一条数据库无关的检索策略。"""
+
+    strategy_id: str = Field(min_length=1)
+    level: str = Field(min_length=1)
+    expression: str = Field(min_length=1)
+    description: str = ""
+
+
+class SearchPlan(StrictModel):
+    """ResearchTask 对应的数据库无关检索计划。"""
+
+    task_id: str = Field(min_length=1)
+    novelty_point_id: str = Field(min_length=1)
+    concepts: list[SearchConcept] = Field(min_length=1)
+    strategies: list[SearchStrategy] = Field(min_length=1)
 
 
 class NoveltyBrief(StrictModel):
