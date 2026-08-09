@@ -85,6 +85,42 @@ def persist_paper_input(
     return workspace
 
 
+def persist_workflow_input(
+    paper: PaperInput,
+    *,
+    output_root: str | Path = DEFAULT_OUTPUTS_DIR,
+) -> Path:
+    """确保直接通过 JSON/API 启动的工作流也具备完整 paper-input 目录。"""
+
+    workspace = paper_workspace(paper, output_root=output_root)
+    input_dir = workspace / "paper-input"
+    full_path = input_dir / "full.md"
+    content_list_path = input_dir / "content-list.json"
+    if not full_path.exists():
+        full_path.write_text(paper.full_text + "\n", encoding="utf-8")
+    if not content_list_path.exists():
+        _write_json(
+            content_list_path,
+            {
+                "paper_id": paper.paper_id,
+                "title": paper.title,
+                "source": paper.metadata.get("source", "workflow_input"),
+                "page_count": int(paper.metadata.get("pages", "0") or 0),
+                "sections": [],
+                "keywords_zh": paper.keywords_zh,
+                "keywords_en": paper.keywords_en,
+                "reference_count": len(paper.references),
+                "parse_warnings": [],
+                "workflow_input": "others/paper.json",
+            },
+        )
+    _write_json(
+        input_dir / "others" / "paper.json",
+        paper.model_dump(mode="json"),
+    )
+    return workspace
+
+
 def persist_novelty_points(
     paper: PaperInput,
     points: Sequence[NoveltyPoint],

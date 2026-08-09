@@ -16,7 +16,9 @@ from novelty_agent_framework.persistence import (
     persist_novelty_points,
     persist_report,
     persist_retrieval_plans,
+    persist_workflow_input,
 )
+from novelty_agent_framework.tools.renderer import render_report
 
 from ..agents import (
     DefaultEvidenceValidator,
@@ -88,6 +90,7 @@ class NoveltyWorkflow:
         builder.add_node("assess_coverage", self._assess_coverage)
         builder.add_node("plan_supplement", self._plan_supplement)
         builder.add_node("synthesize_report", self._synthesize_report)
+        builder.add_node("render_report", self._render_report)
 
         builder.add_edge(START, "extract_points")
         builder.add_edge("extract_points", "plan")
@@ -103,10 +106,12 @@ class NoveltyWorkflow:
             },
         )
         builder.add_edge("plan_supplement", "parallel_research")
-        builder.add_edge("synthesize_report", END)
+        builder.add_edge("synthesize_report", "render_report")
+        builder.add_edge("render_report", END)
         return builder.compile()
 
     async def _extract_points(self, state: NoveltyState) -> dict[str, Any]:
+        persist_workflow_input(state["paper"])
         try:
             digest = build_paper_digest(state["paper"])
             points_value = self.point_extractor.extract(
@@ -348,6 +353,18 @@ class NoveltyWorkflow:
             raise WorkflowExecutionError("NoveltyReport.paper_id 与输入论文不一致")
         persist_report(state["paper"], report)
         return {"report": report}
+
+    async def _render_report(self, state: NoveltyState) -> dict[str, Any]:
+        """在结构化报告落盘后生成默认 Markdown 报告。"""
+
+        try:
+            path = render_report(
+                output_format="markdown",
+                paper_name=state["paper"].paper_id,
+            )
+        except (OSError, ValueError, RuntimeError) as exc:
+            raise WorkflowExecutionError(f"Markdown 报告渲染失败：{exc}") from exc
+        return {"rendered_report_path": str(path)}
 
     async def arun(self, paper: PaperInput | dict[str, Any]) -> NoveltyRunResult:
         """异步执行一次完整查新工作流。"""

@@ -42,6 +42,7 @@ class NoveltyState(TypedDict, total=False):
     issues: Annotated[list[WorkflowIssue], add]
     rounds: int
     report: NoveltyReport
+    rendered_report_path: str
 
 
 @dataclass(frozen=True)

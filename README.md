@@ -65,9 +65,18 @@ outputs/<paper_id>/
 ├── evidence-cards.json
 ├── report.json
 └── report/
+    └── <paper_id>-report.md
 ```
 
-`retrieval-plans.json` 按查新点序号分组，每组同时保留 ResearchTask 和汇总后的 QueryPlan。`report.json` 保存 Coordinator 的结构化汇总输出；`report/` 当前只预留目录，待 Writer 实现后写入 TeX/PDF。
+`retrieval-plans.json` 按查新点序号分组，每组同时保留 ResearchTask 和汇总后的 QueryPlan。`report.json` 保存 Coordinator 的结构化汇总输出；工作流末尾的确定性 Renderer 默认使用 `templates/markdown/default.md` 生成 Markdown 报告。后续可继续注册 LaTeX、HTML Renderer。
+
+也可以独立调用 Renderer：
+
+```python
+from novelty_agent_framework.tools import render_report
+
+path = render_report(output_format="markdown", paper_name="paper-id")
+```
 
 ## 运行
 
