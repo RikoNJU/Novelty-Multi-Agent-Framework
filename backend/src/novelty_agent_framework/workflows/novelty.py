@@ -249,7 +249,12 @@ class NoveltyWorkflow:
             "issues": issues,
         }
 
-    def _assess_coverage(self, state: NoveltyState) -> dict[str, Any]:
+    async def _assess_coverage(self, state: NoveltyState) -> dict[str, Any]:
+        """评估证据覆盖度。
+
+        工作流整体通过 ``ainvoke`` 执行，并包含补检回边。保持图节点为异步
+        callable，避免 LangGraph 的异步循环在同步节点线程池收尾阶段挂起。
+        """
         brief = state["brief"]
         counts: dict[str, int] = {point.point_id: 0 for point in brief.novelty_points}
         for card in state.get("evidence_cards", []):
@@ -266,7 +271,8 @@ class NoveltyWorkflow:
         ]
         return {"coverage_gaps": gaps}
 
-    def _route_after_assessment(self, state: NoveltyState) -> str:
+    async def _route_after_assessment(self, state: NoveltyState) -> str:
+        """根据覆盖度异步选择补检或汇总分支。"""
         if state.get("coverage_gaps") and state.get("rounds", 0) < self.config.max_rounds:
             return "supplement"
         return "synthesize"
