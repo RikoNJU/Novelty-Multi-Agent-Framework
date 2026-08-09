@@ -8,6 +8,7 @@ from novelty_agent_framework.agents import (
     NoveltyCoordinatorAgent,
     NoveltyResearchAgent,
 )
+from novelty_agent_framework.ports import SearchHit
 from novelty_agent_framework.schemas import NoveltyPoint, PaperInput, ResearchTask
 
 PROMPTS_ROOT = Path("backend/src/novelty_agent_framework/prompts")
@@ -188,20 +189,33 @@ def test_research_renders_prompt_and_validates_cards():
     task = ResearchTask(
         task_id="TASK-NP-1-R1",
         novelty_point_id="NP-1",
-        queries=["多智能体协作"],
-        context="提出一个测试查新点",
+        task_type="literature_search",
+        language="zh",
+        description="检索多智能体协作文献",
         attempt=1,
     )
 
-    cards = agent.research(task, make_paper())
+    cards = agent.research(
+        task,
+        POINTS[0],
+        [
+            SearchHit(
+                document_id="DOC-1",
+                title="相关工作",
+                abstract="原文摘录",
+                url="https://example.org/paper",
+            )
+        ],
+    )
 
     assert len(cards) == 1
     assert cards[0].card_id == "CARD-1"
     messages, _ = client.calls[0]
     system, user = messages[0].content, messages[1].content
-    assert "文献调研 Agent" in system
+    assert "文献证据分析 Agent" in system
     assert '"task_id": "TASK-NP-1-R1"' in user
-    assert "候选文献" in user  # v2 提示词新增候选文献变量
+    assert "当前查新点" in user
+    assert "候选文献" in user
 
 
 def test_research_rejects_malformed_card():
@@ -215,12 +229,25 @@ def test_research_rejects_malformed_card():
     task = ResearchTask(
         task_id="TASK-NP-1-R1",
         novelty_point_id="NP-1",
-        queries=["q"],
+        task_type="literature_search",
+        language="zh",
         attempt=1,
     )
 
-    with pytest.raises(ValueError, match="证据卡格式错误"):
-        agent.research(task, make_paper())
+    cards = agent.research(
+        task,
+        POINTS[0],
+        [
+            SearchHit(
+                document_id="DOC-1",
+                title="相关工作",
+                abstract="原文摘录",
+                url="https://example.org/paper",
+            )
+        ],
+    )
+
+    assert cards == []
 
 
 def test_agent_without_client_or_registry_raises():

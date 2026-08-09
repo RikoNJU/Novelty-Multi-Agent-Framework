@@ -116,18 +116,18 @@ class SearchPlanner(Protocol):
 
 
 class LiteratureResearchAgent(Protocol):
-    """文献调研子 Agent 的能力边界。"""
+    """对已经召回的候选文献进行查新点级证据分析。"""
 
     def research(
         self,
         task: ResearchTask,
-        paper: PaperInput,
+        point: NoveltyPoint,
+        candidates: Sequence[SearchHit],
         *,
-        search_tool: SearchTool | None = None,
         full_text_tool: FullTextTool | None = None,
         metadata_tool: MetadataTool | None = None,
     ) -> Sequence[EvidenceCard]:
-        """完整执行一个查新任务并返回结构化文献证据。"""
+        """逐篇分析给定候选文献并返回结构化文献证据。"""
 
 
 class EvidenceValidator(Protocol):

@@ -1,4 +1,4 @@
-"""查新文献调研 Agent：检索编排 + 模型比较 + 证据绑定校验。"""
+"""查新文献调研 Agent：候选文献阅读、比较与证据绑定校验。"""
 
 from __future__ import annotations
 
@@ -16,24 +16,18 @@ from backend.env import (
     ModelRegistry,
     PromptLibrary,
 )
-from ..ports import FullTextTool, LiteratureResearchAgent, MetadataTool, SearchTool
-from ..schemas import EvidenceCard, EvidenceSource, NoveltyPoint, PaperInput, ResearchTask
-from ..tools.retrieval import (
-    RetrievalCandidate,
-    merge_candidates,
-    search_expansion,
-    search_reference_seed,
-)
 
-REFERENCE_VIEW_LIMIT = 15
+from ..ports import (
+    FullTextTool,
+    LiteratureResearchAgent,
+    MetadataTool,
+    SearchHit,
+)
+from ..schemas import EvidenceCard, EvidenceSource, NoveltyPoint, ResearchTask
 
 
 class NoveltyResearchAgent(LiteratureResearchAgent):
-    """负责单个查新任务的检索、阅读和证据抽取。
-
-    未注入 SearchTool 时退化为单次模型调用（骨架路径）；注入工具后执行
-    “种子检索 → 扩展检索 → 合并打分 → 取全文/元数据 → 模型比较 → 绑定校验”。
-    """
+    """逐篇分析上游召回的候选文献并抽取查新点级证据。"""
 
     def __init__(
         self,
@@ -43,126 +37,67 @@ class NoveltyResearchAgent(LiteratureResearchAgent):
         models: ModelRegistry | None = None,
         model_alias: str | None = None,
         temperature: float = 0.2,
-        candidate_limit: int = 8,
         candidate_excerpt_chars: int = 2000,
-        paper_excerpt_chars: int = 5000,
     ) -> None:
         self.model_client = model_client
         self._prompts = prompts
         self._models = models
         self._model_alias = model_alias
         self.temperature = temperature
-        self.candidate_limit = candidate_limit
         self.candidate_excerpt_chars = candidate_excerpt_chars
-        self.paper_excerpt_chars = paper_excerpt_chars
 
     def research(
         self,
         task: ResearchTask,
-        paper: PaperInput,
+        point: NoveltyPoint,
+        candidates: Sequence[SearchHit],
         *,
-        search_tool: SearchTool | None = None,
         full_text_tool: FullTextTool | None = None,
         metadata_tool: MetadataTool | None = None,
     ) -> Sequence[EvidenceCard]:
-        if search_tool is None:
-            return self._research_without_tools(task, paper)
-        return self._research_with_tools(
-            task, paper, search_tool, full_text_tool, metadata_tool
-        )
-
-    def _research_without_tools(
-        self,
-        task: ResearchTask,
-        paper: PaperInput,
-    ) -> list[EvidenceCard]:
-        payload = {
-            "task": task.model_dump(mode="json"),
-            "paper": paper.model_dump(mode="json"),
-        }
-        data = self._complete_json(
-            prompt_name="research/literature_review",
-            variables={
-                "task_json": json.dumps(payload["task"], ensure_ascii=False),
-                "paper_json": json.dumps(payload["paper"], ensure_ascii=False),
-                "candidates_json": "[]",
-                "evidence_schema": json.dumps(
-                    EvidenceCard.model_json_schema(), ensure_ascii=False
-                ),
-            },
-            payload=payload,
-            fallback_user_prompt="请完整执行调研任务并输出 EvidenceCard 列表。",
-        )
-        if not isinstance(data, list):
-            raise ValueError("NoveltyResearchAgent 返回 JSON 顶层必须是列表")
-
-        cards: list[EvidenceCard] = []
-        for index, item in enumerate(data):
-            try:
-                cards.append(EvidenceCard.model_validate(item))
-            except ValidationError as exc:
-                raise ValueError(
-                    f"research 第 {index + 1} 张证据卡格式错误：{exc}"
-                ) from exc
-        return cards
-
-    def _research_with_tools(
-        self,
-        task: ResearchTask,
-        paper: PaperInput,
-        search_tool: SearchTool,
-        full_text_tool: FullTextTool | None,
-        metadata_tool: MetadataTool | None,
-    ) -> list[EvidenceCard]:
-        candidates = self._retrieve_candidates(task, paper, search_tool)
+        if task.novelty_point_id != point.point_id:
+            raise ValueError(
+                "ResearchTask.novelty_point_id 与 NoveltyPoint.point_id 不一致"
+            )
         if not candidates:
             return []
-        pack = self._build_evidence_pack(candidates, full_text_tool, metadata_tool)
-        if not pack:
-            return []
-        try:
-            data = self._complete_cards(task, paper, pack)
-        except ValueError:
-            # 模型偶发返回非法 JSON：重试一次
-            data = self._complete_cards(task, paper, pack)
-        return self._validate_card_binding(data, task, pack)
 
-    def _retrieve_candidates(
-        self,
-        task: ResearchTask,
-        paper: PaperInput,
-        search_tool: SearchTool,
-    ) -> list[RetrievalCandidate]:
-        seed = search_reference_seed(paper, search_tool)
-        point = _point_from_task(task)
-        expansion = search_expansion(point, search_tool)
-        return merge_candidates(seed, expansion, point, top_n=self.candidate_limit)
+        pack = self._build_evidence_pack(candidates, full_text_tool, metadata_tool)
+        try:
+            data = self._complete_cards(task, point, pack)
+        except ValueError:
+            # 模型偶发返回非法 JSON：只重试一次输出解析。
+            data = self._complete_cards(task, point, pack)
+        return self._validate_card_binding(data, task, point, pack)
 
     def _build_evidence_pack(
         self,
-        candidates: Sequence[RetrievalCandidate],
+        candidates: Sequence[SearchHit],
         full_text_tool: FullTextTool | None,
         metadata_tool: MetadataTool | None,
     ) -> list[dict[str, Any]]:
         pack: list[dict[str, Any]] = []
-        for candidate in candidates:
-            hit = candidate.hit
+        for hit in candidates:
             full_text = self._safe_fetch(full_text_tool, hit.document_id)
-            source = self._safe_resolve(metadata_tool, hit.document_id) or EvidenceSource(
+            metadata = self._safe_resolve(metadata_tool, hit.document_id)
+            source = metadata or EvidenceSource(
                 title=hit.title,
                 doi=hit.doi,
                 url=hit.url,
             )
-            body = full_text.text if full_text is not None else (hit.abstract or "")
+            uses_full_text = full_text is not None and bool(full_text.text.strip())
+            body = full_text.text if uses_full_text else (hit.abstract or "")
             pack.append(
                 {
                     "document_id": hit.document_id,
-                    "title": hit.title or source.title,
+                    "title": source.title or hit.title,
                     "abstract": hit.abstract or "",
                     "excerpt": body[: self.candidate_excerpt_chars],
+                    "authors": list(hit.authors),
+                    "year": hit.year,
                     "doi": source.doi or hit.doi,
                     "url": source.url or hit.url,
-                    "cited_by_paper": candidate.cited_by_paper,
+                    "text_source": "full_text" if uses_full_text else "abstract",
                 }
             )
         return pack
@@ -170,19 +105,19 @@ class NoveltyResearchAgent(LiteratureResearchAgent):
     def _complete_cards(
         self,
         task: ResearchTask,
-        paper: PaperInput,
+        point: NoveltyPoint,
         pack: Sequence[dict[str, Any]],
     ) -> Any:
         payload = {
             "task": task.model_dump(mode="json"),
-            "paper": _paper_model_view(paper, max_excerpt=self.paper_excerpt_chars),
+            "point": point.model_dump(mode="json"),
             "candidates": list(pack),
         }
         return self._complete_json(
             prompt_name="research/literature_review",
             variables={
                 "task_json": json.dumps(payload["task"], ensure_ascii=False),
-                "paper_json": json.dumps(payload["paper"], ensure_ascii=False),
+                "point_json": json.dumps(payload["point"], ensure_ascii=False),
                 "candidates_json": json.dumps(payload["candidates"], ensure_ascii=False),
                 "evidence_schema": json.dumps(
                     EvidenceCard.model_json_schema(), ensure_ascii=False
@@ -190,8 +125,8 @@ class NoveltyResearchAgent(LiteratureResearchAgent):
             },
             payload=payload,
             fallback_user_prompt=(
-                "请基于给定的候选文献逐篇比较，输出 EvidenceCard 列表；"
-                "只能引用候选列表中的文献，quote 必须来自提供的文本，禁止编造 DOI/URL。"
+                "请逐篇比较候选文献与当前 NoveltyPoint，输出 EvidenceCard 列表；"
+                "每张卡只能对应一篇候选文献，quote 必须来自提供的文本。"
             ),
         )
 
@@ -199,34 +134,34 @@ class NoveltyResearchAgent(LiteratureResearchAgent):
         self,
         data: Any,
         task: ResearchTask,
+        point: NoveltyPoint,
         pack: Sequence[dict[str, Any]],
     ) -> list[EvidenceCard]:
         data = _normalize_card_list(data)
         if not isinstance(data, list):
             raise ValueError("NoveltyResearchAgent 返回 JSON 顶层必须是列表")
-        rows = [
-            (
-                _norm_url(item["url"]),
-                (item["doi"] or "").casefold(),
-                item["document_id"],
-                item["cited_by_paper"],
-            )
-            for item in pack
-        ]
-        seen: set[str] = set()
+
+        seen_card_ids: set[str] = set()
+        seen_document_ids: set[str] = set()
         bound: list[EvidenceCard] = []
         for item in data:
             try:
                 card = EvidenceCard.model_validate(item)
             except ValidationError:
                 continue
-            if card.task_id != task.task_id or card.novelty_point_id != task.novelty_point_id:
+            if card.task_id != task.task_id:
                 continue
-            match = _match_pack_source(card, rows)
-            if match is None or card.card_id in seen:
+            if card.novelty_point_id != point.point_id:
                 continue
-            seen.add(card.card_id)
-            bound.append(card.model_copy(update={"cited_by_paper": match[1]}))
+            candidate = _match_pack_source(card, pack)
+            if candidate is None or not _quotes_are_grounded(card, candidate):
+                continue
+            document_id = candidate["document_id"]
+            if card.card_id in seen_card_ids or document_id in seen_document_ids:
+                continue
+            seen_card_ids.add(card.card_id)
+            seen_document_ids.add(document_id)
+            bound.append(card.model_copy(update={"cited_by_paper": None}))
         return bound
 
     @staticmethod
@@ -255,8 +190,6 @@ class NoveltyResearchAgent(LiteratureResearchAgent):
         payload: dict[str, Any],
         fallback_user_prompt: str,
     ) -> Any:
-        """渲染提示词并调用统一模型客户端，把回复解析为 JSON。"""
-
         client = self._client()
         if self._prompts is not None:
             rendered = self._prompts.render(prompt_name, **variables)
@@ -292,38 +225,15 @@ class NoveltyResearchAgent(LiteratureResearchAgent):
     @staticmethod
     def _system_prompt() -> str:
         return (
-            "你是论文查新系统的文献调研 Agent。你负责检索候选文献、阅读摘要或全文、"
-            "与目标论文的查新点逐项比较，并输出 EvidenceCard。"
-            "你不能编造文献、DOI、URL 或证据位置；所有重合和差异判断必须包含"
-            "可追溯来源、原文摘录和位置。"
+            "你是论文查新系统的文献证据分析 Agent。候选文献已经由上游检索系统"
+            "提供。你负责逐篇阅读候选文献，与给定 NoveltyPoint 单独比较，提取技术"
+            "重合、技术差异及可追溯原文证据，并输出 EvidenceCard。你不能自行检索、"
+            "补充或编造候选文献，也不能给出最终新颖性结论。"
         )
 
 
-def _is_english_query(query: str) -> bool:
-    letters = [char for char in query if char.isascii() and char.isalpha()]
-    if not letters:
-        return False
-    return len(letters) / max(1, len(query)) >= 0.5
-
-
-def _point_from_task(task: ResearchTask) -> NoveltyPoint:
-    """从 ResearchTask 重建查新点视图（工作流只传 task，不传 point）。"""
-
-    english = [query for query in task.queries if _is_english_query(query)]
-    return NoveltyPoint(
-        point_id=task.novelty_point_id,
-        claim=task.context or (task.queries[0] if task.queries else "未命名查新点"),
-        claim_en=english[0] if english else "",
-        technical_features_en=english[1:],
-    )
-
-
-def _norm_url(url: str | None) -> str:
-    return (url or "").casefold().rstrip("/")
-
-
 def _normalize_card_list(data: Any) -> Any:
-    """兼容模型输出包装形态：单证据卡对象或含 evidence_cards 键的对象 → 列表。"""
+    """兼容单卡对象和常见的列表包装形态。"""
 
     if isinstance(data, dict):
         for key in ("evidence_cards", "cards"):
@@ -335,36 +245,52 @@ def _normalize_card_list(data: Any) -> Any:
 
 def _match_pack_source(
     card: EvidenceCard,
-    rows: Sequence[tuple[str, str, str, bool]],
-) -> tuple[str, bool] | None:
-    """卡片任一条来源命中候选包（URL 或 DOI 一致）即视为绑定。"""
+    pack: Sequence[dict[str, Any]],
+) -> dict[str, Any] | None:
+    """按 DOI、URL、精确规范化标题的优先级绑定候选文献。"""
 
     for source in card.sources:
-        url = _norm_url(source.url)
-        doi = (source.doi or "").casefold()
-        for pack_url, pack_doi, doc_id, cited in rows:
-            if (url and url == pack_url) or (doi and doi == pack_doi):
-                return doc_id, cited
+        doi = _normalize_doi(source.doi)
+        if doi:
+            for candidate in pack:
+                if doi == _normalize_doi(candidate.get("doi")):
+                    return candidate
+    for source in card.sources:
+        url = _normalize_url(source.url)
+        if url:
+            for candidate in pack:
+                if url == _normalize_url(candidate.get("url")):
+                    return candidate
+    titles = [_normalize_text(source.title) for source in card.sources]
+    titles.append(_normalize_text(card.document_title))
+    for title in filter(None, titles):
+        for candidate in pack:
+            if title == _normalize_text(candidate.get("title", "")):
+                return candidate
     return None
 
 
-def _paper_model_view(paper: PaperInput, *, max_excerpt: int = 5000) -> dict[str, Any]:
-    """论文摘要视图：避免把全文全量塞进模型上下文。"""
-
-    return {
-        "paper_id": paper.paper_id,
-        "title": paper.title,
-        "abstract": paper.abstract,
-        "english_abstract": paper.english_abstract,
-        "keywords_zh": list(paper.keywords_zh),
-        "keywords_en": list(paper.keywords_en),
-        "claimed_contributions": list(paper.claimed_contributions),
-        "references": list(paper.references)[:REFERENCE_VIEW_LIMIT],
-        "full_text_excerpt": _body_excerpt(paper.full_text, max_excerpt),
-    }
+def _quotes_are_grounded(card: EvidenceCard, candidate: dict[str, Any]) -> bool:
+    candidate_text = _normalize_text(
+        f"{candidate.get('abstract', '')} {candidate.get('excerpt', '')}"
+    )
+    quotes = [source.quote for source in card.sources if source.quote]
+    return bool(quotes) and all(
+        _normalize_text(quote) in candidate_text for quote in quotes
+    )
 
 
-def _body_excerpt(full_text: str, max_excerpt: int) -> str:
-    match = re.search(r"(?m)^\s*摘\s*要\s*$", full_text)
-    start = match.end() if match else 0
-    return full_text[start : start + max_excerpt]
+def _normalize_text(value: str) -> str:
+    return re.sub(r"\s+", " ", value).strip().casefold()
+
+
+def _normalize_url(value: str | None) -> str:
+    return (value or "").strip().casefold().rstrip("/")
+
+
+def _normalize_doi(value: str | None) -> str:
+    normalized = (value or "").strip().casefold()
+    for prefix in ("https://doi.org/", "http://doi.org/", "doi:"):
+        if normalized.startswith(prefix):
+            return normalized[len(prefix) :].strip()
+    return normalized
