@@ -28,11 +28,12 @@ class RecordingModelClient:
 TASKS_JSON = json.dumps(
     [
         {
-            "task_id": "TASK-NP-1-R1",
+            "task_id": "MODEL-TASK-ID",
             "novelty_point_id": "NP-1",
-            "queries": ["多智能体协作"],
-            "context": "提出一个测试查新点",
-            "attempt": 1,
+            "task_type": "feature_supplement",
+            "language": "en",
+            "description": "补充多智能体协作特征的英文文献。",
+            "attempt": 99,
         }
     ]
 )
@@ -80,7 +81,7 @@ def make_paper() -> PaperInput:
     )
 
 
-def test_coordinator_renders_prompt_from_library():
+def test_coordinator_plan_is_deterministic_without_model_call():
     client = RecordingModelClient(TASKS_JSON)
     agent = NoveltyCoordinatorAgent(
         model_client=client,
@@ -94,14 +95,34 @@ def test_coordinator_renders_prompt_from_library():
     )
 
     assert brief.novelty_points[0].point_id == "NP-1"
-    assert brief.research_tasks[0].task_id == "TASK-NP-1-R1"
+    assert [(task.task_id, task.language) for task in brief.research_tasks] == [
+        ("T-1", "zh"),
+        ("T-2", "en"),
+    ]
+    assert all(task.task_type == "literature_search" for task in brief.research_tasks)
+    assert all(task.attempt == 1 for task in brief.research_tasks)
     assert brief.paper_summary == "测试论文摘要"
-    messages, options = client.calls[0]
-    system, user = messages[0].content, messages[1].content
-    assert "Coordinator" in system
-    assert '"paper_id": "paper-1"' in user
-    assert "ResearchTask" in user  # schema 动态注入
-    assert options.response_format == {"type": "json_object"}
+    assert client.calls == []
+
+
+def test_coordinator_plan_creates_two_tasks_per_point_without_client():
+    points = [
+        *POINTS,
+        NoveltyPoint(point_id="NP-2", claim="第二个查新点"),
+    ]
+
+    brief = NoveltyCoordinatorAgent().plan(make_paper(), points=points, attempt=3)
+
+    assert [
+        (task.novelty_point_id, task.task_id, task.language)
+        for task in brief.research_tasks
+    ] == [
+        ("NP-1", "T-1", "zh"),
+        ("NP-1", "T-2", "en"),
+        ("NP-2", "T-1", "zh"),
+        ("NP-2", "T-2", "en"),
+    ]
+    assert all(task.attempt == 3 for task in brief.research_tasks)
 
 
 def test_coordinator_plan_fills_keywords_from_paper():
@@ -128,25 +149,11 @@ def test_coordinator_supplement_renders_prompt_from_library():
         paper_summary="测试论文摘要",
         research_problem="测试论文",
         novelty_points=list(POINTS),
+        keywords_zh=["多智能体"],
+        keywords_en=["multi-agent"],
         research_tasks=[],
     )
-    brief_json = {
-        "paper_summary": "测试论文摘要",
-        "research_problem": "测试论文",
-        "novelty_points": [point.model_dump(mode="json") for point in POINTS],
-        "keywords_zh": [],
-        "keywords_en": [],
-        "research_tasks": [
-            {
-                "task_id": "TASK-NP-1-R2",
-                "novelty_point_id": "NP-1",
-                "queries": ["补充检索词"],
-                "context": "补充上下文",
-                "attempt": 2,
-            }
-        ],
-    }
-    client = RecordingModelClient(json.dumps(brief_json))
+    client = RecordingModelClient(TASKS_JSON)
     agent = NoveltyCoordinatorAgent(
         model_client=client,
         prompts=PromptLibrary(PROMPTS_ROOT),
@@ -160,9 +167,16 @@ def test_coordinator_supplement_renders_prompt_from_library():
         attempt=2,
     )
 
-    assert result.research_tasks[0].task_id == "TASK-NP-1-R2"
+    assert result.research_tasks[0].task_id == "T-R2-1"
+    assert result.research_tasks[0].attempt == 2
+    assert result.research_tasks[0].task_type == "feature_supplement"
+    assert result.novelty_points == brief.novelty_points
+    assert result.paper_summary == brief.paper_summary
+    assert result.keywords_zh == brief.keywords_zh
+    assert result.keywords_en == brief.keywords_en
     messages, _ = client.calls[0]
-    assert "证据缺口" in messages[1].content  # supplement.md 模板内容已渲染
+    assert "补检原因" in messages[1].content
+    assert "SearchPlan" in messages[1].content
 
 
 def test_research_renders_prompt_and_validates_cards():
@@ -211,22 +225,20 @@ def test_research_rejects_malformed_card():
 
 def test_agent_without_client_or_registry_raises():
     agent = NoveltyCoordinatorAgent()
-    with pytest.raises(NotImplementedError):
-        agent.plan(
-            make_paper(),
-            points=[],
-            attempt=1,
-        )
+    brief = agent.plan(make_paper(), points=POINTS, attempt=1)
+    assert len(brief.research_tasks) == 2
 
 
-def test_plan_rejects_task_for_unknown_point():
+def test_plan_supplement_rejects_task_for_unknown_point():
     tasks_json = json.dumps(
         [
             {
                 "task_id": "TASK-X",
                 "novelty_point_id": "NP-99",
-                "queries": ["q"],
-                "attempt": 1,
+                "task_type": "literature_search",
+                "language": "en",
+                "description": "补检",
+                "attempt": 2,
             }
         ]
     )
@@ -235,5 +247,18 @@ def test_plan_rejects_task_for_unknown_point():
         prompts=PromptLibrary(PROMPTS_ROOT),
     )
 
+    from novelty_agent_framework.schemas import NoveltyBrief
+
+    brief = NoveltyBrief(
+        paper_summary="摘要",
+        novelty_points=list(POINTS),
+        research_tasks=[],
+    )
     with pytest.raises(ValueError, match="未知查新点"):
-        agent.plan(make_paper(), points=POINTS, attempt=1)
+        agent.plan_supplement(
+            make_paper(),
+            brief=brief,
+            existing_evidence=[],
+            coverage_gaps=["NP-1: 证据不足"],
+            attempt=2,
+        )

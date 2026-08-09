@@ -20,16 +20,7 @@ def test_agent_skeletons_are_importable():
 
 
 def test_coordinator_agent_parses_model_brief():
-    tasks_json = """[
-      {
-        "task_id": "TASK-NP-1-R1",
-        "novelty_point_id": "NP-1",
-        "queries": ["多智能体协作"],
-        "context": "提出一个测试查新点",
-        "attempt": 1
-      }
-    ]"""
-    agent = NoveltyCoordinatorAgent(model_client=FakeModelClient(tasks_json))
+    agent = NoveltyCoordinatorAgent()
     paper = PaperInput(
         paper_id="paper-1",
         title="测试论文",
@@ -52,20 +43,14 @@ def test_coordinator_agent_parses_model_brief():
     )
 
     assert brief.novelty_points[0].point_id == "NP-1"
-    assert brief.research_tasks[0].task_id == "TASK-NP-1-R1"
+    assert [(task.task_id, task.language) for task in brief.research_tasks] == [
+        ("T-1", "zh"),
+        ("T-2", "en"),
+    ]
 
 
-def test_coordinator_agent_accepts_single_task_object():
-    """R1 等模型可能返回单个任务对象而非列表，plan 应兼容。"""
-
-    tasks_json = """{
-      "task_id": "TASK-NP-1-R1",
-      "novelty_point_id": "NP-1",
-      "queries": ["多智能体协作"],
-      "context": "提出一个测试查新点",
-      "attempt": 1
-    }"""
-    agent = NoveltyCoordinatorAgent(model_client=FakeModelClient(tasks_json))
+def test_coordinator_plan_does_not_need_model_client():
+    agent = NoveltyCoordinatorAgent()
     paper = PaperInput(
         paper_id="paper-1",
         title="测试论文",
@@ -83,10 +68,10 @@ def test_coordinator_agent_accepts_single_task_object():
 
     brief = agent.plan(paper, points=points, attempt=1)
 
-    assert brief.research_tasks[0].task_id == "TASK-NP-1-R1"
+    assert len(brief.research_tasks) == 2
 
 
-def test_demo_coordinator_queries_include_english():
+def test_demo_coordinator_creates_zh_and_en_tasks():
     from novelty_agent_framework.agents import DemoCoordinator
 
     paper = PaperInput(
@@ -107,10 +92,11 @@ def test_demo_coordinator_queries_include_english():
 
     brief = DemoCoordinator().plan(paper, points=points, attempt=1)
 
-    assert brief.research_tasks[0].queries == [
-        "中文声明",
-        "中文特征",
-        "english claim",
-        "english feature",
+    assert [
+        (task.task_id, task.task_type, task.language)
+        for task in brief.research_tasks
+    ] == [
+        ("T-1", "literature_search", "zh"),
+        ("T-2", "literature_search", "en"),
     ]
     assert brief.keywords_zh == ["测试论文"]  # 无关键词时兜底标题

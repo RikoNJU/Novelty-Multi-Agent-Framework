@@ -30,7 +30,11 @@ class DemoCoordinator:
         points: Sequence[NoveltyPoint],
         attempt: int,
     ) -> NoveltyBrief:
-        tasks = [self._task_for(point, attempt) for point in points]
+        tasks = [
+            task
+            for point in points
+            for task in self._tasks_for(point, attempt)
+        ]
         return NoveltyBrief(
             paper_summary=paper.abstract or paper.title,
             research_problem=paper.title,
@@ -52,9 +56,10 @@ class DemoCoordinator:
     ) -> NoveltyBrief:
         missing_ids = {gap.split(":", 1)[0] for gap in coverage_gaps}
         tasks = [
-            self._task_for(point, attempt)
+            task
             for point in brief.novelty_points
             if point.point_id in missing_ids
+            for task in self._tasks_for(point, attempt)
         ]
         return brief.model_copy(update={"research_tasks": tasks})
 
@@ -132,17 +137,30 @@ class DemoCoordinator:
         )
 
     @staticmethod
-    def _task_for(point: NoveltyPoint, attempt: int) -> ResearchTask:
-        queries = [point.claim, *point.technical_features]
-        if point.claim_en:
-            queries.append(point.claim_en)
-        queries.extend(feature for feature in point.technical_features_en if feature)
-        return ResearchTask(
-            task_id=f"TASK-{point.point_id}-R{attempt}",
-            novelty_point_id=point.point_id,
-            queries=queries,
-            context=point.claim,
-            attempt=attempt,
+    def _tasks_for(
+        point: NoveltyPoint, attempt: int
+    ) -> tuple[ResearchTask, ResearchTask]:
+        if attempt == 1:
+            task_ids = ("T-1", "T-2")
+        else:
+            task_ids = (f"T-R{attempt}-1", f"T-R{attempt}-2")
+        return (
+            ResearchTask(
+                task_id=task_ids[0],
+                novelty_point_id=point.point_id,
+                task_type="literature_search",
+                language="zh",
+                description="针对该查新点执行中文文献检索。",
+                attempt=attempt,
+            ),
+            ResearchTask(
+                task_id=task_ids[1],
+                novelty_point_id=point.point_id,
+                task_type="literature_search",
+                language="en",
+                description="针对该查新点执行英文文献检索。",
+                attempt=attempt,
+            ),
         )
 
 

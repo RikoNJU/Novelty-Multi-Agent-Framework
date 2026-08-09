@@ -65,47 +65,16 @@ class NoveltyCoordinatorAgent(NoveltyCoordinator):
         points: Sequence[NoveltyPoint],
         attempt: int,
     ) -> NoveltyBrief:
-        """把查新点转化为调研任务并组装查新规划。
+        """按固定中英文双路规则分配首轮任务并组装查新规划。
 
-        查新点由提取 Agent 预先生成；本方法只负责任务分配与 NoveltyBrief 装配。
+        首轮分工是确定性的，不调用模型，也不生成检索词或 SearchPlan。
         """
 
-        payload = {
-            "paper": paper.model_dump(mode="json"),
-            "points": [point.model_dump(mode="json") for point in points],
-            "attempt": attempt,
-        }
-        data = self._complete_json(
-            prompt_name="coordinator/plan",
-            variables={
-                "paper_json": json.dumps(payload["paper"], ensure_ascii=False),
-                "points_json": json.dumps(payload["points"], ensure_ascii=False),
-                "attempt": attempt,
-                "task_schema": json.dumps(
-                    ResearchTask.model_json_schema(), ensure_ascii=False
-                ),
-            },
-            payload=payload,
-            system_prompt=self._system_prompt(),
-            fallback_user_prompt=(
-                "请为给定查新点生成 ResearchTask 列表（JSON 数组）。"
-            ),
-        )
-        data = _normalize_task_list(data)
-        if not isinstance(data, list):
-            raise ValueError("Coordinator plan 输出顶层必须是 ResearchTask 列表")
-        allowed_ids = {point.point_id for point in points}
-        tasks: list[ResearchTask] = []
-        for index, item in enumerate(data):
-            try:
-                task = ResearchTask.model_validate(item)
-            except ValidationError as exc:
-                raise ValueError(f"plan 第 {index + 1} 个任务格式错误：{exc}") from exc
-            if task.novelty_point_id not in allowed_ids:
-                raise ValueError(
-                    f"plan 任务 {task.task_id} 引用了未知查新点 {task.novelty_point_id}"
-                )
-            tasks.append(task)
+        tasks = [
+            task
+            for point in points
+            for task in _initial_tasks_for_point(point, attempt=attempt)
+        ]
         return NoveltyBrief(
             paper_summary=paper.abstract or paper.title,
             research_problem=paper.title,
@@ -152,20 +121,52 @@ class NoveltyCoordinatorAgent(NoveltyCoordinator):
                     payload["coverage_gaps"], ensure_ascii=False
                 ),
                 "attempt": attempt,
-                "brief_schema": json.dumps(
-                    NoveltyBrief.model_json_schema(), ensure_ascii=False
+                "task_schema": json.dumps(
+                    ResearchTask.model_json_schema(), ensure_ascii=False
                 ),
             },
             payload=payload,
             system_prompt=self._system_prompt(),
             fallback_user_prompt=(
-                "请只针对 coverage_gaps 生成补充调研任务。保持原有 novelty_points "
-                "稳定，不要随意新增或改写查新点。输出完整 NoveltyBrief JSON。"
+                "请只针对 coverage_gaps 生成 ResearchTask 列表。只能引用已有"
+                " novelty_point_id，不生成检索词、SearchPlan 或数据库查询。"
             ),
         )
-        if not isinstance(data, dict):
-            raise ValueError("Coordinator plan_supplement 输出顶层必须是对象")
-        return self._validate_brief(data, action="生成补充查新计划")
+        data = _normalize_task_list(data)
+        if not isinstance(data, list):
+            raise ValueError(
+                "Coordinator plan_supplement 输出顶层必须是 ResearchTask 列表"
+            )
+
+        allowed_ids = {point.point_id for point in brief.novelty_points}
+        task_counts: dict[str, int] = {}
+        supplemental_tasks: list[ResearchTask] = []
+        for index, item in enumerate(data):
+            try:
+                task = ResearchTask.model_validate(item)
+            except ValidationError as exc:
+                raise ValueError(
+                    f"plan_supplement 第 {index + 1} 个任务格式错误：{exc}"
+                ) from exc
+            if task.novelty_point_id not in allowed_ids:
+                raise ValueError(
+                    "plan_supplement 任务引用了未知查新点 "
+                    f"{task.novelty_point_id}"
+                )
+            task_counts[task.novelty_point_id] = (
+                task_counts.get(task.novelty_point_id, 0) + 1
+            )
+            supplemental_tasks.append(
+                task.model_copy(
+                    update={
+                        "task_id": (
+                            f"T-R{attempt}-{task_counts[task.novelty_point_id]}"
+                        ),
+                        "attempt": attempt,
+                    }
+                )
+            )
+        return brief.model_copy(update={"research_tasks": supplemental_tasks})
 
     def synthesize(
         self,
@@ -309,3 +310,30 @@ def _normalize_task_list(data: Any) -> Any:
                 return data[key]
         return [data]
     return data
+
+
+def _initial_tasks_for_point(
+    point: NoveltyPoint,
+    *,
+    attempt: int,
+) -> tuple[ResearchTask, ResearchTask]:
+    """为单个查新点固定创建中文和英文两条首轮任务。"""
+
+    return (
+        ResearchTask(
+            task_id="T-1",
+            novelty_point_id=point.point_id,
+            task_type="literature_search",
+            language="zh",
+            description="针对该查新点执行中文文献检索。",
+            attempt=attempt,
+        ),
+        ResearchTask(
+            task_id="T-2",
+            novelty_point_id=point.point_id,
+            task_type="literature_search",
+            language="en",
+            description="针对该查新点执行英文文献检索。",
+            attempt=attempt,
+        ),
+    )
