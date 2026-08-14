@@ -22,6 +22,23 @@ from ..schemas import (
     SearchStrategy,
 )
 from ..ports import FullTextTool, MetadataTool, SearchHit
+from ..tools.adapter import QueryAdapter, QueryAdapterError
+
+
+class DemoQueryAdapter(QueryAdapter):
+    """默认演示工作流使用的数据库无关查询编译器。"""
+
+    database = "demo"
+
+    def _render_concept(self, concept: SearchConcept) -> str:
+        terms: list[str] = []
+        for raw_term in concept.terms:
+            term = " ".join(raw_term.split())
+            if not term:
+                raise QueryAdapterError(f"Concept {concept.concept_id} 包含空 term")
+            if term not in terms:
+                terms.append(term)
+        return f"DEMO_CONCEPT({' | '.join(terms)})"
 
 
 class DemoCoordinator:

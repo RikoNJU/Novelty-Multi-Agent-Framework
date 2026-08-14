@@ -25,6 +25,7 @@ from ..agents import (
     DefaultEvidenceValidator,
     DemoCoordinator,
     DemoPointExtractor,
+    DemoQueryAdapter,
     DemoResearchAgent,
     DemoSearchPlanner,
     DemoSearchTool,
@@ -67,15 +68,12 @@ class NoveltyWorkflow:
         当前项目采用固定 Agent 组合，因此默认装配逻辑直接放在工作流类中。
         """
 
-        # 延迟导入使 Workflow 模块本身不依赖任何具体数据库实现。
-        from ..tools.arxiv import ArxivQueryAdapter
-
         return cls(
             NoveltyWorkflowServices(
                 coordinator=DemoCoordinator(),
                 research_agent=DemoResearchAgent(),
                 search_planner=DemoSearchPlanner(),
-                query_adapter=ArxivQueryAdapter(),
+                query_adapter=DemoQueryAdapter(),
                 point_extractor=DemoPointExtractor(),
                 search_tool=DemoSearchTool(),
             )

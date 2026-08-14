@@ -1,11 +1,14 @@
 import json
 
+import pytest
+
 from novelty_agent_framework.agents import (
     NoveltyCoordinatorAgent,
     NoveltyResearchAgent,
     SearchPlannerAgent,
 )
 from novelty_agent_framework.tools import ArxivQueryAdapter
+from novelty_agent_framework.tools import RetrievalSourceRegistry
 from novelty_agent_framework.config import (
     build_model_registry,
     build_workflow,
@@ -125,3 +128,35 @@ def test_build_workflow_injects_arxiv_tools_when_enabled():
     assert workflow.services.full_text_tool is not None
     assert workflow.services.metadata_tool is not None
     assert workflow.config.candidate_limit_per_task == 5
+
+
+@pytest.mark.parametrize(
+    ("retrieval", "message"),
+    [
+        ({"active_source": "null_catalog", "sources": {}}, "未在.*配置"),
+        (
+            {
+                "active_source": "null_catalog",
+                "sources": {"null_catalog": {"enabled": False}},
+            },
+            "已被禁用",
+        ),
+        ({"active_source": "null_catalog", "sources": []}, "必须是对象映射"),
+    ],
+)
+def test_active_source_must_exist_and_be_enabled(retrieval, message):
+    config = json.loads(json.dumps(BASE_CONFIG))
+    config["retrieval"] = retrieval
+    with pytest.raises(ValueError, match=message):
+        build_workflow(config)
+
+
+def test_registry_does_not_mask_builder_key_error():
+    registry = RetrievalSourceRegistry()
+
+    def broken_builder(config):
+        raise KeyError("required_setting")
+
+    registry.register("broken", broken_builder)
+    with pytest.raises(KeyError, match="required_setting"):
+        registry.build("broken", {})

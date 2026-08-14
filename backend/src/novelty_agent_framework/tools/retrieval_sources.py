@@ -62,10 +62,11 @@ class RetrievalSourceRegistry:
     def build(self, source_id: str, config: Mapping[str, Any]) -> RetrievalSource:
         key = source_id.strip().lower()
         try:
-            source = self._builders[key](config)
+            builder = self._builders[key]
         except KeyError as exc:
             supported = ", ".join(sorted(self._builders))
             raise ValueError(f"未知检索来源：{source_id!r}；已注册：{supported}") from exc
+        source = builder(config)
         if source.source_id != key:
             raise ValueError(f"构建器 {key!r} 返回了来源 {source.source_id!r}")
         return source

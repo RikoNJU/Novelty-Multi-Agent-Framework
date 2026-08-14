@@ -141,7 +141,15 @@ def build_retrieval_source(
     retrieval = _normalized_retrieval_config(config)
     source_id = str(retrieval.get("active_source", "arxiv"))
     sources = retrieval.get("sources", {})
-    source_config = sources.get(source_id, {}) if isinstance(sources, Mapping) else {}
+    if not isinstance(sources, Mapping):
+        raise ValueError("retrieval.sources 必须是对象映射")
+    if source_id not in sources:
+        raise ValueError(f"活动检索来源 {source_id!r} 未在 retrieval.sources 中配置")
+    source_config = sources[source_id]
+    if not isinstance(source_config, Mapping):
+        raise ValueError(f"retrieval.sources.{source_id} 必须是对象映射")
+    if not source_config.get("enabled", False):
+        raise ValueError(f"活动检索来源 {source_id!r} 已被禁用")
     registry = source_registry or build_source_registry()
     return registry.build(source_id, source_config)
 
@@ -208,6 +216,9 @@ def _normalized_retrieval_config(config: Mapping[str, Any]) -> dict[str, Any]:
             )
         return retrieval
     arxiv = dict(config.get("tools", {}).get("arxiv", {}))
+    # 旧配置没有来源选择语义：保留“Adapter 可用、网络工具关闭”的兼容行为。
+    arxiv["adapter_only"] = not arxiv.get("enabled", False)
+    arxiv["enabled"] = True
     return {
         "active_source": "arxiv",
         "candidate_limit_per_task": arxiv.get("candidate_limit", 8),

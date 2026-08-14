@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from novelty_agent_framework.agents import DemoCoordinator, DemoPointExtractor
+from novelty_agent_framework.agents import DemoCoordinator, DemoPointExtractor, DemoQueryAdapter
 from novelty_agent_framework.ports import SearchHit
 from novelty_agent_framework.schemas import (
     ConclusionLevel,
@@ -43,6 +43,10 @@ def make_paper(claims: int = 1) -> PaperInput:
         full_text="测试论文正文",
         claimed_contributions=[f"创新声明 {index}" for index in range(1, claims + 1)],
     )
+
+
+def test_default_workflow_uses_database_independent_demo_adapter() -> None:
+    assert isinstance(NoveltyWorkflow.default().services.query_adapter, DemoQueryAdapter)
 
 
 class RecordingPlanner:

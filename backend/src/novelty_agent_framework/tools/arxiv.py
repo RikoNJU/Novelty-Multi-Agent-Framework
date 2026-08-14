@@ -290,7 +290,7 @@ def build_arxiv_source(config: Mapping[str, Any]) -> RetrievalSource:
     """从来源专用配置构建自洽的 arXiv 能力包。"""
 
     enabled = bool(config.get("enabled", False))
-    if not enabled:
+    if not enabled or config.get("adapter_only", False):
         return RetrievalSource(source_id="arxiv", query_adapter=ArxivQueryAdapter())
     client = httpx.Client(
         timeout=float(config.get("timeout", 20.0)), follow_redirects=True
