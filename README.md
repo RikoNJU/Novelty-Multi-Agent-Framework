@@ -58,7 +58,17 @@ START
 - Workflow 负责串联、由紧到松执行查询、候选去重、补检和终止控制；
 - Task 的工作流身份是 `(novelty_point_id, task_id)`，因为 `task_id` 只在单个查新点内唯一。
 
-当前真实 Backend 是 `ArxivQueryAdapter + ArxivSearchTool`，尚未实现 CNKI、万方或多数据库路由。
+数据源通过 `RetrievalSourceRegistry` 注册并由 `retrieval.active_source` 选择，Workflow、Agent 与领域 Schema 不包含数据库分支。
+
+生产/实验数据源：
+
+- arXiv
+
+测试数据源：
+
+- `null_catalog`（离线 Null Object，永远返回空结果）
+
+`null_catalog` 只验证数据源注册、配置选择、QueryAdapter/SearchTool 替换和空结果处理；它不模拟真实文献数据库，不验证 FullTextTool、MetadataTool 的跨来源兼容性，也不用于正式查新。用户自制本地数据库导入仍是 `experiments/` 下未实现、未接入工作流的探索功能。
 
 ## 项目结构
 
@@ -143,7 +153,7 @@ from novelty_agent_framework.config import build_workflow, load_config
 from novelty_agent_framework.schemas import PaperInput
 
 config = load_config()
-config["tools"]["arxiv"]["enabled"] = True
+config["retrieval"]["sources"]["arxiv"]["enabled"] = True
 workflow = build_workflow(config)
 result = workflow.run(PaperInput.model_validate(paper_data))
 ```

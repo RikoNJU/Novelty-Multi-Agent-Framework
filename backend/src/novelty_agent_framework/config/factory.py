@@ -13,8 +13,6 @@ import os
 from pathlib import Path
 from typing import Any, Mapping
 
-import httpx
-
 from backend.env import ModelProfile, ModelRegistry, PromptLibrary
 
 from ..agents import (
@@ -24,10 +22,9 @@ from ..agents import (
     SearchPlannerAgent,
 )
 from ..tools import (
-    AdapterFactory,
-    ArxivFullTextTool,
-    ArxivMetadataTool,
-    ArxivSearchTool,
+    RetrievalSource,
+    RetrievalSourceRegistry,
+    build_null_catalog_source,
 )
 from ..workflows import NoveltyWorkflow, NoveltyWorkflowConfig, NoveltyWorkflowServices
 
@@ -75,7 +72,7 @@ def build_agents(
     config: Mapping[str, Any],
     registry: ModelRegistry,
     prompts: PromptLibrary,
-    arxiv_cfg: Mapping[str, Any] | None = None,
+    retrieval_cfg: Mapping[str, Any] | None = None,
 ) -> tuple[
     NoveltyCoordinatorAgent,
     NoveltyResearchAgent,
@@ -87,7 +84,7 @@ def build_agents(
     research_cfg = agents_cfg.get("research", {})
     point_extractor_cfg = agents_cfg.get("point_extractor", {})
     search_planner_cfg = agents_cfg.get("search_planner", {})
-    arxiv_cfg = dict(arxiv_cfg or {})
+    retrieval_cfg = dict(retrieval_cfg or {})
 
     coordinator = NoveltyCoordinatorAgent(
         prompts=prompts,
@@ -100,7 +97,7 @@ def build_agents(
         models=registry,
         model_alias=research_cfg.get("model", "research"),
         temperature=float(research_cfg.get("temperature", 0.2)),
-        candidate_excerpt_chars=int(arxiv_cfg.get("candidate_excerpt_chars", 2000)),
+        candidate_excerpt_chars=int(retrieval_cfg.get("candidate_excerpt_chars", 2000)),
     )
     point_extractor = NoveltyPointExtractorAgent(
         prompts=prompts,
@@ -119,30 +116,48 @@ def build_agents(
     return coordinator, research, point_extractor, search_planner
 
 
-def build_tools(
-    config: Mapping[str, Any],
-) -> tuple[ArxivSearchTool | None, ArxivFullTextTool | None, ArxivMetadataTool | None]:
-    """按配置构建 arXiv 三工具；未启用时返回 (None, None, None) 保持现状。"""
+def build_source_registry() -> RetrievalSourceRegistry:
+    """在组合根注册具体来源；Registry 本身没有来源条件分支。"""
 
-    arxiv_cfg = config.get("tools", {}).get("arxiv", {})
-    if not arxiv_cfg.get("enabled", False):
-        return None, None, None
-    client = httpx.Client(
-        timeout=float(arxiv_cfg.get("timeout", 20.0)),
-        follow_redirects=True,
-    )
-    search = ArxivSearchTool(
-        client=client,
-        min_interval=float(arxiv_cfg.get("min_interval", 3.0)),
-        max_retries=int(arxiv_cfg.get("max_retries", 2)),
-    )
-    return search, ArxivFullTextTool(client=client), ArxivMetadataTool(client=client)
+    registry = RetrievalSourceRegistry()
+    registry.register("arxiv", _build_arxiv_source_lazily)
+    registry.register("null_catalog", build_null_catalog_source)
+    return registry
+
+
+def _build_arxiv_source_lazily(config: Mapping[str, Any]) -> RetrievalSource:
+    """仅在 arXiv 赢得 active_source 选择后导入其具体实现。"""
+
+    from ..tools.arxiv import build_arxiv_source
+
+    return build_arxiv_source(config)
+
+
+def build_retrieval_source(
+    config: Mapping[str, Any],
+    *,
+    source_registry: RetrievalSourceRegistry | None = None,
+) -> RetrievalSource:
+    retrieval = _normalized_retrieval_config(config)
+    source_id = str(retrieval.get("active_source", "arxiv"))
+    sources = retrieval.get("sources", {})
+    source_config = sources.get(source_id, {}) if isinstance(sources, Mapping) else {}
+    registry = source_registry or build_source_registry()
+    return registry.build(source_id, source_config)
+
+
+def build_tools(config: Mapping[str, Any]):
+    """兼容旧调用者，返回活动来源的三项检索工具。"""
+
+    source = build_retrieval_source(config)
+    return source.search_tool, source.full_text_tool, source.metadata_tool
 
 
 def build_workflow(
     config: Mapping[str, Any] | None = None,
     *,
     config_path: str | Path | None = None,
+    source_registry: RetrievalSourceRegistry | None = None,
 ) -> NoveltyWorkflow:
     """从配置构建完整工作流；``config`` 优先于 ``config_path``。"""
 
@@ -151,11 +166,11 @@ def build_workflow(
 
     registry = build_model_registry(raw)
     prompts = build_prompt_library()
-    arxiv_cfg = raw.get("tools", {}).get("arxiv", {})
+    retrieval_cfg = _normalized_retrieval_config(raw)
     coordinator, research, point_extractor, search_planner = build_agents(
-        raw, registry, prompts, arxiv_cfg=arxiv_cfg
+        raw, registry, prompts, retrieval_cfg=retrieval_cfg
     )
-    search_tool, full_text_tool, metadata_tool = build_tools(raw)
+    source = build_retrieval_source(raw, source_registry=source_registry)
 
     workflow_cfg = raw.get("workflow", {})
     return NoveltyWorkflow(
@@ -163,11 +178,11 @@ def build_workflow(
             coordinator=coordinator,
             research_agent=research,
             search_planner=search_planner,
-            query_adapter=AdapterFactory.create("arxiv"),
+            query_adapter=source.query_adapter,
             point_extractor=point_extractor,
-            search_tool=search_tool,
-            full_text_tool=full_text_tool,
-            metadata_tool=metadata_tool,
+            search_tool=source.search_tool,
+            full_text_tool=source.full_text_tool,
+            metadata_tool=source.metadata_tool,
         ),
         config=NoveltyWorkflowConfig(
             max_rounds=int(workflow_cfg.get("max_rounds", 2)),
@@ -175,9 +190,30 @@ def build_workflow(
             minimum_evidence_per_point=int(
                 workflow_cfg.get("minimum_evidence_per_point", 1)
             ),
-            candidate_limit_per_task=int(arxiv_cfg.get("candidate_limit", 8)),
+            candidate_limit_per_task=int(retrieval_cfg.get("candidate_limit_per_task", 8)),
         ),
     )
+
+
+def _normalized_retrieval_config(config: Mapping[str, Any]) -> dict[str, Any]:
+    """读取新配置，并把历史 ``tools.arxiv`` 形状映射到通用结构。"""
+
+    if "retrieval" in config:
+        retrieval = copy.deepcopy(dict(config.get("retrieval", {})))
+        # 过渡期允许旧开关显式启用 arXiv，避免既有部署静默失效。
+        legacy_arxiv = config.get("tools", {}).get("arxiv", {})
+        if legacy_arxiv.get("enabled"):
+            retrieval.setdefault("sources", {}).setdefault("arxiv", {}).update(
+                legacy_arxiv
+            )
+        return retrieval
+    arxiv = dict(config.get("tools", {}).get("arxiv", {}))
+    return {
+        "active_source": "arxiv",
+        "candidate_limit_per_task": arxiv.get("candidate_limit", 8),
+        "candidate_excerpt_chars": arxiv.get("candidate_excerpt_chars", 2000),
+        "sources": {"arxiv": arxiv},
+    }
 
 
 def _apply_env_overrides(config: dict[str, Any]) -> None:

@@ -105,32 +105,10 @@ class QueryAdapter(ABC):
         return " ".join(output).replace("( ", "(").replace(" )", ")")
 
 
-class ArxivQueryAdapter(QueryAdapter):
-    """把语义 Concept 编译为 arXiv ``all:`` 字段查询。"""
-
-    database = "arxiv"
-
-    def _render_concept(self, concept: SearchConcept) -> str:
-        terms: list[str] = []
-        seen: set[str] = set()
-        for raw_term in concept.terms:
-            term = " ".join(raw_term.split())
-            if not term:
-                raise QueryAdapterError(f"Concept {concept.concept_id} 包含空 term")
-            if term not in seen:
-                seen.add(term)
-                terms.append(term)
-
-        rendered = [f'all:"{_escape_quoted_term(term)}"' for term in terms]
-        if len(rendered) == 1:
-            return rendered[0]
-        return f"({' OR '.join(rendered)})"
-
-
 class AdapterFactory:
     """按数据库名称创建查询适配器。"""
 
-    _adapters: dict[str, type[QueryAdapter]] = {"arxiv": ArxivQueryAdapter}
+    _adapters: dict[str, type[QueryAdapter]] = {}
 
     @classmethod
     def create(cls, database: str) -> QueryAdapter:
@@ -155,6 +133,11 @@ def compile_search_plan(
 ) -> list[CompiledQuery]:
     """通过已注册 Adapter 编译 SearchPlan，不执行查询。"""
 
+    # 兼容旧的默认 arXiv API；延迟加载保证通用模块导入不依赖具体实现。
+    if database.strip().lower() == "arxiv" and "arxiv" not in AdapterFactory._adapters:
+        from .arxiv import ArxivQueryAdapter
+
+        AdapterFactory.register("arxiv", ArxivQueryAdapter)
     return list(AdapterFactory.create(database).compile(plan))
 
 

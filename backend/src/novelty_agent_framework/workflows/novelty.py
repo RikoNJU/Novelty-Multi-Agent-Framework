@@ -43,7 +43,7 @@ from ..schemas import (
     SearchPlan,
     WorkflowIssue,
 )
-from ..tools import ArxivQueryAdapter, CompiledQuery
+from ..tools.adapter import CompiledQuery
 from .state import NoveltyState, NoveltyWorkflowConfig, NoveltyWorkflowServices
 
 T = TypeVar("T")
@@ -66,6 +66,9 @@ class NoveltyWorkflow:
 
         当前项目采用固定 Agent 组合，因此默认装配逻辑直接放在工作流类中。
         """
+
+        # 延迟导入使 Workflow 模块本身不依赖任何具体数据库实现。
+        from ..tools.arxiv import ArxivQueryAdapter
 
         return cls(
             NoveltyWorkflowServices(

@@ -9,7 +9,8 @@ from __future__ import annotations
 import re
 import time
 import xml.etree.ElementTree as ET
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
+from typing import Any
 from html.parser import HTMLParser
 from urllib.parse import urlencode
 
@@ -17,7 +18,9 @@ import httpx
 import pymupdf
 
 from ..ports import FullText, FullTextTool, MetadataTool, SearchHit, SearchTool
-from ..schemas import EvidenceSource
+from ..schemas import EvidenceSource, SearchConcept
+from .adapter import QueryAdapter, QueryAdapterError
+from .retrieval_sources import RetrievalSource
 
 ARXIV_QUERY_URL = "https://export.arxiv.org/api/query"
 ARXIV_ABS_URL = "https://arxiv.org/abs/"
@@ -28,6 +31,29 @@ ATOM_NS = "{http://www.w3.org/2005/Atom}"
 ARXIV_NS = "{http://arxiv.org/schemas/atom}"
 
 _VERSION_RE = re.compile(r"v\d+$")
+
+
+class ArxivQueryAdapter(QueryAdapter):
+    """把通用检索 Concept 编译为 arXiv ``all:`` 查询。"""
+
+    database = "arxiv"
+
+    def _render_concept(self, concept: SearchConcept) -> str:
+        terms: list[str] = []
+        seen: set[str] = set()
+        for raw_term in concept.terms:
+            term = " ".join(raw_term.split())
+            if not term:
+                raise QueryAdapterError(f"Concept {concept.concept_id} 包含空 term")
+            if term not in seen:
+                seen.add(term)
+                terms.append(term)
+        rendered = [f'all:"{_escape_query_term(term)}"' for term in terms]
+        return rendered[0] if len(rendered) == 1 else f"({' OR '.join(rendered)})"
+
+
+def _escape_query_term(term: str) -> str:
+    return term.replace("\\", "\\\\").replace('"', '\\"')
 
 
 def strip_version(arxiv_id: str) -> str:
@@ -64,6 +90,8 @@ def parse_entry(entry: ET.Element) -> SearchHit:
 
 class ArxivSearchTool(SearchTool):
     """arXiv 检索薄适配器：单查询、Atom 解析、3 秒限流、5xx 重试。"""
+
+    source_id = "arxiv"
 
     def __init__(
         self,
@@ -137,6 +165,8 @@ class _HTMLTextExtractor(HTMLParser):
 
 class ArxivFullTextTool(FullTextTool):
     """arXiv 全文获取：HTML 优先，PDF（PyMuPDF）兜底，失败返回 None。"""
+
+    source_id = "arxiv"
 
     def __init__(
         self,
@@ -216,6 +246,8 @@ class ArxivFullTextTool(FullTextTool):
 class ArxivMetadataTool(MetadataTool):
     """arXiv 元数据核验：用 id_list 精确查询，返回规范 EvidenceSource。"""
 
+    source_id = "arxiv"
+
     def __init__(
         self,
         *,
@@ -252,3 +284,25 @@ class ArxivMetadataTool(MetadataTool):
             return None
         hit = parse_entry(entries[0])
         return EvidenceSource(title=hit.title, doi=hit.doi, url=hit.url)
+
+
+def build_arxiv_source(config: Mapping[str, Any]) -> RetrievalSource:
+    """从来源专用配置构建自洽的 arXiv 能力包。"""
+
+    enabled = bool(config.get("enabled", False))
+    if not enabled:
+        return RetrievalSource(source_id="arxiv", query_adapter=ArxivQueryAdapter())
+    client = httpx.Client(
+        timeout=float(config.get("timeout", 20.0)), follow_redirects=True
+    )
+    return RetrievalSource(
+        source_id="arxiv",
+        query_adapter=ArxivQueryAdapter(),
+        search_tool=ArxivSearchTool(
+            client=client,
+            min_interval=float(config.get("min_interval", 3.0)),
+            max_retries=int(config.get("max_retries", 2)),
+        ),
+        full_text_tool=ArxivFullTextTool(client=client),
+        metadata_tool=ArxivMetadataTool(client=client),
+    )
