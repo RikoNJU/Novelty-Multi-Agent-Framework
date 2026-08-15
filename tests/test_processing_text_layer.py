@@ -12,7 +12,7 @@ EXPECTED_TITLE = "面向大规模动态图的图神经网络优化机制研究"
 
 
 def test_text_layer_full_flow():
-    doc = DefaultPaperProcessor().process(PDF)
+    doc = DefaultPaperProcessor(parser="text_layer").process(PDF)
 
     assert doc.source == "text_layer"
     assert doc.paper_id == "MF2033k6lC"
@@ -27,7 +27,7 @@ def test_text_layer_full_flow():
 
 
 def test_english_abstract_and_keywords_structured():
-    doc = DefaultPaperProcessor().process(PDF)
+    doc = DefaultPaperProcessor(parser="text_layer").process(PDF)
 
     assert "graph representation learning" in doc.english_abstract
     assert doc.keywords_zh == ["图表示学习", "深度学习", "图神经网络", "分布式技术"]
@@ -40,7 +40,7 @@ def test_english_abstract_and_keywords_structured():
 
 
 def test_to_paper_input_roundtrip():
-    processor = DefaultPaperProcessor()
+    processor = DefaultPaperProcessor(parser="text_layer")
     doc = processor.process(PDF)
     compatible = processor.to_paper_input(doc)
     data = compatible.model_dump(mode="json")
@@ -88,7 +88,7 @@ def test_paper_input_backward_and_forward_compatible():
 
 
 def test_cli_writes_paper_workspace(tmp_path):
-    assert cli_main(["--input", PDF, "--output", str(tmp_path)]) == 0
+    assert cli_main(["--input", PDF, "--output", str(tmp_path), "--parser", "text_layer"]) == 0
 
     workspace = tmp_path / "MF2033k6lC"
     compatible = workspace / "paper-input" / "others" / "paper.json"

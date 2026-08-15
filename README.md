@@ -142,11 +142,46 @@ novelty-demo --input examples/paper.json --output /tmp/novelty-result.json
 
 ### PDF 处理
 
+PDF 解析默认优先使用 MinerU（独立 `mineru` conda 环境，Python API 桥接），
+MinerU 不可用或质量不足时自动回退到原有文本层 + DeepSeek-OCR。
+
 ```bash
+# 先准备 MinerU 独立环境（只需一次）
+conda create -n mineru python=3.11 -y
+conda activate mineru
+pip install -U "mineru[core]==3.4.5"
+
+# 默认走 MinerU，失败自动回退
 python -m novelty_agent_framework.processing.cli \
   --input examples/MF2033k6lC.pdf \
   --output outputs
+
+# 强制走旧文本层/OCR
+python -m novelty_agent_framework.processing.cli \
+  --input examples/MF2033k6lC.pdf \
+  --output outputs --parser text_layer
 ```
+
+MinerU 解析出的图片、表格、公式会以结构化 JSON 保存到
+`outputs/<paper_id>/paper-input/others/paper.json` 和
+`outputs/<paper_id>/paper-input/content-list.json`：
+
+```json
+{
+  "images": [
+    {"image_id": "image-1-1", "kind": "image", "page": 1, "path": "images/xxx.jpg", "caption": "图 1", "footnote": "", "bbox": []}
+  ],
+  "tables": [
+    {"table_id": "table-1-1", "page": 1, "caption": "表 1", "footnote": "", "body": "<table>...</table>", "body_format": "html", "bbox": []}
+  ],
+  "equations": [
+    {"equation_id": "equation-1-1", "page": 1, "latex": "x = y", "bbox": []}
+  ]
+}
+```
+
+图片文件会复制到 `outputs/<paper_id>/paper-input/images/`，JSON 中的 `path`
+是对应 paper 工作区的相对路径（如 `images/000_xxx.jpg`）。
 
 ### 配置驱动的真实工作流
 

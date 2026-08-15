@@ -36,7 +36,7 @@ PAGE2 = "## 结论\n结论内容。\n参考文献\n[1] 作者1. 标题1.\n[2] �
 def test_ocr_path_full_flow(tmp_path):
     pdf = make_two_page_pdf(tmp_path)
     client = FakeOcrClient([PAGE1, PAGE2])
-    doc = DefaultPaperProcessor(ocr_client=client).process(pdf, force_ocr=True)
+    doc = DefaultPaperProcessor(parser="ocr", ocr_client=client).process(pdf, force_ocr=True)
 
     assert doc.source == "ocr"
     assert len(doc.pages) == 2

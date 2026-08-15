@@ -7,13 +7,18 @@ import json
 from novelty_agent_framework.persistence import (
     paper_workspace,
     persist_evidence_cards,
+    persist_paper_input,
     persist_report,
     persist_retrieval_plans,
 )
 from novelty_agent_framework.schemas import (
     EvidenceCard,
     EvidenceSource,
+    PaperDocument,
+    PaperEquation,
+    PaperImage,
     PaperInput,
+    PaperTable,
     NoveltyReport,
     RejectedEvidence,
     ResearchTask,
@@ -57,6 +62,51 @@ def test_workspace_creates_required_directories(tmp_path) -> None:
     assert (workspace / "paper-input" / "images").is_dir()
     assert (workspace / "paper-input" / "others").is_dir()
     assert (workspace / "report").is_dir()
+
+
+def test_persist_paper_input_keeps_structured_blocks(tmp_path) -> None:
+    image_src = tmp_path / "source-images" / "a.jpg"
+    image_src.parent.mkdir(parents=True)
+    image_src.write_bytes(b"fake-image")
+
+    document = PaperDocument(
+        paper_id="structured-paper",
+        title="Structured",
+        full_text="# Page 1\nbody",
+        source="mineru",
+        images=[PaperImage(image_id="image-1-1", kind="image", page=1, path=str(image_src))],
+        tables=[PaperTable(table_id="table-1-1", page=1, body="<table></table>")],
+        equations=[PaperEquation(equation_id="equation-1-1", page=1, latex="x=1")],
+    )
+    paper = PaperInput(
+        paper_id=document.paper_id,
+        title=document.title,
+        full_text=document.full_text,
+        images=document.images,
+        tables=document.tables,
+        equations=document.equations,
+    )
+
+    workspace = persist_paper_input(document, paper, output_root=tmp_path)
+    content_list = json.loads(
+        (workspace / "paper-input" / "content-list.json").read_text(encoding="utf-8")
+    )
+    paper_json = json.loads(
+        (workspace / "paper-input" / "others" / "paper.json").read_text(encoding="utf-8")
+    )
+
+    assert len(content_list["images"]) == 1
+    assert content_list["images"][0]["path"] == "images/000_a.jpg"
+    assert (workspace / "paper-input" / "images" / "000_a.jpg").exists()
+    assert len(content_list["tables"]) == 1
+    assert content_list["tables"][0]["body"] == "<table></table>"
+    assert len(content_list["equations"]) == 1
+    assert content_list["equations"][0]["latex"] == "x=1"
+
+    assert len(paper_json["images"]) == 1
+    assert paper_json["images"][0]["path"] == "images/000_a.jpg"
+    assert len(paper_json["tables"]) == 1
+    assert len(paper_json["equations"]) == 1
 
 
 def test_retrieval_plans_group_tasks_by_novelty_point_order(tmp_path) -> None:

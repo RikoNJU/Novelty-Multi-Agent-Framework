@@ -23,6 +23,12 @@ def normalize_pages(pages: list[PaperPage], source: str) -> list[PaperPage]:
             for page in pages
         ]
 
+    if source == "mineru":
+        return [
+            PaperPage(page=page.page, text=clean_text(_clean_mineru_text(page.text)))
+            for page in pages
+        ]
+
     texts = [page.text for page in pages]
     texts = _strip_repeated_lines(texts)
     texts = [_join_hyphenated_lines(text) for text in texts]
@@ -37,6 +43,15 @@ def normalize_ocr_text(text: str) -> str:
 
     text = _OCR_MARKER.sub("", text)
     return _dedupe_repeats(text)
+
+
+def _clean_mineru_text(text: str) -> str:
+    """MinerU 文本规整：去掉图片链接、列表符号和明显的 Markdown 残留。"""
+
+    text = re.sub(r"!\[[^\]]*\]\([^)]*\)", "", text)
+    text = re.sub(r"(?m)^\s*[-*+]\s+", "", text)
+    text = _join_hyphenated_lines(text)
+    return text
 
 
 def _dedupe_repeats(text: str) -> str:

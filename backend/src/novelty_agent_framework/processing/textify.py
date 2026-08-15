@@ -11,7 +11,7 @@ import pymupdf
 
 from backend.env import ChatMessage, ImageContentPart, ModelClient
 
-from ..schemas import PaperPage
+from ..schemas import PaperEquation, PaperImage, PaperPage, PaperTable
 
 OCR_PROMPT = (
     "请识别图片中的全部文字并输出为 markdown，保留段落与结构，不要省略任何文字。"
@@ -21,8 +21,11 @@ OCR_PROMPT = (
 @dataclass(frozen=True)
 class TextifyResult:
     pages: tuple[PaperPage, ...]
-    source: str  # "text_layer" | "ocr"
+    source: str  # "text_layer" | "ocr" | "mineru"
     warnings: tuple[str, ...]
+    images: tuple[PaperImage, ...] = ()
+    tables: tuple[PaperTable, ...] = ()
+    equations: tuple[PaperEquation, ...] = ()
 
 
 def assemble_marked_text(pages: Sequence[PaperPage]) -> str:

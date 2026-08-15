@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import re
+import shutil
 from collections.abc import Iterable
 from pathlib import Path
 from typing import Any, Mapping, Sequence
@@ -59,6 +60,9 @@ def persist_paper_input(
     input_dir = workspace / "paper-input"
     (input_dir / "full.md").write_text(document.full_text + "\n", encoding="utf-8")
 
+    document.images = _copy_paper_images(document.images, input_dir / "images")
+    paper.images = list(document.images)
+
     content_list = {
         "paper_id": document.paper_id,
         "title": document.title,
@@ -77,6 +81,9 @@ def persist_paper_input(
         "reference_count": len(document.references),
         "parse_warnings": document.parse_warnings,
         "workflow_input": "others/paper.json",
+        "images": [item.model_dump(mode="json") for item in document.images],
+        "tables": [item.model_dump(mode="json") for item in document.tables],
+        "equations": [item.model_dump(mode="json") for item in document.equations],
     }
     _write_json(input_dir / "content-list.json", content_list)
     _write_json(
@@ -113,6 +120,11 @@ def persist_workflow_input(
                 "reference_count": len(paper.references),
                 "parse_warnings": [],
                 "workflow_input": "others/paper.json",
+                "images": [item.model_dump(mode="json") for item in paper.images],
+                "tables": [item.model_dump(mode="json") for item in paper.tables],
+                "equations": [
+                    item.model_dump(mode="json") for item in paper.equations
+                ],
             },
         )
     _write_json(
@@ -247,6 +259,25 @@ def persist_report(
     path = workspace / "report.json"
     _write_json(path, report.model_dump(mode="json"))
     return path
+
+
+def _copy_paper_images(
+    images: Sequence[Any],
+    dest_dir: Path,
+) -> list[Any]:
+    """把 MinerU 产物图片复制到 paper 工作区，并返回路径已更新的图片列表。"""
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    updated: list[Any] = []
+    for index, image in enumerate(images):
+        src = Path(image.path)
+        if src.exists() and src.is_file():
+            dest_name = f"{index:03d}_{src.name}"
+            dest = dest_dir / dest_name
+            shutil.copy2(src, dest)
+            updated.append(image.model_copy(update={"path": f"images/{dest_name}"}))
+        else:
+            updated.append(image)
+    return updated
 
 
 def _safe_directory_name(paper_id: str) -> str:

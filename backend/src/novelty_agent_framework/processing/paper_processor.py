@@ -10,11 +10,14 @@ from backend.env import ModelClient
 from ..ports import PaperProcessor as PaperProcessorProtocol
 from ..schemas import PaperDocument, PaperInput
 from . import normalize, sections as sections_module, textify
+from .mineru_parser import MineruParser, MineruSettings
 from .title import extract_title_from_lines, extract_title_llm
+
+DEFAULT_MINERU_SETTINGS = MineruSettings()
 
 
 class DefaultPaperProcessor(PaperProcessorProtocol):
-    """默认论文处理器：文本层优先，OCR 兜底，输出结构化文档。"""
+    """默认论文处理器：MinerU 优先，文本层/OCR 兜底，输出结构化文档。"""
 
     def __init__(
         self,
@@ -23,11 +26,18 @@ class DefaultPaperProcessor(PaperProcessorProtocol):
         llm_client: ModelClient | None = None,
         dpi: int = 200,
         min_chars_per_page: int = 200,
+        parser: str = "mineru",
+        mineru_parser: MineruParser | None = None,
+        mineru_settings: MineruSettings | None = None,
     ) -> None:
         self.ocr_client = ocr_client
         self.llm_client = llm_client
         self.dpi = dpi
         self.min_chars_per_page = min_chars_per_page
+        self.parser = parser
+        self.mineru_parser = mineru_parser or MineruParser(
+            mineru_settings or DEFAULT_MINERU_SETTINGS
+        )
 
     def process(
         self,
@@ -39,13 +49,18 @@ class DefaultPaperProcessor(PaperProcessorProtocol):
         path = Path(source)
         paper_id = paper_id or path.stem
 
-        result = textify.textify(
-            path,
-            force_ocr=force_ocr,
-            ocr_client=self.ocr_client,
-            dpi=self.dpi,
-            min_chars_per_page=self.min_chars_per_page,
-        )
+        warnings: list[str] = []
+        result = self._try_mineru(path, paper_id=paper_id, warnings=warnings)
+        if result is None:
+            result = textify.textify(
+                path,
+                force_ocr=force_ocr,
+                ocr_client=self.ocr_client,
+                dpi=self.dpi,
+                min_chars_per_page=self.min_chars_per_page,
+            )
+        warnings.extend(result.warnings)
+
         pages = normalize.normalize_pages(list(result.pages), result.source)
         marked = textify.assemble_marked_text(pages)
         sections, section_warnings = sections_module.split_sections(marked)
@@ -55,7 +70,7 @@ class DefaultPaperProcessor(PaperProcessorProtocol):
         keywords_en = sections_module.extract_keywords_en(english_abstract)
 
         title, title_warnings = self._extract_title(path, pages, result.source)
-        warnings = list(result.warnings) + section_warnings + title_warnings
+        warnings = warnings + section_warnings + title_warnings
         if not title:
             title = paper_id
             warnings.append("title: 未提取到标题，回退为 paper_id")
@@ -75,7 +90,32 @@ class DefaultPaperProcessor(PaperProcessorProtocol):
             pages=pages,
             source=result.source,
             parse_warnings=warnings,
+            images=list(result.images),
+            tables=list(result.tables),
+            equations=list(result.equations),
         )
+
+    def _try_mineru(
+        self,
+        path: Path,
+        *,
+        paper_id: str,
+        warnings: list[str],
+    ):
+        """尝试 MinerU 解析；失败或质量不足时返回 None，由调用方走兜底。"""
+        if self.parser not in ("mineru", "auto"):
+            return None
+        try:
+            result = self.mineru_parser.parse(path, paper_id=paper_id)
+        except Exception as exc:  # noqa: BLE001 - MinerU 不可用必须回退
+            warnings.append(f"mineru: 解析失败，回退 textify：{exc}")
+            return None
+
+        pages = list(result.pages)
+        if not _quality_ok_pages(pages, self.min_chars_per_page):
+            warnings.append("mineru: 解析质量不足，回退 textify")
+            return None
+        return result
 
     def to_paper_input(self, document: PaperDocument) -> PaperInput:
         metadata = dict(document.metadata)
@@ -93,6 +133,9 @@ class DefaultPaperProcessor(PaperProcessorProtocol):
             keywords_zh=list(document.keywords_zh),
             keywords_en=list(document.keywords_en),
             metadata=metadata,
+            images=list(document.images),
+            tables=list(document.tables),
+            equations=list(document.equations),
         )
 
     def _extract_title(
@@ -120,6 +163,16 @@ class DefaultPaperProcessor(PaperProcessorProtocol):
             else:
                 warnings.append("title: 正则未命中且未配置 LLM 兜底")
         return title or "", warnings
+
+
+def _quality_ok_pages(pages: list, min_chars_per_page: int) -> bool:
+    """MinerU 结果质量门：有页、平均字符数达标、低字符页占比不超标。"""
+    if not pages:
+        return False
+    counts = [len(page.text.strip()) for page in pages]
+    mean = sum(counts) / len(counts)
+    low_ratio = sum(1 for count in counts if count < min_chars_per_page) / len(counts)
+    return mean >= min_chars_per_page and low_ratio <= 0.3
 
 
 def _font_based_candidates(path: Path, first_text: str) -> list[str]:

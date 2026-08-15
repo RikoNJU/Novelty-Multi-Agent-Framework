@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from enum import StrEnum
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -26,6 +27,9 @@ class PaperInput(StrictModel):
     keywords_zh: list[str] = Field(default_factory=list)
     keywords_en: list[str] = Field(default_factory=list)
     metadata: dict[str, str] = Field(default_factory=dict)
+    images: list[PaperImage] = Field(default_factory=list)
+    tables: list[PaperTable] = Field(default_factory=list)
+    equations: list[PaperEquation] = Field(default_factory=list)
 
 
 class PaperPage(StrictModel):
@@ -33,6 +37,42 @@ class PaperPage(StrictModel):
 
     page: int = Field(ge=1)
     text: str = ""
+
+
+class PaperImage(StrictModel):
+    """MinerU 提取的图片/图表/印章等视觉块。"""
+
+    image_id: str = ""
+    kind: str = "image"  # image | chart | seal
+    page: int = Field(ge=1)
+    path: str = ""
+    caption: str = ""
+    footnote: str = ""
+    bbox: list[float] = Field(default_factory=list)
+    raw: dict[str, Any] = Field(default_factory=dict)
+
+
+class PaperTable(StrictModel):
+    """MinerU 提取的表格结构化块。"""
+
+    table_id: str = ""
+    page: int = Field(ge=1)
+    caption: str = ""
+    footnote: str = ""
+    body: str = ""
+    body_format: str = "html"
+    bbox: list[float] = Field(default_factory=list)
+    raw: dict[str, Any] = Field(default_factory=dict)
+
+
+class PaperEquation(StrictModel):
+    """MinerU 提取的公式块（LaTeX 表示）。"""
+
+    equation_id: str = ""
+    page: int = Field(ge=1)
+    latex: str = ""
+    bbox: list[float] = Field(default_factory=list)
+    raw: dict[str, Any] = Field(default_factory=dict)
 
 
 class PaperDocument(StrictModel):
@@ -52,6 +92,9 @@ class PaperDocument(StrictModel):
     pages: list[PaperPage] = Field(default_factory=list)
     source: str = ""
     parse_warnings: list[str] = Field(default_factory=list)
+    images: list[PaperImage] = Field(default_factory=list)
+    tables: list[PaperTable] = Field(default_factory=list)
+    equations: list[PaperEquation] = Field(default_factory=list)
 
 
 class PaperDigest(StrictModel):
