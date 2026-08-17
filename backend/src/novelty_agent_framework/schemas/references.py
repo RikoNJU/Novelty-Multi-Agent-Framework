@@ -10,7 +10,7 @@ from typing import Annotated, Any
 
 from pydantic import Field, StringConstraints, field_validator, model_validator
 
-from .domain import StrictModel
+from .domain import NoveltyPoint, ResearchTask, StrictModel
 
 NonEmptyStr = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
 JsonObject = dict[str, Any]
@@ -346,6 +346,29 @@ class ResearchBundle(StrictModel):
     artifacts: list[Artifact] = Field(default_factory=list)
     evidence: list[Evidence] = Field(default_factory=list)
     warnings: list[NonEmptyStr] = Field(default_factory=list)
+
+
+class StructuredSourceRetrievalRequest(StrictModel):
+    """单个 ResearchTask 的结构化来源检索与读取请求。"""
+
+    subject_paper_id: NonEmptyStr
+    source_id: NonEmptyStr
+    novelty_point: NoveltyPoint
+    research_task: ResearchTask
+    run_id: NonEmptyStr | None = None
+
+    @field_validator("source_id")
+    @classmethod
+    def normalize_source_id(cls, value: str) -> str:
+        return value.lower()
+
+    @model_validator(mode="after")
+    def validate_task_identity(self) -> StructuredSourceRetrievalRequest:
+        if self.research_task.novelty_point_id != self.novelty_point.point_id:
+            raise ValueError(
+                "research_task.novelty_point_id must match novelty_point.point_id"
+            )
+        return self
 
 
 class ReferenceManifest(StrictModel):

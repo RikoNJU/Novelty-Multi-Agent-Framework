@@ -112,6 +112,69 @@ def persist_reference_manifest(
     return path
 
 
+class ReferenceStore:
+    """参考文献 Manifest 与制品文件的单一工作区存储入口。"""
+
+    def __init__(self, output_root: str | Path = DEFAULT_OUTPUTS_DIR) -> None:
+        self.output_root = Path(output_root)
+
+    def load_manifest(self, paper_id: str) -> ReferenceManifest:
+        return load_reference_manifest(paper_id, output_root=self.output_root)
+
+    def persist_manifest(
+        self, paper_id: str, manifest: ReferenceManifest
+    ) -> Path:
+        return persist_reference_manifest(
+            paper_id, manifest, output_root=self.output_root
+        )
+
+    def write_document(
+        self,
+        paper_id: str,
+        *,
+        work_id: str,
+        artifact_id: str,
+        extension: str,
+        content: str,
+    ) -> Path:
+        """原子写入 UTF-8 文本制品，路径段只接受内部安全 ID。"""
+
+        safe_work_id = _safe_storage_id(work_id, "work_id")
+        safe_artifact_id = _safe_storage_id(artifact_id, "artifact_id")
+        suffix = extension.strip().lower().lstrip(".")
+        if not re.fullmatch(r"[a-z0-9]+", suffix):
+            raise ValueError("artifact extension is unsafe")
+        directory = reference_documents_dir(
+            paper_id, output_root=self.output_root
+        ) / safe_work_id
+        directory.mkdir(parents=True, exist_ok=True)
+        path = directory / f"{safe_artifact_id}.{suffix}"
+        if path.exists():
+            if path.read_text(encoding="utf-8") != content:
+                raise ValueError(f"artifact {artifact_id} content conflicts with existing file")
+            return path
+        temporary_path: Path | None = None
+        try:
+            with tempfile.NamedTemporaryFile(
+                mode="w",
+                encoding="utf-8",
+                dir=directory,
+                prefix=f".{safe_artifact_id}.",
+                suffix=".tmp",
+                delete=False,
+            ) as handle:
+                temporary_path = Path(handle.name)
+                handle.write(content)
+                handle.flush()
+                os.fsync(handle.fileno())
+            os.replace(temporary_path, path)
+            temporary_path = None
+            return path
+        finally:
+            if temporary_path is not None:
+                temporary_path.unlink(missing_ok=True)
+
+
 def persist_paper_input(
     document: PaperDocument,
     paper: PaperInput,
@@ -349,6 +412,13 @@ def _safe_directory_name(paper_id: str) -> str:
     if not name:
         raise ValueError("paper_id 无法转换为安全的工作目录名")
     return name
+
+
+def _safe_storage_id(value: str, field_name: str) -> str:
+    value = value.strip()
+    if not value or re.fullmatch(r"[A-Za-z0-9_-]+", value) is None:
+        raise ValueError(f"{field_name} is not a safe storage identifier")
+    return value
 
 
 def _write_json(path: Path, payload: Any) -> None:

@@ -56,6 +56,9 @@ def test_search_parses_atom_and_strips_version():
     assert len(hits) == 1
     hit = hits[0]
     assert hit.document_id == "2305.12345"
+    assert hit.external_id == "2305.12345v2"
+    assert hit.source_id == "arxiv"
+    assert hit.full_text_url == "https://arxiv.org/pdf/2305.12345"
     assert hit.title == "Graph Summarization for Temporal Graph Learning"
     assert hit.authors == ("Alice Zhang", "Bob Li")
     assert hit.year == 2023
@@ -179,6 +182,7 @@ def test_fulltext_truncates_to_max_chars():
 
     assert result is not None
     assert len(result.text) <= 100
+    assert result.content_extent == "partial"
 
 
 def test_fulltext_caches_across_versions():

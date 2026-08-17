@@ -11,6 +11,7 @@ from novelty_agent_framework.tools import ArxivQueryAdapter
 from novelty_agent_framework.tools import RetrievalSourceRegistry
 from novelty_agent_framework.config import (
     build_model_registry,
+    build_structured_source_retrieval_tool,
     build_workflow,
     load_config,
 )
@@ -160,3 +161,16 @@ def test_registry_does_not_mask_builder_key_error():
     registry.register("broken", broken_builder)
     with pytest.raises(KeyError, match="required_setting"):
         registry.build("broken", {})
+
+
+def test_build_structured_retrieval_tool_does_not_modify_workflow():
+    config = json.loads(json.dumps(BASE_CONFIG))
+    config["retrieval"] = {
+        "active_source": "null_catalog",
+        "candidate_limit_per_task": 3,
+        "sources": {"null_catalog": {"enabled": True}},
+    }
+    tool = build_structured_source_retrieval_tool(config)
+    assert tool.name == "structured_source_retrieval"
+    assert tool.source_id == "null_catalog"
+    assert tool.candidate_limit == 3

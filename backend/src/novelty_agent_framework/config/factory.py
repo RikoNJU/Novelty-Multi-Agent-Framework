@@ -24,6 +24,7 @@ from ..agents import (
 from ..tools import (
     RetrievalSource,
     RetrievalSourceRegistry,
+    StructuredSourceRetrievalTool,
     build_null_catalog_source,
 )
 from ..workflows import NoveltyWorkflow, NoveltyWorkflowConfig, NoveltyWorkflowServices
@@ -105,7 +106,25 @@ def build_agents(
         model_alias=point_extractor_cfg.get("model", "point_extractor"),
         temperature=float(point_extractor_cfg.get("temperature", 0.2)),
     )
-    search_planner = SearchPlannerAgent(
+    search_planner = build_search_planner(
+        config, registry, prompts, retrieval_cfg=retrieval_cfg
+    )
+    return coordinator, research, point_extractor, search_planner
+
+
+def build_search_planner(
+    config: Mapping[str, Any],
+    registry: ModelRegistry,
+    prompts: PromptLibrary,
+    *,
+    retrieval_cfg: Mapping[str, Any] | None = None,
+) -> SearchPlannerAgent:
+    """单独构建 SearchPlanner，供检索 Tool 组合根复用。"""
+
+    agents_cfg = config.get("agents", {})
+    research_cfg = agents_cfg.get("research", {})
+    search_planner_cfg = agents_cfg.get("search_planner", {})
+    return SearchPlannerAgent(
         prompts=prompts,
         models=registry,
         model_alias=search_planner_cfg.get(
@@ -113,7 +132,6 @@ def build_agents(
         ),
         temperature=float(search_planner_cfg.get("temperature", 0.2)),
     )
-    return coordinator, research, point_extractor, search_planner
 
 
 def build_source_registry() -> RetrievalSourceRegistry:
@@ -159,6 +177,32 @@ def build_tools(config: Mapping[str, Any]):
 
     source = build_retrieval_source(config)
     return source.search_tool, source.full_text_tool, source.metadata_tool
+
+
+def build_structured_source_retrieval_tool(
+    config: Mapping[str, Any],
+    *,
+    source_registry: RetrievalSourceRegistry | None = None,
+) -> StructuredSourceRetrievalTool:
+    """构建独立检索 Tool；不接入或修改现有 NoveltyWorkflow。"""
+
+    raw = copy.deepcopy(dict(config))
+    _apply_env_overrides(raw)
+    models = build_model_registry(raw)
+    prompts = build_prompt_library()
+    retrieval_cfg = _normalized_retrieval_config(raw)
+    search_planner = build_search_planner(
+        raw, models, prompts, retrieval_cfg=retrieval_cfg
+    )
+    source = build_retrieval_source(raw, source_registry=source_registry)
+    workflow_cfg = raw.get("workflow", {})
+    return StructuredSourceRetrievalTool(
+        search_planner=search_planner,
+        source=source,
+        candidate_limit=int(retrieval_cfg.get("candidate_limit_per_task", 8)),
+        full_text_limit=int(retrieval_cfg.get("full_text_limit_per_task", 8)),
+        max_concurrency=int(workflow_cfg.get("max_concurrency", 4)),
+    )
 
 
 def build_workflow(

@@ -58,6 +58,18 @@ START
 - Workflow 负责串联、由紧到松执行查询、候选去重、补检和终止控制；
 - Task 的工作流身份是 `(novelty_point_id, task_id)`，因为 `task_id` 只在单个查新点内唯一。
 
+### StructuredSourceRetrievalTool
+
+`StructuredSourceRetrievalTool` 接收一个 `NoveltyPoint`、一个对应的
+`ResearchTask` 和 `source_id`，确定性执行 `SearchPlanner → RetrievalSource →
+Metadata/FullText`，保存 `Work / SourceRecord / Artifact`，并返回 Evidence 为空的
+`ResearchBundle`。它不包含 Researcher、EvidenceCard、EvidenceValidator、覆盖度判断
+或报告生成，也尚未接入现有 LangGraph。
+
+arXiv 是当前能力完整的结构化来源，但 Tool 不假设所有来源都能取得全文。第三阶段
+将由 Coordinator 分发任务，并由每个 Researcher Agent 决定是否调用该 Tool；Web
+Search、Browser、search_workspace 和 read_artifact 将作为后续并列工具处理。
+
 数据源通过 `RetrievalSourceRegistry` 注册并由 `retrieval.active_source` 选择，Workflow、Agent 与领域 Schema 不包含数据库分支。
 
 生产/实验数据源：

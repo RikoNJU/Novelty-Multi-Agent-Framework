@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Protocol, Sequence
+from typing import Any, Protocol, Sequence
 
 from ..schemas import (
     EvidenceCard,
@@ -35,6 +35,10 @@ class SearchHit:
     year: int | None = None
     doi: str | None = None
     url: str | None = None
+    source_id: str | None = None
+    external_id: str | None = None
+    full_text_url: str | None = None
+    raw_metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -46,6 +50,10 @@ class FullText:
     text: str
     source: EvidenceSource | None = None
     sections: dict[str, str] = field(default_factory=dict)
+    media_type: str = "text/plain"
+    content_extent: str = "unknown"
+    source_url: str | None = None
+    version_label: str | None = None
 
 
 class SearchTool(Protocol):

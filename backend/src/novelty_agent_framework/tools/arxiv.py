@@ -70,7 +70,8 @@ def parse_entry(entry: ET.Element) -> SearchHit:
     """把 Atom entry 映射为 SearchHit。"""
 
     entry_id = entry.findtext(f"{ATOM_NS}id") or ""
-    arxiv_id = strip_version(entry_id.rsplit("/", 1)[-1])
+    external_id = entry_id.rsplit("/", 1)[-1]
+    arxiv_id = strip_version(external_id)
     authors = tuple(
         name.text.strip()
         for name in entry.findall(f"{ATOM_NS}author/{ATOM_NS}name")
@@ -85,6 +86,10 @@ def parse_entry(entry: ET.Element) -> SearchHit:
         year=int(published[:4]) if len(published) >= 4 else None,
         doi=entry.findtext(f"{ARXIV_NS}doi"),
         url=f"{ARXIV_ABS_URL}{arxiv_id}",
+        source_id="arxiv",
+        external_id=external_id,
+        full_text_url=f"{ARXIV_PDF_URL}{arxiv_id}",
+        raw_metadata={"atom_id": entry_id, "published": published},
     )
 
 
@@ -200,7 +205,9 @@ class ArxivFullTextTool(FullTextTool):
         if not text:
             return None
         title = self._html_title(response.text) or doc_id
-        return self._make_full_text(doc_id, title, text)
+        return self._make_full_text(
+            doc_id, title, text, source_url=f"{ARXIV_HTML_URL}{doc_id}"
+        )
 
     def _fetch_pdf(self, doc_id: str) -> FullText | None:
         response = self._try_get(f"{ARXIV_PDF_URL}{doc_id}")
@@ -216,14 +223,22 @@ class ArxivFullTextTool(FullTextTool):
             document.close()
         if not text.strip():
             return None
-        return self._make_full_text(doc_id, doc_id, text)
+        return self._make_full_text(
+            doc_id, doc_id, text, source_url=f"{ARXIV_PDF_URL}{doc_id}"
+        )
 
-    def _make_full_text(self, doc_id: str, title: str, text: str) -> FullText:
+    def _make_full_text(
+        self, doc_id: str, title: str, text: str, *, source_url: str
+    ) -> FullText:
+        truncated = len(text) > self._max_chars
         return FullText(
             document_id=doc_id,
             title=title,
             text=text[: self._max_chars],
             source=EvidenceSource(title=title, url=f"{ARXIV_ABS_URL}{doc_id}"),
+            media_type="text/plain",
+            content_extent="partial" if truncated else "unknown",
+            source_url=source_url,
         )
 
     def _try_get(self, url: str) -> httpx.Response | None:

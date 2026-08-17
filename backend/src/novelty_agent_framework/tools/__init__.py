@@ -11,6 +11,10 @@ from .adapter import (
 )
 from .null_catalog import NullQueryAdapter, NullSearchTool, build_null_catalog_source
 from .retrieval_sources import RetrievalSource, RetrievalSourceRegistry
+from .structured_retrieval import (
+    StructuredRetrievalAdapter,
+    StructuredSourceRetrievalTool,
+)
 from .renderer import (
     MarkdownRenderer,
     RendererFactory,
@@ -33,6 +37,8 @@ __all__ = [
     "QueryAdapterError",
     "RetrievalSource",
     "RetrievalSourceRegistry",
+    "StructuredSourceRetrievalTool",
+    "StructuredRetrievalAdapter",
     "RendererFactory",
     "ReportRenderer",
     "ReportRenderError",
