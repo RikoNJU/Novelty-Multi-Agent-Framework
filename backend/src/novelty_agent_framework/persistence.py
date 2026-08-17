@@ -8,9 +8,12 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import shutil
+import tempfile
 from collections.abc import Iterable
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
@@ -21,6 +24,7 @@ from .schemas import (
     PaperDocument,
     PaperInput,
     RejectedEvidence,
+    ReferenceManifest,
     ResearchTask,
     SearchPlan,
 )
@@ -42,10 +46,70 @@ def paper_workspace(
     for directory in (
         workspace / "paper-input" / "images",
         workspace / "paper-input" / "others",
+        workspace / "references" / "documents",
         workspace / "report",
     ):
         directory.mkdir(parents=True, exist_ok=True)
+    manifest_path = workspace / "references" / "list.json"
+    if not manifest_path.exists():
+        manifest = ReferenceManifest(
+            subject_paper_id=paper_id,
+            updated_at=datetime.now(timezone.utc),
+        )
+        _atomic_write_json(manifest_path, manifest.model_dump(mode="json"))
     return workspace
+
+
+def reference_workspace(
+    paper: PaperInput | PaperDocument | str,
+    *,
+    output_root: str | Path = DEFAULT_OUTPUTS_DIR,
+) -> Path:
+    """返回论文工作区内的参考文献目录，并确保其已经初始化。"""
+
+    return paper_workspace(paper, output_root=output_root) / "references"
+
+
+def reference_documents_dir(
+    paper: PaperInput | PaperDocument | str,
+    *,
+    output_root: str | Path = DEFAULT_OUTPUTS_DIR,
+) -> Path:
+    """返回只能由持久化层生成的参考文献制品根目录。"""
+
+    return reference_workspace(paper, output_root=output_root) / "documents"
+
+
+def load_reference_manifest(
+    paper: PaperInput | PaperDocument | str,
+    *,
+    output_root: str | Path = DEFAULT_OUTPUTS_DIR,
+) -> ReferenceManifest:
+    """读取并重新校验 references/list.json，不吞掉损坏数据。"""
+
+    path = reference_workspace(paper, output_root=output_root) / "list.json"
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    return ReferenceManifest.model_validate(payload)
+
+
+def persist_reference_manifest(
+    paper: PaperInput | PaperDocument | str,
+    manifest: ReferenceManifest,
+    *,
+    output_root: str | Path = DEFAULT_OUTPUTS_DIR,
+) -> Path:
+    """校验并原子替换论文参考文献清单。"""
+
+    paper_id = paper if isinstance(paper, str) else paper.paper_id
+    if manifest.subject_paper_id != paper_id:
+        raise ValueError(
+            "manifest.subject_paper_id "
+            f"{manifest.subject_paper_id!r} does not match paper_id {paper_id!r}"
+        )
+    validated = ReferenceManifest.model_validate(manifest.model_dump(mode="python"))
+    path = reference_workspace(paper, output_root=output_root) / "list.json"
+    _atomic_write_json(path, validated.model_dump(mode="json"))
+    return path
 
 
 def persist_paper_input(
@@ -292,6 +356,31 @@ def _write_json(path: Path, payload: Any) -> None:
         json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
     )
+
+
+def _atomic_write_json(path: Path, payload: Any) -> None:
+    """在目标目录落盘后原子替换 JSON，并清理失败的临时文件。"""
+
+    temporary_path: Path | None = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            mode="w",
+            encoding="utf-8",
+            dir=path.parent,
+            prefix=f".{path.name}.",
+            suffix=".tmp",
+            delete=False,
+        ) as handle:
+            temporary_path = Path(handle.name)
+            json.dump(payload, handle, ensure_ascii=False, indent=2)
+            handle.write("\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temporary_path, path)
+        temporary_path = None
+    finally:
+        if temporary_path is not None:
+            temporary_path.unlink(missing_ok=True)
 
 
 def _unique(values: Iterable[str]) -> list[str]:

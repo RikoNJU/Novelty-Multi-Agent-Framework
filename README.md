@@ -102,6 +102,9 @@ outputs/<paper_id>/
 │   ├── content-list.json
 │   ├── images/
 │   └── others/paper.json
+├── references/
+│   ├── list.json                    # 参考作品、来源记录与已保存制品清单
+│   └── documents/<work_id>/         # PDF、解析文本等实际制品
 ├── novelty-points.json
 ├── retrieval-plans.json
 ├── evidence-cards.json
