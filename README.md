@@ -13,13 +13,13 @@ PointExtractor                     从论文提取“查什么”
   ↓
 Coordinator.plan                   把查新点拆成中英文 ResearchTask
   ↓
-SearchPlanner                      生成数据库无关 SearchPlan
+dispatch_research_tasks            按任务动态 fan-out
   ↓
-QueryAdapter                       编译为具体数据库语法
+TaskResearcherWorkflow             单任务 Researcher 决定检索、阅读或结束
+  ├─ structured_source_retrieval   检索并保存 Work/SourceRecord/Artifact
+  └─ reference_artifact_reader     按 Manifest 安全读取原文片段
   ↓
-SearchTool                         执行真实检索并返回 SearchHit
-  ↓
-Researcher                         逐篇阅读候选并生成 EvidenceCard
+Evidence Compiler                  确定性绑定 quote、Artifact 和字符位置
   ↓
 EvidenceValidator                  证据质量门控与去重
   ↓
@@ -38,12 +38,11 @@ LangGraph 节点：
 START
 → extract_points
 → plan
-→ plan_search
-→ retrieve_candidates
-→ parallel_research
+→ dispatch_research_tasks
+→ run_research_task                每个 ResearchTask 运行一个 LangGraph 子图
 → validate_evidence
 → assess_coverage
-  ├─ plan_supplement → plan_search → ...
+  ├─ plan_supplement → dispatch_research_tasks → ...
   └─ synthesize_report → render_report
 → END
 ```
@@ -54,8 +53,10 @@ START
 - SearchPlanner 只生成 Concept、term 和布尔策略，不包含 `all:` 等数据库语法；
 - QueryAdapter 是无 LLM、无网络副作用的确定性编译器；
 - SearchTool 只执行已经编译的查询；
-- Researcher 不再检索，只分析上游传入的 `NoveltyPoint + SearchHit[]`；
-- Workflow 负责串联、由紧到松执行查询、候选去重、补检和终止控制；
+- 每个 Researcher 只接收一个绑定的 `NoveltyPoint + ResearchTask`，通过严格 JSON
+  动作调用注册工具，不接收全局任务或最终报告上下文；
+- TaskResearcher 子图负责预算、重复调用限制和局部失败隔离，主 Workflow 负责
+  fan-out/fan-in、Validator、补检和终止控制；
 - Task 的工作流身份是 `(novelty_point_id, task_id)`，因为 `task_id` 只在单个查新点内唯一。
 
 ### StructuredSourceRetrievalTool
@@ -64,11 +65,11 @@ START
 `ResearchTask` 和 `source_id`，确定性执行 `SearchPlanner → RetrievalSource →
 Metadata/FullText`，保存 `Work / SourceRecord / Artifact`，并返回 Evidence 为空的
 `ResearchBundle`。它不包含 Researcher、EvidenceCard、EvidenceValidator、覆盖度判断
-或报告生成，也尚未接入现有 LangGraph。
+或报告生成。它通过通用 Researcher 工具注册表接入任务子图。
 
-arXiv 是当前能力完整的结构化来源，但 Tool 不假设所有来源都能取得全文。第三阶段
-将由 Coordinator 分发任务，并由每个 Researcher Agent 决定是否调用该 Tool；Web
-Search、Browser、search_workspace 和 read_artifact 将作为后续并列工具处理。
+arXiv 是当前能力完整的结构化来源，但 Tool 不假设所有来源都能取得全文。Coordinator
+分发任务后，由每个 Researcher Agent 决定是否调用该 Tool；Web Search 与 Browser
+是后续通过同一注册表接入的并列工具，不属于当前实现。
 
 数据源通过 `RetrievalSourceRegistry` 注册并由 `retrieval.active_source` 选择，Workflow、Agent 与领域 Schema 不包含数据库分支。
 
@@ -149,7 +150,7 @@ SILICONFLOW_API_KEY=...
 
 ### 离线 Demo
 
-离线 Demo 会经过 SearchPlanner、Adapter、SearchTool 和 Researcher 的完整数据流，但使用确定性实现，不访问网络：
+离线 Demo 使用确定性的 `DemoTaskResearcher` 跑通任务 fan-out、Validator、补检和汇总，不访问网络：
 
 ```bash
 novelty-demo --input examples/paper.json --output /tmp/novelty-result.json
@@ -226,12 +227,9 @@ python -m novelty_agent_framework.main
 
 ## 测试状态
 
-当前共收集 166 个测试，其中 6 个是默认跳过的 live 测试。
-
-- 54 个 Workflow、Factory、Adapter、SearchPlanner、Researcher、Persistence 和 Renderer 核心测试通过；
-- 78 个 Agent、模型客户端、Prompt、arXiv 工具、PointExtractor 和旧 retrieval 辅助测试通过；
-- 26 个 PDF/OCR、章节、文本层和标题处理测试通过；
-- 已确认 158 个非 live 测试通过；
+已确认 242 个非 live 测试通过（排除已知会在 TestClient 生命周期处挂起的
+`tests/test_api.py`），包括任务级 Researcher 子图、通用工具注册表、安全 Artifact
+分片读取、动态 fan-out/fan-in、Factory 边界与既有检索回归。
 - `pytest --collect-only` 正常；
 - 全量运行仍会在 `tests/test_api.py` 的首个 TestClient 生命周期测试处挂起，需要单独修复。
 

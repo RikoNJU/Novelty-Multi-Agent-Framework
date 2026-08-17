@@ -7,7 +7,7 @@ import re
 from collections.abc import Sequence
 from typing import Any
 
-from pydantic import ValidationError
+from pydantic import TypeAdapter, ValidationError
 
 from backend.env import (
     ChatMessage,
@@ -23,7 +23,15 @@ from ..ports import (
     MetadataTool,
     SearchHit,
 )
-from ..schemas import EvidenceCard, EvidenceSource, NoveltyPoint, ResearchTask
+from ..schemas import (
+    EvidenceCard,
+    EvidenceSource,
+    NoveltyPoint,
+    ResearchTask,
+    ResearcherAction,
+)
+
+_ACTION_ADAPTER = TypeAdapter(ResearcherAction)
 
 
 class NoveltyResearchAgent(LiteratureResearchAgent):
@@ -55,6 +63,7 @@ class NoveltyResearchAgent(LiteratureResearchAgent):
         full_text_tool: FullTextTool | None = None,
         metadata_tool: MetadataTool | None = None,
     ) -> Sequence[EvidenceCard]:
+        """兼容旧调用方；生产工作流使用 :meth:`decide`。"""
         if task.novelty_point_id != point.point_id:
             raise ValueError(
                 "ResearchTask.novelty_point_id 与 NoveltyPoint.point_id 不一致"
@@ -69,6 +78,69 @@ class NoveltyResearchAgent(LiteratureResearchAgent):
             # 模型偶发返回非法 JSON：只重试一次输出解析。
             data = self._complete_cards(task, point, pack)
         return self._validate_card_binding(data, task, point, pack)
+
+    async def decide(self, state: dict[str, Any]) -> ResearcherAction:
+        """为单个 ResearchTask 产生一个严格 JSON 动作，不执行工具。"""
+
+        request = state["request"]
+        payload = {
+            "novelty_point": request.novelty_point.model_dump(mode="json"),
+            "research_task": request.research_task.model_dump(mode="json"),
+            "tools": state.get("tool_descriptions", []),
+            "observations": state.get("observations", []),
+            "steps_used": state.get("steps_used", 0),
+            "remaining_budget": state.get("remaining_budget", {}),
+        }
+        if self._prompts is not None:
+            rendered = self._prompts.render(
+                "research/decide",
+                state_json=json.dumps(payload, ensure_ascii=False),
+                action_schema=json.dumps(
+                    _ACTION_ADAPTER.json_schema(), ensure_ascii=False
+                ),
+            )
+            system, user = rendered.system, rendered.user
+        else:
+            system = (
+                "你是单任务 Researcher。每次只输出一个严格 JSON 动作；"
+                "可调用已注册工具或提交 finish，不得编造引用。"
+            )
+            user = json.dumps(payload, ensure_ascii=False)
+        messages = [
+            ChatMessage(role="system", content=system),
+            ChatMessage(role="user", content=user),
+        ]
+        last_error: Exception | None = None
+        for attempt in range(2):
+            try:
+                client = self._client()
+                if hasattr(client, "acomplete"):
+                    response = await client.acomplete(
+                        messages,
+                        options=ModelCallOptions(
+                            temperature=self.temperature,
+                            response_format={"type": "json_object"},
+                        ),
+                    )
+                else:
+                    response = client.complete(
+                        messages,
+                        options=ModelCallOptions(
+                            temperature=self.temperature,
+                            response_format={"type": "json_object"},
+                        ),
+                    )
+                return _ACTION_ADAPTER.validate_python(json.loads(response.content))
+            except (json.JSONDecodeError, ValidationError, ValueError) as exc:
+                last_error = exc
+                if attempt == 0:
+                    messages.append(
+                        ChatMessage(
+                            role="user",
+                            content="上一响应不符合动作 schema，请只返回一个合法 JSON 动作。",
+                        )
+                    )
+        raise ValueError(f"Researcher 连续返回非法动作：{last_error}")
 
     def _build_evidence_pack(
         self,

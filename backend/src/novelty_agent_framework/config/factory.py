@@ -22,12 +22,23 @@ from ..agents import (
     SearchPlannerAgent,
 )
 from ..tools import (
+    ReferenceArtifactReaderTool,
+    ReferenceReaderResearcherTool,
+    ResearcherToolRegistry,
     RetrievalSource,
     RetrievalSourceRegistry,
     StructuredSourceRetrievalTool,
+    StructuredRetrievalResearcherTool,
     build_null_catalog_source,
 )
-from ..workflows import NoveltyWorkflow, NoveltyWorkflowConfig, NoveltyWorkflowServices
+from ..persistence import ReferenceStore
+from ..workflows import (
+    NoveltyWorkflow,
+    NoveltyWorkflowConfig,
+    NoveltyWorkflowServices,
+    TaskResearcherConfig,
+    TaskResearcherWorkflow,
+)
 
 CONFIG_DIR = Path(__file__).resolve().parent
 DEFAULT_CONFIG_PATH = CONFIG_DIR / "settings.example.json"
@@ -225,16 +236,53 @@ def build_workflow(
     source = build_retrieval_source(raw, source_registry=source_registry)
 
     workflow_cfg = raw.get("workflow", {})
+    store = ReferenceStore()
+    reader = ReferenceArtifactReaderTool(store)
+    researcher_tools = [ReferenceReaderResearcherTool(reader)]
+    if source.search_tool is not None:
+        retrieval_tool = StructuredSourceRetrievalTool(
+            search_planner=search_planner,
+            source=source,
+            reference_store=store,
+            candidate_limit=int(retrieval_cfg.get("candidate_limit_per_task", 8)),
+            full_text_limit=int(retrieval_cfg.get("full_text_limit_per_task", 8)),
+            max_concurrency=int(workflow_cfg.get("max_concurrency", 4)),
+        )
+        researcher_tools.insert(
+            0,
+            StructuredRetrievalResearcherTool(
+                {source.source_id: retrieval_tool}
+            ),
+        )
+    tool_registry = ResearcherToolRegistry(researcher_tools)
+    budget_cfg = raw.get("task_researcher", {})
+    task_researcher = TaskResearcherWorkflow(
+        research,
+        tool_registry,
+        reference_store=store,
+        config=TaskResearcherConfig(
+            max_steps=int(budget_cfg.get("max_steps", 12)),
+            max_tool_calls=int(budget_cfg.get("max_tool_calls", 10)),
+            max_chars_per_read=int(budget_cfg.get("max_chars_per_read", 8_000)),
+            max_total_read_chars=int(
+                budget_cfg.get("max_total_read_chars", 48_000)
+            ),
+            per_tool_limits=dict(
+                budget_cfg.get(
+                    "per_tool_limits",
+                    {
+                        "structured_source_retrieval": 1,
+                        "reference_artifact_reader": 8,
+                    },
+                )
+            ),
+        ),
+    )
     return NoveltyWorkflow(
         NoveltyWorkflowServices(
             coordinator=coordinator,
-            research_agent=research,
-            search_planner=search_planner,
-            query_adapter=source.query_adapter,
+            task_researcher=task_researcher,
             point_extractor=point_extractor,
-            search_tool=source.search_tool,
-            full_text_tool=source.full_text_tool,
-            metadata_tool=source.metadata_tool,
         ),
         config=NoveltyWorkflowConfig(
             max_rounds=int(workflow_cfg.get("max_rounds", 2)),

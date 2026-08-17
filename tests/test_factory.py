@@ -1,4 +1,5 @@
 import json
+from dataclasses import fields
 
 import pytest
 
@@ -7,8 +8,8 @@ from novelty_agent_framework.agents import (
     NoveltyResearchAgent,
     SearchPlannerAgent,
 )
-from novelty_agent_framework.tools import ArxivQueryAdapter
 from novelty_agent_framework.tools import RetrievalSourceRegistry
+from novelty_agent_framework.workflows import NoveltyWorkflowServices, TaskResearcherWorkflow
 from novelty_agent_framework.config import (
     build_model_registry,
     build_structured_source_retrieval_tool,
@@ -61,17 +62,14 @@ def test_build_workflow_wires_role_models(monkeypatch):
     assert workflow.config.candidate_limit_per_task == 8
 
     coordinator = workflow.services.coordinator
-    research = workflow.services.research_agent
-    search_planner = workflow.services.search_planner
+    task_researcher = workflow.services.task_researcher
     assert isinstance(coordinator, NoveltyCoordinatorAgent)
-    assert isinstance(research, NoveltyResearchAgent)
-    assert isinstance(search_planner, SearchPlannerAgent)
-    assert isinstance(workflow.services.query_adapter, ArxivQueryAdapter)
+    assert isinstance(task_researcher, TaskResearcherWorkflow)
+    assert isinstance(task_researcher.agent, NoveltyResearchAgent)
     assert coordinator._client().profile.model == "model-a"
-    assert research._client().profile.model == "model-b"
-    assert search_planner._client().profile.model == "model-b"
+    assert task_researcher.agent._client().profile.model == "model-b"
     assert coordinator.temperature == 0.1
-    assert research.temperature == 0.5
+    assert task_researcher.agent.temperature == 0.5
 
 
 def test_build_workflow_env_overrides_role_model(monkeypatch):
@@ -102,14 +100,17 @@ def test_registry_resolves_api_key_env(monkeypatch):
     assert client.profile.api_key == "secret-a"
 
 
-def test_build_tools_disabled_by_default():
+def test_services_hide_retrieval_implementation_details():
     workflow = build_workflow(BASE_CONFIG)
-
-    assert workflow.services.search_tool is None
-    assert workflow.services.full_text_tool is None
-    assert workflow.services.metadata_tool is None
-    assert isinstance(workflow.services.search_planner, SearchPlannerAgent)
-    assert isinstance(workflow.services.query_adapter, ArxivQueryAdapter)
+    assert {item.name for item in fields(NoveltyWorkflowServices)} == {
+        "coordinator",
+        "task_researcher",
+        "point_extractor",
+        "validator",
+    }
+    assert workflow.services.task_researcher.tools.names == (
+        "reference_artifact_reader",
+    )
 
 
 def test_build_workflow_injects_arxiv_tools_when_enabled():
@@ -125,9 +126,10 @@ def test_build_workflow_injects_arxiv_tools_when_enabled():
 
     workflow = build_workflow(config)
 
-    assert workflow.services.search_tool is not None
-    assert workflow.services.full_text_tool is not None
-    assert workflow.services.metadata_tool is not None
+    assert workflow.services.task_researcher.tools.names == (
+        "structured_source_retrieval",
+        "reference_artifact_reader",
+    )
     assert workflow.config.candidate_limit_per_task == 5
 
 

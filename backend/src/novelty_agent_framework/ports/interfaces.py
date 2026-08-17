@@ -21,6 +21,8 @@ from ..schemas import (
     PaperInput,
     ResearchTask,
     SearchPlan,
+    TaskResearchRequest,
+    TaskResearchResult,
 )
 
 
@@ -186,3 +188,10 @@ class NoveltyPointExtractor(Protocol):
         attempt: int,
     ) -> Sequence[NoveltyPoint]:
         """从论文摘要视图提取可检索、可比较的查新点。"""
+
+
+class TaskResearcher(Protocol):
+    """隔离执行单个 ResearchTask 的子工作流端口。"""
+
+    async def ainvoke(self, request: TaskResearchRequest) -> TaskResearchResult:
+        ...

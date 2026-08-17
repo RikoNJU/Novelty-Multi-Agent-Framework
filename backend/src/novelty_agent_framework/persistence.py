@@ -8,6 +8,7 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import os
 import re
 import shutil
@@ -25,8 +26,10 @@ from .schemas import (
     PaperInput,
     RejectedEvidence,
     ReferenceManifest,
+    ReferenceReadResult,
     ResearchTask,
     SearchPlan,
+    TaskResearchResult,
 )
 
 DEFAULT_OUTPUTS_DIR = Path("outputs")
@@ -173,6 +176,68 @@ class ReferenceStore:
         finally:
             if temporary_path is not None:
                 temporary_path.unlink(missing_ok=True)
+
+    def read_document_slice(
+        self,
+        paper_id: str,
+        *,
+        artifact_id: str,
+        char_start: int,
+        max_chars: int,
+    ) -> ReferenceReadResult:
+        """仅按 Manifest 中的文本 Artifact ID 读取受限字符片段。"""
+
+        manifest = self.load_manifest(paper_id)
+        artifact = next(
+            (item for item in manifest.artifacts if item.artifact_id == artifact_id),
+            None,
+        )
+        if artifact is None:
+            raise ValueError(f"unknown artifact_id {artifact_id!r}")
+        if artifact.media_type not in {
+            "text/plain",
+            "text/markdown",
+            "text/html",
+            "application/json",
+        }:
+            raise ValueError(
+                f"artifact {artifact_id} media_type {artifact.media_type!r} is not readable text"
+            )
+        references_dir = reference_workspace(
+            paper_id, output_root=self.output_root
+        ).resolve()
+        path = (references_dir / artifact.relative_path).resolve()
+        if not path.is_relative_to(references_dir):
+            raise ValueError(f"artifact {artifact_id} path escapes references workspace")
+        if not path.is_file():
+            raise FileNotFoundError(f"artifact {artifact_id} content file is missing")
+        raw = path.read_bytes()
+        digest = hashlib.sha256(raw).hexdigest()
+        if digest != artifact.sha256:
+            raise ValueError(f"artifact {artifact_id} sha256 mismatch")
+        try:
+            text = raw.decode("utf-8")
+        except UnicodeDecodeError as exc:
+            raise ValueError(f"artifact {artifact_id} is not valid UTF-8 text") from exc
+        if char_start > len(text):
+            raise ValueError(
+                f"char_start {char_start} exceeds artifact {artifact_id} length"
+            )
+        char_end = min(len(text), char_start + max_chars)
+        read_id = "read_" + hashlib.sha256(
+            f"{artifact_id}\x1f{char_start}\x1f{char_end}\x1f{artifact.sha256}".encode()
+        ).hexdigest()[:24]
+        return ReferenceReadResult(
+            read_id=read_id,
+            work_id=artifact.work_id,
+            artifact_id=artifact.artifact_id,
+            role=artifact.role,
+            char_start=char_start,
+            char_end=char_end,
+            text=text[char_start:char_end],
+            has_more=char_end < len(text),
+            sha256=artifact.sha256,
+        )
 
 
 def persist_paper_input(
@@ -369,6 +434,91 @@ def persist_evidence_cards(
             "rejected_evidence": [
                 item.model_dump(mode="json") for item in rejected_evidence
             ],
+        },
+    )
+    return path
+
+
+def persist_task_research_result(
+    paper_id: str,
+    result: TaskResearchResult,
+    *,
+    attempt: int,
+    output_root: str | Path = DEFAULT_OUTPUTS_DIR,
+) -> Path:
+    """写出单任务审计，不包含全文或模型隐式推理。"""
+
+    workspace = paper_workspace(paper_id, output_root=output_root)
+    point_id = _safe_storage_id(result.novelty_point_id, "novelty_point_id")
+    task_id = _safe_storage_id(result.task_id, "task_id")
+    directory = workspace / "research-runs" / point_id / task_id
+    directory.mkdir(parents=True, exist_ok=True)
+    path = directory / f"attempt-{attempt}.json"
+    _atomic_write_json(path, result.model_dump(mode="json"))
+    return path
+
+
+def persist_task_retrieval_audit(
+    paper: PaperInput,
+    tasks: Sequence[ResearchTask],
+    results: Sequence[TaskResearchResult],
+    *,
+    rounds: int,
+    point_order: Sequence[str] = (),
+    output_root: str | Path = DEFAULT_OUTPUTS_DIR,
+) -> Path:
+    """从任务结果聚合真实 SearchExecution，保留旧 retrieval-plans 文件。"""
+
+    task_by_key = {(task.novelty_point_id, task.task_id): task for task in tasks}
+    grouped: dict[str, list[dict[str, Any]]] = {}
+    for result in results:
+        key = (result.novelty_point_id, result.task_id)
+        task = task_by_key.get(key)
+        for bundle in result.research_bundles:
+            for execution in bundle.search_executions:
+                grouped.setdefault(result.novelty_point_id, []).append(
+                    {
+                        "database": execution.source_id,
+                        "task_id": result.task_id,
+                        "novelty_point_id": result.novelty_point_id,
+                        "strategy_id": execution.parameters.get("strategy_id", ""),
+                        "level": execution.parameters.get("level", ""),
+                        "query": execution.query,
+                        "status": execution.status.value,
+                        "results": [
+                            item.model_dump(mode="json") for item in execution.results
+                        ],
+                    }
+                )
+        if task is not None:
+            grouped.setdefault(result.novelty_point_id, [])
+    ordered = list(dict.fromkeys([*point_order, *grouped]))
+    plans = []
+    for sequence, point_id in enumerate(ordered, start=1):
+        point_tasks = [task for task in tasks if task.novelty_point_id == point_id]
+        executed = grouped.get(point_id, [])
+        plans.append(
+            {
+                "sequence": sequence,
+                "novelty_point_id": point_id,
+                "research_tasks": [
+                    task.model_dump(mode="json") for task in point_tasks
+                ],
+                "search_plans": [],
+                "executed_queries": executed,
+                "query_plan": {
+                    "queries": _unique(item["query"] for item in executed),
+                    "attempts": sorted({task.attempt for task in point_tasks}),
+                },
+            }
+        )
+    path = paper_workspace(paper, output_root=output_root) / "retrieval-plans.json"
+    _atomic_write_json(
+        path,
+        {
+            "paper_id": paper.paper_id,
+            "rounds": rounds,
+            "novelty_point_plans": plans,
         },
     )
     return path

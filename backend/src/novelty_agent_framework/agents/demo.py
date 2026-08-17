@@ -20,6 +20,11 @@ from ..schemas import (
     SearchConcept,
     SearchPlan,
     SearchStrategy,
+    Evidence,
+    EvidenceLocator,
+    TaskResearchRequest,
+    TaskResearchResult,
+    TaskResearchStatus,
 )
 from ..ports import FullTextTool, MetadataTool, SearchHit
 from ..tools.adapter import QueryAdapter, QueryAdapterError
@@ -260,3 +265,52 @@ class DemoSearchTool:
                 url=f"https://example.org/demo/{digest}",
             )
         ][:limit]
+
+
+class DemoTaskResearcher:
+    """默认离线主图使用的单任务确定性 Researcher。"""
+
+    async def ainvoke(self, request: TaskResearchRequest) -> TaskResearchResult:
+        task = request.research_task
+        point = request.novelty_point
+        evidence_id = f"EVD-{point.point_id}-{task.task_id}"
+        quote = "This synthetic passage is used only to validate the workflow."
+        evidence = Evidence(
+            evidence_id=evidence_id,
+            work_id=f"demo-work-{point.point_id}",
+            artifact_id=f"demo-artifact-{point.point_id}",
+            novelty_point_id=point.point_id,
+            task_id=task.task_id,
+            quote=quote,
+            locator=EvidenceLocator(char_start=0, char_end=len(quote)),
+            interpretation="离线演示证据",
+            confidence=0.8,
+        )
+        card = EvidenceCard(
+            card_id=f"CARD-{point.point_id}-{task.task_id}",
+            task_id=task.task_id,
+            novelty_point_id=point.point_id,
+            document_title=f"Demo Related Work {point.point_id}",
+            main_contribution="演示候选文献贡献",
+            overlaps=["包含相关技术特征"],
+            differences=["研究对象与目标论文不同"],
+            sources=[
+                EvidenceSource(
+                    title=f"Demo Related Work {point.point_id}",
+                    quote=quote,
+                    location="artifact chars:0-64",
+                    url=f"https://example.org/demo/{point.point_id}",
+                )
+            ],
+            relevance=0.8,
+            confidence=0.8,
+            evidence_ids=[evidence_id],
+        )
+        return TaskResearchResult(
+            task_id=task.task_id,
+            novelty_point_id=point.point_id,
+            status=TaskResearchStatus.COMPLETED,
+            evidence=[evidence],
+            evidence_cards=[card],
+            steps_used=1,
+        )

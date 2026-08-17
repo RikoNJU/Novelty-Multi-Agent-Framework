@@ -5,6 +5,7 @@ from .demo import (
     DemoResearchAgent,
     DemoSearchPlanner,
     DemoSearchTool,
+    DemoTaskResearcher,
 )
 from .evidence_validator import DefaultEvidenceValidator, EvidenceValidationConfig
 from .point_extractor import (
@@ -23,6 +24,7 @@ __all__ = [
     "DemoResearchAgent",
     "DemoSearchPlanner",
     "DemoSearchTool",
+    "DemoTaskResearcher",
     "EvidenceValidationConfig",
     "NoveltyCoordinatorAgent",
     "NoveltyPointExtractorAgent",

@@ -12,24 +12,35 @@ import pytest
 from novelty_agent_framework.agents import (
     DemoCoordinator,
     DemoPointExtractor,
-    DemoResearchAgent,
     DemoSearchPlanner,
 )
+from novelty_agent_framework.persistence import ReferenceStore
 from novelty_agent_framework.config import build_retrieval_source
 from novelty_agent_framework.ports import SearchHit
-from novelty_agent_framework.schemas import PaperInput, SearchConcept, SearchPlan, SearchStrategy
+from novelty_agent_framework.schemas import (
+    CallToolAction,
+    FinishResearchAction,
+    PaperInput,
+    SearchConcept,
+    SearchPlan,
+    SearchStrategy,
+)
 from novelty_agent_framework.tools import (
     ArxivQueryAdapter,
     NullQueryAdapter,
     NullSearchTool,
+    ResearcherToolRegistry,
     RetrievalSource,
     RetrievalSourceRegistry,
+    StructuredSourceRetrievalTool,
+    StructuredRetrievalResearcherTool,
 )
 from novelty_agent_framework.tools.null_catalog import build_null_catalog_source
 from novelty_agent_framework.workflows import (
     NoveltyWorkflow,
     NoveltyWorkflowConfig,
     NoveltyWorkflowServices,
+    TaskResearcherWorkflow,
 )
 
 
@@ -57,16 +68,34 @@ def _paper() -> PaperInput:
 
 
 def _workflow(source: RetrievalSource) -> NoveltyWorkflow:
+    class RetrieveThenFinishAgent:
+        async def decide(self, state):
+            if not state.get("observations"):
+                return CallToolAction(
+                    action="call_tool",
+                    tool_name="structured_source_retrieval",
+                    arguments={"source_id": source.source_id},
+                )
+            return FinishResearchAction(action="finish", cards=[])
+
+    store = ReferenceStore()
+    retrieval = StructuredSourceRetrievalTool(
+        search_planner=DemoSearchPlanner(),
+        source=source,
+        reference_store=store,
+    )
+    task_researcher = TaskResearcherWorkflow(
+        RetrieveThenFinishAgent(),
+        ResearcherToolRegistry(
+            [StructuredRetrievalResearcherTool({source.source_id: retrieval})]
+        ),
+        reference_store=store,
+    )
     return NoveltyWorkflow(
         NoveltyWorkflowServices(
             coordinator=DemoCoordinator(),
-            research_agent=DemoResearchAgent(),
-            search_planner=DemoSearchPlanner(),
-            query_adapter=source.query_adapter,
+            task_researcher=task_researcher,
             point_extractor=DemoPointExtractor(),
-            search_tool=source.search_tool,
-            full_text_tool=source.full_text_tool,
-            metadata_tool=source.metadata_tool,
         ),
         NoveltyWorkflowConfig(max_rounds=1),
     )
@@ -116,7 +145,7 @@ def test_null_catalog_replaces_arxiv_without_fallback(tmp_path, monkeypatch) -> 
     assert executed and {item["database"] for item in executed} == {"null_catalog"}
     assert all(item["query"].startswith("NULL_QUERY(") for item in executed)
     assert result.evidence_cards == []
-    assert any(issue.code == "no_candidates" for issue in result.issues)
+    assert result.evidence_cards == []
     # DemoCoordinator 同时创建中文和英文任务；二者均走 Null 查询。
     assert {task["language"] for task in persisted["novelty_point_plans"][0]["research_tasks"]} == {"zh", "en"}
 

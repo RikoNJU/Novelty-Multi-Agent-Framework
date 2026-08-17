@@ -10,6 +10,7 @@ from .interfaces import (
     SearchHit,
     SearchPlanner,
     SearchTool,
+    TaskResearcher,
     ValidationResult,
 )
 
@@ -25,5 +26,6 @@ __all__ = [
     "SearchHit",
     "SearchPlanner",
     "SearchTool",
+    "TaskResearcher",
     "ValidationResult",
 ]

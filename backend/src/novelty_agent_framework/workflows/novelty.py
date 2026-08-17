@@ -4,11 +4,13 @@ from __future__ import annotations
 
 import asyncio
 import inspect
-from collections.abc import Awaitable, Sequence
-from dataclasses import asdict
+import re
+import uuid
+from collections.abc import Awaitable
 from typing import Any, TypeVar, cast
 
 from langgraph.graph import END, START, StateGraph
+from langgraph.types import Send
 from pydantic import ValidationError
 
 from novelty_agent_framework.core.errors import WorkflowExecutionError
@@ -16,7 +18,8 @@ from novelty_agent_framework.persistence import (
     persist_evidence_cards,
     persist_novelty_points,
     persist_report,
-    persist_retrieval_plans,
+    persist_task_research_result,
+    persist_task_retrieval_audit,
     persist_workflow_input,
 )
 from novelty_agent_framework.tools.renderer import render_report
@@ -25,10 +28,7 @@ from ..agents import (
     DefaultEvidenceValidator,
     DemoCoordinator,
     DemoPointExtractor,
-    DemoQueryAdapter,
-    DemoResearchAgent,
-    DemoSearchPlanner,
-    DemoSearchTool,
+    DemoTaskResearcher,
     build_paper_digest,
 )
 from ..schemas import (
@@ -41,10 +41,11 @@ from ..schemas import (
     PaperInput,
     RejectedEvidence,
     ResearchTask,
-    SearchPlan,
+    TaskResearchRequest,
+    TaskResearchResult,
+    TaskResearchStatus,
     WorkflowIssue,
 )
-from ..tools.adapter import CompiledQuery
 from .state import NoveltyState, NoveltyWorkflowConfig, NoveltyWorkflowServices
 
 T = TypeVar("T")
@@ -56,6 +57,16 @@ async def _resolve(value: T | Awaitable[T]) -> T:
     if inspect.isawaitable(value):
         return await cast(Awaitable[T], value)
     return value
+
+
+def _safe_error(exc: Exception) -> str:
+    message = re.sub(
+        r"(?i)(api[_-]?key|authorization|cookie)\s*[:=]\s*\S+",
+        r"\1=<redacted>",
+        str(exc),
+    )
+    message = re.sub(r"(?:/[\w. -]+){2,}", "<path>", message)
+    return f"{type(exc).__name__}: {message}"[:1000]
 
 
 class NoveltyWorkflow:
@@ -71,11 +82,8 @@ class NoveltyWorkflow:
         return cls(
             NoveltyWorkflowServices(
                 coordinator=DemoCoordinator(),
-                research_agent=DemoResearchAgent(),
-                search_planner=DemoSearchPlanner(),
-                query_adapter=DemoQueryAdapter(),
+                task_researcher=DemoTaskResearcher(),
                 point_extractor=DemoPointExtractor(),
-                search_tool=DemoSearchTool(),
             )
         )
 
@@ -94,9 +102,8 @@ class NoveltyWorkflow:
         builder = StateGraph(NoveltyState)
         builder.add_node("extract_points", self._extract_points)
         builder.add_node("plan", self._plan)
-        builder.add_node("plan_search", self._plan_search)
-        builder.add_node("retrieve_candidates", self._retrieve_candidates)
-        builder.add_node("parallel_research", self._parallel_research)
+        builder.add_node("dispatch_research_tasks", self._dispatch_node)
+        builder.add_node("run_research_task", self._run_research_task)
         builder.add_node("validate_evidence", self._validate_evidence)
         builder.add_node("assess_coverage", self._assess_coverage)
         builder.add_node("plan_supplement", self._plan_supplement)
@@ -105,10 +112,13 @@ class NoveltyWorkflow:
 
         builder.add_edge(START, "extract_points")
         builder.add_edge("extract_points", "plan")
-        builder.add_edge("plan", "plan_search")
-        builder.add_edge("plan_search", "retrieve_candidates")
-        builder.add_edge("retrieve_candidates", "parallel_research")
-        builder.add_edge("parallel_research", "validate_evidence")
+        builder.add_edge("plan", "dispatch_research_tasks")
+        builder.add_conditional_edges(
+            "dispatch_research_tasks",
+            self._dispatch_research_tasks,
+            ["run_research_task", "validate_evidence"],
+        )
+        builder.add_edge("run_research_task", "validate_evidence")
         builder.add_edge("validate_evidence", "assess_coverage")
         builder.add_conditional_edges(
             "assess_coverage",
@@ -118,7 +128,7 @@ class NoveltyWorkflow:
                 "synthesize": "synthesize_report",
             },
         )
-        builder.add_edge("plan_supplement", "plan_search")
+        builder.add_edge("plan_supplement", "dispatch_research_tasks")
         builder.add_edge("synthesize_report", "render_report")
         builder.add_edge("render_report", END)
         return builder.compile()
@@ -184,223 +194,86 @@ class NoveltyWorkflow:
             "rounds": 1,
         }
 
-    async def _plan_search(self, state: NoveltyState) -> dict[str, Any]:
-        tasks = state.get("research_tasks", [])
-        point_by_id = {
-            point.point_id: point for point in state.get("novelty_points", [])
-        }
-        semaphore = asyncio.Semaphore(self.config.max_concurrency)
+    async def _dispatch_node(self, state: NoveltyState) -> dict[str, Any]:
+        """显式 fan-out 汇合点；不把全局状态传入任务 Researcher。"""
 
-        async def plan_one(
-            task: ResearchTask,
-        ) -> tuple[SearchPlan | None, WorkflowIssue | None]:
-            point = point_by_id.get(task.novelty_point_id)
+        return {}
+
+    async def _dispatch_research_tasks(self, state: NoveltyState):
+        tasks = state.get("research_tasks", [])
+        if not tasks:
+            return "validate_evidence"
+        points = {item.point_id: item for item in state.get("novelty_points", [])}
+        sends = []
+        for task in tasks:
+            point = points.get(task.novelty_point_id)
             if point is None:
-                return None, WorkflowIssue(
-                    node="plan_search",
-                    code="missing_novelty_point",
+                continue
+            sends.append(
+                Send(
+                    "run_research_task",
+                    {
+                        "subject_paper_id": state["paper"].paper_id,
+                        "run_id": state["run_id"],
+                        "current_point": point,
+                        "current_task": task,
+                    },
+                )
+            )
+        return sends or "validate_evidence"
+
+    async def _run_research_task(self, state: NoveltyState) -> dict[str, Any]:
+        task = state["current_task"]
+        point = state["current_point"]
+        request = TaskResearchRequest(
+            subject_paper_id=state["subject_paper_id"],
+            run_id=state["run_id"],
+            novelty_point=point,
+            research_task=task,
+        )
+        try:
+            result = TaskResearchResult.model_validate(
+                await self.services.task_researcher.ainvoke(request)
+            )
+            issues: list[WorkflowIssue] = []
+        except Exception as exc:
+            safe_error = _safe_error(exc)
+            result = TaskResearchResult(
+                task_id=task.task_id,
+                novelty_point_id=point.point_id,
+                status=TaskResearchStatus.FAILED,
+                warnings=[f"task researcher failed: {safe_error}"],
+                steps_used=0,
+            )
+            issues = [
+                WorkflowIssue(
+                    node="run_research_task",
+                    code="research_task_failed",
                     message=(
-                        f"检索规划任务 {task.novelty_point_id} / {task.task_id} "
-                        "找不到对应 NoveltyPoint"
+                        f"调研任务 {point.point_id} / {task.task_id} 执行失败："
+                        f"{safe_error}"
                     ),
                     task_id=task.task_id,
                 )
-            async with semaphore:
-                try:
-                    value = self.services.search_planner.plan(point, task)
-                    return SearchPlan.model_validate(await _resolve(value)), None
-                except Exception as exc:
-                    return None, WorkflowIssue(
-                        node="plan_search",
-                        code="search_plan_failed",
-                        message=(
-                            f"检索规划任务 {task.novelty_point_id} / {task.task_id} "
-                            f"执行失败：{exc}"
-                        ),
-                        task_id=task.task_id,
-                    )
-
-        results = await asyncio.gather(*(plan_one(task) for task in tasks))
-        plans = [plan for plan, _ in results if plan is not None]
-        issues = [issue for _, issue in results if issue is not None]
-        all_plans = _merge_by_key(
-            state.get("all_search_plans", []), plans, key=_plan_key
+            ]
+        persist_task_research_result(
+            state["subject_paper_id"], result, attempt=task.attempt
         )
         return {
-            "search_plans": plans,
-            "all_search_plans": all_plans,
+            "task_research_results": [result],
+            "raw_evidence": result.evidence,
+            "raw_evidence_cards": result.evidence_cards,
             "issues": issues,
         }
-
-    async def _retrieve_candidates(self, state: NoveltyState) -> dict[str, Any]:
-        tasks = state.get("research_tasks", [])
-        candidates_by_task = {_task_key(task): [] for task in tasks}
-        issues: list[WorkflowIssue] = []
-        executed: list[CompiledQuery] = []
-
-        if self.services.search_tool is None:
-            issues.append(
-                WorkflowIssue(
-                    node="retrieve_candidates",
-                    code="search_tool_unavailable",
-                    message="当前未配置可用的 SearchTool，无法召回候选文献",
-                )
-            )
-        else:
-            for plan in state.get("search_plans", []):
-                key = _plan_key(plan)
-                try:
-                    compiled = self.services.query_adapter.compile(plan)
-                except Exception as exc:
-                    issues.append(
-                        WorkflowIssue(
-                            node="retrieve_candidates",
-                            code="query_compile_failed",
-                            message=(
-                                f"查询编译 {plan.novelty_point_id} / {plan.task_id} "
-                                f"失败：{exc}"
-                            ),
-                            task_id=plan.task_id,
-                        )
-                    )
-                    continue
-
-                unique_hits: dict[str, Any] = {}
-                for query in compiled:
-                    try:
-                        hits = self.services.search_tool.search(
-                            query.query,
-                            limit=self.config.candidate_limit_per_task,
-                        )
-                        resolved_hits = list(await _resolve(hits))
-                        executed.append(query)
-                    except Exception as exc:
-                        issues.append(
-                            WorkflowIssue(
-                                node="retrieve_candidates",
-                                code="search_query_failed",
-                                message=(
-                                    f"数据库查询 {plan.novelty_point_id} / {plan.task_id} / "
-                                    f"{query.strategy_id} 失败：{exc}"
-                                ),
-                                task_id=plan.task_id,
-                            )
-                        )
-                        continue
-                    for hit in resolved_hits:
-                        candidate_key = _candidate_key(hit)
-                        if candidate_key not in unique_hits:
-                            unique_hits[candidate_key] = hit
-                    if len(unique_hits) >= self.config.candidate_limit_per_task:
-                        break
-                candidates_by_task[key] = list(unique_hits.values())[
-                    : self.config.candidate_limit_per_task
-                ]
-
-        for task in tasks:
-            if not candidates_by_task[_task_key(task)]:
-                issues.append(
-                    WorkflowIssue(
-                        node="retrieve_candidates",
-                        code="no_candidates",
-                        message=(
-                            f"调研任务 {task.novelty_point_id} / {task.task_id} "
-                            "未召回候选文献"
-                        ),
-                        task_id=task.task_id,
-                    )
-                )
-
-        all_executed = [*state.get("all_executed_queries", []), *executed]
-        persist_retrieval_plans(
-            state["paper"],
-            state.get("all_research_tasks", []),
-            search_plans=state.get("all_search_plans", []),
-            executed_queries=[asdict(query) for query in all_executed],
-            rounds=state.get("rounds", 0),
-            point_order=[point.point_id for point in state.get("novelty_points", [])],
-        )
-        return {
-            "executed_queries": executed,
-            "all_executed_queries": all_executed,
-            "candidates_by_task": candidates_by_task,
-            "issues": issues,
-        }
-
-    async def _parallel_research(self, state: NoveltyState) -> dict[str, Any]:
-        tasks = state.get("research_tasks", [])
-        if not tasks:
-            return {
-                "raw_evidence_cards": [],
-                "issues": [
-                    WorkflowIssue(
-                        node="parallel_research",
-                        code="no_research_tasks",
-                        message="Coordinator 本轮未生成文献调研任务",
-                    )
-                ],
-            }
-
-        semaphore = asyncio.Semaphore(self.config.max_concurrency)
-        point_by_id = {
-            point.point_id: point for point in state.get("novelty_points", [])
-        }
-
-        async def run_one(task: ResearchTask) -> tuple[list[EvidenceCard], list[WorkflowIssue]]:
-            async with semaphore:
-                try:
-                    point = point_by_id[task.novelty_point_id]
-                    candidates = state.get("candidates_by_task", {}).get(
-                        _task_key(task), []
-                    )
-                    result_value = self.services.research_agent.research(
-                        task,
-                        point,
-                        candidates,
-                        full_text_tool=self.services.full_text_tool,
-                        metadata_tool=self.services.metadata_tool,
-                    )
-                    raw_cards = await _resolve(result_value)
-                    cards: list[EvidenceCard] = []
-                    issues: list[WorkflowIssue] = []
-                    for index, raw_card in enumerate(raw_cards):
-                        try:
-                            cards.append(EvidenceCard.model_validate(raw_card))
-                        except ValidationError as exc:
-                            issues.append(
-                                WorkflowIssue(
-                                    node="parallel_research",
-                                    code="malformed_evidence_card",
-                                    message=(
-                                        f"调研任务 {task.novelty_point_id} / {task.task_id} "
-                                        f"的第 {index + 1} 张证据卡格式错误："
-                                        f"{exc}"
-                                    ),
-                                    severity=IssueSeverity.WARNING,
-                                    task_id=task.task_id,
-                                )
-                            )
-                    return cards, issues
-                except Exception as exc:  # 单个子任务失败不能破坏其他并行结果
-                    return [], [
-                        WorkflowIssue(
-                            node="parallel_research",
-                            code="research_task_failed",
-                            message=(
-                                f"调研任务 {task.novelty_point_id} / {task.task_id} "
-                                f"执行失败：{exc}"
-                            ),
-                            severity=IssueSeverity.WARNING,
-                            task_id=task.task_id,
-                        )
-                    ]
-
-        results = await asyncio.gather(*(run_one(task) for task in tasks))
-        cards = [card for task_cards, _ in results for card in task_cards]
-        issues = [issue for _, task_issues in results for issue in task_issues]
-        return {"raw_evidence_cards": cards, "issues": issues}
 
     async def _validate_evidence(self, state: NoveltyState) -> dict[str, Any]:
+        persist_task_retrieval_audit(
+            state["paper"],
+            state.get("all_research_tasks", []),
+            state.get("task_research_results", []),
+            rounds=state.get("rounds", 0),
+            point_order=[item.point_id for item in state.get("novelty_points", [])],
+        )
         result_value = self.validator.validate(
             state.get("raw_evidence_cards", []),
             tasks=state.get("all_research_tasks", []),
@@ -457,8 +330,6 @@ class NoveltyWorkflow:
 
     async def _route_after_assessment(self, state: NoveltyState) -> str:
         """根据覆盖度异步选择补检或汇总分支。"""
-        if self.services.search_tool is None:
-            return "synthesize"
         if state.get("coverage_gaps") and state.get("rounds", 0) < self.config.max_rounds:
             return "supplement"
         return "synthesize"
@@ -487,9 +358,6 @@ class NoveltyWorkflow:
             "brief": brief,
             "research_tasks": list(brief.research_tasks),
             "all_research_tasks": all_tasks,
-            "search_plans": [],
-            "executed_queries": [],
-            "candidates_by_task": {},
             "rounds": next_round,
         }
 
@@ -533,13 +401,11 @@ class NoveltyWorkflow:
         paper_input = PaperInput.model_validate(paper)
         initial: NoveltyState = {
             "paper": paper_input,
+            "run_id": f"run-{uuid.uuid4().hex}",
             "research_tasks": [],
             "all_research_tasks": [],
-            "search_plans": [],
-            "all_search_plans": [],
-            "executed_queries": [],
-            "all_executed_queries": [],
-            "candidates_by_task": {},
+            "task_research_results": [],
+            "raw_evidence": [],
             "raw_evidence_cards": [],
             "evidence_cards": [],
             "rejected_evidence": [],
@@ -547,7 +413,9 @@ class NoveltyWorkflow:
             "issues": [],
             "rounds": 0,
         }
-        final = await self.graph.ainvoke(initial)
+        final = await self.graph.ainvoke(
+            initial, config={"max_concurrency": self.config.max_concurrency}
+        )
         if "brief" not in final or "report" not in final:
             raise WorkflowExecutionError("工作流结束时缺少 Brief 或 Report")
 
@@ -573,24 +441,3 @@ class NoveltyWorkflow:
 
 def _task_key(task: ResearchTask) -> tuple[str, str]:
     return task.novelty_point_id, task.task_id
-
-
-def _plan_key(plan: SearchPlan) -> tuple[str, str]:
-    return plan.novelty_point_id, plan.task_id
-
-
-def _candidate_key(hit: Any) -> str:
-    if hit.document_id:
-        return f"id:{hit.document_id}"
-    if hit.doi:
-        return f"doi:{hit.doi.casefold()}"
-    if hit.url:
-        return f"url:{hit.url.casefold().rstrip('/')}"
-    return f"title:{' '.join(hit.title.casefold().split())}"
-
-
-def _merge_by_key(existing: Sequence[T], current: Sequence[T], *, key: Any) -> list[T]:
-    merged = {key(item): item for item in existing}
-    for item in current:
-        merged[key(item)] = item
-    return list(merged.values())

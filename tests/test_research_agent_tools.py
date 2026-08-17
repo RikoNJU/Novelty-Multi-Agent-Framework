@@ -3,13 +3,20 @@
 from __future__ import annotations
 
 import json
+import asyncio
 
 import pytest
 
 from backend.env import ModelResponse
 from novelty_agent_framework.agents import NoveltyResearchAgent
 from novelty_agent_framework.ports import FullText, SearchHit
-from novelty_agent_framework.schemas import EvidenceSource, NoveltyPoint, ResearchTask
+from novelty_agent_framework.schemas import (
+    CallToolAction,
+    EvidenceSource,
+    NoveltyPoint,
+    ResearchTask,
+    TaskResearchRequest,
+)
 
 QUOTE = "Dynamic neighbor sampling reduces communication overhead."
 
@@ -124,6 +131,16 @@ class RecordingModelClient:
     def complete(self, messages, *, options=None):
         self.calls.append((list(messages), options))
         return ModelResponse(content=self.content)
+
+
+class AsyncSequenceModelClient:
+    def __init__(self, *contents: str) -> None:
+        self.contents = list(contents)
+        self.calls: list[list] = []
+
+    async def acomplete(self, messages, *, options=None):
+        self.calls.append(list(messages))
+        return ModelResponse(content=self.contents.pop(0))
 
 
 def test_candidate_is_analyzed_and_prompt_uses_point_not_paper() -> None:
@@ -279,3 +296,57 @@ def test_single_card_object_is_supported() -> None:
         make_task(), make_point(), [hit()]
     )
     assert [item.card_id for item in cards] == ["CARD-2305.00001"]
+
+
+def test_decide_returns_strict_discriminated_action() -> None:
+    client = AsyncSequenceModelClient(
+        json.dumps(
+            {
+                "action": "call_tool",
+                "tool_name": "reference_artifact_reader",
+                "arguments": {"artifact_id": "art_1"},
+            }
+        )
+    )
+    request = TaskResearchRequest(
+        subject_paper_id="paper-1",
+        run_id="run-1",
+        novelty_point=make_point(),
+        research_task=make_task(),
+    )
+    action = asyncio.run(
+        NoveltyResearchAgent(model_client=client).decide(
+            {
+                "request": request,
+                "tool_descriptions": [{"name": "reference_artifact_reader"}],
+                "observations": [],
+            }
+        )
+    )
+    assert isinstance(action, CallToolAction)
+    assert action.tool_name == "reference_artifact_reader"
+
+
+def test_decide_repairs_invalid_json_once_then_fails() -> None:
+    request = TaskResearchRequest(
+        subject_paper_id="paper-1",
+        run_id="run-1",
+        novelty_point=make_point(),
+        research_task=make_task(),
+    )
+    repaired = AsyncSequenceModelClient(
+        "not-json", json.dumps({"action": "finish", "cards": []})
+    )
+    action = asyncio.run(
+        NoveltyResearchAgent(model_client=repaired).decide({"request": request})
+    )
+    assert action.action == "finish"
+    assert len(repaired.calls) == 2
+    assert "不符合动作 schema" in repaired.calls[1][-1].content
+
+    invalid = AsyncSequenceModelClient("{}", "{}")
+    with pytest.raises(ValueError, match="连续返回非法动作"):
+        asyncio.run(
+            NoveltyResearchAgent(model_client=invalid).decide({"request": request})
+        )
+    assert len(invalid.calls) == 2

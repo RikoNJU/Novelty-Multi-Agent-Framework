@@ -43,6 +43,21 @@ from .references import (
     Work,
     WorkType,
 )
+from .research import (
+    CallToolAction,
+    EvidenceCardDraft,
+    EvidenceQuoteDraft,
+    FinishResearchAction,
+    ReferenceReaderToolArguments,
+    ReferenceReadRequest,
+    ReferenceReadResult,
+    ResearcherAction,
+    ResearcherToolObservation,
+    StructuredRetrievalToolArguments,
+    TaskResearchRequest,
+    TaskResearchResult,
+    TaskResearchStatus,
+)
 
 __all__ = [
     "ConclusionLevel",
@@ -86,4 +101,17 @@ __all__ = [
     "Work",
     "WorkType",
     "WorkflowIssue",
+    "CallToolAction",
+    "EvidenceCardDraft",
+    "EvidenceQuoteDraft",
+    "FinishResearchAction",
+    "ReferenceReaderToolArguments",
+    "ReferenceReadRequest",
+    "ReferenceReadResult",
+    "ResearcherAction",
+    "ResearcherToolObservation",
+    "StructuredRetrievalToolArguments",
+    "TaskResearchRequest",
+    "TaskResearchResult",
+    "TaskResearchStatus",
 ]

@@ -8,27 +8,22 @@ from typing import Annotated, TypedDict
 
 from ..schemas import (
     EvidenceCard,
+    Evidence,
     NoveltyBrief,
     NoveltyPoint,
     NoveltyReport,
     PaperInput,
     RejectedEvidence,
     ResearchTask,
-    SearchPlan,
+    TaskResearchResult,
     WorkflowIssue,
 )
 from ..ports import (
     EvidenceValidator,
-    FullTextTool,
-    LiteratureResearchAgent,
-    MetadataTool,
     NoveltyCoordinator,
     NoveltyPointExtractor,
-    SearchHit,
-    SearchPlanner,
-    SearchTool,
+    TaskResearcher,
 )
-from ..tools.adapter import CompiledQuery, QueryAdapter
 
 
 class NoveltyState(TypedDict, total=False):
@@ -39,11 +34,12 @@ class NoveltyState(TypedDict, total=False):
     brief: NoveltyBrief
     research_tasks: list[ResearchTask]
     all_research_tasks: list[ResearchTask]
-    search_plans: list[SearchPlan]
-    all_search_plans: list[SearchPlan]
-    executed_queries: list[CompiledQuery]
-    all_executed_queries: list[CompiledQuery]
-    candidates_by_task: dict[tuple[str, str], list[SearchHit]]
+    run_id: str
+    subject_paper_id: str
+    current_point: NoveltyPoint
+    current_task: ResearchTask
+    task_research_results: Annotated[list[TaskResearchResult], add]
+    raw_evidence: Annotated[list[Evidence], add]
     raw_evidence_cards: Annotated[list[EvidenceCard], add]
     evidence_cards: list[EvidenceCard]
     rejected_evidence: list[RejectedEvidence]
@@ -76,14 +72,9 @@ class NoveltyWorkflowConfig:
 
 @dataclass(frozen=True)
 class NoveltyWorkflowServices:
-    """注入 Coordinator、Research Agent 和外部工具。"""
+    """主图只依赖全局角色和任务级 Researcher。"""
 
     coordinator: NoveltyCoordinator
-    research_agent: LiteratureResearchAgent
-    search_planner: SearchPlanner
-    query_adapter: QueryAdapter
+    task_researcher: TaskResearcher
     point_extractor: NoveltyPointExtractor | None = None
     validator: EvidenceValidator | None = None
-    search_tool: SearchTool | None = None
-    full_text_tool: FullTextTool | None = None
-    metadata_tool: MetadataTool | None = None
