@@ -6,7 +6,7 @@ import time
 from typing import TypeAlias
 
 from ..schemas import (
-    ReferenceReaderToolArguments,
+    ReaderArguments,
     ReferenceReadRequest,
     ResearcherToolObservation,
     TaskResearchRequest,
@@ -19,14 +19,14 @@ class ReaderTool:
 
     name = "reader"
     description = "按 Artifact ID 读取可验证的文本字符片段。"
-    args_schema = ReferenceReaderToolArguments
+    args_schema = ReaderArguments
 
     def __init__(self, reader: ReferenceArtifactReaderTool) -> None:
         self.reader = reader
 
     async def ainvoke(
         self,
-        arguments: ReferenceReaderToolArguments,
+        arguments: ReaderArguments,
         *,
         scope: TaskResearchRequest,
     ) -> ResearcherToolObservation:

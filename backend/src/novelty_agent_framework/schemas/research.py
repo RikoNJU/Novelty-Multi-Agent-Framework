@@ -8,7 +8,8 @@ from typing import Annotated, Any, Literal
 from pydantic import Field, StringConstraints, model_validator
 
 from .domain import EvidenceCard, NoveltyPoint, ResearchTask, StrictModel
-from .references import ArtifactRole, Evidence, ResearchBundle
+from .references import Evidence, ResearchBundle
+from .research_tools import EvidenceCardDraft, ReferenceReadResult
 
 NonEmptyStr = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
 
@@ -26,58 +27,15 @@ class TaskResearchRequest(StrictModel):
         return self
 
 
-class ReferenceReadRequest(StrictModel):
-    subject_paper_id: NonEmptyStr
-    artifact_id: NonEmptyStr
-    char_start: int = Field(default=0, ge=0)
-    max_chars: int = Field(default=8_000, ge=1, le=16_000)
-
-
-class ReferenceReadResult(StrictModel):
-    read_id: NonEmptyStr
-    work_id: NonEmptyStr
-    artifact_id: NonEmptyStr
-    role: ArtifactRole
-    char_start: int = Field(ge=0)
-    char_end: int = Field(ge=0)
-    text: str
-    has_more: bool
-    sha256: NonEmptyStr
-
-    @model_validator(mode="after")
-    def valid_range(self) -> ReferenceReadResult:
-        if self.char_end < self.char_start:
-            raise ValueError("char_end must not be before char_start")
-        if self.char_end - self.char_start != len(self.text):
-            raise ValueError("read range must match text length")
-        return self
-
-
 class CallToolAction(StrictModel):
     action: Literal["call_tool"]
     tool_name: NonEmptyStr
     arguments: dict[str, Any] = Field(default_factory=dict)
 
 
-class EvidenceQuoteDraft(StrictModel):
-    read_id: NonEmptyStr
-    quote: NonEmptyStr
-    interpretation: NonEmptyStr
-    confidence: float = Field(ge=0.0, le=1.0)
-
-
-class EvidenceCardDraft(StrictModel):
-    work_id: NonEmptyStr
-    main_contribution: NonEmptyStr
-    overlaps: list[NonEmptyStr] = Field(default_factory=list)
-    differences: list[NonEmptyStr] = Field(default_factory=list)
-    quotes: list[EvidenceQuoteDraft] = Field(default_factory=list)
-    possible_baseline: bool = False
-    relevance: float = Field(ge=0.0, le=1.0)
-    confidence: float = Field(ge=0.0, le=1.0)
-
-
 class FinishResearchAction(StrictModel):
+    # Transitional: a later workflow change will invoke EvidenceCardBuilder
+    # before finish and replace these drafts with built card references.
     action: Literal["finish"]
     cards: list[EvidenceCardDraft] = Field(default_factory=list)
 
@@ -127,13 +85,3 @@ class TaskResearchResult(StrictModel):
             if missing:
                 raise ValueError(f"evidence card {card.card_id} references missing evidence {sorted(missing)}")
         return self
-
-
-class StructuredRetrievalToolArguments(StrictModel):
-    source_id: NonEmptyStr
-
-
-class ReferenceReaderToolArguments(StrictModel):
-    artifact_id: NonEmptyStr
-    char_start: int = Field(default=0, ge=0)
-    max_chars: int = Field(default=8_000, ge=1, le=16_000)

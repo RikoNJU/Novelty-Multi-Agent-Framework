@@ -45,18 +45,27 @@ from .references import (
 )
 from .research import (
     CallToolAction,
-    EvidenceCardDraft,
-    EvidenceQuoteDraft,
     FinishResearchAction,
-    ReferenceReaderToolArguments,
-    ReferenceReadRequest,
-    ReferenceReadResult,
     ResearcherAction,
     ResearcherToolObservation,
-    StructuredRetrievalToolArguments,
     TaskResearchRequest,
     TaskResearchResult,
     TaskResearchStatus,
+)
+from .legacy_research_tools import StructuredRetrievalToolArguments
+from .research_tools import (
+    BrowserArguments,
+    BrowserResult,
+    EvidenceCardBuilderArguments,
+    EvidenceCardBuilderResult,
+    EvidenceCardDraft,
+    EvidenceQuoteDraft,
+    ReaderArguments,
+    ReferenceReaderToolArguments,
+    ReferenceReadRequest,
+    ReferenceReadResult,
+    WebSearchArguments,
+    WebSearchResult,
 )
 
 __all__ = [
@@ -102,10 +111,15 @@ __all__ = [
     "WorkType",
     "WorkflowIssue",
     "CallToolAction",
+    "BrowserArguments",
+    "BrowserResult",
+    "EvidenceCardBuilderArguments",
+    "EvidenceCardBuilderResult",
     "EvidenceCardDraft",
     "EvidenceQuoteDraft",
     "FinishResearchAction",
     "ReferenceReaderToolArguments",
+    "ReaderArguments",
     "ReferenceReadRequest",
     "ReferenceReadResult",
     "ResearcherAction",
@@ -114,4 +128,6 @@ __all__ = [
     "TaskResearchRequest",
     "TaskResearchResult",
     "TaskResearchStatus",
+    "WebSearchArguments",
+    "WebSearchResult",
 ]
