@@ -1,6 +1,9 @@
 import asyncio
 import hashlib
+import inspect
 from datetime import datetime, timezone
+
+import pytest
 
 from novelty_agent_framework.persistence import ReferenceStore
 from novelty_agent_framework.schemas import (
@@ -29,6 +32,7 @@ from novelty_agent_framework.tools import (
     ReaderTool,
     ResearcherToolRegistry,
 )
+from novelty_agent_framework.tools import researcher_registry
 from novelty_agent_framework.workflows import TaskResearcherConfig, TaskResearcherWorkflow
 
 NOW = datetime(2026, 8, 18, tzinfo=timezone.utc)
@@ -258,3 +262,12 @@ def test_registry_rejects_unknown_or_invalid_arguments_and_is_extensible(tmp_pat
     registry.register(PingTool())
     pong = asyncio.run(registry.execute("ping", {"value": "ok"}, scope=scope()))
     assert pong.succeeded and pong.payload == {"pong": "ok"}
+
+    with pytest.raises(ValueError, match="duplicate"):
+        registry.register(PingTool())
+
+
+def test_registry_has_no_concrete_tool_dependencies():
+    source = inspect.getsource(researcher_registry)
+    assert "ReferenceArtifactReaderTool" not in source
+    assert "StructuredSourceRetrievalTool" not in source

@@ -10,13 +10,13 @@ from .adapter import (
     compile_search_plan,
 )
 from .null_catalog import NullQueryAdapter, NullSearchTool, build_null_catalog_source
+from .legacy_researcher_tools import StructuredRetrievalResearcherTool
 from .retrieval_sources import RetrievalSource, RetrievalSourceRegistry
 from .reference_reader import ReferenceArtifactReaderTool
 from .reader import ReaderTool, ReferenceReaderResearcherTool
 from .researcher_registry import (
     ResearcherTool,
     ResearcherToolRegistry,
-    StructuredRetrievalResearcherTool,
 )
 from .structured_retrieval import (
     StructuredRetrievalAdapter,
