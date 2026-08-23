@@ -1,0 +1,733 @@
+"""基于 LangGraph 的论文查新总分总工作流。"""
+
+from __future__ import annotations
+
+import asyncio
+import inspect
+from collections.abc import Awaitable, Sequence
+from dataclasses import asdict
+from typing import Any, TypeVar, cast
+
+from langgraph.graph import END, START, StateGraph
+from pydantic import ValidationError
+
+from novelty_agent_framework.core.errors import WorkflowExecutionError
+from novelty_agent_framework.persistence import (
+    persist_evidence_cards,
+    persist_novelty_points,
+    persist_report,
+    persist_retrieval_plans,
+    persist_workflow_input,
+)
+from novelty_agent_framework.tools.renderer import render_report
+
+from ..agents import (
+    DefaultEvidenceValidator,
+    DemoCoordinator,
+    DemoEvidenceReviewer,
+    DemoPointExtractor,
+    DemoQueryAdapter,
+    DemoResearchAgent,
+    DemoSearchPlanner,
+    DemoSearchTool,
+    build_paper_digest,
+)
+from ..schemas import (
+    EvidenceCard,
+    EvidenceReviewDecision,
+    IssueSeverity,
+    NoveltyBrief,
+    NoveltyPoint,
+    NoveltyReport,
+    NoveltyRunResult,
+    PaperInput,
+    RejectedEvidence,
+    ResearchTask,
+    SearchPlan,
+    WorkflowIssue,
+)
+from ..tools.adapter import CompiledQuery
+from .state import NoveltyState, NoveltyWorkflowConfig, NoveltyWorkflowServices
+
+T = TypeVar("T")
+
+
+async def _resolve(value: T | Awaitable[T]) -> T:
+    """兼容同步实现和异步实现，便于接入不同模型 SDK。"""
+
+    if inspect.isawaitable(value):
+        return await cast(Awaitable[T], value)
+    return value
+
+
+class NoveltyWorkflow:
+    """把规划、并行调研、证据门控和汇总组织成可运行闭环。"""
+
+    @classmethod
+    def default(cls) -> "NoveltyWorkflow":
+        """构造默认查新工作流。
+
+        当前项目采用固定 Agent 组合，因此默认装配逻辑直接放在工作流类中。
+        """
+
+        return cls(
+            NoveltyWorkflowServices(
+                coordinator=DemoCoordinator(),
+                research_agent=DemoResearchAgent(),
+                search_planner=DemoSearchPlanner(),
+                query_adapter=DemoQueryAdapter(),
+                point_extractor=DemoPointExtractor(),
+                search_tool=DemoSearchTool(),
+            )
+        )
+
+    def __init__(
+        self,
+        services: NoveltyWorkflowServices,
+        config: NoveltyWorkflowConfig | None = None,
+    ) -> None:
+        self.services = services
+        self.config = config or NoveltyWorkflowConfig()
+        self.validator = services.validator or DefaultEvidenceValidator()
+        self.reviewer = services.reviewer  # None 表示禁用 Reviewer，维持兼容
+        self.point_extractor = services.point_extractor or DemoPointExtractor()
+        self.graph = self._build_graph()
+
+    def _build_graph(self) -> Any:
+        builder = StateGraph(NoveltyState)
+        builder.add_node("extract_points", self._extract_points)
+        builder.add_node("plan", self._plan)
+        builder.add_node("plan_search", self._plan_search)
+        builder.add_node("retrieve_candidates", self._retrieve_candidates)
+        builder.add_node("parallel_research", self._parallel_research)
+        builder.add_node("validate_evidence", self._validate_evidence)
+        builder.add_node("review_evidence", self._review_evidence)
+        builder.add_node("assess_coverage", self._assess_coverage)
+        builder.add_node("plan_supplement", self._plan_supplement)
+        builder.add_node("synthesize_report", self._synthesize_report)
+        builder.add_node("render_report", self._render_report)
+
+        builder.add_edge(START, "extract_points")
+        builder.add_edge("extract_points", "plan")
+        builder.add_edge("plan", "plan_search")
+        builder.add_edge("plan_search", "retrieve_candidates")
+        builder.add_edge("retrieve_candidates", "parallel_research")
+        builder.add_edge("parallel_research", "validate_evidence")
+        builder.add_edge("validate_evidence", "review_evidence")
+        builder.add_edge("review_evidence", "assess_coverage")
+        builder.add_conditional_edges(
+            "assess_coverage",
+            self._route_after_assessment,
+            {
+                "supplement": "plan_supplement",
+                "synthesize": "synthesize_report",
+            },
+        )
+        builder.add_edge("plan_supplement", "plan_search")
+        builder.add_edge("synthesize_report", "render_report")
+        builder.add_edge("render_report", END)
+        return builder.compile()
+
+    async def _extract_points(self, state: NoveltyState) -> dict[str, Any]:
+        persist_workflow_input(state["paper"])
+        try:
+            digest = build_paper_digest(state["paper"])
+            points_value = self.point_extractor.extract(
+                digest,
+                previous_brief=None,
+                attempt=1,
+            )
+            points = list(await _resolve(points_value))
+            validated = [
+                point
+                if isinstance(point, NoveltyPoint)
+                else NoveltyPoint.model_validate(point)
+                for point in points
+            ]
+        except (ValidationError, TypeError, ValueError) as exc:
+            raise WorkflowExecutionError(f"查新点提取失败：{exc}") from exc
+        if not validated:
+            raise WorkflowExecutionError("查新点提取结果为空")
+        # 测试版持久化：写入该论文独立工作目录（后续可替换为数据库存储）
+        persist_novelty_points(state["paper"], validated)
+        missing_english = [
+            point.point_id
+            for point in validated
+            if not point.claim_en or not point.technical_features_en
+        ]
+        issues: list[WorkflowIssue] = []
+        if missing_english:
+            issues.append(
+                WorkflowIssue(
+                    node="extract_points",
+                    code="missing_english_point",
+                    message=(
+                        "以下查新点缺少完整英文表述；英文检索任务将由 SearchPlanner "
+                        "基于中文内容生成英文检索表达："
+                        + ", ".join(missing_english)
+                    ),
+                    severity=IssueSeverity.WARNING,
+                )
+            )
+        return {"novelty_points": validated, "issues": issues}
+
+    async def _plan(self, state: NoveltyState) -> dict[str, Any]:
+        try:
+            brief_value = self.services.coordinator.plan(
+                state["paper"],
+                points=state.get("novelty_points", []),
+                attempt=1,
+            )
+            brief = NoveltyBrief.model_validate(await _resolve(brief_value))
+        except (ValidationError, TypeError, ValueError) as exc:
+            raise WorkflowExecutionError(f"Coordinator 未生成合法 NoveltyBrief：{exc}") from exc
+
+        return {
+            "brief": brief,
+            "research_tasks": list(brief.research_tasks),
+            "all_research_tasks": list(brief.research_tasks),
+            "rounds": 1,
+        }
+
+    async def _plan_search(self, state: NoveltyState) -> dict[str, Any]:
+        tasks = state.get("research_tasks", [])
+        point_by_id = {
+            point.point_id: point for point in state.get("novelty_points", [])
+        }
+        semaphore = asyncio.Semaphore(self.config.max_concurrency)
+
+        async def plan_one(
+            task: ResearchTask,
+        ) -> tuple[SearchPlan | None, WorkflowIssue | None]:
+            point = point_by_id.get(task.novelty_point_id)
+            if point is None:
+                return None, WorkflowIssue(
+                    node="plan_search",
+                    code="missing_novelty_point",
+                    message=(
+                        f"检索规划任务 {task.novelty_point_id} / {task.task_id} "
+                        "找不到对应 NoveltyPoint"
+                    ),
+                    task_id=task.task_id,
+                )
+            async with semaphore:
+                try:
+                    value = self.services.search_planner.plan(point, task)
+                    return SearchPlan.model_validate(await _resolve(value)), None
+                except Exception as exc:
+                    return None, WorkflowIssue(
+                        node="plan_search",
+                        code="search_plan_failed",
+                        message=(
+                            f"检索规划任务 {task.novelty_point_id} / {task.task_id} "
+                            f"执行失败：{exc}"
+                        ),
+                        task_id=task.task_id,
+                    )
+
+        results = await asyncio.gather(*(plan_one(task) for task in tasks))
+        plans = [plan for plan, _ in results if plan is not None]
+        issues = [issue for _, issue in results if issue is not None]
+        all_plans = _merge_by_key(
+            state.get("all_search_plans", []), plans, key=_plan_key
+        )
+        return {
+            "search_plans": plans,
+            "all_search_plans": all_plans,
+            "issues": issues,
+        }
+
+    async def _retrieve_candidates(self, state: NoveltyState) -> dict[str, Any]:
+        tasks = state.get("research_tasks", [])
+        candidates_by_task = {_task_key(task): [] for task in tasks}
+        issues: list[WorkflowIssue] = []
+        executed: list[CompiledQuery] = []
+
+        if self.services.search_tool is None:
+            issues.append(
+                WorkflowIssue(
+                    node="retrieve_candidates",
+                    code="search_tool_unavailable",
+                    message="当前未配置可用的 SearchTool，无法召回候选文献",
+                )
+            )
+        else:
+            for plan in state.get("search_plans", []):
+                key = _plan_key(plan)
+                try:
+                    compiled = self.services.query_adapter.compile(plan)
+                except Exception as exc:
+                    issues.append(
+                        WorkflowIssue(
+                            node="retrieve_candidates",
+                            code="query_compile_failed",
+                            message=(
+                                f"查询编译 {plan.novelty_point_id} / {plan.task_id} "
+                                f"失败：{exc}"
+                            ),
+                            task_id=plan.task_id,
+                        )
+                    )
+                    continue
+
+                unique_hits: dict[str, Any] = {}
+                for query in compiled:
+                    try:
+                        hits = self.services.search_tool.search(
+                            query.query,
+                            limit=self.config.candidate_limit_per_task,
+                        )
+                        resolved_hits = list(await _resolve(hits))
+                        executed.append(query)
+                    except Exception as exc:
+                        issues.append(
+                            WorkflowIssue(
+                                node="retrieve_candidates",
+                                code="search_query_failed",
+                                message=(
+                                    f"数据库查询 {plan.novelty_point_id} / {plan.task_id} / "
+                                    f"{query.strategy_id} 失败：{exc}"
+                                ),
+                                task_id=plan.task_id,
+                            )
+                        )
+                        continue
+                    for hit in resolved_hits:
+                        candidate_key = _candidate_key(hit)
+                        if candidate_key not in unique_hits:
+                            unique_hits[candidate_key] = hit
+                    if len(unique_hits) >= self.config.candidate_limit_per_task:
+                        break
+                candidates_by_task[key] = list(unique_hits.values())[
+                    : self.config.candidate_limit_per_task
+                ]
+
+        for task in tasks:
+            if not candidates_by_task[_task_key(task)]:
+                issues.append(
+                    WorkflowIssue(
+                        node="retrieve_candidates",
+                        code="no_candidates",
+                        message=(
+                            f"调研任务 {task.novelty_point_id} / {task.task_id} "
+                            "未召回候选文献"
+                        ),
+                        task_id=task.task_id,
+                    )
+                )
+
+        all_executed = [*state.get("all_executed_queries", []), *executed]
+        persist_retrieval_plans(
+            state["paper"],
+            state.get("all_research_tasks", []),
+            search_plans=state.get("all_search_plans", []),
+            executed_queries=[asdict(query) for query in all_executed],
+            rounds=state.get("rounds", 0),
+            point_order=[point.point_id for point in state.get("novelty_points", [])],
+        )
+        return {
+            "executed_queries": executed,
+            "all_executed_queries": all_executed,
+            "candidates_by_task": candidates_by_task,
+            "issues": issues,
+        }
+
+    async def _parallel_research(self, state: NoveltyState) -> dict[str, Any]:
+        tasks = state.get("research_tasks", [])
+        if not tasks:
+            return {
+                "raw_evidence_cards": [],
+                "issues": [
+                    WorkflowIssue(
+                        node="parallel_research",
+                        code="no_research_tasks",
+                        message="Coordinator 本轮未生成文献调研任务",
+                    )
+                ],
+            }
+
+        semaphore = asyncio.Semaphore(self.config.max_concurrency)
+        point_by_id = {
+            point.point_id: point for point in state.get("novelty_points", [])
+        }
+
+        async def run_one(task: ResearchTask) -> tuple[list[EvidenceCard], list[WorkflowIssue]]:
+            async with semaphore:
+                try:
+                    point = point_by_id[task.novelty_point_id]
+                    candidates = state.get("candidates_by_task", {}).get(
+                        _task_key(task), []
+                    )
+                    result_value = self.services.research_agent.research(
+                        task,
+                        point,
+                        candidates,
+                        full_text_tool=self.services.full_text_tool,
+                        metadata_tool=self.services.metadata_tool,
+                    )
+                    raw_cards = await _resolve(result_value)
+                    cards: list[EvidenceCard] = []
+                    issues: list[WorkflowIssue] = []
+                    for index, raw_card in enumerate(raw_cards):
+                        try:
+                            cards.append(EvidenceCard.model_validate(raw_card))
+                        except ValidationError as exc:
+                            issues.append(
+                                WorkflowIssue(
+                                    node="parallel_research",
+                                    code="malformed_evidence_card",
+                                    message=(
+                                        f"调研任务 {task.novelty_point_id} / {task.task_id} "
+                                        f"的第 {index + 1} 张证据卡格式错误："
+                                        f"{exc}"
+                                    ),
+                                    severity=IssueSeverity.WARNING,
+                                    task_id=task.task_id,
+                                )
+                            )
+                    return cards, issues
+                except Exception as exc:  # 单个子任务失败不能破坏其他并行结果
+                    return [], [
+                        WorkflowIssue(
+                            node="parallel_research",
+                            code="research_task_failed",
+                            message=(
+                                f"调研任务 {task.novelty_point_id} / {task.task_id} "
+                                f"执行失败：{exc}"
+                            ),
+                            severity=IssueSeverity.WARNING,
+                            task_id=task.task_id,
+                        )
+                    ]
+
+        results = await asyncio.gather(*(run_one(task) for task in tasks))
+        cards = [card for task_cards, _ in results for card in task_cards]
+        issues = [issue for _, task_issues in results for issue in task_issues]
+        return {"raw_evidence_cards": cards, "issues": issues}
+
+    async def _validate_evidence(self, state: NoveltyState) -> dict[str, Any]:
+        result_value = self.validator.validate(
+            state.get("raw_evidence_cards", []),
+            tasks=state.get("all_research_tasks", []),
+        )
+        result = await _resolve(result_value)
+
+        rejected = [
+            RejectedEvidence(card_id=card_id, reason=reason)
+            for card_id, reason in result.rejected
+        ]
+        issues = [
+            WorkflowIssue(
+                node="validate_evidence",
+                code=code,
+                message=message,
+                severity=IssueSeverity(severity),
+                task_id=task_id,
+            )
+            for code, message, severity, task_id in result.issues
+        ]
+        # 确定性 Validator 拒绝的卡片不再调用 LLM Reviewer，避免浪费 Token。
+        # 持久化统一由下游 review_evidence 节点负责，避免重复写盘和字段残留。
+        return {
+            "validator_accepted_cards": list(result.accepted),
+            "evidence_cards": list(result.accepted),
+            "rejected_evidence": rejected,
+            "issues": issues,
+        }
+
+    async def _review_evidence(self, state: NoveltyState) -> dict[str, Any]:
+        """对 Validator 通过的卡片执行 LLM 语义审查。
+
+        Reviewer 不可用时（``services.reviewer is None``）直接透传，维持兼容；
+        Reviewer 可用时只处理 ``validator_accepted_cards``，单卡失败不抛异常，
+        缺失决定按 ``fail_closed`` 处理。Coordinator 最终只能拿到本节点的输出。
+        """
+
+        validator_accepted = list(state.get("validator_accepted_cards", []))
+        # 兼容旧状态：若上游未写入 validator_accepted_cards，退回 evidence_cards。
+        if not validator_accepted:
+            validator_accepted = list(state.get("evidence_cards", []))
+
+        if self.reviewer is None:
+            # Reviewer 未注入：维持兼容，落盘时不写新字段（validator_accepted_cards /
+            # review_decisions），旧 Reader 不会看到这些键。
+            persist_evidence_cards(
+                state["paper"],
+                raw_cards=state.get("raw_evidence_cards", []),
+                accepted_cards=validator_accepted,
+                rejected_evidence=list(state.get("rejected_evidence", [])),
+            )
+            return {
+                "evidence_cards": validator_accepted,
+                "review_decisions": [],
+                "issues": [],
+            }
+
+        try:
+            review_value = self.reviewer.review(
+                validator_accepted,
+                points=state.get("novelty_points", []),
+                tasks=state.get("all_research_tasks", []),
+            )
+            review_result = await _resolve(review_value)
+        except Exception as exc:
+            # Reviewer 整体崩溃：按 fail_closed 处理所有 Validator 通过的卡。
+            issues = [
+                WorkflowIssue(
+                    node="review_evidence",
+                    code="review_failed",
+                    message=f"证据审查失败，所有 Validator 通过的证据被丢弃：{exc}",
+                    severity=IssueSeverity.ERROR,
+                )
+            ]
+            rejected = [
+                RejectedEvidence(card_id=card.card_id, reason="review_failed")
+                for card in validator_accepted
+            ]
+            merged_rejected = list(state.get("rejected_evidence", [])) + rejected
+            # 仍需落盘，保证下游 render_report 能读到 evidence-cards.json
+            persist_evidence_cards(
+                state["paper"],
+                raw_cards=state.get("raw_evidence_cards", []),
+                validator_accepted_cards=validator_accepted,
+                accepted_cards=[],
+                rejected_evidence=merged_rejected,
+            )
+            return {
+                "evidence_cards": [],
+                "review_decisions": [],
+                "rejected_evidence": merged_rejected,
+                "issues": issues,
+            }
+
+        # 拒绝清单：合并 Validator 已拒绝的 + Reviewer 新拒绝的。
+        existing_rejected = list(state.get("rejected_evidence", []))
+        review_rejected = [
+            RejectedEvidence(card_id=card_id, reason=reason)
+            for card_id, reason in review_result.rejected
+        ]
+        rejected = existing_rejected + review_rejected
+
+        issues: list[WorkflowIssue] = []
+        for decision in review_result.decisions:
+            if decision.verdict.value == "reject" and decision.issues:
+                issues.append(
+                    WorkflowIssue(
+                        node="review_evidence",
+                        code=decision.issues[0].code,
+                        message=(
+                            f"证据卡 {decision.card_id} 被审查拒绝："
+                            f"{decision.issues[0].message}"
+                        ),
+                        severity=IssueSeverity(
+                            decision.issues[0].severity.value
+                        ),
+                    )
+                )
+            elif decision.verdict.value == "needs_more_evidence":
+                issues.append(
+                    WorkflowIssue(
+                        node="review_evidence",
+                        code="needs_more_evidence",
+                        message=(
+                            f"证据卡 {decision.card_id} 证据不足，"
+                            "已标记为需要补充"
+                        ),
+                        severity=IssueSeverity.WARNING,
+                    )
+                )
+
+        if review_result.needs_more:
+            issues.append(
+                WorkflowIssue(
+                    node="review_evidence",
+                    code="needs_more_evidence",
+                    message=(
+                        f"共有 {len(review_result.needs_more)} 张证据卡被标记"
+                        "为 needs_more_evidence，可作为 coverage gap 提示"
+                    ),
+                    severity=IssueSeverity.WARNING,
+                )
+            )
+
+        # 落盘覆盖 evidence-cards.json：包含 raw / validator_accepted /
+        # review_decisions / accepted / rejected 五块结构。
+        persist_evidence_cards(
+            state["paper"],
+            raw_cards=state.get("raw_evidence_cards", []),
+            validator_accepted_cards=validator_accepted,
+            review_decisions=list(review_result.decisions),
+            accepted_cards=list(review_result.accepted),
+            rejected_evidence=rejected,
+        )
+
+        return {
+            "evidence_cards": list(review_result.accepted),
+            "review_decisions": list(review_result.decisions),
+            "rejected_evidence": rejected,
+            "issues": issues,
+        }
+
+    async def _assess_coverage(self, state: NoveltyState) -> dict[str, Any]:
+        """评估证据覆盖度。
+
+        工作流整体通过 ``ainvoke`` 执行，并包含补检回边。保持图节点为异步
+        callable，避免 LangGraph 的异步循环在同步节点线程池收尾阶段挂起。
+        """
+        brief = state["brief"]
+        counts: dict[str, int] = {point.point_id: 0 for point in brief.novelty_points}
+        for card in state.get("evidence_cards", []):
+            if card.novelty_point_id in counts:
+                counts[card.novelty_point_id] += 1
+
+        gaps = [
+            (
+                f"{point.point_id}: 仅有 {counts[point.point_id]} 条有效证据，"
+                f"至少需要 {self.config.minimum_evidence_per_point} 条"
+            )
+            for point in brief.novelty_points
+            if counts[point.point_id] < self.config.minimum_evidence_per_point
+        ]
+        return {"coverage_gaps": gaps}
+
+    async def _route_after_assessment(self, state: NoveltyState) -> str:
+        """根据覆盖度异步选择补检或汇总分支。"""
+        if self.services.search_tool is None:
+            return "synthesize"
+        if state.get("coverage_gaps") and state.get("rounds", 0) < self.config.max_rounds:
+            return "supplement"
+        return "synthesize"
+
+    async def _plan_supplement(self, state: NoveltyState) -> dict[str, Any]:
+        next_round = state.get("rounds", 1) + 1
+        try:
+            brief_value = self.services.coordinator.plan_supplement(
+                state["paper"],
+                brief=state["brief"],
+                existing_evidence=state.get("evidence_cards", []),
+                coverage_gaps=state.get("coverage_gaps", []),
+                attempt=next_round,
+            )
+            brief = NoveltyBrief.model_validate(await _resolve(brief_value))
+        except (ValidationError, TypeError, ValueError) as exc:
+            raise WorkflowExecutionError(f"Coordinator 未生成合法补充任务：{exc}") from exc
+
+        existing_tasks = state.get("all_research_tasks", [])
+        task_by_key = {_task_key(task): task for task in existing_tasks}
+        for task in brief.research_tasks:
+            task_by_key[_task_key(task)] = task
+
+        all_tasks = list(task_by_key.values())
+        return {
+            "brief": brief,
+            "research_tasks": list(brief.research_tasks),
+            "all_research_tasks": all_tasks,
+            "search_plans": [],
+            "executed_queries": [],
+            "candidates_by_task": {},
+            "rounds": next_round,
+        }
+
+    async def _synthesize_report(self, state: NoveltyState) -> dict[str, Any]:
+        rejected_reasons = [
+            f"{item.card_id}: {item.reason}"
+            for item in state.get("rejected_evidence", [])
+        ]
+        try:
+            report_value = self.services.coordinator.synthesize(
+                state["paper"],
+                brief=state["brief"],
+                evidence=state.get("evidence_cards", []),
+                rejected_evidence=rejected_reasons,
+                coverage_gaps=state.get("coverage_gaps", []),
+            )
+            report = NoveltyReport.model_validate(await _resolve(report_value))
+        except (ValidationError, TypeError, ValueError) as exc:
+            raise WorkflowExecutionError(f"Coordinator 未生成合法 NoveltyReport：{exc}") from exc
+
+        if report.paper_id != state["paper"].paper_id:
+            raise WorkflowExecutionError("NoveltyReport.paper_id 与输入论文不一致")
+        persist_report(state["paper"], report)
+        return {"report": report}
+
+    async def _render_report(self, state: NoveltyState) -> dict[str, Any]:
+        """在结构化报告落盘后生成默认 Markdown 报告。"""
+
+        try:
+            path = render_report(
+                output_format="markdown",
+                paper_name=state["paper"].paper_id,
+            )
+        except (OSError, ValueError, RuntimeError) as exc:
+            raise WorkflowExecutionError(f"Markdown 报告渲染失败：{exc}") from exc
+        return {"rendered_report_path": str(path)}
+
+    async def arun(self, paper: PaperInput | dict[str, Any]) -> NoveltyRunResult:
+        """异步执行一次完整查新工作流。"""
+
+        paper_input = PaperInput.model_validate(paper)
+        initial: NoveltyState = {
+            "paper": paper_input,
+            "research_tasks": [],
+            "all_research_tasks": [],
+            "search_plans": [],
+            "all_search_plans": [],
+            "executed_queries": [],
+            "all_executed_queries": [],
+            "candidates_by_task": {},
+            "raw_evidence_cards": [],
+            "validator_accepted_cards": [],
+            "evidence_cards": [],
+            "rejected_evidence": [],
+            "review_decisions": [],
+            "coverage_gaps": [],
+            "issues": [],
+            "rounds": 0,
+        }
+        final = await self.graph.ainvoke(initial)
+        if "brief" not in final or "report" not in final:
+            raise WorkflowExecutionError("工作流结束时缺少 Brief 或 Report")
+
+        return NoveltyRunResult(
+            brief=final["brief"],
+            evidence_cards=final.get("evidence_cards", []),
+            rejected_evidence=final.get("rejected_evidence", []),
+            coverage_gaps=final.get("coverage_gaps", []),
+            issues=final.get("issues", []),
+            rounds=final.get("rounds", 0),
+            report=final["report"],
+        )
+
+    def run(self, paper: PaperInput | dict[str, Any]) -> NoveltyRunResult:
+        """同步入口；异步应用应直接调用 arun。"""
+
+        try:
+            asyncio.get_running_loop()
+        except RuntimeError:
+            return asyncio.run(self.arun(paper))
+        raise RuntimeError("检测到正在运行的事件循环，请改用 await workflow.arun(...) ")
+
+
+def _task_key(task: ResearchTask) -> tuple[str, str]:
+    return task.novelty_point_id, task.task_id
+
+
+def _plan_key(plan: SearchPlan) -> tuple[str, str]:
+    return plan.novelty_point_id, plan.task_id
+
+
+def _candidate_key(hit: Any) -> str:
+    if hit.document_id:
+        return f"id:{hit.document_id}"
+    if hit.doi:
+        return f"doi:{hit.doi.casefold()}"
+    if hit.url:
+        return f"url:{hit.url.casefold().rstrip('/')}"
+    return f"title:{' '.join(hit.title.casefold().split())}"
+
+
+def _merge_by_key(existing: Sequence[T], current: Sequence[T], *, key: Any) -> list[T]:
+    merged = {key(item): item for item in existing}
+    for item in current:
+        merged[key(item)] = item
+    return list(merged.values())

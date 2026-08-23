@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="930" viewBox="0 0 1800 930">
+  <defs>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
+      <path d="M 0 0 L 12 6 L 0 12 Z" fill="#536276"/>
+    </marker>
+    <marker id="arrow-start" markerWidth="12" markerHeight="12" refX="2" refY="6" orient="auto" markerUnits="strokeWidth">
+      <path d="M 12 0 L 0 6 L 12 12 Z" fill="#536276"/>
+    </marker>
+    <style>
+      .title { font: 700 44px "Microsoft YaHei", "Noto Sans CJK SC", Arial, sans-serif; fill: #172033; }
+      .subtitle { font: 400 22px "Microsoft YaHei", "Noto Sans CJK SC", Arial, sans-serif; fill: #637083; }
+      .step { font: 700 18px "Microsoft YaHei", "Noto Sans CJK SC", Arial, sans-serif; fill: #637083; }
+      .label { font: 700 28px "Microsoft YaHei", "Noto Sans CJK SC", Arial, sans-serif; fill: #172033; }
+      .body { font: 400 20px "Microsoft YaHei", "Noto Sans CJK SC", Arial, sans-serif; fill: #354156; }
+      .small { font: 600 18px "Microsoft YaHei", "Noto Sans CJK SC", Arial, sans-serif; fill: #526177; }
+      .agent-label { font: 700 22px "Microsoft YaHei", "Noto Sans CJK SC", Arial, sans-serif; fill: #17335C; }
+      .agent-body { font: 400 18px "Microsoft YaHei", "Noto Sans CJK SC", Arial, sans-serif; fill: #53657C; }
+      .flow { fill: none; stroke: #536276; stroke-width: 4; stroke-linecap: square; stroke-linejoin: miter; }
+    </style>
+  </defs>
+
+  <rect x="0" y="0" width="1800" height="930" fill="#F6F8FC"/>
+
+  <text x="90" y="72" class="title">论文查新 Multi-Agent：总—分—总流程</text>
+  <text x="90" y="110" class="subtitle">全局规划与汇总，多个文献调研 Agent 并行检索、阅读和比较</text>
+
+  <!-- 主流程箭头置于节点下层 -->
+  <line x1="600" y1="245" x2="730" y2="245" class="flow" marker-end="url(#arrow)"/>
+  <line x1="1070" y1="245" x2="1200" y2="245" class="flow" marker-end="url(#arrow)"/>
+
+  <!-- 主流程节点 -->
+  <text x="475" y="164" text-anchor="middle" class="step">INPUT</text>
+  <rect x="350" y="185" width="250" height="120" rx="6" fill="#DCE8FF" stroke="#3B6FD8" stroke-width="3"/>
+  <text x="475" y="235" text-anchor="middle" class="label">被评论文</text>
+  <text x="475" y="270" text-anchor="middle" class="body">正文与参考文献</text>
+
+  <text x="900" y="164" text-anchor="middle" class="step">TOTAL</text>
+  <rect x="730" y="185" width="340" height="120" rx="6" fill="#F6A43A" stroke="#C96B12" stroke-width="3"/>
+  <text x="900" y="230" text-anchor="middle" class="label">查新协调 Agent</text>
+  <text x="900" y="266" text-anchor="middle" class="body">提取查新点 · 规划 · 汇总</text>
+
+  <text x="1325" y="164" text-anchor="middle" class="step">OUTPUT</text>
+  <rect x="1200" y="185" width="250" height="120" rx="6" fill="#D9F4E4" stroke="#2D9D62" stroke-width="3"/>
+  <text x="1325" y="235" text-anchor="middle" class="label">论文查新报告</text>
+  <text x="1325" y="270" text-anchor="middle" class="body">创新证据与缺失项</text>
+
+  <!-- Coordinator 与子 Agent 池之间的双向通信 -->
+  <line x1="900" y1="320" x2="900" y2="430" class="flow" marker-start="url(#arrow-start)" marker-end="url(#arrow)"/>
+  <rect x="935" y="341" width="250" height="54" rx="4" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="2"/>
+  <text x="1060" y="375" text-anchor="middle" class="small">任务下发 / 证据回传</text>
+
+  <!-- 并行文献调研池 -->
+  <rect x="350" y="430" width="1100" height="420" rx="8" fill="#EDF3FF" stroke="#8AA9E8" stroke-width="3"/>
+  <text x="395" y="490" class="label">分：并行文献调研</text>
+  <text x="395" y="525" class="body">按“查新点 × 检索主题 × 候选文献批次”分配任务</text>
+
+  <rect x="395" y="575" width="225" height="135" rx="6" fill="#FFFFFF" stroke="#4F7FD6" stroke-width="3"/>
+  <text x="507.5" y="625" text-anchor="middle" class="agent-label">文献调研 Agent 1</text>
+  <text x="507.5" y="664" text-anchor="middle" class="agent-body">检索 · 阅读 · 比较</text>
+
+  <rect x="655" y="575" width="225" height="135" rx="6" fill="#FFFFFF" stroke="#4F7FD6" stroke-width="3"/>
+  <text x="767.5" y="625" text-anchor="middle" class="agent-label">文献调研 Agent 2</text>
+  <text x="767.5" y="664" text-anchor="middle" class="agent-body">检索 · 阅读 · 比较</text>
+
+  <rect x="915" y="575" width="225" height="135" rx="6" fill="#FFFFFF" stroke="#4F7FD6" stroke-width="3"/>
+  <text x="1027.5" y="625" text-anchor="middle" class="agent-label">文献调研 Agent 3</text>
+  <text x="1027.5" y="664" text-anchor="middle" class="agent-body">检索 · 阅读 · 比较</text>
+
+  <rect x="1175" y="575" width="225" height="135" rx="6" fill="#FFFFFF" stroke="#4F7FD6" stroke-width="3"/>
+  <text x="1287.5" y="625" text-anchor="middle" class="agent-label">文献调研 Agent N</text>
+  <text x="1287.5" y="664" text-anchor="middle" class="agent-body">检索 · 阅读 · 比较</text>
+
+  <rect x="395" y="755" width="1005" height="62" rx="4" fill="#DCE8FF" stroke="#8AA9E8" stroke-width="2"/>
+  <text x="897.5" y="794" text-anchor="middle" class="small">统一输出：结构化 Evidence Cards · 文献证据 · 重合点 · 差异点 · 置信度</text>
+</svg>

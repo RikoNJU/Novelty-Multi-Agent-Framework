@@ -1,0 +1,287 @@
+"""按论文组织的本地运行产物持久化。
+
+当前实现面向开发和测试，把每篇论文的阶段产物写入
+``outputs/<paper_id>/``。生产环境后续可替换为对象存储或数据库，但工作流
+只应通过本模块写出产物，避免各节点自行拼接路径。
+"""
+
+from __future__ import annotations
+
+import json
+import re
+from collections.abc import Iterable
+from pathlib import Path
+from typing import Any, Mapping, Sequence
+
+from .schemas import (
+    EvidenceCard,
+    EvidenceReviewDecision,
+    NoveltyPoint,
+    NoveltyReport,
+    PaperDocument,
+    PaperInput,
+    RejectedEvidence,
+    ResearchTask,
+    SearchPlan,
+)
+
+DEFAULT_OUTPUTS_DIR = Path("outputs")
+STORAGE_VERSION = "test-version-local-file"
+
+
+def paper_workspace(
+    paper: PaperInput | PaperDocument | str,
+    *,
+    output_root: str | Path = DEFAULT_OUTPUTS_DIR,
+) -> Path:
+    """创建并返回单篇论文工作目录，阻止 paper_id 逃逸输出根目录。"""
+
+    paper_id = paper if isinstance(paper, str) else paper.paper_id
+    safe_name = _safe_directory_name(paper_id)
+    workspace = Path(output_root) / safe_name
+    for directory in (
+        workspace / "paper-input" / "images",
+        workspace / "paper-input" / "others",
+        workspace / "report",
+    ):
+        directory.mkdir(parents=True, exist_ok=True)
+    return workspace
+
+
+def persist_paper_input(
+    document: PaperDocument,
+    paper: PaperInput,
+    *,
+    output_root: str | Path = DEFAULT_OUTPUTS_DIR,
+) -> Path:
+    """写出论文全文、内容清单和供工作流重载的结构化输入。"""
+
+    workspace = paper_workspace(document, output_root=output_root)
+    input_dir = workspace / "paper-input"
+    (input_dir / "full.md").write_text(document.full_text + "\n", encoding="utf-8")
+
+    content_list = {
+        "paper_id": document.paper_id,
+        "title": document.title,
+        "source": document.source,
+        "page_count": len(document.pages),
+        "sections": [
+            {
+                "name": name,
+                "present": bool(content.strip()),
+                "characters": len(content),
+            }
+            for name, content in document.sections.items()
+        ],
+        "keywords_zh": document.keywords_zh,
+        "keywords_en": document.keywords_en,
+        "reference_count": len(document.references),
+        "parse_warnings": document.parse_warnings,
+        "workflow_input": "others/paper.json",
+    }
+    _write_json(input_dir / "content-list.json", content_list)
+    _write_json(
+        input_dir / "others" / "paper.json",
+        paper.model_dump(mode="json"),
+    )
+    return workspace
+
+
+def persist_workflow_input(
+    paper: PaperInput,
+    *,
+    output_root: str | Path = DEFAULT_OUTPUTS_DIR,
+) -> Path:
+    """确保直接通过 JSON/API 启动的工作流也具备完整 paper-input 目录。"""
+
+    workspace = paper_workspace(paper, output_root=output_root)
+    input_dir = workspace / "paper-input"
+    full_path = input_dir / "full.md"
+    content_list_path = input_dir / "content-list.json"
+    if not full_path.exists():
+        full_path.write_text(paper.full_text + "\n", encoding="utf-8")
+    if not content_list_path.exists():
+        _write_json(
+            content_list_path,
+            {
+                "paper_id": paper.paper_id,
+                "title": paper.title,
+                "source": paper.metadata.get("source", "workflow_input"),
+                "page_count": int(paper.metadata.get("pages", "0") or 0),
+                "sections": [],
+                "keywords_zh": paper.keywords_zh,
+                "keywords_en": paper.keywords_en,
+                "reference_count": len(paper.references),
+                "parse_warnings": [],
+                "workflow_input": "others/paper.json",
+            },
+        )
+    _write_json(
+        input_dir / "others" / "paper.json",
+        paper.model_dump(mode="json"),
+    )
+    return workspace
+
+
+def persist_novelty_points(
+    paper: PaperInput,
+    points: Sequence[NoveltyPoint],
+    *,
+    output_root: str | Path = DEFAULT_OUTPUTS_DIR,
+) -> Path:
+    """把生成的查新点写入论文工作目录。"""
+
+    workspace = paper_workspace(paper, output_root=output_root)
+    path = workspace / "novelty-points.json"
+    _write_json(
+        path,
+        {
+            "paper_id": paper.paper_id,
+            "title": paper.title,
+            "storage": STORAGE_VERSION,
+            "novelty_points": [point.model_dump(mode="json") for point in points],
+        },
+    )
+    return path
+
+
+def persist_retrieval_plans(
+    paper: PaperInput,
+    tasks: Sequence[ResearchTask],
+    *,
+    search_plans: Sequence[SearchPlan] = (),
+    executed_queries: Sequence[Mapping[str, Any]] = (),
+    rounds: int,
+    point_order: Sequence[str] = (),
+    output_root: str | Path = DEFAULT_OUTPUTS_DIR,
+) -> Path:
+    """按查新点写出任务、语义计划及真正执行的数据库 Query。"""
+
+    workspace = paper_workspace(paper, output_root=output_root)
+    path = workspace / "retrieval-plans.json"
+    grouped: dict[str, list[ResearchTask]] = {}
+    for task in tasks:
+        grouped.setdefault(task.novelty_point_id, []).append(task)
+    grouped_plans: dict[str, list[SearchPlan]] = {}
+    for plan in search_plans:
+        grouped_plans.setdefault(plan.novelty_point_id, []).append(plan)
+    grouped_queries: dict[str, list[Mapping[str, Any]]] = {}
+    for query in executed_queries:
+        point_id = str(query.get("novelty_point_id", ""))
+        grouped_queries.setdefault(point_id, []).append(query)
+
+    ordered_point_ids = list(
+        dict.fromkeys([*point_order, *grouped, *grouped_plans, *grouped_queries])
+    )
+    plans = []
+    for sequence, point_id in enumerate(ordered_point_ids, start=1):
+        point_tasks = grouped.get(point_id, [])
+        point_plans = grouped_plans.get(point_id, [])
+        point_queries = grouped_queries.get(point_id, [])
+        plans.append(
+            {
+                "sequence": sequence,
+                "novelty_point_id": point_id,
+                "research_tasks": [
+                    task.model_dump(mode="json") for task in point_tasks
+                ],
+                "search_plans": [
+                    plan.model_dump(mode="json") for plan in point_plans
+                ],
+                "executed_queries": [dict(query) for query in point_queries],
+                "query_plan": {
+                    "queries": _unique(
+                        str(query.get("query", "")) for query in point_queries
+                    ),
+                    "attempts": sorted({task.attempt for task in point_tasks}),
+                },
+            }
+        )
+    _write_json(
+        path,
+        {
+            "paper_id": paper.paper_id,
+            "rounds": rounds,
+            "novelty_point_plans": plans,
+        },
+    )
+    return path
+
+
+def persist_evidence_cards(
+    paper: PaperInput,
+    *,
+    raw_cards: Sequence[EvidenceCard],
+    accepted_cards: Sequence[EvidenceCard],
+    rejected_evidence: Sequence[RejectedEvidence],
+    validator_accepted_cards: Sequence[EvidenceCard] | None = None,
+    review_decisions: Sequence[EvidenceReviewDecision] | None = None,
+    output_root: str | Path = DEFAULT_OUTPUTS_DIR,
+) -> Path:
+    """写出证据校验前后结果，保留拒绝原因供审计。
+
+    新增 ``validator_accepted_cards`` 与 ``review_decisions`` 两个可选字段，
+    用于追踪 Reviewer 阶段。未传入时不会写入对应键，保持对旧 Reader 的兼容。
+    最终落盘结构遵循 ``outputs/<paper_id>/evidence-cards.json`` 约定：
+
+    - ``raw_evidence_cards``：Research Agent 原始输出；
+    - ``validator_accepted_cards``：通过确定性 Validator 的证据；
+    - ``review_decisions``：Reviewer 的逐卡结构化决定；
+    - ``accepted_evidence_cards``：最终允许 Coordinator 使用的证据；
+    - ``rejected_evidence``：所有拒绝项及原因。
+    """
+
+    workspace = paper_workspace(paper, output_root=output_root)
+    path = workspace / "evidence-cards.json"
+    payload: dict[str, Any] = {
+        "paper_id": paper.paper_id,
+        "raw_evidence_cards": [card.model_dump(mode="json") for card in raw_cards],
+        "accepted_evidence_cards": [
+            card.model_dump(mode="json") for card in accepted_cards
+        ],
+        "rejected_evidence": [
+            item.model_dump(mode="json") for item in rejected_evidence
+        ],
+    }
+    if validator_accepted_cards is not None:
+        payload["validator_accepted_cards"] = [
+            card.model_dump(mode="json") for card in validator_accepted_cards
+        ]
+    if review_decisions is not None:
+        payload["review_decisions"] = [
+            decision.model_dump(mode="json") for decision in review_decisions
+        ]
+    _write_json(path, payload)
+    return path
+
+
+def persist_report(
+    paper: PaperInput,
+    report: NoveltyReport,
+    *,
+    output_root: str | Path = DEFAULT_OUTPUTS_DIR,
+) -> Path:
+    """写出 Coordinator.synthesize() 生成并通过校验的结构化报告。"""
+
+    workspace = paper_workspace(paper, output_root=output_root)
+    path = workspace / "report.json"
+    _write_json(path, report.model_dump(mode="json"))
+    return path
+
+
+def _safe_directory_name(paper_id: str) -> str:
+    name = re.sub(r"[^A-Za-z0-9._-]+", "_", paper_id.strip()).strip("._")
+    if not name:
+        raise ValueError("paper_id 无法转换为安全的工作目录名")
+    return name
+
+
+def _write_json(path: Path, payload: Any) -> None:
+    path.write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
+
+
+def _unique(values: Iterable[str]) -> list[str]:
+    return list(dict.fromkeys(values))

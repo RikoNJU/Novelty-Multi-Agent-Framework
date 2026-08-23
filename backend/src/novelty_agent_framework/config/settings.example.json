@@ -1,0 +1,131 @@
+{
+  "server": {
+    "host": "0.0.0.0",
+    "port": 8010
+  },
+  "cors": {
+    "origins": [
+      "http://localhost:3000",
+      "http://localhost:5173"
+    ]
+  },
+  "workflow": {
+    "max_rounds": 2,
+    "max_concurrency": 4,
+    "minimum_evidence_per_point": 1
+  },
+  "retrieval": {
+    "active_source": "arxiv",
+    "candidate_limit_per_task": 8,
+    "candidate_excerpt_chars": 2000,
+    "sources": {
+      "arxiv": {
+        "enabled": true,
+        "min_interval": 3.0,
+        "timeout": 20.0,
+        "max_retries": 2
+      },
+      "null_catalog": {
+        "enabled": true,
+        "testing_only": true
+      }
+    }
+  },
+  "models": {
+    "glm4.7": {
+      "provider": "openai_compatible",
+      "base_url": "https://api.siliconflow.cn/v1",
+      "model": "Pro/zai-org/GLM-4.7",
+      "api_key_env": "SILICONFLOW_API_KEY",
+      "context_window": 200000,
+      "supported_params": ["enable_thinking", "thinking_budget"],
+      "defaults": {
+        "temperature": 0.2,
+        "max_tokens": 8192
+      }
+    },
+    "deepseek-flash": {
+      "provider": "openai_compatible",
+      "base_url": "https://api.siliconflow.cn/v1",
+      "model": "deepseek-ai/DeepSeek-V4-Flash",
+      "api_key_env": "SILICONFLOW_API_KEY",
+      "context_window": 128000,
+      "supported_params": ["enable_thinking", "thinking_budget", "reasoning_effort"],
+      "defaults": {
+        "temperature": 0.3,
+        "max_tokens": 4096,
+        "timeout_seconds": 300
+      }
+    },
+    "r1-qwen3-8b": {
+      "provider": "openai_compatible",
+      "base_url": "https://api.siliconflow.cn/v1",
+      "model": "deepseek-ai/DeepSeek-R1-0528-Qwen3-8B",
+      "api_key_env": "SILICONFLOW_API_KEY",
+      "context_window": 128000,
+      "supported_params": ["enable_thinking", "thinking_budget"],
+      "defaults": {
+        "temperature": 0.2,
+        "max_tokens": 8192,
+        "timeout_seconds": 600
+      }
+    },
+    "deepseek-ocr": {
+      "provider": "openai_compatible",
+      "base_url": "https://api.siliconflow.cn/v1",
+      "model": "deepseek-ai/DeepSeek-OCR",
+      "api_key_env": "SILICONFLOW_API_KEY",
+      "context_window": 128000,
+      "supported_params": [],
+      "defaults": {
+        "max_tokens": 4096
+      }
+    }
+  },
+  "agents": {
+    "coordinator": {
+      "model": "glm4.7",
+      "temperature": 0.2,
+      "prompts": [
+        "coordinator/plan",
+        "coordinator/plan_supplement",
+        "coordinator/synthesize"
+      ]
+    },
+    "research": {
+      "model": "deepseek-flash",
+      "temperature": 0.3,
+      "prompts": [
+        "research/literature_review"
+      ]
+    },
+    "search_planner": {
+      "model": "deepseek-flash",
+      "temperature": 0.2,
+      "prompts": [
+        "search_planner/plan"
+      ]
+    },
+    "point_extractor": {
+      "model": "r1-qwen3-8b",
+      "temperature": 0.2,
+      "prompts": [
+        "extractor/extract_points"
+      ]
+    },
+    "reviewer": {
+      "enabled": false,
+      "model": "deepseek-flash",
+      "temperature": 0.0,
+      "max_cards_per_call": 8,
+      "fail_closed": true,
+      "prompt": "reviewer/review_evidence"
+    }
+  },
+  "processing": {
+    "dpi": 200,
+    "quality_min_chars_per_page": 200,
+    "ocr_model": "deepseek-ocr",
+    "llm_model": "r1-qwen3-8b"
+  }
+}
