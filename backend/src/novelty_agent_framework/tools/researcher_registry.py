@@ -7,15 +7,12 @@ import time
 from typing import Any, Protocol
 
 from ..schemas import (
-    ReferenceReaderToolArguments,
-    ReferenceReadRequest,
     ResearcherToolObservation,
     StrictModel,
     StructuredRetrievalToolArguments,
     StructuredSourceRetrievalRequest,
     TaskResearchRequest,
 )
-from .reference_reader import ReferenceArtifactReaderTool
 from .structured_retrieval import StructuredSourceRetrievalTool
 
 
@@ -122,42 +119,6 @@ class StructuredRetrievalResearcherTool:
                 f"发现 {len(bundle.works)} 个作品，保存 {len(bundle.artifacts)} 个制品"
             ),
             payload={"bundle": bundle.model_dump(mode="json")},
-            elapsed_ms=int((time.monotonic() - started) * 1000),
-        )
-
-
-class ReferenceReaderResearcherTool:
-    name = "reference_artifact_reader"
-    description = "按 Artifact ID 读取可验证的文本字符片段。"
-    args_schema = ReferenceReaderToolArguments
-
-    def __init__(self, reader: ReferenceArtifactReaderTool) -> None:
-        self.reader = reader
-
-    async def ainvoke(
-        self,
-        arguments: ReferenceReaderToolArguments,
-        *,
-        scope: TaskResearchRequest,
-    ) -> ResearcherToolObservation:
-        started = time.monotonic()
-        result = await self.reader.ainvoke(
-            ReferenceReadRequest(
-                subject_paper_id=scope.subject_paper_id,
-                artifact_id=arguments.artifact_id,
-                char_start=arguments.char_start,
-                max_chars=arguments.max_chars,
-            )
-        )
-        return ResearcherToolObservation(
-            tool_name=self.name,
-            arguments=arguments.model_dump(mode="json"),
-            succeeded=True,
-            summary=(
-                f"读取 artifact {result.artifact_id} 字符 "
-                f"[{result.char_start}, {result.char_end})"
-            ),
-            payload={"read_result": result.model_dump(mode="json")},
             elapsed_ms=int((time.monotonic() - started) * 1000),
         )
 

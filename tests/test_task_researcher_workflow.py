@@ -26,7 +26,7 @@ from novelty_agent_framework.schemas import (
 )
 from novelty_agent_framework.tools import (
     ReferenceArtifactReaderTool,
-    ReferenceReaderResearcherTool,
+    ReaderTool,
     ResearcherToolRegistry,
 )
 from novelty_agent_framework.workflows import TaskResearcherConfig, TaskResearcherWorkflow
@@ -144,7 +144,7 @@ def finish_action(quote="Exact grounded quote."):
 def test_complete_tool_read_finish_loop_and_scope_injection(tmp_path):
     store = prepare_store(tmp_path)
     retrieval = FakeRetrievalTool()
-    reader = ReferenceReaderResearcherTool(ReferenceArtifactReaderTool(store))
+    reader = ReaderTool(ReferenceArtifactReaderTool(store))
     registry = ResearcherToolRegistry([retrieval, reader])
     finish = finish_action()
     agent = FakeAgent(
@@ -154,7 +154,7 @@ def test_complete_tool_read_finish_loop_and_scope_injection(tmp_path):
                 arguments={"source_id": "test"},
             ),
             CallToolAction(
-                action="call_tool", tool_name="reference_artifact_reader",
+                action="call_tool", tool_name="reader",
                 arguments={"artifact_id": "art_1", "char_start": 0, "max_chars": 100},
             ),
             finish,
@@ -205,14 +205,14 @@ def test_bad_quote_is_dropped_without_losing_task_result(tmp_path):
 def test_duplicate_calls_and_budget_terminate_partial(tmp_path):
     store = prepare_store(tmp_path)
     action = CallToolAction(
-        action="call_tool", tool_name="reference_artifact_reader",
+        action="call_tool", tool_name="reader",
         arguments={"artifact_id": "art_1", "char_start": 0, "max_chars": 10},
     )
     agent = FakeAgent([action, action, action, action])
     workflow = TaskResearcherWorkflow(
         agent,
         ResearcherToolRegistry(
-            [ReferenceReaderResearcherTool(ReferenceArtifactReaderTool(store))]
+            [ReaderTool(ReferenceArtifactReaderTool(store))]
         ),
         reference_store=store,
         config=TaskResearcherConfig(max_steps=3, max_tool_calls=3),
@@ -228,7 +228,7 @@ def test_registry_rejects_unknown_or_invalid_arguments_and_is_extensible(tmp_pat
     unknown = asyncio.run(registry.execute("missing", {}, scope=scope()))
     assert not unknown.succeeded and "unregistered" in unknown.error
 
-    reader = ReferenceReaderResearcherTool(
+    reader = ReaderTool(
         ReferenceArtifactReaderTool(prepare_store(tmp_path))
     )
     registry.register(reader)

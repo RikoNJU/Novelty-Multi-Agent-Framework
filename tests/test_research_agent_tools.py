@@ -303,7 +303,7 @@ def test_decide_returns_strict_discriminated_action() -> None:
         json.dumps(
             {
                 "action": "call_tool",
-                "tool_name": "reference_artifact_reader",
+                "tool_name": "reader",
                 "arguments": {"artifact_id": "art_1"},
             }
         )
@@ -318,13 +318,13 @@ def test_decide_returns_strict_discriminated_action() -> None:
         NoveltyResearchAgent(model_client=client).decide(
             {
                 "request": request,
-                "tool_descriptions": [{"name": "reference_artifact_reader"}],
+                "tool_descriptions": [{"name": "reader"}],
                 "observations": [],
             }
         )
     )
     assert isinstance(action, CallToolAction)
-    assert action.tool_name == "reference_artifact_reader"
+    assert action.tool_name == "reader"
 
 
 def test_decide_repairs_invalid_json_once_then_fails() -> None:

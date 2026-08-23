@@ -38,7 +38,7 @@ class TaskResearcherConfig:
     per_tool_limits: dict[str, int] = field(
         default_factory=lambda: {
             "structured_source_retrieval": 1,
-            "reference_artifact_reader": 8,
+            "reader": 8,
         }
     )
 
@@ -168,7 +168,7 @@ class TaskResearcherWorkflow:
         action = state["last_action"]
         assert isinstance(action, CallToolAction)
         arguments = dict(action.arguments)
-        if action.tool_name == "reference_artifact_reader":
+        if action.tool_name == "reader":
             arguments["max_chars"] = min(
                 int(arguments.get("max_chars", self.config.max_chars_per_read)),
                 self.config.max_chars_per_read,

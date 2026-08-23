@@ -12,8 +12,8 @@ from .adapter import (
 from .null_catalog import NullQueryAdapter, NullSearchTool, build_null_catalog_source
 from .retrieval_sources import RetrievalSource, RetrievalSourceRegistry
 from .reference_reader import ReferenceArtifactReaderTool
+from .reader import ReaderTool, ReferenceReaderResearcherTool
 from .researcher_registry import (
-    ReferenceReaderResearcherTool,
     ResearcherTool,
     ResearcherToolRegistry,
     StructuredRetrievalResearcherTool,
@@ -45,6 +45,7 @@ __all__ = [
     "RetrievalSource",
     "RetrievalSourceRegistry",
     "ReferenceArtifactReaderTool",
+    "ReaderTool",
     "ReferenceReaderResearcherTool",
     "ResearcherTool",
     "ResearcherToolRegistry",

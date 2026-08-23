@@ -109,7 +109,7 @@ def test_services_hide_retrieval_implementation_details():
         "validator",
     }
     assert workflow.services.task_researcher.tools.names == (
-        "reference_artifact_reader",
+        "reader",
     )
 
 
@@ -128,7 +128,7 @@ def test_build_workflow_injects_arxiv_tools_when_enabled():
 
     assert workflow.services.task_researcher.tools.names == (
         "structured_source_retrieval",
-        "reference_artifact_reader",
+        "reader",
     )
     assert workflow.config.candidate_limit_per_task == 5
 

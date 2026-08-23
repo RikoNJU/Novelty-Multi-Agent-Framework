@@ -23,7 +23,7 @@ from ..agents import (
 )
 from ..tools import (
     ReferenceArtifactReaderTool,
-    ReferenceReaderResearcherTool,
+    ReaderTool,
     ResearcherToolRegistry,
     RetrievalSource,
     RetrievalSourceRegistry,
@@ -238,7 +238,7 @@ def build_workflow(
     workflow_cfg = raw.get("workflow", {})
     store = ReferenceStore()
     reader = ReferenceArtifactReaderTool(store)
-    researcher_tools = [ReferenceReaderResearcherTool(reader)]
+    researcher_tools = [ReaderTool(reader)]
     if source.search_tool is not None:
         retrieval_tool = StructuredSourceRetrievalTool(
             search_planner=search_planner,
@@ -272,7 +272,7 @@ def build_workflow(
                     "per_tool_limits",
                     {
                         "structured_source_retrieval": 1,
-                        "reference_artifact_reader": 8,
+                        "reader": 8,
                     },
                 )
             ),
