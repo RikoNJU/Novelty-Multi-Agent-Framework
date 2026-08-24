@@ -23,7 +23,13 @@ from .structured_retrieval import (
     StructuredSourceRetrievalTool,
 )
 from .web_search import WebSearchTool
-from .web_search_backend import SearchBackend, SearchBackendResult, SearchHit
+from .web_search_backend import (
+    BaiduSearchBackend,
+    BaiduSearchError,
+    SearchBackend,
+    SearchBackendResult,
+    SearchHit,
+)
 from .renderer import (
     MarkdownRenderer,
     RendererFactory,
@@ -90,3 +96,5 @@ def __getattr__(name: str):
         AdapterFactory.register("arxiv", value)
     globals()[name] = value
     return value
+    "BaiduSearchBackend",
+    "BaiduSearchError",
