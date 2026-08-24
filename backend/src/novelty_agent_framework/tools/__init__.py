@@ -22,6 +22,8 @@ from .structured_retrieval import (
     StructuredRetrievalAdapter,
     StructuredSourceRetrievalTool,
 )
+from .web_search import WebSearchTool
+from .web_search_backend import SearchBackend, SearchBackendResult, SearchHit
 from .renderer import (
     MarkdownRenderer,
     RendererFactory,
@@ -49,9 +51,13 @@ __all__ = [
     "ReferenceReaderResearcherTool",
     "ResearcherTool",
     "ResearcherToolRegistry",
+    "SearchBackend",
+    "SearchBackendResult",
+    "SearchHit",
     "StructuredRetrievalResearcherTool",
     "StructuredSourceRetrievalTool",
     "StructuredRetrievalAdapter",
+    "WebSearchTool",
     "RendererFactory",
     "ReportRenderer",
     "ReportRenderError",

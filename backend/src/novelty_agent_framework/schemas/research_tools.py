@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Annotated, TypeAlias
 
 from pydantic import Field, StringConstraints, model_validator
 
 from .domain import EvidenceCard, StrictModel
-from .references import ArtifactRole, Evidence, SearchResultRef
+from .references import ArtifactRole, Evidence
 
 NonEmptyStr = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
 
@@ -19,9 +20,20 @@ class WebSearchArguments(StrictModel):
     max_results: int = Field(default=10, ge=1, le=100)
 
 
+class WebSearchItem(StrictModel):
+    source_record_id: NonEmptyStr
+    rank: int = Field(ge=1)
+    title: NonEmptyStr
+    url: NonEmptyStr
+    snippet: str | None = None
+    score: float | None = None
+    published_at: datetime | None = None
+    source_name: NonEmptyStr | None = None
+
+
 class WebSearchResult(StrictModel):
     query: NonEmptyStr
-    results: list[SearchResultRef] = Field(default_factory=list)
+    results: list[WebSearchItem] = Field(default_factory=list)
     warnings: list[str] = Field(default_factory=list)
 
 

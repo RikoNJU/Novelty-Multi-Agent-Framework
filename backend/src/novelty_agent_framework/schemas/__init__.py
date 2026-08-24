@@ -66,6 +66,7 @@ from .research_tools import (
     ReferenceReadRequest,
     ReferenceReadResult,
     WebSearchArguments,
+    WebSearchItem,
     WebSearchResult,
 )
 
@@ -131,5 +132,6 @@ __all__ = [
     "TaskResearchResult",
     "TaskResearchStatus",
     "WebSearchArguments",
+    "WebSearchItem",
     "WebSearchResult",
 ]
