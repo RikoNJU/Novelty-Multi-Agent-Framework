@@ -9,7 +9,9 @@ from .model_client import (
     ModelRegistry,
     ModelResponse,
     ModelRuntimeConfig,
+    ModelToolCall,
     OpenAICompatibleChatClient,
+    ToolDefinition,
     build_model_client,
 )
 from .prompt_library import (
@@ -31,11 +33,13 @@ __all__ = [
     "ModelRegistry",
     "ModelResponse",
     "ModelRuntimeConfig",
+    "ModelToolCall",
     "OpenAICompatibleChatClient",
     "PromptLibrary",
     "PromptRenderError",
     "PromptTemplate",
     "RenderedPrompt",
+    "ToolDefinition",
     "build_model_client",
     "parse_front_matter",
 ]

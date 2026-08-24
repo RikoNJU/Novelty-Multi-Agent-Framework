@@ -49,9 +49,29 @@ ContentPart = str | ImageContentPart
 
 
 @dataclass(frozen=True)
+class ToolDefinition:
+    """Provider-independent function tool definition."""
+
+    name: str
+    description: str
+    parameters: Mapping[str, Any]
+
+
+@dataclass(frozen=True)
+class ModelToolCall:
+    """A model request to invoke one named tool with JSON-object arguments."""
+
+    id: str
+    name: str
+    arguments: Mapping[str, Any]
+
+
+@dataclass(frozen=True)
 class ChatMessage:
     role: str
-    content: str | Sequence[ContentPart]
+    content: str | Sequence[ContentPart] | None = None
+    tool_calls: Sequence[ModelToolCall] = ()
+    tool_call_id: str | None = None
 
 
 @dataclass(frozen=True)
@@ -62,12 +82,15 @@ class ModelCallOptions:
     response_format: Mapping[str, Any] | None = None
     top_p: float | None = None
     stop: Sequence[str] | None = None
+    tools: Sequence[ToolDefinition] | None = None
+    tool_choice: str | Mapping[str, Any] | None = None
     extra_body: Mapping[str, Any] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
 class ModelResponse:
-    content: str
+    content: str | None
+    tool_calls: Sequence[ModelToolCall] = ()
     raw: Mapping[str, Any] = field(default_factory=dict)
     usage: Mapping[str, Any] = field(default_factory=dict)
 
@@ -194,12 +217,20 @@ class OpenAICompatibleChatClient:
             raise ModelClientError(f"模型网络调用失败: {exc}") from exc
 
         try:
-            content = raw["choices"][0]["message"]["content"]
+            message = raw["choices"][0]["message"]
         except (KeyError, IndexError, TypeError) as exc:
             raise ModelClientError(f"模型返回格式不符合 chat completions: {raw}") from exc
+        if not isinstance(message, Mapping):
+            raise ModelClientError(f"模型返回格式不符合 chat completions: {raw}")
+
+        content = message.get("content")
+        if content is not None and not isinstance(content, str):
+            raise ModelClientError("模型返回的 message.content 必须是字符串或 null")
+        tool_calls = _parse_tool_calls(message.get("tool_calls"))
 
         return ModelResponse(
             content=content,
+            tool_calls=tool_calls,
             raw=raw,
             usage=raw.get("usage", {}),
         )
@@ -215,13 +246,7 @@ class OpenAICompatibleChatClient:
         defaults = dict(profile.defaults or {})
         payload: dict[str, Any] = {
             "model": profile.model,
-            "messages": [
-                {
-                    "role": message.role,
-                    "content": _serialize_content(message.content),
-                }
-                for message in messages
-            ],
+            "messages": [_serialize_message(message) for message in messages],
             "temperature": (
                 options.temperature
                 if options.temperature is not None
@@ -238,6 +263,14 @@ class OpenAICompatibleChatClient:
             payload["response_format"] = dict(options.response_format)
         elif "response_format" in defaults:
             payload["response_format"] = dict(defaults["response_format"])
+        if options.tools:
+            payload["tools"] = [_serialize_tool_definition(tool) for tool in options.tools]
+        if options.tool_choice is not None:
+            payload["tool_choice"] = (
+                dict(options.tool_choice)
+                if isinstance(options.tool_choice, Mapping)
+                else options.tool_choice
+            )
 
         for key, value in defaults.items():
             if key in (
@@ -265,10 +298,26 @@ class OpenAICompatibleChatClient:
         return await asyncio.to_thread(self.complete, messages, options=options)
 
 
-def _serialize_content(content: str | Sequence[ContentPart]) -> Any:
+def _serialize_message(message: ChatMessage) -> dict[str, Any]:
+    """Serialize normal, assistant tool-call, and tool-result messages."""
+
+    serialized: dict[str, Any] = {
+        "role": message.role,
+        "content": _serialize_content(message.content),
+    }
+    if message.tool_calls:
+        serialized["tool_calls"] = [
+            _serialize_model_tool_call(tool_call) for tool_call in message.tool_calls
+        ]
+    if message.tool_call_id is not None:
+        serialized["tool_call_id"] = message.tool_call_id
+    return serialized
+
+
+def _serialize_content(content: str | Sequence[ContentPart] | None) -> Any:
     """把消息内容序列化为 OpenAI chat completions 的 content 字段。"""
 
-    if isinstance(content, str):
+    if content is None or isinstance(content, str):
         return content
     parts: list[dict[str, Any]] = []
     for part in content:
@@ -282,6 +331,66 @@ def _serialize_content(content: str | Sequence[ContentPart]) -> Any:
                 }
             )
     return parts
+
+
+def _serialize_tool_definition(tool: ToolDefinition) -> dict[str, Any]:
+    return {
+        "type": "function",
+        "function": {
+            "name": tool.name,
+            "description": tool.description,
+            "parameters": dict(tool.parameters),
+        },
+    }
+
+
+def _serialize_model_tool_call(tool_call: ModelToolCall) -> dict[str, Any]:
+    return {
+        "id": tool_call.id,
+        "type": "function",
+        "function": {
+            "name": tool_call.name,
+            "arguments": json.dumps(tool_call.arguments, ensure_ascii=False),
+        },
+    }
+
+
+def _parse_tool_calls(value: Any) -> tuple[ModelToolCall, ...]:
+    if value is None:
+        return ()
+    if not isinstance(value, list):
+        raise ModelClientError("模型返回的 message.tool_calls 必须是数组")
+
+    parsed: list[ModelToolCall] = []
+    for index, item in enumerate(value):
+        if not isinstance(item, Mapping):
+            raise ModelClientError(f"模型返回的 tool_calls[{index}] 必须是对象")
+        call_id = item.get("id")
+        function = item.get("function")
+        if not isinstance(call_id, str) or not call_id:
+            raise ModelClientError(f"模型返回的 tool_calls[{index}] 缺少 id")
+        if not isinstance(function, Mapping):
+            raise ModelClientError(f"模型返回的 tool_calls[{index}] 缺少 function")
+        name = function.get("name")
+        if not isinstance(name, str) or not name:
+            raise ModelClientError(f"模型返回的 tool_calls[{index}] 缺少 function.name")
+        raw_arguments = function.get("arguments")
+        if not isinstance(raw_arguments, str):
+            raise ModelClientError(
+                f"模型返回的 tool_calls[{index}].function.arguments 必须是 JSON 字符串"
+            )
+        try:
+            arguments = json.loads(raw_arguments)
+        except json.JSONDecodeError as exc:
+            raise ModelClientError(
+                f"模型返回的 tool_calls[{index}].function.arguments 不是合法 JSON"
+            ) from exc
+        if not isinstance(arguments, dict):
+            raise ModelClientError(
+                f"模型返回的 tool_calls[{index}].function.arguments 必须是 JSON object"
+            )
+        parsed.append(ModelToolCall(id=call_id, name=name, arguments=arguments))
+    return tuple(parsed)
 
 
 class ModelRegistry:
