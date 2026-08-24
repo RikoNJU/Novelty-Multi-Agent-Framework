@@ -281,9 +281,24 @@ def _report(summary: dict) -> str:
 
 本节是 smoke experiment 的定性观察，不是 precision、recall、MAP 或 NDCG 结论。结果标题、URL、snippet 与来源域名可用于候选筛选；应结合上面的域名集中度和字段缺失统计判断来源多样性。任何 snippet 或 provider content 都只是搜索阶段候选发现信息，不能作为已验证证据。
 
+本次 15 条 Backend-only 结果中，百家号、微信公众号与 CSDN 合计 12 条，占 80%。结果中未出现明显的一手学术出版平台或论文数据库，来源以二次传播、技术博客和资讯页面为主。`多智能体 科技查新 论文` 查询还混入论文 AI 降重、AIGC 检测平台等商业内容；英文 query 仍主要返回中文二手内容。这说明 API 连通性与中文候选发现能力成立，但当前固定请求缺少学术来源约束、语言控制和质量过滤，不能直接满足正式科技查新的来源质量要求。
+
+所有标准化结果均提供 snippet、date 和 website，字段完整性较好；但字段完整不等于内容权威。当前 `content` 体量较大，只保留为 provider metadata，后续应评估是否需要裁剪以控制 Manifest 膨胀。
+
 正式证据链仍应为：WebSearch → Browser → Artifact → Reader → EvidenceCardBuilder。
 
-## 8. 边界与下一步
+## 8. 实验发现的数据缺口
+
+- 缺少一手论文数据库、大学机构库或正式出版平台结果；
+- 缺少“学术/论文来源”过滤参数，query 中加入“论文”不足以保证学术质量；
+- 英文 query 没有带来英文来源，当前 v1 没有语言控制；
+- 来源集中于少数内容平台，候选多样性有限；
+- provider `content` 与 snippet 仍是未验证搜索材料，不具备 Artifact/Evidence 身份；
+- 尚未通过 Browser 验证 URL 可访问性、正文真实性、页面稳定性和元数据一致性；
+- 没有标注集，因此不能给出 precision、recall、MAP 或 NDCG；
+- 当前仅验证 standard 默认 edition 和 `baidu_search_v2`，没有比较其他可选搜索策略。
+
+## 9. 边界与下一步
 
 本实验未使用 LLM、ToolCallHarness、Browser、Reader 或 EvidenceCardBuilder，未实现缓存、复杂 retry、Router 或多 backend fallback。下一步可在确认结果质量与稳定性后进行 WebSearch + Harness live smoke；在正式 Researcher 工作流接入前，仍需实现 Browser 并验证候选 URL 到 Artifact 的可信转换。
 """
