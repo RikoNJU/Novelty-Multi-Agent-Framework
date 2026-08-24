@@ -11,6 +11,7 @@ from novelty_agent_framework.schemas import (
     Evidence,
     EvidenceLocator,
     ExternalIdentifier,
+    PublicationStage,
     ReferenceManifest,
     ResearchBundle,
     SearchExecution,
@@ -69,6 +70,21 @@ def make_artifact(artifact_id="art_pdf", **updates):
     }
     data.update(updates)
     return Artifact(**data)
+
+
+def test_persisted_publication_stage_metadata_is_accepted():
+    work = make_work(
+        publication_stage="preprint",
+        publication_stage_provenance="arXiv source",
+    )
+    record = make_record(
+        publication_stage="unknown",
+        publication_stage_provenance=None,
+    )
+
+    assert work.publication_stage is PublicationStage.PREPRINT
+    assert work.publication_stage_provenance == "arXiv source"
+    assert record.publication_stage is PublicationStage.UNKNOWN
 
 
 def test_minimal_models_and_json_round_trip():

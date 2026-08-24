@@ -31,6 +31,16 @@ class WorkType(StrEnum):
     OTHER = "other"
 
 
+class PublicationStage(StrEnum):
+    """Persisted publication lifecycle metadata used by existing workspaces."""
+
+    PREPRINT = "preprint"
+    ACCEPTED_MANUSCRIPT = "accepted_manuscript"
+    PUBLISHED = "published"
+    RETRACTED = "retracted"
+    UNKNOWN = "unknown"
+
+
 class SourceKind(StrEnum):
     STRUCTURED_DATABASE = "structured_database"
     WEB = "web"
@@ -123,6 +133,8 @@ class Work(StrictModel):
     language: NonEmptyStr | None = None
     identifiers: list[ExternalIdentifier] = Field(default_factory=list)
     canonical_source_record_id: NonEmptyStr | None = None
+    publication_stage: PublicationStage = PublicationStage.UNKNOWN
+    publication_stage_provenance: NonEmptyStr | None = None
 
     @field_validator("publication_year")
     @classmethod
@@ -154,6 +166,8 @@ class SourceRecord(StrictModel):
     raw_metadata: JsonObject = Field(default_factory=dict)
     observed_at: datetime
     provenance: JsonObject = Field(default_factory=dict)
+    publication_stage: PublicationStage = PublicationStage.UNKNOWN
+    publication_stage_provenance: NonEmptyStr | None = None
 
     @field_validator("publication_year")
     @classmethod
