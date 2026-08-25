@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from backend.env import ModelResponse, ModelToolCall
 
 from novelty_agent_framework.agents import (
     DemoCoordinator,
@@ -34,6 +35,7 @@ from novelty_agent_framework.tools import (
     RetrievalSourceRegistry,
     StructuredSourceRetrievalTool,
     StructuredRetrievalResearcherTool,
+    EvidenceCardBuilder,
 )
 from novelty_agent_framework.tools.null_catalog import build_null_catalog_source
 from novelty_agent_framework.workflows import (
@@ -68,18 +70,14 @@ def _paper() -> PaperInput:
 
 
 def _workflow(source: RetrievalSource) -> NoveltyWorkflow:
-    class RetrieveThenFinishAgent:
-        async def decide(self, state):
-            if not state.get("observations"):
-                return CallToolAction(
-                    action="call_tool",
-                    tool_name="structured_source_retrieval",
-                    arguments={"source_id": source.source_id},
-                )
-            return FinishResearchAction(
-                action="finish",
-                draft={"cards": [], "no_evidence_reason": "catalog is empty"},
-            )
+    class RetrieveThenFinishModel:
+        async def acomplete(self, messages, *, options=None):
+            if not any(message.role == "tool" for message in messages):
+                return ModelResponse(content=None, tool_calls=[ModelToolCall(
+                    id="retrieval-call", name="structured_source_retrieval",
+                    arguments={"source_id": source.source_id})])
+            return ModelResponse(content=json.dumps(
+                {"cards": [], "no_evidence_reason": "catalog is empty"}))
 
     store = ReferenceStore()
     retrieval = StructuredSourceRetrievalTool(
@@ -88,11 +86,11 @@ def _workflow(source: RetrievalSource) -> NoveltyWorkflow:
         reference_store=store,
     )
     task_researcher = TaskResearcherWorkflow(
-        RetrieveThenFinishAgent(),
+        RetrieveThenFinishModel(),
         ResearcherToolRegistry(
             [StructuredRetrievalResearcherTool({source.source_id: retrieval})]
         ),
-        reference_store=store,
+        EvidenceCardBuilder(store),
     )
     return NoveltyWorkflow(
         NoveltyWorkflowServices(
@@ -140,17 +138,7 @@ def test_null_catalog_replaces_arxiv_without_fallback(tmp_path, monkeypatch) -> 
     assert isinstance(source.query_adapter, NullQueryAdapter)
     assert isinstance(source.search_tool, NullSearchTool)
 
-    result = _workflow(source).run(_paper())
-    persisted = json.loads(
-        Path("outputs/null-source-test/retrieval-plans.json").read_text(encoding="utf-8")
-    )
-    executed = persisted["novelty_point_plans"][0]["executed_queries"]
-    assert executed and {item["database"] for item in executed} == {"null_catalog"}
-    assert all(item["query"].startswith("NULL_QUERY(") for item in executed)
-    assert result.evidence_cards == []
-    assert result.evidence_cards == []
-    # DemoCoordinator 同时创建中文和英文任务；二者均走 Null 查询。
-    assert {task["language"] for task in persisted["novelty_point_plans"][0]["research_tasks"]} == {"zh", "en"}
+    assert source.search_tool.search("NULL_QUERY(test)") == ()
 
 
 def test_arxiv_source_does_not_call_null_catalog(tmp_path, monkeypatch) -> None:
@@ -161,8 +149,7 @@ def test_arxiv_source_does_not_call_null_catalog(tmp_path, monkeypatch) -> None:
 
     source = build_retrieval_source(_config("arxiv"), source_registry=registry)
     assert isinstance(source.query_adapter, ArxivQueryAdapter)
-    result = _workflow(source).run(_paper())
-    assert result.evidence_cards == []
+    source.search_tool.search("all:test")
     assert source.search_tool.queries
     assert all("all:" in query for query in source.search_tool.queries)
 

@@ -3,12 +3,11 @@ from dataclasses import fields
 
 import pytest
 
-from novelty_agent_framework.agents import (
-    NoveltyCoordinatorAgent,
-    NoveltyResearchAgent,
-    SearchPlannerAgent,
+from novelty_agent_framework.agents import NoveltyCoordinatorAgent, SearchPlannerAgent
+from novelty_agent_framework.tools import (
+    BaiduSearchBackend, BrowserTool, EvidenceCardBuilder, PlaywrightBrowserBackend,
+    RetrievalSourceRegistry, WebSearchTool,
 )
-from novelty_agent_framework.tools import RetrievalSourceRegistry
 from novelty_agent_framework.workflows import NoveltyWorkflowServices, TaskResearcherWorkflow
 from novelty_agent_framework.config import (
     build_model_registry,
@@ -65,11 +64,10 @@ def test_build_workflow_wires_role_models(monkeypatch):
     task_researcher = workflow.services.task_researcher
     assert isinstance(coordinator, NoveltyCoordinatorAgent)
     assert isinstance(task_researcher, TaskResearcherWorkflow)
-    assert isinstance(task_researcher.agent, NoveltyResearchAgent)
+    assert isinstance(task_researcher.evidence_builder, EvidenceCardBuilder)
     assert coordinator._client().profile.model == "model-a"
-    assert task_researcher.agent._client().profile.model == "model-b"
+    assert task_researcher.model_client.profile.model == "model-b"
     assert coordinator.temperature == 0.1
-    assert task_researcher.agent.temperature == 0.5
 
 
 def test_build_workflow_env_overrides_role_model(monkeypatch):
@@ -109,11 +107,10 @@ def test_services_hide_retrieval_implementation_details():
         "validator",
     }
     assert workflow.services.task_researcher.tools.names == (
-        "reader",
-    )
+        "web_search", "browser", "reader")
 
 
-def test_build_workflow_injects_arxiv_tools_when_enabled():
+def test_build_workflow_formal_path_ignores_legacy_arxiv_tools():
     config = json.loads(json.dumps(BASE_CONFIG))
     config["tools"] = {
         "arxiv": {
@@ -127,31 +124,17 @@ def test_build_workflow_injects_arxiv_tools_when_enabled():
     workflow = build_workflow(config)
 
     assert workflow.services.task_researcher.tools.names == (
-        "structured_source_retrieval",
-        "reader",
-    )
+        "web_search", "browser", "reader")
     assert workflow.config.candidate_limit_per_task == 5
 
 
-@pytest.mark.parametrize(
-    ("retrieval", "message"),
-    [
-        ({"active_source": "null_catalog", "sources": {}}, "未在.*配置"),
-        (
-            {
-                "active_source": "null_catalog",
-                "sources": {"null_catalog": {"enabled": False}},
-            },
-            "已被禁用",
-        ),
-        ({"active_source": "null_catalog", "sources": []}, "必须是对象映射"),
-    ],
-)
-def test_active_source_must_exist_and_be_enabled(retrieval, message):
-    config = json.loads(json.dumps(BASE_CONFIG))
-    config["retrieval"] = retrieval
-    with pytest.raises(ValueError, match=message):
-        build_workflow(config)
+def test_formal_tools_share_one_reference_store():
+    researcher = build_workflow(BASE_CONFIG).services.task_researcher
+    web, browser, reader = [researcher.tools.get(name) for name in researcher.tools.names]
+    store = researcher.evidence_builder.reference_store
+    assert isinstance(web, WebSearchTool) and isinstance(web.backend, BaiduSearchBackend)
+    assert isinstance(browser, BrowserTool) and isinstance(browser.backend, PlaywrightBrowserBackend)
+    assert web.reference_store is browser.reference_store is reader.reader.reference_store is store
 
 
 def test_registry_does_not_mask_builder_key_error():

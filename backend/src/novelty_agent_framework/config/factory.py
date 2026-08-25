@@ -22,6 +22,10 @@ from ..agents import (
     SearchPlannerAgent,
 )
 from ..tools import (
+    BaiduSearchBackend,
+    BrowserTool,
+    EvidenceCardBuilder,
+    PlaywrightBrowserBackend,
     ReferenceArtifactReaderTool,
     ReaderTool,
     ResearcherToolRegistry,
@@ -29,6 +33,7 @@ from ..tools import (
     RetrievalSourceRegistry,
     StructuredSourceRetrievalTool,
     StructuredRetrievalResearcherTool,
+    WebSearchTool,
     build_null_catalog_source,
 )
 from ..persistence import ReferenceStore
@@ -230,36 +235,39 @@ def build_workflow(
     registry = build_model_registry(raw)
     prompts = build_prompt_library()
     retrieval_cfg = _normalized_retrieval_config(raw)
-    coordinator, research, point_extractor, search_planner = build_agents(
-        raw, registry, prompts, retrieval_cfg=retrieval_cfg
+    agents_cfg = raw.get("agents", {})
+    coordinator_cfg = agents_cfg.get("coordinator", {})
+    point_extractor_cfg = agents_cfg.get("point_extractor", {})
+    research_cfg = agents_cfg.get("research", {})
+    coordinator = NoveltyCoordinatorAgent(
+        prompts=prompts,
+        models=registry,
+        model_alias=coordinator_cfg.get("model", "coordinator"),
+        temperature=float(coordinator_cfg.get("temperature", 0.2)),
     )
-    source = build_retrieval_source(raw, source_registry=source_registry)
+    point_extractor = NoveltyPointExtractorAgent(
+        prompts=prompts,
+        models=registry,
+        model_alias=point_extractor_cfg.get("model", "point_extractor"),
+        temperature=float(point_extractor_cfg.get("temperature", 0.2)),
+    )
+    research_model = registry.client_for(research_cfg.get("model", "research"))
 
     workflow_cfg = raw.get("workflow", {})
     store = ReferenceStore()
-    reader = ReferenceArtifactReaderTool(store)
-    researcher_tools = [ReaderTool(reader)]
-    if source.search_tool is not None:
-        retrieval_tool = StructuredSourceRetrievalTool(
-            search_planner=search_planner,
-            source=source,
-            reference_store=store,
-            candidate_limit=int(retrieval_cfg.get("candidate_limit_per_task", 8)),
-            full_text_limit=int(retrieval_cfg.get("full_text_limit_per_task", 8)),
-            max_concurrency=int(workflow_cfg.get("max_concurrency", 4)),
-        )
-        researcher_tools.insert(
-            0,
-            StructuredRetrievalResearcherTool(
-                {source.source_id: retrieval_tool}
-            ),
-        )
-    tool_registry = ResearcherToolRegistry(researcher_tools)
+    tool_registry = ResearcherToolRegistry(
+        [
+            WebSearchTool(BaiduSearchBackend(), store),
+            BrowserTool(PlaywrightBrowserBackend(), store),
+            ReaderTool(ReferenceArtifactReaderTool(store)),
+        ]
+    )
     budget_cfg = raw.get("task_researcher", {})
     task_researcher = TaskResearcherWorkflow(
-        research,
+        research_model,
         tool_registry,
-        reference_store=store,
+        EvidenceCardBuilder(store),
+        prompts=prompts,
         config=TaskResearcherConfig(
             max_steps=int(budget_cfg.get("max_steps", 12)),
             max_tool_calls=int(budget_cfg.get("max_tool_calls", 10)),
@@ -271,7 +279,8 @@ def build_workflow(
                 budget_cfg.get(
                     "per_tool_limits",
                     {
-                        "structured_source_retrieval": 1,
+                        "web_search": 3,
+                        "browser": 3,
                         "reader": 8,
                     },
                 )
