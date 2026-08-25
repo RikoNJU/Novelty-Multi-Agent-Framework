@@ -14,6 +14,7 @@ from .legacy_researcher_tools import StructuredRetrievalResearcherTool
 from .retrieval_sources import RetrievalSource, RetrievalSourceRegistry
 from .reference_reader import ReferenceArtifactReaderTool
 from .reader import ReaderTool, ReferenceReaderResearcherTool
+from .evidence_card_builder import EvidenceCardBuilder
 from .browser import BrowserTool
 from .browser_backend import (
     BrowserBackend,
@@ -51,6 +52,7 @@ __all__ = [
     "ArxivQueryAdapter",
     "ArxivSearchTool",
     "CompiledQuery",
+    "EvidenceCardBuilder",
     "BrowserBackend",
     "BrowserFetchResult",
     "BrowserTool",
