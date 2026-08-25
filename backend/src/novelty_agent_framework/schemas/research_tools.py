@@ -8,7 +8,7 @@ from typing import Annotated, TypeAlias
 from pydantic import Field, StringConstraints, model_validator
 
 from .domain import EvidenceCard, StrictModel
-from .references import ArtifactRole, Evidence
+from .references import ArtifactRole, ContentExtent, Evidence
 
 NonEmptyStr = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
 
@@ -41,12 +41,19 @@ class BrowserArguments(StrictModel):
     """Fetch a known source reference; browsing does not judge evidence."""
 
     source_record_id: NonEmptyStr
-    url: NonEmptyStr
+
+
+class BrowserArtifactItem(StrictModel):
+    artifact_id: NonEmptyStr
+    role: ArtifactRole
+    media_type: NonEmptyStr
+    content_extent: ContentExtent
 
 
 class BrowserResult(StrictModel):
     source_record_id: NonEmptyStr
-    artifact_ids: list[NonEmptyStr] = Field(default_factory=list)
+    work_id: NonEmptyStr
+    artifacts: list[BrowserArtifactItem] = Field(default_factory=list)
     warnings: list[str] = Field(default_factory=list)
 
 

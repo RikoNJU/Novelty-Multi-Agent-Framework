@@ -14,6 +14,8 @@ from .legacy_researcher_tools import StructuredRetrievalResearcherTool
 from .retrieval_sources import RetrievalSource, RetrievalSourceRegistry
 from .reference_reader import ReferenceArtifactReaderTool
 from .reader import ReaderTool, ReferenceReaderResearcherTool
+from .browser import BrowserTool
+from .browser_backend import BrowserBackend, BrowserFetchResult
 from .researcher_registry import (
     ResearcherTool,
     ResearcherToolRegistry,
@@ -45,6 +47,9 @@ __all__ = [
     "ArxivQueryAdapter",
     "ArxivSearchTool",
     "CompiledQuery",
+    "BrowserBackend",
+    "BrowserFetchResult",
+    "BrowserTool",
     "MarkdownRenderer",
     "NullQueryAdapter",
     "NullSearchTool",

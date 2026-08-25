@@ -20,9 +20,7 @@ from novelty_agent_framework.tools import ReaderTool
 
 def test_tool_schema_module_imports_without_implementations() -> None:
     assert WebSearchArguments(query="graph sampling").max_results == 10
-    assert BrowserArguments(
-        source_record_id="src_1", url="https://example.test/paper"
-    ).source_record_id == "src_1"
+    assert BrowserArguments(source_record_id="src_1").source_record_id == "src_1"
     assert EvidenceCardBuilderArguments.model_fields["draft"].is_required()
 
 

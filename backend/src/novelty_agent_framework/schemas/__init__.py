@@ -55,6 +55,7 @@ from .research import (
 )
 from .legacy_research_tools import StructuredRetrievalToolArguments
 from .research_tools import (
+    BrowserArtifactItem,
     BrowserArguments,
     BrowserResult,
     EvidenceCardBuilderArguments,
@@ -115,6 +116,7 @@ __all__ = [
     "WorkflowIssue",
     "CallToolAction",
     "BrowserArguments",
+    "BrowserArtifactItem",
     "BrowserResult",
     "EvidenceCardBuilderArguments",
     "EvidenceCardBuilderResult",
