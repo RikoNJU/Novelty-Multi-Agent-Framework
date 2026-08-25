@@ -15,7 +15,11 @@ from .retrieval_sources import RetrievalSource, RetrievalSourceRegistry
 from .reference_reader import ReferenceArtifactReaderTool
 from .reader import ReaderTool, ReferenceReaderResearcherTool
 from .browser import BrowserTool
-from .browser_backend import BrowserBackend, BrowserFetchResult
+from .browser_backend import (
+    BrowserBackend,
+    BrowserFetchResult,
+    PlaywrightBrowserBackend,
+)
 from .researcher_registry import (
     ResearcherTool,
     ResearcherToolRegistry,
@@ -50,6 +54,7 @@ __all__ = [
     "BrowserBackend",
     "BrowserFetchResult",
     "BrowserTool",
+    "PlaywrightBrowserBackend",
     "MarkdownRenderer",
     "NullQueryAdapter",
     "NullSearchTool",
