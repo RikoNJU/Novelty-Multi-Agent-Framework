@@ -102,9 +102,40 @@ class WebSearchTool:
             arguments=arguments.model_dump(mode="json"),
             succeeded=True,
             summary=f"发现并保存 {len(items)} 个 Web 候选来源",
-            payload={"search_result": result.model_dump(mode="json")},
+            payload={
+                "search_result": result.model_dump(mode="json"),
+                "source_records": [
+                    records_by_id[item.source_record_id].model_dump(mode="json")
+                    for item in items
+                ],
+            },
             elapsed_ms=int((time.monotonic() - started) * 1_000),
         )
+
+    def project_model_context(
+        self, observation: ResearcherToolObservation
+    ) -> dict[str, Any]:
+        result = observation.payload["search_result"]
+        return {
+            "succeeded": observation.succeeded,
+            "summary": observation.summary,
+            "query": result["query"],
+            "results": [
+                {
+                    key: item.get(key)
+                    for key in (
+                        "source_record_id",
+                        "title",
+                        "url",
+                        "snippet",
+                        "source_name",
+                        "published_at",
+                    )
+                }
+                for item in result["results"]
+            ],
+            "warnings": result["warnings"],
+        }
 
 
 def _source_record(

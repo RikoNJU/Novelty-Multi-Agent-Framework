@@ -51,6 +51,28 @@ class ReaderTool:
             elapsed_ms=int((time.monotonic() - started) * 1000),
         )
 
+    def project_model_context(
+        self, observation: ResearcherToolObservation
+    ) -> dict[str, object]:
+        read = observation.payload["read_result"]
+        return {
+            "succeeded": observation.succeeded,
+            "summary": observation.summary,
+            "read_result": {
+                key: read[key]
+                for key in (
+                    "read_id",
+                    "work_id",
+                    "artifact_id",
+                    "role",
+                    "char_start",
+                    "char_end",
+                    "text",
+                    "has_more",
+                )
+            },
+        }
+
 
 # Transitional import compatibility. This is the same implementation, not a
 # second tool, and therefore exposes the canonical ``reader`` tool name.

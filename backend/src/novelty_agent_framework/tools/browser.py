@@ -152,9 +152,22 @@ class BrowserTool:
             arguments=arguments.model_dump(mode="json"),
             succeeded=True,
             summary=f"获取网页并保存 {len(result.artifacts)} 个 Artifact",
-            payload={"browser_result": result.model_dump(mode="json")},
+            payload={
+                "browser_result": result.model_dump(mode="json"),
+                "browser_fetch": fetched.model_dump(mode="json"),
+            },
             elapsed_ms=int((time.monotonic() - started) * 1_000),
         )
+
+    def project_model_context(
+        self, observation: ResearcherToolObservation
+    ) -> dict[str, object]:
+        result = observation.payload["browser_result"]
+        return {
+            "succeeded": observation.succeeded,
+            "summary": observation.summary,
+            **result,
+        }
 
 
 def _work_id(source_record_id: str) -> str:

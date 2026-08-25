@@ -134,6 +134,10 @@ def test_metadata_arguments_items_persistence_and_warnings(tmp_path) -> None:
     assert record.raw_metadata["search_snippet"] == item["snippet"]
     assert record.raw_metadata["provider_rank"] == 3
     assert record.provenance["run_id"] == "run-paper-1"
+    assert observation.payload["source_records"][0]["raw_metadata"]["provider_rank"] == 3
+    projection = registry.project_model_context("web_search", observation)
+    assert "source_records" not in projection
+    assert "raw_metadata" not in str(projection)
 
 
 def test_stable_ids_deduplicate_and_preserve_work_binding(tmp_path) -> None:

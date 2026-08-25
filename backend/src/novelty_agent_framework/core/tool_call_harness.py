@@ -170,10 +170,13 @@ class ToolCallHarness:
                 scope=scope,
             )
             tool_calls_used += 1
+            model_context = self.registry.project_model_context(
+                tool_call.name, observation
+            )
             tool_message = ChatMessage(
                 role="tool",
                 tool_call_id=tool_call.id,
-                content=_serialize_tool_result(observation),
+                content=_serialize_tool_result(model_context),
             )
             log.append(
                 ToolCallHarnessEvent(
@@ -216,9 +219,9 @@ def _build_context(
     return messages
 
 
-def _serialize_tool_result(observation: ResearcherToolObservation) -> str:
+def _serialize_tool_result(model_context: dict) -> str:
     return json.dumps(
-        observation.model_dump(mode="json"),
+        model_context,
         ensure_ascii=False,
         sort_keys=True,
     )

@@ -78,6 +78,28 @@ class ResearcherToolRegistry:
                 elapsed_ms=int((time.monotonic() - started) * 1000),
             )
 
+    def project_model_context(
+        self,
+        tool_name: str,
+        observation: ResearcherToolObservation,
+    ) -> dict[str, Any]:
+        """Project a full audit observation into the model-visible data plane."""
+
+        if not observation.succeeded:
+            return {
+                "succeeded": False,
+                "summary": observation.summary,
+                "error": observation.error,
+            }
+        tool = self.get(tool_name)
+        projector = getattr(tool, "project_model_context", None)
+        if projector is None:
+            return observation.model_dump(mode="json")
+        projected = projector(observation)
+        if not isinstance(projected, dict):
+            raise TypeError("tool model-context projector must return a dict")
+        return projected
+
 
 def _safe_error(exc: Exception) -> str:
     message = re.sub(

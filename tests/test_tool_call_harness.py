@@ -74,6 +74,11 @@ class ExampleTool:
         )
 
 
+class ProjectedExampleTool(ExampleTool):
+    def project_model_context(self, observation):
+        return {"succeeded": True, "handle": observation.payload["echo"]}
+
+
 def call(arguments=None, *, call_id="call_1") -> ModelResponse:
     return ModelResponse(
         content=None,
@@ -158,6 +163,23 @@ def test_one_tool_call_uses_native_trajectory_and_append_only_trace() -> None:
         "finish",
     ]
     assert result.trace[2].tool_call.id == result.trace[3].tool_call.id == "call_1"
+
+
+def test_full_observation_is_logged_while_projection_reaches_model() -> None:
+    tool = ProjectedExampleTool()
+    model = ScriptedModelClient(call(), ModelResponse(content="finished"))
+    result = run_harness(
+        ToolCallHarness(model, ResearcherToolRegistry([tool])),
+        system_prompt="system",
+        initial_user_message="task",
+    )
+
+    event = next(item for item in result.trace if item.kind == "tool_result")
+    assert event.observation.payload == {"echo": "hello"}
+    assert json.loads(event.message.content) == {
+        "succeeded": True,
+        "handle": "hello",
+    }
 
 
 def test_multiple_tool_calls_are_rejected_without_execution() -> None:

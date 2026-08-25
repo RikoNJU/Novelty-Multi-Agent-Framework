@@ -124,6 +124,10 @@ def test_trusted_url_resolution_persistence_and_idempotence(tmp_path) -> None:
     result = first.payload["browser_result"]
     assert set(result) == {"source_record_id", "work_id", "artifacts", "warnings"}
     assert "A stable rendered page." not in str(result)
+    assert first.payload["browser_fetch"]["text"] == "A stable rendered page."
+    projection = registry.project_model_context("browser", first)
+    assert "browser_fetch" not in projection
+    assert "A stable rendered page." not in str(projection)
     assert result["work_id"].startswith("wrk_")
     assert result["artifacts"] == second.payload["browser_result"]["artifacts"]
     manifest = store.load_manifest("paper-1")

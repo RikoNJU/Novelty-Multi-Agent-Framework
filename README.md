@@ -53,8 +53,8 @@ START
 - SearchPlanner 只生成 Concept、term 和布尔策略，不包含 `all:` 等数据库语法；
 - QueryAdapter 是无 LLM、无网络副作用的确定性编译器；
 - SearchTool 只执行已经编译的查询；
-- 每个 Researcher 只接收一个绑定的 `NoveltyPoint + ResearchTask`，通过严格 JSON
-  动作调用注册工具，不接收全局任务或最终报告上下文；
+- 每个 Researcher 只接收一个绑定的 `NoveltyPoint + ResearchTask`，通过模型原生
+  Tool Calling 调用注册工具，不接收全局任务或最终报告上下文；
 - TaskResearcher 子图负责预算、重复调用限制和局部失败隔离，主 Workflow 负责
   fan-out/fan-in、Validator、补检和终止控制；
 - Task 的工作流身份是 `(novelty_point_id, task_id)`，因为 `task_id` 只在单个查新点内唯一。
@@ -68,8 +68,38 @@ Metadata/FullText`，保存 `Work / SourceRecord / Artifact`，并返回 Evidenc
 或报告生成。它通过通用 Researcher 工具注册表接入任务子图。
 
 arXiv 是当前能力完整的结构化来源，但 Tool 不假设所有来源都能取得全文。Coordinator
-分发任务后，由每个 Researcher Agent 决定是否调用该 Tool；Web Search 与 Browser
-是后续通过同一注册表接入的并列工具，不属于当前实现。
+分发任务后，由每个 Researcher Agent 决定是否调用该 Tool。WebSearch、Browser 与
+Reader 已分别完成真实 Harness/工具链验证，但尚未迁移到正式 Researcher Workflow。
+
+### Researcher Harness 核心原则
+
+```text
+LLM = Control Plane
+Harness / Tool Runtime = Data Plane
+```
+
+LLM 只提供意图参数并选择持久化句柄；Harness/Runtime 注入可信 task scope，恢复
+URL、Work 和存储对象，管理基础设施配置与完整审计 Observation，并把最小投影视图
+交还模型：
+
+```text
+Intent Arguments                         ← LLM
+Trusted Runtime Arguments / Resolved Data
+Infrastructure Config                    ← Harness / Runtime
+```
+
+工具之间使用持久化句柄连接：
+
+```text
+WebSearch          → source_record_id
+Browser            → artifact_id
+Reader             → read_id
+EvidenceCardBuilder → evidence / evidence_card
+```
+
+模型通过句柄做决策，不承担工具之间的数据搬运。当前已验证 WebSearch、Reader，
+Browser 已实现本地 Playwright 后端；Harness 使用 native Model Tool Calling，并将完整
+Observation 留在 trace 中，仅把各工具的 model-context projection 放入 `role=tool`。
 
 数据源通过 `RetrievalSourceRegistry` 注册并由 `retrieval.active_source` 选择，Workflow、Agent 与领域 Schema 不包含数据库分支。
 
@@ -135,7 +165,8 @@ outputs/<paper_id>/
 
 ```bash
 conda activate Novelty
-pip install -e ".[dev,web]"
+pip install -e ".[dev,web,browser]"
+python -m playwright install chromium
 ```
 
 真实模型调用使用 `backend/.env` 或进程环境变量：

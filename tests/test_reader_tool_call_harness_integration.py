@@ -176,9 +176,8 @@ def test_real_reader_vertical_slice_exposes_definition_and_reads_store(tmp_path)
     assert definitions[0].parameters == ReaderArguments.model_json_schema()
 
     payload = tool_result_payload(model)
-    assert payload["tool_name"] == "reader"
     assert payload["succeeded"] is True
-    read = payload["payload"]["read_result"]
+    read = payload["read_result"]
     assert read["text"] == TEXT[char_start : char_start + max_chars]
     assert read["artifact_id"] == ARTIFACT_ID
     assert read["work_id"] == WORK_ID
@@ -186,7 +185,7 @@ def test_real_reader_vertical_slice_exposes_definition_and_reads_store(tmp_path)
         char_start,
         char_start + max_chars,
     )
-    assert payload["arguments"] == {
+    assert result.trace[3].observation.arguments == {
         "artifact_id": ARTIFACT_ID,
         "char_start": char_start,
         "max_chars": max_chars,
@@ -250,7 +249,7 @@ def test_reader_limit_failure_is_returned_without_harness_clamping(tmp_path) -> 
 
     payload = tool_result_payload(model)
     assert payload["succeeded"] is False
-    assert payload["arguments"]["max_chars"] == requested_max_chars
     assert "reader limit 16" in payload["error"]
+    assert result.trace[3].observation.arguments["max_chars"] == requested_max_chars
     assert result.trace[3].tool_call.arguments["max_chars"] == requested_max_chars
     assert result.final_content == "reader integration complete"
