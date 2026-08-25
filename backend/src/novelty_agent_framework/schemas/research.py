@@ -9,7 +9,7 @@ from pydantic import Field, StringConstraints, model_validator
 
 from .domain import EvidenceCard, NoveltyPoint, ResearchTask, StrictModel
 from .references import Evidence, ResearchBundle
-from .research_tools import EvidenceCardDraft, ReferenceReadResult
+from .research_tools import ResearchFinishDraft, ReferenceReadResult
 
 NonEmptyStr = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
 
@@ -34,10 +34,14 @@ class CallToolAction(StrictModel):
 
 
 class FinishResearchAction(StrictModel):
-    # Transitional: a later workflow change will invoke EvidenceCardBuilder
-    # before finish and replace these drafts with built card references.
     action: Literal["finish"]
-    cards: list[EvidenceCardDraft] = Field(default_factory=list)
+    draft: ResearchFinishDraft
+
+    @property
+    def cards(self):
+        """Read-only bridge for the not-yet-migrated TaskResearcherWorkflow."""
+
+        return self.draft.cards
 
 
 ResearcherAction = Annotated[

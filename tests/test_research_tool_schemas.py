@@ -9,7 +9,8 @@ from pydantic import ValidationError
 
 from novelty_agent_framework.schemas import (
     BrowserArguments,
-    EvidenceCardBuilderArguments,
+    EvidenceCardBuilderRequest,
+    ResearchFinishDraft,
     ReaderArguments,
     ReferenceReaderToolArguments,
     WebSearchArguments,
@@ -21,7 +22,10 @@ from novelty_agent_framework.tools import ReaderTool
 def test_tool_schema_module_imports_without_implementations() -> None:
     assert WebSearchArguments(query="graph sampling").max_results == 10
     assert BrowserArguments(source_record_id="src_1").source_record_id == "src_1"
-    assert EvidenceCardBuilderArguments.model_fields["draft"].is_required()
+    request = EvidenceCardBuilderRequest(
+        draft=ResearchFinishDraft(cards=[], no_evidence_reason="none found")
+    )
+    assert request.draft.no_evidence_reason == "none found"
 
 
 def test_reader_uses_canonical_arguments_and_legacy_alias() -> None:

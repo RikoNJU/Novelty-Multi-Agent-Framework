@@ -335,7 +335,16 @@ def test_decide_repairs_invalid_json_once_then_fails() -> None:
         research_task=make_task(),
     )
     repaired = AsyncSequenceModelClient(
-        "not-json", json.dumps({"action": "finish", "cards": []})
+        "not-json",
+        json.dumps(
+            {
+                "action": "finish",
+                "draft": {
+                    "cards": [],
+                    "no_evidence_reason": "No grounded evidence found",
+                },
+            }
+        ),
     )
     action = asyncio.run(
         NoveltyResearchAgent(model_client=repaired).decide({"request": request})

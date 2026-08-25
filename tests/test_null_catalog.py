@@ -76,7 +76,10 @@ def _workflow(source: RetrievalSource) -> NoveltyWorkflow:
                     tool_name="structured_source_retrieval",
                     arguments={"source_id": source.source_id},
                 )
-            return FinishResearchAction(action="finish", cards=[])
+            return FinishResearchAction(
+                action="finish",
+                draft={"cards": [], "no_evidence_reason": "catalog is empty"},
+            )
 
     store = ReferenceStore()
     retrieval = StructuredSourceRetrievalTool(

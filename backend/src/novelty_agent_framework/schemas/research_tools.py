@@ -93,36 +93,46 @@ class ReferenceReadResult(StrictModel):
 
 
 class EvidenceQuoteDraft(StrictModel):
-    """Transitional builder input; it will no longer belong to finish."""
+    """A semantic quote selection without model-supplied provenance handles."""
 
-    read_id: NonEmptyStr
     quote: NonEmptyStr
     interpretation: NonEmptyStr
     confidence: float = Field(ge=0.0, le=1.0)
 
 
 class EvidenceCardDraft(StrictModel):
-    """Transitional builder input retained while Workflow still compiles drafts."""
+    """One model-authored semantic assessment to be bound by the runtime."""
 
-    work_id: NonEmptyStr
     main_contribution: NonEmptyStr
     overlaps: list[NonEmptyStr] = Field(default_factory=list)
     differences: list[NonEmptyStr] = Field(default_factory=list)
-    quotes: list[EvidenceQuoteDraft] = Field(default_factory=list)
+    quotes: list[EvidenceQuoteDraft] = Field(min_length=1)
     possible_baseline: bool = False
     relevance: float = Field(ge=0.0, le=1.0)
     confidence: float = Field(ge=0.0, le=1.0)
 
 
-class EvidenceCardBuilderArguments(StrictModel):
-    task_id: NonEmptyStr
-    novelty_point_id: NonEmptyStr
-    draft: EvidenceCardDraft
+class ResearchFinishDraft(StrictModel):
+    cards: list[EvidenceCardDraft] = Field(default_factory=list)
+    no_evidence_reason: NonEmptyStr | None = None
+
+    @model_validator(mode="after")
+    def require_cards_or_reason(self) -> ResearchFinishDraft:
+        if self.cards and self.no_evidence_reason is not None:
+            raise ValueError("no_evidence_reason must be absent when cards are present")
+        if not self.cards and self.no_evidence_reason is None:
+            raise ValueError("no_evidence_reason is required when cards are empty")
+        return self
+
+
+class EvidenceCardBuilderRequest(StrictModel):
+    draft: ResearchFinishDraft
 
 
 class EvidenceCardBuilderResult(StrictModel):
     evidence: list[Evidence] = Field(default_factory=list)
-    evidence_card: EvidenceCard
+    evidence_cards: list[EvidenceCard] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
 
 
 # Deprecated name retained for import compatibility during schema migration.

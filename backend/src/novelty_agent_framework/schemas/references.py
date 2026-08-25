@@ -297,7 +297,7 @@ class Evidence(StrictModel):
     novelty_point_id: NonEmptyStr | None = None
     task_id: NonEmptyStr | None = None
     quote: NonEmptyStr
-    locator: EvidenceLocator
+    locator: EvidenceLocator | None = None
     interpretation: NonEmptyStr
     confidence: float = Field(ge=0.0, le=1.0)
     provenance: JsonObject = Field(default_factory=dict)

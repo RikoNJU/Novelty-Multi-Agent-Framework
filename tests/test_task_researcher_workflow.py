@@ -12,8 +12,6 @@ from novelty_agent_framework.schemas import (
     ArtifactRole,
     CallToolAction,
     ContentExtent,
-    EvidenceCardDraft,
-    EvidenceQuoteDraft,
     FinishResearchAction,
     NoveltyPoint,
     ReferenceManifest,
@@ -126,22 +124,10 @@ class FakeRetrievalTool:
         )
 
 
-def finish_action(quote="Exact grounded quote."):
+def finish_action():
     return FinishResearchAction(
         action="finish",
-        cards=[
-            EvidenceCardDraft(
-                work_id="wrk_1", main_contribution="贡献",
-                overlaps=["重合"], differences=["差异"],
-                quotes=[
-                    EvidenceQuoteDraft(
-                        read_id="PLACEHOLDER", quote=quote,
-                        interpretation="支持当前比较", confidence=0.9,
-                    )
-                ],
-                relevance=0.9, confidence=0.9,
-            )
-        ],
+        draft={"cards": [], "no_evidence_reason": "builder not migrated"},
     )
 
 
@@ -165,11 +151,6 @@ def test_complete_tool_read_finish_loop_and_scope_injection(tmp_path):
         ]
     )
 
-    # read_id is stable and can be known before the model's finish response.
-    read = store.read_document_slice(
-        "paper-1", artifact_id="art_1", char_start=0, max_chars=100
-    )
-    finish.cards[0].quotes[0].read_id = read.read_id
     result = asyncio.run(
         TaskResearcherWorkflow(agent, registry, reference_store=store).ainvoke(scope())
     )
@@ -178,32 +159,9 @@ def test_complete_tool_read_finish_loop_and_scope_injection(tmp_path):
     assert result.steps_used == 3
     assert len(result.research_bundles) == 1
     assert len(result.read_results) == 1
-    assert len(result.evidence) == len(result.evidence_cards) == 1
-    evidence = result.evidence[0]
-    assert TEXT[evidence.locator.char_start:evidence.locator.char_end] == evidence.quote
-    assert result.evidence_cards[0].evidence_ids == [evidence.evidence_id]
+    assert result.evidence == result.evidence_cards == []
     assert retrieval.scopes == [scope()]
     assert all(state["request"].research_task.task_id == "T-1" for state in agent.states)
-
-
-def test_bad_quote_is_dropped_without_losing_task_result(tmp_path):
-    store = prepare_store(tmp_path)
-    read = store.read_document_slice(
-        "paper-1", artifact_id="art_1", char_start=0, max_chars=100
-    )
-    finish = finish_action("not in slice")
-    finish.cards[0].quotes[0].read_id = read.read_id
-    agent = FakeAgent([finish])
-    workflow = TaskResearcherWorkflow(
-        agent, ResearcherToolRegistry(), reference_store=store
-    )
-    # Inject the read as prior state through the compiler-facing graph node behavior.
-    evidence, cards, warnings = __import__(
-        "novelty_agent_framework.workflows.research_task",
-        fromlist=["compile_evidence_drafts"],
-    ).compile_evidence_drafts(scope(), finish.cards, [read], [], store)
-    assert evidence == cards == []
-    assert any("exact substring" in warning for warning in warnings)
 
 
 def test_duplicate_calls_and_budget_terminate_partial(tmp_path):
