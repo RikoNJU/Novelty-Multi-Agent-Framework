@@ -29,12 +29,17 @@ from ..tools import (
     ReferenceArtifactReaderTool,
     ReaderTool,
     ResearcherToolRegistry,
+    WebSearchTool,
+)
+from ..tools.database_search import (
     RetrievalSource,
     RetrievalSourceRegistry,
     StructuredSourceRetrievalTool,
-    StructuredRetrievalResearcherTool,
-    WebSearchTool,
-    build_null_catalog_source,
+)
+from ..tools.database_search.factory import (
+    build_retrieval_source as build_database_retrieval_source,
+    build_source_registry as build_database_source_registry,
+    build_structured_source_retrieval_tool as build_database_structured_tool,
 )
 from ..persistence import ReferenceStore
 from ..workflows import (
@@ -151,20 +156,9 @@ def build_search_planner(
 
 
 def build_source_registry() -> RetrievalSourceRegistry:
-    """在组合根注册具体来源；Registry 本身没有来源条件分支。"""
+    """兼容入口；数据库组合职责已收束到 database_search。"""
 
-    registry = RetrievalSourceRegistry()
-    registry.register("arxiv", _build_arxiv_source_lazily)
-    registry.register("null_catalog", build_null_catalog_source)
-    return registry
-
-
-def _build_arxiv_source_lazily(config: Mapping[str, Any]) -> RetrievalSource:
-    """仅在 arXiv 赢得 active_source 选择后导入其具体实现。"""
-
-    from ..tools.arxiv import build_arxiv_source
-
-    return build_arxiv_source(config)
+    return build_database_source_registry()
 
 
 def build_retrieval_source(
@@ -172,20 +166,9 @@ def build_retrieval_source(
     *,
     source_registry: RetrievalSourceRegistry | None = None,
 ) -> RetrievalSource:
-    retrieval = _normalized_retrieval_config(config)
-    source_id = str(retrieval.get("active_source", "arxiv"))
-    sources = retrieval.get("sources", {})
-    if not isinstance(sources, Mapping):
-        raise ValueError("retrieval.sources 必须是对象映射")
-    if source_id not in sources:
-        raise ValueError(f"活动检索来源 {source_id!r} 未在 retrieval.sources 中配置")
-    source_config = sources[source_id]
-    if not isinstance(source_config, Mapping):
-        raise ValueError(f"retrieval.sources.{source_id} 必须是对象映射")
-    if not source_config.get("enabled", False):
-        raise ValueError(f"活动检索来源 {source_id!r} 已被禁用")
-    registry = source_registry or build_source_registry()
-    return registry.build(source_id, source_config)
+    return build_database_retrieval_source(
+        _normalized_retrieval_config(config), source_registry=source_registry
+    )
 
 
 def build_tools(config: Mapping[str, Any]):
@@ -210,13 +193,11 @@ def build_structured_source_retrieval_tool(
     search_planner = build_search_planner(
         raw, models, prompts, retrieval_cfg=retrieval_cfg
     )
-    source = build_retrieval_source(raw, source_registry=source_registry)
     workflow_cfg = raw.get("workflow", {})
-    return StructuredSourceRetrievalTool(
+    return build_database_structured_tool(
+        retrieval_cfg,
         search_planner=search_planner,
-        source=source,
-        candidate_limit=int(retrieval_cfg.get("candidate_limit_per_task", 8)),
-        full_text_limit=int(retrieval_cfg.get("full_text_limit_per_task", 8)),
+        source_registry=source_registry,
         max_concurrency=int(workflow_cfg.get("max_concurrency", 4)),
     )
 

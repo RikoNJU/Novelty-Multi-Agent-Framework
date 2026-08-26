@@ -11,7 +11,7 @@ import pytest
 
 from novelty_agent_framework.config import build_workflow, load_config
 from novelty_agent_framework.schemas import NoveltyPoint, ResearchTask
-from novelty_agent_framework.tools import (
+from novelty_agent_framework.tools.database_search.providers.arxiv import (
     ArxivFullTextTool,
     ArxivMetadataTool,
     ArxivSearchTool,

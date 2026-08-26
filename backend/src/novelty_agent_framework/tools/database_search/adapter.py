@@ -7,7 +7,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from dataclasses import dataclass
 
-from ..schemas import SearchConcept, SearchPlan
+from ...schemas import SearchConcept, SearchPlan
 
 _TOKEN = re.compile(r"C\d+(?![A-Za-z0-9_])|AND(?![A-Za-z0-9_])|OR(?![A-Za-z0-9_])|[()]")
 _CONCEPT_ID = re.compile(r"C\d+")
@@ -135,7 +135,7 @@ def compile_search_plan(
 
     # 兼容旧的默认 arXiv API；延迟加载保证通用模块导入不依赖具体实现。
     if database.strip().lower() == "arxiv" and "arxiv" not in AdapterFactory._adapters:
-        from .arxiv import ArxivQueryAdapter
+        from .providers.arxiv import ArxivQueryAdapter
 
         AdapterFactory.register("arxiv", ArxivQueryAdapter)
     return list(AdapterFactory.create(database).compile(plan))

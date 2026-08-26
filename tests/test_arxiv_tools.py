@@ -6,7 +6,7 @@ import httpx
 import pymupdf
 import pytest
 
-from novelty_agent_framework.tools import (
+from novelty_agent_framework.tools.database_search.providers.arxiv import (
     ArxivFullTextTool,
     ArxivMetadataTool,
     ArxivSearchTool,
@@ -88,7 +88,7 @@ def test_search_follows_redirects():
 def test_search_throttles_requests(monkeypatch):
     sleeps: list[float] = []
     monkeypatch.setattr(
-        "novelty_agent_framework.tools.arxiv.time.sleep",
+        "novelty_agent_framework.tools.database_search.providers.arxiv.time.sleep",
         lambda seconds: sleeps.append(seconds),
     )
     calls = {"n": 0}

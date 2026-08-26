@@ -27,7 +27,7 @@ from ..schemas import (
     TaskResearchStatus,
 )
 from ..ports import FullTextTool, MetadataTool, SearchHit
-from ..tools.adapter import QueryAdapter, QueryAdapterError
+from ..tools.database_search.adapter import QueryAdapter, QueryAdapterError
 
 
 class DemoQueryAdapter(QueryAdapter):

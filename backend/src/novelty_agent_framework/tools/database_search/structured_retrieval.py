@@ -11,9 +11,9 @@ from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from typing import Any, TypeVar, cast
 
-from ..persistence import ReferenceStore
-from ..ports import FullText, SearchHit, SearchPlanner
-from ..schemas import (
+from ...persistence import ReferenceStore
+from ...ports import FullText, SearchHit, SearchPlanner
+from ...schemas import (
     AccessStatus,
     Artifact,
     ArtifactRole,

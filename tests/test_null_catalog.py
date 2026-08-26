@@ -27,17 +27,21 @@ from novelty_agent_framework.schemas import (
     SearchStrategy,
 )
 from novelty_agent_framework.tools import (
-    ArxivQueryAdapter,
+    EvidenceCardBuilder,
+    ResearcherToolRegistry,
+)
+from novelty_agent_framework.tools.database_search import (
     NullQueryAdapter,
     NullSearchTool,
-    ResearcherToolRegistry,
     RetrievalSource,
     RetrievalSourceRegistry,
     StructuredSourceRetrievalTool,
     StructuredRetrievalResearcherTool,
-    EvidenceCardBuilder,
 )
-from novelty_agent_framework.tools.null_catalog import build_null_catalog_source
+from novelty_agent_framework.tools.database_search.providers.arxiv import ArxivQueryAdapter
+from novelty_agent_framework.tools.database_search.providers.null_catalog import (
+    build_null_catalog_source,
+)
 from novelty_agent_framework.workflows import (
     NoveltyWorkflow,
     NoveltyWorkflowConfig,

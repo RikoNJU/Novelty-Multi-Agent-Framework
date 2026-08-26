@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import time
 
-from ..schemas import (
+from ...schemas import (
     ResearcherToolObservation,
     StructuredRetrievalToolArguments,
     StructuredSourceRetrievalRequest,

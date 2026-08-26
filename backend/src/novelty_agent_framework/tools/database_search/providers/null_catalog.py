@@ -9,10 +9,10 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 from typing import Any
 
-from ..ports import SearchHit, SearchTool
-from ..schemas import SearchConcept
-from .adapter import QueryAdapter, QueryAdapterError
-from .retrieval_sources import RetrievalSource
+from ....ports import SearchHit, SearchTool
+from ....schemas import SearchConcept
+from ..adapter import QueryAdapter, QueryAdapterError
+from ..retrieval_sources import RetrievalSource
 
 
 class NullQueryAdapter(QueryAdapter):

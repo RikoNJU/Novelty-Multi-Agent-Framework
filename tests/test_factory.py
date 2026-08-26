@@ -6,8 +6,9 @@ import pytest
 from novelty_agent_framework.agents import NoveltyCoordinatorAgent, SearchPlannerAgent
 from novelty_agent_framework.tools import (
     BaiduSearchBackend, BrowserTool, EvidenceCardBuilder, PlaywrightBrowserBackend,
-    RetrievalSourceRegistry, WebSearchTool,
+    WebSearchTool,
 )
+from novelty_agent_framework.tools.database_search import RetrievalSourceRegistry
 from novelty_agent_framework.workflows import NoveltyWorkflowServices, TaskResearcherWorkflow
 from novelty_agent_framework.config import (
     build_model_registry,

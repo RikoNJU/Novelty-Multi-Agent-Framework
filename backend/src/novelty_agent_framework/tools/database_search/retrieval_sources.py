@@ -6,7 +6,7 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from typing import Any
 
-from ..ports import FullTextTool, MetadataTool, SearchTool
+from ...ports import FullTextTool, MetadataTool, SearchTool
 from .adapter import QueryAdapter
 
 

@@ -3,12 +3,12 @@ from __future__ import annotations
 import pytest
 
 from novelty_agent_framework.schemas import SearchConcept, SearchPlan, SearchStrategy
-from novelty_agent_framework.tools import (
+from novelty_agent_framework.tools.database_search import (
     AdapterFactory,
-    ArxivQueryAdapter,
     QueryAdapterError,
     compile_search_plan,
 )
+from novelty_agent_framework.tools.database_search.providers.arxiv import ArxivQueryAdapter
 
 
 def _plan(

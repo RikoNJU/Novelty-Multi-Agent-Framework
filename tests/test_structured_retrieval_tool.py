@@ -21,7 +21,10 @@ from novelty_agent_framework.schemas import (
     SearchStrategy,
     StructuredSourceRetrievalRequest,
 )
-from novelty_agent_framework.tools import RetrievalSource, StructuredSourceRetrievalTool
+from novelty_agent_framework.tools.database_search import (
+    RetrievalSource,
+    StructuredSourceRetrievalTool,
+)
 
 ABSTRACT = "A complete abstract returned by the source."
 FULL_TEXT = "Extracted full text returned by the source."
