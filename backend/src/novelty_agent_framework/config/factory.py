@@ -37,6 +37,7 @@ from ..tools import (
     build_null_catalog_source,
 )
 from ..persistence import ReferenceStore
+from ..core import TraceHarnessProgressProjector
 from .settings import ResearcherRuntimeConfig
 from ..workflows import (
     NoveltyWorkflow,
@@ -278,6 +279,12 @@ def build_workflow(
             max_total_read_chars=researcher_runtime.max_total_read_chars,
             per_tool_limits=dict(researcher_runtime.harness.per_tool_limits),
         ),
+        progress_projector=(
+            TraceHarnessProgressProjector()
+            if researcher_runtime.projection.enabled
+            else None
+        ),
+        progress_config=researcher_runtime.projection,
     )
     return NoveltyWorkflow(
         NoveltyWorkflowServices(

@@ -8,7 +8,12 @@ from dataclasses import dataclass, field
 from backend.env import ModelCallOptions, ModelClient, PromptLibrary
 from pydantic import ValidationError
 
-from ..core import ToolCallHarness, ToolCallHarnessConfig, ToolCallHarnessError
+from ..core import (
+    HarnessProgressProjector,
+    ToolCallHarness,
+    ToolCallHarnessConfig,
+    ToolCallHarnessError,
+)
 from ..schemas import ReferenceReadResult, ResearchFinishDraft, TaskResearchRequest
 from ..schemas import TaskResearchResult, TaskResearchStatus
 from ..tools import EvidenceCardBuilder, ResearcherToolRegistry
@@ -43,6 +48,8 @@ class TaskResearcherWorkflow:
         *,
         prompts: PromptLibrary | None = None,
         config: TaskResearcherConfig | None = None,
+        progress_projector: HarnessProgressProjector | None = None,
+        progress_config: object | None = None,
     ) -> None:
         self.model_client = model_client
         self.tools = tool_registry
@@ -57,6 +64,8 @@ class TaskResearcherWorkflow:
                 max_tool_calls=self.config.max_tool_calls,
                 per_tool_limits=dict(self.config.per_tool_limits),
             ),
+            progress_projector=progress_projector,
+            progress_config=progress_config,
         )
 
     async def ainvoke(self, request: TaskResearchRequest) -> TaskResearchResult:

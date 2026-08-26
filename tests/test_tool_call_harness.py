@@ -9,6 +9,7 @@ import pytest
 
 from backend.env import ModelResponse, ModelToolCall
 from novelty_agent_framework.core import (
+    TraceHarnessProgressProjector,
     ToolCallHarness,
     ToolCallHarnessConfig,
     ToolCallHarnessError,
@@ -180,6 +181,105 @@ def test_full_observation_is_logged_while_projection_reaches_model() -> None:
         "succeeded": True,
         "handle": "hello",
     }
+
+
+def _progress_payload(message):
+    prefix = "[HARNESS_PROGRESS]\n"
+    suffix = "\n[/HARNESS_PROGRESS]"
+    assert message.content.startswith(prefix)
+    assert message.content.endswith(suffix)
+    return json.loads(message.content[len(prefix):-len(suffix)])
+
+
+def test_progress_projector_disabled_preserves_context_exactly() -> None:
+    model = ScriptedModelClient(ModelResponse(content="done"))
+    run_harness(
+        ToolCallHarness(model, ResearcherToolRegistry()),
+        system_prompt="system",
+        initial_user_message="task",
+    )
+
+    assert [message.role for message in model.calls[0][0]] == ["system", "user"]
+    assert [message.content for message in model.calls[0][0]] == ["system", "task"]
+
+
+def test_trace_progress_is_an_independent_fragment_on_every_model_call() -> None:
+    model = ScriptedModelClient(call(), ModelResponse(content="done"))
+    result = run_harness(
+        ToolCallHarness(
+            model,
+            ResearcherToolRegistry([ExampleTool()]),
+            progress_projector=TraceHarnessProgressProjector(),
+        ),
+        system_prompt="immutable system",
+        initial_user_message="task",
+    )
+
+    first, second = (item[0] for item in model.calls)
+    assert first[0].content == second[0].content == "immutable system"
+    assert _progress_payload(first[1]) == {
+        "last_tool_name": None,
+        "last_tool_succeeded": None,
+        "per_tool_call_counts": {},
+        "total_tool_calls": 0,
+        "turns_used": 0,
+    }
+    assert _progress_payload(second[1]) == {
+        "last_tool_name": "example",
+        "last_tool_succeeded": True,
+        "per_tool_call_counts": {"example": 1},
+        "total_tool_calls": 1,
+        "turns_used": 1,
+    }
+    tool_event = next(event for event in result.trace if event.kind == "tool_result")
+    assert "HARNESS_PROGRESS" not in tool_event.message.content
+
+
+def test_progress_counts_failed_observation_from_trace() -> None:
+    model = ScriptedModelClient(
+        call({"wrong": "argument"}), ModelResponse(content="done")
+    )
+    run_harness(
+        ToolCallHarness(
+            model,
+            ResearcherToolRegistry([ExampleTool()]),
+            progress_projector=TraceHarnessProgressProjector(),
+        ),
+        system_prompt="system",
+        initial_user_message="task",
+    )
+
+    progress = _progress_payload(model.calls[1][0][1])
+    assert progress["total_tool_calls"] == 1
+    assert progress["last_tool_succeeded"] is False
+
+
+def test_progress_projector_is_replaceable_with_stub() -> None:
+    class StubProjector:
+        def __init__(self):
+            self.traces = []
+
+        def project(self, *, trace, registry, config=None):
+            self.traces.append(trace)
+            return "stub-view"
+
+    projector = StubProjector()
+    model = ScriptedModelClient(ModelResponse(content="done"))
+    run_harness(
+        ToolCallHarness(
+            model,
+            ResearcherToolRegistry(),
+            progress_projector=projector,
+            progress_config={"test": True},
+        ),
+        system_prompt="system",
+        initial_user_message="task",
+    )
+
+    assert len(projector.traces) == 1
+    assert model.calls[0][0][1].content == (
+        "[HARNESS_PROGRESS]\nstub-view\n[/HARNESS_PROGRESS]"
+    )
 
 
 def test_multiple_tool_calls_are_rejected_without_execution() -> None:

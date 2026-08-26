@@ -4,6 +4,7 @@ from dataclasses import fields
 import pytest
 
 from novelty_agent_framework.agents import NoveltyCoordinatorAgent, SearchPlannerAgent
+from novelty_agent_framework.core import TraceHarnessProgressProjector
 from novelty_agent_framework.tools import (
     BaiduSearchBackend, BrowserTool, EvidenceCardBuilder, PlaywrightBrowserBackend,
     RetrievalSourceRegistry, WebSearchTool,
@@ -98,6 +99,18 @@ def test_nested_researcher_config_reaches_harness():
     assert researcher.harness.config.max_turns == 7
     assert researcher.harness.config.max_tool_calls == 5
     assert researcher.harness.config.per_tool_limits == {"tool_a": 1}
+    assert researcher.harness.progress_projector is None
+
+
+def test_factory_enables_progress_projector_only_from_config():
+    config = json.loads(json.dumps(BASE_CONFIG))
+    config["task_researcher"] = {"projection": {"enabled": True}}
+
+    researcher = build_workflow(config).services.task_researcher
+
+    assert isinstance(
+        researcher.harness.progress_projector, TraceHarnessProgressProjector
+    )
 
 
 def test_legacy_flat_researcher_config_remains_loadable():

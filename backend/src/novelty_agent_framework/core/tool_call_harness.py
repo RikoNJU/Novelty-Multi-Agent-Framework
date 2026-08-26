@@ -30,6 +30,7 @@ from backend.env import (
 
 from ..schemas import ResearcherToolObservation, TaskResearchRequest
 from ..tools import ResearcherToolRegistry
+from .harness_progress import HarnessProgressProjector
 
 HarnessEventKind = Literal[
     "initial_user_message",
@@ -97,10 +98,14 @@ class ToolCallHarness:
         registry: ResearcherToolRegistry,
         *,
         config: ToolCallHarnessConfig | None = None,
+        progress_projector: HarnessProgressProjector | None = None,
+        progress_config: object | None = None,
     ) -> None:
         self.model_client = model_client
         self.registry = registry
         self.config = config or ToolCallHarnessConfig()
+        self.progress_projector = progress_projector
+        self.progress_config = progress_config
 
     async def run(
         self,
@@ -122,7 +127,17 @@ class ToolCallHarness:
         per_tool_calls: Counter[str] = Counter()
 
         for turn in range(1, self.config.max_turns + 1):
-            context = _build_context(system_prompt, tuple(log))
+            trace = tuple(log)
+            progress = (
+                self.progress_projector.project(
+                    trace=trace,
+                    registry=self.registry,
+                    config=self.progress_config,
+                )
+                if self.progress_projector is not None
+                else None
+            )
+            context = _build_context(system_prompt, trace, progress=progress)
             try:
                 response = await self.model_client.acomplete(
                     context, options=call_options
@@ -221,8 +236,22 @@ def _build_tool_definitions(
 def _build_context(
     system_prompt: str,
     trace: tuple[ToolCallHarnessEvent, ...],
+    *,
+    progress: object | None = None,
 ) -> list[ChatMessage]:
     messages = [ChatMessage(role="system", content=system_prompt)]
+    if progress is not None:
+        content = (
+            progress
+            if isinstance(progress, str)
+            else json.dumps(progress, ensure_ascii=False, sort_keys=True)
+        )
+        messages.append(
+            ChatMessage(
+                role="system",
+                content=f"[HARNESS_PROGRESS]\n{content}\n[/HARNESS_PROGRESS]",
+            )
+        )
     messages.extend(
         event.message
         for event in trace
