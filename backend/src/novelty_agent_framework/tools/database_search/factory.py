@@ -10,6 +10,7 @@ from ...ports import SearchPlanner
 from .providers.null_catalog import build_null_catalog_source
 from .retrieval_sources import RetrievalSource, RetrievalSourceRegistry
 from .structured_retrieval import StructuredSourceRetrievalTool
+from .tool import DatabaseSearchTool
 
 
 def build_source_registry() -> RetrievalSourceRegistry:
@@ -65,3 +66,33 @@ def build_structured_source_retrieval_tool(
         full_text_limit=int(retrieval.get("full_text_limit_per_task", 8)),
         max_concurrency=max_concurrency,
     )
+
+
+def build_database_search_tool(
+    retrieval: Mapping[str, Any],
+    *,
+    search_planner: SearchPlanner,
+    reference_store: ReferenceStore,
+    source_registry: RetrievalSourceRegistry | None = None,
+    max_concurrency: int = 4,
+) -> DatabaseSearchTool:
+    """Build every enabled source behind the sole agent-facing DB tool."""
+
+    sources = retrieval.get("sources", {})
+    if not isinstance(sources, Mapping):
+        raise ValueError("retrieval.sources 必须是对象映射")
+    registry = source_registry or build_source_registry()
+    tools: dict[str, StructuredSourceRetrievalTool] = {}
+    for raw_source_id, raw_config in sources.items():
+        source_id = str(raw_source_id).strip().lower()
+        if not isinstance(raw_config, Mapping) or not raw_config.get("enabled", False):
+            continue
+        tools[source_id] = build_structured_source_retrieval_tool(
+            retrieval,
+            search_planner=search_planner,
+            source_id=source_id,
+            source_registry=registry,
+            reference_store=reference_store,
+            max_concurrency=max_concurrency,
+        )
+    return DatabaseSearchTool(tools, reference_store)

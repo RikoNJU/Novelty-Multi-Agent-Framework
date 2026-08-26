@@ -8,6 +8,7 @@ from .adapter import (
     compile_search_plan,
 )
 from .factory import (
+    build_database_search_tool,
     build_retrieval_source,
     build_source_registry,
     build_structured_source_retrieval_tool,
@@ -23,10 +24,12 @@ from .structured_retrieval import (
     StructuredRetrievalAdapter,
     StructuredSourceRetrievalTool,
 )
+from .tool import DatabaseSearchTool
 
 __all__ = [
     "AdapterFactory",
     "CompiledQuery",
+    "DatabaseSearchTool",
     "NullQueryAdapter",
     "NullSearchTool",
     "QueryAdapter",
@@ -37,6 +40,7 @@ __all__ = [
     "StructuredRetrievalResearcherTool",
     "StructuredSourceRetrievalTool",
     "build_null_catalog_source",
+    "build_database_search_tool",
     "build_retrieval_source",
     "build_source_registry",
     "build_structured_source_retrieval_tool",
@@ -45,4 +49,3 @@ __all__ = [
 
 # The null provider is always available; concrete network providers remain lazy.
 AdapterFactory.register("null_catalog", NullQueryAdapter)
-

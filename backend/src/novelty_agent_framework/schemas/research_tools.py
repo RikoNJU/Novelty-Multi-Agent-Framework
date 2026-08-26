@@ -5,12 +5,41 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Annotated, TypeAlias
 
-from pydantic import Field, StringConstraints, model_validator
+from pydantic import Field, StringConstraints, field_validator, model_validator
 
 from .domain import EvidenceCard, StrictModel
-from .references import ArtifactRole, ContentExtent, Evidence
+from .references import AccessStatus, ArtifactRole, ContentExtent, Evidence
 
 NonEmptyStr = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
+
+
+class DatabaseSearchArguments(StrictModel):
+    """Select one configured database; task and query scope stay runtime-owned."""
+
+    source_id: NonEmptyStr
+
+    @field_validator("source_id")
+    @classmethod
+    def normalize_source_id(cls, value: str) -> str:
+        return value.lower()
+
+
+class DatabaseSearchItem(StrictModel):
+    source_record_id: NonEmptyStr
+    work_id: NonEmptyStr
+    title: NonEmptyStr
+    authors: list[NonEmptyStr] = Field(default_factory=list)
+    publication_year: int | None = None
+    source_id: NonEmptyStr
+    access_status: AccessStatus
+    artifact_ids: list[NonEmptyStr] = Field(default_factory=list)
+    abstract_preview: str | None = None
+
+
+class DatabaseSearchResult(StrictModel):
+    source_id: NonEmptyStr
+    results: list[DatabaseSearchItem] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
 
 
 class WebSearchArguments(StrictModel):

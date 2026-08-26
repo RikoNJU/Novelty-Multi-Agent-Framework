@@ -6,6 +6,7 @@ live under :mod:`novelty_agent_framework.tools.database_search`.
 
 from .browser import BrowserTool
 from .browser_backend import BrowserBackend, BrowserFetchResult, PlaywrightBrowserBackend
+from .database_search import DatabaseSearchTool
 from .evidence_card_builder import EvidenceCardBuilder
 from .reader import ReaderTool, ReferenceReaderResearcherTool
 from .reference_reader import ReferenceArtifactReaderTool
@@ -32,6 +33,7 @@ __all__ = [
     "BrowserBackend",
     "BrowserFetchResult",
     "BrowserTool",
+    "DatabaseSearchTool",
     "EvidenceCardBuilder",
     "MarkdownRenderer",
     "PlaywrightBrowserBackend",
