@@ -100,12 +100,14 @@ class ToolCallHarness:
         config: ToolCallHarnessConfig | None = None,
         progress_projector: HarnessProgressProjector | None = None,
         progress_config: object | None = None,
+        context_fragments: tuple[str, ...] = (),
     ) -> None:
         self.model_client = model_client
         self.registry = registry
         self.config = config or ToolCallHarnessConfig()
         self.progress_projector = progress_projector
         self.progress_config = progress_config
+        self.context_fragments = context_fragments
 
     async def run(
         self,
@@ -137,7 +139,12 @@ class ToolCallHarness:
                 if self.progress_projector is not None
                 else None
             )
-            context = _build_context(system_prompt, trace, progress=progress)
+            context = _build_context(
+                system_prompt,
+                trace,
+                progress=progress,
+                context_fragments=self.context_fragments,
+            )
             try:
                 response = await self.model_client.acomplete(
                     context, options=call_options
@@ -238,8 +245,13 @@ def _build_context(
     trace: tuple[ToolCallHarnessEvent, ...],
     *,
     progress: object | None = None,
+    context_fragments: tuple[str, ...] = (),
 ) -> list[ChatMessage]:
     messages = [ChatMessage(role="system", content=system_prompt)]
+    messages.extend(
+        ChatMessage(role="system", content=fragment)
+        for fragment in context_fragments
+    )
     if progress is not None:
         content = (
             progress

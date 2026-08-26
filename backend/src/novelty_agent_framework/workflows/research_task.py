@@ -50,6 +50,7 @@ class TaskResearcherWorkflow:
         config: TaskResearcherConfig | None = None,
         progress_projector: HarnessProgressProjector | None = None,
         progress_config: object | None = None,
+        context_fragments: tuple[str, ...] = (),
     ) -> None:
         self.model_client = model_client
         self.tools = tool_registry
@@ -66,6 +67,7 @@ class TaskResearcherWorkflow:
             ),
             progress_projector=progress_projector,
             progress_config=progress_config,
+            context_fragments=context_fragments,
         )
 
     async def ainvoke(self, request: TaskResearchRequest) -> TaskResearchResult:

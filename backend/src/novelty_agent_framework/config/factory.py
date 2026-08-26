@@ -38,6 +38,7 @@ from ..tools import (
 )
 from ..persistence import ReferenceStore
 from ..core import TraceHarnessProgressProjector
+from ..skills import LoadSkillTool, SkillRegistry
 from .settings import ResearcherRuntimeConfig
 from ..workflows import (
     NoveltyWorkflow,
@@ -50,6 +51,7 @@ from ..workflows import (
 CONFIG_DIR = Path(__file__).resolve().parent
 DEFAULT_CONFIG_PATH = CONFIG_DIR / "settings.example.json"
 PROMPTS_ROOT = Path(__file__).resolve().parents[1] / "prompts"
+SKILLS_ROOT = Path(__file__).resolve().parents[1] / "skills"
 
 
 def load_config(path: str | Path | None = None) -> dict[str, Any]:
@@ -267,6 +269,23 @@ def build_workflow(
     researcher_runtime = ResearcherRuntimeConfig.from_mapping(
         raw.get("task_researcher")
     )
+    skill_fragments: tuple[str, ...] = ()
+    if researcher_runtime.skills.enabled:
+        skill_registry = SkillRegistry.scan(
+            researcher_runtime.skills.root or SKILLS_ROOT
+        )
+        tool_registry.register(
+            LoadSkillTool(
+                skill_registry, max_loaded=researcher_runtime.skills.max_loaded
+            )
+        )
+        catalog = skill_registry.catalog()
+        if catalog:
+            skill_fragments = (
+                "[AVAILABLE_SKILLS]\n"
+                + json.dumps(catalog, ensure_ascii=False, sort_keys=True)
+                + "\n[/AVAILABLE_SKILLS]",
+            )
     task_researcher = TaskResearcherWorkflow(
         research_model,
         tool_registry,
@@ -285,6 +304,7 @@ def build_workflow(
             else None
         ),
         progress_config=researcher_runtime.projection,
+        context_fragments=skill_fragments,
     )
     return NoveltyWorkflow(
         NoveltyWorkflowServices(

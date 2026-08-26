@@ -113,6 +113,38 @@ def test_factory_enables_progress_projector_only_from_config():
     )
 
 
+def test_factory_enables_skills_with_metadata_only_catalog(tmp_path):
+    skill_file = tmp_path / "example" / "SKILL.md"
+    skill_file.parent.mkdir(parents=True)
+    skill_file.write_text(
+        "---\nname: example-skill\ndescription: Example.\n---\nPRIVATE BODY\n",
+        encoding="utf-8",
+    )
+    config = json.loads(json.dumps(BASE_CONFIG))
+    config["task_researcher"] = {
+        "skills": {"enabled": True, "root": str(tmp_path), "max_loaded": 2}
+    }
+
+    researcher = build_workflow(config).services.task_researcher
+
+    assert "load_skill" in researcher.tools.names
+    fragments = researcher.harness.context_fragments
+    assert "example-skill" in fragments[0]
+    assert "Example." in fragments[0]
+    assert "PRIVATE BODY" not in fragments[0]
+    assert str(tmp_path) not in fragments[0]
+
+
+def test_skills_disabled_keeps_business_tool_view_unchanged():
+    config = json.loads(json.dumps(BASE_CONFIG))
+    config["task_researcher"] = {"skills": {"enabled": False}}
+
+    researcher = build_workflow(config).services.task_researcher
+
+    assert researcher.tools.names == ("web_search", "browser", "reader")
+    assert researcher.harness.context_fragments == ()
+
+
 def test_legacy_flat_researcher_config_remains_loadable():
     runtime = ResearcherRuntimeConfig.from_mapping(
         {"max_steps": 4, "max_tool_calls": 3, "per_tool_limits": {"old": 2}}
