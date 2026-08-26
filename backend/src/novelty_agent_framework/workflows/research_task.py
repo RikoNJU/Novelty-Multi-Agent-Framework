@@ -23,7 +23,12 @@ class TaskResearcherConfig:
     max_chars_per_read: int = 8_000
     max_total_read_chars: int = 48_000
     per_tool_limits: dict[str, int] = field(
-        default_factory=lambda: {"web_search": 3, "browser": 3, "reader": 8}
+        default_factory=lambda: {
+            "database_search": 2,
+            "web_search": 3,
+            "browser": 3,
+            "reader": 8,
+        }
     )
 
     def __post_init__(self) -> None:

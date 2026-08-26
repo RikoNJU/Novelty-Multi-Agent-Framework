@@ -37,6 +37,7 @@ from ..tools.database_search import (
     StructuredSourceRetrievalTool,
 )
 from ..tools.database_search.factory import (
+    build_database_search_tool,
     build_retrieval_source as build_database_retrieval_source,
     build_source_registry as build_database_source_registry,
     build_structured_source_retrieval_tool as build_database_structured_tool,
@@ -216,6 +217,10 @@ def build_workflow(
     registry = build_model_registry(raw)
     prompts = build_prompt_library()
     retrieval_cfg = _normalized_retrieval_config(raw)
+    if "retrieval" not in raw:
+        retrieval_cfg.setdefault("sources", {}).setdefault("arxiv", {})[
+            "adapter_only"
+        ] = False
     agents_cfg = raw.get("agents", {})
     coordinator_cfg = agents_cfg.get("coordinator", {})
     point_extractor_cfg = agents_cfg.get("point_extractor", {})
@@ -233,11 +238,21 @@ def build_workflow(
         temperature=float(point_extractor_cfg.get("temperature", 0.2)),
     )
     research_model = registry.client_for(research_cfg.get("model", "research"))
+    search_planner = build_search_planner(
+        raw, registry, prompts, retrieval_cfg=retrieval_cfg
+    )
 
     workflow_cfg = raw.get("workflow", {})
     store = ReferenceStore()
     tool_registry = ResearcherToolRegistry(
         [
+            build_database_search_tool(
+                retrieval_cfg,
+                search_planner=search_planner,
+                reference_store=store,
+                source_registry=source_registry,
+                max_concurrency=int(workflow_cfg.get("max_concurrency", 4)),
+            ),
             WebSearchTool(BaiduSearchBackend(), store),
             BrowserTool(PlaywrightBrowserBackend(), store),
             ReaderTool(ReferenceArtifactReaderTool(store)),
@@ -260,6 +275,7 @@ def build_workflow(
                 budget_cfg.get(
                     "per_tool_limits",
                     {
+                        "database_search": 2,
                         "web_search": 3,
                         "browser": 3,
                         "reader": 8,
