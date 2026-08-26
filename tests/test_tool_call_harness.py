@@ -240,6 +240,47 @@ def test_tool_call_budget_stops_repeated_requests() -> None:
     assert exc.value.trace[-1].detail == "tool-call budget exhausted"
 
 
+def test_per_tool_budget_stops_only_configured_tool() -> None:
+    tool = ExampleTool()
+    model = ScriptedModelClient(call(), call(call_id="call_2"))
+    harness = ToolCallHarness(
+        model,
+        ResearcherToolRegistry([tool]),
+        config=ToolCallHarnessConfig(
+            max_turns=3,
+            max_tool_calls=3,
+            per_tool_limits={"example": 1},
+        ),
+    )
+
+    with pytest.raises(ToolCallHarnessError, match="per-tool budget") as exc:
+        run_harness(harness, system_prompt="system", initial_user_message="task")
+
+    assert len(tool.received) == 1
+    assert exc.value.trace[-1].detail == "per-tool budget exhausted: example"
+
+
+def test_empty_per_tool_limits_preserve_total_budget_behavior() -> None:
+    tool = ExampleTool()
+    model = ScriptedModelClient(
+        call(), call(call_id="call_2"), ModelResponse(content="done")
+    )
+    result = run_harness(
+        ToolCallHarness(
+            model,
+            ResearcherToolRegistry([tool]),
+            config=ToolCallHarnessConfig(
+                max_turns=3, max_tool_calls=2, per_tool_limits={}
+            ),
+        ),
+        system_prompt="system",
+        initial_user_message="task",
+    )
+
+    assert result.tool_calls_used == 2
+    assert len(tool.received) == 2
+
+
 def test_turn_budget_stops_loop_after_last_allowed_turn() -> None:
     tool = ExampleTool()
     harness = ToolCallHarness(
@@ -271,3 +312,5 @@ def test_config_rejects_non_positive_budgets() -> None:
         ToolCallHarnessConfig(max_turns=0)
     with pytest.raises(ValueError, match="max_tool_calls"):
         ToolCallHarnessConfig(max_tool_calls=0)
+    with pytest.raises(ValueError, match="per_tool_limits"):
+        ToolCallHarnessConfig(per_tool_limits={"example": 0})

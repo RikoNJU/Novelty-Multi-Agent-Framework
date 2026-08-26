@@ -8,10 +8,20 @@ from .factory import (
     build_workflow,
     load_config,
 )
-from .settings import NoveltyWebSettings
+from .settings import (
+    HarnessBudgetConfig,
+    NoveltyWebSettings,
+    ProgressProjectionConfig,
+    ResearcherRuntimeConfig,
+    SkillRuntimeConfig,
+)
 
 __all__ = [
     "NoveltyWebSettings",
+    "HarnessBudgetConfig",
+    "ProgressProjectionConfig",
+    "ResearcherRuntimeConfig",
+    "SkillRuntimeConfig",
     "build_model_registry",
     "build_prompt_library",
     "build_retrieval_source",

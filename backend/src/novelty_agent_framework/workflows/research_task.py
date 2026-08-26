@@ -55,6 +55,7 @@ class TaskResearcherWorkflow:
             config=ToolCallHarnessConfig(
                 max_turns=self.config.max_steps,
                 max_tool_calls=self.config.max_tool_calls,
+                per_tool_limits=dict(self.config.per_tool_limits),
             ),
         )
 

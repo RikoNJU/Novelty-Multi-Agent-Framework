@@ -10,6 +10,7 @@ from novelty_agent_framework.tools import (
 )
 from novelty_agent_framework.workflows import NoveltyWorkflowServices, TaskResearcherWorkflow
 from novelty_agent_framework.config import (
+    ResearcherRuntimeConfig,
     build_model_registry,
     build_structured_source_retrieval_tool,
     build_workflow,
@@ -68,6 +69,58 @@ def test_build_workflow_wires_role_models(monkeypatch):
     assert coordinator._client().profile.model == "model-a"
     assert task_researcher.model_client.profile.model == "model-b"
     assert coordinator.temperature == 0.1
+
+
+def test_missing_researcher_section_uses_compatible_defaults():
+    runtime = ResearcherRuntimeConfig.from_mapping()
+
+    assert runtime.harness.max_turns == 12
+    assert runtime.harness.max_total_tool_calls == 10
+    assert runtime.harness.per_tool_limits == {}
+    assert runtime.projection.enabled is False
+    assert runtime.skills.enabled is False
+
+
+def test_nested_researcher_config_reaches_harness():
+    config = json.loads(json.dumps(BASE_CONFIG))
+    config["task_researcher"] = {
+        "harness": {
+            "max_turns": 7,
+            "max_total_tool_calls": 5,
+            "per_tool_limits": {"tool_a": 1},
+        },
+        "projection": {},
+        "skills": {},
+    }
+
+    researcher = build_workflow(config).services.task_researcher
+
+    assert researcher.harness.config.max_turns == 7
+    assert researcher.harness.config.max_tool_calls == 5
+    assert researcher.harness.config.per_tool_limits == {"tool_a": 1}
+
+
+def test_legacy_flat_researcher_config_remains_loadable():
+    runtime = ResearcherRuntimeConfig.from_mapping(
+        {"max_steps": 4, "max_tool_calls": 3, "per_tool_limits": {"old": 2}}
+    )
+
+    assert runtime.harness.max_turns == 4
+    assert runtime.harness.max_total_tool_calls == 3
+    assert runtime.harness.per_tool_limits == {"old": 2}
+
+
+@pytest.mark.parametrize(
+    "raw",
+    [
+        {"harness": {"max_turns": 0}},
+        {"harness": {"max_total_tool_calls": -1}},
+        {"harness": {"per_tool_limits": {"tool_a": 0}}},
+    ],
+)
+def test_researcher_runtime_rejects_invalid_budgets(raw):
+    with pytest.raises(ValueError, match="positive"):
+        ResearcherRuntimeConfig.from_mapping(raw)
 
 
 def test_build_workflow_env_overrides_role_model(monkeypatch):

@@ -37,6 +37,7 @@ from ..tools import (
     build_null_catalog_source,
 )
 from ..persistence import ReferenceStore
+from .settings import ResearcherRuntimeConfig
 from ..workflows import (
     NoveltyWorkflow,
     NoveltyWorkflowConfig,
@@ -262,29 +263,20 @@ def build_workflow(
             ReaderTool(ReferenceArtifactReaderTool(store)),
         ]
     )
-    budget_cfg = raw.get("task_researcher", {})
+    researcher_runtime = ResearcherRuntimeConfig.from_mapping(
+        raw.get("task_researcher")
+    )
     task_researcher = TaskResearcherWorkflow(
         research_model,
         tool_registry,
         EvidenceCardBuilder(store),
         prompts=prompts,
         config=TaskResearcherConfig(
-            max_steps=int(budget_cfg.get("max_steps", 12)),
-            max_tool_calls=int(budget_cfg.get("max_tool_calls", 10)),
-            max_chars_per_read=int(budget_cfg.get("max_chars_per_read", 8_000)),
-            max_total_read_chars=int(
-                budget_cfg.get("max_total_read_chars", 48_000)
-            ),
-            per_tool_limits=dict(
-                budget_cfg.get(
-                    "per_tool_limits",
-                    {
-                        "web_search": 3,
-                        "browser": 3,
-                        "reader": 8,
-                    },
-                )
-            ),
+            max_steps=researcher_runtime.harness.max_turns,
+            max_tool_calls=researcher_runtime.harness.max_total_tool_calls,
+            max_chars_per_read=researcher_runtime.max_chars_per_read,
+            max_total_read_chars=researcher_runtime.max_total_read_chars,
+            per_tool_limits=dict(researcher_runtime.harness.per_tool_limits),
         ),
     )
     return NoveltyWorkflow(

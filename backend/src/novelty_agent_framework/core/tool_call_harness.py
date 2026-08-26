@@ -16,7 +16,8 @@ Business tool implementations do not belong here.
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass, replace
+from collections import Counter
+from dataclasses import dataclass, field, replace
 from typing import Literal
 
 from backend.env import (
@@ -65,12 +66,18 @@ class ToolCallHarnessError(RuntimeError):
 class ToolCallHarnessConfig:
     max_turns: int = 12
     max_tool_calls: int = 10
+    per_tool_limits: dict[str, int] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         if self.max_turns < 1:
             raise ValueError("max_turns must be positive")
         if self.max_tool_calls < 1:
             raise ValueError("max_tool_calls must be positive")
+        for name, limit in self.per_tool_limits.items():
+            if not isinstance(name, str) or not name.strip():
+                raise ValueError("per_tool_limits keys must be non-empty tool names")
+            if isinstance(limit, bool) or not isinstance(limit, int) or limit < 1:
+                raise ValueError(f"per_tool_limits[{name!r}] must be positive")
 
 
 @dataclass(frozen=True)
@@ -112,6 +119,7 @@ class ToolCallHarness:
         tool_definitions = _build_tool_definitions(self.registry)
         call_options = replace(options or ModelCallOptions(), tools=tool_definitions)
         tool_calls_used = 0
+        per_tool_calls: Counter[str] = Counter()
 
         for turn in range(1, self.config.max_turns + 1):
             context = _build_context(system_prompt, tuple(log))
@@ -161,6 +169,11 @@ class ToolCallHarness:
                 )
 
             tool_call = response.tool_calls[0]
+            tool_limit = self.config.per_tool_limits.get(tool_call.name)
+            if tool_limit is not None and per_tool_calls[tool_call.name] >= tool_limit:
+                detail = f"per-tool budget exhausted: {tool_call.name}"
+                _append_error(log, detail)
+                raise ToolCallHarnessError(detail, trace=tuple(log))
             log.append(
                 ToolCallHarnessEvent(kind="tool_call", tool_call=tool_call)
             )
@@ -170,6 +183,7 @@ class ToolCallHarness:
                 scope=scope,
             )
             tool_calls_used += 1
+            per_tool_calls[tool_call.name] += 1
             model_context = self.registry.project_model_context(
                 tool_call.name, observation
             )
