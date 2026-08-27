@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 
 import pytest
 from pydantic import ValidationError
@@ -52,8 +53,42 @@ def test_environment_model_override_is_loader_owned():
     assert config.researcher.model.alias == "glm4.7"
 
 
-def test_typed_config_builds_four_tool_workflow():
+def test_search_planner_example_filename_is_canonical():
+    assert DEFAULT_SEARCH_PLANNER_PATH.name == "search_planner.example.json"
+    assert DEFAULT_SEARCH_PLANNER_PATH.exists()
+    assert not (DEFAULT_SEARCH_PLANNER_PATH.parent / "search_panner.example.json").exists()
+
+
+@pytest.mark.parametrize(
+    "mutate",
+    [
+        lambda raw: raw["tools"]["reader"].update(
+            default_chars_per_read=1001, max_chars_per_read=1000
+        ),
+        lambda raw: raw["tools"]["reader"].update(max_chars_per_read=16001),
+        lambda raw: raw["tools"]["web_search"].update(
+            default_max_results=11, max_results_per_call=10
+        ),
+        lambda raw: raw["tools"]["web_search"].update(max_results_per_call=51),
+    ],
+)
+def test_cross_field_limits_fail_fast(tmp_path: Path, mutate):
+    raw = json.loads(DEFAULT_RESEARCHER_PATH.read_text())
+    mutate(raw)
+    path = tmp_path / "researcher.json"
+    path.write_text(json.dumps(raw), encoding="utf-8")
+    with pytest.raises(ValidationError):
+        load_application_config(researcher_path=path)
+
+
+def test_typed_config_builds_four_tool_workflow_without_legacy_projection(
+    monkeypatch,
+):
     config = load_application_config()
+    monkeypatch.setattr(
+        "novelty_agent_framework.config.factory.legacy_shape",
+        lambda _: (_ for _ in ()).throw(AssertionError("legacy_shape called")),
+    )
     workflow = build_workflow(config)
     assert workflow.services.task_researcher.tools.names == (
         "database_search", "web_search", "browser", "reader"

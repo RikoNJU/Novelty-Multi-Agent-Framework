@@ -51,7 +51,7 @@ from ..workflows import (
     TaskResearcherWorkflow,
 )
 from .loader import legacy_shape, load_application_config, read_json
-from .schemas import ApplicationConfig
+from .schemas import ApplicationConfig, ModelInvocationConfig
 
 CONFIG_DIR = Path(__file__).resolve().parent
 DEFAULT_CONFIG_PATH = CONFIG_DIR / "settings.example.json"
@@ -172,6 +172,7 @@ def build_search_planner(
             if invocation else None
         ),
         max_attempts=int(runtime.get("max_attempts", 2)),
+        prompt_name=str(runtime.get("prompt", "search_planner/plan")),
     )
 
 
@@ -231,16 +232,18 @@ def build_workflow(
     """从配置构建完整工作流；``config`` 优先于 ``config_path``。"""
 
     if isinstance(config, ApplicationConfig):
-        raw = legacy_shape(config)
-    elif config is None and config_path is None:
-        raw = legacy_shape(load_application_config())
-    else:
-        raw = (
-            load_config(config_path)
-            if config is None
-            else copy.deepcopy(dict(config))
+        return _build_workflow_from_application_config(
+            config, source_registry=source_registry
         )
-        _apply_env_overrides(raw)
+    if config is None and config_path is None:
+        return _build_workflow_from_application_config(
+            load_application_config(), source_registry=source_registry
+        )
+
+    raw = (
+        load_config(config_path) if config is None else copy.deepcopy(dict(config))
+    )
+    _apply_env_overrides(raw)
 
     registry = build_model_registry(raw)
     prompts = build_prompt_library()
@@ -372,6 +375,118 @@ def build_workflow(
     )
 
 
+def _build_workflow_from_application_config(
+    config: ApplicationConfig,
+    *,
+    source_registry: RetrievalSourceRegistry | None = None,
+) -> NoveltyWorkflow:
+    """Build the production workflow directly from validated typed fields."""
+
+    registry = build_model_registry(config)
+    prompts = build_prompt_library()
+    coordinator = NoveltyCoordinatorAgent(
+        prompts=prompts,
+        models=registry,
+        model_alias=config.coordinator.model.alias,
+        temperature=config.coordinator.model.temperature,
+    )
+    point_extractor = NoveltyPointExtractorAgent(
+        prompts=prompts,
+        models=registry,
+        model_alias=config.point_extractor.model.alias,
+        temperature=config.point_extractor.model.temperature,
+    )
+    search_planner = SearchPlannerAgent(
+        prompts=prompts,
+        models=registry,
+        model_alias=config.search_planner.model.alias,
+        temperature=config.search_planner.model.temperature,
+        model_options=_typed_model_options(
+            config.search_planner.model,
+            response_format={"type": "json_object"},
+        ),
+        max_attempts=config.search_planner.max_attempts,
+        prompt_name=config.search_planner.prompt,
+    )
+
+    database = config.researcher.tools.database_search
+    retrieval = {
+        "active_source": database.active_source,
+        "candidate_limit_per_task": database.candidate_limit_per_task,
+        "candidate_excerpt_chars": database.candidate_excerpt_chars,
+        "full_text_limit_per_task": database.full_text_limit_per_task,
+        "max_concurrency": database.max_concurrency,
+        "sources": database.providers,
+    }
+    web = config.researcher.tools.web_search
+    browser = config.researcher.tools.browser
+    reader = config.researcher.tools.reader
+    store = ReferenceStore()
+    tool_registry = ResearcherToolRegistry(
+        [
+            build_database_search_tool(
+                retrieval,
+                search_planner=search_planner,
+                reference_store=store,
+                source_registry=source_registry,
+                max_concurrency=database.max_concurrency,
+            ),
+            WebSearchTool(
+                BaiduSearchBackend(
+                    timeout_seconds=float(web.baidu.get("timeout_seconds", 30.0))
+                ),
+                store,
+                default_max_results=web.default_max_results,
+                max_results_per_call=web.max_results_per_call,
+            ),
+            BrowserTool(
+                PlaywrightBrowserBackend(
+                    navigation_timeout_ms=browser.navigation_timeout_ms,
+                    max_html_chars=browser.max_html_chars,
+                    max_text_chars=browser.max_text_chars,
+                ),
+                store,
+            ),
+            ReaderTool(
+                ReferenceArtifactReaderTool(
+                    store, max_chars_per_read=reader.max_chars_per_read
+                ),
+                default_chars_per_read=reader.default_chars_per_read,
+            ),
+        ]
+    )
+    researcher = config.researcher
+    task_researcher = TaskResearcherWorkflow(
+        registry.client_for(researcher.model.alias),
+        tool_registry,
+        EvidenceCardBuilder(store),
+        prompts=prompts,
+        config=TaskResearcherConfig(
+            max_steps=researcher.harness.max_turns,
+            max_tool_calls=researcher.harness.max_total_tool_calls,
+            max_chars_per_read=reader.max_chars_per_read,
+            max_total_read_chars=reader.max_total_read_chars,
+            per_tool_limits=dict(researcher.harness.per_tool_limits),
+            model_options=_typed_model_options(researcher.model),
+            prompt_name=researcher.prompt,
+        ),
+    )
+    workflow = config.project.workflow
+    return NoveltyWorkflow(
+        NoveltyWorkflowServices(
+            coordinator=coordinator,
+            task_researcher=task_researcher,
+            point_extractor=point_extractor,
+        ),
+        config=NoveltyWorkflowConfig(
+            max_rounds=workflow.max_rounds,
+            max_concurrency=workflow.max_concurrency,
+            minimum_evidence_per_point=workflow.minimum_evidence_per_point,
+            candidate_limit_per_task=database.candidate_limit_per_task,
+        ),
+    )
+
+
 def _normalized_retrieval_config(config: Mapping[str, Any]) -> dict[str, Any]:
     """读取新配置，并把历史 ``tools.arxiv`` 形状映射到通用结构。"""
 
@@ -441,6 +556,30 @@ def _model_options(
         max_tokens=int(config["max_tokens"]),
         timeout_seconds=float(config["timeout_seconds"]),
         tool_choice=config.get("tool_choice"),
+        response_format=response_format,
+        extra_body=extra_body,
+    )
+
+
+def _typed_model_options(
+    config: ModelInvocationConfig,
+    *,
+    response_format: Mapping[str, Any] | None = None,
+) -> ModelCallOptions:
+    extra_body = {
+        key: value
+        for key, value in {
+            "enable_thinking": config.enable_thinking,
+            "thinking_budget": config.thinking_budget,
+            "reasoning_effort": config.reasoning_effort,
+        }.items()
+        if value is not None
+    }
+    return ModelCallOptions(
+        temperature=config.temperature,
+        max_tokens=config.max_tokens,
+        timeout_seconds=config.timeout_seconds,
+        tool_choice=config.tool_choice,
         response_format=response_format,
         extra_body=extra_body,
     )

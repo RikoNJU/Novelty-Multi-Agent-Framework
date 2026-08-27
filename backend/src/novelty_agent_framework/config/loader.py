@@ -13,8 +13,7 @@ CONFIG_DIR = Path(__file__).resolve().parent
 DEFAULT_PROJECT_PATH = CONFIG_DIR / "settings.example.json"
 DEFAULT_MODELS_PATH = CONFIG_DIR / "models.example.json"
 DEFAULT_RESEARCHER_PATH = CONFIG_DIR / "agents" / "researcher.example.json"
-# Keep the manually-created filename as the path baseline for this task.
-DEFAULT_SEARCH_PLANNER_PATH = CONFIG_DIR / "agents" / "search_panner.example.json"
+DEFAULT_SEARCH_PLANNER_PATH = CONFIG_DIR / "agents" / "search_planner.example.json"
 DEFAULT_COORDINATOR_PATH = CONFIG_DIR / "agents" / "coordinator.example.json"
 DEFAULT_POINT_EXTRACTOR_PATH = CONFIG_DIR / "agents" / "point_extractor.example.json"
 
@@ -64,7 +63,7 @@ def _apply_model_overrides(raw: dict[str, Any], environ: Mapping[str, str]) -> N
 
 
 def legacy_shape(config: ApplicationConfig) -> dict[str, Any]:
-    """Compatibility-only projection for callers not yet migrated to typed config."""
+    """Compatibility only: project typed config for unmigrated legacy callers."""
 
     db = config.researcher.tools.database_search
     return {

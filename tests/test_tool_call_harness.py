@@ -75,7 +75,7 @@ class ExampleTool:
 
 
 class ReaderBudgetArguments(StrictModel):
-    max_chars: int
+    max_chars: int = 8000
 
 
 class ReaderBudgetTool:
@@ -83,10 +83,16 @@ class ReaderBudgetTool:
     description = "reader budget fixture"
     args_schema = ReaderBudgetArguments
 
+    def __init__(self, *, actual_chars: int | None = None) -> None:
+        self.actual_chars = actual_chars
+        self.received: list[ReaderBudgetArguments] = []
+
     async def ainvoke(self, arguments, *, scope):
+        self.received.append(arguments)
+        actual_chars = self.actual_chars or arguments.max_chars
         return ResearcherToolObservation(
             tool_name="reader", arguments=arguments.model_dump(), succeeded=True,
-            payload={"read_result": {"char_start": 0, "char_end": arguments.max_chars}},
+            payload={"read_result": {"char_start": 0, "char_end": actual_chars}},
         )
 
 
@@ -285,6 +291,52 @@ def test_reader_cumulative_character_budget_is_enforced() -> None:
     )
     with pytest.raises(ToolCallHarnessError, match="cumulative character budget"):
         run_harness(harness, system_prompt="system", initial_user_message="task")
+
+
+@pytest.mark.parametrize("arguments", [{"max_chars": 1200}, {}])
+def test_reader_budget_rejects_canonical_request_before_execution(arguments) -> None:
+    tool = ReaderBudgetTool()
+    response = ModelResponse(
+        content=None,
+        tool_calls=(ModelToolCall("r1", "reader", arguments),),
+    )
+    harness = ToolCallHarness(
+        ScriptedModelClient(response),
+        ResearcherToolRegistry([tool]),
+        config=ToolCallHarnessConfig(max_total_read_chars=1000),
+    )
+
+    with pytest.raises(ToolCallHarnessError, match="cumulative character budget"):
+        run_harness(harness, system_prompt="system", initial_user_message="task")
+
+    assert tool.received == []
+
+
+def test_reader_budget_accumulates_actual_characters() -> None:
+    tool = ReaderBudgetTool(actual_chars=2500)
+    responses = (
+        ModelResponse(
+            content=None,
+            tool_calls=(ModelToolCall("r1", "reader", {"max_chars": 4000}),),
+        ),
+        ModelResponse(
+            content=None,
+            tool_calls=(ModelToolCall("r2", "reader", {"max_chars": 2500}),),
+        ),
+        ModelResponse(content="done"),
+    )
+    harness = ToolCallHarness(
+        ScriptedModelClient(*responses),
+        ResearcherToolRegistry([tool]),
+        config=ToolCallHarnessConfig(
+            max_turns=3, max_tool_calls=2, max_total_read_chars=5000
+        ),
+    )
+
+    result = run_harness(harness, system_prompt="system", initial_user_message="task")
+
+    assert result.final_content == "done"
+    assert [item.max_chars for item in tool.received] == [4000, 2500]
 
 
 def test_turn_budget_stops_loop_after_last_allowed_turn() -> None:

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 import time
+from collections.abc import Mapping
 from typing import Any, Protocol
 
 from ..schemas import (
@@ -66,9 +67,10 @@ class ResearcherToolRegistry:
     ) -> ResearcherToolObservation:
         started = time.monotonic()
         try:
-            tool = self.get(tool_name)
-            validated = tool.args_schema.model_validate(arguments)
-            return await tool.ainvoke(validated, scope=scope)
+            validated = self.validate_arguments(tool_name, arguments)
+            return await self.execute_validated(
+                tool_name, validated, scope=scope, started=started
+            )
         except Exception as exc:
             return ResearcherToolObservation(
                 tool_name=tool_name,
@@ -76,6 +78,41 @@ class ResearcherToolRegistry:
                 succeeded=False,
                 error=_safe_error(exc),
                 elapsed_ms=int((time.monotonic() - started) * 1000),
+            )
+
+    def validate_arguments(
+        self, tool_name: str, arguments: Mapping[str, Any]
+    ) -> StrictModel:
+        """Return the canonical arguments, including schema-provided defaults."""
+
+        tool = self.get(tool_name)
+        return tool.args_schema.model_validate(dict(arguments))
+
+    async def execute_validated(
+        self,
+        tool_name: str,
+        arguments: StrictModel,
+        *,
+        scope: TaskResearchRequest,
+        started: float | None = None,
+    ) -> ResearcherToolObservation:
+        """Execute one already-canonicalized argument object."""
+
+        invoked_at = time.monotonic() if started is None else started
+        try:
+            tool = self.get(tool_name)
+            if not isinstance(arguments, tool.args_schema):
+                raise TypeError(
+                    f"validated arguments for {tool_name!r} use the wrong schema"
+                )
+            return await tool.ainvoke(arguments, scope=scope)
+        except Exception as exc:
+            return ResearcherToolObservation(
+                tool_name=tool_name,
+                arguments=arguments.model_dump(mode="json"),
+                succeeded=False,
+                error=_safe_error(exc),
+                elapsed_ms=int((time.monotonic() - invoked_at) * 1000),
             )
 
     def project_model_context(

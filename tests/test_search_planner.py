@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -114,6 +115,30 @@ def test_plans_normal_chinese_task_and_renders_prompt() -> None:
     assert '"language": "zh"' in messages[1].content
     assert "数据库无关" in messages[0].content
     assert options.response_format == {"type": "json_object"}
+
+
+def test_custom_prompt_name_is_used_for_rendering() -> None:
+    task = make_task()
+    client = StubModelClient(json.dumps(valid_plan(task)))
+
+    class RecordingPrompts:
+        def __init__(self) -> None:
+            self.names: list[str] = []
+
+        def render(self, name, **variables):
+            self.names.append(name)
+            return SimpleNamespace(system="system", user=json.dumps(variables))
+
+    prompts = RecordingPrompts()
+    agent = SearchPlannerAgent(
+        model_client=client,
+        prompts=prompts,
+        prompt_name="test/custom_prompt",
+    )
+
+    agent.plan(make_point(), task)
+
+    assert prompts.names == ["test/custom_prompt"]
 
 
 def test_plans_english_task_when_point_has_no_english_claim() -> None:

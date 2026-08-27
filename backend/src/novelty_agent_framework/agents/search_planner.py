@@ -39,6 +39,7 @@ class SearchPlannerAgent(SearchPlanner):
         temperature: float = 0.2,
         model_options: ModelCallOptions | None = None,
         max_attempts: int = 2,
+        prompt_name: str = "search_planner/plan",
     ) -> None:
         self.model_client = model_client
         self._prompts = prompts
@@ -52,6 +53,7 @@ class SearchPlannerAgent(SearchPlanner):
         if max_attempts < 1:
             raise ValueError("max_attempts must be positive")
         self.max_attempts = max_attempts
+        self.prompt_name = prompt_name
 
     def plan(self, point: NoveltyPoint, task: ResearchTask) -> SearchPlan:
         """将 NoveltyPoint + ResearchTask 转换为经过校验的 SearchPlan。"""
@@ -101,7 +103,7 @@ class SearchPlannerAgent(SearchPlanner):
             "retry_reason": retry_reason or "无（首次生成）",
         }
         if self._prompts is not None:
-            rendered = self._prompts.render("search_planner/plan", **variables)
+            rendered = self._prompts.render(self.prompt_name, **variables)
             system, user = rendered.system, rendered.user
         else:
             system = self._system_prompt()

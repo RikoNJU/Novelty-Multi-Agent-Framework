@@ -60,6 +60,16 @@ class WebSearchConfig(ConfigModel):
     max_results_per_call: int = Field(gt=0)
     baidu: dict[str, Any]
 
+    @model_validator(mode="after")
+    def valid_result_limits(self):
+        if self.default_max_results > self.max_results_per_call:
+            raise ValueError(
+                "default_max_results must not exceed max_results_per_call"
+            )
+        if self.max_results_per_call > 50:
+            raise ValueError("max_results_per_call exceeds Baidu hard limit 50")
+        return self
+
 
 class BrowserConfig(ConfigModel):
     backend: Literal["playwright"]
@@ -72,6 +82,16 @@ class ReaderConfig(ConfigModel):
     default_chars_per_read: int = Field(gt=0)
     max_chars_per_read: int = Field(gt=0)
     max_total_read_chars: int = Field(gt=0)
+
+    @model_validator(mode="after")
+    def valid_read_limits(self):
+        if self.default_chars_per_read > self.max_chars_per_read:
+            raise ValueError(
+                "default_chars_per_read must not exceed max_chars_per_read"
+            )
+        if self.max_chars_per_read > 16_000:
+            raise ValueError("max_chars_per_read exceeds ReaderArguments cap 16000")
+        return self
 
 
 class ResearcherToolsConfig(ConfigModel):

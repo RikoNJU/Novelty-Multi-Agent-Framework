@@ -175,20 +175,36 @@ class ToolCallHarness:
                 detail = f"{tool_call.name} tool-call budget exhausted"
                 _append_error(log, detail)
                 raise ToolCallHarnessError(detail, trace=tuple(log))
-            if tool_call.name == "reader" and self.config.max_total_read_chars is not None:
-                requested = tool_call.arguments.get("max_chars", 0)
-                if isinstance(requested, int) and total_read_chars + requested > self.config.max_total_read_chars:
+            try:
+                validated_arguments = self.registry.validate_arguments(
+                    tool_call.name, tool_call.arguments
+                )
+            except Exception:
+                validated_arguments = None
+            if (
+                tool_call.name == "reader"
+                and validated_arguments is not None
+                and self.config.max_total_read_chars is not None
+            ):
+                requested = getattr(validated_arguments, "max_chars")
+                remaining = self.config.max_total_read_chars - total_read_chars
+                if requested > remaining:
                     detail = "reader cumulative character budget exhausted"
                     _append_error(log, detail)
                     raise ToolCallHarnessError(detail, trace=tuple(log))
             log.append(
                 ToolCallHarnessEvent(kind="tool_call", tool_call=tool_call)
             )
-            observation = await self.registry.execute(
-                tool_call.name,
-                dict(tool_call.arguments),
-                scope=scope,
-            )
+            if validated_arguments is None:
+                observation = await self.registry.execute(
+                    tool_call.name,
+                    dict(tool_call.arguments),
+                    scope=scope,
+                )
+            else:
+                observation = await self.registry.execute_validated(
+                    tool_call.name, validated_arguments, scope=scope
+                )
             tool_calls_used += 1
             per_tool_counts[tool_call.name] = tool_count + 1
             if tool_call.name == "reader" and observation.succeeded:
