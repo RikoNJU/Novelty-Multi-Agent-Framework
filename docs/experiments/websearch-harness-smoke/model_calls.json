@@ -1,0 +1,125 @@
+[
+  {
+    "turn": 1,
+    "model": "deepseek-ai/DeepSeek-V4-Flash",
+    "context_roles": [
+      "system",
+      "user"
+    ],
+    "elapsed_ms": 2507.173,
+    "tools": [
+      {
+        "name": "web_search",
+        "description": "搜索 Web 以发现候选来源；搜索结果本身不是证据。",
+        "parameters": {
+          "additionalProperties": false,
+          "description": "Resource-discovery input; no result produced here is evidence.",
+          "properties": {
+            "query": {
+              "minLength": 1,
+              "title": "Query",
+              "type": "string"
+            },
+            "max_results": {
+              "default": 10,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Max Results",
+              "type": "integer"
+            }
+          },
+          "required": [
+            "query"
+          ],
+          "title": "WebSearchArguments",
+          "type": "object"
+        }
+      }
+    ],
+    "assistant_tool_call_ids": [],
+    "tool_result_call_ids": [],
+    "response_tool_calls": [
+      {
+        "id": "01a035261fdf14249c0758ee11a2975e",
+        "name": "web_search",
+        "arguments": {
+          "query": "多智能体 科技查新 论文",
+          "max_results": 5
+        }
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 590,
+      "completion_tokens": 121,
+      "total_tokens": 711,
+      "completion_tokens_details": {
+        "reasoning_tokens": 53
+      },
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "prompt_cache_hit_tokens": 0,
+      "prompt_cache_miss_tokens": 590
+    }
+  },
+  {
+    "turn": 2,
+    "model": "deepseek-ai/DeepSeek-V4-Flash",
+    "context_roles": [
+      "system",
+      "user",
+      "assistant",
+      "tool"
+    ],
+    "elapsed_ms": 5768.849,
+    "tools": [
+      {
+        "name": "web_search",
+        "description": "搜索 Web 以发现候选来源；搜索结果本身不是证据。",
+        "parameters": {
+          "additionalProperties": false,
+          "description": "Resource-discovery input; no result produced here is evidence.",
+          "properties": {
+            "query": {
+              "minLength": 1,
+              "title": "Query",
+              "type": "string"
+            },
+            "max_results": {
+              "default": 10,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Max Results",
+              "type": "integer"
+            }
+          },
+          "required": [
+            "query"
+          ],
+          "title": "WebSearchArguments",
+          "type": "object"
+        }
+      }
+    ],
+    "assistant_tool_call_ids": [
+      "01a035261fdf14249c0758ee11a2975e"
+    ],
+    "tool_result_call_ids": [
+      "01a035261fdf14249c0758ee11a2975e"
+    ],
+    "response_tool_calls": [],
+    "usage": {
+      "prompt_tokens": 4414,
+      "completion_tokens": 572,
+      "total_tokens": 4986,
+      "completion_tokens_details": {
+        "reasoning_tokens": 103
+      },
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "prompt_cache_hit_tokens": 0,
+      "prompt_cache_miss_tokens": 4414
+    }
+  }
+]

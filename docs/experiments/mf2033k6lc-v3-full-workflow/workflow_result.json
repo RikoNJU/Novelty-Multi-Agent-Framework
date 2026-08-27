@@ -1,0 +1,175 @@
+{
+  "brief": {
+    "paper_summary": "由于现实世界中的大多数数据都可以用图表示，因此近年来针对图表示学习的研究越来越受到关注。通过将高维图数据转化成低维的表征向量，图表示学习可以有效地对图的信息进行存储并快捷地访问图中实体的关键知识。利用学习到的图表征数据可以为社交网络行为分析、节点分类、链路预测和聚类等下游任务提供帮助。随着深度学习的快速发展，研究人员提出了基于图神经网络的图表示学习方法，其使图中的节点能够同时学习图的结构信息以及邻域节点的特征信息，从而得到高质量的低维表征。针对图神经网络上的图表示学习，本文主要关注两个问题：大规模时序图场景下的图表示学习方法和分布式场景下的大规模图的图神经网络优化训练方法。\n真实世界中的图数据规模往往十分庞大且处于动态变化的状态，而现有的图神经网络要么无法处理动态时序图上的图表征学习，要么面对大规模图数据集时训练效率低下。为了解决大规模动态图上的图表征学习问题，本文提出了一种基于图摘要的大规模时序图表示学习方法——GSAERU模型。GSAERU模型由“图表征学习模块”和“时序学习模块”两部分构成。首先将动态时序图建模为各时刻上原图快照的序列，接着在单时间步上将图快照输入图表征学习模块。该模块通过图摘要技术对原图进行压缩，并将压缩后的新图输入图自编码器，利用和原图的重构误差训练原图节点的表征。在获得单时间步上的图表征后将其输入时序学习模块，并通过一个循环神经网络学习原图在时间维度上的特征信息与依赖关系，从而得到大规模时序图的高质量表征。基于在四个真实世界的大规模图数据集上的大量实验表明，GSAERU 模型能够高效生成时序图的表征。与传统的图神经网络算法相比，其平均内存消耗和平均训练时长只有其 9.86% 与 13.27%，且与性能最好的算法在大部分指标下的差距都不超过3.5%。\n\n使用分布式技术加速神经网络训练也是如今热门的研究课题，因为在处理大规模数据时，单个设备（如 CPU，GPU）有限的内存和计算资源往往会成为训练瓶颈。而分布式技术可以提供更多的计算资源来提高训练效率。然而由于图数据的不规则性，传统分布式机器学习方法中的子任务划分和模型训练方法难以直接应用于图神经网络。针对大规模图流数据场景下的分布式图神经网络训练优化问题，本文提出了基于图摘要的分布式图神经网络优化训练算法DSGNN 模型。DSGNN 模型采用“领导——工作者”工作模式，首先由领导节点利用一个基于边分割的图流划分算法对原图进行划分并将划分子图分配给各个工作节点。工作节点随后执行一个基于图摘要技术的小批量训练并将训练结果通过一个注意力层返回给领导节点，最后由领导节点汇总结果并计算梯度，并根据梯度同步更新所有计算节点上的模型。基于四个真实世界的大规模图数据集上的大量实验，结果表明 DSGNN 模型可以大大加速 GNN 模型的训练，并且在链路预测任务上的F1 分数显著高于其它分布式图神经网络模型。",
+    "research_problem": "研 究 生 毕 业 论 文",
+    "novelty_points": [
+      {
+        "point_id": "NP-1",
+        "claim": "提出了一种基于图摘要的大规模时序图表示学习方法，能够高效处理动态图数据。",
+        "claim_en": "Proposed a graph summarization-based method for large-scale sequential graph representation learning, enabling efficient handling of dynamic graph data.",
+        "technical_features": [
+          "图摘要技术",
+          "图自编码器",
+          "循环神经网络",
+          "动态时序图建模"
+        ],
+        "technical_features_en": [
+          "Graph summarization technology",
+          "Graph autoencoder",
+          "Recurrent neural network",
+          "Dynamic sequential graph modeling"
+        ],
+        "source_locations": [
+          "针对大规模动态图上的图表征学习问题，本文提出了一种基于图摘要的大规模时序图表示学习方法——GSAERU模型。"
+        ]
+      },
+      {
+        "point_id": "NP-2",
+        "claim": "通过图摘要技术压缩图数据，并利用重构误差训练节点表征，结合循环神经网络学习时序特征。",
+        "claim_en": "Compressed graph data using graph summarization technology and trained node representations via reconstruction error, combined with recurrent neural network for temporal feature learning.",
+        "technical_features": [
+          "图压缩",
+          "重构误差",
+          "节点表征训练",
+          "循环神经网络"
+        ],
+        "technical_features_en": [
+          "Graph compression",
+          "Reconstruction error",
+          "Node representation training",
+          "Recurrent neural network"
+        ],
+        "source_locations": [
+          "该模块通过图摘要技术对原图进行压缩，并将压缩后的新图输入图自编码器，利用和原图的重构误差训练原图节点的表征。在获得单时间步上的图表征后将其输入时序学习模块，并通过一个循环神经网络学习原图在时间维度上的特征信息与依赖关系。"
+        ]
+      },
+      {
+        "point_id": "NP-3",
+        "claim": "提出了一种基于图摘要的分布式图神经网络优化训练算法，采用领导-工作者模式加速训练并提高性能。",
+        "claim_en": "Proposed a distributed GNN optimization training algorithm based on graph summarization, adopting a leader-worker mode to accelerate training and improve performance.",
+        "technical_features": [
+          "领导-工作者模式",
+          "边分割图流划分",
+          "注意力层",
+          "小批量训练"
+        ],
+        "technical_features_en": [
+          "Leader-worker mode",
+          "Edge segmentation graph flow partitioning",
+          "Attention layer",
+          "Mini-batch training"
+        ],
+        "source_locations": [
+          "DSGNN 模型采用“领导——工作者”工作模式，首先由领导节点利用一个基于边分割的图流划分算法对原图进行划分并将划分子图分配给各个工作节点。工作节点随后执行一个基于图摘要技术的小批量训练并将训练结果通过一个注意力层返回给领导节点，最后由领导节点汇总结果并计算梯度，并根据梯度同步更新所有计算节点上的模型。"
+        ]
+      }
+    ],
+    "keywords_zh": [
+      "图表示学习",
+      "深度学习",
+      "图神经网络",
+      "分布式技术"
+    ],
+    "keywords_en": [
+      "graph representation learning",
+      "deep learning",
+      "graph neural network",
+      "distributed technology"
+    ],
+    "research_tasks": [
+      {
+        "task_id": "T-1",
+        "novelty_point_id": "NP-1",
+        "task_type": "literature_search",
+        "language": "zh",
+        "description": "针对该查新点执行中文文献检索。",
+        "attempt": 1
+      },
+      {
+        "task_id": "T-2",
+        "novelty_point_id": "NP-1",
+        "task_type": "literature_search",
+        "language": "en",
+        "description": "针对该查新点执行英文文献检索。",
+        "attempt": 1
+      },
+      {
+        "task_id": "T-1",
+        "novelty_point_id": "NP-2",
+        "task_type": "literature_search",
+        "language": "zh",
+        "description": "针对该查新点执行中文文献检索。",
+        "attempt": 1
+      },
+      {
+        "task_id": "T-2",
+        "novelty_point_id": "NP-2",
+        "task_type": "literature_search",
+        "language": "en",
+        "description": "针对该查新点执行英文文献检索。",
+        "attempt": 1
+      },
+      {
+        "task_id": "T-1",
+        "novelty_point_id": "NP-3",
+        "task_type": "literature_search",
+        "language": "zh",
+        "description": "针对该查新点执行中文文献检索。",
+        "attempt": 1
+      },
+      {
+        "task_id": "T-2",
+        "novelty_point_id": "NP-3",
+        "task_type": "literature_search",
+        "language": "en",
+        "description": "针对该查新点执行英文文献检索。",
+        "attempt": 1
+      }
+    ]
+  },
+  "evidence_cards": [],
+  "rejected_evidence": [],
+  "coverage_gaps": [
+    "NP-1: 仅有 0 条有效证据，至少需要 1 条",
+    "NP-2: 仅有 0 条有效证据，至少需要 1 条",
+    "NP-3: 仅有 0 条有效证据，至少需要 1 条"
+  ],
+  "issues": [],
+  "rounds": 1,
+  "report": {
+    "paper_id": "MF2033k6lC",
+    "conclusions": [
+      {
+        "novelty_point_id": "NP-1",
+        "level": "insufficient",
+        "summary": "在本次查新检索范围内（中英文文献数据库），未获得与该查新点直接相关的有效证据，无法判断其新颖性。检索范围可能受限于数据库覆盖和检索词选择，存在漏检可能。",
+        "supporting_card_ids": [],
+        "counter_card_ids": [],
+        "confidence": 0.0
+      },
+      {
+        "novelty_point_id": "NP-2",
+        "level": "insufficient",
+        "summary": "在本次查新检索范围内（中英文文献数据库），未获得与该查新点直接相关的有效证据，无法判断其新颖性。检索范围可能受限于数据库覆盖和检索词选择，存在漏检可能。",
+        "supporting_card_ids": [],
+        "counter_card_ids": [],
+        "confidence": 0.0
+      },
+      {
+        "novelty_point_id": "NP-3",
+        "level": "insufficient",
+        "summary": "在本次查新检索范围内（中英文文献数据库），未获得与该查新点直接相关的有效证据，无法判断其新颖性。检索范围可能受限于数据库覆盖和检索词选择，存在漏检可能。",
+        "supporting_card_ids": [],
+        "counter_card_ids": [],
+        "confidence": 0.0
+      }
+    ],
+    "missing_references": [],
+    "missing_baselines": [],
+    "citation_issues": [],
+    "limitations": [
+      "有效证据不足，无法进行充分查新。",
+      "检索范围可能受限于数据库覆盖和检索词选择，存在漏检可能。"
+    ]
+  }
+}
