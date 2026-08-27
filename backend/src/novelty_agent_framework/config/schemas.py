@@ -73,6 +73,7 @@ class WebSearchConfig(ConfigModel):
 
 class BrowserConfig(ConfigModel):
     backend: Literal["playwright"]
+    network_mode: Literal["inherit", "direct"] = "inherit"
     navigation_timeout_ms: int = Field(gt=0)
     max_html_chars: int = Field(gt=0)
     max_text_chars: int = Field(gt=0)

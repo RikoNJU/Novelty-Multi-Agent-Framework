@@ -59,6 +59,24 @@ def test_search_planner_example_filename_is_canonical():
     assert not (DEFAULT_SEARCH_PLANNER_PATH.parent / "search_panner.example.json").exists()
 
 
+def test_browser_network_mode_defaults_to_inherit(tmp_path: Path):
+    raw = json.loads(DEFAULT_RESEARCHER_PATH.read_text())
+    raw["tools"]["browser"].pop("network_mode", None)
+    path = tmp_path / "researcher.json"
+    path.write_text(json.dumps(raw), encoding="utf-8")
+    config = load_application_config(researcher_path=path)
+    assert config.researcher.tools.browser.network_mode == "inherit"
+
+
+def test_browser_network_mode_rejects_invalid_value(tmp_path: Path):
+    raw = json.loads(DEFAULT_RESEARCHER_PATH.read_text())
+    raw["tools"]["browser"]["network_mode"] = "automatic"
+    path = tmp_path / "researcher.json"
+    path.write_text(json.dumps(raw), encoding="utf-8")
+    with pytest.raises(ValidationError):
+        load_application_config(researcher_path=path)
+
+
 @pytest.mark.parametrize(
     "mutate",
     [

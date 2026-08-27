@@ -301,6 +301,7 @@ def build_workflow(
             ),
             BrowserTool(
                 PlaywrightBrowserBackend(
+                    network_mode=str(browser_cfg.get("network_mode", "inherit")),
                     navigation_timeout_ms=int(
                         browser_cfg.get("navigation_timeout_ms", 30_000)
                     ),
@@ -441,6 +442,7 @@ def _build_workflow_from_application_config(
             ),
             BrowserTool(
                 PlaywrightBrowserBackend(
+                    network_mode=browser.network_mode,
                     navigation_timeout_ms=browser.navigation_timeout_ms,
                     max_html_chars=browser.max_html_chars,
                     max_text_chars=browser.max_text_chars,

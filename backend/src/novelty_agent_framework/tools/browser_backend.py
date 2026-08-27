@@ -10,6 +10,7 @@ from urllib.parse import urlsplit
 from pydantic import Field
 
 from ..schemas import StrictModel
+from .browser_runtime import playwright_launch_kwargs
 
 
 class BrowserFetchResult(StrictModel):
@@ -46,6 +47,7 @@ class PlaywrightBrowserBackend:
         navigation_timeout_ms: int = 30_000,
         max_html_chars: int = 2_000_000,
         max_text_chars: int = 500_000,
+        network_mode: str = "inherit",
     ) -> None:
         if navigation_timeout_ms <= 0:
             raise ValueError("navigation_timeout_ms must be positive")
@@ -53,13 +55,19 @@ class PlaywrightBrowserBackend:
             raise ValueError("content limits must be positive")
         self.navigation_timeout_ms = navigation_timeout_ms
         self.limits = _ContentLimits(max_html_chars, max_text_chars)
+        if network_mode not in {"inherit", "direct"}:
+            raise ValueError("browser network mode must be 'inherit' or 'direct'")
+        self.network_mode = network_mode
 
     async def fetch(self, url: str) -> BrowserFetchResult:
         requested_url = _validate_public_url(url)
         async_playwright = _load_async_playwright()
         warnings: list[str] = []
         async with async_playwright() as playwright:
-            browser = await playwright.chromium.launch(headless=True)
+            launch_kwargs, _network, _runtime = playwright_launch_kwargs(
+                self.network_mode
+            )
+            browser = await playwright.chromium.launch(**launch_kwargs)
             try:
                 context = await browser.new_context()
                 try:

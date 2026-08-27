@@ -22,7 +22,10 @@ def test_perturbed_config_reaches_runtime_objects(tmp_path):
     researcher_raw["tools"]["web_search"].update(default_max_results=4, max_results_per_call=6)
     researcher_raw["tools"]["web_search"]["baidu"]["timeout_seconds"] = 7
     researcher_raw["tools"]["browser"].update(
-        navigation_timeout_ms=4321, max_html_chars=2222, max_text_chars=1111
+        network_mode="direct",
+        navigation_timeout_ms=4321,
+        max_html_chars=2222,
+        max_text_chars=1111,
     )
     researcher_raw["tools"]["reader"].update(
         default_chars_per_read=1000, max_chars_per_read=1234,
@@ -63,6 +66,7 @@ def test_perturbed_config_reaches_runtime_objects(tmp_path):
     assert web.default_max_results == 4 and web.max_results_per_call == 6
     assert web.backend.timeout_seconds == 7
     assert browser.backend.navigation_timeout_ms == 4321
+    assert browser.backend.network_mode == "direct"
     assert browser.backend.limits.html_chars == 2222
     assert browser.backend.limits.text_chars == 1111
     assert reader.default_chars_per_read == 1000

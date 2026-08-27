@@ -6,6 +6,13 @@ live under :mod:`novelty_agent_framework.tools.database_search`.
 
 from .browser import BrowserTool
 from .browser_backend import BrowserBackend, BrowserFetchResult, PlaywrightBrowserBackend
+from .browser_runtime import (
+    BrowserDependencyError,
+    BrowserNetworkSettings,
+    ChromiumRuntimeSettings,
+    resolve_browser_network,
+    resolve_chromium_runtime,
+)
 from .database_search import DatabaseSearchTool
 from .evidence_card_builder import EvidenceCardBuilder
 from .reader import ReaderTool, ReferenceReaderResearcherTool
@@ -31,8 +38,11 @@ __all__ = [
     "BaiduSearchBackend",
     "BaiduSearchError",
     "BrowserBackend",
+    "BrowserDependencyError",
     "BrowserFetchResult",
+    "BrowserNetworkSettings",
     "BrowserTool",
+    "ChromiumRuntimeSettings",
     "DatabaseSearchTool",
     "EvidenceCardBuilder",
     "MarkdownRenderer",
@@ -50,4 +60,6 @@ __all__ = [
     "SearchHit",
     "WebSearchTool",
     "render_report",
+    "resolve_browser_network",
+    "resolve_chromium_runtime",
 ]
