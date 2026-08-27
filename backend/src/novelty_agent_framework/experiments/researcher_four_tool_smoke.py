@@ -7,8 +7,11 @@ import argparse
 import json
 import time
 from dataclasses import replace
+from datetime import datetime, timezone
+from pathlib import Path
 
-from ..config.factory import build_workflow, load_config
+from ..config import effective_safe_config, load_application_config
+from ..config.factory import build_workflow
 from ..schemas import NoveltyPoint, ResearchTask, TaskResearchRequest
 
 
@@ -45,7 +48,7 @@ class RequiredAllToolsPrompts:
         ))
 
 async def run(*, require_all: bool = False) -> dict[str, object]:
-    config = load_config()
+    config = load_application_config()
     workflow = build_workflow(config)
     researcher = workflow.services.task_researcher
     if require_all:
@@ -72,9 +75,10 @@ async def run(*, require_all: bool = False) -> dict[str, object]:
 
     researcher.tools.execute = measured_execute
     mode_suffix = "required" if require_all else "autonomous"
+    run_stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     request = TaskResearchRequest(
-        subject_paper_id=f"researcher-four-tool-live-smoke-{mode_suffix}",
-        run_id=f"researcher-four-tool-live-smoke-run-{mode_suffix}",
+        subject_paper_id=f"researcher-four-tool-live-smoke-{mode_suffix}-{run_stamp}",
+        run_id=f"researcher-four-tool-live-smoke-run-{mode_suffix}-{run_stamp}",
         novelty_point=NoveltyPoint(
             point_id="NP-live-four",
             claim="Temporal graph neural networks using graph summarization",
@@ -94,6 +98,7 @@ async def run(*, require_all: bool = False) -> dict[str, object]:
     warnings.extend(result.warnings)
     return {
         "registered_tools": list(researcher.tools.names),
+        "effective_safe_config": effective_safe_config(config),
         "experiment_mode": "required_all_capability" if require_all else "autonomous",
         "tool_sequence": tool_sequence,
         "per_tool_counts": {name: tool_sequence.count(name) for name in researcher.tools.names},
@@ -121,8 +126,15 @@ async def run(*, require_all: bool = False) -> dict[str, object]:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--require-all", action="store_true")
+    parser.add_argument("--output", type=Path)
     args = parser.parse_args()
-    print(json.dumps(asyncio.run(run(require_all=args.require_all)), ensure_ascii=False, indent=2))
+    rendered = json.dumps(
+        asyncio.run(run(require_all=args.require_all)), ensure_ascii=False, indent=2
+    )
+    if args.output is not None:
+        args.output.parent.mkdir(parents=True, exist_ok=True)
+        args.output.write_text(rendered + "\n", encoding="utf-8")
+    print(rendered)
 
 
 if __name__ == "__main__":

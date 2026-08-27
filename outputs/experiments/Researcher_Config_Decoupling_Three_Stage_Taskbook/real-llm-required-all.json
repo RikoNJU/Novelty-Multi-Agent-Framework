@@ -1,0 +1,275 @@
+{
+  "registered_tools": [
+    "database_search",
+    "web_search",
+    "browser",
+    "reader"
+  ],
+  "effective_safe_config": {
+    "researcher": {
+      "version": 1,
+      "model": {
+        "alias": "deepseek-flash",
+        "temperature": 0.3,
+        "max_tokens": 4096,
+        "timeout_seconds": 300.0,
+        "tool_choice": "auto",
+        "enable_thinking": null,
+        "thinking_budget": null,
+        "reasoning_effort": null
+      },
+      "prompt": "research/native_tool_loop",
+      "harness": {
+        "max_turns": 12,
+        "max_total_tool_calls": 10,
+        "per_tool_limits": {
+          "database_search": 2,
+          "web_search": 3,
+          "browser": 3,
+          "reader": 8
+        }
+      },
+      "tools": {
+        "database_search": {
+          "active_source": "arxiv",
+          "candidate_limit_per_task": 8,
+          "candidate_excerpt_chars": 2000,
+          "full_text_limit_per_task": 8,
+          "max_concurrency": 4,
+          "providers": {
+            "arxiv": {
+              "enabled": true,
+              "min_interval_seconds": 3.0,
+              "timeout_seconds": 20.0,
+              "max_retries": 2,
+              "full_text_max_chars": 100000
+            },
+            "null_catalog": {
+              "enabled": true,
+              "testing_only": true
+            }
+          }
+        },
+        "web_search": {
+          "backend": "baidu",
+          "default_max_results": 10,
+          "max_results_per_call": 50,
+          "baidu": {
+            "timeout_seconds": 30.0
+          }
+        },
+        "browser": {
+          "backend": "playwright",
+          "navigation_timeout_ms": 30000,
+          "max_html_chars": 2000000,
+          "max_text_chars": 500000
+        },
+        "reader": {
+          "default_chars_per_read": 8000,
+          "max_chars_per_read": 16000,
+          "max_total_read_chars": 48000
+        }
+      }
+    },
+    "search_planner": {
+      "version": 1,
+      "model": {
+        "alias": "r1-qwen3-8b",
+        "temperature": 0.2,
+        "max_tokens": 8192,
+        "timeout_seconds": 600.0,
+        "tool_choice": null,
+        "enable_thinking": null,
+        "thinking_budget": null,
+        "reasoning_effort": null
+      },
+      "prompt": "search_planner/plan",
+      "max_attempts": 2
+    },
+    "models": {
+      "glm4.7": {
+        "provider": "openai_compatible",
+        "base_url": "https://api.siliconflow.cn/v1",
+        "model": "Pro/zai-org/GLM-4.7",
+        "context_window": 200000,
+        "supported_params": [
+          "enable_thinking",
+          "thinking_budget"
+        ],
+        "api_key_env": "SILICONFLOW_API_KEY"
+      },
+      "deepseek-flash": {
+        "provider": "openai_compatible",
+        "base_url": "https://api.siliconflow.cn/v1",
+        "model": "deepseek-ai/DeepSeek-V4-Flash",
+        "context_window": 128000,
+        "supported_params": [
+          "enable_thinking",
+          "thinking_budget",
+          "reasoning_effort"
+        ],
+        "api_key_env": "SILICONFLOW_API_KEY"
+      },
+      "r1-qwen3-8b": {
+        "provider": "openai_compatible",
+        "base_url": "https://api.siliconflow.cn/v1",
+        "model": "deepseek-ai/DeepSeek-R1-0528-Qwen3-8B",
+        "context_window": 128000,
+        "supported_params": [
+          "enable_thinking",
+          "thinking_budget"
+        ],
+        "api_key_env": "SILICONFLOW_API_KEY"
+      },
+      "deepseek-ocr": {
+        "provider": "openai_compatible",
+        "base_url": "https://api.siliconflow.cn/v1",
+        "model": "deepseek-ai/DeepSeek-OCR",
+        "context_window": 128000,
+        "supported_params": [],
+        "api_key_env": "SILICONFLOW_API_KEY"
+      }
+    }
+  },
+  "experiment_mode": "required_all_capability",
+  "tool_sequence": [
+    "database_search",
+    "web_search",
+    "browser",
+    "browser",
+    "browser"
+  ],
+  "per_tool_counts": {
+    "database_search": 1,
+    "web_search": 1,
+    "browser": 3,
+    "reader": 0
+  },
+  "researcher_model": "deepseek-flash",
+  "researcher_calls": 6,
+  "researcher_token_usage": [
+    {
+      "prompt_tokens": 1681,
+      "completion_tokens": 149,
+      "total_tokens": 1830,
+      "completion_tokens_details": {
+        "reasoning_tokens": 105
+      },
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "prompt_cache_hit_tokens": 0,
+      "prompt_cache_miss_tokens": 1681
+    },
+    {
+      "prompt_tokens": 1809,
+      "completion_tokens": 196,
+      "total_tokens": 2005,
+      "completion_tokens_details": {
+        "reasoning_tokens": 129
+      },
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "prompt_cache_hit_tokens": 0,
+      "prompt_cache_miss_tokens": 1809
+    },
+    {
+      "prompt_tokens": 5643,
+      "completion_tokens": 722,
+      "total_tokens": 6365,
+      "completion_tokens_details": {
+        "reasoning_tokens": 624
+      },
+      "prompt_tokens_details": {
+        "cached_tokens": 1536
+      },
+      "prompt_cache_hit_tokens": 1536,
+      "prompt_cache_miss_tokens": 4107
+    },
+    {
+      "prompt_tokens": 6017,
+      "completion_tokens": 95,
+      "total_tokens": 6112,
+      "completion_tokens_details": {
+        "reasoning_tokens": 21
+      },
+      "prompt_tokens_details": {
+        "cached_tokens": 5632
+      },
+      "prompt_cache_hit_tokens": 5632,
+      "prompt_cache_miss_tokens": 385
+    },
+    {
+      "prompt_tokens": 6367,
+      "completion_tokens": 784,
+      "total_tokens": 7151,
+      "completion_tokens_details": {
+        "reasoning_tokens": 708
+      },
+      "prompt_tokens_details": {
+        "cached_tokens": 5888
+      },
+      "prompt_cache_hit_tokens": 5888,
+      "prompt_cache_miss_tokens": 479
+    },
+    {
+      "prompt_tokens": 6719,
+      "completion_tokens": 846,
+      "total_tokens": 7565,
+      "completion_tokens_details": {
+        "reasoning_tokens": 763
+      },
+      "prompt_tokens_details": {
+        "cached_tokens": 6144
+      },
+      "prompt_cache_hit_tokens": 6144,
+      "prompt_cache_miss_tokens": 575
+    }
+  ],
+  "search_planner_model": "r1-qwen3-8b",
+  "search_planner_calls": 2,
+  "search_planner_token_usage": [
+    {
+      "prompt_tokens": 1056,
+      "completion_tokens": 953,
+      "total_tokens": 2009,
+      "completion_tokens_details": {
+        "reasoning_tokens": 445
+      },
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "prompt_cache_hit_tokens": 0,
+      "prompt_cache_miss_tokens": 1056
+    },
+    {
+      "prompt_tokens": 1065,
+      "completion_tokens": 915,
+      "total_tokens": 1980,
+      "completion_tokens_details": {
+        "reasoning_tokens": 448
+      },
+      "prompt_tokens_details": {
+        "cached_tokens": 576
+      },
+      "prompt_cache_hit_tokens": 576,
+      "prompt_cache_miss_tokens": 489
+    }
+  ],
+  "elapsed_seconds": 239.716,
+  "manifest": {
+    "works": 0,
+    "source_records": 10,
+    "artifacts": 0
+  },
+  "trusted_reads": 0,
+  "evidence": 0,
+  "evidence_cards": 0,
+  "finish_status": "partial",
+  "research_bundles": 0,
+  "warnings": [
+    "query compilation NP-live-four/T-live-four/S4 failed: QueryAdapterError: 检索表达式包含不支持的 token：'NOT'",
+    "native tool harness failed: browser tool-call budget exhausted"
+  ]
+}

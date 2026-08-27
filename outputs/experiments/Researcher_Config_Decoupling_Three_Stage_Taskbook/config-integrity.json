@@ -1,0 +1,144 @@
+{
+  "status": "PASS",
+  "paths": {
+    "project": "/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/config/settings.example.json",
+    "models": "/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/config/models.example.json",
+    "researcher": "/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/config/agents/researcher.example.json",
+    "search_planner": "/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/config/agents/search_panner.example.json"
+  },
+  "effective_safe_config": {
+    "researcher": {
+      "version": 1,
+      "model": {
+        "alias": "deepseek-flash",
+        "temperature": 0.3,
+        "max_tokens": 4096,
+        "timeout_seconds": 300.0,
+        "tool_choice": "auto",
+        "enable_thinking": null,
+        "thinking_budget": null,
+        "reasoning_effort": null
+      },
+      "prompt": "research/native_tool_loop",
+      "harness": {
+        "max_turns": 12,
+        "max_total_tool_calls": 10,
+        "per_tool_limits": {
+          "database_search": 2,
+          "web_search": 3,
+          "browser": 3,
+          "reader": 8
+        }
+      },
+      "tools": {
+        "database_search": {
+          "active_source": "arxiv",
+          "candidate_limit_per_task": 8,
+          "candidate_excerpt_chars": 2000,
+          "full_text_limit_per_task": 8,
+          "max_concurrency": 4,
+          "providers": {
+            "arxiv": {
+              "enabled": true,
+              "min_interval_seconds": 3.0,
+              "timeout_seconds": 20.0,
+              "max_retries": 2,
+              "full_text_max_chars": 100000
+            },
+            "null_catalog": {
+              "enabled": true,
+              "testing_only": true
+            }
+          }
+        },
+        "web_search": {
+          "backend": "baidu",
+          "default_max_results": 10,
+          "max_results_per_call": 50,
+          "baidu": {
+            "timeout_seconds": 30.0
+          }
+        },
+        "browser": {
+          "backend": "playwright",
+          "navigation_timeout_ms": 30000,
+          "max_html_chars": 2000000,
+          "max_text_chars": 500000
+        },
+        "reader": {
+          "default_chars_per_read": 8000,
+          "max_chars_per_read": 16000,
+          "max_total_read_chars": 48000
+        }
+      }
+    },
+    "search_planner": {
+      "version": 1,
+      "model": {
+        "alias": "r1-qwen3-8b",
+        "temperature": 0.2,
+        "max_tokens": 8192,
+        "timeout_seconds": 600.0,
+        "tool_choice": null,
+        "enable_thinking": null,
+        "thinking_budget": null,
+        "reasoning_effort": null
+      },
+      "prompt": "search_planner/plan",
+      "max_attempts": 2
+    },
+    "models": {
+      "glm4.7": {
+        "provider": "openai_compatible",
+        "base_url": "https://api.siliconflow.cn/v1",
+        "model": "Pro/zai-org/GLM-4.7",
+        "context_window": 200000,
+        "supported_params": [
+          "enable_thinking",
+          "thinking_budget"
+        ],
+        "api_key_env": "SILICONFLOW_API_KEY"
+      },
+      "deepseek-flash": {
+        "provider": "openai_compatible",
+        "base_url": "https://api.siliconflow.cn/v1",
+        "model": "deepseek-ai/DeepSeek-V4-Flash",
+        "context_window": 128000,
+        "supported_params": [
+          "enable_thinking",
+          "thinking_budget",
+          "reasoning_effort"
+        ],
+        "api_key_env": "SILICONFLOW_API_KEY"
+      },
+      "r1-qwen3-8b": {
+        "provider": "openai_compatible",
+        "base_url": "https://api.siliconflow.cn/v1",
+        "model": "deepseek-ai/DeepSeek-R1-0528-Qwen3-8B",
+        "context_window": 128000,
+        "supported_params": [
+          "enable_thinking",
+          "thinking_budget"
+        ],
+        "api_key_env": "SILICONFLOW_API_KEY"
+      },
+      "deepseek-ocr": {
+        "provider": "openai_compatible",
+        "base_url": "https://api.siliconflow.cn/v1",
+        "model": "deepseek-ai/DeepSeek-OCR",
+        "context_window": 128000,
+        "supported_params": [],
+        "api_key_env": "SILICONFLOW_API_KEY"
+      }
+    }
+  },
+  "registered_tools": [
+    "database_search",
+    "web_search",
+    "browser",
+    "reader"
+  ],
+  "researcher_model": "deepseek-flash",
+  "search_planner_model": "r1-qwen3-8b",
+  "contains_api_key_value": false
+}
