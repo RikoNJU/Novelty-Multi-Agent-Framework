@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -48,16 +48,34 @@ class DatabaseSearchConfig(ConfigModel):
     candidate_limit_per_task: int = Field(gt=0)
     candidate_excerpt_chars: int = Field(gt=0)
     full_text_limit_per_task: int = Field(ge=0)
+    max_concurrency: int = Field(gt=0)
     providers: dict[str, dict[str, Any]]
 
 
+class WebSearchConfig(ConfigModel):
+    backend: Literal["baidu"]
+    default_max_results: int = Field(gt=0)
+    max_results_per_call: int = Field(gt=0)
+    baidu: dict[str, Any]
+
+
+class BrowserConfig(ConfigModel):
+    backend: Literal["playwright"]
+    navigation_timeout_ms: int = Field(gt=0)
+    max_html_chars: int = Field(gt=0)
+    max_text_chars: int = Field(gt=0)
+
+
 class ReaderConfig(ConfigModel):
+    default_chars_per_read: int = Field(gt=0)
     max_chars_per_read: int = Field(gt=0)
     max_total_read_chars: int = Field(gt=0)
 
 
 class ResearcherToolsConfig(ConfigModel):
     database_search: DatabaseSearchConfig
+    web_search: WebSearchConfig
+    browser: BrowserConfig
     reader: ReaderConfig
 
 
@@ -73,6 +91,7 @@ class SearchPlannerConfig(ConfigModel):
     version: int = Field(ge=1)
     model: ModelInvocationConfig
     prompt: str = Field(min_length=1)
+    max_attempts: int = Field(gt=0)
 
 
 class RoleAgentConfig(ConfigModel):

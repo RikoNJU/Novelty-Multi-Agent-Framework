@@ -74,6 +74,22 @@ class ExampleTool:
         )
 
 
+class ReaderBudgetArguments(StrictModel):
+    max_chars: int
+
+
+class ReaderBudgetTool:
+    name = "reader"
+    description = "reader budget fixture"
+    args_schema = ReaderBudgetArguments
+
+    async def ainvoke(self, arguments, *, scope):
+        return ResearcherToolObservation(
+            tool_name="reader", arguments=arguments.model_dump(), succeeded=True,
+            payload={"read_result": {"char_start": 0, "char_end": arguments.max_chars}},
+        )
+
+
 class ProjectedExampleTool(ExampleTool):
     def project_model_context(self, observation):
         return {"succeeded": True, "handle": observation.payload["echo"]}
@@ -237,7 +253,38 @@ def test_tool_call_budget_stops_repeated_requests() -> None:
         run_harness(harness, system_prompt="system", initial_user_message="task")
 
     assert len(tool.received) == 1
-    assert exc.value.trace[-1].detail == "tool-call budget exhausted"
+    assert exc.value.trace[-1].detail == "total tool-call budget exhausted"
+
+
+def test_per_tool_budget_has_distinct_runtime_error() -> None:
+    tool = ExampleTool()
+    model = ScriptedModelClient(call(), call(call_id="call_2"))
+    harness = ToolCallHarness(
+        model,
+        ResearcherToolRegistry([tool]),
+        config=ToolCallHarnessConfig(
+            max_turns=3, max_tool_calls=3, per_tool_limits={"example": 1}
+        ),
+    )
+    with pytest.raises(ToolCallHarnessError, match="example tool-call budget"):
+        run_harness(harness, system_prompt="system", initial_user_message="task")
+    assert len(tool.received) == 1
+
+
+def test_reader_cumulative_character_budget_is_enforced() -> None:
+    responses = (
+        ModelResponse(content=None, tool_calls=(ModelToolCall("r1", "reader", {"max_chars": 6}),)),
+        ModelResponse(content=None, tool_calls=(ModelToolCall("r2", "reader", {"max_chars": 5}),)),
+    )
+    harness = ToolCallHarness(
+        ScriptedModelClient(*responses),
+        ResearcherToolRegistry([ReaderBudgetTool()]),
+        config=ToolCallHarnessConfig(
+            max_turns=3, max_tool_calls=3, max_total_read_chars=10
+        ),
+    )
+    with pytest.raises(ToolCallHarnessError, match="cumulative character budget"):
+        run_harness(harness, system_prompt="system", initial_user_message="task")
 
 
 def test_turn_budget_stops_loop_after_last_allowed_turn() -> None:

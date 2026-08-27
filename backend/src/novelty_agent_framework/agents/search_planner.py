@@ -19,7 +19,6 @@ from backend.env import (
 from ..ports import SearchPlanner
 from ..schemas import NoveltyPoint, ResearchTask, SearchPlan
 
-MAX_ATTEMPTS = 2
 CONCEPT_ID_PATTERN = re.compile(r"C\d+")
 STRATEGY_ID_PATTERN = re.compile(r"S\d+")
 FORBIDDEN_DATABASE_SYNTAX = re.compile(
@@ -38,12 +37,21 @@ class SearchPlannerAgent(SearchPlanner):
         models: ModelRegistry | None = None,
         model_alias: str | None = None,
         temperature: float = 0.2,
+        model_options: ModelCallOptions | None = None,
+        max_attempts: int = 2,
     ) -> None:
         self.model_client = model_client
         self._prompts = prompts
         self._models = models
         self._model_alias = model_alias
         self.temperature = temperature
+        self.model_options = model_options or ModelCallOptions(
+            temperature=temperature,
+            response_format={"type": "json_object"},
+        )
+        if max_attempts < 1:
+            raise ValueError("max_attempts must be positive")
+        self.max_attempts = max_attempts
 
     def plan(self, point: NoveltyPoint, task: ResearchTask) -> SearchPlan:
         """将 NoveltyPoint + ResearchTask 转换为经过校验的 SearchPlan。"""
@@ -54,7 +62,7 @@ class SearchPlannerAgent(SearchPlanner):
             )
 
         last_error: ValueError | None = None
-        for attempt_index in range(MAX_ATTEMPTS):
+        for attempt_index in range(self.max_attempts):
             try:
                 data = self._complete_json(
                     point=point,
@@ -66,10 +74,10 @@ class SearchPlannerAgent(SearchPlanner):
                 return plan
             except ValueError as exc:
                 last_error = exc
-                if attempt_index + 1 >= MAX_ATTEMPTS:
+                if attempt_index + 1 >= self.max_attempts:
                     break
         raise ValueError(
-            f"SearchPlanner 两次生成均失败：{last_error or '未知错误'}"
+            f"SearchPlanner {self.max_attempts} 次生成均失败：{last_error or '未知错误'}"
         ) from last_error
 
     def _complete_json(
@@ -109,10 +117,7 @@ class SearchPlannerAgent(SearchPlanner):
                 ChatMessage(role="system", content=system),
                 ChatMessage(role="user", content=user),
             ],
-            options=ModelCallOptions(
-                temperature=self.temperature,
-                response_format={"type": "json_object"},
-            ),
+            options=self.model_options,
         )
         try:
             return json.loads(response.content)

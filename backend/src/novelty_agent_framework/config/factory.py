@@ -13,7 +13,7 @@ import os
 from pathlib import Path
 from typing import Any, Mapping
 
-from backend.env import ModelProfile, ModelRegistry, PromptLibrary
+from backend.env import ModelCallOptions, ModelProfile, ModelRegistry, PromptLibrary
 
 from ..agents import (
     NoveltyCoordinatorAgent,
@@ -156,6 +156,8 @@ def build_search_planner(
     agents_cfg = config.get("agents", {})
     research_cfg = agents_cfg.get("research", {})
     search_planner_cfg = agents_cfg.get("search_planner", {})
+    runtime = config.get("search_planner_runtime", {})
+    invocation = runtime.get("model", {})
     return SearchPlannerAgent(
         prompts=prompts,
         models=registry,
@@ -163,6 +165,11 @@ def build_search_planner(
             "model", research_cfg.get("model", "search_planner")
         ),
         temperature=float(search_planner_cfg.get("temperature", 0.2)),
+        model_options=(
+            _model_options(invocation, response_format={"type": "json_object"})
+            if invocation else None
+        ),
+        max_attempts=int(runtime.get("max_attempts", 2)),
     )
 
 
@@ -258,6 +265,11 @@ def build_workflow(
     )
 
     workflow_cfg = raw.get("workflow", {})
+    researcher_runtime = raw.get("researcher_runtime", {})
+    runtime_tools = researcher_runtime.get("tools", {})
+    web_cfg = runtime_tools.get("web_search", {})
+    browser_cfg = runtime_tools.get("browser", {})
+    reader_cfg = runtime_tools.get("reader", {})
     store = ReferenceStore()
     tool_registry = ResearcherToolRegistry(
         [
@@ -266,11 +278,31 @@ def build_workflow(
                 search_planner=search_planner,
                 reference_store=store,
                 source_registry=source_registry,
-                max_concurrency=int(workflow_cfg.get("max_concurrency", 4)),
+                max_concurrency=int(retrieval_cfg["max_concurrency"]),
             ),
-            WebSearchTool(BaiduSearchBackend(), store),
-            BrowserTool(PlaywrightBrowserBackend(), store),
-            ReaderTool(ReferenceArtifactReaderTool(store)),
+            WebSearchTool(
+                BaiduSearchBackend(
+                    timeout_seconds=float(web_cfg.get("baidu", {}).get("timeout_seconds", 30.0))
+                ),
+                store,
+                default_max_results=int(web_cfg.get("default_max_results", 10)),
+                max_results_per_call=int(web_cfg.get("max_results_per_call", 50)),
+            ),
+            BrowserTool(
+                PlaywrightBrowserBackend(
+                    navigation_timeout_ms=int(browser_cfg.get("navigation_timeout_ms", 30_000)),
+                    max_html_chars=int(browser_cfg.get("max_html_chars", 2_000_000)),
+                    max_text_chars=int(browser_cfg.get("max_text_chars", 500_000)),
+                ),
+                store,
+            ),
+            ReaderTool(
+                ReferenceArtifactReaderTool(
+                    store,
+                    max_chars_per_read=int(reader_cfg.get("max_chars_per_read", 16_000)),
+                ),
+                default_chars_per_read=int(reader_cfg.get("default_chars_per_read", 8_000)),
+            ),
         ]
     )
     budget_cfg = raw.get("task_researcher", {})
@@ -297,6 +329,11 @@ def build_workflow(
                     },
                 )
             ),
+            model_options=(
+                _model_options(researcher_runtime.get("model", {}))
+                if researcher_runtime else ModelCallOptions(temperature=0.0, tool_choice="auto")
+            ),
+            prompt_name=str(researcher_runtime.get("prompt", "research/native_tool_loop")),
         ),
     )
     return NoveltyWorkflow(
@@ -327,17 +364,35 @@ def _normalized_retrieval_config(config: Mapping[str, Any]) -> dict[str, Any]:
             retrieval.setdefault("sources", {}).setdefault("arxiv", {}).update(
                 legacy_arxiv
             )
+        retrieval.setdefault("max_concurrency", int(config.get("workflow", {}).get("max_concurrency", 4)))
+        _adapt_legacy_arxiv_provider(retrieval)
         return retrieval
     arxiv = dict(config.get("tools", {}).get("arxiv", {}))
     # 旧配置没有来源选择语义：保留“Adapter 可用、网络工具关闭”的兼容行为。
     arxiv["adapter_only"] = not arxiv.get("enabled", False)
     arxiv["enabled"] = True
-    return {
+    retrieval = {
         "active_source": "arxiv",
         "candidate_limit_per_task": arxiv.get("candidate_limit", 8),
         "candidate_excerpt_chars": arxiv.get("candidate_excerpt_chars", 2000),
+        "full_text_limit_per_task": arxiv.get("full_text_limit", 8),
+        "max_concurrency": int(config.get("workflow", {}).get("max_concurrency", 4)),
         "sources": {"arxiv": arxiv},
     }
+    _adapt_legacy_arxiv_provider(retrieval)
+    return retrieval
+
+
+def _adapt_legacy_arxiv_provider(retrieval: dict[str, Any]) -> None:
+    """Compatibility-only key adaptation; split config already uses canonical keys."""
+
+    arxiv = retrieval.get("sources", {}).get("arxiv")
+    if not isinstance(arxiv, dict):
+        return
+    arxiv.setdefault("min_interval_seconds", arxiv.pop("min_interval", 3.0))
+    arxiv.setdefault("timeout_seconds", arxiv.pop("timeout", 20.0))
+    arxiv.setdefault("max_retries", 2)
+    arxiv.setdefault("full_text_max_chars", 100_000)
 
 
 def _apply_env_overrides(config: dict[str, Any]) -> None:
@@ -347,3 +402,23 @@ def _apply_env_overrides(config: dict[str, Any]) -> None:
         env_value = os.getenv(f"NOVELTY_{role.upper()}_MODEL")
         if env_value:
             agent_cfg["model"] = env_value
+
+
+def _model_options(
+    config: Mapping[str, Any],
+    *,
+    response_format: Mapping[str, Any] | None = None,
+) -> ModelCallOptions:
+    extra_body = {
+        key: config[key]
+        for key in ("enable_thinking", "thinking_budget", "reasoning_effort")
+        if config.get(key) is not None
+    }
+    return ModelCallOptions(
+        temperature=float(config["temperature"]),
+        max_tokens=int(config["max_tokens"]),
+        timeout_seconds=float(config["timeout_seconds"]),
+        tool_choice=config.get("tool_choice"),
+        response_format=response_format,
+        extra_body=extra_body,
+    )

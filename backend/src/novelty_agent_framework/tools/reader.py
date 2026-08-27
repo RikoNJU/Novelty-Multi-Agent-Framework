@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import time
 from typing import TypeAlias
+from pydantic import Field, create_model
 
 from ..schemas import (
     ReaderArguments,
@@ -21,8 +22,22 @@ class ReaderTool:
     description = "按 Artifact ID 读取可验证的文本字符片段。"
     args_schema = ReaderArguments
 
-    def __init__(self, reader: ReferenceArtifactReaderTool) -> None:
+    def __init__(
+        self,
+        reader: ReferenceArtifactReaderTool,
+        *,
+        default_chars_per_read: int | None = None,
+    ) -> None:
         self.reader = reader
+        resolved_default = min(8_000, reader.max_chars_per_read) if default_chars_per_read is None else default_chars_per_read
+        if not 1 <= resolved_default <= reader.max_chars_per_read:
+            raise ValueError("default_chars_per_read exceeds reader limit")
+        self.default_chars_per_read = resolved_default
+        self.args_schema = create_model(
+            f"ConfiguredReaderArguments{resolved_default}_{reader.max_chars_per_read}",
+            __base__=ReaderArguments,
+            max_chars=(int, Field(default=resolved_default, ge=1, le=reader.max_chars_per_read)),
+        )
 
     async def ainvoke(
         self,

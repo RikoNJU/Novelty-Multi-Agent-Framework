@@ -183,7 +183,7 @@ def test_retries_once_after_invalid_json_then_succeeds() -> None:
 def test_invalid_schema_fails_after_one_retry() -> None:
     client = StubModelClient("{}", "{}")
 
-    with pytest.raises(ValueError, match="两次生成均失败"):
+    with pytest.raises(ValueError, match="2 次生成均失败"):
         build_agent(client).plan(make_point(), make_task())
 
     assert len(client.calls) == 2

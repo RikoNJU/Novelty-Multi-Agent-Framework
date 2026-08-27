@@ -7,6 +7,7 @@ import time
 from datetime import datetime, timezone
 from typing import Any
 from urllib.parse import urlsplit, urlunsplit
+from pydantic import Field, create_model
 
 from ..persistence import ReferenceStore
 from ..schemas import (
@@ -31,11 +32,23 @@ class WebSearchTool:
         self,
         backend: SearchBackend,
         reference_store: ReferenceStore | None = None,
+        *,
+        default_max_results: int = 10,
+        max_results_per_call: int = 50,
     ) -> None:
         if not backend.name.strip():
             raise ValueError("search backend name cannot be empty")
         self.backend = backend
         self.reference_store = reference_store or ReferenceStore()
+        if not 1 <= default_max_results <= max_results_per_call <= 100:
+            raise ValueError("web search result limits are invalid")
+        self.default_max_results = default_max_results
+        self.max_results_per_call = max_results_per_call
+        self.args_schema = create_model(
+            f"ConfiguredWebSearchArguments{default_max_results}_{max_results_per_call}",
+            __base__=WebSearchArguments,
+            max_results=(int, Field(default=default_max_results, ge=1, le=max_results_per_call)),
+        )
 
     async def ainvoke(
         self,
@@ -44,9 +57,14 @@ class WebSearchTool:
         scope: TaskResearchRequest,
     ) -> ResearcherToolObservation:
         started = time.monotonic()
+        max_results = arguments.max_results
+        if max_results > self.max_results_per_call:
+            raise ValueError(
+                f"max_results exceeds web_search limit {self.max_results_per_call}"
+            )
         backend_result = await self.backend.search(
             arguments.query,
-            max_results=arguments.max_results,
+            max_results=max_results,
         )
         observed_at = datetime.now(timezone.utc)
         manifest = self.reference_store.load_manifest(scope.subject_paper_id)

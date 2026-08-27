@@ -102,12 +102,10 @@ def test_metadata_arguments_items_persistence_and_warnings(tmp_path) -> None:
 
     assert backend.calls == [("multi agent novelty search", 7)]
     assert tool.name == "web_search"
-    assert tool.args_schema is WebSearchArguments
+    assert issubclass(tool.args_schema, WebSearchArguments)
     assert "本身不是证据" in tool.description
     assert registry.names == ("web_search",)
-    assert registry.descriptions()[0]["arguments_schema"] == (
-        WebSearchArguments.model_json_schema()
-    )
+    assert registry.descriptions()[0]["arguments_schema"] == tool.args_schema.model_json_schema()
     assert observation.succeeded is True
     result = observation.payload["search_result"]
     assert result["query"] == "multi agent novelty search"

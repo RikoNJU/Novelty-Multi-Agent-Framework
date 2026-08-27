@@ -30,6 +30,10 @@ class TaskResearcherConfig:
             "reader": 8,
         }
     )
+    model_options: ModelCallOptions = field(
+        default_factory=lambda: ModelCallOptions(temperature=0.0, tool_choice="auto")
+    )
+    prompt_name: str = "research/native_tool_loop"
 
     def __post_init__(self) -> None:
         if min(self.max_steps, self.max_tool_calls, self.max_chars_per_read,
@@ -60,6 +64,8 @@ class TaskResearcherWorkflow:
             config=ToolCallHarnessConfig(
                 max_turns=self.config.max_steps,
                 max_tool_calls=self.config.max_tool_calls,
+                per_tool_limits=dict(self.config.per_tool_limits),
+                max_total_read_chars=self.config.max_total_read_chars,
             ),
         )
 
@@ -71,7 +77,7 @@ class TaskResearcherWorkflow:
                 system_prompt=system_prompt,
                 initial_user_message=user_message,
                 scope=request,
-                options=ModelCallOptions(temperature=0.0, tool_choice="auto"),
+                options=self.config.model_options,
             )
         except ToolCallHarnessError as exc:
             reads, read_warnings = _trusted_reads(exc.trace)
@@ -138,7 +144,7 @@ class TaskResearcherWorkflow:
             ),
         }
         if self.prompts is not None:
-            rendered = self.prompts.render("research/native_tool_loop", **variables)
+            rendered = self.prompts.render(self.config.prompt_name, **variables)
             return rendered.system, rendered.user
         return (
             "Use only registered tools. Finish with strict ResearchFinishDraft JSON. "

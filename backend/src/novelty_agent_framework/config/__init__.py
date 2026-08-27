@@ -9,13 +9,14 @@ from .factory import (
     load_config,
 )
 from .settings import NoveltyWebSettings
-from .loader import load_application_config
+from .loader import effective_safe_config, load_application_config
 from .schemas import ApplicationConfig
 
 __all__ = [
     "NoveltyWebSettings",
     "ApplicationConfig",
     "load_application_config",
+    "effective_safe_config",
     "build_model_registry",
     "build_prompt_library",
     "build_retrieval_source",

@@ -80,6 +80,7 @@ def legacy_shape(config: ApplicationConfig) -> dict[str, Any]:
             "max_steps": config.researcher.harness.max_turns,
             "max_tool_calls": config.researcher.harness.max_total_tool_calls,
             "max_chars_per_read": config.researcher.tools.reader.max_chars_per_read,
+            "default_chars_per_read": config.researcher.tools.reader.default_chars_per_read,
             "max_total_read_chars": config.researcher.tools.reader.max_total_read_chars,
             "per_tool_limits": config.researcher.harness.per_tool_limits,
         },
@@ -88,6 +89,29 @@ def legacy_shape(config: ApplicationConfig) -> dict[str, Any]:
             "candidate_limit_per_task": db.candidate_limit_per_task,
             "candidate_excerpt_chars": db.candidate_excerpt_chars,
             "full_text_limit_per_task": db.full_text_limit_per_task,
+            "max_concurrency": db.max_concurrency,
             "sources": db.providers,
+        },
+        "researcher_runtime": config.researcher.model_dump(mode="python"),
+        "search_planner_runtime": config.search_planner.model_dump(mode="python"),
+    }
+
+
+def effective_safe_config(config: ApplicationConfig) -> dict[str, Any]:
+    """Reproducible runtime view without API keys or environment values."""
+
+    return {
+        "researcher": config.researcher.model_dump(mode="json"),
+        "search_planner": config.search_planner.model_dump(mode="json"),
+        "models": {
+            alias: {
+                "provider": profile.provider,
+                "base_url": profile.base_url,
+                "model": profile.model,
+                "context_window": profile.context_window,
+                "supported_params": profile.supported_params,
+                "api_key_env": profile.api_key_env,
+            }
+            for alias, profile in config.models.items()
         },
     }

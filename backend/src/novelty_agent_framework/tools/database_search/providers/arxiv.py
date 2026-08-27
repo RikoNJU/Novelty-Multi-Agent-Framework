@@ -307,17 +307,18 @@ def build_arxiv_source(config: Mapping[str, Any]) -> RetrievalSource:
     enabled = bool(config.get("enabled", False))
     if not enabled or config.get("adapter_only", False):
         return RetrievalSource(source_id="arxiv", query_adapter=ArxivQueryAdapter())
-    client = httpx.Client(
-        timeout=float(config.get("timeout", 20.0)), follow_redirects=True
-    )
+    timeout_seconds = float(config["timeout_seconds"])
+    client = httpx.Client(timeout=timeout_seconds, follow_redirects=True)
     return RetrievalSource(
         source_id="arxiv",
         query_adapter=ArxivQueryAdapter(),
         search_tool=ArxivSearchTool(
             client=client,
-            min_interval=float(config.get("min_interval", 3.0)),
-            max_retries=int(config.get("max_retries", 2)),
+            min_interval=float(config["min_interval_seconds"]),
+            max_retries=int(config["max_retries"]),
         ),
-        full_text_tool=ArxivFullTextTool(client=client),
+        full_text_tool=ArxivFullTextTool(
+            client=client, max_chars=int(config["full_text_max_chars"])
+        ),
         metadata_tool=ArxivMetadataTool(client=client),
     )
