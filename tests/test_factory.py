@@ -47,7 +47,7 @@ def test_load_config_default_contains_models_and_agents():
     config = load_config()
     assert "models" in config
     assert "agents" in config
-    assert config["agents"]["coordinator"]["model"] == "glm4.7"
+    assert config["agents"]["coordinator"]["model"] == "deepseek-flash"
     assert config["agents"]["search_planner"]["model"] != config["agents"]["research"]["model"]
 
 

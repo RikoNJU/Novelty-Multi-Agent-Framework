@@ -50,6 +50,8 @@ from ..workflows import (
     TaskResearcherConfig,
     TaskResearcherWorkflow,
 )
+from .loader import legacy_shape, load_application_config, read_json
+from .schemas import ApplicationConfig
 
 CONFIG_DIR = Path(__file__).resolve().parent
 DEFAULT_CONFIG_PATH = CONFIG_DIR / "settings.example.json"
@@ -57,14 +59,22 @@ PROMPTS_ROOT = Path(__file__).resolve().parents[1] / "prompts"
 
 
 def load_config(path: str | Path | None = None) -> dict[str, Any]:
-    config_path = Path(path) if path is not None else DEFAULT_CONFIG_PATH
-    with config_path.open(encoding="utf-8") as fh:
-        return json.load(fh)
+    """Compatibility shape; new code should call load_application_config()."""
+
+    if path is not None:
+        return read_json(path)
+    return legacy_shape(load_application_config())
 
 
-def build_model_registry(config: Mapping[str, Any]) -> ModelRegistry:
+def build_model_registry(config: Mapping[str, Any] | ApplicationConfig) -> ModelRegistry:
     profiles: dict[str, ModelProfile] = {}
-    for alias, raw in config.get("models", {}).items():
+    model_items = (
+        config.models.items()
+        if isinstance(config, ApplicationConfig)
+        else config.get("models", {}).items()
+    )
+    for alias, value in model_items:
+        raw = value.model_dump(mode="python") if hasattr(value, "model_dump") else value
         profiles[alias] = ModelProfile(
             alias=alias,
             provider=raw.get("provider", "openai_compatible"),
@@ -73,7 +83,7 @@ def build_model_registry(config: Mapping[str, Any]) -> ModelRegistry:
             api_key=_resolve_api_key(raw),
             context_window=int(raw.get("context_window", 128_000)),
             supported_params=frozenset(raw.get("supported_params", [])),
-            defaults=dict(raw.get("defaults", {})),
+            defaults={},
         )
     return ModelRegistry(profiles)
 
@@ -204,15 +214,20 @@ def build_structured_source_retrieval_tool(
 
 
 def build_workflow(
-    config: Mapping[str, Any] | None = None,
+    config: Mapping[str, Any] | ApplicationConfig | None = None,
     *,
     config_path: str | Path | None = None,
     source_registry: RetrievalSourceRegistry | None = None,
 ) -> NoveltyWorkflow:
     """从配置构建完整工作流；``config`` 优先于 ``config_path``。"""
 
-    raw = load_config(config_path) if config is None else copy.deepcopy(dict(config))
-    _apply_env_overrides(raw)
+    if isinstance(config, ApplicationConfig):
+        raw = legacy_shape(config)
+    elif config is None and config_path is None:
+        raw = legacy_shape(load_application_config())
+    else:
+        raw = load_config(config_path) if config is None else copy.deepcopy(dict(config))
+        _apply_env_overrides(raw)
 
     registry = build_model_registry(raw)
     prompts = build_prompt_library()
