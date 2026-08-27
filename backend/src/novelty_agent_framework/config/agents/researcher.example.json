@@ -1,12 +1,62 @@
 {
   "version": 1,
-  "model": {"alias": "deepseek-flash", "temperature": 0.3, "max_tokens": 4096, "timeout_seconds": 300, "tool_choice": "auto"},
+  "model": {
+    "alias": "deepseek-flash",
+    "temperature": 0.3,
+    "max_tokens": 4096,
+    "timeout_seconds": 300,
+    "tool_choice": "auto"
+  },
   "prompt": "research/native_tool_loop",
-  "harness": {"max_turns": 12, "max_total_tool_calls": 10, "per_tool_limits": {"database_search": 2, "web_search": 3, "browser": 3, "reader": 8}},
+  "harness": {
+    "max_turns": 12,
+    "max_total_tool_calls": 10,
+    "per_tool_limits": {
+      "database_search": 2,
+      "web_search": 3,
+      "browser": 3,
+      "reader": 8
+    }
+  },
   "tools": {
-    "database_search": {"active_source": "arxiv", "candidate_limit_per_task": 8, "candidate_excerpt_chars": 2000, "full_text_limit_per_task": 8, "max_concurrency": 4, "providers": {"arxiv": {"enabled": true, "min_interval_seconds": 3.0, "timeout_seconds": 20.0, "max_retries": 2, "full_text_max_chars": 100000}, "null_catalog": {"enabled": true, "testing_only": true}}},
-    "web_search": {"backend": "baidu", "default_max_results": 10, "max_results_per_call": 50, "baidu": {"timeout_seconds": 30.0}},
-    "browser": {"backend": "playwright", "navigation_timeout_ms": 30000, "max_html_chars": 2000000, "max_text_chars": 500000},
-    "reader": {"default_chars_per_read": 8000, "max_chars_per_read": 16000, "max_total_read_chars": 48000}
+    "database_search": {
+      "active_source": "arxiv",
+      "candidate_limit_per_task": 8,
+      "candidate_excerpt_chars": 2000,
+      "full_text_limit_per_task": 8,
+      "max_concurrency": 4,
+      "providers": {
+        "arxiv": {
+          "enabled": true,
+          "min_interval_seconds": 3.0,
+          "timeout_seconds": 20.0,
+          "max_retries": 2,
+          "full_text_max_chars": 100000
+        },
+        "null_catalog": {
+          "enabled": true,
+          "testing_only": true
+        }
+      }
+    },
+    "web_search": {
+      "backend": "baidu",
+      "default_max_results": 10,
+      "max_results_per_call": 50,
+      "baidu": {
+        "timeout_seconds": 30.0
+      }
+    },
+    "browser": {
+      "backend": "playwright",
+      "navigation_timeout_ms": 30000,
+      "max_html_chars": 2000000,
+      "max_text_chars": 500000
+    },
+    "reader": {
+      "default_chars_per_read": 8000,
+      "max_chars_per_read": 16000,
+      "max_total_read_chars": 48000
+    }
   }
 }

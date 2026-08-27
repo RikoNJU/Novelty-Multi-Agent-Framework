@@ -69,18 +69,35 @@ def legacy_shape(config: ApplicationConfig) -> dict[str, Any]:
     db = config.researcher.tools.database_search
     return {
         **config.project.model_dump(mode="python"),
-        "models": {alias: item.model_dump(mode="python") for alias, item in config.models.items()},
+        "models": {
+            alias: item.model_dump(mode="python")
+            for alias, item in config.models.items()
+        },
         "agents": {
-            "research": {"model": config.researcher.model.alias, "temperature": config.researcher.model.temperature},
-            "search_planner": {"model": config.search_planner.model.alias, "temperature": config.search_planner.model.temperature},
-            "coordinator": {"model": config.coordinator.model.alias, "temperature": config.coordinator.model.temperature},
-            "point_extractor": {"model": config.point_extractor.model.alias, "temperature": config.point_extractor.model.temperature},
+            "research": {
+                "model": config.researcher.model.alias,
+                "temperature": config.researcher.model.temperature,
+            },
+            "search_planner": {
+                "model": config.search_planner.model.alias,
+                "temperature": config.search_planner.model.temperature,
+            },
+            "coordinator": {
+                "model": config.coordinator.model.alias,
+                "temperature": config.coordinator.model.temperature,
+            },
+            "point_extractor": {
+                "model": config.point_extractor.model.alias,
+                "temperature": config.point_extractor.model.temperature,
+            },
         },
         "task_researcher": {
             "max_steps": config.researcher.harness.max_turns,
             "max_tool_calls": config.researcher.harness.max_total_tool_calls,
             "max_chars_per_read": config.researcher.tools.reader.max_chars_per_read,
-            "default_chars_per_read": config.researcher.tools.reader.default_chars_per_read,
+            "default_chars_per_read": (
+                config.researcher.tools.reader.default_chars_per_read
+            ),
             "max_total_read_chars": config.researcher.tools.reader.max_total_read_chars,
             "per_tool_limits": config.researcher.harness.per_tool_limits,
         },

@@ -66,7 +66,9 @@ def load_config(path: str | Path | None = None) -> dict[str, Any]:
     return legacy_shape(load_application_config())
 
 
-def build_model_registry(config: Mapping[str, Any] | ApplicationConfig) -> ModelRegistry:
+def build_model_registry(
+    config: Mapping[str, Any] | ApplicationConfig,
+) -> ModelRegistry:
     profiles: dict[str, ModelProfile] = {}
     model_items = (
         config.models.items()
@@ -233,7 +235,11 @@ def build_workflow(
     elif config is None and config_path is None:
         raw = legacy_shape(load_application_config())
     else:
-        raw = load_config(config_path) if config is None else copy.deepcopy(dict(config))
+        raw = (
+            load_config(config_path)
+            if config is None
+            else copy.deepcopy(dict(config))
+        )
         _apply_env_overrides(raw)
 
     registry = build_model_registry(raw)
@@ -282,7 +288,9 @@ def build_workflow(
             ),
             WebSearchTool(
                 BaiduSearchBackend(
-                    timeout_seconds=float(web_cfg.get("baidu", {}).get("timeout_seconds", 30.0))
+                    timeout_seconds=float(
+                        web_cfg.get("baidu", {}).get("timeout_seconds", 30.0)
+                    )
                 ),
                 store,
                 default_max_results=int(web_cfg.get("default_max_results", 10)),
@@ -290,7 +298,9 @@ def build_workflow(
             ),
             BrowserTool(
                 PlaywrightBrowserBackend(
-                    navigation_timeout_ms=int(browser_cfg.get("navigation_timeout_ms", 30_000)),
+                    navigation_timeout_ms=int(
+                        browser_cfg.get("navigation_timeout_ms", 30_000)
+                    ),
                     max_html_chars=int(browser_cfg.get("max_html_chars", 2_000_000)),
                     max_text_chars=int(browser_cfg.get("max_text_chars", 500_000)),
                 ),
@@ -299,9 +309,13 @@ def build_workflow(
             ReaderTool(
                 ReferenceArtifactReaderTool(
                     store,
-                    max_chars_per_read=int(reader_cfg.get("max_chars_per_read", 16_000)),
+                    max_chars_per_read=int(
+                        reader_cfg.get("max_chars_per_read", 16_000)
+                    ),
                 ),
-                default_chars_per_read=int(reader_cfg.get("default_chars_per_read", 8_000)),
+                default_chars_per_read=int(
+                    reader_cfg.get("default_chars_per_read", 8_000)
+                ),
             ),
         ]
     )
@@ -331,9 +345,12 @@ def build_workflow(
             ),
             model_options=(
                 _model_options(researcher_runtime.get("model", {}))
-                if researcher_runtime else ModelCallOptions(temperature=0.0, tool_choice="auto")
+                if researcher_runtime
+                else ModelCallOptions(temperature=0.0, tool_choice="auto")
             ),
-            prompt_name=str(researcher_runtime.get("prompt", "research/native_tool_loop")),
+            prompt_name=str(
+                researcher_runtime.get("prompt", "research/native_tool_loop")
+            ),
         ),
     )
     return NoveltyWorkflow(
@@ -348,7 +365,9 @@ def build_workflow(
             minimum_evidence_per_point=int(
                 workflow_cfg.get("minimum_evidence_per_point", 1)
             ),
-            candidate_limit_per_task=int(retrieval_cfg.get("candidate_limit_per_task", 8)),
+            candidate_limit_per_task=int(
+                retrieval_cfg.get("candidate_limit_per_task", 8)
+            ),
         ),
     )
 
@@ -364,7 +383,10 @@ def _normalized_retrieval_config(config: Mapping[str, Any]) -> dict[str, Any]:
             retrieval.setdefault("sources", {}).setdefault("arxiv", {}).update(
                 legacy_arxiv
             )
-        retrieval.setdefault("max_concurrency", int(config.get("workflow", {}).get("max_concurrency", 4)))
+        retrieval.setdefault(
+            "max_concurrency",
+            int(config.get("workflow", {}).get("max_concurrency", 4)),
+        )
         _adapt_legacy_arxiv_provider(retrieval)
         return retrieval
     arxiv = dict(config.get("tools", {}).get("arxiv", {}))

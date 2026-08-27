@@ -38,7 +38,9 @@ class HarnessConfig(ConfigModel):
 
     @model_validator(mode="after")
     def positive_limits(self):
-        if not self.per_tool_limits or any(value < 1 for value in self.per_tool_limits.values()):
+        if not self.per_tool_limits or any(
+            value < 1 for value in self.per_tool_limits.values()
+        ):
             raise ValueError("per_tool_limits must contain positive limits")
         return self
 
