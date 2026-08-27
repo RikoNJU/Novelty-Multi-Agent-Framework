@@ -24,6 +24,7 @@ from ..workflows import (NoveltyWorkflow, NoveltyWorkflowConfig,
 from .evidence_card_builder_live_smoke import MeasuredModelClient, _message, _trace
 
 OUTPUT_DIR = Path("outputs/experiments/formal-researcher-workflow-smoke")
+REPORT_PATH = Path("docs/experiments/formal-researcher-workflow-smoke/report.md")
 WORKSPACE = OUTPUT_DIR / "workspace"
 PAPER_ID = "EXP_FORMAL_RESEARCHER_WORKFLOW"
 PRIOR_ATTEMPTS = [{"attempt": 1, "status": "failed",
@@ -244,7 +245,8 @@ def _write_report(s, finish, task_result):
 
 透传 Validator 只存在于本实验，真实 Validator 尚未适配 Builder v1 的 `locator=None/location=None` contract；Reviewer 尚未迁移。本次仅一个点、一个任务、`max_rounds=1`，不证明多轮质量。若状态为 success，可以进入 Validator + Reviewer 迁移。
 """
-    (OUTPUT_DIR / "report.md").write_text(report, encoding="utf-8")
+    REPORT_PATH.parent.mkdir(parents=True, exist_ok=True)
+    REPORT_PATH.write_text(report, encoding="utf-8")
 
 
 def main():

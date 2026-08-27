@@ -155,4 +155,8 @@ playwright.chromium.launch(headless=True)
 - 未修改生产代码、Config、Prompt、Harness 或 BrowserTool。
 - 未将受限诊断沙箱问题误当成需要加入 Chromium 绕过参数的生产需求。
 
-原始结构化结论见 [diagnostic_results.json](./diagnostic_results.json)。
+原始结构化结论位于：
+
+```text
+outputs/experiments/Browser_Infrastructure_Diagnostic/diagnostic_results.json
+```

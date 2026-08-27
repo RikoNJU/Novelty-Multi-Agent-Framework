@@ -33,6 +33,7 @@ from ..tools import (
 )
 
 EXPERIMENT_OUTPUT_DIR = Path("outputs/experiments/websearch-harness-smoke")
+REPORT_PATH = Path("docs/experiments/websearch-harness-smoke/report.md")
 WORKSPACE_ROOT = EXPERIMENT_OUTPUT_DIR / "workspace"
 SUBJECT_PAPER_ID = "EXP_WEBSEARCH_HARNESS"
 
@@ -389,7 +390,8 @@ def _write_outputs(
     (EXPERIMENT_OUTPUT_DIR / "final.txt").write_text(
         final_content + "\n", encoding="utf-8"
     )
-    (EXPERIMENT_OUTPUT_DIR / "report.md").write_text(
+    REPORT_PATH.parent.mkdir(parents=True, exist_ok=True)
+    REPORT_PATH.write_text(
         _report(summary, final_content, search_result), encoding="utf-8"
     )
 

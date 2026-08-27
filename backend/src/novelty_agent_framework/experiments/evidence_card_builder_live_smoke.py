@@ -37,6 +37,7 @@ from ..tools import (
 )
 
 OUTPUT_DIR = Path("outputs/experiments/evidence-card-builder-live-smoke")
+REPORT_PATH = Path("docs/experiments/evidence-card-builder-live-smoke/report.md")
 WORKSPACE = OUTPUT_DIR / "workspace"
 SUBJECT_ID = "EXP_EVIDENCE_CARD_BUILDER"
 FORBIDDEN_FINISH_KEYS = {
@@ -443,7 +444,8 @@ def _write(summary, trace, model_calls, raw_finish, finish, reads, manifest, bui
 
 核心成功标准全部满足，**可以进入 Validator / Reviewer 迁移设计**；在此之前还需要把 Workflow finish 后处理显式接到 Builder。
 """
-    (OUTPUT_DIR / "report.md").write_text(report, encoding="utf-8")
+    REPORT_PATH.parent.mkdir(parents=True, exist_ok=True)
+    REPORT_PATH.write_text(report, encoding="utf-8")
 
 
 def main() -> None:

@@ -40,7 +40,8 @@
 
 ## 6. 完整审计与持久化闭环
 
-- WebSearch、Browser、Reader 的完整 Observation 均保存在 `trace.jsonl`：**True**
+- WebSearch、Browser、Reader 的完整 Observation 均保存在
+  `outputs/experiments/researcher-three-tool-smoke/trace.jsonl`：**True**
 - Browser 完整 Observation 包含 browser_fetch/html/text，但 role=tool projection 不包含这些字段。
 - SourceRecord → Work → Artifact → Read 从重新加载的 Manifest 验证闭合：**True**
 - 句柄：source `src_fdee106b1e978830af30329b` → work `wrk_86600422c9a12affdfaa7ea1` → artifact `art_e6e8b1aab20bb0c7c373b21f` → read `read_a5499710002f73ed22de78ae`

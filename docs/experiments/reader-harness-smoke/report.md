@@ -235,6 +235,8 @@ publication_stage_provenance
 
 ## 11. 实验产物
 
+实际文件目录：`outputs/experiments/reader-harness-smoke/`。
+
 - `trace.jsonl`：Harness 的 6 条事实事件；
 - `result.json`：实验状态、参数、成功标记、耗时与 token 汇总；
 - `model_calls.json`：逐轮模型耗时、上下文角色、Tool Call 和 provider usage；

@@ -12,7 +12,8 @@
 - SearchPlanner 模型：`r1-qwen3-8b`。
 - 正式工具：`database_search`、`web_search`、`browser`、`reader`。
 - Effective config 不包含 API key 或环境变量值。
-- 详细安全配置见 `config-integrity.json`。
+- 详细安全配置见
+  `outputs/experiments/Researcher_Config_Decoupling_Three_Stage_Taskbook/config-integrity.json`。
 
 ## Parameter Perturbation
 
@@ -20,7 +21,8 @@
 
 只修改临时 JSON 配置，未修改 Python，明显非默认值全部到达最终 runtime object：Researcher/Planner invocation、Harness 总预算与 per-tool budget、Reader 单次与累计字符、DB 数量与并发、arXiv 节流/timeout/retry/fulltext、Baidu timeout、Browser timeout/内容限制。
 
-详细值见 `parameter-perturbation.json`。
+详细值见
+`outputs/experiments/Researcher_Config_Decoupling_Three_Stage_Taskbook/parameter-perturbation.json`。
 
 ## Scripted 四工具链
 
@@ -83,7 +85,8 @@ native tool harness failed: browser tool-call budget exhausted
 
 Browser 的第 4 次调用被 `per_tool_limits.browser = 3` 精确拦截，证明 runtime enforcement 生效。真实策略仍因 Browser 重复而未进入 Reader；这属于 Research Strategy Quality，不影响配置系统验收。
 
-原始结果见 `real-llm-required-all.json`。
+原始结果见
+`outputs/experiments/Researcher_Config_Decoupling_Three_Stage_Taskbook/real-llm-required-all.json`。
 
 ## 最终判断
 

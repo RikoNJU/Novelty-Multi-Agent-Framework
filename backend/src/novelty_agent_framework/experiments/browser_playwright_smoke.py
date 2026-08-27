@@ -35,6 +35,7 @@ from ..tools import (
 
 ROOT = Path(__file__).resolve().parents[4]
 OUTPUT_DIR = ROOT / "outputs/experiments/browser-playwright-smoke"
+REPORT_PATH = ROOT / "docs/experiments/browser-playwright-smoke/report.md"
 SUBJECT_ID = "EXP_BROWSER_PLAYWRIGHT"
 
 
@@ -285,7 +286,8 @@ Playwright {result['playwright_version']}；仅安装 Chromium。本实验不使
 
 成功 {result['successful_cases']} 项，失败 {result['failed_cases']} 项。WebSearch 候选页面遇到反爬、跳转或导航失败时按真实失败记录，不伪造成功。Reader 仅通过 Browser 返回的 `artifact_id` 读取持久化文本，没有复制 Browser 正文作为输入。
 """
-    (OUTPUT_DIR / "report.md").write_text(report, encoding="utf-8")
+    REPORT_PATH.parent.mkdir(parents=True, exist_ok=True)
+    REPORT_PATH.write_text(report, encoding="utf-8")
 
 
 def main() -> None:

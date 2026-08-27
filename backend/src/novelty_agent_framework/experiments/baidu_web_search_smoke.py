@@ -20,6 +20,7 @@ from ..tools import BaiduSearchBackend, WebSearchTool
 from ..tools.web_search_backend import BAIDU_WEB_SEARCH_ENDPOINT
 
 EXPERIMENT_OUTPUT_DIR = Path("outputs/experiments/baidu-web-search-smoke")
+REPORT_PATH = Path("docs/experiments/baidu-web-search-smoke/report.md")
 WORKSPACE_ROOT = EXPERIMENT_OUTPUT_DIR / "workspace"
 SUBJECT_PAPER_ID = "EXP_BAIDU_WEBSEARCH"
 QUERIES = (
@@ -187,7 +188,8 @@ def _write_outputs(summary: dict, manifest: dict) -> None:
             json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
             encoding="utf-8",
         )
-    (EXPERIMENT_OUTPUT_DIR / "report.md").write_text(
+    REPORT_PATH.parent.mkdir(parents=True, exist_ok=True)
+    REPORT_PATH.write_text(
         _report(summary), encoding="utf-8"
     )
 

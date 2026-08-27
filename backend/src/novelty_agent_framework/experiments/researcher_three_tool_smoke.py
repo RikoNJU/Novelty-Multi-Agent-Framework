@@ -29,6 +29,7 @@ from ..tools import (
 )
 
 OUTPUT_DIR = Path("outputs/experiments/researcher-three-tool-smoke")
+REPORT_PATH = Path("docs/experiments/researcher-three-tool-smoke/report.md")
 WORKSPACE = OUTPUT_DIR / "workspace"
 SUBJECT_ID = "EXP_RESEARCHER_THREE_TOOL"
 SYSTEM_PROMPT = """你是 Researcher 三工具纵向链路测试 Agent。必须严格串行完成：
@@ -441,7 +442,8 @@ def _write(summary, trace, model_calls, manifest, final) -> None:
 
 {final}
 """
-    (OUTPUT_DIR / "report.md").write_text(report, encoding="utf-8")
+    REPORT_PATH.parent.mkdir(parents=True, exist_ok=True)
+    REPORT_PATH.write_text(report, encoding="utf-8")
 
 
 def main() -> None:
