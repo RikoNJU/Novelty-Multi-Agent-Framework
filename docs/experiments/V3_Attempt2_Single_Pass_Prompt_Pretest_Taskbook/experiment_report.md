@@ -138,6 +138,28 @@ Token 没有下降。主要原因是 5 个 Task 在 Browser 持续失败后反�
 完整 JSON、六份 append-only trace 和 manifest snapshot 位于：
 
 ```text
-docs/experiments/V3_Attempt2_Single_Pass_Prompt_Pretest_Taskbook/
-  mf2033k6lc-v3-attempt2-single-pass-prompt-pretest/
+outputs/experiments/mf2033k6lc-v3-attempt2-single-pass-prompt-pretest/
 ```
+
+## Browser Runtime 修复后复跑（2026-08-27）
+
+在零模型 Browser preflight、backend smoke、Browser → Artifact → Reader smoke
+全部通过后，使用相同实验 Prompt 原样复跑。结果如下：
+
+| 指标 | 修复前 | 修复后 |
+|---|---:|---:|
+| 严格单次序列 | 0/6 | 2/6 |
+| Browser success | 0/6 | 4/6 |
+| Artifact tasks | 0/6 | 4/6 |
+| Trusted Read tasks | 0/6 | 4/6 |
+| Trusted Read chars | 0 | 22,865 |
+| Grounded EvidenceCard | 0 | 0 |
+| Researcher tokens | 206,113 | 242,037 |
+
+获取层由 FAIL 变为 **PASS**，证明 Browser runtime 修复有效，不再是统一的 Chromium
+启动失败。行为路径仍为 **FAIL**：4 个任务重复 Search 或 Reader，`NP-3/T-1` 遇到
+模型调用失败，`NP-3/T-2` 的目标页面导航超时。唯一草稿 Card 的 quote 不是 Reader
+原文逐字摘录，被 EvidenceCardBuilder 正确拒绝，因此 card path 仍未证明。
+
+本次尝试没有完整跑通，不继续全栈复跑；按既定安排，待 reviewer 接入后再做完整 demo。
+详细基础设施结论见 `docs/experiments/Browser_Runtime_Repair/report.md`。

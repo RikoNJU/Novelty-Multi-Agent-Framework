@@ -34,7 +34,7 @@ OUTPUT = Path(
 PAPER_INPUT = Path("outputs/MF2033k6lC/paper-input/others/paper.json")
 POINTS_INPUT = Path("outputs/MF2033k6lC/novelty-points.json")
 ORIGINAL_TASK_SUMMARY = Path(
-    "docs/experiments/MF2033k6lC_V3_Researcher_Attempt2_Taskbook/"
+    "outputs/experiments/MF2033k6lC_V3_Researcher_Attempt2_Taskbook/"
     "mf2033k6lc-v3-researcher-attempt2/task_summary.json"
 )
 PROMPT_RULES = """Controlled single-pass acquisition experiment.
