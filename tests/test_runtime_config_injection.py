@@ -50,7 +50,7 @@ def test_perturbed_config_reaches_runtime_objects(tmp_path):
     web = task.tools.get("web_search")
     browser = task.tools.get("browser")
     reader = task.tools.get("reader")
-    planner = internal.search_planner
+    planner = workflow.services.search_planner
 
     assert task.config.max_steps == 7 and task.config.max_tool_calls == 6
     assert task.harness.config.per_tool_limits["browser"] == 2

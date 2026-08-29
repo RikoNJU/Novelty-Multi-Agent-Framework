@@ -11,6 +11,7 @@ def render_prompt():
         "research/native_tool_loop",
         novelty_point_json='{"point_id":"NP-1"}',
         research_task_json='{"task_id":"T-1","language":"zh"}',
+        search_plan_json='{"concepts":[{"terms":["term"]}],"strategies":[{"expression":"C1"}]}',
         finish_schema_json='{"type":"object"}',
     )
 
