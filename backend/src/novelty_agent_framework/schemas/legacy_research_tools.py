@@ -1,4 +1,8 @@
-"""Schemas used only by legacy Researcher tool compatibility paths."""
+"""Schemas used only by legacy Researcher tool compatibility paths.
+
+LEGACY / UNUSED by the canonical Harness. Retained for historical experiments and
+regression checks; new code must use ``DatabaseSearchArguments``.
+"""
 
 from __future__ import annotations
 

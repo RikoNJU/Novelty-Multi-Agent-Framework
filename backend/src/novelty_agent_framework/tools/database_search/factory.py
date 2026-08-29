@@ -49,12 +49,13 @@ def build_retrieval_source(
 def build_structured_source_retrieval_tool(
     retrieval: Mapping[str, Any],
     *,
-    search_planner: SearchPlanner,
+    search_planner: SearchPlanner | None = None,
     source_id: str | None = None,
     source_registry: RetrievalSourceRegistry | None = None,
     reference_store: ReferenceStore | None = None,
     max_concurrency: int = 4,
 ) -> StructuredSourceRetrievalTool:
+    """Build a retrieval tool; ``search_planner`` is legacy and runtime-unused."""
     source = build_retrieval_source(
         retrieval, source_id=source_id, source_registry=source_registry
     )
@@ -71,12 +72,12 @@ def build_structured_source_retrieval_tool(
 def build_database_search_tool(
     retrieval: Mapping[str, Any],
     *,
-    search_planner: SearchPlanner,
+    search_planner: SearchPlanner | None = None,
     reference_store: ReferenceStore,
     source_registry: RetrievalSourceRegistry | None = None,
     max_concurrency: int = 4,
 ) -> DatabaseSearchTool:
-    """Build every enabled source behind the sole agent-facing DB tool."""
+    """Build all sources; ``search_planner`` is constructor compatibility only."""
 
     sources = retrieval.get("sources", {})
     if not isinstance(sources, Mapping):

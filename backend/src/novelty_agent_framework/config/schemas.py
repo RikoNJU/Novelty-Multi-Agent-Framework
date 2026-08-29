@@ -117,6 +117,15 @@ class SearchPlannerConfig(ConfigModel):
     max_attempts: int = Field(gt=0)
 
 
+class ReviewerConfig(ConfigModel):
+    version: int = Field(ge=1)
+    enabled: bool = False
+    model: ModelInvocationConfig
+    prompt: str = Field(min_length=1)
+    max_cards_per_call: int = Field(gt=0)
+    fail_closed: bool = True
+
+
 class RoleAgentConfig(ConfigModel):
     version: int = Field(ge=1)
     model: ModelInvocationConfig
@@ -150,6 +159,7 @@ class ApplicationConfig(ConfigModel):
     models: dict[str, ModelProfileConfig]
     researcher: ResearcherConfig
     search_planner: SearchPlannerConfig
+    reviewer: ReviewerConfig | None = None
     coordinator: RoleAgentConfig
     point_extractor: RoleAgentConfig
 
@@ -162,6 +172,8 @@ class ApplicationConfig(ConfigModel):
             "coordinator": self.coordinator.model.alias,
             "point_extractor": self.point_extractor.model.alias,
         }
+        if self.reviewer is not None and self.reviewer.enabled:
+            roles["reviewer"] = self.reviewer.model.alias
         unknown = {role: alias for role, alias in roles.items() if alias not in aliases}
         for key in ("ocr_model", "llm_model"):
             alias = self.project.processing.get(key)

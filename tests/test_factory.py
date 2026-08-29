@@ -3,7 +3,11 @@ from dataclasses import fields
 
 import pytest
 
-from novelty_agent_framework.agents import NoveltyCoordinatorAgent, SearchPlannerAgent
+from novelty_agent_framework.agents import (
+    NoveltyCoordinatorAgent,
+    NoveltyEvidenceReviewer,
+    SearchPlannerAgent,
+)
 from novelty_agent_framework.tools import (
     BaiduSearchBackend, BrowserTool, EvidenceCardBuilder, PlaywrightBrowserBackend,
     WebSearchTool,
@@ -16,6 +20,7 @@ from novelty_agent_framework.config import (
     build_workflow,
     load_config,
 )
+from novelty_agent_framework.config.loader import load_application_config
 
 BASE_CONFIG = {
     "workflow": {
@@ -80,6 +85,19 @@ def test_build_workflow_env_overrides_role_model(monkeypatch):
     workflow = build_workflow(BASE_CONFIG)
 
     assert workflow.services.coordinator._client().profile.model == "model-b"
+
+
+def test_reviewer_composition_root_respects_enabled_switch():
+    disabled = load_application_config()
+    assert build_workflow(disabled).services.reviewer is None
+
+    enabled = disabled.model_copy(
+        update={
+            "reviewer": disabled.reviewer.model_copy(update={"enabled": True})
+        }
+    )
+    reviewer = build_workflow(enabled).services.reviewer
+    assert isinstance(reviewer, NoveltyEvidenceReviewer)
 
 
 def test_build_workflow_does_not_mutate_input_config(monkeypatch):

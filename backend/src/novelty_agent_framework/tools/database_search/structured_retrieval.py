@@ -135,14 +135,14 @@ class StructuredRetrievalAdapter:
 
 
 class StructuredSourceRetrievalTool:
-    """SearchPlanner → RetrievalSource → Metadata/FullText → ResearchBundle。"""
+    """Injected SearchPlan → RetrievalSource → Metadata/FullText → ResearchBundle。"""
 
     name = "structured_source_retrieval"
 
     def __init__(
         self,
         *,
-        search_planner: SearchPlanner,
+        search_planner: SearchPlanner | None = None,
         source: RetrievalSource,
         reference_store: ReferenceStore | None = None,
         candidate_limit: int = 8,
@@ -155,6 +155,9 @@ class StructuredSourceRetrievalTool:
             raise ValueError("RetrievalSource.search_tool is required")
         if candidate_limit < 1 or full_text_limit < 0 or max_concurrency < 1:
             raise ValueError("retrieval limits and concurrency are invalid")
+        # LEGACY / UNUSED: 旧版会在数据库检索阶段再次调用 Planner。
+        # 当前正式链由 TaskResearchRequest.search_plan 注入唯一计划。
+        # 仅为历史构造器兼容保留；新代码禁止依赖。
         self.search_planner = search_planner
         self.source = source
         self.reference_store = reference_store or ReferenceStore()
@@ -174,13 +177,7 @@ class StructuredSourceRetrievalTool:
                 f"tool source_id {self.source_id!r}"
             )
         manifest = self.reference_store.load_manifest(request.subject_paper_id)
-        plan = SearchPlan.model_validate(
-            await _resolve(
-                self.search_planner.plan(
-                    request.novelty_point, request.research_task
-                )
-            )
-        )
+        plan = request.search_plan
         compiled, warnings = self._compile_strategies(plan)
         pending, failed, unique_hits = await self._search(compiled, request)
         enriched_hits, acquisition_warnings = await self._enrich_metadata(unique_hits)

@@ -10,7 +10,7 @@ from typing import Annotated, Any
 
 from pydantic import Field, StringConstraints, field_validator, model_validator
 
-from .domain import NoveltyPoint, ResearchTask, StrictModel
+from .domain import NoveltyPoint, ResearchTask, SearchPlan, StrictModel
 
 NonEmptyStr = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
 JsonObject = dict[str, Any]
@@ -369,6 +369,7 @@ class StructuredSourceRetrievalRequest(StrictModel):
     source_id: NonEmptyStr
     novelty_point: NoveltyPoint
     research_task: ResearchTask
+    search_plan: SearchPlan
     run_id: NonEmptyStr | None = None
 
     @field_validator("source_id")
@@ -381,6 +382,12 @@ class StructuredSourceRetrievalRequest(StrictModel):
         if self.research_task.novelty_point_id != self.novelty_point.point_id:
             raise ValueError(
                 "research_task.novelty_point_id must match novelty_point.point_id"
+            )
+        if self.search_plan.task_id != self.research_task.task_id:
+            raise ValueError("search_plan.task_id must match research_task.task_id")
+        if self.search_plan.novelty_point_id != self.research_task.novelty_point_id:
+            raise ValueError(
+                "search_plan.novelty_point_id must match research_task.novelty_point_id"
             )
         return self
 

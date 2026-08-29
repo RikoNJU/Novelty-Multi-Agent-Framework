@@ -16,6 +16,7 @@ DEFAULT_RESEARCHER_PATH = CONFIG_DIR / "agents" / "researcher.example.json"
 DEFAULT_SEARCH_PLANNER_PATH = CONFIG_DIR / "agents" / "search_planner.example.json"
 DEFAULT_COORDINATOR_PATH = CONFIG_DIR / "agents" / "coordinator.example.json"
 DEFAULT_POINT_EXTRACTOR_PATH = CONFIG_DIR / "agents" / "point_extractor.example.json"
+DEFAULT_REVIEWER_PATH = CONFIG_DIR / "agents" / "reviewer.example.json"
 
 
 def read_json(path: str | Path) -> dict[str, Any]:
@@ -35,6 +36,7 @@ def load_application_config(
     search_planner_path: str | Path = DEFAULT_SEARCH_PLANNER_PATH,
     coordinator_path: str | Path = DEFAULT_COORDINATOR_PATH,
     point_extractor_path: str | Path = DEFAULT_POINT_EXTRACTOR_PATH,
+    reviewer_path: str | Path = DEFAULT_REVIEWER_PATH,
     environ: Mapping[str, str] | None = None,
 ) -> ApplicationConfig:
     raw = {
@@ -44,6 +46,7 @@ def load_application_config(
         "search_planner": read_json(search_planner_path),
         "coordinator": read_json(coordinator_path),
         "point_extractor": read_json(point_extractor_path),
+        "reviewer": read_json(reviewer_path),
     }
     _apply_model_overrides(raw, environ or os.environ)
     return ApplicationConfig.model_validate(raw)
@@ -55,6 +58,7 @@ def _apply_model_overrides(raw: dict[str, Any], environ: Mapping[str, str]) -> N
         "search_planner": ("NOVELTY_SEARCH_PLANNER_MODEL",),
         "coordinator": ("NOVELTY_COORDINATOR_MODEL",),
         "point_extractor": ("NOVELTY_POINT_EXTRACTOR_MODEL",),
+        "reviewer": ("NOVELTY_REVIEWER_MODEL",),
     }
     for role, names in mapping.items():
         value = next((environ[name] for name in names if environ.get(name)), None)
@@ -89,6 +93,26 @@ def legacy_shape(config: ApplicationConfig) -> dict[str, Any]:
                 "model": config.point_extractor.model.alias,
                 "temperature": config.point_extractor.model.temperature,
             },
+            "reviewer": {
+                "enabled": bool(config.reviewer and config.reviewer.enabled),
+                "model": (
+                    config.reviewer.model.alias if config.reviewer else "reviewer"
+                ),
+                "temperature": (
+                    config.reviewer.model.temperature if config.reviewer else 0.0
+                ),
+                "prompt": (
+                    config.reviewer.prompt
+                    if config.reviewer
+                    else "reviewer/review_evidence"
+                ),
+                "max_cards_per_call": (
+                    config.reviewer.max_cards_per_call if config.reviewer else 8
+                ),
+                "fail_closed": (
+                    config.reviewer.fail_closed if config.reviewer else True
+                ),
+            },
         },
         "task_researcher": {
             "max_steps": config.researcher.harness.max_turns,
@@ -119,6 +143,9 @@ def effective_safe_config(config: ApplicationConfig) -> dict[str, Any]:
     return {
         "researcher": config.researcher.model_dump(mode="json"),
         "search_planner": config.search_planner.model_dump(mode="json"),
+        "reviewer": (
+            config.reviewer.model_dump(mode="json") if config.reviewer else None
+        ),
         "models": {
             alias: {
                 "provider": profile.provider,

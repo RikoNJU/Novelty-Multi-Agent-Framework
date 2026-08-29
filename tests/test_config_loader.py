@@ -113,4 +113,8 @@ def test_typed_config_builds_four_tool_workflow_without_legacy_projection(
     )
     database = workflow.services.task_researcher.tools.get("database_search")
     planner = next(iter(database.tools_by_source.values())).search_planner
-    assert planner._model_alias == config.search_planner.model.alias
+    assert planner is None
+    assert (
+        workflow.services.search_planner._model_alias
+        == config.search_planner.model.alias
+    )

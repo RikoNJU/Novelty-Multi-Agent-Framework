@@ -16,7 +16,9 @@ from typing import Any, Mapping
 from backend.env import ModelCallOptions, ModelProfile, ModelRegistry, PromptLibrary
 
 from ..agents import (
+    EvidenceReviewerConfig,
     NoveltyCoordinatorAgent,
+    NoveltyEvidenceReviewer,
     NoveltyPointExtractorAgent,
     NoveltyResearchAgent,
     SearchPlannerAgent,
@@ -272,6 +274,22 @@ def build_workflow(
     search_planner = build_search_planner(
         raw, registry, prompts, retrieval_cfg=retrieval_cfg
     )
+    reviewer_cfg = agents_cfg.get("reviewer", {})
+    reviewer = (
+        NoveltyEvidenceReviewer(
+            prompts=prompts,
+            models=registry,
+            config=EvidenceReviewerConfig(
+                enabled=True,
+                model_alias=str(reviewer_cfg.get("model", "reviewer")),
+                temperature=float(reviewer_cfg.get("temperature", 0.0)),
+                max_cards_per_call=int(reviewer_cfg.get("max_cards_per_call", 8)),
+                fail_closed=bool(reviewer_cfg.get("fail_closed", True)),
+            ),
+        )
+        if reviewer_cfg.get("enabled", False)
+        else None
+    )
 
     workflow_cfg = raw.get("workflow", {})
     researcher_runtime = raw.get("researcher_runtime", {})
@@ -284,7 +302,6 @@ def build_workflow(
         [
             build_database_search_tool(
                 retrieval_cfg,
-                search_planner=search_planner,
                 reference_store=store,
                 source_registry=source_registry,
                 max_concurrency=int(retrieval_cfg["max_concurrency"]),
@@ -363,6 +380,7 @@ def build_workflow(
             task_researcher=task_researcher,
             search_planner=search_planner,
             point_extractor=point_extractor,
+            reviewer=reviewer,
         ),
         config=NoveltyWorkflowConfig(
             max_rounds=int(workflow_cfg.get("max_rounds", 2)),
@@ -410,6 +428,21 @@ def _build_workflow_from_application_config(
         max_attempts=config.search_planner.max_attempts,
         prompt_name=config.search_planner.prompt,
     )
+    reviewer = (
+        NoveltyEvidenceReviewer(
+            prompts=prompts,
+            models=registry,
+            config=EvidenceReviewerConfig(
+                enabled=True,
+                model_alias=config.reviewer.model.alias,
+                temperature=config.reviewer.model.temperature,
+                max_cards_per_call=config.reviewer.max_cards_per_call,
+                fail_closed=config.reviewer.fail_closed,
+            ),
+        )
+        if config.reviewer is not None and config.reviewer.enabled
+        else None
+    )
 
     database = config.researcher.tools.database_search
     retrieval = {
@@ -428,7 +461,6 @@ def _build_workflow_from_application_config(
         [
             build_database_search_tool(
                 retrieval,
-                search_planner=search_planner,
                 reference_store=store,
                 source_registry=source_registry,
                 max_concurrency=database.max_concurrency,
@@ -481,6 +513,7 @@ def _build_workflow_from_application_config(
             task_researcher=task_researcher,
             search_planner=search_planner,
             point_extractor=point_extractor,
+            reviewer=reviewer,
         ),
         config=NoveltyWorkflowConfig(
             max_rounds=workflow.max_rounds,

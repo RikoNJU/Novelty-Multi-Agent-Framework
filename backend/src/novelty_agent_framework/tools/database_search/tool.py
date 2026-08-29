@@ -66,6 +66,7 @@ class DatabaseSearchTool:
                 source_id=source_id,
                 novelty_point=scope.novelty_point,
                 research_task=scope.research_task,
+                search_plan=scope.search_plan,
             )
         )
         artifacts_by_record: dict[str, list[str]] = {}
@@ -105,6 +106,7 @@ class DatabaseSearchTool:
             succeeded=True,
             summary=f"数据库检索召回 {len(items)} 个候选作品",
             payload={
+                "research_bundle": bundle.model_dump(mode="json"),
                 "database_search_result": result.model_dump(mode="json"),
                 "search_executions": [
                     item.model_dump(mode="json") for item in bundle.search_executions

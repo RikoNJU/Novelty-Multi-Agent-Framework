@@ -13,9 +13,6 @@ from novelty_agent_framework.schemas import (
     DatabaseSearchArguments,
     NoveltyPoint,
     ResearchTask,
-    SearchConcept,
-    SearchPlan,
-    SearchStrategy,
     TaskResearchRequest,
 )
 from novelty_agent_framework.tools.database_search import (
@@ -32,12 +29,7 @@ class Planner:
 
     def plan(self, point, task):
         self.calls.append((point, task))
-        return SearchPlan(
-            task_id=task.task_id,
-            novelty_point_id=point.point_id,
-            concepts=[SearchConcept(concept_id="C1", name="graph", terms=["graph"])],
-            strategies=[SearchStrategy(strategy_id="S1", level="strict", expression="C1")],
-        )
+        raise AssertionError("legacy planner path must not be called")
 
 
 class Searcher:
@@ -125,10 +117,7 @@ def test_scope_planning_persistence_projection_and_deduplication(tmp_path):
         tool.ainvoke(DatabaseSearchArguments(source_id="demo"), scope=scope())
     )
 
-    assert planner.calls == [
-        (scope().novelty_point, scope().research_task),
-        (scope().novelty_point, scope().research_task),
-    ]
+    assert planner.calls == []
     assert observation.succeeded and observation.tool_name == "database_search"
     assert "bundle" not in observation.payload
     assert "search_executions" in observation.payload

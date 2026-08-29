@@ -60,6 +60,13 @@ def calls(trace, *, attempted: bool) -> list:
     ]
 
 
+class FailingLegacyPlanner:
+    """Proof guard: database retrieval must consume the request plan."""
+
+    def plan(self, *args, **kwargs):
+        raise AssertionError("legacy planner path must not be called")
+
+
 def summarize_web_rounds(trace) -> list[dict[str, Any]]:
     executed = calls(trace, attempted=False)
     web_indexes = [index for index, call in enumerate(executed) if call.name == "web_search"]
@@ -192,6 +199,9 @@ async def run() -> dict[str, Any]:
     ]
     point = next(item for item in points if item.point_id == SELECTED_POINT_ID)
     built = build_workflow(config)
+    planner = built.services.search_planner
+    planner_client = MeasuredClient(planner._client(), "search_planner")
+    planner.model_client = planner_client
     brief = built.services.coordinator.plan(paper, points=points, attempt=1)
     task = next(
         item
@@ -211,9 +221,8 @@ async def run() -> dict[str, Any]:
     researcher.model_client = researcher_client
     researcher.harness.model_client = researcher_client
     database = researcher.tools.get("database_search")
-    planner = next(iter(database.tools_by_source.values())).search_planner
-    planner_client = MeasuredClient(planner._client(), "search_planner")
-    planner.model_client = planner_client
+    for retrieval in database.tools_by_source.values():
+        retrieval.search_planner = FailingLegacyPlanner()
 
     captured_trace = ()
     harness_result = None
@@ -314,6 +323,9 @@ async def run() -> dict[str, Any]:
                 "card rejected only for an ungrounded paraphrased quote"
             ),
         },
+        "planner_call_count": len(planner_client.calls),
+        "search_plan": request.search_plan.model_dump(mode="json"),
+        "task_research_request": request.model_dump(mode="json"),
         "attempted_tool_sequence": attempted_names,
         "executed_tool_sequence": executed_names,
         "tool_counts": {

@@ -51,6 +51,7 @@ def request(**updates) -> StructuredSourceRetrievalRequest:
         "source_id": "demo",
         "novelty_point": point(),
         "research_task": task(),
+        "search_plan": Planner().plan(point(), task()),
         "run_id": "run-1",
     }
     data.update(updates)
@@ -202,7 +203,7 @@ def test_single_task_tool_returns_bundle_for_sync_and_async_fakes(
     assert isinstance(bundle, ResearchBundle)
     assert bundle.producer == "structured_source_retrieval:demo"
     assert bundle.evidence == []
-    assert planner.calls == [("NP-1", "T-1")]
+    assert planner.calls == []
     assert searcher.calls
     assert metadata.calls == ["2305.12345"]
     assert full_text.calls == ["2305.12345"]
@@ -217,6 +218,16 @@ def test_request_and_source_are_validated_before_execution(tmp_path):
     with pytest.raises(ValidationError, match="must match"):
         request(
             research_task=task().model_copy(
+                update={"novelty_point_id": "NP-other"}
+            )
+        )
+    with pytest.raises(ValidationError, match="search_plan.task_id"):
+        request(
+            search_plan=request().search_plan.model_copy(update={"task_id": "T-other"})
+        )
+    with pytest.raises(ValidationError, match="search_plan.novelty_point_id"):
+        request(
+            search_plan=request().search_plan.model_copy(
                 update={"novelty_point_id": "NP-other"}
             )
         )

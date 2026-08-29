@@ -9,7 +9,12 @@ from backend.env import ModelCallOptions, ModelClient, PromptLibrary
 from pydantic import ValidationError
 
 from ..core import ToolCallHarness, ToolCallHarnessConfig, ToolCallHarnessError
-from ..schemas import ReferenceReadResult, ResearchFinishDraft, TaskResearchRequest
+from ..schemas import (
+    ReferenceReadResult,
+    ResearchBundle,
+    ResearchFinishDraft,
+    TaskResearchRequest,
+)
 from ..schemas import TaskResearchResult, TaskResearchStatus
 from ..tools import EvidenceCardBuilder, ResearcherToolRegistry
 
@@ -81,10 +86,16 @@ class TaskResearcherWorkflow:
             )
         except ToolCallHarnessError as exc:
             reads, read_warnings = _trusted_reads(exc.trace)
+            bundles, bundle_warnings = _trusted_bundles(exc.trace)
             return _partial(
                 request,
                 reads=reads,
-                warnings=[f"native tool harness failed: {exc}", *read_warnings],
+                bundles=bundles,
+                warnings=[
+                    f"native tool harness failed: {exc}",
+                    *read_warnings,
+                    *bundle_warnings,
+                ],
                 steps=_turns_in_trace(exc.trace),
             )
         except Exception as exc:
@@ -94,6 +105,7 @@ class TaskResearcherWorkflow:
             )
 
         reads, read_warnings = _trusted_reads(harness_result.trace)
+        bundles, bundle_warnings = _trusted_bundles(harness_result.trace)
         try:
             draft = ResearchFinishDraft.model_validate_json(
                 harness_result.final_content or ""
@@ -102,7 +114,8 @@ class TaskResearcherWorkflow:
             return _partial(
                 request,
                 reads=reads,
-                warnings=[*read_warnings,
+                bundles=bundles,
+                warnings=[*read_warnings, *bundle_warnings,
                           f"invalid ResearchFinishDraft: {_safe_error(exc)}"],
                 steps=harness_result.turns_used,
             )
@@ -115,7 +128,8 @@ class TaskResearcherWorkflow:
             return _partial(
                 request,
                 reads=reads,
-                warnings=[*read_warnings,
+                bundles=bundles,
+                warnings=[*read_warnings, *bundle_warnings,
                           f"evidence builder failed: {_safe_error(exc)}"],
                 steps=harness_result.turns_used,
             )
@@ -125,9 +139,10 @@ class TaskResearcherWorkflow:
             novelty_point_id=request.novelty_point.point_id,
             status=TaskResearchStatus.COMPLETED,
             read_results=reads,
+            research_bundles=bundles,
             evidence=built.evidence,
             evidence_cards=built.evidence_cards,
-            warnings=[*read_warnings, *built.warnings],
+            warnings=[*read_warnings, *bundle_warnings, *built.warnings],
             steps_used=harness_result.turns_used,
         )
 
@@ -173,16 +188,38 @@ def _trusted_reads(trace) -> tuple[list[ReferenceReadResult], list[str]]:
     return reads, warnings
 
 
+def _trusted_bundles(trace) -> tuple[list[ResearchBundle], list[str]]:
+    bundles: list[ResearchBundle] = []
+    warnings: list[str] = []
+    for event in trace:
+        observation = event.observation
+        if event.kind != "tool_result" or observation is None or not observation.succeeded:
+            continue
+        payload = observation.payload.get("research_bundle")
+        if payload is None and observation.tool_name == "structured_source_retrieval":
+            payload = observation.payload.get("bundle")
+        if payload is None:
+            continue
+        try:
+            bundles.append(ResearchBundle.model_validate(payload))
+        except (ValidationError, ValueError, TypeError) as exc:
+            warnings.append(f"ignored malformed research bundle: {_safe_error(exc)}")
+    return bundles, warnings
+
+
 def _turns_in_trace(trace) -> int:
     return sum(event.kind == "assistant_response" for event in trace)
 
 
-def _partial(request, *, reads=None, warnings=None, steps=0) -> TaskResearchResult:
+def _partial(
+    request, *, reads=None, bundles=None, warnings=None, steps=0
+) -> TaskResearchResult:
     return TaskResearchResult(
         task_id=request.research_task.task_id,
         novelty_point_id=request.novelty_point.point_id,
         status=TaskResearchStatus.PARTIAL,
         read_results=reads or [],
+        research_bundles=bundles or [],
         warnings=warnings or [],
         steps_used=steps,
     )

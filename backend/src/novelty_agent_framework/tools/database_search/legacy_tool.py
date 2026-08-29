@@ -14,7 +14,11 @@ from .structured_retrieval import StructuredSourceRetrievalTool
 
 
 class StructuredRetrievalResearcherTool:
-    """Legacy Researcher wrapper for database-bound structured retrieval."""
+    """Compatibility wrapper outside the canonical database_search path.
+
+    LEGACY / UNUSED by the formal Harness. Retained for historical experiments;
+    new code must use ``DatabaseSearchTool``.
+    """
 
     name = "structured_source_retrieval"
     description = "在一个已配置结构化来源中检索并保存候选文献。"
@@ -41,6 +45,7 @@ class StructuredRetrievalResearcherTool:
                 source_id=source_id,
                 novelty_point=scope.novelty_point,
                 research_task=scope.research_task,
+                search_plan=scope.search_plan,
                 run_id=scope.run_id,
             )
         )

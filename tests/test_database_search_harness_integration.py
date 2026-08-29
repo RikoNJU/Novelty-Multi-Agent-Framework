@@ -30,6 +30,11 @@ class Planner:
         )
 
 
+class FailingLegacyPlanner:
+    def plan(self, *args, **kwargs):
+        raise AssertionError("legacy planner path must not be called")
+
+
 class DatabaseBackend:
     source_id = "demo"
 
@@ -110,6 +115,97 @@ class ScriptedFullToolModel:
         return ModelResponse(content=None, tool_calls=[ModelToolCall(call_id, name, arguments)])
 
 
+class DatabaseReaderModel(ScriptedFullToolModel):
+    async def acomplete(self, messages, *, options=None):
+        self.options.append(options)
+        if self.step == 0:
+            response = self._call("db", "database_search", {"source_id": "demo"})
+        elif self.step == 1:
+            payload = json.loads(messages[-1].content)
+            response = self._call(
+                "read-db",
+                "reader",
+                {"artifact_id": payload["results"][0]["artifact_ids"][0]},
+            )
+        else:
+            response = ModelResponse(
+                content=json.dumps(
+                    {
+                        "cards": [
+                            {
+                                "main_contribution": "Database candidate",
+                                "overlaps": ["temporal graph"],
+                                "differences": [],
+                                "quotes": [
+                                    {
+                                        "quote": DB_TEXT,
+                                        "interpretation": "DB support",
+                                        "confidence": 0.9,
+                                    }
+                                ],
+                                "possible_baseline": True,
+                                "relevance": 0.9,
+                                "confidence": 0.9,
+                            }
+                        ],
+                        "no_evidence_reason": None,
+                    }
+                )
+            )
+        self.step += 1
+        return response
+
+
+def test_single_task_uses_scope_plan_without_legacy_planner(tmp_path):
+    store = ReferenceStore(tmp_path)
+    internal = StructuredSourceRetrievalTool(
+        search_planner=FailingLegacyPlanner(),
+        source=RetrievalSource(
+            source_id="demo",
+            query_adapter=DemoQueryAdapter(),
+            search_tool=DatabaseBackend(),
+        ),
+        reference_store=store,
+    )
+    registry = ResearcherToolRegistry(
+        [
+            DatabaseSearchTool({"demo": internal}, store),
+            ReaderTool(ReferenceArtifactReaderTool(store)),
+        ]
+    )
+    model = DatabaseReaderModel()
+    workflow = TaskResearcherWorkflow(
+        model,
+        registry,
+        EvidenceCardBuilder(store),
+        config=TaskResearcherConfig(max_steps=4, max_tool_calls=3),
+    )
+    request = TaskResearchRequest(
+        subject_paper_id="single-task",
+        run_id="single-task-run",
+        novelty_point=NoveltyPoint(point_id="NP-1", claim="graph novelty"),
+        research_task=ResearchTask(
+            task_id="T-1",
+            novelty_point_id="NP-1",
+            task_type="search",
+            language="en",
+        ),
+        search_plan=minimal_search_plan("T-1", "NP-1"),
+    )
+
+    result = asyncio.run(workflow.ainvoke(request))
+
+    assert registry.names == ("database_search", "reader")
+    assert model.tool_sequence == ["database_search", "reader"]
+    assert len(result.research_bundles) == 1
+    assert len(result.research_bundles[0].search_executions) == 1
+    assert result.research_bundles[0].search_executions[0].parameters[
+        "strategy_id"
+    ] == request.search_plan.strategies[0].strategy_id
+    assert len(result.read_results) == 1
+    assert len(result.evidence_cards) == 1
+
+
 def test_scripted_four_tool_chain_shares_handles_and_builds_evidence(tmp_path):
     store = ReferenceStore(tmp_path)
     database_internal = StructuredSourceRetrievalTool(
@@ -145,7 +241,7 @@ def test_scripted_four_tool_chain_shares_handles_and_builds_evidence(tmp_path):
     assert "structured_source_retrieval" not in {tool.name for tool in model.options[0].tools}
     assert len(result.read_results) == 2
     assert len(result.evidence) == len(result.evidence_cards) == 2
-    assert result.research_bundles == []
+    assert len(result.research_bundles) == 1
     assert len(manifest.works) == 2
     assert len(manifest.source_records) == 2
     assert len(manifest.artifacts) == 2
