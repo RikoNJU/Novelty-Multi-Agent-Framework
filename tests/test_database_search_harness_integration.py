@@ -14,6 +14,7 @@ from novelty_agent_framework.tools.browser_backend import BrowserFetchResult
 from novelty_agent_framework.tools.database_search import DatabaseSearchTool, RetrievalSource, StructuredSourceRetrievalTool
 from novelty_agent_framework.tools.web_search_backend import SearchBackendResult, SearchHit
 from novelty_agent_framework.workflows import TaskResearcherConfig, TaskResearcherWorkflow
+from conftest import minimal_search_plan
 
 DB_TEXT = "Database abstract supports temporal graph summarization."
 WEB_TEXT = "Web page confirms the documented baseline behavior."
@@ -132,6 +133,7 @@ def test_scripted_four_tool_chain_shares_handles_and_builds_evidence(tmp_path):
         subject_paper_id="paper-four-tools", run_id="run-four-tools",
         novelty_point=NoveltyPoint(point_id="NP-1", claim="graph novelty", technical_features=["graph"]),
         research_task=ResearchTask(task_id="T-1", novelty_point_id="NP-1", task_type="search", language="en"),
+        search_plan=minimal_search_plan("T-1", "NP-1"),
     )
 
     result = asyncio.run(workflow.ainvoke(request))

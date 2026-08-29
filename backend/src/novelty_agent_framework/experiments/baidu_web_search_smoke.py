@@ -18,6 +18,7 @@ from ..persistence import ReferenceStore
 from ..schemas import NoveltyPoint, ResearchTask, TaskResearchRequest, WebSearchArguments
 from ..tools import BaiduSearchBackend, WebSearchTool
 from ..tools.web_search_backend import BAIDU_WEB_SEARCH_ENDPOINT
+from ._support import minimal_search_plan
 
 EXPERIMENT_OUTPUT_DIR = Path("outputs/experiments/baidu-web-search-smoke")
 REPORT_PATH = Path("docs/experiments/baidu-web-search-smoke/report.md")
@@ -51,6 +52,7 @@ def _scope() -> TaskResearchRequest:
             language="zh",
             description="验证百度搜索后端与 SourceRecord 持久化",
         ),
+        search_plan=minimal_search_plan("TASK-baidu-smoke", "NP-baidu-smoke"),
     )
 
 

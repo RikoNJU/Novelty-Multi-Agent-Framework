@@ -7,7 +7,7 @@ import json
 
 import pytest
 
-from novelty_agent_framework.agents import DemoCoordinator, DemoPointExtractor, DemoTaskResearcher
+from novelty_agent_framework.agents import DemoCoordinator, DemoPointExtractor, DemoSearchPlanner, DemoTaskResearcher
 from novelty_agent_framework.ports import ReviewResult, ValidationResult
 from novelty_agent_framework.schemas import (
     EvidenceCard,
@@ -80,6 +80,7 @@ def _workflow(*, reviewer=None, validator=None) -> NoveltyWorkflow:
         NoveltyWorkflowServices(
             coordinator=DemoCoordinator(),
             task_researcher=DemoTaskResearcher(),
+            search_planner=DemoSearchPlanner(),
             point_extractor=DemoPointExtractor(),
             validator=validator,
             reviewer=reviewer,

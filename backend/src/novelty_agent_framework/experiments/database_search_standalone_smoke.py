@@ -17,6 +17,7 @@ from ..config.factory import (
 from ..persistence import ReferenceStore
 from ..schemas import DatabaseSearchArguments, NoveltyPoint, ResearchTask, TaskResearchRequest
 from ..tools.database_search.factory import build_database_search_tool
+from ._support import minimal_search_plan
 
 
 class RecordingPlanner:
@@ -59,6 +60,7 @@ async def run(output_root: Path) -> dict[str, object]:
             task_type="search",
             language="en",
         ),
+        search_plan=minimal_search_plan("T-live", "NP-live"),
     )
     started = time.monotonic()
     observation = await tool.ainvoke(DatabaseSearchArguments(source_id="arxiv"), scope=scope)

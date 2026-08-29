@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime, timezone
 
 from novelty_agent_framework.persistence import (
     paper_workspace,
@@ -10,6 +11,7 @@ from novelty_agent_framework.persistence import (
     persist_paper_input,
     persist_report,
     persist_retrieval_plans,
+    persist_task_retrieval_audit,
 )
 from novelty_agent_framework.schemas import (
     EvidenceCard,
@@ -25,6 +27,11 @@ from novelty_agent_framework.schemas import (
     SearchConcept,
     SearchPlan,
     SearchStrategy,
+    ResearchBundle,
+    SearchExecution,
+    SearchExecutionStatus,
+    TaskResearchResult,
+    TaskResearchStatus,
 )
 
 
@@ -151,6 +158,44 @@ def test_retrieval_plans_group_tasks_by_novelty_point_order(tmp_path) -> None:
     assert len(plans[0]["search_plans"]) == 2
     assert len(plans[0]["executed_queries"]) == 2
     assert plans[2]["research_tasks"] == []
+
+
+def test_task_retrieval_audit_preserves_plans_and_adds_executions(tmp_path) -> None:
+    task = make_task("T1", "NP-1", "query one", 1)
+    plan = make_plan(task, "query one")
+    execution = SearchExecution(
+        execution_id="EXEC-1",
+        tool_name="database_search",
+        source_id="arxiv",
+        query="query one",
+        parameters={"strategy_id": "S1", "level": "strict"},
+        status=SearchExecutionStatus.SUCCEEDED,
+        started_at=datetime.now(timezone.utc),
+    )
+    result = TaskResearchResult(
+        task_id=task.task_id,
+        novelty_point_id=task.novelty_point_id,
+        status=TaskResearchStatus.COMPLETED,
+        research_bundles=[
+            ResearchBundle(
+                bundle_id="B1", producer="test", search_executions=[execution]
+            )
+        ],
+        steps_used=1,
+    )
+
+    path = persist_task_retrieval_audit(
+        make_paper(),
+        [task],
+        [result],
+        search_plans=[plan],
+        rounds=1,
+        output_root=tmp_path,
+    )
+    persisted = json.loads(path.read_text(encoding="utf-8"))
+    point = persisted["novelty_point_plans"][0]
+    assert point["search_plans"][0]["task_id"] == "T1"
+    assert point["executed_queries"][0]["query"] == "query one"
 
 
 def test_evidence_cards_keep_raw_accepted_and_rejected_results(tmp_path) -> None:

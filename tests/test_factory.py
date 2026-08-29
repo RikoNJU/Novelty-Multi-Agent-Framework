@@ -105,8 +105,10 @@ def test_services_hide_retrieval_implementation_details():
     assert {item.name for item in fields(NoveltyWorkflowServices)} == {
         "coordinator",
         "task_researcher",
+        "search_planner",
         "point_extractor",
         "validator",
+        "reviewer",
     }
     assert workflow.services.task_researcher.tools.names == (
         "database_search", "web_search", "browser", "reader")

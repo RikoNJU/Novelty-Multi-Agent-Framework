@@ -31,6 +31,7 @@ from ..tools import (
     ResearcherToolRegistry,
     WebSearchTool,
 )
+from ._support import minimal_search_plan
 
 EXPERIMENT_OUTPUT_DIR = Path("outputs/experiments/websearch-harness-smoke")
 REPORT_PATH = Path("docs/experiments/websearch-harness-smoke/report.md")
@@ -148,6 +149,7 @@ def _scope() -> TaskResearchRequest:
             language="zh",
             description="调用真实百度搜索并整理候选来源",
         ),
+        search_plan=minimal_search_plan("TASK-websearch-harness", "NP-websearch-harness"),
     )
 
 

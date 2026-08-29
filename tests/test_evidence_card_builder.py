@@ -26,6 +26,7 @@ from novelty_agent_framework.schemas import (
     WorkType,
 )
 from novelty_agent_framework.tools import EvidenceCardBuilder, ResearcherToolRegistry
+from conftest import minimal_search_plan
 
 NOW = datetime(2026, 8, 25, tzinfo=timezone.utc)
 SHA = "a" * 64
@@ -46,6 +47,7 @@ def scope() -> TaskResearchRequest:
             task_type="evidence",
             language="en",
         ),
+        search_plan=minimal_search_plan("TASK-1", "NP-1"),
     )
 
 

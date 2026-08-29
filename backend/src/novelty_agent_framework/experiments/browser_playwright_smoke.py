@@ -32,6 +32,7 @@ from ..tools import (
     ReferenceArtifactReaderTool,
     WebSearchTool,
 )
+from ._support import minimal_search_plan
 
 ROOT = Path(__file__).resolve().parents[4]
 OUTPUT_DIR = ROOT / "outputs/experiments/browser-playwright-smoke"
@@ -85,6 +86,7 @@ def _scope() -> TaskResearchRequest:
             task_type="browser_smoke",
             language="en",
         ),
+        search_plan=minimal_search_plan("TASK-browser", "NP-browser"),
     )
 
 

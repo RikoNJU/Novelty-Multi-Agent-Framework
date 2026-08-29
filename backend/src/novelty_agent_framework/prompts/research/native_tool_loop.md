@@ -50,5 +50,8 @@ NoveltyPoint:
 ResearchTask:
 {research_task_json}
 
+SearchPlan:
+{search_plan_json}
+
 Required finish schema:
 {finish_schema_json}

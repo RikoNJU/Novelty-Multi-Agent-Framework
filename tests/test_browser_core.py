@@ -22,6 +22,7 @@ from novelty_agent_framework.tools import (
     BrowserTool,
     ResearcherToolRegistry,
 )
+from conftest import minimal_search_plan
 
 
 class StubBrowserBackend:
@@ -61,6 +62,7 @@ def scope() -> TaskResearchRequest:
             task_type="browse",
             language="en",
         ),
+        search_plan=minimal_search_plan("TASK-1", "NP-1"),
     )
 
 

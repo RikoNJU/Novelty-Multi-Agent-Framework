@@ -12,6 +12,7 @@ from novelty_agent_framework.agents import (
     DefaultEvidenceValidator,
     DemoCoordinator,
     DemoPointExtractor,
+    DemoSearchPlanner,
 )
 from novelty_agent_framework.ports import ValidationResult
 from novelty_agent_framework.schemas import (
@@ -108,12 +109,22 @@ class RecordingValidator:
         return self.delegate.validate(cards, tasks=tasks)
 
 
-def build_workflow(researcher=None, validator=None, **config):
+class RecordingPlanner(DemoSearchPlanner):
+    def __init__(self):
+        self.calls = []
+
+    def plan(self, point, task):
+        self.calls.append((point, task))
+        return super().plan(point, task)
+
+
+def build_workflow(researcher=None, validator=None, planner=None, **config):
     researcher = researcher or RecordingTaskResearcher()
     return NoveltyWorkflow(
         NoveltyWorkflowServices(
             coordinator=DemoCoordinator(),
             task_researcher=researcher,
+            search_planner=planner or DemoSearchPlanner(),
             point_extractor=DemoPointExtractor(),
             validator=validator,
         ),
@@ -126,13 +137,16 @@ def test_graph_replaces_fixed_retrieval_nodes():
     assert "dispatch_research_tasks" in nodes
     assert "run_research_task" in nodes
     assert "validate_evidence" in nodes
+    assert "dispatch_planning_tasks" in nodes
+    assert "plan_research_task" in nodes
     assert "plan_search" not in nodes
     assert "retrieve_candidates" not in nodes
     assert "parallel_research" not in nodes
 
 
 def test_each_task_is_isolated_and_fan_out_runs_concurrently():
-    workflow, researcher = build_workflow(max_concurrency=4)
+    planner = RecordingPlanner()
+    workflow, researcher = build_workflow(planner=planner, max_concurrency=4)
     result = workflow.run(make_paper(claims=2))
     assert len(researcher.calls) == 4
     assert researcher.max_active > 1
@@ -141,6 +155,12 @@ def test_each_task_is_isolated_and_fan_out_runs_concurrently():
         for call in researcher.calls
     )
     assert len(result.evidence_cards) == 4
+    assert len(planner.calls) == 4
+    assert all(
+        call.search_plan.task_id == call.research_task.task_id
+        and call.search_plan.novelty_point_id == call.novelty_point.point_id
+        for call in researcher.calls
+    )
 
 
 def test_validator_runs_once_after_current_round_fan_in():
@@ -162,7 +182,8 @@ def test_single_task_failure_does_not_cancel_siblings():
 
 def test_supplement_dispatches_only_new_tasks():
     researcher = RecordingTaskResearcher(first_round_empty=True)
-    workflow, _ = build_workflow(researcher, max_rounds=2)
+    planner = RecordingPlanner()
+    workflow, _ = build_workflow(researcher, planner=planner, max_rounds=2)
     result = workflow.run(make_paper())
     assert result.rounds == 2
     assert [call.research_task.task_id for call in researcher.calls] == [
@@ -172,6 +193,7 @@ def test_supplement_dispatches_only_new_tasks():
         "T-R2-2",
     ]
     assert result.evidence_cards
+    assert len(planner.calls) == 4
 
 
 class NoTaskCoordinator(DemoCoordinator):
@@ -189,6 +211,7 @@ def test_no_tasks_branch_does_not_hang():
         NoveltyWorkflowServices(
             coordinator=NoTaskCoordinator(),
             task_researcher=researcher,
+            search_planner=DemoSearchPlanner(),
             point_extractor=DemoPointExtractor(),
         ),
         NoveltyWorkflowConfig(max_rounds=1),
@@ -208,6 +231,7 @@ def test_task_audit_and_compatibility_files_are_written():
         Path("outputs/paper-test/retrieval-plans.json").read_text(encoding="utf-8")
     )
     assert retrieval["paper_id"] == "paper-test"
+    assert all(plan["search_plans"] for plan in retrieval["novelty_point_plans"])
     assert Path("outputs/paper-test/evidence-cards.json").is_file()
 
 

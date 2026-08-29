@@ -13,6 +13,7 @@ from pathlib import Path
 from ..config import effective_safe_config, load_application_config
 from ..config.factory import build_workflow
 from ..schemas import NoveltyPoint, ResearchTask, TaskResearchRequest
+from ._support import minimal_search_plan
 
 
 class MeasuredClient:
@@ -89,6 +90,7 @@ async def run(*, require_all: bool = False) -> dict[str, object]:
             task_id="T-live-four", novelty_point_id="NP-live-four",
             task_type="search", language="en",
         ),
+        search_plan=minimal_search_plan("T-live-four", "NP-live-four"),
     )
     started = time.monotonic()
     result = await researcher.ainvoke(request)

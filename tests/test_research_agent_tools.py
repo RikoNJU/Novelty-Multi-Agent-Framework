@@ -17,6 +17,7 @@ from novelty_agent_framework.schemas import (
     ResearchTask,
     TaskResearchRequest,
 )
+from conftest import minimal_search_plan
 
 QUOTE = "Dynamic neighbor sampling reduces communication overhead."
 
@@ -313,6 +314,7 @@ def test_decide_returns_strict_discriminated_action() -> None:
         run_id="run-1",
         novelty_point=make_point(),
         research_task=make_task(),
+        search_plan=minimal_search_plan("TASK-1", "NP-1"),
     )
     action = asyncio.run(
         NoveltyResearchAgent(model_client=client).decide(
@@ -333,6 +335,7 @@ def test_decide_repairs_invalid_json_once_then_fails() -> None:
         run_id="run-1",
         novelty_point=make_point(),
         research_task=make_task(),
+        search_plan=minimal_search_plan("TASK-1", "NP-1"),
     )
     repaired = AsyncSequenceModelClient(
         "not-json",

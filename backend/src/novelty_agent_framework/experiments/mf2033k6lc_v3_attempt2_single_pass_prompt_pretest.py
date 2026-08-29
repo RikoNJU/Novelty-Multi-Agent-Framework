@@ -285,6 +285,9 @@ async def run() -> dict[str, Any]:
             run_id="v3-attempt2-single-pass-prompt-pretest",
             novelty_point=point_by_id[task.novelty_point_id],
             research_task=task,
+            search_plan=built.services.search_planner.plan(
+                point_by_id[task.novelty_point_id], task
+            ),
         )
         key = f"{task.novelty_point_id}/{task.task_id}"
         token = TASK_KEY.set(key)

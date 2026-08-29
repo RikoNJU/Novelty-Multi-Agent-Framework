@@ -16,6 +16,7 @@ from ..schemas import (
     PaperInput,
     RejectedEvidence,
     ResearchTask,
+    SearchPlan,
     TaskResearchResult,
     WorkflowIssue,
 )
@@ -24,6 +25,7 @@ from ..ports import (
     EvidenceReviewer,
     NoveltyCoordinator,
     NoveltyPointExtractor,
+    SearchPlanner,
     TaskResearcher,
 )
 
@@ -40,6 +42,8 @@ class NoveltyState(TypedDict, total=False):
     subject_paper_id: str
     current_point: NoveltyPoint
     current_task: ResearchTask
+    current_search_plan: SearchPlan
+    search_plans: Annotated[list[SearchPlan], add]
     task_research_results: Annotated[list[TaskResearchResult], add]
     raw_evidence: Annotated[list[Evidence], add]
     raw_evidence_cards: Annotated[list[EvidenceCard], add]
@@ -80,6 +84,7 @@ class NoveltyWorkflowServices:
 
     coordinator: NoveltyCoordinator
     task_researcher: TaskResearcher
+    search_planner: SearchPlanner
     point_extractor: NoveltyPointExtractor | None = None
     validator: EvidenceValidator | None = None
     reviewer: EvidenceReviewer | None = None

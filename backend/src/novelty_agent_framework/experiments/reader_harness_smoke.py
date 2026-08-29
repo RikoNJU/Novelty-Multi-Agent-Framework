@@ -25,6 +25,7 @@ from ..core import ToolCallHarness, ToolCallHarnessConfig
 from ..persistence import ReferenceStore
 from ..schemas import NoveltyPoint, ReferenceReadRequest, ResearchTask, TaskResearchRequest
 from ..tools import ReaderTool, ReferenceArtifactReaderTool, ResearcherToolRegistry
+from ._support import minimal_search_plan
 
 SUBJECT_PAPER_ID = "MF2033k6lC"
 ARTIFACT_ID = "art_1b4f8b3b8cb082d6ef83ed76"
@@ -115,6 +116,7 @@ def _scope() -> TaskResearchRequest:
             language="zh",
             description="读取指定 Artifact 并概括文本内容",
         ),
+        search_plan=minimal_search_plan("TASK-reader-smoke", "NP-reader-smoke"),
     )
 
 

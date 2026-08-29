@@ -318,6 +318,7 @@ async def run() -> dict[str, Any]:
         NoveltyWorkflowServices(
             coordinator=coordinator,
             task_researcher=recording,
+            search_planner=built.services.search_planner,
             point_extractor=PersistedPointExtractor(points),
             validator=PassthroughValidator(),
         ),

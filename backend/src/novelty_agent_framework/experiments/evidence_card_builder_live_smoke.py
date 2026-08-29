@@ -35,6 +35,7 @@ from ..tools import (
     ResearcherToolRegistry,
     WebSearchTool,
 )
+from ._support import minimal_search_plan
 
 OUTPUT_DIR = Path("outputs/experiments/evidence-card-builder-live-smoke")
 REPORT_PATH = Path("docs/experiments/evidence-card-builder-live-smoke/report.md")
@@ -126,6 +127,7 @@ def _scope() -> TaskResearchRequest:
             task_type="builder_smoke",
             language="zh",
         ),
+        search_plan=minimal_search_plan("TASK-builder", "NP-builder"),
     )
 
 

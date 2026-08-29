@@ -24,6 +24,7 @@ from novelty_agent_framework.tools import (
     SearchHit,
     WebSearchTool,
 )
+from conftest import minimal_search_plan
 
 PUBLISHED_AT = datetime(2026, 8, 20, tzinfo=timezone.utc)
 
@@ -41,6 +42,7 @@ def scope(paper_id: str = "paper-1") -> TaskResearchRequest:
             task_type="search",
             language="en",
         ),
+        search_plan=minimal_search_plan("TASK-1", "NP-1"),
     )
 
 

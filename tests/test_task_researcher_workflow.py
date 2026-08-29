@@ -1,18 +1,23 @@
 import asyncio
 import json
 
+import pytest
+from pydantic import ValidationError
+
 from backend.env import ModelResponse, ModelToolCall
 from novelty_agent_framework.schemas import (EvidenceCardBuilderResult, NoveltyPoint,
     ResearcherToolObservation, ResearchTask, StrictModel, TaskResearchRequest)
 from novelty_agent_framework.tools import ResearcherToolRegistry
 from novelty_agent_framework.workflows import TaskResearcherConfig, TaskResearcherWorkflow
+from conftest import minimal_search_plan
 
 
 def scope():
     return TaskResearchRequest(subject_paper_id="paper-1", run_id="run-1",
         novelty_point=NoveltyPoint(point_id="NP-1", claim="claim", technical_features=[]),
         research_task=ResearchTask(task_id="T-1", novelty_point_id="NP-1",
-                                   task_type="search", language="en"))
+                                   task_type="search", language="en"),
+        search_plan=minimal_search_plan("T-1", "NP-1"))
 
 
 class ReaderArgs(StrictModel):
@@ -34,8 +39,10 @@ class FakeReader:
 
 
 class FakeModel:
-    def __init__(self, responses): self.responses = list(responses)
-    async def acomplete(self, messages, *, options=None): return self.responses.pop(0)
+    def __init__(self, responses): self.responses, self.messages = list(responses), []
+    async def acomplete(self, messages, *, options=None):
+        self.messages.append(messages)
+        return self.responses.pop(0)
 
 
 class FakeBuilder:
@@ -49,6 +56,18 @@ class FakeBuilder:
 
 def finish(reason="empty"):
     return ModelResponse(content=json.dumps({"cards": [], "no_evidence_reason": reason}))
+
+
+def test_request_requires_a_bound_search_plan():
+    payload = scope().model_dump(mode="python")
+    payload.pop("search_plan")
+    with pytest.raises(ValidationError):
+        TaskResearchRequest.model_validate(payload)
+
+    payload = scope().model_dump(mode="python")
+    payload["search_plan"]["task_id"] = "wrong-task"
+    with pytest.raises(ValidationError, match="search_plan must belong"):
+        TaskResearchRequest.model_validate(payload)
 
 
 def test_native_reader_trace_is_trusted_and_arguments_are_not_clamped():
@@ -81,8 +100,11 @@ def test_builder_failure_is_partial():
 
 
 def test_no_evidence_finish_is_completed_with_warning():
-    result = asyncio.run(TaskResearcherWorkflow(FakeModel([finish("nothing relevant")]),
+    model = FakeModel([finish("nothing relevant")])
+    result = asyncio.run(TaskResearcherWorkflow(model,
         ResearcherToolRegistry(), FakeBuilder()).ainvoke(scope()))
     assert result.status.value == "completed"
     assert result.evidence == result.evidence_cards == []
     assert result.warnings == ["no evidence: empty"]
+    assert "search_plan_json:" in model.messages[0][1].content
+    assert '"task_id": "T-1"' in model.messages[0][1].content

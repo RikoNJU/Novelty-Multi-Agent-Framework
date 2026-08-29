@@ -361,6 +361,7 @@ def build_workflow(
         NoveltyWorkflowServices(
             coordinator=coordinator,
             task_researcher=task_researcher,
+            search_planner=search_planner,
             point_extractor=point_extractor,
         ),
         config=NoveltyWorkflowConfig(
@@ -478,6 +479,7 @@ def _build_workflow_from_application_config(
         NoveltyWorkflowServices(
             coordinator=coordinator,
             task_researcher=task_researcher,
+            search_planner=search_planner,
             point_extractor=point_extractor,
         ),
         config=NoveltyWorkflowConfig(

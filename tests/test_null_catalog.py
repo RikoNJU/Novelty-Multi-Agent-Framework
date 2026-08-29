@@ -100,6 +100,7 @@ def _workflow(source: RetrievalSource) -> NoveltyWorkflow:
         NoveltyWorkflowServices(
             coordinator=DemoCoordinator(),
             task_researcher=task_researcher,
+            search_planner=DemoSearchPlanner(),
             point_extractor=DemoPointExtractor(),
         ),
         NoveltyWorkflowConfig(max_rounds=1),

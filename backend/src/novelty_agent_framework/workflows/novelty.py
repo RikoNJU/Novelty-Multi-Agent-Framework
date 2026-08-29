@@ -18,6 +18,7 @@ from novelty_agent_framework.persistence import (
     persist_evidence_cards,
     persist_novelty_points,
     persist_report,
+    persist_retrieval_plans,
     persist_task_research_result,
     persist_task_retrieval_audit,
     persist_workflow_input,
@@ -28,6 +29,7 @@ from ..agents import (
     DefaultEvidenceValidator,
     DemoCoordinator,
     DemoPointExtractor,
+    DemoSearchPlanner,
     DemoTaskResearcher,
     build_paper_digest,
 )
@@ -41,6 +43,7 @@ from ..schemas import (
     PaperInput,
     RejectedEvidence,
     ResearchTask,
+    SearchPlan,
     TaskResearchRequest,
     TaskResearchResult,
     TaskResearchStatus,
@@ -83,6 +86,7 @@ class NoveltyWorkflow:
             NoveltyWorkflowServices(
                 coordinator=DemoCoordinator(),
                 task_researcher=DemoTaskResearcher(),
+                search_planner=DemoSearchPlanner(),
                 point_extractor=DemoPointExtractor(),
             )
         )
@@ -102,6 +106,8 @@ class NoveltyWorkflow:
         builder = StateGraph(NoveltyState)
         builder.add_node("extract_points", self._extract_points)
         builder.add_node("plan", self._plan)
+        builder.add_node("dispatch_planning_tasks", self._dispatch_node)
+        builder.add_node("plan_research_task", self._plan_research_task)
         builder.add_node("dispatch_research_tasks", self._dispatch_node)
         builder.add_node("run_research_task", self._run_research_task)
         builder.add_node("validate_evidence", self._validate_evidence)
@@ -113,7 +119,13 @@ class NoveltyWorkflow:
 
         builder.add_edge(START, "extract_points")
         builder.add_edge("extract_points", "plan")
-        builder.add_edge("plan", "dispatch_research_tasks")
+        builder.add_edge("plan", "dispatch_planning_tasks")
+        builder.add_conditional_edges(
+            "dispatch_planning_tasks",
+            self._dispatch_planning_tasks,
+            ["plan_research_task", "dispatch_research_tasks"],
+        )
+        builder.add_edge("plan_research_task", "dispatch_research_tasks")
         builder.add_conditional_edges(
             "dispatch_research_tasks",
             self._dispatch_research_tasks,
@@ -130,7 +142,7 @@ class NoveltyWorkflow:
                 "synthesize": "synthesize_report",
             },
         )
-        builder.add_edge("plan_supplement", "dispatch_research_tasks")
+        builder.add_edge("plan_supplement", "dispatch_planning_tasks")
         builder.add_edge("synthesize_report", "render_report")
         builder.add_edge("render_report", END)
         return builder.compile()
@@ -201,15 +213,58 @@ class NoveltyWorkflow:
 
         return {}
 
+    async def _dispatch_planning_tasks(self, state: NoveltyState):
+        tasks = state.get("research_tasks", [])
+        if not tasks:
+            return "dispatch_research_tasks"
+        points = {item.point_id: item for item in state.get("novelty_points", [])}
+        sends = [
+            Send(
+                "plan_research_task",
+                {"current_point": points[task.novelty_point_id], "current_task": task},
+            )
+            for task in tasks
+            if task.novelty_point_id in points
+        ]
+        return sends or "dispatch_research_tasks"
+
+    async def _plan_research_task(self, state: NoveltyState) -> dict[str, Any]:
+        point = state["current_point"]
+        task = state["current_task"]
+        try:
+            plan_value = self.services.search_planner.plan(point, task)
+            plan = SearchPlan.model_validate(await _resolve(plan_value))
+        except (ValidationError, TypeError, ValueError) as exc:
+            raise WorkflowExecutionError(
+                f"Planner 未为 {point.point_id} / {task.task_id} 生成合法 SearchPlan：{exc}"
+            ) from exc
+        if plan.task_id != task.task_id or plan.novelty_point_id != point.point_id:
+            raise WorkflowExecutionError(
+                f"SearchPlan 与任务绑定不一致：{point.point_id} / {task.task_id}"
+            )
+        return {"search_plans": [plan]}
+
     async def _dispatch_research_tasks(self, state: NoveltyState):
         tasks = state.get("research_tasks", [])
         if not tasks:
             return "validate_evidence"
         points = {item.point_id: item for item in state.get("novelty_points", [])}
+        plans = {
+            (item.novelty_point_id, item.task_id): item
+            for item in state.get("search_plans", [])
+        }
+        persist_retrieval_plans(
+            state["paper"],
+            state.get("all_research_tasks", []),
+            search_plans=state.get("search_plans", []),
+            rounds=state.get("rounds", 0),
+            point_order=[item.point_id for item in state.get("novelty_points", [])],
+        )
         sends = []
         for task in tasks:
             point = points.get(task.novelty_point_id)
-            if point is None:
+            plan = plans.get((task.novelty_point_id, task.task_id))
+            if point is None or plan is None:
                 continue
             sends.append(
                 Send(
@@ -219,6 +274,7 @@ class NoveltyWorkflow:
                         "run_id": state["run_id"],
                         "current_point": point,
                         "current_task": task,
+                        "current_search_plan": plan,
                     },
                 )
             )
@@ -232,6 +288,7 @@ class NoveltyWorkflow:
             run_id=state["run_id"],
             novelty_point=point,
             research_task=task,
+            search_plan=state["current_search_plan"],
         )
         try:
             result = TaskResearchResult.model_validate(
@@ -273,6 +330,7 @@ class NoveltyWorkflow:
             state["paper"],
             state.get("all_research_tasks", []),
             state.get("task_research_results", []),
+            search_plans=state.get("search_plans", []),
             rounds=state.get("rounds", 0),
             point_order=[item.point_id for item in state.get("novelty_points", [])],
         )
@@ -489,6 +547,7 @@ class NoveltyWorkflow:
             "task_research_results": [],
             "raw_evidence": [],
             "raw_evidence_cards": [],
+            "search_plans": [],
             "validator_accepted_cards": [],
             "evidence_cards": [],
             "rejected_evidence": [],

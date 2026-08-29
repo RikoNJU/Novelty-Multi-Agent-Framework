@@ -16,6 +16,7 @@ from novelty_agent_framework.tools import (
     WebSearchTool,
 )
 import novelty_agent_framework.tools.web_search_backend as backend_module
+from conftest import minimal_search_plan
 
 
 class FakeAsyncClient:
@@ -96,6 +97,7 @@ def scope() -> TaskResearchRequest:
             task_type="search",
             language="zh",
         ),
+        search_plan=minimal_search_plan("TASK-1", "NP-1"),
     )
 
 

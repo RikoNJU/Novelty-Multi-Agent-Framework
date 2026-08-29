@@ -7,7 +7,7 @@ from typing import Annotated, Any, Literal
 
 from pydantic import Field, StringConstraints, model_validator
 
-from .domain import EvidenceCard, NoveltyPoint, ResearchTask, StrictModel
+from .domain import EvidenceCard, NoveltyPoint, ResearchTask, SearchPlan, StrictModel
 from .references import Evidence, ResearchBundle
 from .research_tools import ResearchFinishDraft, ReferenceReadResult
 
@@ -19,11 +19,18 @@ class TaskResearchRequest(StrictModel):
     run_id: NonEmptyStr
     novelty_point: NoveltyPoint
     research_task: ResearchTask
+    search_plan: SearchPlan
 
     @model_validator(mode="after")
     def bind_task(self) -> TaskResearchRequest:
         if self.research_task.novelty_point_id != self.novelty_point.point_id:
             raise ValueError("research_task must belong to novelty_point")
+        if self.search_plan.task_id != self.research_task.task_id:
+            raise ValueError("search_plan must belong to research_task")
+        if self.search_plan.novelty_point_id != self.research_task.novelty_point_id:
+            raise ValueError("search_plan must belong to research_task novelty_point")
+        if self.search_plan.novelty_point_id != self.novelty_point.point_id:
+            raise ValueError("search_plan must belong to novelty_point")
         return self
 
 

@@ -472,20 +472,18 @@ def persist_task_retrieval_audit(
     tasks: Sequence[ResearchTask],
     results: Sequence[TaskResearchResult],
     *,
+    search_plans: Sequence[SearchPlan] = (),
     rounds: int,
     point_order: Sequence[str] = (),
     output_root: str | Path = DEFAULT_OUTPUTS_DIR,
 ) -> Path:
     """从任务结果聚合真实 SearchExecution，保留旧 retrieval-plans 文件。"""
 
-    task_by_key = {(task.novelty_point_id, task.task_id): task for task in tasks}
-    grouped: dict[str, list[dict[str, Any]]] = {}
+    executed_queries: list[dict[str, Any]] = []
     for result in results:
-        key = (result.novelty_point_id, result.task_id)
-        task = task_by_key.get(key)
         for bundle in result.research_bundles:
             for execution in bundle.search_executions:
-                grouped.setdefault(result.novelty_point_id, []).append(
+                executed_queries.append(
                     {
                         "database": execution.source_id,
                         "task_id": result.task_id,
@@ -499,38 +497,15 @@ def persist_task_retrieval_audit(
                         ],
                     }
                 )
-        if task is not None:
-            grouped.setdefault(result.novelty_point_id, [])
-    ordered = list(dict.fromkeys([*point_order, *grouped]))
-    plans = []
-    for sequence, point_id in enumerate(ordered, start=1):
-        point_tasks = [task for task in tasks if task.novelty_point_id == point_id]
-        executed = grouped.get(point_id, [])
-        plans.append(
-            {
-                "sequence": sequence,
-                "novelty_point_id": point_id,
-                "research_tasks": [
-                    task.model_dump(mode="json") for task in point_tasks
-                ],
-                "search_plans": [],
-                "executed_queries": executed,
-                "query_plan": {
-                    "queries": _unique(item["query"] for item in executed),
-                    "attempts": sorted({task.attempt for task in point_tasks}),
-                },
-            }
-        )
-    path = paper_workspace(paper, output_root=output_root) / "retrieval-plans.json"
-    _atomic_write_json(
-        path,
-        {
-            "paper_id": paper.paper_id,
-            "rounds": rounds,
-            "novelty_point_plans": plans,
-        },
+    return persist_retrieval_plans(
+        paper,
+        tasks,
+        search_plans=search_plans,
+        executed_queries=executed_queries,
+        rounds=rounds,
+        point_order=point_order,
+        output_root=output_root,
     )
-    return path
 
 
 def persist_report(

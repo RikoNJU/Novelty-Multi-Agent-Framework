@@ -132,6 +132,7 @@ async def run():
     workflow = NoveltyWorkflow(NoveltyWorkflowServices(
         coordinator=built.services.coordinator,
         task_researcher=recording,
+        search_planner=built.services.search_planner,
         point_extractor=PersistedPointExtractor(points),
         validator=PassthroughValidator()),
         NoveltyWorkflowConfig(max_rounds=1, max_concurrency=1,

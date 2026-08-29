@@ -11,7 +11,7 @@ from pathlib import Path
 
 from backend.env.model_client import _load_dev_env
 
-from ..agents import DemoCoordinator
+from ..agents import DemoCoordinator, DemoSearchPlanner
 from ..config.factory import build_model_registry, build_prompt_library, load_config
 from ..persistence import ReferenceStore
 from ..ports import ValidationResult
@@ -120,6 +120,7 @@ async def run():
     recording = RecordingResearcher(researcher)
     workflow = NoveltyWorkflow(NoveltyWorkflowServices(
         coordinator=OneTaskCoordinator(), task_researcher=recording,
+        search_planner=DemoSearchPlanner(),
         point_extractor=FixedPointExtractor(), validator=PassthroughValidator()),
         NoveltyWorkflowConfig(max_rounds=1, max_concurrency=1,
                               minimum_evidence_per_point=1))

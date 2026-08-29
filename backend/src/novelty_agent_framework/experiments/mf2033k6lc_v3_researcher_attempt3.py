@@ -203,6 +203,7 @@ async def run() -> dict[str, Any]:
         run_id="v3-researcher-attempt3",
         novelty_point=point,
         research_task=task,
+        search_plan=built.services.search_planner.plan(point, task),
     )
 
     researcher = built.services.task_researcher

@@ -29,6 +29,7 @@ from novelty_agent_framework.tools import (
     ReferenceArtifactReaderTool,
     ResearcherToolRegistry,
 )
+from conftest import minimal_search_plan
 
 PAPER_ID = "paper-test"
 WORK_ID = "wrk_test"
@@ -108,6 +109,7 @@ def research_scope() -> TaskResearchRequest:
             task_type="read",
             language="en",
         ),
+        search_plan=minimal_search_plan("TASK-1", "NP-1"),
     )
 
 

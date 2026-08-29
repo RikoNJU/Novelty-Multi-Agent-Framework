@@ -27,6 +27,7 @@ from ..tools import (
     ResearcherToolRegistry,
     WebSearchTool,
 )
+from ._support import minimal_search_plan
 
 OUTPUT_DIR = Path("outputs/experiments/researcher-three-tool-smoke")
 REPORT_PATH = Path("docs/experiments/researcher-three-tool-smoke/report.md")
@@ -106,6 +107,7 @@ def _scope() -> TaskResearchRequest:
             task_type="three_tool_smoke",
             language="zh",
         ),
+        search_plan=minimal_search_plan("TASK-three-tool", "NP-three-tool"),
     )
 
 

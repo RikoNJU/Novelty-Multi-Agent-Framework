@@ -139,6 +139,9 @@ class TaskResearcherWorkflow:
             "research_task_json": json.dumps(
                 request.research_task.model_dump(mode="json"), ensure_ascii=False
             ),
+            "search_plan_json": json.dumps(
+                request.search_plan.model_dump(mode="json"), ensure_ascii=False
+            ),
             "finish_schema_json": json.dumps(
                 ResearchFinishDraft.model_json_schema(), ensure_ascii=False
             ),

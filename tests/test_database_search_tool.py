@@ -23,6 +23,7 @@ from novelty_agent_framework.tools.database_search import (
     RetrievalSource,
     StructuredSourceRetrievalTool,
 )
+from conftest import minimal_search_plan
 
 
 class Planner:
@@ -81,6 +82,7 @@ def scope() -> TaskResearchRequest:
         research_task=ResearchTask(
             task_id="T-1", novelty_point_id="NP-1", task_type="search", language="en"
         ),
+        search_plan=minimal_search_plan("T-1", "NP-1"),
     )
 
 

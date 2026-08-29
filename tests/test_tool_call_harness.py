@@ -21,6 +21,7 @@ from novelty_agent_framework.schemas import (
     TaskResearchRequest,
 )
 from novelty_agent_framework.tools import ResearcherToolRegistry
+from conftest import minimal_search_plan
 
 
 def scope() -> TaskResearchRequest:
@@ -36,6 +37,7 @@ def scope() -> TaskResearchRequest:
             task_type="search",
             language="en",
         ),
+        search_plan=minimal_search_plan("T-1", "NP-1"),
     )
 
 
