@@ -8,6 +8,11 @@ from .demo import (
     DemoTaskResearcher,
 )
 from .evidence_validator import DefaultEvidenceValidator, EvidenceValidationConfig
+from .evidence_reviewer import (
+    DemoEvidenceReviewer,
+    EvidenceReviewerConfig,
+    NoveltyEvidenceReviewer,
+)
 from .point_extractor import (
     DemoPointExtractor,
     NoveltyPointExtractorAgent,
@@ -21,12 +26,15 @@ __all__ = [
     "DemoQueryAdapter",
     "DefaultEvidenceValidator",
     "DemoCoordinator",
+    "DemoEvidenceReviewer",
     "DemoResearchAgent",
     "DemoSearchPlanner",
     "DemoSearchTool",
     "DemoTaskResearcher",
     "EvidenceValidationConfig",
+    "EvidenceReviewerConfig",
     "NoveltyCoordinatorAgent",
+    "NoveltyEvidenceReviewer",
     "NoveltyPointExtractorAgent",
     "NoveltyResearchAgent",
     "SearchPlannerAgent",

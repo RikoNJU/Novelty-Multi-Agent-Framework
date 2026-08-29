@@ -20,6 +20,7 @@ from typing import Any, Mapping, Sequence
 
 from .schemas import (
     EvidenceCard,
+    EvidenceReviewDecision,
     NoveltyPoint,
     NoveltyReport,
     PaperDocument,
@@ -417,25 +418,33 @@ def persist_evidence_cards(
     raw_cards: Sequence[EvidenceCard],
     accepted_cards: Sequence[EvidenceCard],
     rejected_evidence: Sequence[RejectedEvidence],
+    validator_accepted_cards: Sequence[EvidenceCard] | None = None,
+    review_decisions: Sequence[EvidenceReviewDecision] | None = None,
     output_root: str | Path = DEFAULT_OUTPUTS_DIR,
 ) -> Path:
     """写出证据校验前后结果，保留拒绝原因供审计。"""
 
     workspace = paper_workspace(paper, output_root=output_root)
     path = workspace / "evidence-cards.json"
-    _write_json(
-        path,
-        {
-            "paper_id": paper.paper_id,
-            "raw_evidence_cards": [card.model_dump(mode="json") for card in raw_cards],
-            "accepted_evidence_cards": [
-                card.model_dump(mode="json") for card in accepted_cards
-            ],
-            "rejected_evidence": [
-                item.model_dump(mode="json") for item in rejected_evidence
-            ],
-        },
-    )
+    payload: dict[str, Any] = {
+        "paper_id": paper.paper_id,
+        "raw_evidence_cards": [card.model_dump(mode="json") for card in raw_cards],
+        "accepted_evidence_cards": [
+            card.model_dump(mode="json") for card in accepted_cards
+        ],
+        "rejected_evidence": [
+            item.model_dump(mode="json") for item in rejected_evidence
+        ],
+    }
+    if validator_accepted_cards is not None:
+        payload["validator_accepted_cards"] = [
+            card.model_dump(mode="json") for card in validator_accepted_cards
+        ]
+    if review_decisions is not None:
+        payload["review_decisions"] = [
+            decision.model_dump(mode="json") for decision in review_decisions
+        ]
+    _write_json(path, payload)
     return path
 
 

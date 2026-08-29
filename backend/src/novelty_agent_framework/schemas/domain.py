@@ -251,6 +251,33 @@ class WorkflowIssue(StrictModel):
     task_id: str | None = None
 
 
+class ReviewVerdict(StrEnum):
+    """证据 Reviewer 对单张 Evidence Card 的裁定。"""
+
+    ACCEPT = "accept"
+    REJECT = "reject"
+    NEEDS_MORE_EVIDENCE = "needs_more_evidence"
+
+
+class EvidenceReviewIssue(StrictModel):
+    """Reviewer 对单张证据卡发现的具体问题。"""
+
+    code: str
+    message: str
+    severity: IssueSeverity = IssueSeverity.WARNING
+    field: str | None = None
+    source_index: int | None = None
+
+
+class EvidenceReviewDecision(StrictModel):
+    """Reviewer 对单张 Evidence Card 的结构化决定。"""
+
+    card_id: str
+    verdict: ReviewVerdict
+    issues: list[EvidenceReviewIssue] = Field(default_factory=list)
+    reviewed_confidence: float = Field(ge=0.0, le=1.0)
+
+
 class NoveltyRunResult(StrictModel):
     """一次完整工作流的可测试结果。"""
 

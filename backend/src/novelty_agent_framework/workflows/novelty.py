@@ -105,6 +105,7 @@ class NoveltyWorkflow:
         builder.add_node("dispatch_research_tasks", self._dispatch_node)
         builder.add_node("run_research_task", self._run_research_task)
         builder.add_node("validate_evidence", self._validate_evidence)
+        builder.add_node("review_evidence", self._review_evidence)
         builder.add_node("assess_coverage", self._assess_coverage)
         builder.add_node("plan_supplement", self._plan_supplement)
         builder.add_node("synthesize_report", self._synthesize_report)
@@ -119,7 +120,8 @@ class NoveltyWorkflow:
             ["run_research_task", "validate_evidence"],
         )
         builder.add_edge("run_research_task", "validate_evidence")
-        builder.add_edge("validate_evidence", "assess_coverage")
+        builder.add_edge("validate_evidence", "review_evidence")
+        builder.add_edge("review_evidence", "assess_coverage")
         builder.add_conditional_edges(
             "assess_coverage",
             self._route_after_assessment,
@@ -294,15 +296,95 @@ class NoveltyWorkflow:
             )
             for code, message, severity, task_id in result.issues
         ]
+        return {
+            "validator_accepted_cards": list(result.accepted),
+            "evidence_cards": list(result.accepted),
+            "rejected_evidence": rejected,
+            "issues": issues,
+        }
+
+    async def _review_evidence(self, state: NoveltyState) -> dict[str, Any]:
+        """审查 Validator 放行的卡片，并持久化两阶段审计结果。"""
+
+        validator_accepted = state.get("validator_accepted_cards", [])
+        if not validator_accepted:
+            validator_accepted = state.get("evidence_cards", [])
+        rejected = list(state.get("rejected_evidence", []))
+        if self.services.reviewer is None:
+            accepted = list(validator_accepted)
+            decisions = []
+            issues = []
+            audit_decisions = None
+        else:
+            try:
+                result = await _resolve(
+                    self.services.reviewer.review(
+                        validator_accepted,
+                        points=state.get("novelty_points", []),
+                        tasks=state.get("all_research_tasks", []),
+                    )
+                )
+                accepted = list(result.accepted)
+                decisions = list(result.decisions)
+                rejected.extend(
+                    RejectedEvidence(card_id=card_id, reason=reason)
+                    for card_id, reason in result.rejected
+                )
+                issues = [
+                    WorkflowIssue(
+                        node="review_evidence",
+                        code="needs_more_evidence",
+                        message=f"证据卡 {card_id} 需要更多证据",
+                    )
+                    for card_id in result.needs_more
+                ]
+                issues.extend(
+                    WorkflowIssue(
+                        node="review_evidence",
+                        code=decision.issues[0].code,
+                        message=(
+                            f"证据卡 {decision.card_id} 被审查拒绝："
+                            f"{decision.issues[0].message}"
+                        ),
+                        severity=IssueSeverity(decision.issues[0].severity.value),
+                    )
+                    for decision in result.decisions
+                    if decision.verdict.value == "reject" and decision.issues
+                )
+                audit_decisions = decisions
+            except Exception as exc:
+                accepted = []
+                decisions = []
+                safe_error = _safe_error(exc)
+                rejected.extend(
+                    RejectedEvidence(
+                        card_id=card.card_id,
+                        reason="review_failed",
+                    )
+                    for card in validator_accepted
+                )
+                issues = [
+                    WorkflowIssue(
+                        node="review_evidence",
+                        code="review_failed",
+                        message=f"Reviewer 执行失败：{safe_error}",
+                        severity=IssueSeverity.ERROR,
+                    )
+                ]
+                audit_decisions = decisions
+
         persist_evidence_cards(
             state["paper"],
             raw_cards=state.get("raw_evidence_cards", []),
-            accepted_cards=result.accepted,
+            validator_accepted_cards=validator_accepted if self.services.reviewer else None,
+            review_decisions=audit_decisions,
+            accepted_cards=accepted,
             rejected_evidence=rejected,
         )
         return {
-            "evidence_cards": list(result.accepted),
+            "evidence_cards": accepted,
             "rejected_evidence": rejected,
+            "review_decisions": decisions,
             "issues": issues,
         }
 
@@ -407,8 +489,10 @@ class NoveltyWorkflow:
             "task_research_results": [],
             "raw_evidence": [],
             "raw_evidence_cards": [],
+            "validator_accepted_cards": [],
             "evidence_cards": [],
             "rejected_evidence": [],
+            "review_decisions": [],
             "coverage_gaps": [],
             "issues": [],
             "rounds": 0,

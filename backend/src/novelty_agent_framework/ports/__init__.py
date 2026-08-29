@@ -1,5 +1,6 @@
 from .interfaces import (
     EvidenceValidator,
+    EvidenceReviewer,
     FullText,
     FullTextTool,
     LiteratureResearchAgent,
@@ -12,10 +13,12 @@ from .interfaces import (
     SearchTool,
     TaskResearcher,
     ValidationResult,
+    ReviewResult,
 )
 
 __all__ = [
     "EvidenceValidator",
+    "EvidenceReviewer",
     "FullText",
     "FullTextTool",
     "LiteratureResearchAgent",
@@ -28,4 +31,5 @@ __all__ = [
     "SearchTool",
     "TaskResearcher",
     "ValidationResult",
+    "ReviewResult",
 ]

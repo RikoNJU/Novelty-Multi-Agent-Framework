@@ -8,6 +8,7 @@ from typing import Annotated, TypedDict
 
 from ..schemas import (
     EvidenceCard,
+    EvidenceReviewDecision,
     Evidence,
     NoveltyBrief,
     NoveltyPoint,
@@ -20,6 +21,7 @@ from ..schemas import (
 )
 from ..ports import (
     EvidenceValidator,
+    EvidenceReviewer,
     NoveltyCoordinator,
     NoveltyPointExtractor,
     TaskResearcher,
@@ -41,8 +43,10 @@ class NoveltyState(TypedDict, total=False):
     task_research_results: Annotated[list[TaskResearchResult], add]
     raw_evidence: Annotated[list[Evidence], add]
     raw_evidence_cards: Annotated[list[EvidenceCard], add]
+    validator_accepted_cards: list[EvidenceCard]
     evidence_cards: list[EvidenceCard]
     rejected_evidence: list[RejectedEvidence]
+    review_decisions: list[EvidenceReviewDecision]
     coverage_gaps: list[str]
     issues: Annotated[list[WorkflowIssue], add]
     rounds: int
@@ -78,3 +82,4 @@ class NoveltyWorkflowServices:
     task_researcher: TaskResearcher
     point_extractor: NoveltyPointExtractor | None = None
     validator: EvidenceValidator | None = None
+    reviewer: EvidenceReviewer | None = None

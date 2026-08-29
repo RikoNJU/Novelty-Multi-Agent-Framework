@@ -12,6 +12,7 @@ from typing import Any, Protocol, Sequence
 
 from ..schemas import (
     EvidenceCard,
+    EvidenceReviewDecision,
     EvidenceSource,
     NoveltyBrief,
     NoveltyPoint,
@@ -159,6 +160,29 @@ class ValidationResult:
     accepted: tuple[EvidenceCard, ...]
     rejected: tuple[tuple[str, str], ...]
     issues: tuple[tuple[str, str, str, str | None], ...] = ()
+
+
+class EvidenceReviewer(Protocol):
+    """对通过 Validator 的证据卡进行语义与证据一致性审查。"""
+
+    def review(
+        self,
+        cards: Sequence[EvidenceCard],
+        *,
+        points: Sequence[NoveltyPoint],
+        tasks: Sequence[ResearchTask],
+    ) -> "ReviewResult":
+        ...
+
+
+@dataclass(frozen=True)
+class ReviewResult:
+    """Reviewer 的标准输出。"""
+
+    accepted: tuple[EvidenceCard, ...]
+    rejected: tuple[tuple[str, str], ...]
+    needs_more: tuple[str, ...]
+    decisions: tuple[EvidenceReviewDecision, ...] = ()
 
 
 class PaperProcessor(Protocol):
