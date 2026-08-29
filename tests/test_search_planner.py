@@ -1,4 +1,8 @@
-"""SearchPlanner Agent 的独立数据流和确定性校验测试。"""
+"""SearchPlanner Agent 的独立数据流和确定性校验测试。
+
+模型契约已最小化为 SearchPlanDraft（terms + expression）；
+机械字段由 search_plan_compiler 补全，本文件只验证 draft 契约与补全结果。
+"""
 
 from __future__ import annotations
 
@@ -53,7 +57,9 @@ def make_task(*, language: str = "zh", task_type: str = "literature_search") -> 
     )
 
 
-def valid_plan(task: ResearchTask, *, language: str | None = None) -> dict:
+def valid_draft(task: ResearchTask, *, language: str | None = None) -> dict:
+    """最小模型契约：只含 concepts.terms 与 strategies.expression。"""
+
     use_en = (language or task.language) == "en"
     names = (
         ["dynamic graph neural network", "dynamic neighbor sampling", "communication overhead"]
@@ -61,31 +67,11 @@ def valid_plan(task: ResearchTask, *, language: str | None = None) -> dict:
         else ["动态图神经网络", "动态邻居采样", "通信开销"]
     )
     return {
-        "task_id": task.task_id,
-        "novelty_point_id": task.novelty_point_id,
-        "concepts": [
-            {"concept_id": f"C{index}", "name": name, "terms": [name]}
-            for index, name in enumerate(names, start=1)
-        ],
+        "concepts": [{"terms": [name]} for name in names],
         "strategies": [
-            {
-                "strategy_id": "S1",
-                "level": "strict",
-                "expression": "C1 AND C2 AND C3",
-                "description": "完整技术组合",
-            },
-            {
-                "strategy_id": "S2",
-                "level": "medium",
-                "expression": "C1 AND C2",
-                "description": "保留对象与方法",
-            },
-            {
-                "strategy_id": "S3",
-                "level": "broad",
-                "expression": "C2 AND C3",
-                "description": "围绕关键方法与目标扩大召回",
-            },
+            {"expression": "C1 AND C2 AND C3"},
+            {"expression": "C1 AND C2"},
+            {"expression": "C2 AND C3"},
         ],
     }
 
@@ -99,18 +85,22 @@ def build_agent(client: StubModelClient) -> SearchPlannerAgent:
 
 def test_plans_normal_chinese_task_and_renders_prompt() -> None:
     task = make_task(language="zh")
-    client = StubModelClient(json.dumps({"search_plan": valid_plan(task)}))
+    client = StubModelClient(json.dumps({"search_plan": valid_draft(task)}))
 
     plan = build_agent(client).plan(make_point(), task)
 
     assert isinstance(plan, SearchPlan)
     assert plan.task_id == "T-1"
-    assert plan.concepts[0].name == "动态图神经网络"
+    assert plan.novelty_point_id == "NP-1"
+    assert plan.concepts[0].name == "动态图神经网络"  # name = terms[0]，补全器生成
+    assert [c.concept_id for c in plan.concepts] == ["C1", "C2", "C3"]
+    assert [s.strategy_id for s in plan.strategies] == ["S1", "S2", "S3"]
     assert [strategy.level for strategy in plan.strategies] == [
         "strict",
         "medium",
         "broad",
     ]
+    assert plan.strategies[0].description == "动态图神经网络 AND 动态邻居采样 AND 通信开销"
     messages, options = client.calls[0]
     assert '"language": "zh"' in messages[1].content
     assert "数据库无关" in messages[0].content
@@ -119,7 +109,7 @@ def test_plans_normal_chinese_task_and_renders_prompt() -> None:
 
 def test_custom_prompt_name_is_used_for_rendering() -> None:
     task = make_task()
-    client = StubModelClient(json.dumps(valid_plan(task)))
+    client = StubModelClient(json.dumps(valid_draft(task)))
 
     class RecordingPrompts:
         def __init__(self) -> None:
@@ -143,7 +133,7 @@ def test_custom_prompt_name_is_used_for_rendering() -> None:
 
 def test_plans_english_task_when_point_has_no_english_claim() -> None:
     task = make_task(language="en")
-    client = StubModelClient(json.dumps(valid_plan(task, language="en")))
+    client = StubModelClient(json.dumps(valid_draft(task, language="en")))
 
     plan = build_agent(client).plan(make_point(english=False), task)
 
@@ -154,7 +144,7 @@ def test_plans_english_task_when_point_has_no_english_claim() -> None:
 def test_task_point_mismatch_fails_before_model_call() -> None:
     task = make_task()
     task = task.model_copy(update={"novelty_point_id": "NP-2"})
-    client = StubModelClient(json.dumps(valid_plan(task)))
+    client = StubModelClient(json.dumps(valid_draft(task)))
 
     with pytest.raises(ValueError, match="不一致"):
         build_agent(client).plan(make_point(), task)
@@ -170,8 +160,8 @@ def test_task_point_mismatch_fails_before_model_call() -> None:
             "未定义 Concept：C4",
         ),
         (
-            lambda data: data["concepts"][1].update(concept_id="C1"),
-            "重复 Concept ID",
+            lambda data: data["concepts"][1].update(terms=[""]),
+            "空词项",
         ),
         (
             lambda data: data["strategies"][0].update(
@@ -181,9 +171,9 @@ def test_task_point_mismatch_fails_before_model_call() -> None:
         ),
     ],
 )
-def test_rejects_invalid_plan_semantics(mutation, message) -> None:  # type: ignore[no-untyped-def]
+def test_rejects_invalid_draft_semantics(mutation, message) -> None:  # type: ignore[no-untyped-def]
     task = make_task(language="en")
-    data = valid_plan(task)
+    data = valid_draft(task)
     mutation(data)
     output = json.dumps(data)
     client = StubModelClient(output, output)
@@ -196,7 +186,7 @@ def test_rejects_invalid_plan_semantics(mutation, message) -> None:  # type: ign
 
 def test_retries_once_after_invalid_json_then_succeeds() -> None:
     task = make_task()
-    client = StubModelClient("not json", json.dumps(valid_plan(task)))
+    client = StubModelClient("not json", json.dumps(valid_draft(task)))
 
     plan = build_agent(client).plan(make_point(), task)
 
@@ -214,13 +204,32 @@ def test_invalid_schema_fails_after_one_retry() -> None:
     assert len(client.calls) == 2
 
 
+def test_legacy_full_plan_output_is_rejected() -> None:
+    """旧契约（含 concept_id/level/description）因 extra=forbid 被拒并重试。"""
+
+    task = make_task()
+    legacy = {
+        "task_id": task.task_id,
+        "novelty_point_id": task.novelty_point_id,
+        "concepts": [{"concept_id": "C1", "name": "x", "terms": ["x"]}],
+        "strategies": [{"strategy_id": "S1", "level": "strict", "expression": "C1"}],
+    }
+    client = StubModelClient(json.dumps(legacy), json.dumps(legacy))
+
+    with pytest.raises(ValueError, match="2 次生成均失败"):
+        build_agent(client).plan(make_point(), task)
+
+    assert len(client.calls) == 2
+
+
 def test_supplement_task_can_use_focused_strategy_count() -> None:
     task = make_task(language="en", task_type="feature_supplement")
-    data = valid_plan(task)
+    data = valid_draft(task)
     data["strategies"] = [data["strategies"][0]]
     client = StubModelClient(json.dumps(data))
 
     plan = build_agent(client).plan(make_point(), task)
 
     assert len(plan.strategies) == 1
+    assert plan.strategies[0].level == "strict"
     assert "动态邻居采样" in client.calls[0][0][1].content

@@ -11,6 +11,7 @@ from pydantic import ValidationError
 from ..core import ToolCallHarness, ToolCallHarnessConfig, ToolCallHarnessError
 from ..schemas import (
     ReferenceReadResult,
+    SearchPlan,
     ResearchBundle,
     ResearchFinishDraft,
     TaskResearchRequest,
@@ -155,7 +156,7 @@ class TaskResearcherWorkflow:
                 request.research_task.model_dump(mode="json"), ensure_ascii=False
             ),
             "search_plan_json": json.dumps(
-                request.search_plan.model_dump(mode="json"), ensure_ascii=False
+                _project_search_plan(request.search_plan), ensure_ascii=False
             ),
             "finish_schema_json": json.dumps(
                 ResearchFinishDraft.model_json_schema(), ensure_ascii=False
@@ -227,3 +228,17 @@ def _partial(
 
 def _safe_error(exc: Exception) -> str:
     return f"{type(exc).__name__}: {exc}"[:500]
+
+def _project_search_plan(plan: SearchPlan) -> dict:
+    """模型上下文投影：只给最小语义（terms + expression），不给 ID/level/name/description/绑定。
+
+    完整运行时 SearchPlan 只流向机器与审计；Researcher 提示词每轮工具循环
+    都携带本投影，体积约省 30-40%。
+    """
+
+    return {
+        "concepts": [{"terms": list(concept.terms)} for concept in plan.concepts],
+        "strategies": [
+            {"expression": strategy.expression} for strategy in plan.strategies
+        ],
+    }

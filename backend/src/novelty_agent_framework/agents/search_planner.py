@@ -1,9 +1,13 @@
-"""SearchPlanner Agent：把查新点和调研任务转换为数据库无关的检索计划。"""
+"""SearchPlanner Agent：把查新点和调研任务转换为数据库无关的检索计划。
+
+模型只输出最小契约 SearchPlanDraft（concepts.terms + strategies.expression）；
+机械字段（concept_id/strategy_id/task_id/novelty_point_id/level/name/description）
+由 search_plan_compiler.build_runtime_plan 确定性补全，模型不参与生成。
+"""
 
 from __future__ import annotations
 
 import json
-import re
 from typing import Any
 
 from pydantic import ValidationError
@@ -17,17 +21,12 @@ from backend.env import (
 )
 
 from ..ports import SearchPlanner
-from ..schemas import NoveltyPoint, ResearchTask, SearchPlan
-
-CONCEPT_ID_PATTERN = re.compile(r"C\d+")
-STRATEGY_ID_PATTERN = re.compile(r"S\d+")
-FORBIDDEN_DATABASE_SYNTAX = re.compile(
-    r"(?i)(?:\b(?:abs|ti|all)\s*:|\b(?:SU|TS|AU)\s*=)"
-)
+from ..schemas import NoveltyPoint, ResearchTask, SearchPlan, SearchPlanDraft
+from .search_plan_compiler import build_runtime_plan
 
 
 class SearchPlannerAgent(SearchPlanner):
-    """用 LLM 生成数据库无关 SearchPlan，并执行确定性语义校验。"""
+    """用 LLM 生成最小契约 SearchPlanDraft，并补全为运行时 SearchPlan。"""
 
     def __init__(
         self,
@@ -56,7 +55,7 @@ class SearchPlannerAgent(SearchPlanner):
         self.prompt_name = prompt_name
 
     def plan(self, point: NoveltyPoint, task: ResearchTask) -> SearchPlan:
-        """将 NoveltyPoint + ResearchTask 转换为经过校验的 SearchPlan。"""
+        """将 NoveltyPoint + ResearchTask 转换为经过补全的运行时 SearchPlan。"""
 
         if task.novelty_point_id != point.point_id:
             raise ValueError(
@@ -71,9 +70,8 @@ class SearchPlannerAgent(SearchPlanner):
                     task=task,
                     retry_reason=str(last_error) if last_error else "",
                 )
-                plan = _validate_plan_data(data)
-                _validate_plan_semantics(plan, point=point, task=task)
-                return plan
+                draft = _validate_draft_data(data)
+                return build_runtime_plan(draft, task=task)
             except ValueError as exc:
                 last_error = exc
                 if attempt_index + 1 >= self.max_attempts:
@@ -97,8 +95,8 @@ class SearchPlannerAgent(SearchPlanner):
         variables = {
             "point_json": json.dumps(payload["point"], ensure_ascii=False),
             "task_json": json.dumps(payload["task"], ensure_ascii=False),
-            "search_plan_schema": json.dumps(
-                SearchPlan.model_json_schema(), ensure_ascii=False
+            "draft_schema": json.dumps(
+                SearchPlanDraft.model_json_schema(), ensure_ascii=False
             ),
             "retry_reason": retry_reason or "无（首次生成）",
         }
@@ -108,10 +106,11 @@ class SearchPlannerAgent(SearchPlanner):
         else:
             system = self._system_prompt()
             user = (
-                "请把输入转换为数据库无关的 SearchPlan JSON。"
-                "不得输出数据库字段语法。\n\n输入：\n"
+                "请把输入转换为数据库无关的 SearchPlanDraft JSON。"
+                "不得输出数据库字段语法，也不得输出 concept_id/strategy_id/"
+                "level/description/task_id/novelty_point_id 等系统分配字段。\n\n输入：\n"
                 f"{json.dumps(payload, ensure_ascii=False)}\n\n"
-                f"输出 schema：\n{variables['search_plan_schema']}"
+                f"输出 schema：\n{variables['draft_schema']}"
             )
 
         response = self._client().complete(
@@ -139,73 +138,21 @@ class SearchPlannerAgent(SearchPlanner):
     def _system_prompt() -> str:
         return (
             "你是科技查新系统中的 SearchPlanner。你只把 NoveltyPoint 和 "
-            "ResearchTask 转换为数据库无关的 SearchPlan。你负责提取核心概念、"
-            "规范词项、保守扩展同义词并建立逻辑策略；不能检索文献、编造来源或"
-            "输出任何数据库专用语法。"
+            "ResearchTask 转换为最小检索草稿 SearchPlanDraft：概念词项 terms 与"
+            "策略组合 expression（引用 C1..Cn，编号按 concepts 顺序由系统分配）。"
+            "不能检索文献、编造来源、输出数据库专用语法，也不能输出任何系统分配"
+            "字段（concept_id/strategy_id/level/description/task_id/novelty_point_id）。"
         )
 
 
-def _validate_plan_data(data: Any) -> SearchPlan:
+def _validate_draft_data(data: Any) -> SearchPlanDraft:
     if isinstance(data, dict) and isinstance(data.get("search_plan"), dict):
         data = data["search_plan"]
     if not isinstance(data, dict):
-        raise ValueError("SearchPlanner 输出顶层必须是 SearchPlan 对象")
+        raise ValueError("SearchPlanner 输出顶层必须是 SearchPlanDraft 对象")
     try:
-        return SearchPlan.model_validate(data)
+        return SearchPlanDraft.model_validate(data)
     except ValidationError as exc:
-        raise ValueError(f"SearchPlanner 输出不符合 SearchPlan schema：{exc}") from exc
-
-
-def _validate_plan_semantics(
-    plan: SearchPlan,
-    *,
-    point: NoveltyPoint,
-    task: ResearchTask,
-) -> None:
-    if plan.task_id != task.task_id:
-        raise ValueError("SearchPlan.task_id 与输入 ResearchTask 不一致")
-    if plan.novelty_point_id != point.point_id:
-        raise ValueError("SearchPlan.novelty_point_id 与输入 NoveltyPoint 不一致")
-    if plan.novelty_point_id != task.novelty_point_id:
-        raise ValueError("SearchPlan 与 ResearchTask 的 novelty_point_id 不一致")
-
-    concept_ids = [concept.concept_id for concept in plan.concepts]
-    _validate_ids(concept_ids, pattern=CONCEPT_ID_PATTERN, kind="Concept")
-    strategy_ids = [strategy.strategy_id for strategy in plan.strategies]
-    _validate_ids(strategy_ids, pattern=STRATEGY_ID_PATTERN, kind="Strategy")
-
-    defined_concepts = set(concept_ids)
-    for strategy in plan.strategies:
-        if FORBIDDEN_DATABASE_SYNTAX.search(strategy.expression):
-            raise ValueError(
-                f"SearchStrategy {strategy.strategy_id} 包含数据库专用语法"
-            )
-        referenced = set(CONCEPT_ID_PATTERN.findall(strategy.expression))
-        undefined = sorted(referenced - defined_concepts)
-        if undefined:
-            raise ValueError(
-                f"SearchPlan 引用了未定义 Concept：{', '.join(undefined)}"
-            )
-
-    if task.task_type == "literature_search":
-        levels = [strategy.level for strategy in plan.strategies]
-        if levels != ["strict", "medium", "broad"]:
-            raise ValueError(
-                "普通 literature_search 任务必须按 strict、medium、broad "
-                "顺序生成三条策略"
-            )
-
-
-def _validate_ids(
-    values: list[str],
-    *,
-    pattern: re.Pattern[str],
-    kind: str,
-) -> None:
-    if len(values) != len(set(values)):
-        raise ValueError(f"SearchPlan 中存在重复 {kind} ID")
-    invalid = [value for value in values if pattern.fullmatch(value) is None]
-    if invalid:
         raise ValueError(
-            f"SearchPlan 中存在非法 {kind} ID：{', '.join(invalid)}"
-        )
+            f"SearchPlanner 输出不符合 SearchPlanDraft schema：{exc}"
+        ) from exc

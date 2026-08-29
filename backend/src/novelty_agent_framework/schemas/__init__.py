@@ -56,6 +56,11 @@ from .research import (
     TaskResearchResult,
     TaskResearchStatus,
 )
+from .search_plan_draft import (
+    SearchConceptDraft,
+    SearchPlanDraft,
+    SearchStrategyDraft,
+)
 from .legacy_research_tools import StructuredRetrievalToolArguments
 from .research_tools import (
     BrowserArtifactItem,
@@ -112,12 +117,15 @@ __all__ = [
     "ReviewVerdict",
     "ResearchBundle",
     "SearchConcept",
+    "SearchConceptDraft",
     "SearchPlan",
+    "SearchPlanDraft",
     "SearchExecution",
     "SearchExecutionStatus",
     "SearchResultRef",
     "StructuredSourceRetrievalRequest",
     "SearchStrategy",
+    "SearchStrategyDraft",
     "StrictModel",
     "SourceKind",
     "SourceRecord",
