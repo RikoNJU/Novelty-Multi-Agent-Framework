@@ -81,6 +81,7 @@ def build_model_registry(
     )
     for alias, value in model_items:
         raw = value.model_dump(mode="python") if hasattr(value, "model_dump") else value
+        timeout = raw.get("timeout_seconds") or os.getenv("NOVELTY_TIMEOUT_SECONDS")
         profiles[alias] = ModelProfile(
             alias=alias,
             provider=raw.get("provider", "openai_compatible"),
@@ -89,7 +90,7 @@ def build_model_registry(
             api_key=_resolve_api_key(raw),
             context_window=int(raw.get("context_window", 128_000)),
             supported_params=frozenset(raw.get("supported_params", [])),
-            defaults={},
+            defaults={"timeout_seconds": float(timeout) if timeout else 60.0},
         )
     return ModelRegistry(profiles)
 
@@ -413,12 +414,20 @@ def _build_workflow_from_application_config(
         models=registry,
         model_alias=config.coordinator.model.alias,
         temperature=config.coordinator.model.temperature,
+        model_options=_typed_model_options(
+            config.coordinator.model,
+            response_format={"type": "json_object"},
+        ),
     )
     point_extractor = NoveltyPointExtractorAgent(
         prompts=prompts,
         models=registry,
         model_alias=config.point_extractor.model.alias,
         temperature=config.point_extractor.model.temperature,
+        model_options=_typed_model_options(
+            config.point_extractor.model,
+            response_format={"type": "json_object"},
+        ),
     )
     search_planner = SearchPlannerAgent(
         prompts=prompts,
@@ -446,6 +455,7 @@ def _build_workflow_from_application_config(
                 max_cards_per_call=config.reviewer.max_cards_per_call,
                 fail_closed=config.reviewer.fail_closed,
             ),
+            model_options=_typed_model_options(config.reviewer.model),
         )
         if config.reviewer is not None and config.reviewer.enabled
         else None

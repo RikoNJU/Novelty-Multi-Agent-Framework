@@ -94,11 +94,13 @@ class NoveltyEvidenceReviewer(EvidenceReviewer):
         prompts: PromptLibrary | None = None,
         models: ModelRegistry | None = None,
         config: EvidenceReviewerConfig | None = None,
+        model_options: ModelCallOptions | None = None,
     ) -> None:
         self.model_client = model_client
         self._prompts = prompts
         self._models = models
         self.config = config or EvidenceReviewerConfig()
+        self.model_options = model_options
 
     def review(
         self,
@@ -170,7 +172,8 @@ class NoveltyEvidenceReviewer(EvidenceReviewer):
                 ChatMessage(role="system", content=system),
                 ChatMessage(role="user", content=user),
             ],
-            options=ModelCallOptions(temperature=self.config.temperature),
+            options=self.model_options
+            or ModelCallOptions(temperature=self.config.temperature),
         )
         try:
             return json.loads(response.content)

@@ -23,6 +23,7 @@ from backend.env import (
     ChatMessage,
     ModelCallOptions,
     ModelClient,
+    ModelResponse,
     ModelToolCall,
     ToolDefinition,
 )
@@ -157,10 +158,20 @@ class ToolCallHarness:
                 )
 
             if len(response.tool_calls) > 1:
-                _append_error(log, "serial harness policy violation: multiple tool calls")
-                raise ToolCallHarnessError(
-                    "serial harness policy violation: expected at most one tool call",
-                    trace=tuple(log),
+                # 串行策略：每轮至多执行一个工具调用。多调用场景下取第一个
+                # 执行（模型下一轮会基于结果继续），其余丢弃并记录审计日志，
+                # 而不是让整个研究任务失败（R1 等模型常并行发起多个调用）。
+                _append_error(
+                    log,
+                    "serial harness policy: multiple tool calls; "
+                    "executing first only, dropped "
+                    + ", ".join(call.name for call in response.tool_calls[1:]),
+                )
+                response = ModelResponse(
+                    content=response.content,
+                    tool_calls=response.tool_calls[:1],
+                    raw=response.raw,
+                    usage=response.usage,
                 )
 
             if tool_calls_used >= self.config.max_tool_calls:
@@ -176,11 +187,36 @@ class ToolCallHarness:
                     tool_call.name != "reader"
                     or requested_artifact not in required_reader_artifact_ids
                 ):
+                    # 软性拒绝：不杀死任务，向模型回传拒绝消息（含必须读取的
+                    # artifact_id），让它下一轮自我纠正；审计日志保留完整记录。
                     detail = (
                         "reader required after database_search returned artifact_ids"
                     )
                     _append_error(log, detail)
-                    raise ToolCallHarnessError(detail, trace=tuple(log))
+                    tool_calls_used += 1
+                    rejection = ChatMessage(
+                        role="tool",
+                        tool_call_id=tool_call.id,
+                        content=json.dumps(
+                            {
+                                "succeeded": False,
+                                "summary": detail,
+                                "required_artifact_ids": sorted(
+                                    required_reader_artifact_ids
+                                ),
+                            },
+                            ensure_ascii=False,
+                            sort_keys=True,
+                        ),
+                    )
+                    log.append(
+                        ToolCallHarnessEvent(
+                            kind="tool_result",
+                            message=rejection,
+                            tool_call=tool_call,
+                        )
+                    )
+                    continue
             tool_limit = self.config.per_tool_limits.get(tool_call.name)
             tool_count = per_tool_counts.get(tool_call.name, 0)
             if tool_limit is not None and tool_count >= tool_limit:
@@ -221,7 +257,12 @@ class ToolCallHarness:
             per_tool_counts[tool_call.name] = tool_count + 1
             if tool_call.name == "database_search" and observation.succeeded:
                 required_reader_artifact_ids = _database_artifact_ids(observation)
-            elif tool_call.name == "reader" and required_reader_artifact_ids:
+            elif (
+                tool_call.name == "reader"
+                and observation.succeeded
+                and required_reader_artifact_ids
+            ):
+                # 仅成功读取后才释放约束；失败/错误 artifact 不解除要求。
                 required_reader_artifact_ids.clear()
             if tool_call.name == "reader" and observation.succeeded:
                 read = observation.payload.get("read_result", {})

@@ -284,7 +284,7 @@ def test_full_observation_is_logged_while_projection_reaches_model() -> None:
     }
 
 
-def test_multiple_tool_calls_are_rejected_without_execution() -> None:
+def test_multiple_tool_calls_execute_first_only() -> None:
     tool = ExampleTool()
     response = ModelResponse(
         content=None,
@@ -293,18 +293,21 @@ def test_multiple_tool_calls_are_rejected_without_execution() -> None:
             ModelToolCall(id="call_2", name="example", arguments={"value": "2"}),
         ),
     )
+    result = run_harness(
+        ToolCallHarness(
+            ScriptedModelClient(response, ModelResponse(content="finished")),
+            ResearcherToolRegistry([tool]),
+        ),
+        system_prompt="system",
+        initial_user_message="task",
+    )
 
-    with pytest.raises(ToolCallHarnessError, match="serial harness policy") as exc:
-        run_harness(
-            ToolCallHarness(
-                ScriptedModelClient(response), ResearcherToolRegistry([tool])
-            ),
-            system_prompt="system",
-            initial_user_message="task",
-        )
-
-    assert tool.received == []
-    assert exc.value.trace[-1].kind == "error"
+    assert [item.value for item in tool.received] == ["1"]
+    assert result.final_content == "finished"
+    error_events = [event for event in result.trace if event.kind == "error"]
+    assert error_events
+    assert "multiple tool calls" in error_events[0].detail
+    assert "dropped example" in error_events[0].detail
 
 
 @pytest.mark.parametrize("failure", ["validation", "execution"])
@@ -455,39 +458,61 @@ def test_config_rejects_non_positive_budgets() -> None:
 def test_database_search_artifact_ids_require_reader_next() -> None:
     example = ExampleTool()
     database = DatabaseStubTool(artifact_ids=["a-1"])
-    model = ScriptedModelClient(database_call(), call(call_id="call_2"))
+    model = ScriptedModelClient(
+        database_call(),
+        call(call_id="call_2"),
+        ModelResponse(content="finished"),
+    )
     harness = ToolCallHarness(
         model,
         ResearcherToolRegistry([database, example]),
         config=ToolCallHarnessConfig(max_turns=4, max_tool_calls=3),
     )
 
-    with pytest.raises(ToolCallHarnessError, match="reader required") as exc:
-        run_harness(harness, system_prompt="system", initial_user_message="task")
+    result = run_harness(
+        harness, system_prompt="system", initial_user_message="task"
+    )
 
+    # 软性拒绝：example 未执行，模型收到拒绝消息后可继续
     assert len(database.received) == 1
     assert example.received == []
-    assert (
-        exc.value.trace[-1].detail
-        == "reader required after database_search returned artifact_ids"
+    assert result.final_content == "finished"
+    errors = [event for event in result.trace if event.kind == "error"]
+    assert errors
+    assert errors[0].detail == "reader required after database_search returned artifact_ids"
+    rejection = next(
+        event for event in result.trace if event.kind == "tool_result"
+        and event.message is not None
+        and event.message.tool_call_id == "call_2"
     )
+    assert json.loads(rejection.message.content)["succeeded"] is False
+    assert json.loads(rejection.message.content)["required_artifact_ids"] == ["a-1"]
 
 
 def test_required_reader_rejects_wrong_artifact_id() -> None:
     database = DatabaseStubTool(artifact_ids=["a-1"])
     reader = ArtifactReaderStub()
-    model = ScriptedModelClient(database_call(), reader_call("a-2"))
+    model = ScriptedModelClient(
+        database_call(),
+        reader_call("a-2"),
+        reader_call("a-1"),
+        ModelResponse(content="finished"),
+    )
     harness = ToolCallHarness(
         model,
         ResearcherToolRegistry([database, reader]),
-        config=ToolCallHarnessConfig(max_turns=4, max_tool_calls=3),
+        config=ToolCallHarnessConfig(max_turns=5, max_tool_calls=4),
     )
 
-    with pytest.raises(ToolCallHarnessError, match="reader required") as exc:
-        run_harness(harness, system_prompt="system", initial_user_message="task")
+    result = run_harness(
+        harness, system_prompt="system", initial_user_message="task"
+    )
 
-    assert reader.received == []
-    assert exc.value.trace[-1].detail.endswith("artifact_ids")
+    # 错误 artifact 的 reader 调用被拒绝且不执行；正确 id 后成功读取并释放
+    assert [item.artifact_id for item in reader.received] == ["a-1"]
+    assert result.final_content == "finished"
+    errors = [event for event in result.trace if event.kind == "error"]
+    assert len(errors) == 1
 
 
 def test_required_reader_accepts_artifact_id_then_releases() -> None:

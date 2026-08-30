@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import re
 from collections.abc import Sequence
+from dataclasses import replace
 from typing import Any
 
 from pydantic import ValidationError
@@ -82,12 +83,14 @@ class NoveltyPointExtractorAgent(NoveltyPointExtractor):
         models: ModelRegistry | None = None,
         model_alias: str | None = None,
         temperature: float = 0.2,
+        model_options: ModelCallOptions | None = None,
     ) -> None:
         self.model_client = model_client
         self._prompts = prompts
         self._models = models
         self._model_alias = model_alias
         self.temperature = temperature
+        self.model_options = model_options
 
     def extract(
         self,
@@ -226,8 +229,8 @@ class NoveltyPointExtractorAgent(NoveltyPointExtractor):
                 ChatMessage(role="system", content=system),
                 ChatMessage(role="user", content=user),
             ],
-            options=ModelCallOptions(
-                temperature=self.temperature,
+            options=replace(
+                self.model_options or ModelCallOptions(temperature=self.temperature),
                 response_format={"type": "json_object"},
             ),
         )
