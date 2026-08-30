@@ -110,11 +110,25 @@ class ResearcherConfig(ConfigModel):
     tools: ResearcherToolsConfig
 
 
+class SearchPlannerLimitsConfig(ConfigModel):
+    """SearchPlanner 语义校验的数量预算（与 prompt 数字一致，配置可覆盖）。"""
+
+    max_concepts: int = Field(default=6, gt=0)
+    max_terms_per_concept: int = Field(default=5, gt=0)
+    max_alias_per_concept: int = Field(default=4, ge=0)
+    max_exclude_per_concept: int = Field(default=3, ge=0)
+    max_term_words: int = Field(default=8, gt=0)
+    require_escape: bool = False
+
+
 class SearchPlannerConfig(ConfigModel):
     version: int = Field(ge=1)
     model: ModelInvocationConfig
     prompt: str = Field(min_length=1)
     max_attempts: int = Field(gt=0)
+    limits: SearchPlannerLimitsConfig = Field(
+        default_factory=SearchPlannerLimitsConfig
+    )
 
 
 class ReviewerConfig(ConfigModel):

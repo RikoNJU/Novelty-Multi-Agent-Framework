@@ -1,7 +1,7 @@
-"""SearchPlanner Agent 的独立数据流和确定性校验测试。
+"""SearchPlanner Agent 的独立数据流和确定性校验测试（v2 契约）。
 
-模型契约已最小化为 SearchPlanDraft（terms + expression）；
-机械字段由 search_plan_compiler 补全，本文件只验证 draft 契约与补全结果。
+模型契约 v2：concepts（role/terms/alias/exclude/importance）+ strategies
+（level/focus_concepts）；布尔表达式由 search_plan_compiler 模板生成。
 """
 
 from __future__ import annotations
@@ -12,7 +12,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from backend.env import ModelResponse, PromptLibrary
+from backend.env import ModelClientError, ModelResponse, PromptLibrary
 from novelty_agent_framework.agents import SearchPlannerAgent
 from novelty_agent_framework.schemas import NoveltyPoint, ResearchTask, SearchPlan
 
@@ -58,21 +58,24 @@ def make_task(*, language: str = "zh", task_type: str = "literature_search") -> 
 
 
 def valid_draft(task: ResearchTask, *, language: str | None = None) -> dict:
-    """最小模型契约：只含 concepts.terms 与 strategies.expression。"""
+    """v2 最小模型契约：concepts（role/terms/...）+ strategies（level）。"""
 
     use_en = (language or task.language) == "en"
-    names = (
-        ["dynamic graph neural network", "dynamic neighbor sampling", "communication overhead"]
-        if use_en
-        else ["动态图神经网络", "动态邻居采样", "通信开销"]
-    )
+    if use_en:
+        concepts = [
+            {"role": "object", "terms": ["dynamic graph neural network"], "alias": ["DGNN"], "importance": 3},
+            {"role": "method", "terms": ["dynamic neighbor sampling"], "importance": 3},
+            {"role": "escape", "terms": ["communication efficient graph training"], "importance": 2},
+        ]
+    else:
+        concepts = [
+            {"role": "object", "terms": ["动态图神经网络"], "importance": 3},
+            {"role": "method", "terms": ["动态邻居采样"], "importance": 3},
+            {"role": "escape", "terms": ["低通信开销图训练"], "importance": 2},
+        ]
     return {
-        "concepts": [{"terms": [name]} for name in names],
-        "strategies": [
-            {"expression": "C1 AND C2 AND C3"},
-            {"expression": "C1 AND C2"},
-            {"expression": "C2 AND C3"},
-        ],
+        "concepts": concepts,
+        "strategies": [{"level": "strict"}, {"level": "medium"}, {"level": "broad"}],
     }
 
 
@@ -94,16 +97,18 @@ def test_plans_normal_chinese_task_and_renders_prompt() -> None:
     assert plan.novelty_point_id == "NP-1"
     assert plan.concepts[0].name == "动态图神经网络"  # name = terms[0]，补全器生成
     assert [c.concept_id for c in plan.concepts] == ["C1", "C2", "C3"]
+    assert [c.role for c in plan.concepts] == ["object", "method", "escape"]
     assert [s.strategy_id for s in plan.strategies] == ["S1", "S2", "S3"]
     assert [strategy.level for strategy in plan.strategies] == [
         "strict",
         "medium",
         "broad",
     ]
-    assert plan.strategies[0].description == "动态图神经网络 AND 动态邻居采样 AND 通信开销"
+    assert [s.use_alias for s in plan.strategies] == [False, True, True]
+    assert plan.strategies[0].description == "动态图神经网络 AND 动态邻居采样"
     messages, options = client.calls[0]
     assert '"language": "zh"' in messages[1].content
-    assert "数据库无关" in messages[0].content
+    assert "SearchPlanDraft" in messages[0].content
     assert options.response_format == {"type": "json_object"}
 
 
@@ -156,18 +161,12 @@ def test_task_point_mismatch_fails_before_model_call() -> None:
     ("mutation", "message"),
     [
         (
-            lambda data: data["strategies"][0].update(expression="C1 AND C4"),
-            "未定义 Concept：C4",
+            lambda data: data["concepts"][0].update(terms=[""]),
+            "词项全为空",
         ),
         (
-            lambda data: data["concepts"][1].update(terms=[""]),
-            "空词项",
-        ),
-        (
-            lambda data: data["strategies"][0].update(
-                expression='abs:"graph neural network" AND C2'
-            ),
-            "数据库专用语法",
+            lambda data: data["concepts"][0].update(terms=["efficient robust learning"]),
+            "generic_term",
         ),
     ],
 )
@@ -181,7 +180,7 @@ def test_rejects_invalid_draft_semantics(mutation, message) -> None:  # type: ig
     with pytest.raises(ValueError, match=message):
         build_agent(client).plan(make_point(), task)
 
-    assert len(client.calls) == 2
+    assert len(client.calls) == 3
 
 
 def test_retries_once_after_invalid_json_then_succeeds() -> None:
@@ -195,41 +194,80 @@ def test_retries_once_after_invalid_json_then_succeeds() -> None:
     assert "不是合法 JSON" in client.calls[1][0][1].content
 
 
+def test_retries_after_model_network_error_then_succeeds() -> None:
+    """单次模型网络超时不应击穿工作流：进入重试并携带网络错误原因。"""
+
+    task = make_task()
+
+    class FlakyClient(StubModelClient):
+        def __init__(self, *outputs: str) -> None:
+            super().__init__(*outputs)
+            self.fail_first = True
+
+        def complete(self, messages, *, options=None):
+            self.calls.append((list(messages), options))
+            if self.fail_first:
+                self.fail_first = False
+                raise ModelClientError("模型网络调用失败: The read operation timed out")
+            index = min(len(self.calls) - 1, len(self.outputs) - 1)
+            return ModelResponse(content=self.outputs[index])
+
+    client = FlakyClient(json.dumps(valid_draft(task)))
+    plan = build_agent(client).plan(make_point(), task)
+
+    assert plan.task_id == task.task_id
+    assert len(client.calls) == 2
+    assert "模型网络调用失败" in client.calls[1][0][1].content
+
 def test_invalid_schema_fails_after_one_retry() -> None:
     client = StubModelClient("{}", "{}")
 
-    with pytest.raises(ValueError, match="2 次生成均失败"):
+    with pytest.raises(ValueError, match="3 次生成均失败"):
         build_agent(client).plan(make_point(), make_task())
 
-    assert len(client.calls) == 2
+    assert len(client.calls) == 3
 
 
-def test_legacy_full_plan_output_is_rejected() -> None:
-    """旧契约（含 concept_id/level/description）因 extra=forbid 被拒并重试。"""
+def test_legacy_v1_output_is_rejected() -> None:
+    """v1 契约（含 expression）因 extra=forbid 被拒并重试。"""
 
     task = make_task()
     legacy = {
-        "task_id": task.task_id,
-        "novelty_point_id": task.novelty_point_id,
-        "concepts": [{"concept_id": "C1", "name": "x", "terms": ["x"]}],
-        "strategies": [{"strategy_id": "S1", "level": "strict", "expression": "C1"}],
+        "concepts": [{"terms": ["x"]}],
+        "strategies": [{"expression": "C1"}],
     }
     client = StubModelClient(json.dumps(legacy), json.dumps(legacy))
 
-    with pytest.raises(ValueError, match="2 次生成均失败"):
+    with pytest.raises(ValueError, match="3 次生成均失败"):
         build_agent(client).plan(make_point(), task)
 
-    assert len(client.calls) == 2
+    assert len(client.calls) == 3
+
+
+def test_structured_retry_feedback_is_forwarded_to_prompt() -> None:
+    task = make_task(language="en")
+    bad = valid_draft(task)
+    bad["concepts"][0]["terms"] = ["efficient robust learning"]  # 泛词失败
+    good = valid_draft(task)
+    client = StubModelClient(json.dumps(bad), json.dumps(good))
+
+    plan = build_agent(client).plan(make_point(), task)
+
+    assert plan.strategies[0].expression == "C1 AND C2"
+    retry_message = client.calls[1][0][1].content
+    assert "generic_term" in retry_message
+    assert '"code"' in retry_message
 
 
 def test_supplement_task_can_use_focused_strategy_count() -> None:
     task = make_task(language="en", task_type="feature_supplement")
     data = valid_draft(task)
-    data["strategies"] = [data["strategies"][0]]
+    data["strategies"] = [{"level": "strict", "focus_concepts": ["C2"]}]
     client = StubModelClient(json.dumps(data))
 
     plan = build_agent(client).plan(make_point(), task)
 
     assert len(plan.strategies) == 1
     assert plan.strategies[0].level == "strict"
+    assert plan.strategies[0].expression == "C2"
     assert "动态邻居采样" in client.calls[0][0][1].content

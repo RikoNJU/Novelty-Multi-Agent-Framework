@@ -49,6 +49,14 @@ class QueryAdapter(ABC):
 
         compiled: list[CompiledQuery] = []
         for strategy in plan.strategies:
+            rendered = {
+                concept.concept_id: self._render_concept(
+                    concept,
+                    use_alias=strategy.use_alias,
+                    use_exclude=strategy.use_exclude,
+                )
+                for concept in plan.concepts
+            }
             query = self._compile_expression(strategy.expression, rendered)
             compiled.append(
                 CompiledQuery(
@@ -63,8 +71,18 @@ class QueryAdapter(ABC):
         return compiled
 
     @abstractmethod
-    def _render_concept(self, concept: SearchConcept) -> str:
-        """把单个语义 Concept 编译为数据库专用查询片段。"""
+    def _render_concept(
+        self,
+        concept: SearchConcept,
+        *,
+        use_alias: bool = False,
+        use_exclude: bool = True,
+    ) -> str:
+        """把单个语义 Concept 编译为数据库专用查询片段。
+
+        use_alias=True 时概念渲染应把 alias 并入 OR 展开（v2 medium/broad）；
+        use_exclude=False 时跳过 exclude（放宽链最后兜底）。
+        """
 
     @staticmethod
     def _compile_expression(expression: str, concepts: dict[str, str]) -> str:

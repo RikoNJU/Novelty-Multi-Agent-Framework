@@ -1,6 +1,7 @@
 """SearchPlanner Agent：把查新点和调研任务转换为数据库无关的检索计划。
 
-模型只输出最小契约 SearchPlanDraft（concepts.terms + strategies.expression）；
+模型只输出最小契约 SearchPlanDraft v2（concepts.role/terms/alias/exclude/importance
+ + strategies.level/focus_concepts）；布尔表达式由编译器模板生成；
 机械字段（concept_id/strategy_id/task_id/novelty_point_id/level/name/description）
 由 search_plan_compiler.build_runtime_plan 确定性补全，模型不参与生成。
 """
@@ -16,13 +17,18 @@ from backend.env import (
     ChatMessage,
     ModelCallOptions,
     ModelClient,
+    ModelClientError,
     ModelRegistry,
     PromptLibrary,
 )
 
 from ..ports import SearchPlanner
 from ..schemas import NoveltyPoint, ResearchTask, SearchPlan, SearchPlanDraft
-from .search_plan_compiler import build_runtime_plan
+from .search_plan_compiler import (
+    SearchPlanCompilationError,
+    SemanticLimits,
+    build_runtime_plan,
+)
 
 
 class SearchPlannerAgent(SearchPlanner):
@@ -37,7 +43,8 @@ class SearchPlannerAgent(SearchPlanner):
         model_alias: str | None = None,
         temperature: float = 0.2,
         model_options: ModelCallOptions | None = None,
-        max_attempts: int = 2,
+        max_attempts: int = 3,
+        semantic_limits: SemanticLimits | None = None,
         prompt_name: str = "search_planner/plan",
     ) -> None:
         self.model_client = model_client
@@ -52,6 +59,7 @@ class SearchPlannerAgent(SearchPlanner):
         if max_attempts < 1:
             raise ValueError("max_attempts must be positive")
         self.max_attempts = max_attempts
+        self.semantic_limits = semantic_limits
         self.prompt_name = prompt_name
 
     def plan(self, point: NoveltyPoint, task: ResearchTask) -> SearchPlan:
@@ -63,19 +71,27 @@ class SearchPlannerAgent(SearchPlanner):
             )
 
         last_error: ValueError | None = None
+        retry_reason = ""
         for attempt_index in range(self.max_attempts):
             try:
                 data = self._complete_json(
                     point=point,
                     task=task,
-                    retry_reason=str(last_error) if last_error else "",
+                    retry_reason=retry_reason,
                 )
                 draft = _validate_draft_data(data)
-                return build_runtime_plan(draft, task=task)
+                return build_runtime_plan(
+                    draft, task=task, limits=self.semantic_limits
+                )
+            except SearchPlanCompilationError as exc:
+                last_error = exc
+                retry_reason = _format_compilation_feedback(exc)
+            except ModelClientError as exc:
+                last_error = exc
+                retry_reason = f"模型网络调用失败：{exc}（将重试）"
             except ValueError as exc:
                 last_error = exc
-                if attempt_index + 1 >= self.max_attempts:
-                    break
+                retry_reason = f"格式校验失败：{exc}"
         raise ValueError(
             f"SearchPlanner {self.max_attempts} 次生成均失败：{last_error or '未知错误'}"
         ) from last_error
@@ -106,9 +122,9 @@ class SearchPlannerAgent(SearchPlanner):
         else:
             system = self._system_prompt()
             user = (
-                "请把输入转换为数据库无关的 SearchPlanDraft JSON。"
-                "不得输出数据库字段语法，也不得输出 concept_id/strategy_id/"
-                "level/description/task_id/novelty_point_id 等系统分配字段。\n\n输入：\n"
+                "请把输入转换为数据库无关的 SearchPlanDraft（v2）JSON。"
+                "不得输出数据库字段语法、布尔表达式，也不得输出 concept_id/"
+                "strategy_id/expression/description/task_id/novelty_point_id 等系统分配字段。\n\n输入：\n"
                 f"{json.dumps(payload, ensure_ascii=False)}\n\n"
                 f"输出 schema：\n{variables['draft_schema']}"
             )
@@ -138,11 +154,26 @@ class SearchPlannerAgent(SearchPlanner):
     def _system_prompt() -> str:
         return (
             "你是科技查新系统中的 SearchPlanner。你只把 NoveltyPoint 和 "
-            "ResearchTask 转换为最小检索草稿 SearchPlanDraft：概念词项 terms 与"
-            "策略组合 expression（引用 C1..Cn，编号按 concepts 顺序由系统分配）。"
-            "不能检索文献、编造来源、输出数据库专用语法，也不能输出任何系统分配"
-            "字段（concept_id/strategy_id/level/description/task_id/novelty_point_id）。"
+            "ResearchTask 转换为最小检索草稿 SearchPlanDraft（v2）：concepts 的"
+            "角色/词项/别名/排除词/重要性，与 strategies 的 level（及可选 "
+            "focus_concepts）。不能检索文献、编造来源、输出数据库专用语法、布尔"
+            "表达式或任何系统分配字段（concept_id/strategy_id/expression/"
+            "description/task_id/novelty_point_id）。"
         )
+
+
+def _format_compilation_feedback(exc: SearchPlanCompilationError) -> str:
+    """把编译器的结构化错误列表转为重试 prompt 的 JSON 反馈。"""
+
+    if exc.issues:
+        return json.dumps(
+            [
+                {"code": issue.code, "detail": issue.detail, "fix": issue.fix}
+                for issue in exc.issues
+            ],
+            ensure_ascii=False,
+        )
+    return str(exc)
 
 
 def _validate_draft_data(data: Any) -> SearchPlanDraft:

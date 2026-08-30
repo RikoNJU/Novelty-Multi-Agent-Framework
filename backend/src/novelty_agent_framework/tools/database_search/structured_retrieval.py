@@ -30,8 +30,10 @@ from ...schemas import (
     StructuredSourceRetrievalRequest,
     Work,
     WorkType,
+    SearchStrategy,
 )
 from .adapter import CompiledQuery
+from ...agents.search_plan_compiler import FallbackVariant, build_fallback_chain
 from .retrieval_sources import RetrievalSource
 
 T = TypeVar("T")
@@ -50,6 +52,7 @@ class _PendingExecution:
     started_at: datetime
     completed_at: datetime
     hits: list[SearchHit]
+    variant: FallbackVariant | None = None
 
 
 class StructuredRetrievalAdapter:
@@ -178,8 +181,9 @@ class StructuredSourceRetrievalTool:
             )
         manifest = self.reference_store.load_manifest(request.subject_paper_id)
         plan = request.search_plan
-        compiled, warnings = self._compile_strategies(plan)
-        pending, failed, unique_hits = await self._search(compiled, request)
+        chain = build_fallback_chain(plan)
+        pending, failed, unique_hits, chain_warnings = await self._search(chain, request)
+        warnings = list(chain_warnings)
         enriched_hits, acquisition_warnings = await self._enrich_metadata(unique_hits)
         warnings.extend(acquisition_warnings)
 
@@ -228,7 +232,9 @@ class StructuredSourceRetrievalTool:
                     tool_name=self.name,
                     source_id=self.source_id,
                     query=item.query.query,
-                    parameters=_query_parameters(item.query, self.candidate_limit),
+                        parameters=_query_parameters(
+                            item.query, self.candidate_limit, variant=item.variant
+                        ),
                     status=(
                         SearchExecutionStatus.PARTIAL
                         if partial
@@ -340,83 +346,129 @@ class StructuredSourceRetrievalTool:
             "检测到正在运行的事件循环，请改用 await tool.ainvoke(...)"
         )
 
-    def _compile_strategies(
-        self, plan: SearchPlan
-    ) -> tuple[list[CompiledQuery], list[str]]:
-        compiled: list[CompiledQuery] = []
-        warnings: list[str] = []
-        for strategy in plan.strategies:
-            single = plan.model_copy(update={"strategies": [strategy]})
-            try:
-                compiled.extend(self.source.query_adapter.compile(single))
-            except Exception as exc:
-                warnings.append(
-                    f"query compilation {plan.novelty_point_id}/{plan.task_id}/{strategy.strategy_id} failed: {_safe_error(exc)}"
-                )
-        return compiled, warnings
+    def _compile_variant(
+        self,
+        variant: FallbackVariant,
+        plan: SearchPlan,
+    ) -> list[CompiledQuery]:
+        """把一条放宽变体编译为数据库查询（纯代码，不执行）。"""
+
+        single = plan.model_copy(
+            update={
+                "strategies": [
+                    SearchStrategy(
+                        strategy_id=variant.variant_id,
+                        level=variant.level,
+                        expression=variant.expression,
+                        description="",
+                        use_alias=variant.use_alias,
+                        use_exclude=variant.use_exclude,
+                    )
+                ]
+            }
+        )
+        try:
+            return list(self.source.query_adapter.compile(single))
+        except Exception as exc:
+            return []
 
     async def _search(
         self,
-        compiled: Sequence[CompiledQuery],
+        chain: Sequence[FallbackVariant],
         request: StructuredSourceRetrievalRequest,
     ) -> tuple[
-        list[_PendingExecution], list[SearchExecution], dict[str, SearchHit]
+        list[_PendingExecution],
+        list[SearchExecution],
+        dict[str, SearchHit],
+        list[str],
     ]:
+        """沿放宽链执行检索：基础策略命中则跳过其放宽变体，零命中自动降级。"""
+
         pending: list[_PendingExecution] = []
         failed: list[SearchExecution] = []
         unique: dict[str, SearchHit] = {}
-        for index, query in enumerate(compiled, start=1):
-            started = datetime.now(timezone.utc)
-            execution_id = self.adapter.stable_id(
-                "sex",
-                request.run_id or request.subject_paper_id,
-                request.research_task.task_id,
-                query.strategy_id,
-                query.query,
-                str(index),
-            )
-            try:
-                raw_hits = list(
-                    await _resolve(
-                        self.source.search_tool.search(
-                            query.query, limit=self.candidate_limit
-                        )
-                    )
-                )
-                hits = [
-                    hit if isinstance(hit, SearchHit) else SearchHit(**hit)
-                    for hit in raw_hits
-                ]
-            except Exception as exc:
-                failed.append(
-                    SearchExecution(
-                        execution_id=execution_id,
-                        run_id=request.run_id,
-                        tool_name=self.name,
-                        source_id=self.source_id,
-                        query=query.query,
-                        parameters=_query_parameters(query, self.candidate_limit),
-                        status=SearchExecutionStatus.FAILED,
-                        started_at=started,
-                        completed_at=datetime.now(timezone.utc),
-                        error=_safe_error(exc),
-                    )
-                )
-                continue
-            pending.append(
-                _PendingExecution(
-                    execution_id=execution_id,
-                    query=query,
-                    started_at=started,
-                    completed_at=datetime.now(timezone.utc),
-                    hits=hits,
-                )
-            )
-            for hit in hits:
-                unique.setdefault(_candidate_key(hit), hit)
+        warnings: list[str] = []
+        base_hit: dict[str, bool] = {}
+        execution_index = 0
+
+        for variant in chain:
             if len(unique) >= self.candidate_limit:
                 break
-        return pending, failed, dict(list(unique.items())[: self.candidate_limit])
+            if (
+                variant.variant_id != variant.base_strategy_id
+                and base_hit.get(variant.base_strategy_id)
+            ):
+                continue  # 基础策略已命中，放宽变体不再需要
+            compiled = self._compile_variant(variant, request.search_plan)
+            if not compiled:
+                warnings.append(
+                    f"fallback variant {variant.variant_id} failed to compile; skipped"
+                )
+                continue
+            for query in compiled:
+                execution_index += 1
+                started = datetime.now(timezone.utc)
+                execution_id = self.adapter.stable_id(
+                    "sex",
+                    request.run_id or request.subject_paper_id,
+                    request.research_task.task_id,
+                    query.strategy_id,
+                    query.query,
+                    str(execution_index),
+                )
+                try:
+                    raw_hits = list(
+                        await _resolve(
+                            self.source.search_tool.search(
+                                query.query, limit=self.candidate_limit
+                            )
+                        )
+                    )
+                    hits = [
+                        hit if isinstance(hit, SearchHit) else SearchHit(**hit)
+                        for hit in raw_hits
+                    ]
+                except Exception as exc:
+                    failed.append(
+                        SearchExecution(
+                            execution_id=execution_id,
+                            run_id=request.run_id,
+                            tool_name=self.name,
+                            source_id=self.source_id,
+                            query=query.query,
+                            parameters=_query_parameters(
+                                query, self.candidate_limit, variant=variant
+                            ),
+                            status=SearchExecutionStatus.FAILED,
+                            started_at=started,
+                            completed_at=datetime.now(timezone.utc),
+                            error=_safe_error(exc),
+                        )
+                    )
+                    continue
+                pending.append(
+                    _PendingExecution(
+                        execution_id=execution_id,
+                        query=query,
+                        started_at=started,
+                        completed_at=datetime.now(timezone.utc),
+                        hits=hits,
+                        variant=variant,
+                    )
+                )
+                if hits:
+                    base_hit[variant.base_strategy_id] = True
+                for hit in hits:
+                    unique.setdefault(_candidate_key(hit), hit)
+                if len(unique) >= self.candidate_limit:
+                    break
+
+        return (
+            pending,
+            failed,
+            dict(list(unique.items())[: self.candidate_limit]),
+            warnings,
+        )
 
     async def _enrich_metadata(
         self, hits: Mapping[str, SearchHit]
@@ -590,14 +642,24 @@ def _candidate_key(hit: SearchHit) -> str:
     return f"title:{_normalize_text(hit.title)}"
 
 
-def _query_parameters(query: CompiledQuery, limit: int) -> dict[str, Any]:
-    return {
+def _query_parameters(
+    query: CompiledQuery,
+    limit: int,
+    *,
+    variant: FallbackVariant | None = None,
+) -> dict[str, Any]:
+    parameters = {
         "limit": limit,
         "task_id": query.task_id,
         "novelty_point_id": query.novelty_point_id,
         "strategy_id": query.strategy_id,
         "level": query.level,
     }
+    if variant is not None:
+        parameters["variant_id"] = variant.variant_id
+        parameters["base_strategy"] = variant.base_strategy_id
+        parameters["fallback_reason"] = variant.drop_reason or None
+    return parameters
 
 
 def _normalize_text(value: str) -> str:

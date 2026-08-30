@@ -221,7 +221,11 @@ class NoveltyWorkflow:
         sends = [
             Send(
                 "plan_research_task",
-                {"current_point": points[task.novelty_point_id], "current_task": task},
+                {
+                    "current_point": points[task.novelty_point_id],
+                    "current_task": task,
+                    "subject_paper_id": state["paper"].paper_id,
+                },
             )
             for task in tasks
             if task.novelty_point_id in points
@@ -235,9 +239,36 @@ class NoveltyWorkflow:
             plan_value = self.services.search_planner.plan(point, task)
             plan = SearchPlan.model_validate(await _resolve(plan_value))
         except (ValidationError, TypeError, ValueError) as exc:
-            raise WorkflowExecutionError(
-                f"Planner 未为 {point.point_id} / {task.task_id} 生成合法 SearchPlan：{exc}"
-            ) from exc
+            # 韧性：单个任务检索方案失败不应击穿整个查新流程——
+            # 记录 PARTIAL 结果与告警，其余任务继续，覆盖度评估可见该缺口。
+            safe_error = _safe_error(exc)
+            result = TaskResearchResult(
+                task_id=task.task_id,
+                novelty_point_id=point.point_id,
+                status=TaskResearchStatus.FAILED,
+                warnings=[f"planner failed: {safe_error}"],
+                steps_used=0,
+            )
+            persist_task_research_result(
+                state["subject_paper_id"], result, attempt=task.attempt
+            )
+            return {
+                "search_plans": [],
+                "task_research_results": [result],
+                "raw_evidence": [],
+                "raw_evidence_cards": [],
+                "issues": [
+                    WorkflowIssue(
+                        node="plan_research_task",
+                        code="search_plan_failed",
+                        message=(
+                            f"检索方案生成失败（{point.point_id}/{task.task_id}）："
+                            f"{safe_error}"
+                        ),
+                        task_id=task.task_id,
+                    )
+                ],
+            }
         if plan.task_id != task.task_id or plan.novelty_point_id != point.point_id:
             raise WorkflowExecutionError(
                 f"SearchPlan 与任务绑定不一致：{point.point_id} / {task.task_id}"

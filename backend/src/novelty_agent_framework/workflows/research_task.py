@@ -237,7 +237,14 @@ def _project_search_plan(plan: SearchPlan) -> dict:
     """
 
     return {
-        "concepts": [{"terms": list(concept.terms)} for concept in plan.concepts],
+        "concepts": [
+            {
+                "terms": list(concept.terms),
+                "role": concept.role,
+                "alias": list(concept.alias),
+            }
+            for concept in plan.concepts
+        ],
         "strategies": [
             {"expression": strategy.expression} for strategy in plan.strategies
         ],

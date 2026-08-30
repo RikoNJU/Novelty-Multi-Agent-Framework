@@ -38,7 +38,17 @@ class ArxivQueryAdapter(QueryAdapter):
 
     database = "arxiv"
 
-    def _render_concept(self, concept: SearchConcept) -> str:
+    def __init__(self, *, render_v2: bool = True, phrase_max_words: int = 3) -> None:
+        self.render_v2 = render_v2
+        self.phrase_max_words = phrase_max_words
+
+    def _render_concept(
+        self,
+        concept: SearchConcept,
+        *,
+        use_alias: bool = False,
+        use_exclude: bool = True,
+    ) -> str:
         terms: list[str] = []
         seen: set[str] = set()
         for raw_term in concept.terms:
@@ -48,8 +58,83 @@ class ArxivQueryAdapter(QueryAdapter):
             if term not in seen:
                 seen.add(term)
                 terms.append(term)
-        rendered = [f'all:"{_escape_query_term(term)}"' for term in terms]
-        return rendered[0] if len(rendered) == 1 else f"({' OR '.join(rendered)})"
+        field = _field_for_role(concept.role)
+        rendered = [
+            render_arxiv_term(
+                term,
+                render_v2=self.render_v2,
+                phrase_max_words=self.phrase_max_words,
+                field=field,
+            )
+            for term in terms
+        ]
+        if use_alias:
+            for raw_alias in concept.alias:
+                alias = " ".join(raw_alias.split())
+                if alias and alias not in seen:
+                    seen.add(alias)
+                    rendered.append(
+                        render_arxiv_term(
+                            alias,
+                            render_v2=self.render_v2,
+                            phrase_max_words=self.phrase_max_words,
+                            field=field,
+                        )
+                    )
+        block = rendered[0] if len(rendered) == 1 else f"({' OR '.join(rendered)})"
+        excluded = [
+            render_arxiv_term(
+                " ".join(raw.split()),
+                render_v2=self.render_v2,
+                phrase_max_words=self.phrase_max_words,
+                field="all",
+            )
+            for raw in concept.exclude
+            if raw.strip()
+        ]
+        if use_exclude and excluded:
+            block = f"{block} ANDNOT ({' OR '.join(excluded)})"
+        return block
+
+
+def _field_for_role(role: str | None) -> str:
+    """按概念角色选择 arXiv 字段：object 标题优先，方法/特征用摘要，
+    escape 用全字段，缺省（v1 兼容）用 all。
+    """
+
+    if role == "escape":
+        return "all"
+    if role == "object":
+        return "ti"
+    if role in ("method", "feature", "setting"):
+        return "abs"
+    return "all"
+
+
+def render_arxiv_term(
+    term: str,
+    *,
+    render_v2: bool = True,
+    phrase_max_words: int = 3,
+    field: str = "all",
+) -> str:
+    """把单个术语渲染为 arXiv all: 查询片段（纯函数，可单测）。
+
+    - render_v2=False：始终 quoted phrase（all:"term"，v1 行为）；
+    - render_v2=True：词数 <= phrase_max_words 保持 quoted phrase；
+      词数更多时拆成词级 AND（all:w1 AND all:w2 ...），词级模式会
+      剥离术语内嵌的双引号（引号只在短语内有意义）。
+    """
+
+    normalized = " ".join(term.split())
+    if not normalized:
+        raise ValueError("term is empty")
+    if not render_v2:
+        return f'{field}:"{_escape_query_term(normalized)}"'
+    words = [token.strip('"') for token in normalized.split() if token.strip('"')]
+    if len(words) <= phrase_max_words:
+        return f'{field}:"{_escape_query_term(normalized)}"'
+    return " AND ".join(f"{field}:{_escape_query_term(word)}" for word in words)
 
 
 def _escape_query_term(term: str) -> str:
@@ -305,13 +390,17 @@ def build_arxiv_source(config: Mapping[str, Any]) -> RetrievalSource:
     """从来源专用配置构建自洽的 arXiv 能力包。"""
 
     enabled = bool(config.get("enabled", False))
+    render_v2 = bool(config.get("render_v2", True))
     if not enabled or config.get("adapter_only", False):
-        return RetrievalSource(source_id="arxiv", query_adapter=ArxivQueryAdapter())
+        return RetrievalSource(
+            source_id="arxiv",
+            query_adapter=ArxivQueryAdapter(render_v2=render_v2),
+        )
     timeout_seconds = float(config["timeout_seconds"])
     client = httpx.Client(timeout=timeout_seconds, follow_redirects=True)
     return RetrievalSource(
         source_id="arxiv",
-        query_adapter=ArxivQueryAdapter(),
+        query_adapter=ArxivQueryAdapter(render_v2=render_v2),
         search_tool=ArxivSearchTool(
             client=client,
             min_interval=float(config["min_interval_seconds"]),

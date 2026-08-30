@@ -77,7 +77,7 @@ async def run():
     raw = load_config()
     raw["workflow"].update({"max_rounds": 1, "max_concurrency": 1,
                             "minimum_evidence_per_point": 1})
-    raw["task_researcher"].update({"max_steps": 8, "max_tool_calls": 6})
+    raw["task_researcher"].update({"max_steps": 12, "max_tool_calls": 10})
     processing = raw["processing"]
     paper = PaperInput.model_validate(json.loads(PAPER_INPUT.read_text(encoding="utf-8")))
     points_payload = json.loads(POINTS_INPUT.read_text(encoding="utf-8"))

@@ -50,7 +50,7 @@ NoveltyPoint:
 ResearchTask:
 {research_task_json}
 
-SearchPlan（已投影：仅概念词表与策略组合逻辑；ID/level/绑定等系统字段由运行时管理）:
+SearchPlan（已投影：概念词表/角色/别名与策略组合逻辑；ID/level/绑定等系统字段由运行时管理）:
 {search_plan_json}
 
 Required finish schema:

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from enum import StrEnum
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -134,20 +134,34 @@ class ResearchTask(StrictModel):
 
 
 class SearchConcept(StrictModel):
-    """检索中的一个语义概念及其词项表达。"""
+    """检索中的一个语义概念及其词项表达。
+
+    role/alias/exclude/importance 为 v2 可选字段（默认 None/空），旧调用方不传时
+    行为与 v1 完全一致；M2 模板编译器会填充这些字段。
+    """
 
     concept_id: str = Field(min_length=1)
     name: str = Field(min_length=1)
     terms: list[str] = Field(min_length=1)
+    role: Literal["object", "method", "feature", "setting", "escape"] | None = None
+    alias: list[str] = Field(default_factory=list)
+    exclude: list[str] = Field(default_factory=list)
+    importance: int = Field(default=2, ge=1, le=3)
 
 
 class SearchStrategy(StrictModel):
-    """一条数据库无关的检索策略。"""
+    """一条数据库无关的检索策略。
+
+    use_alias 为 v2 可选字段（默认 False）：strict 只渲染 terms，medium/broad
+    渲染 terms+alias，由编译器模板赋值；旧调用方不传时行为与 v1 一致。
+    """
 
     strategy_id: str = Field(min_length=1)
     level: str = Field(min_length=1)
     expression: str = Field(min_length=1)
     description: str = ""
+    use_alias: bool = False
+    use_exclude: bool = True
 
 
 class SearchPlan(StrictModel):

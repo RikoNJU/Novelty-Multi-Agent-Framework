@@ -20,7 +20,13 @@ class NullQueryAdapter(QueryAdapter):
 
     database = "null_catalog"
 
-    def _render_concept(self, concept: SearchConcept) -> str:
+    def _render_concept(
+        self,
+        concept: SearchConcept,
+        *,
+        use_alias: bool = False,
+        use_exclude: bool = True,
+    ) -> str:
         terms: list[str] = []
         for raw_term in concept.terms:
             term = " ".join(raw_term.split())

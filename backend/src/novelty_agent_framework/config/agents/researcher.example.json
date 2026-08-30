@@ -5,15 +5,16 @@
     "temperature": 0.3,
     "max_tokens": 4096,
     "timeout_seconds": 300,
-    "tool_choice": "auto"
+    "tool_choice": "auto",
+    "enable_thinking": false
   },
   "prompt": "research/native_tool_loop",
   "harness": {
     "max_turns": 12,
     "max_total_tool_calls": 10,
     "per_tool_limits": {
-      "database_search": 2,
-      "web_search": 3,
+      "database_search": 3,
+      "web_search": 5,
       "browser": 3,
       "reader": 8
     }
@@ -28,8 +29,8 @@
       "providers": {
         "arxiv": {
           "enabled": true,
-          "min_interval_seconds": 3.0,
-          "timeout_seconds": 20.0,
+          "min_interval_seconds": 3,
+          "timeout_seconds": 20,
           "max_retries": 2,
           "full_text_max_chars": 100000
         },
@@ -44,7 +45,7 @@
       "default_max_results": 10,
       "max_results_per_call": 50,
       "baidu": {
-        "timeout_seconds": 30.0
+        "timeout_seconds": 30
       }
     },
     "browser": {

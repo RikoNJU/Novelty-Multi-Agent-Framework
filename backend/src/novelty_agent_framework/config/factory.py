@@ -23,6 +23,7 @@ from ..agents import (
     NoveltyResearchAgent,
     SearchPlannerAgent,
 )
+from ..agents.search_plan_compiler import SemanticLimits
 from ..tools import (
     BaiduSearchBackend,
     BrowserTool,
@@ -173,7 +174,8 @@ def build_search_planner(
             _model_options(invocation, response_format={"type": "json_object"})
             if invocation else None
         ),
-        max_attempts=int(runtime.get("max_attempts", 2)),
+        max_attempts=int(runtime.get("max_attempts", 3)),
+        semantic_limits=SemanticLimits(**(runtime.get("limits") or {})),
         prompt_name=str(runtime.get("prompt", "search_planner/plan")),
     )
 
@@ -426,6 +428,9 @@ def _build_workflow_from_application_config(
             response_format={"type": "json_object"},
         ),
         max_attempts=config.search_planner.max_attempts,
+        semantic_limits=SemanticLimits(
+            **config.search_planner.limits.model_dump()
+        ),
         prompt_name=config.search_planner.prompt,
     )
     reviewer = (
