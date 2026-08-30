@@ -18,7 +18,7 @@ import httpx
 import pymupdf
 
 from ....ports import FullText, FullTextTool, MetadataTool, SearchHit, SearchTool
-from ....schemas import EvidenceSource, SearchConcept
+from ....schemas import EvidenceSource, ExternalIdentifier, ParsedCitation, SearchConcept
 from ..adapter import QueryAdapter, QueryAdapterError
 from ..retrieval_sources import RetrievalSource
 
@@ -119,6 +119,22 @@ class ArxivSearchTool(SearchTool):
         response = self._get(f"{self._base_url}?{params}")
         root = ET.fromstring(response.text)
         return [parse_entry(entry) for entry in root.findall(f"{ATOM_NS}entry")]
+
+    def resolve_identifier(self, identifier: ExternalIdentifier) -> SearchHit | None:
+        if identifier.namespace != "arxiv":
+            return None
+        hits = self.search(f"id:{strip_version(identifier.value)}", limit=2)
+        target = strip_version(identifier.value).casefold()
+        return next((hit for hit in hits if strip_version(hit.document_id).casefold() == target), None)
+
+    def search_known_item(self, citation: ParsedCitation, *, limit: int = 5) -> Sequence[SearchHit]:
+        if citation.arxiv_id:
+            hit = self.resolve_identifier(ExternalIdentifier(namespace="arxiv", value=citation.arxiv_id))
+            return [hit] if hit else []
+        if not citation.title:
+            return []
+        escaped = _escape_query_term(citation.title)
+        return self.search(f'ti:"{escaped}"', limit=limit)
 
     def _throttle(self) -> None:
         elapsed = time.monotonic() - self._last_request_at

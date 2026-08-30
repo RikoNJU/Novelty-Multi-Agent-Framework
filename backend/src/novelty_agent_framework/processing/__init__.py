@@ -3,6 +3,7 @@
 from .mineru_parser import MineruError, MineruParser, MineruSettings
 from .paper_processor import DefaultPaperProcessor
 from .textify import TextifyResult, assemble_marked_text, textify
+from .reference_bootstrap import CitationMatcher, CitationParser, ReferenceBootstrapService, ReferenceProviderRegistry
 
 __all__ = [
     "DefaultPaperProcessor",
@@ -12,4 +13,8 @@ __all__ = [
     "TextifyResult",
     "assemble_marked_text",
     "textify",
+    "CitationMatcher",
+    "CitationParser",
+    "ReferenceBootstrapService",
+    "ReferenceProviderRegistry",
 ]

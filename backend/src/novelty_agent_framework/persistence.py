@@ -27,6 +27,9 @@ from .schemas import (
     PaperInput,
     RejectedEvidence,
     ReferenceManifest,
+    ReferenceBootstrapManifest,
+    ReferenceNamespace,
+    ArtifactNamespace,
     ReferenceReadResult,
     ResearchTask,
     SearchPlan,
@@ -51,6 +54,7 @@ def paper_workspace(
         workspace / "paper-input" / "images",
         workspace / "paper-input" / "others",
         workspace / "references" / "documents",
+        workspace / "subject_references" / "documents",
         workspace / "report",
     ):
         directory.mkdir(parents=True, exist_ok=True)
@@ -61,6 +65,13 @@ def paper_workspace(
             updated_at=datetime.now(timezone.utc),
         )
         _atomic_write_json(manifest_path, manifest.model_dump(mode="json"))
+    subject_manifest_path = workspace / "subject_references" / "list.json"
+    if not subject_manifest_path.exists():
+        manifest = ReferenceManifest(
+            subject_paper_id=paper_id,
+            updated_at=datetime.now(timezone.utc),
+        )
+        _atomic_write_json(subject_manifest_path, manifest.model_dump(mode="json"))
     return workspace
 
 
@@ -72,6 +83,14 @@ def reference_workspace(
     """返回论文工作区内的参考文献目录，并确保其已经初始化。"""
 
     return paper_workspace(paper, output_root=output_root) / "references"
+
+
+def subject_reference_workspace(
+    paper: PaperInput | PaperDocument | str,
+    *,
+    output_root: str | Path = DEFAULT_OUTPUTS_DIR,
+) -> Path:
+    return paper_workspace(paper, output_root=output_root) / "subject_references"
 
 
 def reference_documents_dir(
@@ -119,18 +138,31 @@ def persist_reference_manifest(
 class ReferenceStore:
     """参考文献 Manifest 与制品文件的单一工作区存储入口。"""
 
-    def __init__(self, output_root: str | Path = DEFAULT_OUTPUTS_DIR) -> None:
+    def __init__(
+        self,
+        output_root: str | Path = DEFAULT_OUTPUTS_DIR,
+        namespace: ReferenceNamespace = ReferenceNamespace.RESEARCH,
+    ) -> None:
         self.output_root = Path(output_root)
+        self.namespace = ReferenceNamespace(namespace)
+
+    def _workspace(self, paper_id: str) -> Path:
+        if self.namespace == ReferenceNamespace.SUBJECT_REFERENCE:
+            return subject_reference_workspace(paper_id, output_root=self.output_root)
+        return reference_workspace(paper_id, output_root=self.output_root)
 
     def load_manifest(self, paper_id: str) -> ReferenceManifest:
-        return load_reference_manifest(paper_id, output_root=self.output_root)
+        path = self._workspace(paper_id) / "list.json"
+        return ReferenceManifest.model_validate(json.loads(path.read_text(encoding="utf-8")))
 
     def persist_manifest(
         self, paper_id: str, manifest: ReferenceManifest
     ) -> Path:
-        return persist_reference_manifest(
-            paper_id, manifest, output_root=self.output_root
-        )
+        if manifest.subject_paper_id != paper_id:
+            raise ValueError("manifest subject_paper_id does not match paper_id")
+        path = self._workspace(paper_id) / "list.json"
+        _atomic_write_json(path, ReferenceManifest.model_validate(manifest).model_dump(mode="json"))
+        return path
 
     def write_document(
         self,
@@ -148,9 +180,7 @@ class ReferenceStore:
         suffix = extension.strip().lower().lstrip(".")
         if not re.fullmatch(r"[a-z0-9]+", suffix):
             raise ValueError("artifact extension is unsafe")
-        directory = reference_documents_dir(
-            paper_id, output_root=self.output_root
-        ) / safe_work_id
+        directory = self._workspace(paper_id) / "documents" / safe_work_id
         directory.mkdir(parents=True, exist_ok=True)
         path = directory / f"{safe_artifact_id}.{suffix}"
         if path.exists():
@@ -204,9 +234,7 @@ class ReferenceStore:
             raise ValueError(
                 f"artifact {artifact_id} media_type {artifact.media_type!r} is not readable text"
             )
-        references_dir = reference_workspace(
-            paper_id, output_root=self.output_root
-        ).resolve()
+        references_dir = self._workspace(paper_id).resolve()
         path = (references_dir / artifact.relative_path).resolve()
         if not path.is_relative_to(references_dir):
             raise ValueError(f"artifact {artifact_id} path escapes references workspace")
@@ -239,6 +267,36 @@ class ReferenceStore:
             has_more=char_end < len(text),
             sha256=artifact.sha256,
         )
+
+
+class SubjectReferenceStore(ReferenceStore):
+    def __init__(self, output_root: str | Path = DEFAULT_OUTPUTS_DIR) -> None:
+        super().__init__(output_root, namespace=ReferenceNamespace.SUBJECT_REFERENCE)
+
+    def load_bootstrap(self, paper_id: str) -> ReferenceBootstrapManifest:
+        path = self._workspace(paper_id) / "bootstrap.json"
+        if not path.exists():
+            return ReferenceBootstrapManifest(subject_paper_id=paper_id)
+        return ReferenceBootstrapManifest.model_validate_json(path.read_text(encoding="utf-8"))
+
+    def persist_bootstrap(
+        self, paper_id: str, manifest: ReferenceBootstrapManifest
+    ) -> Path:
+        if manifest.subject_paper_id != paper_id:
+            raise ValueError("bootstrap subject_paper_id does not match paper_id")
+        path = self._workspace(paper_id) / "bootstrap.json"
+        _atomic_write_json(path, manifest.model_dump(mode="json"))
+        return path
+
+
+def reference_store_for_artifact_namespace(
+    namespace: ArtifactNamespace,
+    *,
+    output_root: str | Path = DEFAULT_OUTPUTS_DIR,
+) -> ReferenceStore:
+    if namespace == ArtifactNamespace.SUBJECT_REFERENCE:
+        return SubjectReferenceStore(output_root)
+    return ReferenceStore(output_root)
 
 
 def persist_paper_input(

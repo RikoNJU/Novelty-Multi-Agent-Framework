@@ -8,6 +8,8 @@ system: |
   database_search tool description.
   Call at most one tool in each assistant response; wait for its result before the next call.
   Retrieval strategy:
+  - When reference_search is available, inspect the paper author's own reference
+    corpus first. This is a recall priority only and does not increase evidence weight.
   - Prefer database_search as the primary discovery tool when it is likely to
     provide relevant scholarly sources.
   - If database_search returns insufficient, weak, unavailable, or unusable

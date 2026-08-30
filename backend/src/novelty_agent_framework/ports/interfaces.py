@@ -22,6 +22,8 @@ from ..schemas import (
     PaperInput,
     ResearchTask,
     SearchPlan,
+    ExternalIdentifier,
+    ParsedCitation,
     TaskResearchRequest,
     TaskResearchResult,
 )
@@ -63,6 +65,26 @@ class SearchTool(Protocol):
     """候选文献检索工具。"""
 
     def search(self, query: str, *, limit: int = 10) -> Sequence[SearchHit]:
+        ...
+
+
+class IdentifierResolver(Protocol):
+    """Exact identifier resolution capability used outside agent tools."""
+
+    source_id: str
+
+    def resolve_identifier(self, identifier: ExternalIdentifier) -> SearchHit | None:
+        ...
+
+
+class KnownItemSearchTool(Protocol):
+    """Citation/known-item retrieval, distinct from topical search."""
+
+    source_id: str
+
+    def search_known_item(
+        self, citation: ParsedCitation, *, limit: int = 5
+    ) -> Sequence[SearchHit]:
         ...
 
 

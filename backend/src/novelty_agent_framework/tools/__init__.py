@@ -17,6 +17,7 @@ from .database_search import DatabaseSearchTool
 from .evidence_card_builder import EvidenceCardBuilder
 from .reader import ReaderTool, ReferenceReaderResearcherTool
 from .reference_reader import ReferenceArtifactReaderTool
+from .reference_search import ReferenceSearchTool
 from .renderer import (
     MarkdownRenderer,
     RendererFactory,
@@ -49,6 +50,7 @@ __all__ = [
     "PlaywrightBrowserBackend",
     "ReaderTool",
     "ReferenceArtifactReaderTool",
+    "ReferenceSearchTool",
     "ReferenceReaderResearcherTool",
     "RendererFactory",
     "ReportRenderError",

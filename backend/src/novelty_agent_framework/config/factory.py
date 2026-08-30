@@ -29,6 +29,7 @@ from ..tools import (
     EvidenceCardBuilder,
     PlaywrightBrowserBackend,
     ReferenceArtifactReaderTool,
+    ReferenceSearchTool,
     ReaderTool,
     ResearcherToolRegistry,
     WebSearchTool,
@@ -44,7 +45,7 @@ from ..tools.database_search.factory import (
     build_source_registry as build_database_source_registry,
     build_structured_source_retrieval_tool as build_database_structured_tool,
 )
-from ..persistence import ReferenceStore
+from ..persistence import ReferenceStore, SubjectReferenceStore
 from ..workflows import (
     NoveltyWorkflow,
     NoveltyWorkflowConfig,
@@ -300,6 +301,7 @@ def build_workflow(
     store = ReferenceStore()
     tool_registry = ResearcherToolRegistry(
         [
+            ReferenceSearchTool(SubjectReferenceStore()),
             build_database_search_tool(
                 retrieval_cfg,
                 reference_store=store,
@@ -459,6 +461,7 @@ def _build_workflow_from_application_config(
     store = ReferenceStore()
     tool_registry = ResearcherToolRegistry(
         [
+            ReferenceSearchTool(SubjectReferenceStore()),
             build_database_search_tool(
                 retrieval,
                 reference_store=store,
