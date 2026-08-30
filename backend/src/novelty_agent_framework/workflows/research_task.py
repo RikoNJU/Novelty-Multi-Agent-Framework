@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass, field
 
 from backend.env import ModelCallOptions, ModelClient, PromptLibrary
@@ -18,6 +19,24 @@ from ..schemas import (
 )
 from ..schemas import TaskResearchResult, TaskResearchStatus
 from ..tools import EvidenceCardBuilder, ResearcherToolRegistry
+
+
+def _extract_finish_json(content: str | None) -> str:
+    """从模型收尾文本中稳健提取 ResearchFinishDraft JSON 片段。
+
+    DeepSeek-V4-Flash 等模型常把收尾 JSON 包在 ```json ... ``` 代码块里或
+    夹带叙述文字；pydantic 的 model_validate_json 要求纯 JSON，这里先剥离
+    Markdown 围栏，再截取首个 '{' 到末尾 '}' 之间的内容。
+    """
+
+    text = (content or "").strip()
+    fence = re.search(r"```(?:json)?\s*(.*?)```", text, re.DOTALL)
+    if fence:
+        text = fence.group(1).strip()
+    start, end = text.find("{"), text.rfind("}")
+    if start != -1 and end > start:
+        text = text[start : end + 1]
+    return text
 
 
 @dataclass(frozen=True)
@@ -109,7 +128,7 @@ class TaskResearcherWorkflow:
         bundles, bundle_warnings = _trusted_bundles(harness_result.trace)
         try:
             draft = ResearchFinishDraft.model_validate_json(
-                harness_result.final_content or ""
+                _extract_finish_json(harness_result.final_content)
             )
         except (ValidationError, ValueError) as exc:
             return _partial(
