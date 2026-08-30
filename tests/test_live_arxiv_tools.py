@@ -2,15 +2,26 @@
 
 默认跳过；显式执行：
     pytest -m live tests/test_live_arxiv_tools.py -s
-需要外网可访问 export.arxiv.org / arxiv.org。
+需要外网可访问 export.arxiv.org / arxiv.org，模型链路需要 backend/.env。
 """
 
 from __future__ import annotations
 
+import asyncio
+
 import pytest
 
-from novelty_agent_framework.config import build_workflow, load_config
-from novelty_agent_framework.schemas import NoveltyPoint, ResearchTask
+from backend.env.model_client import _load_dev_env
+from novelty_agent_framework.config import (
+    build_workflow,
+    load_application_config,
+)
+from novelty_agent_framework.schemas import (
+    DatabaseSearchArguments,
+    NoveltyPoint,
+    ResearchTask,
+    TaskResearchRequest,
+)
 from novelty_agent_framework.tools.database_search.providers.arxiv import (
     ArxivFullTextTool,
     ArxivMetadataTool,
@@ -40,11 +51,11 @@ def test_live_arxiv_search_fetch_resolve() -> None:
 
 
 def test_live_research_agent_runs_one_point() -> None:
-    """完整 Agent 跑一个查新点：真实检索 + 假模型输出由绑定校验兜底。"""
+    """完整链路跑一个查新点：真实 planner → 编译器 → 真实 arxiv 检索。"""
 
-    workflow = build_workflow()
-    if workflow.services.search_tool is None:
-        pytest.skip("默认配置未启用 tools.arxiv")
+    _load_dev_env()
+    workflow = build_workflow(load_application_config())
+    researcher = workflow.services.task_researcher
 
     point = NoveltyPoint(
         point_id="NP-1",
@@ -61,24 +72,31 @@ def test_live_research_agent_runs_one_point() -> None:
         attempt=1,
     )
     plan = workflow.services.search_planner.plan(point, task)
-    compiled = workflow.services.query_adapter.compile(plan)
-    candidates = workflow.services.search_tool.search(compiled[0].query, limit=3)
-    agent = workflow.services.research_agent
-    cards = agent.research(
-        task,
-        point,
-        candidates,
-        full_text_tool=workflow.services.full_text_tool,
-        metadata_tool=workflow.services.metadata_tool,
+
+    scope = TaskResearchRequest(
+        subject_paper_id="live-test-subject",
+        run_id="live-run-1",
+        novelty_point=point,
+        research_task=task,
+        search_plan=plan,
     )
-    print(f"\n返回 {len(cards)} 张证据卡，均绑定真实检索结果")
+    database = researcher.tools.get("database_search")
+    observation = asyncio.run(
+        database.ainvoke(DatabaseSearchArguments(source_id="arxiv"), scope=scope)
+    )
+    result = observation.payload["database_search_result"]
+    assert observation.succeeded
+    assert result["results"], "真实 arxiv 检索应返回候选"
+    print(f"\n检索式: {plan.strategies[0].expression}；返回 {len(result['results'])} 条候选")
 
 
 def test_live_build_workflow_with_tools_enabled() -> None:
-    config = load_config()
-    config["tools"]["arxiv"]["enabled"] = True
-    workflow = build_workflow(config)
+    _load_dev_env()
+    workflow = build_workflow(load_application_config())
+    researcher = workflow.services.task_researcher
 
-    assert workflow.services.search_tool is not None
-    assert workflow.services.full_text_tool is not None
-    assert workflow.services.metadata_tool is not None
+    assert "reference_search" in researcher.tools.names
+    database = researcher.tools.get("database_search")
+    assert "arxiv" in database.tools_by_source
+    assert "null_catalog" in database.tools_by_source
+    assert "arxiv" in database.description
