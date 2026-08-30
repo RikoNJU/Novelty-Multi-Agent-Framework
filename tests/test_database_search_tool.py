@@ -64,6 +64,18 @@ class FullTexts:
         )
 
 
+class SecondSearcher(Searcher):
+    source_id = "demo2"
+
+
+class SecondFullTexts(FullTexts):
+    source_id = "demo2"
+
+
+class SecondQueryAdapter(DemoQueryAdapter):
+    database = "demo2"
+
+
 def scope() -> TaskResearchRequest:
     return TaskResearchRequest(
         subject_paper_id="subject-1",
@@ -99,6 +111,44 @@ def test_arguments_only_accept_and_normalize_source_id():
     assert DatabaseSearchArguments(source_id=" DeMo ").source_id == "demo"
     with pytest.raises(ValidationError):
         DatabaseSearchArguments(source_id="demo", query="untrusted")
+
+
+def test_description_lists_configured_sources_and_reader_policy(tmp_path):
+    tool, _, _ = build_tool(tmp_path)
+
+    assert "source_id 只能使用以下值：demo" in tool.description
+    assert "artifact_ids" in tool.description
+    assert "reader" in tool.description
+
+
+def test_description_whitelists_every_configured_source(tmp_path):
+    store = ReferenceStore(tmp_path)
+    planner = Planner()
+    internal = StructuredSourceRetrievalTool(
+        search_planner=planner,
+        source=RetrievalSource(
+            source_id="demo",
+            query_adapter=DemoQueryAdapter(),
+            search_tool=Searcher(),
+            full_text_tool=FullTexts(),
+        ),
+        reference_store=store,
+        candidate_limit=2,
+    )
+    internal2 = StructuredSourceRetrievalTool(
+        search_planner=planner,
+        source=RetrievalSource(
+            source_id="demo2",
+            query_adapter=SecondQueryAdapter(),
+            search_tool=SecondSearcher(),
+            full_text_tool=SecondFullTexts(),
+        ),
+        reference_store=store,
+        candidate_limit=2,
+    )
+    tool = DatabaseSearchTool({"demo": internal, "demo2": internal2}, store)
+
+    assert "source_id 只能使用以下值：demo, demo2" in tool.description
 
 
 def test_unknown_source_fails_clearly(tmp_path):

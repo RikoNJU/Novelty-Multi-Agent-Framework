@@ -15,6 +15,9 @@ from novelty_agent_framework.agents.search_plan_compiler import (
     build_runtime_plan,
     validate_draft_semantics,
 )
+from novelty_agent_framework.core.search_plan_expression import (
+    parse_search_plan_expression,
+)
 from novelty_agent_framework.schemas import ResearchTask
 from novelty_agent_framework.schemas.search_plan_draft import (
     SearchConceptDraft,
@@ -273,3 +276,34 @@ def test_semantic_limits_defaults_match_config_file() -> None:
         "max_term_words",
     ):
         assert getattr(defaults, field) == limits_config[field], field
+
+
+def test_compiled_expressions_conform_to_shared_dsl() -> None:
+    """模板/覆盖生成的表达式必须通过共享 DSL 语法校验（防御性守卫契约）。"""
+
+    drafts_and_tasks = [
+        (make_draft(), make_task()),
+        (
+            make_draft(
+                strategies=[
+                    {"level": "strict", "focus_concepts": ["C1", "C2"]},
+                    {"level": "medium"},
+                    {"level": "broad"},
+                ]
+            ),
+            make_task(),
+        ),
+        (
+            make_draft(strategies=[{"level": "strict"}]),
+            make_task(task_type="feature_supplement"),
+        ),
+    ]
+    for draft, task in drafts_and_tasks:
+        plan = build_runtime_plan(draft, task=task)
+        defined = {concept.concept_id for concept in plan.concepts}
+        for strategy in plan.strategies:
+            tokens = parse_search_plan_expression(
+                strategy.expression, defined_concepts=defined
+            )
+            assert tokens
+            assert strategy.expression

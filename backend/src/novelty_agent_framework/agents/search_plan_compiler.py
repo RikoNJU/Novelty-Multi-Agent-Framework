@@ -261,12 +261,47 @@ def build_runtime_plan(
     if not any(bool(getattr(s, "focus_concepts", None)) for s in draft.strategies):
         _assert_default_pool_monotonicity(strategies, concepts)
 
+    _validate_compiled_expressions(strategies, concepts)
+
     return SearchPlan(
         task_id=task.task_id,
         novelty_point_id=task.novelty_point_id,
         concepts=concepts,
         strategies=strategies,
     )
+
+
+def _validate_compiled_expressions(
+    strategies: list[SearchStrategy],
+    concepts: list[SearchConcept],
+) -> None:
+    """防御性守卫：模板/覆盖生成的表达式必须符合共享 DSL 语法。
+
+    表达式由本模块确定性生成，正常情况下必然合法；此校验防止未来改动
+    破坏表达式模板（如引入非法 token、未定义概念引用或括号失衡）。
+
+    延迟导入 core：core/__init__ 急切导入 tool_call_harness（其导入 tools），
+    与 tools→structured_retrieval→本模块 构成导入期环；运行时调用时
+    包导入图已完整，可安全解析。
+    """
+
+    from ..core.search_plan_expression import (
+        SearchPlanExpressionError,
+        parse_search_plan_expression,
+    )
+
+    defined_concepts = {concept.concept_id for concept in concepts}
+    for strategy in strategies:
+        try:
+            parse_search_plan_expression(
+                strategy.expression,
+                defined_concepts=defined_concepts,
+            )
+        except SearchPlanExpressionError as exc:
+            raise SearchPlanCompilationError(
+                "模板生成的表达式不符合共享 DSL 语法："
+                f"{strategy.strategy_id} {strategy.expression!r}：{exc}"
+            ) from exc
 
 
 def _pool_for(

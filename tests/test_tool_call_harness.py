@@ -103,6 +103,58 @@ class ProjectedExampleTool(ExampleTool):
         return {"succeeded": True, "handle": observation.payload["echo"]}
 
 
+class DatabaseStubArguments(StrictModel):
+    source_id: str = "demo"
+
+
+class DatabaseStubTool:
+    name = "database_search"
+    description = "database stub"
+    args_schema = DatabaseStubArguments
+
+    def __init__(self, *, artifact_ids: list[str]) -> None:
+        self.artifact_ids = artifact_ids
+        self.received: list[DatabaseStubArguments] = []
+
+    async def ainvoke(self, arguments, *, scope):
+        self.received.append(arguments)
+        return ResearcherToolObservation(
+            tool_name=self.name,
+            arguments=arguments.model_dump(mode="json"),
+            succeeded=True,
+            payload={
+                "database_search_result": {
+                    "results": [{"artifact_ids": list(self.artifact_ids)}]
+                }
+            },
+        )
+
+
+class ArtifactReaderArguments(StrictModel):
+    artifact_id: str
+    max_chars: int = 8_000
+
+
+class ArtifactReaderStub:
+    name = "reader"
+    description = "artifact reader stub"
+    args_schema = ArtifactReaderArguments
+
+    def __init__(self) -> None:
+        self.received: list[ArtifactReaderArguments] = []
+
+    async def ainvoke(self, arguments, *, scope):
+        self.received.append(arguments)
+        return ResearcherToolObservation(
+            tool_name="reader",
+            arguments=arguments.model_dump(),
+            succeeded=True,
+            payload={
+                "read_result": {"char_start": 0, "char_end": arguments.max_chars}
+            },
+        )
+
+
 def call(arguments=None, *, call_id="call_1") -> ModelResponse:
     return ModelResponse(
         content=None,
@@ -111,6 +163,32 @@ def call(arguments=None, *, call_id="call_1") -> ModelResponse:
                 id=call_id,
                 name="example",
                 arguments=arguments or {"value": "hello"},
+            ),
+        ),
+    )
+
+
+def database_call(*, call_id="call_1") -> ModelResponse:
+    return ModelResponse(
+        content=None,
+        tool_calls=(
+            ModelToolCall(
+                id=call_id,
+                name="database_search",
+                arguments={"source_id": "demo"},
+            ),
+        ),
+    )
+
+
+def reader_call(artifact_id: str, *, call_id="call_2") -> ModelResponse:
+    return ModelResponse(
+        content=None,
+        tool_calls=(
+            ModelToolCall(
+                id=call_id,
+                name="reader",
+                arguments={"artifact_id": artifact_id},
             ),
         ),
     )
@@ -372,3 +450,86 @@ def test_config_rejects_non_positive_budgets() -> None:
         ToolCallHarnessConfig(max_turns=0)
     with pytest.raises(ValueError, match="max_tool_calls"):
         ToolCallHarnessConfig(max_tool_calls=0)
+
+
+def test_database_search_artifact_ids_require_reader_next() -> None:
+    example = ExampleTool()
+    database = DatabaseStubTool(artifact_ids=["a-1"])
+    model = ScriptedModelClient(database_call(), call(call_id="call_2"))
+    harness = ToolCallHarness(
+        model,
+        ResearcherToolRegistry([database, example]),
+        config=ToolCallHarnessConfig(max_turns=4, max_tool_calls=3),
+    )
+
+    with pytest.raises(ToolCallHarnessError, match="reader required") as exc:
+        run_harness(harness, system_prompt="system", initial_user_message="task")
+
+    assert len(database.received) == 1
+    assert example.received == []
+    assert (
+        exc.value.trace[-1].detail
+        == "reader required after database_search returned artifact_ids"
+    )
+
+
+def test_required_reader_rejects_wrong_artifact_id() -> None:
+    database = DatabaseStubTool(artifact_ids=["a-1"])
+    reader = ArtifactReaderStub()
+    model = ScriptedModelClient(database_call(), reader_call("a-2"))
+    harness = ToolCallHarness(
+        model,
+        ResearcherToolRegistry([database, reader]),
+        config=ToolCallHarnessConfig(max_turns=4, max_tool_calls=3),
+    )
+
+    with pytest.raises(ToolCallHarnessError, match="reader required") as exc:
+        run_harness(harness, system_prompt="system", initial_user_message="task")
+
+    assert reader.received == []
+    assert exc.value.trace[-1].detail.endswith("artifact_ids")
+
+
+def test_required_reader_accepts_artifact_id_then_releases() -> None:
+    database = DatabaseStubTool(artifact_ids=["a-1"])
+    reader = ArtifactReaderStub()
+    example = ExampleTool()
+    model = ScriptedModelClient(
+        database_call(),
+        reader_call("a-1"),
+        call(call_id="call_3"),
+        ModelResponse(content="finished"),
+    )
+    harness = ToolCallHarness(
+        model,
+        ResearcherToolRegistry([database, reader, example]),
+        config=ToolCallHarnessConfig(max_turns=5, max_tool_calls=4),
+    )
+
+    result = run_harness(
+        harness, system_prompt="system", initial_user_message="task"
+    )
+
+    assert result.final_content == "finished"
+    assert [item.artifact_id for item in reader.received] == ["a-1"]
+    assert len(example.received) == 1
+
+
+def test_database_search_without_artifact_ids_imposes_no_reader_requirement() -> None:
+    database = DatabaseStubTool(artifact_ids=[])
+    example = ExampleTool()
+    model = ScriptedModelClient(
+        database_call(), call(call_id="call_2"), ModelResponse(content="finished")
+    )
+    harness = ToolCallHarness(
+        model,
+        ResearcherToolRegistry([database, example]),
+        config=ToolCallHarnessConfig(max_turns=4, max_tool_calls=3),
+    )
+
+    result = run_harness(
+        harness, system_prompt="system", initial_user_message="task"
+    )
+
+    assert result.final_content == "finished"
+    assert len(example.received) == 1

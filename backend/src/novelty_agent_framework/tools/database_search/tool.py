@@ -20,9 +20,6 @@ from .structured_retrieval import StructuredSourceRetrievalTool
 
 class DatabaseSearchTool:
     name = "database_search"
-    description = (
-        "搜索已配置的结构化文献数据库并保存候选作品；候选来源本身不是证据。"
-    )
     args_schema = DatabaseSearchArguments
 
     def __init__(
@@ -42,6 +39,13 @@ class DatabaseSearchTool:
                 raise ValueError("all database retrieval tools must share reference_store")
         self.tools_by_source = normalized
         self.reference_store = reference_store
+        available = ", ".join(sorted(normalized))
+        self.description = (
+            "搜索已配置的结构化文献数据库并保存候选作品；"
+            f"source_id 只能使用以下值：{available}。"
+            "候选来源本身不是证据；结果包含 artifact_ids 时，下一次工具调用"
+            "必须优先使用 reader 读取其中一个 Artifact，不得继续搜索。"
+        )
 
     async def ainvoke(
         self,

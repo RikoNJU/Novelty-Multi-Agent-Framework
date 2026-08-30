@@ -120,6 +120,7 @@ class ToolCallHarness:
         tool_calls_used = 0
         per_tool_counts: dict[str, int] = {}
         total_read_chars = 0
+        required_reader_artifact_ids: set[str] = set()
 
         for turn in range(1, self.config.max_turns + 1):
             context = _build_context(system_prompt, tuple(log))
@@ -169,6 +170,17 @@ class ToolCallHarness:
                 )
 
             tool_call = response.tool_calls[0]
+            if required_reader_artifact_ids:
+                requested_artifact = tool_call.arguments.get("artifact_id")
+                if (
+                    tool_call.name != "reader"
+                    or requested_artifact not in required_reader_artifact_ids
+                ):
+                    detail = (
+                        "reader required after database_search returned artifact_ids"
+                    )
+                    _append_error(log, detail)
+                    raise ToolCallHarnessError(detail, trace=tuple(log))
             tool_limit = self.config.per_tool_limits.get(tool_call.name)
             tool_count = per_tool_counts.get(tool_call.name, 0)
             if tool_limit is not None and tool_count >= tool_limit:
@@ -207,6 +219,10 @@ class ToolCallHarness:
                 )
             tool_calls_used += 1
             per_tool_counts[tool_call.name] = tool_count + 1
+            if tool_call.name == "database_search" and observation.succeeded:
+                required_reader_artifact_ids = _database_artifact_ids(observation)
+            elif tool_call.name == "reader" and required_reader_artifact_ids:
+                required_reader_artifact_ids.clear()
             if tool_call.name == "reader" and observation.succeeded:
                 read = observation.payload.get("read_result", {})
                 start, end = read.get("char_start"), read.get("char_end")
@@ -274,6 +290,16 @@ def _serialize_tool_result(model_context: dict) -> str:
         ensure_ascii=False,
         sort_keys=True,
     )
+
+
+def _database_artifact_ids(observation: ResearcherToolObservation) -> set[str]:
+    result = observation.payload.get("database_search_result", {})
+    return {
+        artifact_id
+        for item in result.get("results", [])
+        for artifact_id in item.get("artifact_ids", [])
+        if isinstance(artifact_id, str) and artifact_id
+    }
 
 
 def _append_error(log: list[ToolCallHarnessEvent], detail: str) -> None:
