@@ -58,6 +58,21 @@ class AccessStatus(StrEnum):
     FAILED = "failed"
 
 
+class ReferenceNamespace(StrEnum):
+    RESEARCH = "research"
+    SUBJECT_REFERENCE = "subject_reference"
+
+
+class ArtifactNamespace(StrEnum):
+    SUBJECT_REFERENCE = "subject_reference"
+    RESEARCH_REFERENCE = "research_reference"
+
+
+class ArtifactHandle(StrictModel):
+    namespace: ArtifactNamespace
+    artifact_id: NonEmptyStr
+
+
 class ArtifactRole(StrEnum):
     ABSTRACT = "abstract"
     FULL_TEXT = "full_text"

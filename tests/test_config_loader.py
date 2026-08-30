@@ -99,7 +99,7 @@ def test_cross_field_limits_fail_fast(tmp_path: Path, mutate):
         load_application_config(researcher_path=path)
 
 
-def test_typed_config_builds_four_tool_workflow_without_legacy_projection(
+def test_typed_config_builds_five_tool_workflow_without_legacy_projection(
     monkeypatch,
 ):
     config = load_application_config()
@@ -109,7 +109,7 @@ def test_typed_config_builds_four_tool_workflow_without_legacy_projection(
     )
     workflow = build_workflow(config)
     assert workflow.services.task_researcher.tools.names == (
-        "database_search", "web_search", "browser", "reader"
+        "reference_search", "database_search", "web_search", "browser", "reader"
     )
     database = workflow.services.task_researcher.tools.get("database_search")
     planner = next(iter(database.tools_by_source.values())).search_planner

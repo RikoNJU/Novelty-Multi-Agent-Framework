@@ -129,7 +129,7 @@ def test_services_hide_retrieval_implementation_details():
         "reviewer",
     }
     assert workflow.services.task_researcher.tools.names == (
-        "database_search", "web_search", "browser", "reader")
+        "reference_search", "database_search", "web_search", "browser", "reader")
 
 
 def test_build_workflow_formal_path_ignores_legacy_arxiv_tools():
@@ -146,13 +146,13 @@ def test_build_workflow_formal_path_ignores_legacy_arxiv_tools():
     workflow = build_workflow(config)
 
     assert workflow.services.task_researcher.tools.names == (
-        "database_search", "web_search", "browser", "reader")
+        "reference_search", "database_search", "web_search", "browser", "reader")
     assert workflow.config.candidate_limit_per_task == 5
 
 
 def test_formal_tools_share_one_reference_store():
     researcher = build_workflow(BASE_CONFIG).services.task_researcher
-    database, web, browser, reader = [
+    reference_search, database, web, browser, reader = [
         researcher.tools.get(name) for name in researcher.tools.names
     ]
     store = researcher.evidence_builder.reference_store

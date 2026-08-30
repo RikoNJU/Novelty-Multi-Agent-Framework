@@ -24,7 +24,10 @@ def test_researcher_prompt_renders_attempt3_retrieval_policy() -> None:
     assert "For Chinese-language research tasks" in rendered.system
     assert "Search results and snippets are discovery metadata, not evidence" in rendered.system
     assert "Never issue consecutive web_search calls" in rendered.system
-    assert "read it directly with reader" in rendered.system
+    assert "Never guess an\nunlisted database source_id" in rendered.system
+    assert "the next tool call MUST be reader" in rendered.system
+    assert "Do not call\ndatabase_search, web_search, or browser again" in rendered.system
+    assert "When reference_search is available" in rendered.system
     assert "Do not decide whether a source is evidentiary based only on search snippets" in rendered.system
 
 

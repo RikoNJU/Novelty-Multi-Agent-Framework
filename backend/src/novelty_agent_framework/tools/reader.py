@@ -49,6 +49,7 @@ class ReaderTool:
         result = await self.reader.ainvoke(
             ReferenceReadRequest(
                 subject_paper_id=scope.subject_paper_id,
+                namespace=arguments.namespace,
                 artifact_id=arguments.artifact_id,
                 char_start=arguments.char_start,
                 max_chars=arguments.max_chars,

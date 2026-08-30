@@ -8,7 +8,14 @@ from typing import Annotated, TypeAlias
 from pydantic import Field, StringConstraints, field_validator, model_validator
 
 from .domain import EvidenceCard, StrictModel
-from .references import AccessStatus, ArtifactRole, ContentExtent, Evidence
+from .references import (
+    AccessStatus,
+    ArtifactHandle,
+    ArtifactNamespace,
+    ArtifactRole,
+    ContentExtent,
+    Evidence,
+)
 
 NonEmptyStr = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
 
@@ -87,6 +94,7 @@ class BrowserResult(StrictModel):
 
 
 class ReaderArguments(StrictModel):
+    namespace: ArtifactNamespace = ArtifactNamespace.RESEARCH_REFERENCE
     artifact_id: NonEmptyStr
     char_start: int = Field(default=0, ge=0)
     max_chars: int = Field(default=8_000, ge=1, le=16_000)
@@ -96,6 +104,7 @@ class ReferenceReadRequest(StrictModel):
     """Internal deterministic-reader request derived from ReaderArguments."""
 
     subject_paper_id: NonEmptyStr
+    namespace: ArtifactNamespace = ArtifactNamespace.RESEARCH_REFERENCE
     artifact_id: NonEmptyStr
     char_start: int = Field(default=0, ge=0)
     max_chars: int = Field(default=8_000, ge=1, le=16_000)
@@ -119,6 +128,27 @@ class ReferenceReadResult(StrictModel):
         if self.char_end - self.char_start != len(self.text):
             raise ValueError("read range must match text length")
         return self
+
+
+class ReferenceSearchArguments(StrictModel):
+    query: NonEmptyStr
+    max_results: int = Field(default=10, ge=1, le=100)
+
+
+class ReferenceSearchItem(StrictModel):
+    reference_id: NonEmptyStr
+    work_id: NonEmptyStr
+    title: NonEmptyStr
+    authors: list[NonEmptyStr] = Field(default_factory=list)
+    publication_year: int | None = None
+    artifact_handles: list[ArtifactHandle] = Field(default_factory=list)
+    abstract_preview: str | None = None
+    score: float
+
+
+class ReferenceSearchResult(StrictModel):
+    query: NonEmptyStr
+    results: list[ReferenceSearchItem] = Field(default_factory=list)
 
 
 class EvidenceQuoteDraft(StrictModel):

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import asyncio
 
-from ..persistence import ReferenceStore
+from ..persistence import ReferenceStore, reference_store_for_artifact_namespace
 from ..schemas import ReferenceReadRequest, ReferenceReadResult
 
 
@@ -29,7 +29,10 @@ class ReferenceArtifactReaderTool:
             raise ValueError(
                 f"max_chars exceeds reader limit {self.max_chars_per_read}"
             )
-        return self.reference_store.read_document_slice(
+        store = reference_store_for_artifact_namespace(
+            request.namespace, output_root=self.reference_store.output_root
+        )
+        return store.read_document_slice(
             request.subject_paper_id,
             artifact_id=request.artifact_id,
             char_start=request.char_start,

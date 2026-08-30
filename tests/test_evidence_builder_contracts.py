@@ -129,7 +129,7 @@ def test_existing_three_tool_schemas_are_unchanged() -> None:
     assert WebSearchArguments.model_fields.keys() == {"query", "max_results"}
     assert BrowserArguments.model_fields.keys() == {"source_record_id"}
     assert ReaderArguments.model_fields.keys() == {
-        "artifact_id", "char_start", "max_chars"
+        "namespace", "artifact_id", "char_start", "max_chars"
     }
 
 

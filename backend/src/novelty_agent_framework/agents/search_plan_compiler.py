@@ -16,6 +16,10 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
+from ..core.search_plan_expression import (
+    SearchPlanExpressionError,
+    parse_search_plan_expression,
+)
 from ..schemas import ResearchTask, SearchConcept, SearchPlan, SearchStrategy
 from ..schemas.search_plan_draft import SearchPlanDraft
 
@@ -279,16 +283,7 @@ def _validate_compiled_expressions(
 
     表达式由本模块确定性生成，正常情况下必然合法；此校验防止未来改动
     破坏表达式模板（如引入非法 token、未定义概念引用或括号失衡）。
-
-    延迟导入 core：core/__init__ 急切导入 tool_call_harness（其导入 tools），
-    与 tools→structured_retrieval→本模块 构成导入期环；运行时调用时
-    包导入图已完整，可安全解析。
     """
-
-    from ..core.search_plan_expression import (
-        SearchPlanExpressionError,
-        parse_search_plan_expression,
-    )
 
     defined_concepts = {concept.concept_id for concept in concepts}
     for strategy in strategies:
