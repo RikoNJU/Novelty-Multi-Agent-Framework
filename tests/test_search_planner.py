@@ -10,6 +10,9 @@ import pytest
 
 from backend.env import ModelResponse, PromptLibrary
 from novelty_agent_framework.agents import SearchPlannerAgent
+from novelty_agent_framework.core.search_plan_expression import (
+    parse_search_plan_expression,
+)
 from novelty_agent_framework.schemas import NoveltyPoint, ResearchTask, SearchPlan
 
 PROMPTS_ROOT = Path("backend/src/novelty_agent_framework/prompts")
@@ -114,9 +117,36 @@ def test_plans_normal_chinese_task_and_renders_prompt() -> None:
     messages, options = client.calls[0]
     assert '"language": "zh"' in messages[1].content
     assert "数据库无关" in messages[0].content
-    assert "expression 是严格 DSL" in messages[1].content
-    assert "严禁出现 terms、自然语言、引号" in messages[1].content
+    assert "检索规划 SOP" in messages[1].content
+    assert "expression 仅允许 Concept ID" in messages[1].content
+    assert "同一 Concept 的 terms" in messages[1].content
     assert options.response_format == {"type": "json_object"}
+
+
+def test_prompt_v2_renders_all_inputs_and_contains_valid_golden_plan() -> None:
+    rendered = PromptLibrary(PROMPTS_ROOT).render(
+        "search_planner/plan",
+        point_json='{"point_id":"NP-CURRENT"}',
+        task_json='{"task_id":"T-CURRENT"}',
+        retry_reason="invalid_expression_grammar",
+        search_plan_schema='{"title":"SearchPlan"}',
+    )
+
+    assert rendered.version == "2"
+    assert '{"point_id":"NP-CURRENT"}' in rendered.user
+    assert '{"task_id":"T-CURRENT"}' in rendered.user
+    assert "invalid_expression_grammar" in rendered.user
+    assert '{"title":"SearchPlan"}' in rendered.user
+
+    example_text = rendered.user.split("示例 SearchPlan：\n", 1)[1]
+    example_data, _ = json.JSONDecoder().raw_decode(example_text)
+    example = SearchPlan.model_validate(example_data)
+    defined_concepts = {concept.concept_id for concept in example.concepts}
+    for strategy in example.strategies:
+        parse_search_plan_expression(
+            strategy.expression,
+            defined_concepts=defined_concepts,
+        )
 
 
 def test_custom_prompt_name_is_used_for_rendering() -> None:
