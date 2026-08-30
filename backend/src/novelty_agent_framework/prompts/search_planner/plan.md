@@ -16,7 +16,10 @@ system: |
 2. concept_id 使用 C1、C2、C3...，单个计划内唯一；
 3. terms 至少包含核心标准表达，只扩展高度相关的同义词、缩写、全称或领域替代表达；
 4. language=zh 时以中文词项为主，可补充标准缩写；language=en 时使用专业英文术语，即使查新点英文内容缺失也应基于中文内容进行术语翻译与归一化；
-5. expression 只引用 Concept ID，并使用 AND、OR 和括号表达数据库无关逻辑；
+5. expression 是严格 DSL，只允许 Concept ID（C1、C2...）、大写 AND、大写 OR、圆括号和空白；
+   合法示例：`C1 AND C2`、`C1 AND (C2 OR C3)`；
+   expression 中严禁出现 terms、自然语言、引号、NOT、&&、|| 或任何其他字符；
+   检索词只能放入 concepts[*].terms，绝不能直接写入 expression；
 6. 禁止 abs:、ti:、all:、SU=、TS=、AU= 等数据库字段语法。
 
 策略要求：

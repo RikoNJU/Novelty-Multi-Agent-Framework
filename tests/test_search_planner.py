@@ -114,6 +114,8 @@ def test_plans_normal_chinese_task_and_renders_prompt() -> None:
     messages, options = client.calls[0]
     assert '"language": "zh"' in messages[1].content
     assert "数据库无关" in messages[0].content
+    assert "expression 是严格 DSL" in messages[1].content
+    assert "严禁出现 terms、自然语言、引号" in messages[1].content
     assert options.response_format == {"type": "json_object"}
 
 

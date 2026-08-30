@@ -101,6 +101,13 @@ def test_arguments_only_accept_and_normalize_source_id():
         DatabaseSearchArguments(source_id="demo", query="untrusted")
 
 
+def test_description_lists_available_sources_and_reader_policy(tmp_path):
+    tool, _, _ = build_tool(tmp_path)
+
+    assert "source_id 只能使用以下值：demo" in tool.description
+    assert "必须优先使用 reader" in tool.description
+
+
 def test_unknown_source_fails_clearly(tmp_path):
     tool, _, planner = build_tool(tmp_path)
     with pytest.raises(ValueError, match="unavailable"):

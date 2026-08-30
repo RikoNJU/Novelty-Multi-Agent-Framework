@@ -103,6 +103,40 @@ class ProjectedExampleTool(ExampleTool):
         return {"succeeded": True, "handle": observation.payload["echo"]}
 
 
+class DatabaseArtifactTool(ExampleTool):
+    name = "database_search"
+
+    async def ainvoke(self, arguments, *, scope):
+        self.received.append(arguments)
+        return ResearcherToolObservation(
+            tool_name=self.name,
+            arguments=arguments.model_dump(mode="json"),
+            succeeded=True,
+            payload={
+                "database_search_result": {
+                    "results": [{"artifact_ids": ["artifact-1"]}]
+                }
+            },
+        )
+
+
+class ArtifactReaderArguments(StrictModel):
+    artifact_id: str
+
+
+class ArtifactReaderTool(ExampleTool):
+    name = "reader"
+    args_schema = ArtifactReaderArguments
+
+    async def ainvoke(self, arguments, *, scope):
+        self.received.append(arguments)
+        return ResearcherToolObservation(
+            tool_name=self.name,
+            arguments=arguments.model_dump(mode="json"),
+            succeeded=True,
+        )
+
+
 def call(arguments=None, *, call_id="call_1") -> ModelResponse:
     return ModelResponse(
         content=None,
@@ -246,6 +280,111 @@ def test_registry_failure_observation_is_returned_to_model(failure: str) -> None
     assert tool_result.tool_call_id == "call_1"
     assert json.loads(tool_result.content)["succeeded"] is False
     assert result.final_content == "recovered"
+
+
+def test_failed_call_does_not_consume_success_or_per_tool_budget() -> None:
+    class RecoveringTool(ExampleTool):
+        async def ainvoke(self, arguments, *, scope):
+            self.received.append(arguments)
+            succeeded = len(self.received) > 1
+            return ResearcherToolObservation(
+                tool_name=self.name,
+                arguments=arguments.model_dump(mode="json"),
+                succeeded=succeeded,
+                error=None if succeeded else "invalid source",
+                payload={"echo": arguments.value} if succeeded else {},
+            )
+
+    tool = RecoveringTool()
+    model = ScriptedModelClient(
+        call({"value": "bad"}, call_id="call_1"),
+        call({"value": "recovered"}, call_id="call_2"),
+        ModelResponse(content="finished"),
+    )
+    result = run_harness(
+        ToolCallHarness(
+            model,
+            ResearcherToolRegistry([tool]),
+            config=ToolCallHarnessConfig(
+                max_turns=3,
+                max_tool_calls=1,
+                per_tool_limits={"example": 1},
+            ),
+        ),
+        system_prompt="system",
+        initial_user_message="task",
+    )
+
+    assert len(tool.received) == 2
+    assert result.tool_calls_used == 2
+    assert result.final_content == "finished"
+
+
+def test_database_artifacts_require_reader_before_another_tool_call() -> None:
+    database = DatabaseArtifactTool()
+    other = ExampleTool()
+    model = ScriptedModelClient(
+        ModelResponse(
+            content=None,
+            tool_calls=(
+                ModelToolCall(
+                    id="db-1",
+                    name="database_search",
+                    arguments={"value": "arxiv"},
+                ),
+            ),
+        ),
+        call(call_id="other-1"),
+    )
+
+    with pytest.raises(ToolCallHarnessError, match="reader required"):
+        run_harness(
+            ToolCallHarness(
+                model, ResearcherToolRegistry([database, other])
+            ),
+            system_prompt="system",
+            initial_user_message="task",
+        )
+
+    assert len(database.received) == 1
+    assert other.received == []
+
+
+def test_database_artifacts_allow_matching_reader_call() -> None:
+    database = DatabaseArtifactTool()
+    reader = ArtifactReaderTool()
+    model = ScriptedModelClient(
+        ModelResponse(
+            content=None,
+            tool_calls=(
+                ModelToolCall(
+                    id="db-1",
+                    name="database_search",
+                    arguments={"value": "arxiv"},
+                ),
+            ),
+        ),
+        ModelResponse(
+            content=None,
+            tool_calls=(
+                ModelToolCall(
+                    id="read-1",
+                    name="reader",
+                    arguments={"artifact_id": "artifact-1"},
+                ),
+            ),
+        ),
+        ModelResponse(content="finished"),
+    )
+
+    result = run_harness(
+        ToolCallHarness(model, ResearcherToolRegistry([database, reader])),
+        system_prompt="system",
+        initial_user_message="task",
+    )
+
+    assert result.final_content == "finished"
+    assert len(reader.received) == 1
 
 
 def test_tool_call_budget_stops_repeated_requests() -> None:
