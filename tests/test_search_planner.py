@@ -205,6 +205,23 @@ def test_retries_once_after_invalid_json_then_succeeds() -> None:
     assert "不是合法 JSON" in client.calls[1][0][1].content
 
 
+def test_retries_after_invalid_expression_grammar_then_succeeds() -> None:
+    task = make_task()
+    invalid = valid_plan(task)
+    invalid["strategies"][1]["expression"] = "C1 AND dynamic neighbor sampling"
+    repaired = valid_plan(task)
+    repaired["strategies"][1]["expression"] = "C1 AND C2"
+    client = StubModelClient(json.dumps(invalid), json.dumps(repaired))
+
+    plan = build_agent(client).plan(make_point(), task)
+
+    assert len(client.calls) == 2
+    assert plan.strategies[1].expression == "C1 AND C2"
+    retry_prompt = client.calls[1][0][1].content
+    assert "invalid_expression_grammar" in retry_prompt
+    assert "strategy S2" in retry_prompt
+
+
 def test_invalid_schema_fails_after_one_retry() -> None:
     client = StubModelClient("{}", "{}")
 

@@ -7,9 +7,12 @@ from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from dataclasses import dataclass
 
+from ...core.search_plan_expression import (
+    SearchPlanExpressionError,
+    parse_search_plan_expression,
+)
 from ...schemas import SearchConcept, SearchPlan
 
-_TOKEN = re.compile(r"C\d+(?![A-Za-z0-9_])|AND(?![A-Za-z0-9_])|OR(?![A-Za-z0-9_])|[()]")
 _CONCEPT_ID = re.compile(r"C\d+")
 
 
@@ -68,40 +71,13 @@ class QueryAdapter(ABC):
 
     @staticmethod
     def _compile_expression(expression: str, concepts: dict[str, str]) -> str:
-        tokens = _tokenize(expression)
-        output: list[str] = []
-        depth = 0
-        expects_operand = True
-
-        for token in tokens:
-            if expects_operand:
-                if token == "(":
-                    depth += 1
-                    output.append(token)
-                elif _CONCEPT_ID.fullmatch(token):
-                    if token not in concepts:
-                        raise QueryAdapterError(f"检索表达式引用了未定义 Concept：{token}")
-                    output.append(concepts[token])
-                    expects_operand = False
-                else:
-                    raise QueryAdapterError(f"检索表达式在 {token!r} 前缺少 Concept")
-                continue
-
-            if token in {"AND", "OR"}:
-                output.append(token)
-                expects_operand = True
-            elif token == ")":
-                if depth == 0:
-                    raise QueryAdapterError("检索表达式括号不平衡")
-                depth -= 1
-                output.append(token)
-            else:
-                raise QueryAdapterError(f"检索表达式在 {token!r} 前缺少 AND/OR")
-
-        if expects_operand:
-            raise QueryAdapterError("检索表达式不完整")
-        if depth:
-            raise QueryAdapterError("检索表达式括号不平衡")
+        try:
+            tokens = parse_search_plan_expression(
+                expression, defined_concepts=set(concepts)
+            )
+        except SearchPlanExpressionError as exc:
+            raise QueryAdapterError(str(exc)) from exc
+        output = [concepts.get(token, token) for token in tokens]
         return " ".join(output).replace("( ", "(").replace(" )", ")")
 
 
@@ -139,24 +115,6 @@ def compile_search_plan(
 
         AdapterFactory.register("arxiv", ArxivQueryAdapter)
     return list(AdapterFactory.create(database).compile(plan))
-
-
-def _tokenize(expression: str) -> list[str]:
-    tokens: list[str] = []
-    position = 0
-    while position < len(expression):
-        if expression[position].isspace():
-            position += 1
-            continue
-        match = _TOKEN.match(expression, position)
-        if match is None:
-            fragment = expression[position : position + 16].split(maxsplit=1)[0]
-            raise QueryAdapterError(f"检索表达式包含不支持的 token：{fragment!r}")
-        tokens.append(match.group())
-        position = match.end()
-    if not tokens:
-        raise QueryAdapterError("检索表达式不能为空")
-    return tokens
 
 
 def _escape_quoted_term(term: str) -> str:

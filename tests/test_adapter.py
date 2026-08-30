@@ -2,6 +2,10 @@ from __future__ import annotations
 
 import pytest
 
+from novelty_agent_framework.core.search_plan_expression import (
+    SearchPlanExpressionError,
+    parse_search_plan_expression,
+)
 from novelty_agent_framework.schemas import SearchConcept, SearchPlan, SearchStrategy
 from novelty_agent_framework.tools.database_search import (
     AdapterFactory,
@@ -120,6 +124,15 @@ def test_concept_id_prefixes_are_tokenized_independently() -> None:
 )
 def test_invalid_expressions_are_rejected(expression: str, message: str) -> None:
     with pytest.raises(QueryAdapterError, match=message):
+        compile_search_plan(_plan(expressions=[("S1", "strict", expression)]))
+
+
+def test_shared_parser_and_adapter_reject_the_same_literal_expression() -> None:
+    expression = "C1 AND dynamic"
+
+    with pytest.raises(SearchPlanExpressionError):
+        parse_search_plan_expression(expression, defined_concepts={"C1"})
+    with pytest.raises(QueryAdapterError):
         compile_search_plan(_plan(expressions=[("S1", "strict", expression)]))
 
 

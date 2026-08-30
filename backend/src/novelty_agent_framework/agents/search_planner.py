@@ -16,6 +16,10 @@ from backend.env import (
     PromptLibrary,
 )
 
+from ..core.search_plan_expression import (
+    SearchPlanExpressionError,
+    parse_search_plan_expression,
+)
 from ..ports import SearchPlanner
 from ..schemas import NoveltyPoint, ResearchTask, SearchPlan
 
@@ -73,6 +77,7 @@ class SearchPlannerAgent(SearchPlanner):
                 )
                 plan = _validate_plan_data(data)
                 _validate_plan_semantics(plan, point=point, task=task)
+                _validate_plan_expressions(plan)
                 return plan
             except ValueError as exc:
                 last_error = exc
@@ -174,17 +179,10 @@ def _validate_plan_semantics(
     strategy_ids = [strategy.strategy_id for strategy in plan.strategies]
     _validate_ids(strategy_ids, pattern=STRATEGY_ID_PATTERN, kind="Strategy")
 
-    defined_concepts = set(concept_ids)
     for strategy in plan.strategies:
         if FORBIDDEN_DATABASE_SYNTAX.search(strategy.expression):
             raise ValueError(
                 f"SearchStrategy {strategy.strategy_id} 包含数据库专用语法"
-            )
-        referenced = set(CONCEPT_ID_PATTERN.findall(strategy.expression))
-        undefined = sorted(referenced - defined_concepts)
-        if undefined:
-            raise ValueError(
-                f"SearchPlan 引用了未定义 Concept：{', '.join(undefined)}"
             )
 
     if task.task_type == "literature_search":
@@ -194,6 +192,21 @@ def _validate_plan_semantics(
                 "普通 literature_search 任务必须按 strict、medium、broad "
                 "顺序生成三条策略"
             )
+
+
+def _validate_plan_expressions(plan: SearchPlan) -> None:
+    defined_concepts = {concept.concept_id for concept in plan.concepts}
+    for strategy in plan.strategies:
+        try:
+            parse_search_plan_expression(
+                strategy.expression,
+                defined_concepts=defined_concepts,
+            )
+        except SearchPlanExpressionError as exc:
+            raise SearchPlanExpressionError(
+                "invalid_expression_grammar: "
+                f"strategy {strategy.strategy_id}: {exc}"
+            ) from exc
 
 
 def _validate_ids(
