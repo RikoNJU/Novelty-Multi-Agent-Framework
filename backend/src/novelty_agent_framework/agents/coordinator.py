@@ -8,6 +8,7 @@
 from __future__ import annotations
 
 import json
+import re
 from collections.abc import Sequence
 from dataclasses import replace
 from typing import Any
@@ -195,6 +196,7 @@ class NoveltyCoordinatorAgent(NoveltyCoordinator):
         }
         data = self._complete_json(
             prompt_name="coordinator/synthesize",
+            max_attempts=2,
             variables={
                 "paper_json": json.dumps(payload["paper"], ensure_ascii=False),
                 "brief_json": json.dumps(payload["brief"], ensure_ascii=False),
@@ -214,6 +216,8 @@ class NoveltyCoordinatorAgent(NoveltyCoordinator):
             fallback_user_prompt=(
                 "请基于有效 EvidenceCard 生成最终 NoveltyReport JSON。每个结论必须"
                 "绑定 supporting_card_ids 或明确标记证据不足，不得编造文献。"
+                "若 accepted 证据为空但有 rejected_evidence，请在 limitations 说明拒绝原因，"
+                "不要把“技术性拒绝”写成“未检索到文献”。"
             ),
         )
         if not isinstance(data, dict):
@@ -228,35 +232,40 @@ class NoveltyCoordinatorAgent(NoveltyCoordinator):
         payload: dict[str, Any],
         system_prompt: str,
         fallback_user_prompt: str,
+        max_attempts: int = 1,
     ) -> Any:
         """渲染提示词并调用统一模型客户端，把回复解析为 JSON。"""
 
+        if max_attempts < 1:
+            raise ValueError("max_attempts 必须至少为 1")
         client = self._client()
-        if self._prompts is not None:
-            rendered = self._prompts.render(prompt_name, **variables)
-            system, user = rendered.system, rendered.user
-        else:
-            system = system_prompt
-            user = (
-                f"{fallback_user_prompt}\n\n输入数据：\n"
-                f"{json.dumps(payload, ensure_ascii=False)}"
-            )
+        last_error: Exception | None = None
+        for _attempt in range(max_attempts):
+            if self._prompts is not None:
+                rendered = self._prompts.render(prompt_name, **variables)
+                system, user = rendered.system, rendered.user
+            else:
+                system = system_prompt
+                user = (
+                    f"{fallback_user_prompt}\n\n输入数据：\n"
+                    f"{json.dumps(payload, ensure_ascii=False)}"
+                )
 
-        response = client.complete(
-            [
-                ChatMessage(role="system", content=system),
-                ChatMessage(role="user", content=user),
-            ],
-            options=replace(
-                self.model_options or ModelCallOptions(temperature=self.temperature),
-                response_format={"type": "json_object"},
-            ),
-        )
-        try:
-            data = json.loads(response.content)
-        except json.JSONDecodeError as exc:
-            raise ValueError("NoveltyCoordinatorAgent 返回内容不是合法 JSON") from exc
-        return data
+            response = client.complete(
+                [
+                    ChatMessage(role="system", content=system),
+                    ChatMessage(role="user", content=user),
+                ],
+                options=replace(
+                    self.model_options or ModelCallOptions(temperature=self.temperature),
+                    response_format={"type": "json_object"},
+                ),
+            )
+            try:
+                return json.loads(_extract_json_object(response.content))
+            except json.JSONDecodeError as exc:
+                last_error = exc
+        raise ValueError("NoveltyCoordinatorAgent 返回内容不是合法 JSON") from last_error
 
     def _client(self) -> ModelClient:
         if self.model_client is not None:
@@ -303,6 +312,20 @@ class NoveltyCoordinatorAgent(NoveltyCoordinator):
             "你的输出必须严格符合调用方要求的 JSON schema。"
         )
 
+
+
+def _extract_json_object(content: str | None) -> str:
+    """Strip Markdown fences and prose so models may return fenced JSON."""
+
+    text = (content or "").strip()
+    fence = re.search(r"```(?:json)?\s*(.*?)```", text, re.DOTALL)
+    if fence:
+        text = fence.group(1).strip()
+    start = text.find("{")
+    end = text.rfind("}")
+    if start >= 0 and end > start:
+        text = text[start : end + 1]
+    return text
 
 def _normalize_task_list(data: Any) -> Any:
     """兼容模型输出包装形态：单任务对象或含 research_tasks 键的对象 → 列表。"""

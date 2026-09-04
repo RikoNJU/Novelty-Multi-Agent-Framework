@@ -50,3 +50,7 @@
 ## 限制与下一步
 
 透传 Validator 只存在于本实验，真实 Validator 尚未适配 Builder v1 的 `locator=None/location=None` contract；Reviewer 尚未迁移。本次仅一个点、一个任务、`max_rounds=1`，不证明多轮质量。若状态为 success，可以进入 Validator + Reviewer 迁移。
+
+## 后续更新：EvidenceCard 定位修复
+
+上文记录的 `locator=None / location=None` 问题已修复：`EvidenceCardBuilder` 现在会在引文匹配后计算其在 Reader 文本中的真实字符区间，并回填 `Evidence.locator`（`char_start/char_end`）与 `EvidenceSource.location`（格式 `artifact <artifact_id> chars:<start>-<end>`）。`DefaultEvidenceValidator` 的 `require_direct_quote` 门槛保持不变；相关单测与 Validator 集成回归已通过。另为 Reviewer 注入可信当前日期，并增强 Coordinator synthesize 对 Markdown 围栏 JSON 的解析与一次重试。

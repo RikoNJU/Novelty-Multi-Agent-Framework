@@ -279,6 +279,12 @@ def build_workflow(
         raw, registry, prompts, retrieval_cfg=retrieval_cfg
     )
     reviewer_cfg = agents_cfg.get("reviewer", {})
+    reviewer_model_invocation = reviewer_cfg.get("model_options")
+    reviewer_model_options = (
+        _model_options(reviewer_model_invocation)
+        if isinstance(reviewer_model_invocation, Mapping)
+        else None
+    )
     reviewer = (
         NoveltyEvidenceReviewer(
             prompts=prompts,
@@ -290,6 +296,7 @@ def build_workflow(
                 max_cards_per_call=int(reviewer_cfg.get("max_cards_per_call", 8)),
                 fail_closed=bool(reviewer_cfg.get("fail_closed", True)),
             ),
+            model_options=reviewer_model_options,
         )
         if reviewer_cfg.get("enabled", False)
         else None

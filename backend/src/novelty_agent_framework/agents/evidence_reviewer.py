@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime, timezone
 from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Any
@@ -146,13 +147,16 @@ class NoveltyEvidenceReviewer(EvidenceReviewer):
         points: Sequence[NoveltyPoint],
         tasks: Sequence[ResearchTask],
     ) -> Any:
+        today = datetime.now(timezone.utc).date().isoformat()
         payload = {
+            "today": today,
             "points": [point.model_dump(mode="json") for point in points],
             "tasks": [task.model_dump(mode="json") for task in tasks],
             "cards": [card.model_dump(mode="json") for card in cards],
             "review_schema": _review_output_schema(),
         }
         variables = {
+            "today": today,
             "points_json": json.dumps(payload["points"], ensure_ascii=False),
             "tasks_json": json.dumps(payload["tasks"], ensure_ascii=False),
             "cards_json": json.dumps(payload["cards"], ensure_ascii=False),
@@ -164,7 +168,10 @@ class NoveltyEvidenceReviewer(EvidenceReviewer):
         else:
             system = _fallback_system_prompt()
             user = (
-                "请审查以下 EvidenceCard 列表，逐卡输出结构化决定。\n\n"
+                "请审查以下 EvidenceCard 列表，逐卡输出结构化决定。\n"
+                f"当前可信日期（UTC）：{today}\n"
+                "该日期是判断来源可核验性的唯一时间基准；不得使用模型内部日期，"
+                "也不得仅凭 arXiv 编号的月份推断来源不可能存在。\n\n"
                 f"输入数据：\n{json.dumps(payload, ensure_ascii=False)}"
             )
         response = self._client().complete(

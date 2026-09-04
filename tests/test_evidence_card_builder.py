@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 
 import pytest
 
+from novelty_agent_framework.agents import DefaultEvidenceValidator
 from novelty_agent_framework.persistence import ReferenceStore
 from novelty_agent_framework.schemas import (
     AccessStatus,
@@ -13,6 +14,7 @@ from novelty_agent_framework.schemas import (
     ArtifactRole,
     ContentExtent,
     EvidenceCardDraft,
+    EvidenceLocator,
     EvidenceQuoteDraft,
     ExternalIdentifier,
     NoveltyPoint,
@@ -175,21 +177,85 @@ def test_single_quote_builds_trusted_card_and_evidence(tmp_path) -> None:
     built = result.evidence_cards[0]
     assert (evidence.task_id, evidence.novelty_point_id) == ("TASK-1", "NP-1")
     assert (evidence.work_id, evidence.artifact_id) == ("wrk_a", "art_a")
-    assert evidence.locator is None
+    assert evidence.locator == EvidenceLocator(char_start=0, char_end=19)
     assert evidence.provenance == {
         "builder": "evidence_card_builder",
         "read_id": "read_wrk_a",
         "read_char_start": 0,
         "read_char_end": len(TEXT_A),
+        "quote_char_start": 0,
+        "quote_char_end": 19,
         "source_record_id": "src_a",
     }
     assert built.document_title == "Trusted Work A"
     assert built.sources[0].url == "https://full.example/a"
     assert built.sources[0].doi == "10.1/work-a"
-    assert built.sources[0].location is None
+    assert built.sources[0].location == "artifact art_a chars:0-19"
     assert built.cited_by_paper is None
     assert built.evidence_ids == [evidence.evidence_id]
 
+
+def test_locator_uses_absolute_read_offset(tmp_path) -> None:
+    result = builder(tmp_path).build(
+        finish(card(quote("Alpha unique quote."))),
+        scope=scope(),
+        read_results=[read(char_start=100, char_end=100 + len(TEXT_A))],
+    )
+
+    evidence = result.evidence[0]
+    source = result.evidence_cards[0].sources[0]
+    assert evidence.locator == EvidenceLocator(char_start=100, char_end=119)
+    assert evidence.provenance["quote_char_start"] == 100
+    assert evidence.provenance["quote_char_end"] == 119
+    assert source.location == "artifact art_a chars:100-119"
+
+
+def test_whitespace_normalized_quote_maps_to_original_offsets(tmp_path) -> None:
+    prefix = "prefix\n"
+    segment = "Alpha \t unique\nquote."
+    text = prefix + segment + " suffix"
+    result = builder(tmp_path).build(
+        finish(card(quote("Alpha   unique\nquote."))),
+        scope=scope(),
+        read_results=[read(text=text, char_start=500, char_end=500 + len(text))],
+    )
+
+    evidence = result.evidence[0]
+    expected_start = 500 + len(prefix)
+    expected_end = 500 + len(prefix) + len(segment)
+    assert evidence.locator == EvidenceLocator(
+        char_start=expected_start, char_end=expected_end
+    )
+    assert text[evidence.locator.char_start - 500 : evidence.locator.char_end - 500] == segment
+    assert result.evidence_cards[0].sources[0].location == (
+        f"artifact art_a chars:{expected_start}-{expected_end}"
+    )
+
+
+def test_evidence_locators_stay_inside_read_bounds(tmp_path) -> None:
+    result = builder(tmp_path).build(
+        finish(card(quote("Alpha unique quote."), quote("Another A quote."))),
+        scope=scope(),
+        read_results=[read(char_start=10, char_end=10 + len(TEXT_A))],
+    )
+    for evidence in result.evidence:
+        assert evidence.locator is not None
+        assert evidence.locator.char_start >= 10
+        assert evidence.locator.char_end <= 10 + len(TEXT_A)
+
+def test_built_card_passes_default_evidence_validator(tmp_path) -> None:
+    result = builder(tmp_path).build(
+        finish(card(quote("Alpha unique quote."))),
+        scope=scope(),
+        read_results=[read()],
+    )
+    validation = DefaultEvidenceValidator().validate(
+        result.evidence_cards, tasks=[scope().research_task]
+    )
+    assert [card.card_id for card in validation.accepted] == [
+        result.evidence_cards[0].card_id
+    ]
+    assert validation.rejected == ()
 
 def test_multiple_reads_quotes_and_whitespace_grounding(tmp_path) -> None:
     duplicate = read(
