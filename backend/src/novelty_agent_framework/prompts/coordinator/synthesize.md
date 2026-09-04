@@ -8,6 +8,8 @@ system: |
 ---
 请基于有效 EvidenceCard 生成最终 NoveltyReport JSON。每个结论必须绑定 supporting_card_ids 或明确标记证据不足，不得编造文献。
 
+区分两类"无证据"：若存在被拒绝证据（rejected_evidence 非空），应把拒绝原因写入 limitations，并说明是技术性质疑/格式性拒绝而非检索零命中；只有 accepted 证据为空且 rejected_evidence 也为空时，结论才应表述为"未检索到相关文献"。
+
 输入数据：
 {paper_json}
 

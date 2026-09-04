@@ -246,3 +246,7 @@ backend/src/novelty_agent_framework/agents/evidence_validator.py:108-111
 2. harness 多工具调用取第一个执行（R1/flash 并行调用不再杀死任务）
 3. required-reader 软性拒绝（违规回传拒绝消息，仅成功读取后释放）
 4. 收尾 JSON 剥离 Markdown 围栏（`_extract_finish_json`，本实验依赖此修复才能产出卡片）
+
+## 后续更新：EvidenceCard 定位修复
+
+上文记录的 `locator=None / location=None` 问题已修复：`EvidenceCardBuilder` 现在会在引文匹配后计算其在 Reader 文本中的真实字符区间，并回填 `Evidence.locator`（`char_start/char_end`）与 `EvidenceSource.location`（格式 `artifact <artifact_id> chars:<start>-<end>`）。`DefaultEvidenceValidator` 的 `require_direct_quote` 门槛保持不变；相关单测与 Validator 集成回归已通过。另为 Reviewer 注入可信当前日期，并增强 Coordinator synthesize 对 Markdown 围栏 JSON 的解析与一次重试。

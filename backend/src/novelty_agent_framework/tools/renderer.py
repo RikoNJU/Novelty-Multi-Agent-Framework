@@ -264,6 +264,10 @@ def _format_evidence(cards: list[Mapping[str, Any]]) -> str:
         for source in card.get("sources", []):
             target = source.get("doi") or source.get("url") or source.get("location") or "—"
             source_lines.append(f"  - {source.get('title', '来源')}：{target}")
+            if source.get("quote"):
+                source_lines.append(f"    - 引文：{_cell(source['quote'])}")
+            if source.get("location"):
+                source_lines.append(f"    - 位置：{_cell(source['location'])}")
         sources = "\n".join(source_lines) or "  - 未记录"
         sections.append(
             f"### {card.get('card_id', 'Evidence')} · {card.get('document_title', '未命名文献')}\n\n"

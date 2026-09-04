@@ -20,7 +20,10 @@ from novelty_agent_framework.config import (
     build_workflow,
     load_config,
 )
-from novelty_agent_framework.config.loader import load_application_config
+from novelty_agent_framework.config.loader import (
+    legacy_shape,
+    load_application_config,
+)
 
 BASE_CONFIG = {
     "workflow": {
@@ -189,3 +192,17 @@ def test_build_structured_retrieval_tool_does_not_modify_workflow():
     assert tool.name == "structured_source_retrieval"
     assert tool.source_id == "null_catalog"
     assert tool.candidate_limit == 3
+
+def test_legacy_shape_reviewer_receives_model_options():
+    config = load_application_config()
+    enabled = config.model_copy(
+        update={
+            "reviewer": config.reviewer.model_copy(update={"enabled": True})
+        }
+    )
+    workflow = build_workflow(legacy_shape(enabled))
+    reviewer = workflow.services.reviewer
+    assert isinstance(reviewer, NoveltyEvidenceReviewer)
+    assert reviewer.model_options is not None
+    assert reviewer.model_options.max_tokens == config.reviewer.model.max_tokens
+    assert reviewer.model_options.timeout_seconds == config.reviewer.model.timeout_seconds

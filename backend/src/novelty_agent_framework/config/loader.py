@@ -98,6 +98,11 @@ def legacy_shape(config: ApplicationConfig) -> dict[str, Any]:
                 "model": (
                     config.reviewer.model.alias if config.reviewer else "reviewer"
                 ),
+                "model_options": (
+                    config.reviewer.model.model_dump(mode="python")
+                    if config.reviewer
+                    else None
+                ),
                 "temperature": (
                     config.reviewer.model.temperature if config.reviewer else 0.0
                 ),

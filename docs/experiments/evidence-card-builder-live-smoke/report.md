@@ -76,3 +76,7 @@
 本次只使用一个稳定官方网页和一张 Card；共同来源解析成功不代表多文献检索质量。Whitespace normalization 不产生统一 locator，因此 v1 明确保留 `locator=None`、`location=None`。当前 Validator 可能仍要求 location，这是后续迁移项，不是 Builder 失败。本任务未迁移正式 Researcher Workflow、Validator 或 Reviewer。
 
 核心成功标准全部满足，**可以进入 Validator / Reviewer 迁移设计**；在此之前还需要把 Workflow finish 后处理显式接到 Builder。
+
+## 后续更新：EvidenceCard 定位修复
+
+上文记录的 `locator=None / location=None` 问题已修复：`EvidenceCardBuilder` 现在会在引文匹配后计算其在 Reader 文本中的真实字符区间，并回填 `Evidence.locator`（`char_start/char_end`）与 `EvidenceSource.location`（格式 `artifact <artifact_id> chars:<start>-<end>`）。`DefaultEvidenceValidator` 的 `require_direct_quote` 门槛保持不变；相关单测与 Validator 集成回归已通过。另为 Reviewer 注入可信当前日期，并增强 Coordinator synthesize 对 Markdown 围栏 JSON 的解析与一次重试。

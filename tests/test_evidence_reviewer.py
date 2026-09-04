@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import re
+from datetime import datetime, timezone
 
 import pytest
 from pydantic import ValidationError
@@ -31,8 +33,10 @@ class StubClient:
     def __init__(self, payload=None, error: Exception | None = None):
         self.payload = payload
         self.error = error
+        self.messages = None
 
     def complete(self, messages, *, options=None):
+        self.messages = messages
         if self.error:
             raise self.error
         return ModelResponse(content=json.dumps(self.payload))
@@ -49,6 +53,38 @@ def _decision(verdict="accept", *, code=None, card_id="C1", **extra):
     issue = [] if code is None else [{"code": code, "message": "problem", "severity": "warning", "field": "main_contribution", "source_index": 0}]
     return {"card_id": card_id, "verdict": verdict, "issues": issue, "reviewed_confidence": 0.7, **extra}
 
+
+def test_review_prompt_receives_trusted_current_date():
+    client = StubClient({"decisions": [_decision()]})
+    reviewer = NoveltyEvidenceReviewer(
+        client,
+        config=EvidenceReviewerConfig(fail_closed=True),
+    )
+    reviewer.review([_card()], points=[], tasks=[])
+    assert client.messages is not None
+    user = client.messages[-1].content
+    assert re.search(r"当前可信日期（UTC）：\d{4}-\d{2}-\d{2}", user)
+    assert datetime.now(timezone.utc).date().isoformat() in user
+    assert "不得仅凭 arXiv 编号" in user
+
+
+def test_review_prompt_renders_today_when_prompt_library_is_used(tmp_path):
+    from pathlib import Path
+    from backend.env import PromptLibrary
+    root = Path("backend/src/novelty_agent_framework/prompts")
+    if not root.is_dir():
+        root = tmp_path
+    client = StubClient({"decisions": [_decision()]})
+    reviewer = NoveltyEvidenceReviewer(
+        client,
+        prompts=PromptLibrary(root),
+        config=EvidenceReviewerConfig(fail_closed=True),
+    )
+    reviewer.review([_card()], points=[], tasks=[])
+    assert client.messages is not None
+    user = client.messages[-1].content
+    assert "当前可信日期（UTC）：" in user
+    assert datetime.now(timezone.utc).date().isoformat() in user
 
 def test_accept_returns_the_original_card_without_modification():
     card = _card()

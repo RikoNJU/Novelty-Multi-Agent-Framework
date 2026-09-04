@@ -14,6 +14,7 @@ from ..schemas import (
     EvidenceCardBuilderResult,
     EvidenceCardDraft,
     EvidenceQuoteDraft,
+    EvidenceLocator,
     EvidenceSource,
     ReferenceReadResult,
     ResearchFinishDraft,
@@ -179,6 +180,9 @@ class EvidenceCardBuilder:
             record = _resolve_source_record(persisted_artifact, work, records)
             if record is None:
                 warnings.append(f"missing source record for work {work.work_id}")
+            local_start, local_end = _find_quote_span(quote.quote, read.text)
+            quote_char_start = read.char_start + local_start
+            quote_char_end = read.char_start + local_end
             normalized_quote = _normalize_whitespace(quote.quote)
             item = Evidence(
                 evidence_id=_stable_id(
@@ -195,7 +199,9 @@ class EvidenceCardBuilder:
                 novelty_point_id=scope.novelty_point.point_id,
                 task_id=scope.research_task.task_id,
                 quote=quote.quote,
-                locator=None,
+                locator=EvidenceLocator(
+                    char_start=quote_char_start, char_end=quote_char_end
+                ),
                 interpretation=quote.interpretation,
                 confidence=quote.confidence,
                 provenance={
@@ -203,6 +209,8 @@ class EvidenceCardBuilder:
                     "read_id": read.read_id,
                     "read_char_start": read.char_start,
                     "read_char_end": read.char_end,
+                    "quote_char_start": quote_char_start,
+                    "quote_char_end": quote_char_end,
                     **(
                         {"source_record_id": record.source_record_id}
                         if record is not None
@@ -215,7 +223,10 @@ class EvidenceCardBuilder:
                 EvidenceSource(
                     title=work.title,
                     quote=quote.quote,
-                    location=None,
+                    location=(
+                        f"artifact {persisted_artifact.artifact_id} "
+                        f"chars:{quote_char_start}-{quote_char_end}"
+                    ),
                     doi=_doi(work, record),
                     url=(
                         record.full_text_url or record.landing_url
@@ -233,6 +244,53 @@ def _quote_matches(quote: str, text: str) -> bool:
 
 def _normalize_whitespace(value: str) -> str:
     return re.sub(r"\s+", " ", value).strip()
+
+
+_WS_RE = re.compile(r"\s")
+
+
+def _normalized_spans(value: str) -> tuple[str, list[tuple[int, int]]]:
+    """Collapse whitespace like _normalize_whitespace while keeping original offsets."""
+
+    chars: list[str] = []
+    spans: list[tuple[int, int]] = []
+    index = 0
+    while index < len(value):
+        if _WS_RE.match(value[index]):
+            end = index + 1
+            while end < len(value) and _WS_RE.match(value[end]):
+                end += 1
+            chars.append(" ")
+            spans.append((index, end))
+            index = end
+        else:
+            chars.append(value[index])
+            spans.append((index, index + 1))
+            index += 1
+    return "".join(chars), spans
+
+
+def _find_quote_span(quote: str, text: str) -> tuple[int, int]:
+    """Return the original character span of *quote* inside *text*.
+
+    Exact substring matches are preferred. Whitespace-normalized matches are
+    mapped back to original offsets so Evidence.locator always refers to the
+    persisted Reader text, never to a normalized copy.
+    """
+
+    exact = text.find(quote)
+    if exact >= 0:
+        return exact, exact + len(quote)
+
+    normalized_text, spans = _normalized_spans(text)
+    wanted = _normalize_whitespace(quote)
+    normalized_start = normalized_text.find(wanted)
+    if normalized_start < 0:
+        raise ValueError(f"quote not found in read text: {quote!r}")
+    normalized_end = normalized_start + len(wanted)
+    if normalized_end > len(spans):
+        raise ValueError(f"quote span out of bounds: {quote!r}")
+    return spans[normalized_start][0], spans[normalized_end - 1][1]
 
 
 def _resolve_source_record(

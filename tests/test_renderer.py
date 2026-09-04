@@ -64,7 +64,14 @@ def seed_workspace() -> None:
         novelty_point_id="NP-1",
         document_title="Related Paper",
         main_contribution="Related contribution",
-        sources=[EvidenceSource(title="arXiv", url="https://arxiv.org/abs/1234.5678")],
+        sources=[
+            EvidenceSource(
+                title="arXiv",
+                url="https://arxiv.org/abs/1234.5678",
+                quote="Exact source text.",
+                location="artifact art_x chars:0-18",
+            )
+        ],
         relevance=0.9,
         confidence=0.8,
     )
@@ -122,6 +129,8 @@ def test_markdown_renderer_reads_workspace_and_uses_default_paths(
     assert "Renderer Test \\| Paper" in content
     assert "Graph learning method" in content
     assert "Related Paper" in content
+    assert "引文：Exact source text." in content
+    assert "位置：artifact art_x chars:0-18" in content
     assert "存在部分技术差异" in content
     assert "{{" not in content
 
