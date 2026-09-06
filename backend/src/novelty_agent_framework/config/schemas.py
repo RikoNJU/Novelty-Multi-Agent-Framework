@@ -161,11 +161,21 @@ class WorkflowConfig(ConfigModel):
     minimum_evidence_per_point: int = Field(ge=0)
 
 
+class RuntimeDebugSettingsConfig(ConfigModel):
+    enabled: bool = True
+    output_root: str = "outputs"
+    archive_root: str = "docs/experiments/runtime"
+    max_inline_bytes: int = Field(default=256_000, gt=0)
+
+
 class ProjectSettingsConfig(ConfigModel):
     server: ServerConfig
     cors: CorsConfig
     workflow: WorkflowConfig
     processing: dict[str, Any]
+    runtime_debug: RuntimeDebugSettingsConfig = Field(
+        default_factory=RuntimeDebugSettingsConfig
+    )
 
 
 class ApplicationConfig(ConfigModel):

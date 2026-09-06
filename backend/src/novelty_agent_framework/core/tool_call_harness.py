@@ -30,6 +30,7 @@ from backend.env import (
 
 from ..schemas import ResearcherToolObservation, TaskResearchRequest
 from ..tools import ResearcherToolRegistry
+from .runtime_artifacts import current_runtime_artifacts
 
 HarnessEventKind = Literal[
     "initial_user_message",
@@ -174,13 +175,44 @@ class ToolCallHarness:
                     usage=response.usage,
                 )
 
-            if tool_calls_used >= self.config.max_tool_calls:
-                _append_error(log, "total tool-call budget exhausted")
-                raise ToolCallHarnessError(
-                    "total tool-call budget exhausted", trace=tuple(log)
-                )
-
             tool_call = response.tool_calls[0]
+            try:
+                validated_arguments = self.registry.validate_arguments(
+                    tool_call.name, tool_call.arguments
+                )
+            except Exception:
+                validated_arguments = None
+            runtime = current_runtime_artifacts()
+            resolved_arguments = (
+                validated_arguments.model_dump(mode="json")
+                if validated_arguments is not None
+                else dict(tool_call.arguments)
+            )
+            runtime_call = (
+                runtime.start_tool_call(
+                    tool_call.name,
+                    agent_arguments=dict(tool_call.arguments),
+                    resolved_arguments=resolved_arguments,
+                    agent_tool_call_id=tool_call.id,
+                )
+                if runtime is not None
+                else None
+            )
+
+            if tool_calls_used >= self.config.max_tool_calls:
+                detail = "total tool-call budget exhausted"
+                _append_error(log, detail)
+                if runtime is not None and runtime_call is not None:
+                    runtime.finish_tool_call(
+                        runtime_call,
+                        raw_result=None,
+                        normalized_result=None,
+                        succeeded=False,
+                        error={"type": "HarnessPolicyError", "message": detail},
+                        failure_phase="PRE_TOOL",
+                    )
+                raise ToolCallHarnessError(detail, trace=tuple(log))
+
             if required_reader_artifact_ids:
                 requested_artifact = tool_call.arguments.get("artifact_id")
                 if (
@@ -216,19 +248,31 @@ class ToolCallHarness:
                             tool_call=tool_call,
                         )
                     )
+                    if runtime is not None and runtime_call is not None:
+                        runtime.finish_tool_call(
+                            runtime_call,
+                            raw_result=None,
+                            normalized_result=json.loads(rejection.content),
+                            succeeded=False,
+                            error={"type": "HarnessPolicyError", "message": detail},
+                            failure_phase="PRE_TOOL",
+                        )
                     continue
             tool_limit = self.config.per_tool_limits.get(tool_call.name)
             tool_count = per_tool_counts.get(tool_call.name, 0)
             if tool_limit is not None and tool_count >= tool_limit:
                 detail = f"{tool_call.name} tool-call budget exhausted"
                 _append_error(log, detail)
+                if runtime is not None and runtime_call is not None:
+                    runtime.finish_tool_call(
+                        runtime_call,
+                        raw_result=None,
+                        normalized_result=None,
+                        succeeded=False,
+                        error={"type": "HarnessPolicyError", "message": detail},
+                        failure_phase="PRE_TOOL",
+                    )
                 raise ToolCallHarnessError(detail, trace=tuple(log))
-            try:
-                validated_arguments = self.registry.validate_arguments(
-                    tool_call.name, tool_call.arguments
-                )
-            except Exception:
-                validated_arguments = None
             if (
                 tool_call.name == "reader"
                 and validated_arguments is not None
@@ -239,19 +283,57 @@ class ToolCallHarness:
                 if requested > remaining:
                     detail = "reader cumulative character budget exhausted"
                     _append_error(log, detail)
+                    if runtime is not None and runtime_call is not None:
+                        runtime.finish_tool_call(
+                            runtime_call,
+                            raw_result=None,
+                            normalized_result=None,
+                            succeeded=False,
+                            error={"type": "HarnessPolicyError", "message": detail},
+                            failure_phase="PRE_TOOL",
+                        )
                     raise ToolCallHarnessError(detail, trace=tuple(log))
             log.append(
                 ToolCallHarnessEvent(kind="tool_call", tool_call=tool_call)
             )
-            if validated_arguments is None:
-                observation = await self.registry.execute(
-                    tool_call.name,
-                    dict(tool_call.arguments),
-                    scope=scope,
+            try:
+                if validated_arguments is None:
+                    observation = await self.registry.execute(
+                        tool_call.name,
+                        dict(tool_call.arguments),
+                        scope=scope,
+                    )
+                else:
+                    observation = await self.registry.execute_validated(
+                        tool_call.name, validated_arguments, scope=scope
+                    )
+            except BaseException as exc:
+                if runtime is not None and runtime_call is not None:
+                    runtime.fail_tool_call(runtime_call, exc)
+                raise
+            try:
+                model_context = self.registry.project_model_context(
+                    tool_call.name, observation
                 )
-            else:
-                observation = await self.registry.execute_validated(
-                    tool_call.name, validated_arguments, scope=scope
+            except BaseException as exc:
+                if runtime is not None and runtime_call is not None:
+                    runtime.fail_tool_call(
+                        runtime_call,
+                        exc,
+                        raw_result=observation.model_dump(mode="json"),
+                        failure_phase="NORMALIZATION",
+                    )
+                raise
+            if runtime is not None and runtime_call is not None:
+                runtime.finish_tool_call(
+                    runtime_call,
+                    raw_result=observation.model_dump(mode="json"),
+                    normalized_result=model_context,
+                    succeeded=observation.succeeded,
+                    error=observation.error,
+                    failure_phase=(
+                        None if observation.succeeded else "TOOL_EXECUTION"
+                    ),
                 )
             tool_calls_used += 1
             per_tool_counts[tool_call.name] = tool_count + 1
@@ -276,9 +358,6 @@ class ToolCallHarness:
                         detail = "reader cumulative character budget exhausted"
                         _append_error(log, detail)
                         raise ToolCallHarnessError(detail, trace=tuple(log))
-            model_context = self.registry.project_model_context(
-                tool_call.name, observation
-            )
             tool_message = ChatMessage(
                 role="tool",
                 tool_call_id=tool_call.id,

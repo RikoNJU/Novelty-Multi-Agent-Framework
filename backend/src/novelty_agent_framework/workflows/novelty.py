@@ -7,13 +7,17 @@ import inspect
 import re
 import uuid
 from collections.abc import Awaitable
-from typing import Any, TypeVar, cast
+from typing import Any, Callable, Mapping, TypeVar, cast
 
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import Send
 from pydantic import ValidationError
 
 from novelty_agent_framework.core.errors import WorkflowExecutionError
+from novelty_agent_framework.core.runtime_artifacts import (
+    RuntimeArtifactManager,
+    current_runtime_artifacts,
+)
 from novelty_agent_framework.persistence import (
     persist_evidence_cards,
     persist_novelty_points,
@@ -52,6 +56,21 @@ from ..schemas import (
 from .state import NoveltyState, NoveltyWorkflowConfig, NoveltyWorkflowServices
 
 T = TypeVar("T")
+
+_STAGE_NAMES = (
+    "extract_points",
+    "plan",
+    "dispatch_planning_tasks",
+    "plan_research_task",
+    "dispatch_research_tasks",
+    "run_research_task",
+    "validate_evidence",
+    "review_evidence",
+    "assess_coverage",
+    "plan_supplement",
+    "synthesize_report",
+    "render_report",
+)
 
 
 async def _resolve(value: T | Awaitable[T]) -> T:
@@ -95,27 +114,62 @@ class NoveltyWorkflow:
         self,
         services: NoveltyWorkflowServices,
         config: NoveltyWorkflowConfig | None = None,
+        *,
+        runtime_config: Mapping[str, Any] | None = None,
     ) -> None:
         self.services = services
         self.config = config or NoveltyWorkflowConfig()
         self.validator = services.validator or DefaultEvidenceValidator()
         self.point_extractor = services.point_extractor or DemoPointExtractor()
+        self.runtime_config = dict(runtime_config or {})
         self.graph = self._build_graph()
 
     def _build_graph(self) -> Any:
         builder = StateGraph(NoveltyState)
-        builder.add_node("extract_points", self._extract_points)
-        builder.add_node("plan", self._plan)
-        builder.add_node("dispatch_planning_tasks", self._dispatch_node)
-        builder.add_node("plan_research_task", self._plan_research_task)
-        builder.add_node("dispatch_research_tasks", self._dispatch_node)
-        builder.add_node("run_research_task", self._run_research_task)
-        builder.add_node("validate_evidence", self._validate_evidence)
-        builder.add_node("review_evidence", self._review_evidence)
-        builder.add_node("assess_coverage", self._assess_coverage)
-        builder.add_node("plan_supplement", self._plan_supplement)
-        builder.add_node("synthesize_report", self._synthesize_report)
-        builder.add_node("render_report", self._render_report)
+        builder.add_node(
+            "extract_points", self._record_stage("extract_points", self._extract_points)
+        )
+        builder.add_node("plan", self._record_stage("plan", self._plan))
+        builder.add_node(
+            "dispatch_planning_tasks",
+            self._record_stage("dispatch_planning_tasks", self._dispatch_node),
+        )
+        builder.add_node(
+            "plan_research_task",
+            self._record_stage("plan_research_task", self._plan_research_task),
+        )
+        builder.add_node(
+            "dispatch_research_tasks",
+            self._record_stage("dispatch_research_tasks", self._dispatch_node),
+        )
+        builder.add_node(
+            "run_research_task",
+            self._record_stage("run_research_task", self._run_research_task),
+        )
+        builder.add_node(
+            "validate_evidence",
+            self._record_stage("validate_evidence", self._validate_evidence),
+        )
+        builder.add_node(
+            "review_evidence",
+            self._record_stage("review_evidence", self._review_evidence),
+        )
+        builder.add_node(
+            "assess_coverage",
+            self._record_stage("assess_coverage", self._assess_coverage),
+        )
+        builder.add_node(
+            "plan_supplement",
+            self._record_stage("plan_supplement", self._plan_supplement),
+        )
+        builder.add_node(
+            "synthesize_report",
+            self._record_stage("synthesize_report", self._synthesize_report),
+        )
+        builder.add_node(
+            "render_report",
+            self._record_stage("render_report", self._render_report),
+        )
 
         builder.add_edge(START, "extract_points")
         builder.add_edge("extract_points", "plan")
@@ -146,6 +200,29 @@ class NoveltyWorkflow:
         builder.add_edge("synthesize_report", "render_report")
         builder.add_edge("render_report", END)
         return builder.compile()
+
+    @staticmethod
+    def _record_stage(
+        stage_name: str,
+        function: Callable[[NoveltyState], Awaitable[dict[str, Any]]],
+    ) -> Callable[[NoveltyState], Awaitable[dict[str, Any]]]:
+        """Instrument a graph node without giving business agents artifact duties."""
+
+        async def recorded(state: NoveltyState) -> dict[str, Any]:
+            runtime = current_runtime_artifacts()
+            if runtime is None:
+                return await function(state)
+            handle = runtime.start_stage(stage_name, state)
+            try:
+                output = await function(state)
+            except BaseException as exc:
+                runtime.fail_stage(handle, exc)
+                raise
+            runtime.finish_stage(handle, output)
+            return output
+
+        recorded.__name__ = f"runtime_recorded_{stage_name}"
+        return recorded
 
     async def _extract_points(self, state: NoveltyState) -> dict[str, Any]:
         persist_workflow_input(state["paper"])
@@ -570,9 +647,10 @@ class NoveltyWorkflow:
         """异步执行一次完整查新工作流。"""
 
         paper_input = PaperInput.model_validate(paper)
+        run_id = f"run-{uuid.uuid4().hex}"
         initial: NoveltyState = {
             "paper": paper_input,
-            "run_id": f"run-{uuid.uuid4().hex}",
+            "run_id": run_id,
             "research_tasks": [],
             "all_research_tasks": [],
             "task_research_results": [],
@@ -587,21 +665,53 @@ class NoveltyWorkflow:
             "issues": [],
             "rounds": 0,
         }
-        final = await self.graph.ainvoke(
-            initial, config={"max_concurrency": self.config.max_concurrency}
+        model_client = getattr(self.services.task_researcher, "model_client", None)
+        profile = getattr(model_client, "profile", None)
+        tool_registry = getattr(self.services.task_researcher, "tools", None)
+        manager = RuntimeArtifactManager(
+            paper_input.paper_id,
+            config=self.config.runtime_debug,
+            run_id=run_id,
+            runtime_config=self.runtime_config or {
+                "workflow": {
+                    "max_rounds": self.config.max_rounds,
+                    "max_concurrency": self.config.max_concurrency,
+                    "minimum_evidence_per_point": self.config.minimum_evidence_per_point,
+                    "candidate_limit_per_task": self.config.candidate_limit_per_task,
+                }
+            },
+            model_provider=getattr(profile, "provider", None),
+            model_name=getattr(profile, "model", None),
+            enabled_tools=getattr(tool_registry, "names", ()),
+            stage_names=_STAGE_NAMES,
         )
-        if "brief" not in final or "report" not in final:
-            raise WorkflowExecutionError("工作流结束时缺少 Brief 或 Report")
-
-        return NoveltyRunResult(
-            brief=final["brief"],
-            evidence_cards=final.get("evidence_cards", []),
-            rejected_evidence=final.get("rejected_evidence", []),
-            coverage_gaps=final.get("coverage_gaps", []),
-            issues=final.get("issues", []),
-            rounds=final.get("rounds", 0),
-            report=final["report"],
-        )
+        manager.activate()
+        try:
+            final = await self.graph.ainvoke(
+                initial, config={"max_concurrency": self.config.max_concurrency}
+            )
+            if "brief" not in final or "report" not in final:
+                raise WorkflowExecutionError("工作流结束时缺少 Brief 或 Report")
+            result = NoveltyRunResult(
+                brief=final["brief"],
+                evidence_cards=final.get("evidence_cards", []),
+                rejected_evidence=final.get("rejected_evidence", []),
+                coverage_gaps=final.get("coverage_gaps", []),
+                issues=final.get("issues", []),
+                rounds=final.get("rounds", 0),
+                report=final["report"],
+            )
+        except (KeyboardInterrupt, asyncio.CancelledError) as exc:
+            manager.finish_run("INTERRUPTED", error=exc)
+            raise
+        except Exception as exc:
+            manager.finish_run("FAILED", error=exc)
+            raise
+        else:
+            manager.finish_run("SUCCESS")
+            return result
+        finally:
+            manager.deactivate()
 
     def run(self, paper: PaperInput | dict[str, Any]) -> NoveltyRunResult:
         """同步入口；异步应用应直接调用 arun。"""

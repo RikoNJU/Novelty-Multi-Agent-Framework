@@ -24,6 +24,7 @@ from ..agents import (
     SearchPlannerAgent,
 )
 from ..agents.search_plan_compiler import SemanticLimits
+from ..core.runtime_artifacts import RuntimeDebugConfig
 from ..tools import (
     BaiduSearchBackend,
     BrowserTool,
@@ -403,7 +404,22 @@ def build_workflow(
             candidate_limit_per_task=int(
                 retrieval_cfg.get("candidate_limit_per_task", 8)
             ),
+            runtime_debug=RuntimeDebugConfig(
+                enabled=bool(raw.get("runtime_debug", {}).get("enabled", True)),
+                output_root=Path(
+                    raw.get("runtime_debug", {}).get("output_root", "outputs")
+                ),
+                archive_root=Path(
+                    raw.get("runtime_debug", {}).get(
+                        "archive_root", "docs/experiments/runtime"
+                    )
+                ),
+                max_inline_bytes=int(
+                    raw.get("runtime_debug", {}).get("max_inline_bytes", 256_000)
+                ),
+            ),
         ),
+        runtime_config=raw,
     )
 
 
@@ -532,6 +548,7 @@ def _build_workflow_from_application_config(
         ),
     )
     workflow = config.project.workflow
+    runtime_debug = config.project.runtime_debug
     return NoveltyWorkflow(
         NoveltyWorkflowServices(
             coordinator=coordinator,
@@ -545,7 +562,14 @@ def _build_workflow_from_application_config(
             max_concurrency=workflow.max_concurrency,
             minimum_evidence_per_point=workflow.minimum_evidence_per_point,
             candidate_limit_per_task=database.candidate_limit_per_task,
+            runtime_debug=RuntimeDebugConfig(
+                enabled=runtime_debug.enabled,
+                output_root=Path(runtime_debug.output_root),
+                archive_root=Path(runtime_debug.archive_root),
+                max_inline_bytes=runtime_debug.max_inline_bytes,
+            ),
         ),
+        runtime_config=config.model_dump(mode="json"),
     )
 
 
