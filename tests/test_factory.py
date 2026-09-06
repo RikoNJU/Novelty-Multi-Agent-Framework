@@ -56,7 +56,8 @@ def test_load_config_default_contains_models_and_agents():
     assert "models" in config
     assert "agents" in config
     assert config["agents"]["coordinator"]["model"] == "deepseek-flash"
-    assert config["agents"]["search_planner"]["model"] != config["agents"]["research"]["model"]
+    assert config["agents"]["search_planner"]["model"] == "deepseek-flash"
+    assert config["agents"]["research"]["model"] == "deepseek-flash"
 
 
 def test_build_workflow_wires_role_models(monkeypatch):

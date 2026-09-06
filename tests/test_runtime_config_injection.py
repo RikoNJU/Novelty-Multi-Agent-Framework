@@ -78,5 +78,11 @@ def test_perturbed_config_reaches_runtime_objects(tmp_path):
     assert planner.model_options.timeout_seconds == 13
 
     safe = effective_safe_config(config)
+    assert safe["workflow"] == config.project.workflow.model_dump(mode="json")
+    assert safe["coordinator"]["model"]["alias"] == config.coordinator.model.alias
+    assert (
+        safe["point_extractor"]["model"]["alias"]
+        == config.point_extractor.model.alias
+    )
     serialized = json.dumps(safe)
     assert "api_key\"" not in serialized and "secret" not in serialized.lower()

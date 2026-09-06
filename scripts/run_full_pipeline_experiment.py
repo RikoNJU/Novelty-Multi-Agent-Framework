@@ -7,6 +7,7 @@ import argparse
 import asyncio
 import contextvars
 import json
+import os
 import random
 import subprocess
 import sys
@@ -23,7 +24,12 @@ sys.path.insert(0, str(PROJECT_ROOT / "backend" / "src"))
 
 from backend.env.model_client import OpenAICompatibleChatClient, _load_dev_env
 from novelty_agent_framework.agents import DefaultEvidenceValidator, EvidenceValidationConfig
-from novelty_agent_framework.config import build_model_registry, build_workflow, load_application_config
+from novelty_agent_framework.config import (
+    build_model_registry,
+    build_workflow,
+    effective_safe_config,
+    load_application_config,
+)
 from novelty_agent_framework.persistence import persist_paper_input
 from novelty_agent_framework.processing import DefaultPaperProcessor
 from novelty_agent_framework.processing.mineru_parser import MineruSettings
@@ -35,6 +41,14 @@ DEFAULT_PAPER_ID = "MG19333vrw-locator-off-full"
 EXPERIMENT_DIR = PROJECT_ROOT / "docs" / "experiments" / EXPERIMENT_ID
 _call_context: contextvars.ContextVar[dict[str, str]] = contextvars.ContextVar(
     "experiment_call_context", default={}
+)
+MODEL_OVERRIDE_ENV_NAMES = (
+    "NOVELTY_COORDINATOR_MODEL",
+    "NOVELTY_POINT_EXTRACTOR_MODEL",
+    "NOVELTY_RESEARCHER_MODEL",
+    "NOVELTY_RESEARCH_MODEL",
+    "NOVELTY_SEARCH_PLANNER_MODEL",
+    "NOVELTY_REVIEWER_MODEL",
 )
 
 
@@ -348,11 +362,17 @@ def _cost_summary(calls: list[dict[str, Any]], *, full_tasks: int | None = None)
     return result
 
 
-def _research_tasks(workspace: Path, recorder: Recorder) -> list[dict[str, Any]]:
+def _research_tasks(
+    workspace: Path,
+    recorder: Recorder,
+    expected_keys: set[str],
+) -> list[dict[str, Any]]:
     rows = []
     for path in sorted((workspace / "research-runs").glob("*/*/attempt-*.json")):
         result = json.loads(path.read_text(encoding="utf-8"))
         key = f'{result["novelty_point_id"]}/{result["task_id"]}'
+        if key not in expected_keys:
+            continue
         events = recorder.tool_events.get(key, [])
         tools: defaultdict[str, Counter] = defaultdict(Counter)
         counters = Counter()
@@ -387,12 +407,18 @@ def _write_outputs(metrics: dict[str, Any], result: Any | None) -> None:
     (EXPERIMENT_DIR / "metrics.json").write_text(
         json.dumps(metrics, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
     )
+    (EXPERIMENT_DIR / "effective-config.json").write_text(
+        json.dumps(metrics.get("effective_config", {}), ensure_ascii=False, indent=2)
+        + "\n",
+        encoding="utf-8",
+    )
     with (EXPERIMENT_DIR / "model_calls.jsonl").open("w", encoding="utf-8") as stream:
         for call in metrics.get("model_calls", []):
             stream.write(json.dumps(call, ensure_ascii=False) + "\n")
     (EXPERIMENT_DIR / "README.md").write_text(
         "# MG19333vrw Full Pipeline / Locator Disabled\n\n"
-        "See `report.md`, `metrics.json`, and `model_calls.jsonl`.\n", encoding="utf-8"
+        "See `report.md`, `effective-config.json`, `metrics.json`, and "
+        "`model_calls.jsonl`.\n", encoding="utf-8"
     )
     evidence = metrics.get("evidence", {})
     timing = metrics.get("timing", {})
@@ -400,17 +426,22 @@ def _write_outputs(metrics: dict[str, Any], result: Any | None) -> None:
 
 ## 1. 实验目的
 
-验证原始 PDF 经 MinerU 到最终报告的闭环，仅关闭 locator gate，保留 quote gate。
+验证 SearchPlanner 默认模型收敛为 `deepseek-flash` 后，不设置任何
+`NOVELTY_*_MODEL` 角色覆盖即可完成 MG19333vrw 工作流并生成报告。
 
 ## 2. 基线
 
 - branch: `{metrics.get('git_branch')}`
 - commit: `{metrics.get('git_commit')}`
 - started_at: `{metrics.get('started_at')}`
+- execution_status: **{metrics.get('execution_status', 'INCOMPLETE')}**
 - status: **{metrics.get('status')}**
 
-## 3. 唯一功能性改动
+## 3. 固定实验条件
 
+- `paper = MG19333vrw`
+- Prompt 与工具预算保持当前仓库配置
+- `max_rounds = 1`
 - `require_direct_quote = true`
 - `require_source_location = false`
 - `locator_gate_disabled = true`
@@ -421,43 +452,56 @@ def _write_outputs(metrics: dict[str, Any], result: Any | None) -> None:
 - size: {metrics.get('input_size_bytes')} bytes
 - pages: {metrics.get('paper_processing', {}).get('pages')}
 
-## 5. MinerU
+## 5. 实际生效配置
+
+- `NOVELTY_*_MODEL` 覆盖：{metrics.get('model_overrides', {}).get('active') or '无'}
+- 无覆盖完整运行验收：**{'PASS' if metrics.get('verification', {}).get('criteria_passed') else 'FAIL'}**
+- SearchPlanner 实际调用模型：{metrics.get('verification', {}).get('observed_search_planner_models')}
+- 工作流正常返回：{metrics.get('verification', {}).get('workflow_returned')}
+- 质量门结果：{metrics.get('status')}（与“进程完成”分开记录）
+- 完整无密钥快照：`effective-config.json`
+
+```json
+{json.dumps(metrics.get('effective_config', {}), ensure_ascii=False, indent=2)}
+```
+
+## 6. MinerU
 
 ```json
 {json.dumps(metrics.get('paper_processing', {}), ensure_ascii=False, indent=2)}
 ```
 
-## 6. Reference Bootstrap
+## 7. Reference Bootstrap
 
 ```json
 {json.dumps(metrics.get('reference_bootstrap', {}), ensure_ascii=False, indent=2)}
 ```
 
-## 7. 工作流结果
+## 8. 工作流结果
 
 - rounds: {metrics.get('workflow', {}).get('rounds')}
 - ResearchTasks: {len(metrics.get('research_tasks', []))}
 - coverage gaps: {metrics.get('workflow', {}).get('coverage_gaps')}
 
-## 8. Tool 调用统计
+## 9. Tool 调用统计
 
 ```json
 {json.dumps(metrics.get('research_tasks', []), ensure_ascii=False, indent=2)}
 ```
 
-## 9. Evidence
+## 10. Evidence
 
 ```json
 {json.dumps(evidence, ensure_ascii=False, indent=2)}
 ```
 
-## 10. 时间统计
+## 11. 时间统计
 
 ```json
 {json.dumps(timing, ensure_ascii=False, indent=2)}
 ```
 
-## 11. Token 统计
+## 12. Token 统计
 
 ```json
 {json.dumps({'total': metrics.get('tokens'), 'by_role': metrics.get('token_by_role')}, ensure_ascii=False, indent=2)}
@@ -466,12 +510,12 @@ def _write_outputs(metrics: dict[str, Any], result: Any | None) -> None:
 MinerU external API tokens: 0  
 MinerU internal inference tokens: N/A
 
-## 12. 最终报告
+## 13. 最终报告
 
 - path: `{metrics.get('report', {}).get('path')}`
 - generated: {metrics.get('report', {}).get('generated')}
 
-## 13. 与上次实验对比
+## 14. 与上次实验对比
 
 | 指标 | 上轮 Full Workflow | 本轮 Locator Disabled |
 |---|---:|---:|
@@ -486,21 +530,21 @@ MinerU internal inference tokens: N/A
 | Total tokens | 未完整记录 | {metrics.get('tokens', {}).get('total_tokens')} |
 | PDF→Report 总耗时 | 未记录 | {timing.get('total_seconds')} s |
 
-## 14. 暴露的新问题
+## 15. 暴露的新问题
 
 {metrics.get('error') or '见 metrics.json 中的 issues / rejected reasons。'}
 
-## 15. 结论
+## 16. 结论
 
 {metrics.get('conclusion', '实验未完成。')}
 
-## 16. 完整规模估算
+## 17. 完整规模估算
 
 ```json
 {json.dumps(metrics.get('full_scale_estimate', {}), ensure_ascii=False, indent=2)}
 ```
 
-## 17. 金额成本
+## 18. 金额成本
 
 ```json
 {json.dumps(metrics.get('cost', {}), ensure_ascii=False, indent=2)}
@@ -530,8 +574,6 @@ def main() -> int:
     previous_metrics: dict[str, Any] = {}
     if args.resume and source_metrics_path.is_file():
         previous_metrics = json.loads(source_metrics_path.read_text(encoding="utf-8"))
-        if not args.sample_one_task:
-            recorder.model_calls.extend(previous_metrics.get("model_calls", []))
     original_complete = recorder.install_model_hook()
     metrics: dict[str, Any] = {
         "experiment_id": SAMPLE_EXPERIMENT_ID if args.sample_one_task else EXPERIMENT_ID,
@@ -554,6 +596,15 @@ def main() -> int:
             ["git", "branch", "--show-current"], cwd=PROJECT_ROOT, text=True
         ).strip()
         config = load_application_config()
+        # This experiment is intentionally a single-round control for both the
+        # sampled and full MG19333vrw runs.
+        config.project.workflow.max_rounds = 1
+        metrics["model_overrides"] = {
+            "active": [name for name in MODEL_OVERRIDE_ENV_NAMES if os.environ.get(name)],
+            "verified_without_overrides": not any(
+                os.environ.get(name) for name in MODEL_OVERRIDE_ENV_NAMES
+            ),
+        }
         workspace = PROJECT_ROOT / "outputs" / args.paper_id
         fixed_points = None
         if args.resume:
@@ -616,8 +667,7 @@ def main() -> int:
                 raise RuntimeError("Reference Bootstrap did not become ready")
         if config.reviewer is not None:
             config.reviewer.enabled = True
-        if args.sample_one_task:
-            config.project.workflow.max_rounds = 1
+        metrics["effective_config"] = effective_safe_config(config)
         workflow = build_workflow(config)
         if fixed_points is not None:
             class PersistedPointExtractor:
@@ -663,7 +713,13 @@ def main() -> int:
             "coverage_gaps": result.coverage_gaps,
             "issues": [item.model_dump(mode="json") for item in result.issues],
         }
-        metrics["research_tasks"] = _research_tasks(workspace, recorder)
+        current_task_keys = {
+            f"{task.novelty_point_id}/{task.task_id}"
+            for task in result.brief.research_tasks
+        }
+        metrics["research_tasks"] = _research_tasks(
+            workspace, recorder, current_task_keys
+        )
         if args.sample_one_task:
             metrics["research_tasks"] = [
                 row for row in metrics["research_tasks"]
@@ -681,6 +737,30 @@ def main() -> int:
         valid = bool(text.strip() and reviewer_accepted > 0 and "Traceback" not in text)
         metrics["report"] = {"generated": report_path.is_file(), "path": str(report_path),
                              "bytes": len(text.encode()), "valid": valid}
+        observed_planner_models = sorted({
+            call["model_alias"]
+            for call in recorder.model_calls
+            if call.get("stage") == "SearchPlanner" and call.get("model_alias")
+        })
+        metrics["verification"] = {
+            "workflow_returned": True,
+            "model_overrides_absent": metrics["model_overrides"][
+                "verified_without_overrides"
+            ],
+            "configured_search_planner_model": config.search_planner.model.alias,
+            "observed_search_planner_models": observed_planner_models,
+            "max_rounds": config.project.workflow.max_rounds,
+            "final_report_generated": report_path.is_file(),
+        }
+        metrics["verification"]["criteria_passed"] = all((
+            metrics["verification"]["model_overrides_absent"],
+            metrics["verification"]["configured_search_planner_model"]
+            == "deepseek-flash",
+            observed_planner_models == ["deepseek-flash"],
+            metrics["verification"]["max_rounds"] == 1,
+            metrics["verification"]["final_report_generated"],
+        ))
+        metrics["execution_status"] = "COMPLETED"
         metrics["timing"] = {
             "paper_processing_seconds": round(processing_elapsed, 6),
             "reference_bootstrap_seconds": round(bootstrap_elapsed, 6),
@@ -752,7 +832,7 @@ def main() -> int:
         _write_outputs(metrics, result)
     print(json.dumps({"status": metrics["status"], "error": metrics.get("error"),
                       "metrics": str(EXPERIMENT_DIR / "metrics.json")}, ensure_ascii=False))
-    return 0 if metrics["status"] == "SUCCESS" else 1
+    return 0 if metrics.get("verification", {}).get("criteria_passed") else 1
 
 
 if __name__ == "__main__":

@@ -242,7 +242,9 @@ workflow = build_workflow(config)
 result = workflow.run(PaperInput.model_validate(paper_data))
 ```
 
-当前示例配置中的 `Pro/zai-org/GLM-4.7` 在第一次原型实验时被 SiliconFlow 返回 `Model disabled`。真实运行前应把 Coordinator 配置为当前可用模型；实验使用 `deepseek-flash` 临时替代。
+当前默认配置已将 Coordinator、Researcher、SearchPlanner 收敛到已验证可用的
+`deepseek-flash`；仍可分别通过 `NOVELTY_COORDINATOR_MODEL`、
+`NOVELTY_RESEARCH_MODEL` 和 `NOVELTY_SEARCH_PLANNER_MODEL` 显式覆盖。
 
 ### Renderer 与 API
 

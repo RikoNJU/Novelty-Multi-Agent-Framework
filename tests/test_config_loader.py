@@ -18,7 +18,8 @@ def test_split_files_load_and_project_settings_are_slim():
     project = json.loads(DEFAULT_PROJECT_PATH.read_text())
     assert not {"models", "agents", "task_researcher", "retrieval"} & set(project)
     assert config.models and config.researcher.version == config.search_planner.version == 1
-    assert config.researcher.model.alias != config.search_planner.model.alias
+    assert config.researcher.model.alias == "deepseek-flash"
+    assert config.search_planner.model.alias == "deepseek-flash"
 
 
 def test_example_files_contain_no_secret_values():
@@ -51,6 +52,11 @@ def test_unknown_model_alias_fails_fast(tmp_path):
 def test_environment_model_override_is_loader_owned():
     config = load_application_config(environ={"NOVELTY_RESEARCH_MODEL": "glm4.7"})
     assert config.researcher.model.alias == "glm4.7"
+
+
+def test_search_planner_uses_verified_default_without_environment_override():
+    config = load_application_config(environ={})
+    assert config.search_planner.model.alias == "deepseek-flash"
 
 
 def test_search_planner_example_filename_is_canonical():
