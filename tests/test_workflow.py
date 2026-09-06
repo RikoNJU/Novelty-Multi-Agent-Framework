@@ -414,6 +414,15 @@ def test_supplement_dispatches_only_new_tasks():
     ]
     assert result.evidence_cards
     assert len(planner.calls) == 4
+    summary_path = next(Path("outputs/paper-test/runtime").glob("*/summary.json"))
+    checks = json.loads(summary_path.read_text())[
+        "final_evidence_sufficiency_checks"
+    ]
+    assert len(checks) == 2
+    assert checks[0]["check_status"] == "INSUFFICIENT"
+    assert checks[0]["actual_next_stage"] == "plan_supplement"
+    assert checks[1]["check_status"] == "PASS"
+    assert checks[1]["actual_next_stage"] == "synthesize_report"
 
 
 class NoTaskCoordinator(DemoCoordinator):
@@ -447,6 +456,13 @@ def test_no_tasks_branch_does_not_hang():
     result = workflow.run(make_paper())
     assert researcher.calls == []
     assert result.insufficient_final_evidence_points
+    summary_path = next(Path("outputs/paper-test/runtime").glob("*/summary.json"))
+    check = json.loads(summary_path.read_text())[
+        "final_evidence_sufficiency_checks"
+    ][0]
+    assert check["check_status"] == "INSUFFICIENT"
+    assert check["round_limit_allows_supplement"] is False
+    assert check["actual_next_stage"] == "synthesize_report"
 
 
 def test_task_audit_and_compatibility_files_are_written():

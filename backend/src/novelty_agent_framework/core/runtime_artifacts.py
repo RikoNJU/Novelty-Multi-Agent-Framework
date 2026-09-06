@@ -171,6 +171,12 @@ class RuntimeArtifactManager:
                 f"{self._stage_counter:04d}_{_safe_segment(stage_name)}"
             )
             directory.mkdir(parents=False, exist_ok=False)
+            debug_details = _stage_debug_details(
+                stage_name,
+                stage_input=stage_input,
+                stage_output=None,
+                runtime_config=self.runtime_config,
+            )
             record = {
                 "stage_id": stage_id,
                 "stage_name": stage_name,
@@ -183,6 +189,9 @@ class RuntimeArtifactManager:
                 "validation_result": None,
                 "directory": directory,
             }
+            if debug_details is not None:
+                record["debug_details"] = debug_details
+                record["_stage_input"] = stage_input
             self._stage_records.append(record)
             self._write_json(directory / "input.json", stage_input)
             self._write_json(directory / "meta.json", _public_record(record))
@@ -201,6 +210,13 @@ class RuntimeArtifactManager:
         )
         with self._lock:
             record = self._find_record(self._stage_records, "stage_id", handle.stage_id)
+            stage_input = record.pop("_stage_input", None)
+            debug_details = _stage_debug_details(
+                handle.stage_name,
+                stage_input=stage_input,
+                stage_output=stage_output,
+                runtime_config=self.runtime_config,
+            )
             record.update(
                 status="SUCCESS",
                 finished_at=_iso(finished),
@@ -208,6 +224,8 @@ class RuntimeArtifactManager:
                 duration_ms=_elapsed_ms(handle.monotonic_started),
                 validation_result=validation_result,
             )
+            if debug_details is not None:
+                record["debug_details"] = debug_details
             self._write_json(handle.directory / "output.json", stage_output)
             self._write_json(handle.directory / "meta.json", _public_record(record))
 
@@ -220,6 +238,7 @@ class RuntimeArtifactManager:
         error = self._error_payload(exc, stage=handle.stage_name)
         with self._lock:
             record = self._find_record(self._stage_records, "stage_id", handle.stage_id)
+            record.pop("_stage_input", None)
             record.update(
                 status="FAILED",
                 finished_at=_iso(finished),
@@ -470,6 +489,26 @@ class RuntimeArtifactManager:
             for item in self._stage_records
             if item.get("validation_result") is not None
         ]
+        final_evidence_sufficiency_checks = []
+        for index, item in enumerate(self._stage_records):
+            details = item.get("debug_details")
+            if not isinstance(details, Mapping) or not details.get(
+                "final_evidence_sufficiency"
+            ):
+                continue
+            next_stage = (
+                self._stage_records[index + 1]["stage_name"]
+                if index + 1 < len(self._stage_records)
+                else None
+            )
+            final_evidence_sufficiency_checks.append(
+                {
+                    "stage_id": item["stage_id"],
+                    "stage_status": item["status"],
+                    **details["final_evidence_sufficiency"],
+                    "actual_next_stage": next_stage,
+                }
+            )
         return {
             "run": {
                 "paper_id": self.paper_id,
@@ -490,6 +529,9 @@ class RuntimeArtifactManager:
             "tool_calls": list(tool_stats.values()),
             "errors": list(self._error_records),
             "integrity_gates": integrity_gates,
+            "final_evidence_sufficiency_checks": (
+                final_evidence_sufficiency_checks
+            ),
             "last_completed_stage": completed[-1]["stage_name"] if completed else None,
         }
 
@@ -601,7 +643,11 @@ def _safe_segment(value: str) -> str:
 
 
 def _public_record(record: Mapping[str, Any]) -> dict[str, Any]:
-    return {key: value for key, value in record.items() if key not in {"path", "directory"}}
+    return {
+        key: value
+        for key, value in record.items()
+        if key not in {"path", "directory"} and not key.startswith("_")
+    }
 
 
 def _prepare_value(value: Any, *, max_inline_bytes: int, key: str | None = None) -> Any:
@@ -689,6 +735,159 @@ def _infer_result_count(value: Any) -> int | None:
     return None
 
 
+def _stage_debug_details(
+    stage_name: str,
+    *,
+    stage_input: Any,
+    stage_output: Any,
+    runtime_config: Mapping[str, Any],
+) -> dict[str, Any] | None:
+    if stage_name != "check_final_evidence_sufficiency":
+        return None
+    state = _as_mapping(stage_input)
+    if state is None:
+        return None
+    brief = _as_mapping(state.get("brief")) or {}
+    point_values = brief.get("novelty_points", state.get("novelty_points", []))
+    point_ids = [
+        point_id
+        for point in _as_sequence(point_values)
+        if (point_id := _field_value(point, "point_id")) is not None
+    ]
+    counts = {point_id: 0 for point_id in point_ids}
+    ignored_card_count = 0
+    cards = _as_sequence(state.get("evidence_cards", []))
+    for card in cards:
+        point_id = _field_value(card, "novelty_point_id")
+        if point_id in counts:
+            counts[point_id] += 1
+        else:
+            ignored_card_count += 1
+
+    workflow_config = _workflow_runtime_config(runtime_config)
+    configured_cut = workflow_config.get("min_final_evidence_cards_per_point")
+    if not isinstance(configured_cut, int) or isinstance(configured_cut, bool):
+        configured_cut = _required_count_from_output(stage_output)
+    if configured_cut is None:
+        return None
+
+    point_results = [
+        {
+            "novelty_point_id": point_id,
+            "valid_card_count": counts[point_id],
+            "required_card_count": configured_cut,
+            "status": "PASS" if counts[point_id] >= configured_cut else "INSUFFICIENT",
+        }
+        for point_id in point_ids
+    ]
+    calculated_insufficient = [
+        item["novelty_point_id"]
+        for item in point_results
+        if item["status"] == "INSUFFICIENT"
+    ]
+    calculated_insufficient_facts = [
+        {
+            "novelty_point_id": item["novelty_point_id"],
+            "valid_card_count": item["valid_card_count"],
+            "required_card_count": item["required_card_count"],
+            "reason": "insufficient_final_evidence",
+        }
+        for item in point_results
+        if item["status"] == "INSUFFICIENT"
+    ]
+    reported = _reported_insufficient_points(stage_output)
+    rounds = state.get("rounds")
+    max_rounds = workflow_config.get("max_rounds")
+    round_limit_allows_supplement = (
+        bool(reported)
+        and isinstance(rounds, int)
+        and isinstance(max_rounds, int)
+        and rounds < max_rounds
+    )
+    return {
+        "final_evidence_sufficiency": {
+            "configured_cut": configured_cut,
+            "round": rounds,
+            "max_rounds": max_rounds,
+            "input_final_valid_card_count": len(cards),
+            "counted_final_valid_card_count": sum(counts.values()),
+            "ignored_card_count": ignored_card_count,
+            "calculated_status": (
+                "INSUFFICIENT" if calculated_insufficient else "PASS"
+            ),
+            "check_status": (
+                ("INSUFFICIENT" if reported else "PASS")
+                if reported is not None
+                else None
+            ),
+            "point_results": point_results,
+            "calculated_insufficient_point_ids": calculated_insufficient,
+            "calculated_insufficient_final_evidence_points": (
+                calculated_insufficient_facts
+            ),
+            "reported_insufficient_final_evidence_points": reported,
+            "output_matches_calculation": (
+                reported == calculated_insufficient_facts
+                if reported is not None
+                else None
+            ),
+            "round_limit_allows_supplement": round_limit_allows_supplement,
+        }
+    }
+
+
+def _as_mapping(value: Any) -> Mapping[str, Any] | None:
+    if isinstance(value, BaseModel):
+        value = value.model_dump(mode="python")
+    elif dataclasses.is_dataclass(value) and not isinstance(value, type):
+        value = dataclasses.asdict(value)
+    return value if isinstance(value, Mapping) else None
+
+
+def _as_sequence(value: Any) -> list[Any] | tuple[Any, ...]:
+    return value if isinstance(value, (list, tuple)) else []
+
+
+def _field_value(value: Any, field: str) -> str | None:
+    mapping = _as_mapping(value)
+    candidate = (
+        mapping.get(field) if mapping is not None else getattr(value, field, None)
+    )
+    return candidate if isinstance(candidate, str) and candidate else None
+
+
+def _workflow_runtime_config(runtime_config: Mapping[str, Any]) -> Mapping[str, Any]:
+    workflow = runtime_config.get("workflow")
+    if isinstance(workflow, Mapping):
+        return workflow
+    project = runtime_config.get("project")
+    if isinstance(project, Mapping):
+        workflow = project.get("workflow")
+        if isinstance(workflow, Mapping):
+            return workflow
+    return {}
+
+
+def _reported_insufficient_points(stage_output: Any) -> list[dict[str, Any]] | None:
+    output = _as_mapping(stage_output)
+    if output is None or "insufficient_final_evidence_points" not in output:
+        return None
+    reported = []
+    for item in _as_sequence(output["insufficient_final_evidence_points"]):
+        mapping = _as_mapping(item)
+        if mapping is not None:
+            reported.append(dict(mapping))
+    return reported
+
+
+def _required_count_from_output(stage_output: Any) -> int | None:
+    reported = _reported_insufficient_points(stage_output)
+    if not reported:
+        return None
+    value = reported[0].get("required_card_count")
+    return value if isinstance(value, int) and not isinstance(value, bool) else None
+
+
 def _stage_validation_result(stage_name: str, output: Any) -> dict[str, Any] | None:
     if not isinstance(output, Mapping):
         return None
@@ -759,6 +958,36 @@ def _render_summary(summary: Mapping[str, Any]) -> str:
         f"{item['failed']} | {item['empty']} |"
         for item in summary["tool_calls"]
     )
+    lines.extend(["", "## Final Evidence Sufficiency Checks", ""])
+    checks = summary.get("final_evidence_sufficiency_checks", [])
+    if checks:
+        for check in checks:
+            lines.extend(
+                [
+                    f"### Round {check.get('round')}",
+                    "",
+                    f"Configured cut: {check.get('configured_cut')}",
+                    f"Stage status: {check.get('stage_status')}",
+                    f"Check status: {check.get('check_status')}",
+                    f"Input final valid Cards: {check.get('input_final_valid_card_count')}",
+                    f"Ignored Cards: {check.get('ignored_card_count')}",
+                    f"Output matches calculation: {check.get('output_matches_calculation')}",
+                    "Round limit allows supplement: "
+                    f"{check.get('round_limit_allows_supplement')}",
+                    f"Actual next stage: {check.get('actual_next_stage')}",
+                    "",
+                    "| Novelty Point | Valid Cards | Required Cards | Status |",
+                    "|---|---:|---:|---|",
+                ]
+            )
+            lines.extend(
+                f"| {item['novelty_point_id']} | {item['valid_card_count']} | "
+                f"{item['required_card_count']} | {item['status']} |"
+                for item in check.get("point_results", [])
+            )
+            lines.append("")
+    else:
+        lines.append("- None")
     lines.extend(["", "## Errors", ""])
     if summary["errors"]:
         lines.extend(

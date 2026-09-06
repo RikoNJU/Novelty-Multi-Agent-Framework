@@ -51,3 +51,31 @@ Values under keys matching `api_key`, `token`, `secret`, `password`,
 SHA-256 metadata rather than duplicated inline. Existing `Path` values are
 represented as artifact references containing path, size, and SHA-256 when the
 target is a file.
+
+## Final Evidence Sufficiency Check
+
+The `check_final_evidence_sufficiency` stage keeps its complete state input and
+business output in the normal `input.json` and `output.json` files. Its
+`meta.json` also contains a factual projection under:
+
+```text
+debug_details.final_evidence_sufficiency
+```
+
+The projection records:
+
+- the effective `configured_cut`, current round, and `max_rounds`;
+- the total number of final valid Cards presented to the check;
+- each NoveltyPoint's `valid_card_count`, `required_card_count`, and deterministic
+  `PASS` or `INSUFFICIENT` comparison;
+- the structured `insufficient_final_evidence_points` emitted by the stage;
+- whether the emitted list matches the count comparison;
+- whether the current round limit permits the existing V0 supplement branch.
+
+`summary.json` collects every round under
+`final_evidence_sufficiency_checks`. Each entry also records the actually
+executed next stage, such as `plan_supplement` or `synthesize_report`.
+`summary.md` renders the same facts as a per-round table. These fields report
+observed values and deterministic comparisons only; they do not evaluate
+retrieval breadth, source diversity, evidence quality, or conclusion
+credibility.

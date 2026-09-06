@@ -62,6 +62,8 @@ def test_incremental_run_stage_tool_and_archived_summary(tmp_path: Path) -> None
     _, archive = manager.finish_run("SUCCESS")
 
     recorded = json.loads(tool.path.read_text())
+    stage_meta = json.loads((stage.directory / "meta.json").read_text())
+    assert "debug_details" not in stage_meta
     assert recorded["tool_call_id"] == "tool_0001"
     assert recorded["agent_tool_call_id"] == "model-call-7"
     assert recorded["execution_status"] == "SUCCESS"
@@ -213,3 +215,92 @@ def test_harness_records_agent_and_schema_resolved_arguments(tmp_path: Path) -> 
     assert payload["resolved_arguments"] == {"query": "q", "max_results": 10}
     assert payload["execution_status"] == "SUCCESS"
     assert payload["business_status"] == "EMPTY"
+
+
+def test_final_evidence_sufficiency_facts_are_in_stage_and_summary(
+    tmp_path: Path,
+) -> None:
+    manager = RuntimeArtifactManager(
+        "paper",
+        config=_config(tmp_path),
+        runtime_config={
+            "project": {
+                "workflow": {
+                    "max_rounds": 2,
+                    "min_final_evidence_cards_per_point": 2,
+                }
+            }
+        },
+        stage_names=[
+            "check_final_evidence_sufficiency",
+            "plan_supplement",
+        ],
+    )
+    manager.activate()
+    stage = manager.start_stage(
+        "check_final_evidence_sufficiency",
+        {
+            "brief": {
+                "novelty_points": [
+                    {"point_id": "NP-1"},
+                    {"point_id": "NP-2"},
+                ]
+            },
+            "evidence_cards": [
+                {"novelty_point_id": "NP-1"},
+                {"novelty_point_id": "NP-1"},
+                {"novelty_point_id": "NP-2"},
+            ],
+            "rounds": 1,
+        },
+    )
+    manager.finish_stage(
+        stage,
+        {
+            "insufficient_final_evidence_points": [
+                {
+                    "novelty_point_id": "NP-2",
+                    "valid_card_count": 1,
+                    "required_card_count": 2,
+                    "reason": "insufficient_final_evidence",
+                }
+            ]
+        },
+    )
+    supplement = manager.start_stage("plan_supplement", {"rounds": 1})
+    manager.finish_stage(supplement, {"rounds": 2})
+    manager.deactivate()
+    manager.finish_run("SUCCESS")
+
+    meta = json.loads((stage.directory / "meta.json").read_text())
+    details = meta["debug_details"]["final_evidence_sufficiency"]
+    assert details["configured_cut"] == 2
+    assert details["check_status"] == "INSUFFICIENT"
+    assert details["input_final_valid_card_count"] == 3
+    assert details["point_results"] == [
+        {
+            "novelty_point_id": "NP-1",
+            "required_card_count": 2,
+            "status": "PASS",
+            "valid_card_count": 2,
+        },
+        {
+            "novelty_point_id": "NP-2",
+            "required_card_count": 2,
+            "status": "INSUFFICIENT",
+            "valid_card_count": 1,
+        },
+    ]
+    assert details["output_matches_calculation"] is True
+    assert details["round_limit_allows_supplement"] is True
+
+    summary = json.loads((manager.run_dir / "summary.json").read_text())
+    check = summary["final_evidence_sufficiency_checks"][0]
+    assert check["stage_status"] == "SUCCESS"
+    assert check["actual_next_stage"] == "plan_supplement"
+    assert check["reported_insufficient_final_evidence_points"][0][
+        "reason"
+    ] == "insufficient_final_evidence"
+    markdown = (manager.run_dir / "summary.md").read_text()
+    assert "## Final Evidence Sufficiency Checks" in markdown
+    assert "| NP-2 | 1 | 2 | INSUFFICIENT |" in markdown
