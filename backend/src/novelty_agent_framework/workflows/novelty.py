@@ -14,11 +14,16 @@ from langgraph.types import Send
 from pydantic import ValidationError
 
 from novelty_agent_framework.core.errors import WorkflowExecutionError
+from novelty_agent_framework.core.integrity_gates import (
+    validate_report_integrity,
+    validate_synthesis_input,
+)
 from novelty_agent_framework.core.runtime_artifacts import (
     RuntimeArtifactManager,
     current_runtime_artifacts,
 )
 from novelty_agent_framework.persistence import (
+    ReferenceStore,
     persist_evidence_cards,
     persist_novelty_points,
     persist_report,
@@ -66,9 +71,12 @@ _STAGE_NAMES = (
     "run_research_task",
     "validate_evidence",
     "review_evidence",
+    "validate_synthesis_input",
     "assess_coverage",
     "plan_supplement",
     "synthesize_report",
+    "validate_report_integrity",
+    "persist_report",
     "render_report",
 )
 
@@ -121,6 +129,12 @@ class NoveltyWorkflow:
         self.config = config or NoveltyWorkflowConfig()
         self.validator = services.validator or DefaultEvidenceValidator()
         self.point_extractor = services.point_extractor or DemoPointExtractor()
+        evidence_builder = getattr(services.task_researcher, "evidence_builder", None)
+        self.reference_store = (
+            getattr(evidence_builder, "reference_store", None)
+            or getattr(services.task_researcher, "reference_store", None)
+            or ReferenceStore()
+        )
         self.runtime_config = dict(runtime_config or {})
         self.graph = self._build_graph()
 
@@ -155,6 +169,12 @@ class NoveltyWorkflow:
             self._record_stage("review_evidence", self._review_evidence),
         )
         builder.add_node(
+            "validate_synthesis_input",
+            self._record_stage(
+                "validate_synthesis_input", self._validate_synthesis_input
+            ),
+        )
+        builder.add_node(
             "assess_coverage",
             self._record_stage("assess_coverage", self._assess_coverage),
         )
@@ -165,6 +185,16 @@ class NoveltyWorkflow:
         builder.add_node(
             "synthesize_report",
             self._record_stage("synthesize_report", self._synthesize_report),
+        )
+        builder.add_node(
+            "validate_report_integrity",
+            self._record_stage(
+                "validate_report_integrity", self._validate_report_integrity
+            ),
+        )
+        builder.add_node(
+            "persist_report",
+            self._record_stage("persist_report", self._persist_report),
         )
         builder.add_node(
             "render_report",
@@ -187,7 +217,8 @@ class NoveltyWorkflow:
         )
         builder.add_edge("run_research_task", "validate_evidence")
         builder.add_edge("validate_evidence", "review_evidence")
-        builder.add_edge("review_evidence", "assess_coverage")
+        builder.add_edge("review_evidence", "validate_synthesis_input")
+        builder.add_edge("validate_synthesis_input", "assess_coverage")
         builder.add_conditional_edges(
             "assess_coverage",
             self._route_after_assessment,
@@ -197,7 +228,9 @@ class NoveltyWorkflow:
             },
         )
         builder.add_edge("plan_supplement", "dispatch_planning_tasks")
-        builder.add_edge("synthesize_report", "render_report")
+        builder.add_edge("synthesize_report", "validate_report_integrity")
+        builder.add_edge("validate_report_integrity", "persist_report")
+        builder.add_edge("persist_report", "render_report")
         builder.add_edge("render_report", END)
         return builder.compile()
 
@@ -576,6 +609,62 @@ class NoveltyWorkflow:
         ]
         return {"coverage_gaps": gaps}
 
+    async def _validate_synthesis_input(
+        self, state: NoveltyState
+    ) -> dict[str, Any]:
+        """Gate A: filter cards with broken deterministic provenance chains."""
+
+        result = validate_synthesis_input(
+            state.get("evidence_cards", []),
+            evidence=state.get("raw_evidence", []),
+            tasks=state.get("all_research_tasks", []),
+            novelty_points=state.get("novelty_points", []),
+            paper_id=state["paper"].paper_id,
+            reference_store=self.reference_store,
+        )
+        accepted = list(result.accepted)
+        gate_rejections = [
+            RejectedEvidence(card_id=card.card_id, reason="; ".join(reasons))
+            for card, reasons in result.rejected
+        ]
+        rejected = [*state.get("rejected_evidence", []), *gate_rejections]
+        gate_issues = [
+            WorkflowIssue(
+                node="validate_synthesis_input",
+                code="synthesis_input_integrity",
+                message=(
+                    f"Evidence Card {card.card_id} failed synthesis input "
+                    f"integrity: {'; '.join(reasons)}"
+                ),
+                severity=IssueSeverity.WARNING,
+                task_id=card.task_id,
+            )
+            for card, reasons in result.rejected
+        ]
+        persist_evidence_cards(
+            state["paper"],
+            raw_cards=state.get("raw_evidence_cards", []),
+            validator_accepted_cards=(
+                state.get("validator_accepted_cards", [])
+                if self.services.reviewer
+                else None
+            ),
+            review_decisions=(
+                state.get("review_decisions", []) if self.services.reviewer else None
+            ),
+            accepted_cards=accepted,
+            rejected_evidence=rejected,
+        )
+        return {
+            "evidence_cards": accepted,
+            "rejected_evidence": rejected,
+            "issues": gate_issues,
+            "synthesis_integrity": result.audit(),
+            "integrity_rejected_card_ids": [
+                card.card_id for card, _reasons in result.rejected
+            ],
+        }
+
     async def _route_after_assessment(self, state: NoveltyState) -> str:
         """根据覆盖度异步选择补检或汇总分支。"""
         if state.get("coverage_gaps") and state.get("rounds", 0) < self.config.max_rounds:
@@ -610,9 +699,13 @@ class NoveltyWorkflow:
         }
 
     async def _synthesize_report(self, state: NoveltyState) -> dict[str, Any]:
+        integrity_rejected_ids = set(
+            state.get("integrity_rejected_card_ids", [])
+        )
         rejected_reasons = [
             f"{item.card_id}: {item.reason}"
             for item in state.get("rejected_evidence", [])
+            if item.card_id not in integrity_rejected_ids
         ]
         try:
             report_value = self.services.coordinator.synthesize(
@@ -628,8 +721,25 @@ class NoveltyWorkflow:
 
         if report.paper_id != state["paper"].paper_id:
             raise WorkflowExecutionError("NoveltyReport.paper_id 与输入论文不一致")
-        persist_report(state["paper"], report)
         return {"report": report}
+
+    async def _validate_report_integrity(
+        self, state: NoveltyState
+    ) -> dict[str, Any]:
+        """Gate B: observe report reference failures without blocking output."""
+
+        result = validate_report_integrity(
+            state["report"],
+            novelty_points=state.get("novelty_points", []),
+            evidence_cards=state.get("evidence_cards", []),
+        )
+        return {"report_integrity": result.audit()}
+
+    async def _persist_report(self, state: NoveltyState) -> dict[str, Any]:
+        """Persist the unchanged report after the non-blocking output gate."""
+
+        persist_report(state["paper"], state["report"])
+        return {}
 
     async def _render_report(self, state: NoveltyState) -> dict[str, Any]:
         """在结构化报告落盘后生成默认 Markdown 报告。"""
@@ -663,6 +773,7 @@ class NoveltyWorkflow:
             "review_decisions": [],
             "coverage_gaps": [],
             "issues": [],
+            "integrity_rejected_card_ids": [],
             "rounds": 0,
         }
         model_client = getattr(self.services.task_researcher, "model_client", None)

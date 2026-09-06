@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import json
+import threading
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
@@ -17,14 +20,22 @@ from novelty_agent_framework.agents import (
     build_paper_digest,
 )
 from novelty_agent_framework.ports import ValidationResult
+from novelty_agent_framework.persistence import ReferenceStore
 from novelty_agent_framework.schemas import (
+    Artifact,
+    ArtifactRole,
+    ContentExtent,
+    Evidence,
     EvidenceCard,
+    EvidenceLocator,
     EvidenceSource,
     NoveltyBrief,
     PaperInput,
     TaskResearchRequest,
     TaskResearchResult,
     TaskResearchStatus,
+    Work,
+    WorkType,
 )
 from novelty_agent_framework.workflows import (
     NoveltyWorkflow,
@@ -48,7 +59,9 @@ def make_paper(claims: int = 1) -> PaperInput:
     )
 
 
-def make_card(request: TaskResearchRequest) -> EvidenceCard:
+def make_card(
+    request: TaskResearchRequest, evidence_id: str = "fixture-evidence"
+) -> EvidenceCard:
     task = request.research_task
     point = request.novelty_point
     return EvidenceCard(
@@ -69,6 +82,7 @@ def make_card(request: TaskResearchRequest) -> EvidenceCard:
         ],
         relevance=0.9,
         confidence=0.9,
+        evidence_ids=[evidence_id],
     )
 
 
@@ -79,6 +93,8 @@ class RecordingTaskResearcher:
         self.calls: list[TaskResearchRequest] = []
         self.active = 0
         self.max_active = 0
+        self.reference_store = ReferenceStore()
+        self.store_lock = threading.RLock()
 
     async def ainvoke(self, request: TaskResearchRequest) -> TaskResearchResult:
         self.calls.append(request)
@@ -89,12 +105,75 @@ class RecordingTaskResearcher:
         if request.research_task.task_id == self.fail_task:
             raise RuntimeError("task failed")
         cards = []
+        evidence = []
         if not (self.first_round_empty and request.research_task.attempt == 1):
-            cards = [make_card(request)]
+            task = request.research_task
+            point = request.novelty_point
+            quote = "Grounded quote."
+            work_id = f"work-{point.point_id}-{task.task_id}"
+            artifact_id = f"artifact-{point.point_id}-{task.task_id}"
+            evidence_id = f"evidence-{point.point_id}-{task.task_id}"
+            with self.store_lock:
+                manifest = self.reference_store.load_manifest(
+                    request.subject_paper_id
+                )
+                self.reference_store.write_document(
+                    request.subject_paper_id,
+                    work_id=work_id,
+                    artifact_id=artifact_id,
+                    extension="txt",
+                    content=quote,
+                )
+                self.reference_store.persist_manifest(
+                    request.subject_paper_id,
+                    manifest.model_copy(
+                        update={
+                            "works": [
+                                *manifest.works,
+                                Work(
+                                    work_id=work_id,
+                                    work_type=WorkType.ARTICLE,
+                                    title=f"Candidate {point.point_id} {task.task_id}",
+                                ),
+                            ],
+                            "artifacts": [
+                                *manifest.artifacts,
+                                Artifact(
+                                    artifact_id=artifact_id,
+                                    work_id=work_id,
+                                    role=ArtifactRole.EXTRACTED_TEXT,
+                                    media_type="text/plain",
+                                    relative_path=(
+                                        f"documents/{work_id}/{artifact_id}.txt"
+                                    ),
+                                    sha256=hashlib.sha256(quote.encode()).hexdigest(),
+                                    content_extent=ContentExtent.FULL,
+                                    acquired_at=datetime.now(timezone.utc),
+                                ),
+                            ],
+                            "updated_at": datetime.now(timezone.utc),
+                        }
+                    ),
+                )
+            evidence = [
+                Evidence(
+                    evidence_id=evidence_id,
+                    work_id=work_id,
+                    artifact_id=artifact_id,
+                    novelty_point_id=point.point_id,
+                    task_id=task.task_id,
+                    quote=quote,
+                    locator=EvidenceLocator(char_start=0, char_end=len(quote)),
+                    interpretation="fixture",
+                    confidence=0.9,
+                )
+            ]
+            cards = [make_card(request, evidence_id)]
         return TaskResearchResult(
             task_id=request.research_task.task_id,
             novelty_point_id=request.novelty_point.point_id,
             status=TaskResearchStatus.COMPLETED,
+            evidence=evidence,
             evidence_cards=cards,
             steps_used=1,
         )

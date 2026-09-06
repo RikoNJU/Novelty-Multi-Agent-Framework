@@ -19,6 +19,7 @@ from pathlib import Path
 from typing import Any, Mapping, Sequence
 
 from .schemas import (
+    Artifact,
     ArtifactNamespace,
     EvidenceCard,
     EvidenceReviewDecision,
@@ -223,13 +224,7 @@ class ReferenceStore:
     ) -> ReferenceReadResult:
         """仅按 Manifest 中的文本 Artifact ID 读取受限字符片段。"""
 
-        manifest = self.load_manifest(paper_id)
-        artifact = next(
-            (item for item in manifest.artifacts if item.artifact_id == artifact_id),
-            None,
-        )
-        if artifact is None:
-            raise ValueError(f"unknown artifact_id {artifact_id!r}")
+        artifact, _path, raw = self.verify_artifact_file(paper_id, artifact_id)
         if artifact.media_type not in {
             "text/plain",
             "text/markdown",
@@ -239,16 +234,6 @@ class ReferenceStore:
             raise ValueError(
                 f"artifact {artifact_id} media_type {artifact.media_type!r} is not readable text"
             )
-        references_dir = self._workspace(paper_id).resolve()
-        path = (references_dir / artifact.relative_path).resolve()
-        if not path.is_relative_to(references_dir):
-            raise ValueError(f"artifact {artifact_id} path escapes references workspace")
-        if not path.is_file():
-            raise FileNotFoundError(f"artifact {artifact_id} content file is missing")
-        raw = path.read_bytes()
-        digest = hashlib.sha256(raw).hexdigest()
-        if digest != artifact.sha256:
-            raise ValueError(f"artifact {artifact_id} sha256 mismatch")
         try:
             text = raw.decode("utf-8")
         except UnicodeDecodeError as exc:
@@ -272,6 +257,32 @@ class ReferenceStore:
             has_more=char_end < len(text),
             sha256=artifact.sha256,
         )
+
+    def verify_artifact_file(
+        self,
+        paper_id: str,
+        artifact_id: str,
+    ) -> tuple[Artifact, Path, bytes]:
+        """Resolve one manifest Artifact and verify path, existence and SHA-256."""
+
+        manifest = self.load_manifest(paper_id)
+        artifact = next(
+            (item for item in manifest.artifacts if item.artifact_id == artifact_id),
+            None,
+        )
+        if artifact is None:
+            raise ValueError(f"unknown artifact_id {artifact_id!r}")
+        references_dir = self._workspace(paper_id).resolve()
+        path = (references_dir / artifact.relative_path).resolve()
+        if not path.is_relative_to(references_dir):
+            raise ValueError(f"artifact {artifact_id} path escapes references workspace")
+        if not path.is_file():
+            raise FileNotFoundError(f"artifact {artifact_id} content file is missing")
+        raw = path.read_bytes()
+        digest = hashlib.sha256(raw).hexdigest()
+        if digest != artifact.sha256:
+            raise ValueError(f"artifact {artifact_id} sha256 mismatch")
+        return artifact, path, raw
 
 
 class SubjectReferenceStore(ReferenceStore):

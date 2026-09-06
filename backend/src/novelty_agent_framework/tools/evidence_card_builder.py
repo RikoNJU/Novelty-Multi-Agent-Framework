@@ -242,8 +242,13 @@ def _quote_matches(quote: str, text: str) -> bool:
     return quote in text or _normalize_whitespace(quote) in _normalize_whitespace(text)
 
 
-def _normalize_whitespace(value: str) -> str:
+def normalize_quote_whitespace(value: str) -> str:
+    """Canonical quote whitespace used by both the builder and integrity gates."""
+
     return re.sub(r"\s+", " ", value).strip()
+
+
+_normalize_whitespace = normalize_quote_whitespace
 
 
 _WS_RE = re.compile(r"\s")

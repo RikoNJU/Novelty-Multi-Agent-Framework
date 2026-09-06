@@ -180,6 +180,7 @@ class RuntimeArtifactManager:
                 "duration": None,
                 "duration_ms": None,
                 "error": None,
+                "validation_result": None,
                 "directory": directory,
             }
             self._stage_records.append(record)
@@ -195,6 +196,9 @@ class RuntimeArtifactManager:
         if not self.config.enabled or handle.directory is None:
             return
         finished = _now()
+        validation_result = _stage_validation_result(
+            handle.stage_name, stage_output
+        )
         with self._lock:
             record = self._find_record(self._stage_records, "stage_id", handle.stage_id)
             record.update(
@@ -202,6 +206,7 @@ class RuntimeArtifactManager:
                 finished_at=_iso(finished),
                 duration=_elapsed_seconds(handle.monotonic_started),
                 duration_ms=_elapsed_ms(handle.monotonic_started),
+                validation_result=validation_result,
             )
             self._write_json(handle.directory / "output.json", stage_output)
             self._write_json(handle.directory / "meta.json", _public_record(record))
@@ -396,6 +401,7 @@ class RuntimeArtifactManager:
                     "duration": None,
                     "duration_ms": None,
                     "error": None,
+                    "validation_result": None,
                 },
             )
 
@@ -456,6 +462,14 @@ class RuntimeArtifactManager:
             if record["business_status"] == "EMPTY":
                 stats["empty"] += 1
         completed = [item for item in self._stage_records if item["status"] == "SUCCESS"]
+        integrity_gates = [
+            {
+                "stage_name": item["stage_name"],
+                **item["validation_result"],
+            }
+            for item in self._stage_records
+            if item.get("validation_result") is not None
+        ]
         return {
             "run": {
                 "paper_id": self.paper_id,
@@ -475,6 +489,7 @@ class RuntimeArtifactManager:
             "stages": stages,
             "tool_calls": list(tool_stats.values()),
             "errors": list(self._error_records),
+            "integrity_gates": integrity_gates,
             "last_completed_stage": completed[-1]["stage_name"] if completed else None,
         }
 
@@ -674,6 +689,17 @@ def _infer_result_count(value: Any) -> int | None:
     return None
 
 
+def _stage_validation_result(stage_name: str, output: Any) -> dict[str, Any] | None:
+    if not isinstance(output, Mapping):
+        return None
+    key = {
+        "validate_synthesis_input": "synthesis_integrity",
+        "validate_report_integrity": "report_integrity",
+    }.get(stage_name)
+    value = output.get(key) if key is not None else None
+    return dict(value) if isinstance(value, Mapping) else None
+
+
 def _git_identity() -> tuple[str | None, str | None]:
     def run(*args: str) -> str | None:
         try:
@@ -740,6 +766,21 @@ def _render_summary(summary: Mapping[str, Any]) -> str:
             f"{item.get('type')}: {item.get('message')}"
             for item in summary["errors"]
         )
+    else:
+        lines.append("- None")
+    lines.extend(["", "## Integrity Gates", ""])
+    if summary.get("integrity_gates"):
+        lines.extend(
+            f"- {item['stage_name']}: "
+            f"{'PASS' if item.get('validation_passed') else 'FAILED'}"
+            for item in summary["integrity_gates"]
+        )
+        for item in summary["integrity_gates"]:
+            for issue in item.get("issues", []):
+                lines.append(f"  - {issue}")
+            for rejected in item.get("rejected_cards", []):
+                for reason in rejected.get("reasons", []):
+                    lines.append(f"  - {rejected.get('card_id')}: {reason}")
     else:
         lines.append("- None")
     lines.extend(["", "## Last Completed Stage", "",

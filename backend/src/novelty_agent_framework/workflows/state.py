@@ -56,6 +56,9 @@ class NoveltyState(TypedDict, total=False):
     issues: Annotated[list[WorkflowIssue], add]
     rounds: int
     report: NoveltyReport
+    synthesis_integrity: dict
+    integrity_rejected_card_ids: Annotated[list[str], add]
+    report_integrity: dict
     rendered_report_path: str
 
 
