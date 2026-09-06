@@ -9,7 +9,12 @@ from novelty_agent_framework.agents import (
     NoveltyResearchAgent,
 )
 from novelty_agent_framework.ports import SearchHit
-from novelty_agent_framework.schemas import NoveltyPoint, PaperInput, ResearchTask
+from novelty_agent_framework.schemas import (
+    InsufficientFinalEvidence,
+    NoveltyPoint,
+    PaperInput,
+    ResearchTask,
+)
 
 PROMPTS_ROOT = Path("backend/src/novelty_agent_framework/prompts")
 
@@ -164,7 +169,13 @@ def test_coordinator_supplement_renders_prompt_from_library():
         make_paper(),
         brief=brief,
         existing_evidence=[],
-        coverage_gaps=["NP-1: 仅有 0 条有效证据，至少需要 1 条"],
+        insufficient_final_evidence_points=[
+            InsufficientFinalEvidence(
+                novelty_point_id="NP-1",
+                valid_card_count=0,
+                required_card_count=1,
+            )
+        ],
         attempt=2,
     )
 
@@ -176,7 +187,7 @@ def test_coordinator_supplement_renders_prompt_from_library():
     assert result.keywords_zh == brief.keywords_zh
     assert result.keywords_en == brief.keywords_en
     messages, _ = client.calls[0]
-    assert "补检原因" in messages[1].content
+    assert "最终有效 EvidenceCard 数量" in messages[1].content
     assert "SearchPlan" in messages[1].content
 
 
@@ -286,6 +297,12 @@ def test_plan_supplement_rejects_task_for_unknown_point():
             make_paper(),
             brief=brief,
             existing_evidence=[],
-            coverage_gaps=["NP-1: 证据不足"],
+            insufficient_final_evidence_points=[
+                InsufficientFinalEvidence(
+                    novelty_point_id="NP-1",
+                    valid_card_count=0,
+                    required_card_count=1,
+                )
+            ],
             attempt=2,
         )

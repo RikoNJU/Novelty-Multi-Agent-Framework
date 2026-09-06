@@ -5,7 +5,7 @@ The workflow has two deterministic integrity stages:
 ```text
 review_evidence
 → validate_synthesis_input
-→ assess_coverage
+→ check_final_evidence_sufficiency
 ...
 → synthesize_report
 → validate_report_integrity
@@ -13,20 +13,21 @@ review_evidence
 → render_report
 ```
 
-`validate_synthesis_input` checks only cards that are about to enter coverage
-and synthesis. It verifies card identity and task ownership, resolves every
-Evidence reference, validates Evidence-to-Artifact-to-Work relationships, and
+`validate_synthesis_input` checks only cards that are about to enter the final
+evidence sufficiency check and synthesis. It verifies card identity and task
+ownership, resolves every Evidence reference, validates Evidence-to-Artifact-to-Work relationships, and
 uses the current paper's `ReferenceStore` to verify Artifact path containment,
 existence, and SHA-256. Character locators are compared with persisted UTF-8
 text using the same whitespace normalization as `EvidenceCardBuilder`.
 
 Cards that fail are removed from `state["evidence_cards"]` and added to the
 existing rejected-evidence and workflow-issue collections. Other cards and
-novelty points continue, so coverage is calculated from the final accepted
+novelty points continue, so the sufficiency check counts the final accepted
 card set. Gate-only rejection reasons are retained for audit but excluded from
 the rejected-evidence list passed to report synthesis, preventing integrity
-diagnostics from leaking into the formal report; the resulting coverage gap is
-still passed through normally.
+diagnostics from leaking into the formal report. Any point below the configured
+final valid Card threshold is still passed through normally as a structured
+`insufficient_final_evidence` fact.
 
 `validate_report_integrity` checks exact NoveltyPoint conclusion counts,
 unknown or cross-point Card references, duplicate references, and overlap

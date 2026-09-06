@@ -23,9 +23,13 @@ Evidence Compiler                  确定性绑定 quote、Artifact 和字符位
   ↓
 EvidenceValidator                  证据质量门控与去重
   ↓
-Coverage Assessment
-  ├─ 证据不足 → Coordinator.plan_supplement → 重新经过完整检索链
-  └─ 达到轮次上限或覆盖充分
+EvidenceReviewer                   证据复核
+  ↓
+Provenance Integrity Gate         过滤溯源链不完整的 Card
+  ↓
+Final Evidence Sufficiency Check  按查新点检查最终有效 Card 数量
+  ├─ 数量不足 且轮次未耗尽 → Coordinator.plan_supplement → 重新经过完整检索链
+  └─ 数量达标或轮次耗尽
   ↓
 Coordinator.synthesize             生成结构化 NoveltyReport
   ↓
@@ -41,7 +45,9 @@ START
 → dispatch_research_tasks
 → run_research_task                每个 ResearchTask 运行一个 LangGraph 子图
 → validate_evidence
-→ assess_coverage
+→ review_evidence
+→ validate_synthesis_input
+→ check_final_evidence_sufficiency
   ├─ plan_supplement → dispatch_research_tasks → ...
   └─ synthesize_report → render_report
 → END
@@ -64,8 +70,15 @@ START
 `StructuredSourceRetrievalTool` 接收一个 `NoveltyPoint`、一个对应的
 `ResearchTask` 和 `source_id`，确定性执行 `SearchPlanner → RetrievalSource →
 Metadata/FullText`，保存 `Work / SourceRecord / Artifact`，并返回 Evidence 为空的
-`ResearchBundle`。它不包含 Researcher、EvidenceCard、EvidenceValidator、覆盖度判断
+`ResearchBundle`。它不包含 Researcher、EvidenceCard、EvidenceValidator、最终证据数量判断
 或报告生成。它通过通用 Researcher 工具注册表接入任务子图。
+
+`Final Evidence Sufficiency Check` 在 Validator、Reviewer 和 Provenance
+Integrity Gate 之后，对每个 `NoveltyPoint` 的最终有效 `EvidenceCard`
+数量进行确定性检查。数量低于系统配置
+`min_final_evidence_cards_per_point` 时，记录结构化
+`insufficient_final_evidence` 事实。V0 继续使用现有补检回边。该节点仅
+判断 Card 数量，不评价检索范围、来源多样性、证据质量或新颖性结论。
 
 arXiv 是当前能力完整的结构化来源，但 Tool 不假设所有来源都能取得全文。Coordinator
 分发任务后，由每个 Researcher Agent 决定是否调用该 Tool。WebSearch、Browser 与

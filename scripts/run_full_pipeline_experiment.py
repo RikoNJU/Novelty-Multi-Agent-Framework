@@ -481,7 +481,7 @@ def _write_outputs(metrics: dict[str, Any], result: Any | None) -> None:
 
 - rounds: {metrics.get('workflow', {}).get('rounds')}
 - ResearchTasks: {len(metrics.get('research_tasks', []))}
-- coverage gaps: {metrics.get('workflow', {}).get('coverage_gaps')}
+- insufficient final evidence points: {metrics.get('workflow', {}).get('insufficient_final_evidence_points')}
 
 ## 9. Tool 调用统计
 
@@ -710,7 +710,10 @@ def main() -> int:
         reviewer_accepted = len(result.evidence_cards)
         metrics["workflow"] = {
             "rounds": result.rounds, "novelty_points": len(result.brief.novelty_points),
-            "coverage_gaps": result.coverage_gaps,
+            "insufficient_final_evidence_points": [
+                item.model_dump(mode="json")
+                for item in result.insufficient_final_evidence_points
+            ],
             "issues": [item.model_dump(mode="json") for item in result.issues],
         }
         current_task_keys = {

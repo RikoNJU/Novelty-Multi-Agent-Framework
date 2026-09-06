@@ -88,7 +88,7 @@ def test_synthesize_accepts_markdown_fenced_json() -> None:
         brief=_brief(),
         evidence=[],
         rejected_evidence=[],
-        coverage_gaps=[],
+        insufficient_final_evidence_points=[],
     )
     assert isinstance(report, NoveltyReport)
     assert report.paper_id == "paper-1"
@@ -103,7 +103,7 @@ def test_synthesize_retries_once_when_first_response_is_not_json() -> None:
         brief=_brief(),
         evidence=[],
         rejected_evidence=[],
-        coverage_gaps=[],
+        insufficient_final_evidence_points=[],
     )
     assert isinstance(report, NoveltyReport)
     assert client.calls == 2
@@ -118,7 +118,6 @@ def test_synthesize_fails_after_both_attempts() -> None:
             brief=_brief(),
             evidence=[],
             rejected_evidence=[],
-            coverage_gaps=[],
+            insufficient_final_evidence_points=[],
         )
     assert client.calls == 2
-

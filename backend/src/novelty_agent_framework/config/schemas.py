@@ -158,7 +158,7 @@ class CorsConfig(ConfigModel):
 class WorkflowConfig(ConfigModel):
     max_rounds: int = Field(gt=0)
     max_concurrency: int = Field(gt=0)
-    minimum_evidence_per_point: int = Field(ge=0)
+    min_final_evidence_cards_per_point: int = Field(ge=1)
 
 
 class RuntimeDebugSettingsConfig(ConfigModel):

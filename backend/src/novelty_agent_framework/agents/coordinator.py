@@ -24,6 +24,7 @@ from backend.env import (
 )
 from ..schemas import (
     EvidenceCard,
+    InsufficientFinalEvidence,
     NoveltyBrief,
     NoveltyPoint,
     NoveltyReport,
@@ -95,7 +96,7 @@ class NoveltyCoordinatorAgent(NoveltyCoordinator):
         *,
         brief: NoveltyBrief,
         existing_evidence: Sequence[EvidenceCard],
-        coverage_gaps: Sequence[str],
+        insufficient_final_evidence_points: Sequence[InsufficientFinalEvidence],
         attempt: int,
     ) -> NoveltyBrief:
         """针对证据不足的查新点生成补充调研任务。
@@ -110,7 +111,10 @@ class NoveltyCoordinatorAgent(NoveltyCoordinator):
             "existing_evidence": [
                 item.model_dump(mode="json") for item in existing_evidence
             ],
-            "coverage_gaps": list(coverage_gaps),
+            "insufficient_final_evidence_points": [
+                item.model_dump(mode="json")
+                for item in insufficient_final_evidence_points
+            ],
             "attempt": attempt,
         }
         data = self._complete_json(
@@ -121,8 +125,8 @@ class NoveltyCoordinatorAgent(NoveltyCoordinator):
                 "existing_evidence_json": json.dumps(
                     payload["existing_evidence"], ensure_ascii=False
                 ),
-                "coverage_gaps_json": json.dumps(
-                    payload["coverage_gaps"], ensure_ascii=False
+                "insufficient_final_evidence_points_json": json.dumps(
+                    payload["insufficient_final_evidence_points"], ensure_ascii=False
                 ),
                 "attempt": attempt,
                 "task_schema": json.dumps(
@@ -132,7 +136,8 @@ class NoveltyCoordinatorAgent(NoveltyCoordinator):
             payload=payload,
             system_prompt=self._system_prompt(),
             fallback_user_prompt=(
-                "请只针对 coverage_gaps 生成 ResearchTask 列表。只能引用已有"
+                "请只针对最终有效 EvidenceCard 数量低于系统门槛的查新点"
+                "生成 ResearchTask 列表。只能引用已有"
                 " novelty_point_id，不生成检索词、SearchPlan 或数据库查询。"
             ),
         )
@@ -179,7 +184,7 @@ class NoveltyCoordinatorAgent(NoveltyCoordinator):
         brief: NoveltyBrief,
         evidence: Sequence[EvidenceCard],
         rejected_evidence: Sequence[str],
-        coverage_gaps: Sequence[str],
+        insufficient_final_evidence_points: Sequence[InsufficientFinalEvidence],
     ) -> NoveltyReport:
         """汇总全部有效证据，形成最终查新报告。
 
@@ -192,7 +197,10 @@ class NoveltyCoordinatorAgent(NoveltyCoordinator):
             "brief": brief.model_dump(mode="json"),
             "evidence": [item.model_dump(mode="json") for item in evidence],
             "rejected_evidence": list(rejected_evidence),
-            "coverage_gaps": list(coverage_gaps),
+            "insufficient_final_evidence_points": [
+                item.model_dump(mode="json")
+                for item in insufficient_final_evidence_points
+            ],
         }
         data = self._complete_json(
             prompt_name="coordinator/synthesize",
@@ -204,8 +212,8 @@ class NoveltyCoordinatorAgent(NoveltyCoordinator):
                 "rejected_evidence_json": json.dumps(
                     payload["rejected_evidence"], ensure_ascii=False
                 ),
-                "coverage_gaps_json": json.dumps(
-                    payload["coverage_gaps"], ensure_ascii=False
+                "insufficient_final_evidence_points_json": json.dumps(
+                    payload["insufficient_final_evidence_points"], ensure_ascii=False
                 ),
                 "report_schema": json.dumps(
                     NoveltyReport.model_json_schema(), ensure_ascii=False

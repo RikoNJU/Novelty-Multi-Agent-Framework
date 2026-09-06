@@ -225,6 +225,91 @@ def test_graph_replaces_fixed_retrieval_nodes():
     assert "parallel_research" not in nodes
 
 
+def _final_evidence_sufficiency_state(card_count: int):
+    paper = make_paper()
+    point = DemoPointExtractor().extract(
+        build_paper_digest(paper), previous_brief=None, attempt=1
+    )[0]
+    brief = DemoCoordinator().plan(paper, points=[point], attempt=1)
+    task = brief.research_tasks[0]
+    request = TaskResearchRequest(
+        subject_paper_id=paper.paper_id,
+        run_id="run-sufficiency-test",
+        novelty_point=point,
+        research_task=task,
+        search_plan=DemoSearchPlanner().plan(point, task),
+    )
+    cards = [
+        make_card(request).model_copy(update={"card_id": f"CARD-{index}"})
+        for index in range(card_count)
+    ]
+    return {"paper": paper, "brief": brief, "evidence_cards": cards, "rounds": 1}
+
+
+def test_final_evidence_sufficiency_passes_at_configured_cut():
+    workflow, _ = build_workflow(
+        min_final_evidence_cards_per_point=2,
+        max_rounds=2,
+    )
+    checked = asyncio.run(
+        workflow._check_final_evidence_sufficiency(
+            _final_evidence_sufficiency_state(2)
+        )
+    )
+    assert checked["insufficient_final_evidence_points"] == []
+    assert asyncio.run(
+        workflow._route_after_evidence_sufficiency_check(
+            {**_final_evidence_sufficiency_state(2), **checked}
+        )
+    ) == "synthesize"
+
+
+def test_final_evidence_sufficiency_records_count_below_cut_and_supplements():
+    workflow, _ = build_workflow(
+        min_final_evidence_cards_per_point=2,
+        max_rounds=2,
+    )
+    state = _final_evidence_sufficiency_state(1)
+    checked = asyncio.run(workflow._check_final_evidence_sufficiency(state))
+    item = checked["insufficient_final_evidence_points"][0]
+    assert item.novelty_point_id == "NP-1"
+    assert item.valid_card_count == 1
+    assert item.required_card_count == 2
+    assert asyncio.run(
+        workflow._route_after_evidence_sufficiency_check({**state, **checked})
+    ) == "supplement"
+
+
+def test_zero_cards_is_insufficient_final_evidence():
+    workflow, _ = build_workflow(min_final_evidence_cards_per_point=2)
+    checked = asyncio.run(
+        workflow._check_final_evidence_sufficiency(
+            _final_evidence_sufficiency_state(0)
+        )
+    )
+    item = checked["insufficient_final_evidence_points"][0]
+    assert item.valid_card_count == 0
+    assert item.reason == "insufficient_final_evidence"
+
+
+def test_final_evidence_sufficiency_stops_supplement_at_round_limit():
+    workflow, _ = build_workflow(
+        min_final_evidence_cards_per_point=2,
+        max_rounds=1,
+    )
+    state = _final_evidence_sufficiency_state(0)
+    checked = asyncio.run(workflow._check_final_evidence_sufficiency(state))
+    assert checked["insufficient_final_evidence_points"]
+    assert asyncio.run(
+        workflow._route_after_evidence_sufficiency_check({**state, **checked})
+    ) == "synthesize"
+
+
+def test_final_evidence_cut_rejects_values_below_one():
+    with pytest.raises(ValueError, match="min_final_evidence_cards_per_point"):
+        NoveltyWorkflowConfig(min_final_evidence_cards_per_point=0)
+
+
 def test_each_task_is_isolated_and_fan_out_runs_concurrently():
     planner = RecordingPlanner()
     workflow, researcher = build_workflow(planner=planner, max_concurrency=4)
@@ -336,7 +421,15 @@ class NoTaskCoordinator(DemoCoordinator):
         brief = super().plan(paper, points=points, attempt=attempt)
         return brief.model_copy(update={"research_tasks": []})
 
-    def plan_supplement(self, paper, *, brief, existing_evidence, coverage_gaps, attempt):
+    def plan_supplement(
+        self,
+        paper,
+        *,
+        brief,
+        existing_evidence,
+        insufficient_final_evidence_points,
+        attempt,
+    ):
         return brief.model_copy(update={"research_tasks": []})
 
 
@@ -353,7 +446,7 @@ def test_no_tasks_branch_does_not_hang():
     )
     result = workflow.run(make_paper())
     assert researcher.calls == []
-    assert result.coverage_gaps
+    assert result.insufficient_final_evidence_points
 
 
 def test_task_audit_and_compatibility_files_are_written():

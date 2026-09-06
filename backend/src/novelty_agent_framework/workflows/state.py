@@ -10,6 +10,7 @@ from ..schemas import (
     EvidenceCard,
     EvidenceReviewDecision,
     Evidence,
+    InsufficientFinalEvidence,
     NoveltyBrief,
     NoveltyPoint,
     NoveltyReport,
@@ -52,7 +53,7 @@ class NoveltyState(TypedDict, total=False):
     evidence_cards: list[EvidenceCard]
     rejected_evidence: list[RejectedEvidence]
     review_decisions: list[EvidenceReviewDecision]
-    coverage_gaps: list[str]
+    insufficient_final_evidence_points: list[InsufficientFinalEvidence]
     issues: Annotated[list[WorkflowIssue], add]
     rounds: int
     report: NoveltyReport
@@ -68,7 +69,7 @@ class NoveltyWorkflowConfig:
 
     max_rounds: int = 2
     max_concurrency: int = 4
-    minimum_evidence_per_point: int = 1
+    min_final_evidence_cards_per_point: int = 1
     candidate_limit_per_task: int = 8
     runtime_debug: RuntimeDebugConfig = field(default_factory=RuntimeDebugConfig)
 
@@ -77,8 +78,8 @@ class NoveltyWorkflowConfig:
             raise ValueError("max_rounds 必须至少为 1")
         if self.max_concurrency < 1:
             raise ValueError("max_concurrency 必须至少为 1")
-        if self.minimum_evidence_per_point < 1:
-            raise ValueError("minimum_evidence_per_point 必须至少为 1")
+        if self.min_final_evidence_cards_per_point < 1:
+            raise ValueError("min_final_evidence_cards_per_point 必须至少为 1")
         if self.candidate_limit_per_task < 1:
             raise ValueError("candidate_limit_per_task 必须至少为 1")
 

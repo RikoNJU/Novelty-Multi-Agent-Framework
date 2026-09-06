@@ -292,13 +292,22 @@ class EvidenceReviewDecision(StrictModel):
     reviewed_confidence: float = Field(ge=0.0, le=1.0)
 
 
+class InsufficientFinalEvidence(StrictModel):
+    """A point whose final valid EvidenceCard count is below the system cut."""
+
+    novelty_point_id: str = Field(min_length=1)
+    valid_card_count: int = Field(ge=0)
+    required_card_count: int = Field(ge=1)
+    reason: Literal["insufficient_final_evidence"] = "insufficient_final_evidence"
+
+
 class NoveltyRunResult(StrictModel):
     """一次完整工作流的可测试结果。"""
 
     brief: NoveltyBrief
     evidence_cards: list[EvidenceCard]
     rejected_evidence: list[RejectedEvidence]
-    coverage_gaps: list[str]
+    insufficient_final_evidence_points: list[InsufficientFinalEvidence]
     issues: list[WorkflowIssue]
     rounds: int
     report: NoveltyReport

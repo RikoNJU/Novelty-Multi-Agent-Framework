@@ -18,6 +18,7 @@ from ..schemas import (
     ContentExtent,
     EvidenceCard,
     EvidenceSource,
+    InsufficientFinalEvidence,
     NoveltyBrief,
     NoveltyConclusion,
     NoveltyPoint,
@@ -92,10 +93,12 @@ class DemoCoordinator:
         *,
         brief: NoveltyBrief,
         existing_evidence: Sequence[EvidenceCard],
-        coverage_gaps: Sequence[str],
+        insufficient_final_evidence_points: Sequence[InsufficientFinalEvidence],
         attempt: int,
     ) -> NoveltyBrief:
-        missing_ids = {gap.split(":", 1)[0] for gap in coverage_gaps}
+        missing_ids = {
+            item.novelty_point_id for item in insufficient_final_evidence_points
+        }
         tasks = [
             task
             for point in brief.novelty_points
@@ -111,7 +114,7 @@ class DemoCoordinator:
         brief: NoveltyBrief,
         evidence: Sequence[EvidenceCard],
         rejected_evidence: Sequence[str],
-        coverage_gaps: Sequence[str],
+        insufficient_final_evidence_points: Sequence[InsufficientFinalEvidence],
     ) -> NoveltyReport:
         grouped: dict[str, list[EvidenceCard]] = defaultdict(list)
         for card in evidence:
@@ -164,7 +167,13 @@ class DemoCoordinator:
                 if card.possible_baseline and card.cited_by_paper is False
             }
         )
-        limitations = list(coverage_gaps)
+        limitations = [
+            (
+                f"{item.novelty_point_id}: 最终有效 EvidenceCard 数量为 "
+                f"{item.valid_card_count}，系统门槛为 {item.required_card_count}"
+            )
+            for item in insufficient_final_evidence_points
+        ]
         if rejected_evidence:
             limitations.append(f"有 {len(rejected_evidence)} 条候选证据未通过质量门槛")
 

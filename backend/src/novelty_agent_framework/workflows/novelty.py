@@ -44,6 +44,7 @@ from ..agents import (
 )
 from ..schemas import (
     EvidenceCard,
+    InsufficientFinalEvidence,
     IssueSeverity,
     NoveltyBrief,
     NoveltyPoint,
@@ -72,7 +73,7 @@ _STAGE_NAMES = (
     "validate_evidence",
     "review_evidence",
     "validate_synthesis_input",
-    "assess_coverage",
+    "check_final_evidence_sufficiency",
     "plan_supplement",
     "synthesize_report",
     "validate_report_integrity",
@@ -175,8 +176,11 @@ class NoveltyWorkflow:
             ),
         )
         builder.add_node(
-            "assess_coverage",
-            self._record_stage("assess_coverage", self._assess_coverage),
+            "check_final_evidence_sufficiency",
+            self._record_stage(
+                "check_final_evidence_sufficiency",
+                self._check_final_evidence_sufficiency,
+            ),
         )
         builder.add_node(
             "plan_supplement",
@@ -218,10 +222,12 @@ class NoveltyWorkflow:
         builder.add_edge("run_research_task", "validate_evidence")
         builder.add_edge("validate_evidence", "review_evidence")
         builder.add_edge("review_evidence", "validate_synthesis_input")
-        builder.add_edge("validate_synthesis_input", "assess_coverage")
+        builder.add_edge(
+            "validate_synthesis_input", "check_final_evidence_sufficiency"
+        )
         builder.add_conditional_edges(
-            "assess_coverage",
-            self._route_after_assessment,
+            "check_final_evidence_sufficiency",
+            self._route_after_evidence_sufficiency_check,
             {
                 "supplement": "plan_supplement",
                 "synthesize": "synthesize_report",
@@ -350,7 +356,7 @@ class NoveltyWorkflow:
             plan = SearchPlan.model_validate(await _resolve(plan_value))
         except (ValidationError, TypeError, ValueError) as exc:
             # 韧性：单个任务检索方案失败不应击穿整个查新流程——
-            # 记录 PARTIAL 结果与告警，其余任务继续，覆盖度评估可见该缺口。
+            # 记录 PARTIAL 结果与告警，其余任务继续，最终数量检查可见该缺口。
             safe_error = _safe_error(exc)
             result = TaskResearchResult(
                 task_id=task.task_id,
@@ -587,11 +593,13 @@ class NoveltyWorkflow:
             "issues": issues,
         }
 
-    async def _assess_coverage(self, state: NoveltyState) -> dict[str, Any]:
-        """评估证据覆盖度。
+    async def _check_final_evidence_sufficiency(
+        self, state: NoveltyState
+    ) -> dict[str, Any]:
+        """按查新点检查最终有效 EvidenceCard 数量是否达标。
 
-        工作流整体通过 ``ainvoke`` 执行，并包含补检回边。保持图节点为异步
-        callable，避免 LangGraph 的异步循环在同步节点线程池收尾阶段挂起。
+        输入是 Validator、Reviewer 和 Provenance Integrity Gate 保留的 Card。
+        本节点只判断数量，不评价检索范围、来源多样性、证据质量或结论可信度。
         """
         brief = state["brief"]
         counts: dict[str, int] = {point.point_id: 0 for point in brief.novelty_points}
@@ -599,15 +607,17 @@ class NoveltyWorkflow:
             if card.novelty_point_id in counts:
                 counts[card.novelty_point_id] += 1
 
-        gaps = [
-            (
-                f"{point.point_id}: 仅有 {counts[point.point_id]} 条有效证据，"
-                f"至少需要 {self.config.minimum_evidence_per_point} 条"
+        configured_cut = self.config.min_final_evidence_cards_per_point
+        insufficient = [
+            InsufficientFinalEvidence(
+                novelty_point_id=point.point_id,
+                valid_card_count=counts[point.point_id],
+                required_card_count=configured_cut,
             )
             for point in brief.novelty_points
-            if counts[point.point_id] < self.config.minimum_evidence_per_point
+            if counts[point.point_id] < configured_cut
         ]
-        return {"coverage_gaps": gaps}
+        return {"insufficient_final_evidence_points": insufficient}
 
     async def _validate_synthesis_input(
         self, state: NoveltyState
@@ -665,9 +675,14 @@ class NoveltyWorkflow:
             ],
         }
 
-    async def _route_after_assessment(self, state: NoveltyState) -> str:
-        """根据覆盖度异步选择补检或汇总分支。"""
-        if state.get("coverage_gaps") and state.get("rounds", 0) < self.config.max_rounds:
+    async def _route_after_evidence_sufficiency_check(
+        self, state: NoveltyState
+    ) -> str:
+        """根据数量检查事实和轮次上限选择补检或汇总。"""
+        if (
+            state.get("insufficient_final_evidence_points")
+            and state.get("rounds", 0) < self.config.max_rounds
+        ):
             return "supplement"
         return "synthesize"
 
@@ -678,7 +693,9 @@ class NoveltyWorkflow:
                 state["paper"],
                 brief=state["brief"],
                 existing_evidence=state.get("evidence_cards", []),
-                coverage_gaps=state.get("coverage_gaps", []),
+                insufficient_final_evidence_points=state.get(
+                    "insufficient_final_evidence_points", []
+                ),
                 attempt=next_round,
             )
             brief = NoveltyBrief.model_validate(await _resolve(brief_value))
@@ -713,7 +730,9 @@ class NoveltyWorkflow:
                 brief=state["brief"],
                 evidence=state.get("evidence_cards", []),
                 rejected_evidence=rejected_reasons,
-                coverage_gaps=state.get("coverage_gaps", []),
+                insufficient_final_evidence_points=state.get(
+                    "insufficient_final_evidence_points", []
+                ),
             )
             report = NoveltyReport.model_validate(await _resolve(report_value))
         except (ValidationError, TypeError, ValueError) as exc:
@@ -771,7 +790,7 @@ class NoveltyWorkflow:
             "evidence_cards": [],
             "rejected_evidence": [],
             "review_decisions": [],
-            "coverage_gaps": [],
+            "insufficient_final_evidence_points": [],
             "issues": [],
             "integrity_rejected_card_ids": [],
             "rounds": 0,
@@ -787,7 +806,9 @@ class NoveltyWorkflow:
                 "workflow": {
                     "max_rounds": self.config.max_rounds,
                     "max_concurrency": self.config.max_concurrency,
-                    "minimum_evidence_per_point": self.config.minimum_evidence_per_point,
+                    "min_final_evidence_cards_per_point": (
+                        self.config.min_final_evidence_cards_per_point
+                    ),
                     "candidate_limit_per_task": self.config.candidate_limit_per_task,
                 }
             },
@@ -807,7 +828,9 @@ class NoveltyWorkflow:
                 brief=final["brief"],
                 evidence_cards=final.get("evidence_cards", []),
                 rejected_evidence=final.get("rejected_evidence", []),
-                coverage_gaps=final.get("coverage_gaps", []),
+                insufficient_final_evidence_points=final.get(
+                    "insufficient_final_evidence_points", []
+                ),
                 issues=final.get("issues", []),
                 rounds=final.get("rounds", 0),
                 report=final["report"],

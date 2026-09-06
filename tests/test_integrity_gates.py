@@ -243,10 +243,14 @@ def test_gate_a_filtered_cards_drive_coverage_gap(
     gated = asyncio.run(workflow._validate_synthesis_input(state))
     assert gated["evidence_cards"] == []
     assert len(gated["rejected_evidence"]) == 2
-    coverage = asyncio.run(workflow._assess_coverage({**state, **gated}))
-    assert coverage["coverage_gaps"]
+    sufficiency = asyncio.run(
+        workflow._check_final_evidence_sufficiency({**state, **gated})
+    )
+    assert sufficiency["insufficient_final_evidence_points"]
     route = asyncio.run(
-        workflow._route_after_assessment({**state, **gated, **coverage})
+        workflow._route_after_evidence_sufficiency_check(
+            {**state, **gated, **sufficiency}
+        )
     )
     assert route == "supplement"
 
@@ -412,6 +416,7 @@ def test_complete_workflow_records_both_gate_passes(tmp_path: Path, monkeypatch)
         Path("outputs/valid-chain/runtime").glob("*/summary.json")
     )
     summary = json.loads(summary_path.read_text())
+    manifest = json.loads((summary_path.parent / "manifest.json").read_text())
     gate_results = {
         item["stage_name"]: item for item in summary["integrity_gates"]
     }
@@ -421,15 +426,23 @@ def test_complete_workflow_records_both_gate_passes(tmp_path: Path, monkeypatch)
         if item["status"] != "NOT_RUN"
     ]
     assert summary["run"]["status"] == "SUCCESS"
+    assert (
+        manifest["runtime_config"]["workflow"]
+        ["min_final_evidence_cards_per_point"]
+        == 1
+    )
     assert gate_results["validate_synthesis_input"]["validation_passed"] is True
     assert gate_results["validate_report_integrity"]["validation_passed"] is True
     assert stage_order.index("review_evidence") < stage_order.index(
         "validate_synthesis_input"
-    ) < stage_order.index("assess_coverage")
+    ) < stage_order.index("check_final_evidence_sufficiency")
     assert stage_order.index("synthesize_report") < stage_order.index(
         "validate_report_integrity"
     ) < stage_order.index("persist_report") < stage_order.index("render_report")
     assert result.evidence_cards
+    assert json.loads(result.model_dump_json())[
+        "insufficient_final_evidence_points"
+    ] == []
     assert Path("outputs/valid-chain/report.json").is_file()
     assert Path("outputs/valid-chain/report/valid-chain-report.md").is_file()
 
@@ -455,7 +468,7 @@ def test_gate_a_reasons_do_not_enter_formal_report() -> None:
                     )
                 ],
                 "integrity_rejected_card_ids": ["gate-only"],
-                "coverage_gaps": [],
+                "insufficient_final_evidence_points": [],
             }
         )
     )
@@ -532,7 +545,7 @@ def test_gate_a_failure_is_runtime_only_and_run_continues(
     )
 
     assert result.evidence_cards == []
-    assert result.coverage_gaps
+    assert result.insufficient_final_evidence_points
     assert Path("outputs/broken-chain/report.json").is_file()
     assert Path("outputs/broken-chain/report/broken-chain-report.md").is_file()
     summary_path = next(

@@ -76,7 +76,7 @@ async def run():
     _load_dev_env()
     raw = load_config()
     raw["workflow"].update({"max_rounds": 1, "max_concurrency": 1,
-                            "minimum_evidence_per_point": 1})
+                            "min_final_evidence_cards_per_point": 1})
     raw["task_researcher"].update({"max_steps": 12, "max_tool_calls": 10})
     processing = raw["processing"]
     paper = PaperInput.model_validate(json.loads(PAPER_INPUT.read_text(encoding="utf-8")))
@@ -136,7 +136,7 @@ async def run():
         point_extractor=PersistedPointExtractor(points),
         validator=PassthroughValidator()),
         NoveltyWorkflowConfig(max_rounds=1, max_concurrency=1,
-                              minimum_evidence_per_point=1))
+                              min_final_evidence_cards_per_point=1))
     workflow_started = time.perf_counter()
     workflow_result = await workflow.arun(paper)
     workflow_ms = round((time.perf_counter() - workflow_started) * 1000, 3)

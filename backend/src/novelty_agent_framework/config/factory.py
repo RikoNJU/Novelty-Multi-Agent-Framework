@@ -398,8 +398,8 @@ def build_workflow(
         config=NoveltyWorkflowConfig(
             max_rounds=int(workflow_cfg.get("max_rounds", 2)),
             max_concurrency=int(workflow_cfg.get("max_concurrency", 4)),
-            minimum_evidence_per_point=int(
-                workflow_cfg.get("minimum_evidence_per_point", 1)
+            min_final_evidence_cards_per_point=int(
+                workflow_cfg.get("min_final_evidence_cards_per_point", 1)
             ),
             candidate_limit_per_task=int(
                 retrieval_cfg.get("candidate_limit_per_task", 8)
@@ -560,7 +560,9 @@ def _build_workflow_from_application_config(
         config=NoveltyWorkflowConfig(
             max_rounds=workflow.max_rounds,
             max_concurrency=workflow.max_concurrency,
-            minimum_evidence_per_point=workflow.minimum_evidence_per_point,
+            min_final_evidence_cards_per_point=(
+                workflow.min_final_evidence_cards_per_point
+            ),
             candidate_limit_per_task=database.candidate_limit_per_task,
             runtime_debug=RuntimeDebugConfig(
                 enabled=runtime_debug.enabled,

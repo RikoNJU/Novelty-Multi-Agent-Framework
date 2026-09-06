@@ -24,12 +24,13 @@ from novelty_agent_framework.config.loader import (
     legacy_shape,
     load_application_config,
 )
+from novelty_agent_framework.config.schemas import WorkflowConfig
 
 BASE_CONFIG = {
     "workflow": {
         "max_rounds": 3,
         "max_concurrency": 2,
-        "minimum_evidence_per_point": 2,
+        "min_final_evidence_cards_per_point": 2,
     },
     "models": {
         "m1": {
@@ -51,6 +52,17 @@ BASE_CONFIG = {
 }
 
 
+def test_workflow_config_rejects_final_evidence_cut_below_one():
+    with pytest.raises(ValueError, match="min_final_evidence_cards_per_point"):
+        WorkflowConfig.model_validate(
+            {
+                "max_rounds": 1,
+                "max_concurrency": 1,
+                "min_final_evidence_cards_per_point": 0,
+            }
+        )
+
+
 def test_load_config_default_contains_models_and_agents():
     config = load_config()
     assert "models" in config
@@ -68,7 +80,7 @@ def test_build_workflow_wires_role_models(monkeypatch):
 
     assert workflow.config.max_rounds == 3
     assert workflow.config.max_concurrency == 2
-    assert workflow.config.minimum_evidence_per_point == 2
+    assert workflow.config.min_final_evidence_cards_per_point == 2
     assert workflow.config.candidate_limit_per_task == 8
 
     coordinator = workflow.services.coordinator

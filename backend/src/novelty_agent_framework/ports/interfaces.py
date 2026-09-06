@@ -14,6 +14,7 @@ from ..schemas import (
     EvidenceCard,
     EvidenceReviewDecision,
     EvidenceSource,
+    InsufficientFinalEvidence,
     ExternalIdentifier,
     NoveltyBrief,
     NoveltyPoint,
@@ -120,7 +121,7 @@ class NoveltyCoordinator(Protocol):
         *,
         brief: NoveltyBrief,
         existing_evidence: Sequence[EvidenceCard],
-        coverage_gaps: Sequence[str],
+        insufficient_final_evidence_points: Sequence[InsufficientFinalEvidence],
         attempt: int,
     ) -> NoveltyBrief:
         """针对证据缺口生成补充调研任务。"""
@@ -132,7 +133,7 @@ class NoveltyCoordinator(Protocol):
         brief: NoveltyBrief,
         evidence: Sequence[EvidenceCard],
         rejected_evidence: Sequence[str],
-        coverage_gaps: Sequence[str],
+        insufficient_final_evidence_points: Sequence[InsufficientFinalEvidence],
     ) -> NoveltyReport:
         """从全局视角汇总证据并形成查新报告。"""
 
