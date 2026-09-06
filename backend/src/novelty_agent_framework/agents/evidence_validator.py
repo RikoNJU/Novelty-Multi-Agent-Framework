@@ -17,6 +17,7 @@ class EvidenceValidationConfig:
     minimum_confidence: float = 0.3
     minimum_relevance: float = 0.3
     require_direct_quote: bool = True
+    require_source_location: bool = True
 
     def __post_init__(self) -> None:
         for name, value in (
@@ -106,9 +107,13 @@ class DefaultEvidenceValidator:
         if not any(source.doi or source.url for source in card.sources):
             return "来源缺少 DOI 或 URL"
         if self.config.require_direct_quote and not any(
-            source.quote and source.location for source in card.sources
+            source.quote for source in card.sources
         ):
-            return "缺少原文摘录或原文位置"
+            return "缺少原文摘录"
+        if self.config.require_source_location and not any(
+            source.location for source in card.sources
+        ):
+            return "缺少原文位置"
         return None
 
     @staticmethod

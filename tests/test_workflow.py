@@ -13,6 +13,8 @@ from novelty_agent_framework.agents import (
     DemoCoordinator,
     DemoPointExtractor,
     DemoSearchPlanner,
+    EvidenceValidationConfig,
+    build_paper_digest,
 )
 from novelty_agent_framework.ports import ValidationResult
 from novelty_agent_framework.schemas import (
@@ -169,6 +171,60 @@ def test_validator_runs_once_after_current_round_fan_in():
     workflow, _ = build_workflow(researcher, validator, max_rounds=1)
     workflow.run(make_paper())
     assert validator.calls == [(2, 2)]
+
+
+def test_locator_gate_can_be_disabled_without_disabling_quote_gate():
+    point = DemoPointExtractor().extract(
+        build_paper_digest(make_paper()), previous_brief=None, attempt=1
+    )[0]
+    task = DemoCoordinator().plan(make_paper(), points=[point], attempt=1).research_tasks[0]
+    request = TaskResearchRequest(
+        subject_paper_id="paper-test",
+        run_id="run-test",
+        novelty_point=point,
+        research_task=task,
+        search_plan=DemoSearchPlanner().plan(point, task),
+    )
+    card = make_card(request)
+    without_location = card.model_copy(
+        update={"sources": [card.sources[0].model_copy(update={"location": None})]}
+    )
+    validator = DefaultEvidenceValidator(
+        EvidenceValidationConfig(
+            require_direct_quote=True,
+            require_source_location=False,
+        )
+    )
+    assert validator.validate([without_location], tasks=[task]).accepted == (
+        without_location,
+    )
+
+    without_quote = without_location.model_copy(
+        update={"sources": [without_location.sources[0].model_copy(update={"quote": None})]}
+    )
+    rejected = validator.validate([without_quote], tasks=[task]).rejected
+    assert rejected == ((without_quote.card_id, "缺少原文摘录"),)
+
+
+def test_locator_gate_remains_enabled_by_default():
+    point = DemoPointExtractor().extract(
+        build_paper_digest(make_paper()), previous_brief=None, attempt=1
+    )[0]
+    task = DemoCoordinator().plan(make_paper(), points=[point], attempt=1).research_tasks[0]
+    request = TaskResearchRequest(
+        subject_paper_id="paper-test",
+        run_id="run-test",
+        novelty_point=point,
+        research_task=task,
+        search_plan=DemoSearchPlanner().plan(point, task),
+    )
+    card = make_card(request)
+    without_location = card.model_copy(
+        update={"sources": [card.sources[0].model_copy(update={"location": None})]}
+    )
+    assert DefaultEvidenceValidator().validate(
+        [without_location], tasks=[task]
+    ).rejected == ((without_location.card_id, "缺少原文位置"),)
 
 
 def test_single_task_failure_does_not_cancel_siblings():
