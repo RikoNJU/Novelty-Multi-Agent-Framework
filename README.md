@@ -138,6 +138,18 @@ Evidence quote 或 Reader 正文。`review_evidence` 阶段的 `meta.json` 和�
 `summary.json` / `summary.md` 也包含按查新点整理的白名单、漏评、重复评审、未解析
 Evidence 与 Card 保留情况。
 
+跨 Namespace 参考文献资产链排障可运行：
+
+```bash
+python scripts/reference_namespace_diagnostics.py outputs/<paper_id>
+python scripts/reference_namespace_diagnostics.py outputs/<paper_id> \
+  --namespace subject_reference --artifact-id <artifact_id>
+```
+
+该命令只读检查两个 manifest、Artifact 文件完整性、Reader 输入/输出 namespace
+一致性及 Evidence provenance 回指，不输出 Reader 正文或 Evidence quote。跨 namespace
+出现相同裸 `artifact_id` 会作为需要 namespace-aware 访问的提示，而不会被判定为错误。
+
 ChinaXiv 接入状态：暂停，未注册为可用数据源。截至 2026-08-14，官网关键词检索仅验证到 HTML 表单，未发现可稳定直接调用的公开关键词 API；OAI-PMH 候选端点从当前网络返回“无权访问”而非 OAI XML，因而无法验证元数据收割、详情元数据和公开 PDF 契约。项目不会以网页爬虫或未经验证的协议假设冒充正式 ChinaXiv 支持。待取得官方接口文档或可稳定访问的 OAI-PMH 响应后再继续实现。
 
 ## 项目结构
