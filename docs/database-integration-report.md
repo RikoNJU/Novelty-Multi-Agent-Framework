@@ -37,30 +37,40 @@ ScienceDirect 等数据库可共享 HTTP、重试、限流、缓存和持久化�
    - 使用 `FULL` 视图尝试获取全文；
    - 对无全文权限或资源不存在的情况安全降级，不把摘要标记为全文；
    - 缓存已获取的文章元数据，减少重复请求。
-3. 将 `sciencedirect` 注册到 `RetrievalSourceRegistry`，并支持公共查询编译入口。
-4. 增加默认关闭的 ScienceDirect 配置，以及 `ELSEVIER_API_KEY`、
+3. 实现 Springer Nature Provider：
+   - 使用 Meta API 获取题录和摘要；
+   - 支持 Open Access JATS 全文；
+   - 为专项授权场景支持 TDM JATS endpoint 和 API metric；
+   - 解析 JATS 正文和章节，并避免在错误或 provenance 中泄露 URL API Key。
+4. 实现 IEEE Xplore Provider：
+   - 使用 Metadata Search API 获取题录和摘要；
+   - 使用 `article_number` 尝试获取开放全文；
+   - 订阅内容或无全文时安全降级为摘要；
+   - 明确拒绝把普通 API Key 当作付费全文授权。
+5. 将 `sciencedirect`、`springer` 和 `ieee_xplore` 注册到
+   `RetrievalSourceRegistry`，并支持公共查询编译入口。
+6. 增加默认关闭的 Provider 配置，以及 `ELSEVIER_API_KEY`、
    `ELSEVIER_INST_TOKEN` 环境变量模板。
-5. 增加 Provider 接入文档和离线测试：
-   - 数据库相关测试 64 项通过；
-   - 全仓回归 516 项通过、6 项 live 测试跳过；
-   - 另有 2 个既有失败，分别涉及 Chromium 运行库和 Reader 默认 namespace，
-     与数据库接入无关。
+7. 增加 `SPRINGER_NATURE_API_KEY`、`SPRINGER_NATURE_TDM_API_METRIC` 和
+   `IEEE_XPLORE_API_KEY` 环境变量模板。
+8. 增加 Provider 接入文档和离线契约测试：
+   - 数据库、配置及检索相关测试 95 项通过；
+   - 全仓回归 535 项通过、6 项 live 测试跳过；
+   - 仍有 2 个既有失败，分别涉及 Chromium 运行库和 Reader 默认 namespace，
+     与本次 Provider 接入无关。
 
 详细的 Provider 开发约定见 [`database-providers.md`](database-providers.md)。
 
 ## 三、待完成工作
 
-1. 编写并运行 ScienceDirect 真实 API 冒烟测试，验证：
-   - API Key 和机构令牌；
-   - 搜索、摘要及全文响应的真实字段；
-   - `401/403/429`、配额和限流行为。
+1. 编写并运行 ScienceDirect、Springer Nature 和 IEEE Xplore 真实 API 冒烟测试，
+   验证密钥、权限、真实响应字段、配额与限流行为。
 2. 使用真实论文运行 `database_search → reader → EvidenceCard` 端到端测试。
 3. 根据真实权限结果，进一步细化 `AUTH_REQUIRED`、`METADATA_ONLY` 和
    `FULL_TEXT_ACQUIRED` 状态记录。
 4. 评估多数据库调度策略，避免完全依赖模型临时选择来源；同时验证跨来源 DOI
    去重和来源覆盖率。
-5. 按实际需求实现 Springer、IEEE Xplore Provider；Scopus 仅在跨出版社召回不足时
-   再评估接入。
+5. Scopus 仅在跨出版社召回不足时再评估接入。
 
 ## 四、注意事项
 
@@ -71,11 +81,11 @@ ScienceDirect 等数据库可共享 HTTP、重试、限流、缓存和持久化�
   检索候选都能取得全文。只有摘要时必须保存为 `ABSTRACT` Artifact。
 - 每个数据库的查询长度、分页、配额和限流规则不同，应由 Provider 独立校验。
 - 全文和摘要的保存、展示及二次使用必须遵守数据库许可与机构订阅协议。
-- 未完成真实 API 测试前，只能认定 ScienceDirect 离线契约通过，不能宣称生产环境
-  已验证。
+- 未完成真实 API 测试前，只能认定各商业 Provider 离线契约通过，不能宣称生产环境
+  已验证。Springer TDM 与 IEEE 付费全文还需要独立的合同授权。
 
 ## 五、建议的下一步
 
-先在无密钥条件下完成 ScienceDirect 冒烟测试脚本，再由用户在本地配置 API Key，
-执行一次小规模真实验证。真实链路稳定后，再决定是否扩展 Springer、IEEE Xplore
-或 Scopus，避免同时引入多套未经验证的外部接口。
+先由用户在本地配置所需 Provider 的 API Key，一次只启用一个来源，执行小规模真实
+验证。元数据与开放全文链路稳定后，再决定是否购买 Springer TDM、IEEE 付费全文或
+扩展 Scopus。

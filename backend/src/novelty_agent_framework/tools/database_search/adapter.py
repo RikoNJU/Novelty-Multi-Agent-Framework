@@ -164,6 +164,17 @@ def compile_search_plan(
         from .providers.sciencedirect import ScienceDirectQueryAdapter
 
         AdapterFactory.register("sciencedirect", ScienceDirectQueryAdapter)
+    if normalized == "springer" and "springer" not in AdapterFactory._adapters:
+        from .providers.springer import SpringerNatureQueryAdapter
+
+        AdapterFactory.register("springer", SpringerNatureQueryAdapter)
+    if (
+        normalized == "ieee_xplore"
+        and "ieee_xplore" not in AdapterFactory._adapters
+    ):
+        from .providers.ieee_xplore import IEEEXploreQueryAdapter
+
+        AdapterFactory.register("ieee_xplore", IEEEXploreQueryAdapter)
     return list(AdapterFactory.create(database).compile(plan))
 
 

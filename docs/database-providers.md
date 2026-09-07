@@ -33,5 +33,31 @@ Artifact 持久化和 EvidenceCard 构建不包含数据库分支。
 `ELSEVIER_INST_TOKEN`。全文无权访问时返回 `None`，由通用检索链保留摘要，绝不把
 摘要标记为全文。
 
-Springer 和 IEEE Xplore 后续复用相同 HTTP 基础设施，但必须各自实现查询编译、
-响应映射和授权判断，不能复用 ScienceDirect 的 API 假设。
+## Springer Nature
+
+`springer` Provider 使用 Meta API `meta/v2/json` 检索元数据和摘要。全文模式：
+
+- `disabled`：不调用全文接口；
+- `openaccess`（默认）：仅对 Meta API 明确标记为开放获取的候选调用
+  Open Access JATS 接口；
+- `tdm`：调用 `xmldata/jats`，必须配置 `SPRINGER_NATURE_TDM_API_METRIC`，且必须
+  已取得 Springer Nature 的专项 TDM 授权。
+
+API Key 从 `SPRINGER_NATURE_API_KEY` 读取。JATS 会被解析为纯文本和章节映射；
+响应 URL 中的 Key 不会写入 Artifact provenance 或错误信息。
+
+## IEEE Xplore
+
+`ieee_xplore` Provider 使用 Metadata Search API 检索题录和摘要，并以 IEEE
+`article_number` 作为全文请求标识。`full_text_mode` 支持：
+
+- `disabled`：只保存题录和摘要；
+- `openaccess`（默认）：只调用 IEEE Open Access full-text endpoint，订阅内容自动
+  降级到摘要。
+
+API Key 从 `IEEE_XPLORE_API_KEY` 读取。IEEE 的付费全文 API 需要另行签约、客户凭据
+和短期 token 流程，本 Provider 不会仅凭普通 API Key 尝试下载付费全文；取得正式
+接口参数后应另行扩展，而不是复用开放全文模式。
+
+Springer Nature 和 IEEE Xplore 复用相同 HTTP 基础设施，但各自保留查询编译、响应
+映射和授权判断，不复用 ScienceDirect 的 API 假设。

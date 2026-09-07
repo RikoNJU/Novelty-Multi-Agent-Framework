@@ -17,6 +17,8 @@ def build_source_registry() -> RetrievalSourceRegistry:
     registry = RetrievalSourceRegistry()
     registry.register("arxiv", _build_arxiv_source_lazily)
     registry.register("sciencedirect", _build_sciencedirect_source_lazily)
+    registry.register("springer", _build_springer_source_lazily)
+    registry.register("ieee_xplore", _build_ieee_xplore_source_lazily)
     registry.register("null_catalog", build_null_catalog_source)
     return registry
 
@@ -33,6 +35,18 @@ def _build_sciencedirect_source_lazily(
     from .providers.sciencedirect import build_sciencedirect_source
 
     return build_sciencedirect_source(config)
+
+
+def _build_springer_source_lazily(config: Mapping[str, Any]) -> RetrievalSource:
+    from .providers.springer import build_springer_source
+
+    return build_springer_source(config)
+
+
+def _build_ieee_xplore_source_lazily(config: Mapping[str, Any]) -> RetrievalSource:
+    from .providers.ieee_xplore import build_ieee_xplore_source
+
+    return build_ieee_xplore_source(config)
 
 
 def build_retrieval_source(
