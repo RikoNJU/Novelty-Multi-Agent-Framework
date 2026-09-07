@@ -166,6 +166,7 @@ class RuntimeDebugSettingsConfig(ConfigModel):
     output_root: str = "outputs"
     archive_root: str = "docs/experiments/runtime"
     max_inline_bytes: int = Field(default=256_000, gt=0)
+    llm_pricing_path: str | None = None
 
 
 class ProjectSettingsConfig(ConfigModel):

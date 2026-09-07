@@ -159,6 +159,7 @@ backend/env/                              统一模型客户端、模型注册�
 backend/src/novelty_agent_framework/
 ├── agents/                              Coordinator、PointExtractor、SearchPlanner、Researcher、Validator、Demo
 ├── config/                              配置加载和真实工作流组合根
+├── diagnostics/                         LLM usage 归一化与 RMB 计费
 ├── ports/                               可替换能力接口
 ├── processing/                          PDF 文本层解析、OCR 兜底、章节与标题提取
 ├── prompts/                             版本化 Agent 提示词
@@ -193,6 +194,13 @@ outputs/<paper_id>/
 ```
 
 真实实验还可额外写出 `run-metrics.json`，记录墙钟时间和逐次模型 usage。
+
+开启 `runtime_debug` 时，每次生产模型调用还会写入
+`outputs/<paper_id>/runtime/<run_id>/llm_calls/`。单次记录包含模型、阶段、耗时、
+输入/缓存输入/输出/推理 token、所用单价档及 RMB 金额；`summary.json` 和
+`summary.md` 提供按模型与整次运行的汇总。单价表位于
+`backend/src/novelty_agent_framework/config/llm_pricing.json`，未知单价会标为
+`UNPRICED`，不会按 0 元处理。
 
 `retrieval-plans.json` 按查新点保存 `research_tasks`、数据库无关 `search_plans`、真正执行的 `executed_queries`，以及供现有 Renderer 使用的 `query_plan.queries`。
 
@@ -279,8 +287,9 @@ workflow = build_workflow(config)
 result = workflow.run(PaperInput.model_validate(paper_data))
 ```
 
-当前默认配置已将 Coordinator、Researcher、SearchPlanner 收敛到已验证可用的
-`deepseek-flash`；仍可分别通过 `NOVELTY_COORDINATOR_MODEL`、
+当前默认配置已将 Coordinator、PointExtractor、Researcher、SearchPlanner、Reviewer
+以及文本处理的 LLM 兜底统一为 `deepseek-flash`；OCR 保留专用的
+`deepseek-ocr`。仍可分别通过 `NOVELTY_COORDINATOR_MODEL`、
 `NOVELTY_RESEARCH_MODEL` 和 `NOVELTY_SEARCH_PLANNER_MODEL` 显式覆盖。
 
 ### Renderer 与 API

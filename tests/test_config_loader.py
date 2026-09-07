@@ -59,6 +59,22 @@ def test_search_planner_uses_verified_default_without_environment_override():
     assert config.search_planner.model.alias == "deepseek-flash"
 
 
+def test_default_text_llm_roles_are_unified_on_deepseek_v4_flash():
+    config = load_application_config(environ={})
+    aliases = {
+        config.coordinator.model.alias,
+        config.point_extractor.model.alias,
+        config.researcher.model.alias,
+        config.search_planner.model.alias,
+        config.reviewer.model.alias,
+        config.project.processing["llm_model"],
+    }
+
+    assert aliases == {"deepseek-flash"}
+    assert config.models["deepseek-flash"].model == "deepseek-ai/DeepSeek-V4-Flash"
+    assert config.project.processing["ocr_model"] == "deepseek-ocr"
+
+
 def test_search_planner_example_filename_is_canonical():
     assert DEFAULT_SEARCH_PLANNER_PATH.name == "search_planner.example.json"
     assert DEFAULT_SEARCH_PLANNER_PATH.exists()

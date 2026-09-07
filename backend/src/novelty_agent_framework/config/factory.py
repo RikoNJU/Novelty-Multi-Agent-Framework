@@ -432,6 +432,10 @@ def build_workflow(
                 max_inline_bytes=int(
                     raw.get("runtime_debug", {}).get("max_inline_bytes", 256_000)
                 ),
+                llm_pricing_path=Path(
+                    raw.get("runtime_debug", {}).get("llm_pricing_path")
+                    or RuntimeDebugConfig().llm_pricing_path
+                ),
             ),
         ),
         runtime_config=raw,
@@ -593,6 +597,11 @@ def _build_workflow_from_application_config(
                 output_root=Path(runtime_debug.output_root),
                 archive_root=Path(runtime_debug.archive_root),
                 max_inline_bytes=runtime_debug.max_inline_bytes,
+                llm_pricing_path=(
+                    Path(runtime_debug.llm_pricing_path)
+                    if runtime_debug.llm_pricing_path
+                    else RuntimeDebugConfig().llm_pricing_path
+                ),
             ),
         ),
         runtime_config=config.model_dump(mode="json"),

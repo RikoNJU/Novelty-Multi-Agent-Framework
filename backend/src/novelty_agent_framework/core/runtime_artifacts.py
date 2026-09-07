@@ -25,6 +25,14 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, Mapping
 
+from backend.env import (
+    ModelCallEvent,
+    reset_model_call_observer,
+    set_model_call_observer,
+)
+
+from ..diagnostics.llm_usage import DEFAULT_PRICING_PATH, LlmPricingCatalog
+
 try:
     from pydantic import BaseModel
 except ImportError:  # pragma: no cover - the application depends on pydantic
@@ -67,6 +75,7 @@ class RuntimeDebugConfig:
     output_root: Path = Path("outputs")
     archive_root: Path = Path("docs/experiments/runtime")
     max_inline_bytes: int = 256_000
+    llm_pricing_path: Path = DEFAULT_PRICING_PATH
 
     def __post_init__(self) -> None:
         if self.max_inline_bytes < 1:
@@ -122,11 +131,17 @@ class RuntimeArtifactManager:
         self._lock = threading.RLock()
         self._stage_counter = 0
         self._tool_counter = 0
+        self._llm_call_counter = 0
         self._error_counter = 0
         self._stage_records: list[dict[str, Any]] = []
         self._tool_records: list[dict[str, Any]] = []
+        self._llm_call_records: list[dict[str, Any]] = []
         self._error_records: list[dict[str, Any]] = []
-        self._activation_token: contextvars.Token[RuntimeArtifactManager | None] | None = None
+        self._activation_token: (
+            contextvars.Token[RuntimeArtifactManager | None] | None
+        ) = None
+        self._model_observer_token: contextvars.Token[Any] | None = None
+        self._pricing_catalog: LlmPricingCatalog | None = None
         self.run_dir: Path | None = None
         if self.config.enabled:
             safe_paper_id = _safe_segment(paper_id)
@@ -136,8 +151,15 @@ class RuntimeArtifactManager:
                 / "runtime"
                 / _safe_segment(self.run_id)
             )
-            for child in ("stages", "tools", "errors"):
+            for child in ("stages", "tools", "llm_calls", "errors"):
                 (self.run_dir / child).mkdir(parents=True, exist_ok=False)
+            try:
+                self._pricing_catalog = LlmPricingCatalog.load(
+                    self.config.llm_pricing_path
+                )
+            except (OSError, ValueError, json.JSONDecodeError):
+                # Usage tracking remains useful even when a local price table is bad.
+                self._pricing_catalog = None
             self._write_manifest("RUNNING")
 
     def __enter__(self) -> RuntimeArtifactManager:
@@ -151,11 +173,73 @@ class RuntimeArtifactManager:
         if self._activation_token is not None:
             raise RuntimeError("runtime artifact manager is already active")
         self._activation_token = _current_run.set(self)
+        self._model_observer_token = set_model_call_observer(self.record_model_call)
 
     def deactivate(self) -> None:
+        if self._model_observer_token is not None:
+            reset_model_call_observer(self._model_observer_token)
+            self._model_observer_token = None
         if self._activation_token is not None:
             _current_run.reset(self._activation_token)
             self._activation_token = None
+
+    def record_model_call(self, event: ModelCallEvent) -> None:
+        """Persist one model call and its normalized token/cost accounting."""
+
+        if not self.config.enabled or self.run_dir is None:
+            return
+        usage = event.response.usage if event.response is not None else {}
+        if self._pricing_catalog is not None:
+            accounting = self._pricing_catalog.calculate(
+                event.model, usage, occurred_at=event.started_at
+            )
+        else:
+            from ..diagnostics.llm_usage import normalize_usage
+
+            accounting = {
+                "tokens": normalize_usage(usage),
+                "billing": {
+                    "status": "PRICING_UNAVAILABLE",
+                    "currency": "RMB",
+                    "amount": None,
+                    "unit_tokens": None,
+                    "rate_name": None,
+                    "rates_per_unit": None,
+                    "pricing_table": str(self.config.llm_pricing_path),
+                },
+            }
+        with self._lock:
+            self._llm_call_counter += 1
+            call_id = f"llm_{self._llm_call_counter:04d}"
+            record = {
+                "llm_call_id": call_id,
+                "stage_name": _current_stage.get(),
+                "alias": event.alias,
+                "provider": event.provider,
+                "model": event.model,
+                "started_at": _iso(event.started_at),
+                "duration_ms": event.duration_ms,
+                "message_count": event.message_count,
+                "status": "FAILED" if event.error is not None else "SUCCESS",
+                "request_id": (
+                    event.response.raw.get("id")
+                    if event.response is not None
+                    and isinstance(event.response.raw, Mapping)
+                    else None
+                ),
+                **accounting,
+                "provider_usage": dict(usage),
+                "error": (
+                    {"type": type(event.error).__name__, "message": str(event.error)}
+                    if event.error is not None
+                    else None
+                ),
+            }
+            self._llm_call_records.append(record)
+            path = self.run_dir / "llm_calls" / (
+                f"{self._llm_call_counter:04d}_{_safe_segment(event.alias)}.json"
+            )
+            self._write_json(path, record)
 
     def start_stage(self, stage_name: str, stage_input: Any) -> StageHandle:
         started = _now()
@@ -442,6 +526,7 @@ class RuntimeArtifactManager:
             "python_version": platform.python_version(),
             "os": platform.platform(),
             "runtime_debug_enabled": self.config.enabled,
+            "llm_pricing_path": self.config.llm_pricing_path,
             "model_provider": self.model_provider,
             "model_name": self.model_name,
             "enabled_tools": self.enabled_tools,
@@ -536,6 +621,7 @@ class RuntimeArtifactManager:
             },
             "stages": stages,
             "tool_calls": list(tool_stats.values()),
+            "llm_usage": _summarize_llm_usage(self._llm_call_records),
             "errors": list(self._error_records),
             "integrity_gates": integrity_gates,
             "final_evidence_sufficiency_checks": (
@@ -745,6 +831,70 @@ def _infer_result_count(value: Any) -> int | None:
             if inferred is not None:
                 return inferred
     return None
+
+
+def _summarize_llm_usage(records: list[dict[str, Any]]) -> dict[str, Any]:
+    def blank(label: str | None = None) -> dict[str, Any]:
+        return {
+            **({"model": label} if label is not None else {}),
+            "calls": 0,
+            "successful_calls": 0,
+            "failed_calls": 0,
+            "priced_calls": 0,
+            "free_calls": 0,
+            "unpriced_calls": 0,
+            "usage_unavailable_calls": 0,
+            "input_tokens": 0,
+            "cached_input_tokens": 0,
+            "output_tokens": 0,
+            "reasoning_tokens": 0,
+            "total_tokens": 0,
+            "amount_rmb": 0.0,
+        }
+
+    totals = blank()
+    by_model: dict[str, dict[str, Any]] = {}
+    for record in records:
+        model = str(record.get("model") or "unknown")
+        targets = (totals, by_model.setdefault(model, blank(model)))
+        tokens = record.get("tokens", {})
+        billing = record.get("billing", {})
+        billing_status = billing.get("status")
+        for target in targets:
+            target["calls"] += 1
+            status_key = (
+                "successful_calls"
+                if record.get("status") == "SUCCESS"
+                else "failed_calls"
+            )
+            target[status_key] += 1
+            if billing_status == "PRICED":
+                target["priced_calls"] += 1
+            elif billing_status == "FREE":
+                target["free_calls"] += 1
+            elif billing_status in {"UNPRICED", "PRICING_UNAVAILABLE"}:
+                target["unpriced_calls"] += 1
+            else:
+                target["usage_unavailable_calls"] += 1
+            for key in (
+                "input_tokens",
+                "cached_input_tokens",
+                "output_tokens",
+                "reasoning_tokens",
+                "total_tokens",
+            ):
+                value = tokens.get(key, 0)
+                if isinstance(value, int) and not isinstance(value, bool):
+                    target[key] += value
+            amount = billing.get("amount")
+            if isinstance(amount, (int, float)) and not isinstance(amount, bool):
+                target["amount_rmb"] = round(target["amount_rmb"] + amount, 8)
+
+    totals["cost_completeness"] = (
+        "PARTIAL" if totals["unpriced_calls"] else "COMPLETE"
+    )
+    totals["currency"] = "RMB"
+    return {"totals": totals, "by_model": list(by_model.values())}
 
 
 def _stage_debug_details(
@@ -1108,6 +1258,33 @@ def _render_summary(summary: Mapping[str, Any]) -> str:
         f"| {item['tool_name']} | {item['calls']} | {item['success']} | "
         f"{item['failed']} | {item['empty']} |"
         for item in summary["tool_calls"]
+    )
+    llm_usage = summary.get("llm_usage", {})
+    llm_totals = llm_usage.get("totals", {})
+    lines.extend(
+        [
+            "",
+            "## LLM Token Usage and Cost",
+            "",
+            f"Calls: {llm_totals.get('calls', 0)}",
+            f"Input tokens: {llm_totals.get('input_tokens', 0)}",
+            f"Cached input tokens: {llm_totals.get('cached_input_tokens', 0)}",
+            f"Output tokens: {llm_totals.get('output_tokens', 0)}",
+            f"Reasoning tokens: {llm_totals.get('reasoning_tokens', 0)}",
+            f"Total tokens: {llm_totals.get('total_tokens', 0)}",
+            f"Cost: RMB {llm_totals.get('amount_rmb', 0):.8f}",
+            f"Cost completeness: {llm_totals.get('cost_completeness', 'COMPLETE')}",
+            "",
+            "| Model | Calls | Input | Cached | Output | Total | Cost (RMB) | Unpriced |",
+            "|---|---:|---:|---:|---:|---:|---:|---:|",
+        ]
+    )
+    lines.extend(
+        f"| {item['model']} | {item['calls']} | {item['input_tokens']} | "
+        f"{item['cached_input_tokens']} | {item['output_tokens']} | "
+        f"{item['total_tokens']} | {item['amount_rmb']:.8f} | "
+        f"{item['unpriced_calls']} |"
+        for item in llm_usage.get("by_model", [])
     )
     lines.extend(["", "## Final Evidence Sufficiency Checks", ""])
     checks = summary.get("final_evidence_sufficiency_checks", [])

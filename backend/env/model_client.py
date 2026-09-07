@@ -6,14 +6,17 @@
 from __future__ import annotations
 
 import asyncio
+import contextvars
 import json
 import os
+import time
 import urllib.error
 import urllib.request
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Protocol
+from typing import Any, Callable, Protocol
 
 
 def _load_dev_env() -> None:
@@ -35,6 +38,51 @@ _load_dev_env()
 
 class ModelClientError(RuntimeError):
     """模型客户端调用失败。"""
+
+
+@dataclass(frozen=True)
+class ModelCallEvent:
+    """One completed model request, emitted without prompt or credential data."""
+
+    alias: str
+    provider: str
+    model: str
+    started_at: datetime
+    duration_ms: int
+    message_count: int
+    response: ModelResponse | None = None
+    error: BaseException | None = None
+
+
+ModelCallObserver = Callable[[ModelCallEvent], None]
+_model_call_observer: contextvars.ContextVar[ModelCallObserver | None] = (
+    contextvars.ContextVar("novelty_model_call_observer", default=None)
+)
+
+
+def set_model_call_observer(
+    observer: ModelCallObserver,
+) -> contextvars.Token[ModelCallObserver | None]:
+    """Install a task-local observer and return the token needed to restore it."""
+
+    return _model_call_observer.set(observer)
+
+
+def reset_model_call_observer(
+    token: contextvars.Token[ModelCallObserver | None],
+) -> None:
+    _model_call_observer.reset(token)
+
+
+def _emit_model_call(event: ModelCallEvent) -> None:
+    observer = _model_call_observer.get()
+    if observer is None:
+        return
+    try:
+        observer(event)
+    except Exception:
+        # Debug accounting must never change the result of a model request.
+        return
 
 
 @dataclass(frozen=True)
@@ -183,6 +231,46 @@ class OpenAICompatibleChatClient:
         self.profile = profile
 
     def complete(
+        self,
+        messages: Sequence[ChatMessage],
+        *,
+        options: ModelCallOptions | None = None,
+    ) -> ModelResponse:
+        started_at = datetime.now(timezone.utc)
+        monotonic_started = time.monotonic()
+        try:
+            response = self._complete(messages, options=options)
+        except Exception as exc:
+            _emit_model_call(
+                ModelCallEvent(
+                    alias=self.profile.alias,
+                    provider=self.profile.provider,
+                    model=self.profile.model,
+                    started_at=started_at,
+                    duration_ms=max(
+                        0, int((time.monotonic() - monotonic_started) * 1000)
+                    ),
+                    message_count=len(messages),
+                    error=exc,
+                )
+            )
+            raise
+        _emit_model_call(
+            ModelCallEvent(
+                alias=self.profile.alias,
+                provider=self.profile.provider,
+                model=self.profile.model,
+                started_at=started_at,
+                duration_ms=max(
+                    0, int((time.monotonic() - monotonic_started) * 1000)
+                ),
+                message_count=len(messages),
+                response=response,
+            )
+        )
+        return response
+
+    def _complete(
         self,
         messages: Sequence[ChatMessage],
         *,

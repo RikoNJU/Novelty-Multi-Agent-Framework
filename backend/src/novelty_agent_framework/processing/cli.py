@@ -41,7 +41,7 @@ def main(argv: list[str] | None = None) -> int:
     registry = build_model_registry(config)
     processing_cfg = config.get("processing", {})
     ocr_client = registry.client_for(processing_cfg.get("ocr_model", "deepseek-ocr"))
-    llm_client = registry.client_for(processing_cfg.get("llm_model", "r1-qwen3-8b"))
+    llm_client = registry.client_for(processing_cfg.get("llm_model", "deepseek-flash"))
 
     mineru_settings = MineruSettings(
         python_path=args.mineru_python or processing_cfg.get("mineru_python"),
