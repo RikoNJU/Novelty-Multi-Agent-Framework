@@ -1,525 +1,228 @@
-# MG19333vrw_FullPipeline_LocatorDisabled 实验报告
+# MG19333vrw 全流程实验报告
 
-## 1. 实验目的
+> 实验日期：2026-09-07<br>
+> 实验对象：`examples/MG19333vrw.pdf`<br>
+> 运行模式：MinerU 解析 + 完整查新工作流 + Runtime Debug<br>
+> 最终状态：流程成功，证据覆盖不足
 
-验证 SearchPlanner 默认模型收敛为 `deepseek-flash` 后，不设置任何
-`NOVELTY_*_MODEL` 角色覆盖即可完成 MG19333vrw 工作流并生成报告。
+## 结论摘要
 
-## 2. 基线
+这次实验成功跑通了从 PDF 解析到 Markdown 报告生成的完整链路。MinerU 真实执行且没有回退；三个查新点均经过任务规划、检索、证据校验、Reviewer 复核和报告生成；两个报告完整性门也全部通过。
 
-- branch: `lya`
-- commit: `eab288105bc7b0c7baeecb222c005d528fbe6b68`
-- started_at: `2026-09-06T10:43:32.796769+00:00`
-- execution_status: **COMPLETED**
-- status: **INVALID / DEGRADED**
+不过，“流程成功”不等于“查新结论充分”。系统最终只保留了 1 张有效 EvidenceCard，覆盖 NP-2；NP-1 和 NP-3 均没有达到每个查新点至少 1 张有效 Card 的门槛。因此，本次实验得到了一份结构完整、可审计的报告，但还不是一份三个查新点都得到充分证据支持的完整查新结果。
 
-## 3. 固定实验条件
+| 问题 | 结果 |
+|---|---|
+| 能否完成 PDF → 报告全流程？ | 能 |
+| MinerU 是否真实成功？ | 是，未触发文本层/OCR 回退 |
+| 是否生成结构完整的最终报告？ | 是 |
+| 三个查新点是否都有充分证据？ | 否，仅 NP-2 达到证据门槛 |
+| 调试数据是否完整保存？ | 是 |
 
-- `paper = MG19333vrw`
-- Prompt 与工具预算保持当前仓库配置
-- `max_rounds = 1`
-- `require_direct_quote = true`
-- `require_source_location = false`
-- `locator_gate_disabled = true`
+## 实验目标
 
-## 4. 输入
+本次实验主要验证以下内容：
 
-- PDF: `examples/MG19333vrw.pdf`
-- size: 2023977 bytes
-- pages: 90
+1. 使用 MinerU 3.4.5 解析真实论文 PDF；
+2. 在不设置任何 `NOVELTY_*_MODEL` 角色覆盖的情况下，由默认的 `deepseek-flash` 完成全流程；
+3. 关闭 evidence locator 强制门，但继续要求证据包含直接引文；
+4. 验证 Runtime Debug 能否记录阶段输入输出、模型调用、工具调用、错误、Token、成本和完整性门结果；
+5. 判断最终能否生成可阅读、可追溯的科技查新报告。
 
-## 5. 实际生效配置
+## 实验条件
 
-- `NOVELTY_*_MODEL` 覆盖：无
-- 无覆盖完整运行验收：**PASS**
-- SearchPlanner 实际调用模型：[`deepseek-flash`]
-- 工作流正常返回：True
-- 质量门结果：INVALID / DEGRADED（与“进程完成”分开记录）
-- 完整无密钥快照：`effective-config.json`
+| 项目 | 配置 |
+|---|---|
+| 代码分支 | `lya` |
+| Git commit | `5909b50993fdad4de4caf49bb0ea0bf1a62930bb` |
+| 输入 PDF | `examples/MG19333vrw.pdf` |
+| 文件大小 | 2,023,977 bytes |
+| PDF 页数 | 74 |
+| 主模型 | `deepseek-ai/DeepSeek-V4-Flash` |
+| 工作流轮数 | 1 |
+| 最大并发 | 4 |
+| 每点最低有效 Card 数 | 1 |
+| 直接引文要求 | 开启 |
+| 来源位置要求 | 关闭 |
+| Reviewer | 开启，fail-closed |
+| Runtime Debug | 开启 |
 
-```json
-{
-  "workflow": {
-    "max_rounds": 1,
-    "max_concurrency": 4,
-    "minimum_evidence_per_point": 1
-  },
-  "runtime_debug": {
-    "enabled": true,
-    "output_root": "outputs",
-    "archive_root": "docs/experiments/runtime",
-    "max_inline_bytes": 256000
-  },
-  "processing": {
-    "parser": "mineru",
-    "dpi": 200,
-    "quality_min_chars_per_page": 200,
-    "ocr_model": "deepseek-ocr",
-    "llm_model": "r1-qwen3-8b",
-    "mineru_python": null,
-    "mineru_env": "mineru",
-    "mineru_worker": "scripts/mineru_worker.py",
-    "mineru_backend": "pipeline",
-    "mineru_method": "auto",
-    "mineru_lang": "ch",
-    "mineru_effort": "medium",
-    "mineru_timeout_seconds": 1800,
-    "mineru_work_root": "outputs/.mineru",
-    "mineru_model_source": null
-  },
-  "coordinator": {
-    "version": 1,
-    "model": {
-      "alias": "deepseek-flash",
-      "temperature": 0.2,
-      "max_tokens": 4096,
-      "timeout_seconds": 300.0,
-      "tool_choice": null,
-      "enable_thinking": null,
-      "thinking_budget": null,
-      "reasoning_effort": null
-    },
-    "prompts": [
-      "coordinator/plan",
-      "coordinator/plan_supplement",
-      "coordinator/synthesize"
-    ]
-  },
-  "point_extractor": {
-    "version": 1,
-    "model": {
-      "alias": "r1-qwen3-8b",
-      "temperature": 0.2,
-      "max_tokens": 8192,
-      "timeout_seconds": 600.0,
-      "tool_choice": null,
-      "enable_thinking": null,
-      "thinking_budget": null,
-      "reasoning_effort": null
-    },
-    "prompts": [
-      "extractor/extract_points"
-    ]
-  },
-  "researcher": {
-    "version": 1,
-    "model": {
-      "alias": "deepseek-flash",
-      "temperature": 0.3,
-      "max_tokens": 4096,
-      "timeout_seconds": 300.0,
-      "tool_choice": "auto",
-      "enable_thinking": false,
-      "thinking_budget": null,
-      "reasoning_effort": null
-    },
-    "prompt": "research/native_tool_loop",
-    "harness": {
-      "max_turns": 12,
-      "max_total_tool_calls": 10,
-      "per_tool_limits": {
-        "database_search": 3,
-        "web_search": 5,
-        "browser": 3,
-        "reader": 8
-      }
-    },
-    "tools": {
-      "database_search": {
-        "active_source": "arxiv",
-        "candidate_limit_per_task": 8,
-        "candidate_excerpt_chars": 2000,
-        "full_text_limit_per_task": 8,
-        "max_concurrency": 4,
-        "providers": {
-          "arxiv": {
-            "enabled": true,
-            "min_interval_seconds": 3,
-            "timeout_seconds": 20,
-            "max_retries": 2,
-            "full_text_max_chars": 100000
-          },
-          "null_catalog": {
-            "enabled": true,
-            "testing_only": true
-          }
-        }
-      },
-      "web_search": {
-        "backend": "baidu",
-        "default_max_results": 10,
-        "max_results_per_call": 50,
-        "baidu": {
-          "timeout_seconds": 30
-        }
-      },
-      "browser": {
-        "backend": "playwright",
-        "network_mode": "inherit",
-        "navigation_timeout_ms": 30000,
-        "max_html_chars": 2000000,
-        "max_text_chars": 500000
-      },
-      "reader": {
-        "default_chars_per_read": 8000,
-        "max_chars_per_read": 16000,
-        "max_total_read_chars": 48000
-      }
-    }
-  },
-  "search_planner": {
-    "version": 1,
-    "model": {
-      "alias": "deepseek-flash",
-      "temperature": 0.2,
-      "max_tokens": 2048,
-      "timeout_seconds": 180.0,
-      "tool_choice": null,
-      "enable_thinking": false,
-      "thinking_budget": null,
-      "reasoning_effort": null
-    },
-    "prompt": "search_planner/plan",
-    "max_attempts": 3,
-    "limits": {
-      "max_concepts": 6,
-      "max_terms_per_concept": 5,
-      "max_alias_per_concept": 4,
-      "max_exclude_per_concept": 3,
-      "max_term_words": 8,
-      "require_escape": false
-    }
-  },
-  "reviewer": {
-    "version": 1,
-    "enabled": true,
-    "model": {
-      "alias": "deepseek-flash",
-      "temperature": 0.0,
-      "max_tokens": 8192,
-      "timeout_seconds": 600.0,
-      "tool_choice": null,
-      "enable_thinking": null,
-      "thinking_budget": null,
-      "reasoning_effort": null
-    },
-    "prompt": "reviewer/review_evidence",
-    "max_cards_per_call": 8,
-    "fail_closed": true
-  },
-  "models": {
-    "glm4.7": {
-      "provider": "openai_compatible",
-      "base_url": "https://api.siliconflow.cn/v1",
-      "model": "Pro/zai-org/GLM-4.7",
-      "context_window": 200000,
-      "supported_params": [
-        "enable_thinking",
-        "thinking_budget"
-      ],
-      "api_key_env": "SILICONFLOW_API_KEY"
-    },
-    "deepseek-flash": {
-      "provider": "openai_compatible",
-      "base_url": "https://api.siliconflow.cn/v1",
-      "model": "deepseek-ai/DeepSeek-V4-Flash",
-      "context_window": 128000,
-      "supported_params": [
-        "enable_thinking",
-        "thinking_budget",
-        "reasoning_effort"
-      ],
-      "api_key_env": "SILICONFLOW_API_KEY"
-    },
-    "r1-qwen3-8b": {
-      "provider": "openai_compatible",
-      "base_url": "https://api.siliconflow.cn/v1",
-      "model": "deepseek-ai/DeepSeek-R1-0528-Qwen3-8B",
-      "context_window": 128000,
-      "supported_params": [
-        "enable_thinking",
-        "thinking_budget"
-      ],
-      "api_key_env": "SILICONFLOW_API_KEY"
-    },
-    "deepseek-ocr": {
-      "provider": "openai_compatible",
-      "base_url": "https://api.siliconflow.cn/v1",
-      "model": "deepseek-ai/DeepSeek-OCR",
-      "context_window": 128000,
-      "supported_params": [],
-      "api_key_env": "SILICONFLOW_API_KEY"
-    }
-  }
-}
-```
+完整、无密钥的配置快照见 [`effective-config.json`](effective-config.json)。
 
-## 6. MinerU
+## 执行过程
 
-```json
-{
-  "success": true,
-  "source": "mineru",
-  "pages": 90,
-  "backend": "pipeline",
-  "method": "auto",
-  "fallback_triggered": false,
-  "warnings": [
-    "methods: 未检测到",
-    "results: 未检测到",
-    "discussion: 未检测到"
-  ],
-  "elapsed_seconds": 60.309827,
-  "reused": true
-}
-```
+### 1. PDF 解析
 
-## 7. Reference Bootstrap
+MinerU 在 53.28 秒内完成 74 页 PDF 的解析，解析来源被记录为 `mineru`，没有触发回退。系统生成了全文 Markdown、结构化 content list、版面与坐标数据，以及 50 张论文图片。
 
-```json
-{
-  "paper_id": "MG19333vrw-locator-off-full",
-  "total": 91,
-  "bootstrap_ready": true,
-  "resolved": 0,
-  "ambiguous": 0,
-  "not_found": 91,
-  "failed": 0,
-  "success": true,
-  "elapsed_seconds": 0.406834,
-  "stderr": "",
-  "reused": true
-}
-```
+章节检测给出了三项警告：未识别到 `methods`、`results` 和 `discussion`。这不代表论文缺少相应内容，而是章节标题没有被当前规则识别；后续查新点提取仍然正常完成。
 
-## 8. 工作流结果
+### 2. 参考文献预处理
 
-- rounds: 1
-- ResearchTasks: 2
-- coverage gaps: ['NP-1: 仅有 0 条有效证据，至少需要 1 条']
+系统从论文中识别出 85 条参考文献，bootstrap 本身成功完成，但 85 条均未自动解析到外部作品记录：
 
-## 9. Tool 调用统计
+| 指标 | 数量 |
+|---|---:|
+| 识别出的参考文献 | 85 |
+| 自动 resolved | 0 |
+| ambiguous | 0 |
+| not found | 85 |
+| 处理失败 | 0 |
 
-```json
-[
-  {
-    "point": "NP-1",
-    "task": "T-1",
-    "attempt": 1,
-    "status": "partial",
-    "planner_seconds": 4.220793133999905,
-    "researcher_seconds": 334.86619296599974,
-    "tool_calls": {
-      "reference_search": {
-        "attempts": 1,
-        "success": 1
-      },
-      "web_search": {
-        "attempts": 5,
-        "success": 3
-      },
-      "database_search": {
-        "attempts": 2,
-        "success": 2
-      },
-      "reader": {
-        "attempts": 1,
-        "success": 1
-      },
-      "browser": {
-        "attempts": 1,
-        "success": 0
-      }
-    },
-    "tool_counters": {
-      "tool_rejection_count": 1,
-      "multiple_tool_call_dropped_count": 1,
-      "required_reader_correction_count": 0,
-      "tool_execution_failure_count": 3,
-      "zero_hit_count": 5
-    },
-    "tokens": 147891,
-    "model_calls": 13,
-    "warnings": [
-      "native tool harness failed: total tool-call budget exhausted"
-    ]
-  },
-  {
-    "point": "NP-1",
-    "task": "T-2",
-    "attempt": 1,
-    "status": "partial",
-    "planner_seconds": 5.118868268000369,
-    "researcher_seconds": 335.2450522620002,
-    "tool_calls": {
-      "reference_search": {
-        "attempts": 1,
-        "success": 1
-      },
-      "database_search": {
-        "attempts": 1,
-        "success": 1
-      },
-      "reader": {
-        "attempts": 4,
-        "success": 3
-      },
-      "web_search": {
-        "attempts": 3,
-        "success": 1
-      },
-      "browser": {
-        "attempts": 1,
-        "success": 1
-      }
-    },
-    "tool_counters": {
-      "tool_rejection_count": 1,
-      "multiple_tool_call_dropped_count": 1,
-      "required_reader_correction_count": 0,
-      "tool_execution_failure_count": 3,
-      "zero_hit_count": 5
-    },
-    "tokens": 89205,
-    "model_calls": 13,
-    "warnings": [
-      "native tool harness failed: total tool-call budget exhausted"
-    ]
-  }
-]
-```
+这说明“参考文献列表已提取”，但“引用记录自动对齐”没有取得有效结果。它没有阻塞主流程，却削弱了后续利用论文自带参考文献扩展证据的能力。
 
-## 10. Evidence
+### 3. 查新点与检索任务
 
-```json
-{
-  "built": 0,
-  "validator_accepted": 0,
-  "validator_rejected": 0,
-  "reviewer_accepted": 0,
-  "reviewer_rejected": 0,
-  "rejected": []
-}
-```
+PointExtractor 提取了 3 个查新点，Coordinator 和 SearchPlanner 共生成 6 个研究任务，每个查新点包含 2 个任务。
 
-## 11. 时间统计
+| 查新点 | 核心主张 | 最终状态 | 有效 Card |
+|---|---|---|---:|
+| NP-1 | Museformer 结合细粒度与粗粒度注意力，兼顾长序列和音乐结构建模 | 证据不足 | 0 |
+| NP-2 | 使用相似度统计自动识别与音乐结构最相关的小节 | 部分创新 | 1 |
+| NP-3 | 使用 block-sparse 实现低复杂度编码，并支持更长序列和更快运行 | 证据不足 | 0 |
 
-```json
-{
-  "paper_processing_seconds": 0.0,
-  "reference_bootstrap_seconds": 0.0,
-  "workflow_seconds": 347.911799,
-  "PointExtractor_seconds": 3e-06,
-  "Coordinator_seconds": 3.9e-05,
-  "SearchPlanner_seconds": 9.339661,
-  "Researcher_seconds": 670.111245,
-  "Validator_seconds": 1e-05,
-  "Reviewer_seconds": 7e-06,
-  "Report synthesis/render_seconds": 3.069427,
-  "total_seconds": 347.954224,
-  "previous_attempt_seconds": 303.847925
-}
-```
+6 个任务中只有 NP-2/T-2 正常完成，其余 5 个以 `partial` 结束。部分任务仍检索到候选文献，但在浏览、读取或预算阶段未能形成符合契约的最终证据。
 
-## 12. Token 统计
+## 最终结果
 
-```json
-{
-  "total": {
-    "prompt_tokens": 308477,
-    "completion_tokens": 4433,
-    "total_tokens": 312910,
-    "calls": 27,
-    "unreported_calls": 0
-  },
-  "by_role": {
-    "Report synthesis/render": {
-      "prompt_tokens": 75519,
-      "completion_tokens": 295,
-      "total_tokens": 75814,
-      "calls": 1
-    },
-    "Researcher": {
-      "prompt_tokens": 228148,
-      "completion_tokens": 2370,
-      "total_tokens": 230518,
-      "calls": 22
-    },
-    "SearchPlanner": {
-      "prompt_tokens": 4810,
-      "completion_tokens": 1768,
-      "total_tokens": 6578,
-      "calls": 4
-    }
-  }
-}
-```
+系统构建、校验并经 Reviewer 保留了 1 张 EvidenceCard：
 
-MinerU external API tokens: 0  
-MinerU internal inference tokens: N/A
+| 阶段 | Card 数量 |
+|---|---:|
+| 构建 | 1 |
+| Validator 接受 | 1 |
+| Validator 拒绝 | 0 |
+| Reviewer 接受 | 1 |
+| Reviewer 拒绝 | 0 |
 
-## 13. 最终报告
+### NP-1：证据不足
 
-- path: `/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/outputs/MG19333vrw-locator-off-full/report/MG19333vrw-locator-off-full-report.md`
-- generated: True
+没有形成与 Museformer 细粒度/粗粒度注意力核心贡献直接对应的有效 EvidenceCard，因此无法可靠评价该主张的新颖性。
 
-## 14. 与上次实验对比
+### NP-2：部分创新
 
-| 指标 | 上轮 Full Workflow | 本轮 Locator Disabled |
+系统找到论文 *Generating Music with Structure Using Self-Similarity as Attention* 作为有效相关证据。该工作已将自相似度矩阵用于音乐结构建模，但主要使用用户提供的结构模板；MG19333vrw 主张从训练集相似度分布中自动确定结构相关小节，两者存在方法差异。
+
+最终结论为“部分创新”，置信度为 0.7。由于只有一张有效 Card，该结论仍需要更多文献支持。
+
+### NP-3：证据不足
+
+检索过程没有形成直接覆盖 block-sparse 细/粗粒度注意力实现、复杂度下降和长序列能力的有效 EvidenceCard，因此无法可靠评价该主张的新颖性。
+
+## 调试结果
+
+Runtime Debug 完整记录了 25 个工作流阶段、79 次模型调用、65 次工具调用和 30 个可恢复错误。工作流最后仍正常到达 `render_report`，两个完整性门均通过。
+
+### 工具调用情况
+
+| 工具 | 调用 | 成功 | 失败 | 空结果 |
+|---|---:|---:|---:|---:|
+| Reference Search | 6 | 6 | 0 | 6 |
+| Database Search | 6 | 6 | 0 | 3 |
+| Web Search | 18 | 10 | 8 | 0 |
+| Browser | 12 | 4 | 8 | 0 |
+| Reader | 23 | 9 | 14 | 0 |
+
+Reference Search 虽然调用成功，但 6 次均为空。Database Search 的调用稳定性较好，但一半查询没有命中。真正影响证据产出的环节主要是 Browser 和 Reader：Browser 成功率为 33%，Reader 成功率约为 39%。
+
+### 主要失败模式
+
+30 个调试错误均发生在单任务工具链内部，没有导致主工作流崩溃。主要问题如下：
+
+1. **Artifact/SourceRecord 句柄不可解析。** 多次 Reader 或 Browser 调用了当前 namespace 中不存在的 `artifact_id` 或 `source_record_id`。这是证据读取失败的最大来源。
+2. **工具预算耗尽。** 4 次任务耗尽总工具调用预算，另有任务耗尽 Browser 预算；这直接导致 5 个任务只能以 `partial` 结束。
+3. **Reader 顺序策略冲突。** Database Search 返回 artifact 后，Harness 要求优先 Reader；模型的后续动作有 4 次被该策略拒绝。
+4. **Baidu 查询过长。** 3 次搜索超过 Baidu 的 72-unit 限制，说明 SearchPlanner 或 Web Search Adapter 还需要做长度裁剪。
+5. **动态页面读取不稳定。** Playwright 有 3 次在页面持续导航时无法读取内容。
+
+Reviewer 专项诊断和 namespace 诊断均返回 `ok: true`。最终 Card 的 Evidence → Artifact 绑定能够正确解析，报告中引用的 Card 也通过了 provenance 与 report integrity 检查。因此，当前问题主要发生在候选证据形成之前，而不是最终证据链被错误接受。
+
+## 性能与成本
+
+### 时间
+
+| 阶段 | 耗时 |
+|---|---:|
+| MinerU 与论文处理 | 53.28 秒 |
+| Reference bootstrap | 0.64 秒 |
+| 工作流墙钟时间 | 215.94 秒 |
+| PDF → 最终报告 | 269.91 秒 |
+
+6 个 Researcher 的累计任务耗时为 538.13 秒。该值高于工作流墙钟时间是正常的，因为任务以最大并发 4 并行执行。
+
+### 模型调用与 Token
+
+| 模块 | 调用 | Token |
 |---|---:|---:|
-| PDF parser | text_layer | mineru |
-| NoveltyPoints | 2 | 1 |
-| ResearchTasks | 4 | 2 |
-| EvidenceCards built | 3 | 0 |
-| Validator accepted | 0 | 0 |
-| Reviewer accepted | 0 | 0 |
-| 有效最终报告 | ❌ | False |
-| 总耗时 | ≈35 min | 347.954224 s |
-| Total tokens | 未完整记录 | 312910 |
-| PDF→Report 总耗时 | 未记录 | 347.954224 s |
+| PointExtractor | 4 | 12,956 |
+| SearchPlanner | 7 | 10,585 |
+| Researcher | 64 | 527,236 |
+| 报告汇总 | 1 | 55,477 |
+| 未归类调用 | 3 | 14,178 |
+| **合计** | **79** | **620,432** |
 
-## 15. 暴露的新问题
+所有模型调用均返回了 usage 数据。输入 Token 为 603,601，其中缓存输入 Token 为 414,976；输出 Token 为 16,831，另记录 reasoning Token 3,110。
 
-见 metrics.json 中的 issues / rejected reasons。
+### 成本口径
 
-## 16. 结论
+Runtime Debug 按 2026-09-07 的当前价格表估算本次模型成本为 **0.8418468 元**。该结果使用 DeepSeek-V4-Flash 的日间价格：非缓存输入 3 元/百万 Token、缓存输入 0.3 元/百万 Token、输出 9 元/百万 Token。
 
-程序已闭环，但未同时满足 MinerU、Validator、Reviewer 和有效报告标准。
+`metrics.json` 中另有一项 0.23058652 元的旧实验脚本估算。它使用了 2026-08-31 写死在脚本中的旧费率，与当前 Runtime Debug 价格表不一致。为了避免误导，本报告以 Runtime Debug 的 0.8418468 元为当前估算；平台优惠、券、税费和账户侧实际结算仍不在此估算内。MinerU 为本地运行，不计 API Token 成本。
 
-## 17. 完整规模估算
+## 与上一轮实验的对比
 
-```json
-{}
-```
+| 指标 | 上一轮 | 本轮 |
+|---|---:|---:|
+| PDF parser | text layer | MinerU |
+| 查新点 | 2 | 3 |
+| 研究任务 | 4 | 6 |
+| 构建的 EvidenceCard | 3 | 1 |
+| Validator 接受 | 0 | 1 |
+| Reviewer 接受 | 0 | 1 |
+| 是否生成有效报告 | 否 | 是 |
+| 总耗时 | 约 35 分钟 | 约 4 分 30 秒 |
+| Token 是否完整记录 | 否 | 是，620,432 |
 
-## 18. 金额成本
+本轮在流程稳定性、运行速度、调试能力和最终证据闭环方面都有明显进展，但证据召回与读取的有效率仍不足。Card 数量从 3 降至 1 不应简单理解为效果退化：上一轮的 3 张 Card 最终全部被 Validator 拒绝，而本轮唯一的 Card 通过了 Validator、Reviewer 和完整性门。不过，两个查新点仍为零证据，说明系统离稳定产出完整查新结论还有距离。
 
-```json
-{
-  "currency": "CNY",
-  "rate_card_effective_at": "2026-08-31 Asia/Shanghai",
-  "pricing_source": "https://siliconflow.cn/pricing",
-  "future_pricing_notice": "https://api-docs.siliconflow.cn/docs/release-notes/overview",
-  "actual_cost_cny": 0.06219804,
-  "by_model": {
-    "deepseek-ai/DeepSeek-V4-Flash": {
-      "calls": 27,
-      "cache_miss_input_tokens": 48125,
-      "cache_hit_input_tokens": 260352,
-      "output_tokens": 4433,
-      "cost_cny": 0.06219804,
-      "rates": {
-        "cache_miss_input_cny_per_million": 1.0,
-        "cache_hit_input_cny_per_million": 0.02,
-        "output_cny_per_million": 2.0
-      }
-    }
-  },
-  "formula": "(cache_miss_input * miss_rate + cache_hit_input * hit_rate + output * output_rate) / 1,000,000",
-  "notes": [
-    "MinerU local inference cost is not token-billed and is excluded.",
-    "Network/browser/arXiv tools have no metered price in this experiment.",
-    "Platform discounts, coupons, taxes, and account-specific billing adjustments are excluded."
-  ]
-}
-```
+## 对实验结果的判断
+
+本次实验达到以下目标：
+
+- MinerU 真实成功并生成结构化论文输入；
+- 默认模型配置可以跑通完整工作流；
+- Runtime Debug 能够完整记录阶段、工具、模型、成本和错误；
+- 系统能够生成结构完整、引用闭环正确的最终报告；
+- 至少一个查新点形成了有效证据和可解释结论。
+
+本次实验尚未达到以下目标：
+
+- 三个查新点全部满足最低证据门槛；
+- 参考文献 bootstrap 形成可用的引用资产；
+- 大多数研究任务正常完成；
+- Browser 和 Reader 达到足以支撑稳定证据生产的成功率。
+
+因此，最准确的实验结论是：**全流程已经可运行，也能生成一份完整格式的报告；但证据生产链仍不够稳定，本次报告只有一个查新点获得实质性结论，不能视为完整的科技查新成果。**
+
+## 后续改进建议
+
+建议按以下顺序处理：
+
+1. 修复跨工具的 Artifact/SourceRecord 句柄恢复与 namespace 选择；
+2. 在 Baidu Adapter 层确定性裁剪过长查询，而不是依赖模型自行缩短；
+3. 调整 Harness 的 Reader 强制顺序提示和纠错逻辑，减少无效重试；
+4. 根据检索命中情况动态分配工具预算，避免 Reader 错误快速耗尽整个任务预算；
+5. 修复参考文献 bootstrap 的 85/85 `not_found` 问题；
+6. 完成上述修复后，将 `max_rounds` 恢复为 2，验证补检回边能否为 NP-1 和 NP-3 补足证据；
+7. 统一实验脚本与 Runtime Debug 的价格表，删除脚本内写死的旧费率。
+
+## 产物索引
+
+- 最终科技查新报告：`outputs/MG19333vrw-debug-full-20260907/report/MG19333vrw-debug-full-20260907-report.md`
+- 结构化报告：`outputs/MG19333vrw-debug-full-20260907/report.json`
+- 查新点：`outputs/MG19333vrw-debug-full-20260907/novelty-points.json`
+- 检索计划：`outputs/MG19333vrw-debug-full-20260907/retrieval-plans.json`
+- EvidenceCard：`outputs/MG19333vrw-debug-full-20260907/evidence-cards.json`
+- Runtime 调试摘要：`outputs/MG19333vrw-debug-full-20260907/runtime/run-1978a1e85dc54f958289e728cc59dad6/summary.md`
+- 完整实验指标：[`metrics.json`](metrics.json)
+- 模型调用明细：[`model_calls.jsonl`](model_calls.jsonl)
