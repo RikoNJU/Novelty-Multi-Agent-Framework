@@ -11,6 +11,7 @@ from novelty_agent_framework.persistence import ReferenceStore
 from novelty_agent_framework.schemas import (
     AccessStatus,
     Artifact,
+    ArtifactNamespace,
     ArtifactRole,
     ContentExtent,
     EvidenceCardDraft,
@@ -125,6 +126,7 @@ def prepare_store(tmp_path) -> ReferenceStore:
 
 def read(work="wrk_a", artifact="art_a", text=TEXT_A, **updates):
     values = {
+        "namespace": ArtifactNamespace.RESEARCH_REFERENCE,
         "read_id": f"read_{work}",
         "work_id": work,
         "artifact_id": artifact,
@@ -180,6 +182,7 @@ def test_single_quote_builds_trusted_card_and_evidence(tmp_path) -> None:
     assert evidence.locator == EvidenceLocator(char_start=0, char_end=19)
     assert evidence.provenance == {
         "builder": "evidence_card_builder",
+        "artifact_namespace": "research_reference",
         "read_id": "read_wrk_a",
         "read_char_start": 0,
         "read_char_end": len(TEXT_A),

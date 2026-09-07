@@ -245,9 +245,13 @@ class ReferenceStore:
             )
         char_end = min(len(text), char_start + max_chars)
         read_id = "read_" + hashlib.sha256(
-            f"{artifact_id}\x1f{char_start}\x1f{char_end}\x1f{artifact.sha256}".encode()
+            (
+                f"{artifact_namespace_for_reference_namespace(self.namespace).value}"
+                f"\x1f{artifact_id}\x1f{char_start}\x1f{char_end}\x1f{artifact.sha256}"
+            ).encode()
         ).hexdigest()[:24]
         return ReferenceReadResult(
+            namespace=artifact_namespace_for_reference_namespace(self.namespace),
             read_id=read_id,
             work_id=artifact.work_id,
             artifact_id=artifact.artifact_id,
@@ -308,6 +312,18 @@ class SubjectReferenceStore(ReferenceStore):
         path = self._workspace(paper_id) / "bootstrap.json"
         _atomic_write_json(path, manifest.model_dump(mode="json"))
         return path
+
+
+def artifact_namespace_for_reference_namespace(
+    namespace: ReferenceNamespace,
+) -> ArtifactNamespace:
+    """Map a physical ReferenceStore namespace to its public artifact address."""
+
+    mapping = {
+        ReferenceNamespace.RESEARCH: ArtifactNamespace.RESEARCH_REFERENCE,
+        ReferenceNamespace.SUBJECT_REFERENCE: ArtifactNamespace.SUBJECT_REFERENCE,
+    }
+    return mapping[ReferenceNamespace(namespace)]
 
 
 def reference_store_for_artifact_namespace(

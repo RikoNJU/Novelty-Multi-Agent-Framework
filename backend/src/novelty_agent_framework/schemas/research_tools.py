@@ -111,6 +111,7 @@ class ReferenceReadRequest(StrictModel):
 
 
 class ReferenceReadResult(StrictModel):
+    namespace: ArtifactNamespace
     read_id: NonEmptyStr
     work_id: NonEmptyStr
     artifact_id: NonEmptyStr

@@ -79,6 +79,7 @@ class ReaderTool:
             "read_result": {
                 key: read[key]
                 for key in (
+                    "namespace",
                     "read_id",
                     "work_id",
                     "artifact_id",

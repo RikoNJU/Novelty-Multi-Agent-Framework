@@ -17,6 +17,7 @@ from novelty_agent_framework.agents import (
 )
 from novelty_agent_framework.schemas import (
     ArtifactRole,
+    ArtifactNamespace,
     Evidence,
     EvidenceCard,
     NoveltyPoint,
@@ -52,6 +53,7 @@ class RecordingReader:
     async def ainvoke(self, request):
         self.requests.append(request)
         return ReferenceReadResult(
+            namespace=request.namespace,
             read_id="read-1",
             work_id="work-1",
             artifact_id=request.artifact_id,
