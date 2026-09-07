@@ -16,6 +16,7 @@ from .tool import DatabaseSearchTool
 def build_source_registry() -> RetrievalSourceRegistry:
     registry = RetrievalSourceRegistry()
     registry.register("arxiv", _build_arxiv_source_lazily)
+    registry.register("sciencedirect", _build_sciencedirect_source_lazily)
     registry.register("null_catalog", build_null_catalog_source)
     return registry
 
@@ -24,6 +25,14 @@ def _build_arxiv_source_lazily(config: Mapping[str, Any]) -> RetrievalSource:
     from .providers.arxiv import build_arxiv_source
 
     return build_arxiv_source(config)
+
+
+def _build_sciencedirect_source_lazily(
+    config: Mapping[str, Any],
+) -> RetrievalSource:
+    from .providers.sciencedirect import build_sciencedirect_source
+
+    return build_sciencedirect_source(config)
 
 
 def build_retrieval_source(

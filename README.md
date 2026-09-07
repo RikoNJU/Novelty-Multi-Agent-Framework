@@ -118,7 +118,11 @@ Observation 留在 trace 中，仅把各工具的 model-context projection 放�
 
 生产/实验数据源：
 
-- arXiv
+- arXiv（默认启用）
+- ScienceDirect（默认禁用；已完成离线 API 契约测试，启用时需要 Elsevier Key）
+
+新增数据库的 Provider 边界、配置和测试要求见
+[`docs/database-providers.md`](docs/database-providers.md)。
 
 测试数据源：
 
