@@ -114,6 +114,7 @@ def test_reviewer_composition_root_respects_enabled_switch():
     )
     reviewer = build_workflow(enabled).services.reviewer
     assert isinstance(reviewer, NoveltyEvidenceReviewer)
+    assert reviewer.tools.names == ("reader",)
 
 
 def test_build_workflow_does_not_mutate_input_config(monkeypatch):

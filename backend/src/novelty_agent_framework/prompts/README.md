@@ -4,7 +4,8 @@
 
 - `coordinator/`：任务分配（plan）、补充检索和最终汇总；
 - `extractor/`：查新点提取；
-- `reviewer/`：查新点审查（去重/合并/补全）；
+- `reviewer/review_points.md`：候选查新点去重；
+- `reviewer/review_evidence.md`：基于多 Work 证据的查新点级新颖性判定；
 - `research/`：单个文献调研任务。
 
 每个模板由 front matter（`name` / `version` / `system`）和正文模板组成，

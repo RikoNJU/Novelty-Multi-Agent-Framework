@@ -5,7 +5,7 @@ from __future__ import annotations
 from enum import StrEnum
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class StrictModel(BaseModel):
@@ -292,6 +292,61 @@ class EvidenceReviewDecision(StrictModel):
     reviewed_confidence: float = Field(ge=0.0, le=1.0)
 
 
+class ReviewStatus(StrEnum):
+    """查新点级 Reviewer 的完成状态。"""
+
+    REVIEWED = "reviewed"
+    INSUFFICIENT_EVIDENCE = "insufficient_evidence"
+
+
+class NoveltyVerdict(StrEnum):
+    """Reviewer 对单个查新点给出的新颖性评价。"""
+
+    NOVEL = "novel"
+    PARTIALLY_NOVEL = "partially_novel"
+    NOT_NOVEL = "not_novel"
+
+
+class RelevantWork(StrictModel):
+    """对查新点结论高度相关、且仅以可信句柄引用的 Work。"""
+
+    work_id: str = Field(min_length=1)
+    card_ids: list[str] = Field(min_length=1)
+    evidence_ids: list[str] = Field(min_length=1)
+    relevance_reason: str = Field(min_length=1)
+
+
+class SupplementRequest(StrictModel):
+    """Reviewer 的补检语义建议；V0 不拥有工作流路由权。"""
+
+    reason: str = Field(min_length=1)
+    missing_aspects: list[str] = Field(default_factory=list)
+    suggested_focus: list[str] = Field(default_factory=list)
+
+
+class NoveltyPointReview(StrictModel):
+    """一个 NoveltyPoint 的结构化信息判定结果。"""
+
+    novelty_point_id: str = Field(min_length=1)
+    status: ReviewStatus
+    verdict: NoveltyVerdict | None = None
+    verdict_reason: str | None = None
+    confidence: float | None = Field(default=None, ge=0.0, le=1.0)
+    highly_relevant_works: list[RelevantWork] = Field(default_factory=list)
+    supplement_request: SupplementRequest | None = None
+
+    @model_validator(mode="after")
+    def validate_review_semantics(self) -> "NoveltyPointReview":
+        if self.status is ReviewStatus.REVIEWED:
+            if self.verdict is None:
+                raise ValueError("reviewed result requires verdict")
+            if not self.verdict_reason:
+                raise ValueError("reviewed result requires verdict_reason")
+            if self.confidence is None:
+                raise ValueError("reviewed result requires confidence")
+        return self
+
+
 class InsufficientFinalEvidence(StrictModel):
     """A point whose final valid EvidenceCard count is below the system cut."""
 
@@ -307,6 +362,7 @@ class NoveltyRunResult(StrictModel):
     brief: NoveltyBrief
     evidence_cards: list[EvidenceCard]
     rejected_evidence: list[RejectedEvidence]
+    novelty_reviews: list[NoveltyPointReview] = Field(default_factory=list)
     insufficient_final_evidence_points: list[InsufficientFinalEvidence]
     issues: list[WorkflowIssue]
     rounds: int

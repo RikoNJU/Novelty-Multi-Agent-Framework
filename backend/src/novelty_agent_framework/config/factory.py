@@ -33,6 +33,7 @@ from ..tools import (
     ReferenceArtifactReaderTool,
     ReferenceSearchTool,
     ReaderTool,
+    ReviewerReaderTool,
     ResearcherToolRegistry,
     WebSearchTool,
 )
@@ -286,6 +287,13 @@ def build_workflow(
         if isinstance(reviewer_model_invocation, Mapping)
         else None
     )
+    workflow_cfg = raw.get("workflow", {})
+    researcher_runtime = raw.get("researcher_runtime", {})
+    runtime_tools = researcher_runtime.get("tools", {})
+    web_cfg = runtime_tools.get("web_search", {})
+    browser_cfg = runtime_tools.get("browser", {})
+    reader_cfg = runtime_tools.get("reader", {})
+    store = ReferenceStore()
     reviewer = (
         NoveltyEvidenceReviewer(
             prompts=prompts,
@@ -298,18 +306,25 @@ def build_workflow(
                 fail_closed=bool(reviewer_cfg.get("fail_closed", True)),
             ),
             model_options=reviewer_model_options,
+            tool_registry=ResearcherToolRegistry(
+                [
+                    ReviewerReaderTool(
+                        ReferenceArtifactReaderTool(
+                            store,
+                            max_chars_per_read=int(
+                                reader_cfg.get("max_chars_per_read", 16_000)
+                            ),
+                        ),
+                        default_chars_per_read=int(
+                            reader_cfg.get("default_chars_per_read", 8_000)
+                        ),
+                    )
+                ]
+            ),
         )
         if reviewer_cfg.get("enabled", False)
         else None
     )
-
-    workflow_cfg = raw.get("workflow", {})
-    researcher_runtime = raw.get("researcher_runtime", {})
-    runtime_tools = researcher_runtime.get("tools", {})
-    web_cfg = runtime_tools.get("web_search", {})
-    browser_cfg = runtime_tools.get("browser", {})
-    reader_cfg = runtime_tools.get("reader", {})
-    store = ReferenceStore()
     tool_registry = ResearcherToolRegistry(
         [
             ReferenceSearchTool(SubjectReferenceStore()),
@@ -467,23 +482,6 @@ def _build_workflow_from_application_config(
         ),
         prompt_name=config.search_planner.prompt,
     )
-    reviewer = (
-        NoveltyEvidenceReviewer(
-            prompts=prompts,
-            models=registry,
-            config=EvidenceReviewerConfig(
-                enabled=True,
-                model_alias=config.reviewer.model.alias,
-                temperature=config.reviewer.model.temperature,
-                max_cards_per_call=config.reviewer.max_cards_per_call,
-                fail_closed=config.reviewer.fail_closed,
-            ),
-            model_options=_typed_model_options(config.reviewer.model),
-        )
-        if config.reviewer is not None and config.reviewer.enabled
-        else None
-    )
-
     database = config.researcher.tools.database_search
     retrieval = {
         "active_source": database.active_source,
@@ -497,6 +495,32 @@ def _build_workflow_from_application_config(
     browser = config.researcher.tools.browser
     reader = config.researcher.tools.reader
     store = ReferenceStore()
+    reviewer = (
+        NoveltyEvidenceReviewer(
+            prompts=prompts,
+            models=registry,
+            config=EvidenceReviewerConfig(
+                enabled=True,
+                model_alias=config.reviewer.model.alias,
+                temperature=config.reviewer.model.temperature,
+                max_cards_per_call=config.reviewer.max_cards_per_call,
+                fail_closed=config.reviewer.fail_closed,
+            ),
+            model_options=_typed_model_options(config.reviewer.model),
+            tool_registry=ResearcherToolRegistry(
+                [
+                    ReviewerReaderTool(
+                        ReferenceArtifactReaderTool(
+                            store, max_chars_per_read=reader.max_chars_per_read
+                        ),
+                        default_chars_per_read=reader.default_chars_per_read,
+                    )
+                ]
+            ),
+        )
+        if config.reviewer is not None and config.reviewer.enabled
+        else None
+    )
     tool_registry = ResearcherToolRegistry(
         [
             ReferenceSearchTool(SubjectReferenceStore()),

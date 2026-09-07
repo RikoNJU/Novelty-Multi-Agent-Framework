@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass, field, replace
-from typing import Literal
+from typing import Any, Literal
 
 from backend.env import (
     ChatMessage,
@@ -28,8 +28,8 @@ from backend.env import (
     ToolDefinition,
 )
 
-from ..schemas import ResearcherToolObservation, TaskResearchRequest
-from ..tools import ResearcherToolRegistry
+from ..schemas import ResearcherToolObservation
+from ..tools.researcher_registry import ResearcherToolRegistry
 from .runtime_artifacts import current_runtime_artifacts
 
 HarnessEventKind = Literal[
@@ -108,7 +108,7 @@ class ToolCallHarness:
         *,
         system_prompt: str,
         initial_user_message: str,
-        scope: TaskResearchRequest,
+        scope: Any,
         options: ModelCallOptions | None = None,
     ) -> ToolCallHarnessResult:
         log: list[ToolCallHarnessEvent] = [

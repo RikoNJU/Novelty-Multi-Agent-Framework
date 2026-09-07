@@ -24,6 +24,7 @@ from .schemas import (
     EvidenceCard,
     EvidenceReviewDecision,
     NoveltyPoint,
+    NoveltyPointReview,
     NoveltyReport,
     PaperDocument,
     PaperInput,
@@ -523,6 +524,26 @@ def persist_evidence_cards(
             decision.model_dump(mode="json") for decision in review_decisions
         ]
     _write_json(path, payload)
+    return path
+
+
+def persist_novelty_reviews(
+    paper: PaperInput,
+    reviews: Sequence[NoveltyPointReview],
+    *,
+    output_root: str | Path = DEFAULT_OUTPUTS_DIR,
+) -> Path:
+    """写出 Reviewer 的正式查新点级业务产物。"""
+
+    workspace = paper_workspace(paper, output_root=output_root)
+    path = workspace / "novelty-reviews.json"
+    _write_json(
+        path,
+        {
+            "paper_id": paper.paper_id,
+            "reviews": [item.model_dump(mode="json") for item in reviews],
+        },
+    )
     return path
 
 

@@ -13,6 +13,7 @@ from ..schemas import (
     InsufficientFinalEvidence,
     NoveltyBrief,
     NoveltyPoint,
+    NoveltyPointReview,
     NoveltyReport,
     PaperInput,
     RejectedEvidence,
@@ -53,6 +54,7 @@ class NoveltyState(TypedDict, total=False):
     evidence_cards: list[EvidenceCard]
     rejected_evidence: list[RejectedEvidence]
     review_decisions: list[EvidenceReviewDecision]
+    novelty_reviews: list[NoveltyPointReview]
     insufficient_final_evidence_points: list[InsufficientFinalEvidence]
     issues: Annotated[list[WorkflowIssue], add]
     rounds: int
