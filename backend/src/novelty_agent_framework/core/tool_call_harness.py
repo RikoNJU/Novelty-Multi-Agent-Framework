@@ -2,7 +2,7 @@
 
 This module will bridge:
 - ModelClient native tool-calling protocol
-- ResearcherToolRegistry tool definitions and execution
+- task-scoped tool registry definitions and execution
 - assistant/tool message trajectory
 
 The first implementation is serial:
@@ -29,7 +29,6 @@ from backend.env import (
 )
 
 from ..schemas import ResearcherToolObservation
-from ..tools.researcher_registry import ResearcherToolRegistry
 from .runtime_artifacts import current_runtime_artifacts
 
 HarnessEventKind = Literal[
@@ -95,7 +94,7 @@ class ToolCallHarness:
     def __init__(
         self,
         model_client: ModelClient,
-        registry: ResearcherToolRegistry,
+        registry: Any,
         *,
         config: ToolCallHarnessConfig | None = None,
     ) -> None:
@@ -377,7 +376,7 @@ class ToolCallHarness:
 
 
 def _build_tool_definitions(
-    registry: ResearcherToolRegistry,
+    registry: Any,
 ) -> tuple[ToolDefinition, ...]:
     return tuple(
         ToolDefinition(

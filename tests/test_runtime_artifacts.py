@@ -304,3 +304,75 @@ def test_final_evidence_sufficiency_facts_are_in_stage_and_summary(
     markdown = (manager.run_dir / "summary.md").read_text()
     assert "## Final Evidence Sufficiency Checks" in markdown
     assert "| NP-2 | 1 | 2 | INSUFFICIENT |" in markdown
+
+
+def test_reviewer_scope_and_output_facts_are_in_stage_and_summary(
+    tmp_path: Path,
+) -> None:
+    manager = RuntimeArtifactManager(
+        "paper",
+        config=_config(tmp_path),
+        stage_names=["review_evidence", "validate_synthesis_input"],
+    )
+    manager.activate()
+    stage = manager.start_stage(
+        "review_evidence",
+        {
+            "novelty_points": [{"point_id": "NP-1"}, {"point_id": "NP-2"}],
+            "validator_accepted_cards": [
+                {
+                    "card_id": "C-1",
+                    "novelty_point_id": "NP-1",
+                    "evidence_ids": ["E-1", "E-missing"],
+                }
+            ],
+            "raw_evidence": [
+                {
+                    "evidence_id": "E-1",
+                    "novelty_point_id": "NP-1",
+                    "artifact_id": "A-1",
+                }
+            ],
+        },
+    )
+    manager.finish_stage(
+        stage,
+        {
+            "evidence_cards": [
+                {
+                    "card_id": "C-1",
+                    "novelty_point_id": "NP-1",
+                    "evidence_ids": ["E-1", "E-missing"],
+                }
+            ],
+            "novelty_reviews": [
+                {
+                    "novelty_point_id": "NP-1",
+                    "status": "insufficient_evidence",
+                    "verdict": None,
+                    "confidence": None,
+                    "highly_relevant_works": [],
+                    "supplement_request": {"reason": "missing detail"},
+                }
+            ],
+        },
+    )
+    next_stage = manager.start_stage("validate_synthesis_input", {})
+    manager.finish_stage(next_stage, {})
+    manager.deactivate()
+    manager.finish_run("SUCCESS")
+
+    meta = json.loads((stage.directory / "meta.json").read_text())
+    details = meta["debug_details"]["reviewer_information_adjudication"]
+    assert details["cards_preserved"] is True
+    assert details["missing_review_point_ids"] == ["NP-2"]
+    assert details["unresolved_evidence_ids"] == ["E-missing"]
+    assert details["point_scopes"][0]["allowed_artifact_ids"] == ["A-1"]
+    assert details["supplement_requests_control_route"] is False
+
+    summary = json.loads((manager.run_dir / "summary.json").read_text())
+    check = summary["reviewer_information_adjudication_checks"][0]
+    assert check["actual_next_stage"] == "validate_synthesis_input"
+    markdown = (manager.run_dir / "summary.md").read_text()
+    assert "## Reviewer Information Adjudication" in markdown
+    assert "| NP-1 | insufficient_evidence | - | 0 | True |" in markdown

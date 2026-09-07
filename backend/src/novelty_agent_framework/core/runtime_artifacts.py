@@ -490,25 +490,34 @@ class RuntimeArtifactManager:
             if item.get("validation_result") is not None
         ]
         final_evidence_sufficiency_checks = []
+        reviewer_information_adjudication_checks = []
         for index, item in enumerate(self._stage_records):
             details = item.get("debug_details")
-            if not isinstance(details, Mapping) or not details.get(
-                "final_evidence_sufficiency"
-            ):
+            if not isinstance(details, Mapping):
                 continue
             next_stage = (
                 self._stage_records[index + 1]["stage_name"]
                 if index + 1 < len(self._stage_records)
                 else None
             )
-            final_evidence_sufficiency_checks.append(
-                {
-                    "stage_id": item["stage_id"],
-                    "stage_status": item["status"],
-                    **details["final_evidence_sufficiency"],
-                    "actual_next_stage": next_stage,
-                }
-            )
+            if details.get("final_evidence_sufficiency"):
+                final_evidence_sufficiency_checks.append(
+                    {
+                        "stage_id": item["stage_id"],
+                        "stage_status": item["status"],
+                        **details["final_evidence_sufficiency"],
+                        "actual_next_stage": next_stage,
+                    }
+                )
+            if details.get("reviewer_information_adjudication"):
+                reviewer_information_adjudication_checks.append(
+                    {
+                        "stage_id": item["stage_id"],
+                        "stage_status": item["status"],
+                        **details["reviewer_information_adjudication"],
+                        "actual_next_stage": next_stage,
+                    }
+                )
         return {
             "run": {
                 "paper_id": self.paper_id,
@@ -531,6 +540,9 @@ class RuntimeArtifactManager:
             "integrity_gates": integrity_gates,
             "final_evidence_sufficiency_checks": (
                 final_evidence_sufficiency_checks
+            ),
+            "reviewer_information_adjudication_checks": (
+                reviewer_information_adjudication_checks
             ),
             "last_completed_stage": completed[-1]["stage_name"] if completed else None,
         }
@@ -742,6 +754,8 @@ def _stage_debug_details(
     stage_output: Any,
     runtime_config: Mapping[str, Any],
 ) -> dict[str, Any] | None:
+    if stage_name == "review_evidence":
+        return _reviewer_debug_details(stage_input, stage_output)
     if stage_name != "check_final_evidence_sufficiency":
         return None
     state = _as_mapping(stage_input)
@@ -832,6 +846,143 @@ def _stage_debug_details(
                 else None
             ),
             "round_limit_allows_supplement": round_limit_allows_supplement,
+        }
+    }
+
+
+def _reviewer_debug_details(
+    stage_input: Any, stage_output: Any
+) -> dict[str, Any] | None:
+    """Build an IDs-only Reviewer audit without copying source text."""
+
+    state = _as_mapping(stage_input)
+    if state is None:
+        return None
+    output = _as_mapping(stage_output) or {}
+    points = _as_sequence(state.get("novelty_points", []))
+    point_ids = [
+        point_id
+        for point in points
+        if (point_id := _field_value(point, "point_id")) is not None
+    ]
+    cards = _as_sequence(
+        state.get("validator_accepted_cards") or state.get("evidence_cards", [])
+    )
+    evidence = _as_sequence(state.get("raw_evidence", []))
+    evidence_by_id = {
+        evidence_id: item
+        for item in evidence
+        if (evidence_id := _field_value(item, "evidence_id")) is not None
+    }
+
+    point_scopes = []
+    all_unresolved: set[str] = set()
+    for point_id in point_ids:
+        point_cards = [
+            item for item in cards
+            if _field_value(item, "novelty_point_id") == point_id
+        ]
+        card_ids = [
+            value for item in point_cards
+            if (value := _field_value(item, "card_id")) is not None
+        ]
+        referenced_ids = sorted(
+            {
+                str(evidence_id)
+                for card in point_cards
+                for evidence_id in (
+                    (_as_mapping(card) or {}).get("evidence_ids", []) or []
+                )
+                if isinstance(evidence_id, str) and evidence_id
+            }
+        )
+        unresolved = sorted(
+            evidence_id
+            for evidence_id in referenced_ids
+            if evidence_id not in evidence_by_id
+            or _field_value(evidence_by_id[evidence_id], "novelty_point_id")
+            != point_id
+        )
+        all_unresolved.update(unresolved)
+        allowed_artifact_ids = sorted(
+            {
+                artifact_id
+                for evidence_id in referenced_ids
+                if evidence_id in evidence_by_id
+                and _field_value(evidence_by_id[evidence_id], "novelty_point_id")
+                == point_id
+                if (
+                    artifact_id := _field_value(
+                        evidence_by_id[evidence_id], "artifact_id"
+                    )
+                )
+                is not None
+            }
+        )
+        point_scopes.append(
+            {
+                "novelty_point_id": point_id,
+                "card_ids": card_ids,
+                "referenced_evidence_ids": referenced_ids,
+                "unresolved_evidence_ids": unresolved,
+                "allowed_artifact_ids": allowed_artifact_ids,
+            }
+        )
+
+    reviews = _as_sequence(output.get("novelty_reviews", []))
+    review_ids = [
+        value for item in reviews
+        if (value := _field_value(item, "novelty_point_id")) is not None
+    ]
+    duplicate_review_ids = sorted(
+        {value for value in review_ids if review_ids.count(value) > 1}
+    )
+    review_results = []
+    for item in reviews:
+        mapping = _as_mapping(item) or {}
+        supplement = _as_mapping(mapping.get("supplement_request"))
+        review_results.append(
+            {
+                "novelty_point_id": mapping.get("novelty_point_id"),
+                "status": mapping.get("status"),
+                "verdict": mapping.get("verdict"),
+                "confidence": mapping.get("confidence"),
+                "highly_relevant_work_count": len(
+                    _as_sequence(mapping.get("highly_relevant_works", []))
+                ),
+                "has_supplement_request": supplement is not None,
+                "supplement_reason": (
+                    supplement.get("reason") if supplement is not None else None
+                ),
+            }
+        )
+
+    input_card_ids = [
+        value for item in cards
+        if (value := _field_value(item, "card_id")) is not None
+    ]
+    output_cards = _as_sequence(output.get("evidence_cards", []))
+    output_card_ids = [
+        value for item in output_cards
+        if (value := _field_value(item, "card_id")) is not None
+    ]
+    return {
+        "reviewer_information_adjudication": {
+            "expected_point_ids": point_ids,
+            "reviewed_point_ids": review_ids,
+            "missing_review_point_ids": sorted(set(point_ids) - set(review_ids)),
+            "unexpected_review_point_ids": sorted(set(review_ids) - set(point_ids)),
+            "duplicate_review_point_ids": duplicate_review_ids,
+            "input_card_ids": input_card_ids,
+            "output_card_ids": output_card_ids,
+            "cards_preserved": (
+                len(input_card_ids) == len(output_card_ids)
+                and set(input_card_ids) == set(output_card_ids)
+            ),
+            "unresolved_evidence_ids": sorted(all_unresolved),
+            "point_scopes": point_scopes,
+            "review_results": review_results,
+            "supplement_requests_control_route": False,
         }
     }
 
@@ -984,6 +1135,38 @@ def _render_summary(summary: Mapping[str, Any]) -> str:
                 f"| {item['novelty_point_id']} | {item['valid_card_count']} | "
                 f"{item['required_card_count']} | {item['status']} |"
                 for item in check.get("point_results", [])
+            )
+            lines.append("")
+    else:
+        lines.append("- None")
+    lines.extend(["", "## Reviewer Information Adjudication", ""])
+    reviewer_checks = summary.get("reviewer_information_adjudication_checks", [])
+    if reviewer_checks:
+        for check in reviewer_checks:
+            lines.extend(
+                [
+                    f"### Stage {check.get('stage_id')}",
+                    "",
+                    f"Stage status: {check.get('stage_status')}",
+                    f"Cards preserved: {check.get('cards_preserved')}",
+                    "Supplement requests control route: "
+                    f"{check.get('supplement_requests_control_route')}",
+                    f"Missing reviews: {check.get('missing_review_point_ids')}",
+                    f"Unexpected reviews: {check.get('unexpected_review_point_ids')}",
+                    f"Duplicate reviews: {check.get('duplicate_review_point_ids')}",
+                    f"Unresolved Evidence IDs: {check.get('unresolved_evidence_ids')}",
+                    f"Actual next stage: {check.get('actual_next_stage')}",
+                    "",
+                    "| Novelty Point | Status | Verdict | Relevant Works | Supplement |",
+                    "|---|---|---|---:|---|",
+                ]
+            )
+            lines.extend(
+                f"| {item.get('novelty_point_id')} | {item.get('status')} | "
+                f"{item.get('verdict') or '-'} | "
+                f"{item.get('highly_relevant_work_count')} | "
+                f"{item.get('has_supplement_request')} |"
+                for item in check.get("review_results", [])
             )
             lines.append("")
     else:
