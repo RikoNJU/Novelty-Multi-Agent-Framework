@@ -26,6 +26,19 @@ class MissingProviderCredentialError(ProviderConfigurationError):
     """A required provider credential is absent from the environment."""
 
 
+class ProviderRequestError(RuntimeError):
+    """An HTTP provider failed without exposing credential-bearing request URLs."""
+
+
+def raise_for_provider_status(response: httpx.Response, *, provider: str) -> None:
+    """Raise a sanitized error because some providers put API keys in the URL."""
+
+    if response.is_error:
+        raise ProviderRequestError(
+            f"{provider} API returned HTTP {response.status_code}"
+        )
+
+
 def resolve_env_credential(
     config: Mapping[str, Any],
     *,

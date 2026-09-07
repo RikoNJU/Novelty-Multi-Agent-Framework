@@ -120,6 +120,8 @@ Observation 留在 trace 中，仅把各工具的 model-context projection 放�
 
 - arXiv（默认启用）
 - ScienceDirect（默认禁用；已完成离线 API 契约测试，启用时需要 Elsevier Key）
+- Springer Nature（默认禁用；Meta API 检索，开放全文 JATS，TDM 全文需另行授权）
+- IEEE Xplore（默认禁用；Metadata API 检索，默认仅尝试 Open Access 全文）
 
 新增数据库的 Provider 边界、配置和测试要求见
 [`docs/database-providers.md`](docs/database-providers.md)。
