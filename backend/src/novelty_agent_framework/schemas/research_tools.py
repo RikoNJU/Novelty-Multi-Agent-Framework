@@ -94,7 +94,14 @@ class BrowserResult(StrictModel):
 
 
 class ReaderArguments(StrictModel):
-    namespace: ArtifactNamespace = ArtifactNamespace.RESEARCH_REFERENCE
+    """Agent 可见的读取参数。
+
+    这里**没有** namespace：artifact_id 由工具生成、模型只是转述，它没有可靠
+    依据判断制品属于研究语料还是论文自带参考语料。实测把 namespace 交给模型
+    （默认值 research_reference）会让 reference_search 召回的自带参考语料全部
+    读失败，因此命名空间由 ReaderTool 按制品归属自动判定。
+    """
+
     artifact_id: NonEmptyStr
     char_start: int = Field(default=0, ge=0)
     max_chars: int = Field(default=8_000, ge=1, le=16_000)

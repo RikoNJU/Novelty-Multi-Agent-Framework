@@ -128,8 +128,9 @@ def test_builder_request_result_support_multiple_cards_and_forbid_extra() -> Non
 def test_existing_three_tool_schemas_are_unchanged() -> None:
     assert WebSearchArguments.model_fields.keys() == {"query", "max_results"}
     assert BrowserArguments.model_fields.keys() == {"source_record_id"}
+    # ReaderArguments 不再暴露 namespace：命名空间由工具按制品归属判定
     assert ReaderArguments.model_fields.keys() == {
-        "namespace", "artifact_id", "char_start", "max_chars"
+        "artifact_id", "char_start", "max_chars"
     }
 
 

@@ -4,9 +4,11 @@
 针对 ``unknown artifact_id`` 这一类失败，脚本按下列判据归因：
 
 ``WRONG_NAMESPACE``
-    id 存在于**另一个**命名空间的 manifest 里 —— 也就是调用方选错了
-    命名空间（研究语料 ``research_reference`` 与论文自带参考语料
-    ``subject_reference`` 互不通用，且底层 reader 有意不做回退）。
+    记录来自**旧契约**（``ReaderArguments`` 曾暴露 ``namespace``），id 存在于
+    另一个命名空间的 manifest 里 —— 也就是调用方选错了命名空间。新契约下
+    ``ReaderArguments`` 不再暴露 ``namespace``，工具会按制品归属自动判定，
+    因此新记录的未知 id 只会被归为下面两类（若仍出现 ``WRONG_NAMESPACE``
+    说明自动判定契约被破坏了）。
 ``LOST_MANIFEST_ENTRY``
     id 不在任何 manifest 里，但磁盘上确实存在对应正文文件 —— 典型的
     manifest 并发「读-改-写」丢更新：文件与 id 都产生了，登记被覆盖。
@@ -97,7 +99,17 @@ def _classify(
     if "unknown artifact_id" not in message:
         return "OTHER" if call.get("execution_status") == "FAILED" else "SUCCEEDED"
     artifact_id = call.get("artifact_id")
-    namespace = call.get("namespace") or RESEARCH
+    namespace = call.get("namespace")
+    if namespace is None:
+        # 新契约：ReaderArguments 不再暴露 namespace，工具会同时搜索两个语料，
+        # 因此「选错命名空间」已不可能发生；未知 id 只可能是没登记或从未落盘。
+        if any(artifact_id in ids for ids in manifests.values()):
+            # 制品在某个 Manifest 里却仍报未知 id —— 契约被破坏，值得单独标记
+            return "WRONG_NAMESPACE"
+        if any(artifact_id in ids for ids in documents.values()):
+            return "LOST_MANIFEST_ENTRY"
+        return "NEVER_PERSISTED"
+    # 旧契约（记录里带 namespace）：按请求的命名空间与实际归属对比
     other = SUBJECT if namespace == RESEARCH else RESEARCH
     if artifact_id in manifests.get(other, set()):
         return "WRONG_NAMESPACE"

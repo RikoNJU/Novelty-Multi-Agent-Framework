@@ -62,10 +62,17 @@ def _reader_call(
     workspace: Path,
     index: int,
     *,
-    namespace: str,
+    namespace: str | None,
     artifact_id: str,
     message: str | None,
 ) -> None:
+    resolved = {
+        "artifact_id": artifact_id,
+        "char_start": 0,
+        "max_chars": 8000,
+    }
+    if namespace is not None:
+        resolved["namespace"] = namespace
     _write(
         workspace / f"runtime/run-1/tools/{index:04d}_reader.json",
         {
@@ -74,12 +81,7 @@ def _reader_call(
             "stage_name": "run_research_task",
             "execution_status": "FAILED" if message else "SUCCESS",
             "agent_arguments": {"artifact_id": artifact_id},
-            "resolved_arguments": {
-                "namespace": namespace,
-                "artifact_id": artifact_id,
-                "char_start": 0,
-                "max_chars": 8000,
-            },
+            "resolved_arguments": resolved,
             "error": ({"type": "ValueError", "message": message} if message else None),
         },
     )
@@ -153,3 +155,37 @@ def test_diagnostics_reports_missing_runtime_records(tmp_path) -> None:
     assert report["counts"]["reader_calls"] == 0
     assert report["classification_counts"] == {}
     assert any("runtime_debug" in item for item in report["warnings"])
+
+
+def test_diagnostics_handles_new_contract_records_without_namespace(tmp_path) -> None:
+    """新契约的记录里没有 namespace：工具已同时搜索两个语料，
+    未知 id 只可能是「文件在但没登记」或「从未落盘」。"""
+
+    output_root = tmp_path / "outputs"
+    paper_workspace(PAPER_ID, output_root=output_root)
+    research = ReferenceStore(output_root)
+    research.write_document(
+        PAPER_ID,
+        work_id="work-orphan-new",
+        artifact_id="art_orphan_new",
+        extension="txt",
+        content="ORPHAN",
+    )
+
+    workspace = output_root / PAPER_ID
+    unknown = "unknown artifact_id {} in the research or subject reference manifest"
+    _reader_call(
+        workspace, 1, namespace=None, artifact_id="art_orphan_new",
+        message=unknown.format(repr("art_orphan_new")),
+    )
+    _reader_call(
+        workspace, 2, namespace=None, artifact_id="art_nowhere",
+        message=unknown.format(repr("art_nowhere")),
+    )
+
+    report = inspect_workspace(workspace)
+
+    assert report["classification_counts"] == {
+        "LOST_MANIFEST_ENTRY": 1,
+        "NEVER_PERSISTED": 1,
+    }

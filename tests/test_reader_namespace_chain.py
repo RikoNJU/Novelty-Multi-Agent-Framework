@@ -21,6 +21,7 @@ from novelty_agent_framework.schemas import (
     NoveltyPoint,
     ReaderArguments,
     ReferenceManifest,
+    ReferenceReadRequest,
     ReferenceSearchArguments,
     ResearchFinishDraft,
     ResearchTask,
@@ -129,19 +130,32 @@ def _draft(quote: str) -> ResearchFinishDraft:
     )
 
 
-def _read(
-    root,
-    namespace: ArtifactNamespace,
-    artifact_id: str,
-):
+def _read(root, artifact_id: str):
+    """走 agent 层读取：命名空间由工具按制品归属自动判定。"""
+
     reader = ReaderTool(ReferenceArtifactReaderTool(ReferenceStore(root)))
     observation = asyncio.run(
         reader.ainvoke(
-            ReaderArguments(namespace=namespace, artifact_id=artifact_id),
+            ReaderArguments(artifact_id=artifact_id),
             scope=_scope(),
         )
     )
     return observation, observation.payload["read_result"]
+
+
+def _read_explicit(root, namespace: ArtifactNamespace, artifact_id: str):
+    """绕过 agent 层直接指定命名空间——底层 reader 仍然要求显式指定。"""
+
+    reader = ReferenceArtifactReaderTool(ReferenceStore(root))
+    return asyncio.run(
+        reader.ainvoke(
+            ReferenceReadRequest(
+                subject_paper_id=PAPER_ID,
+                namespace=namespace,
+                artifact_id=artifact_id,
+            )
+        )
+    )
 
 
 def test_a_research_reference_reader_and_builder_baseline(tmp_path) -> None:
@@ -154,9 +168,7 @@ def test_a_research_reference_reader_and_builder_baseline(tmp_path) -> None:
         text="RESEARCH A QUOTE",
     )
 
-    _observation, payload = _read(
-        tmp_path, ArtifactNamespace.RESEARCH_REFERENCE, "artifact_a"
-    )
+    _observation, payload = _read(tmp_path, "artifact_a")
     assert payload["namespace"] == "research_reference"
     assert payload["artifact_id"] == "artifact_a"
     assert payload["work_id"] == "work_a"
@@ -185,7 +197,7 @@ def test_b_subject_search_reader_builder_chain(tmp_path) -> None:
     handle = found.results[0].artifact_handles[0]
     assert handle.namespace == ArtifactNamespace.SUBJECT_REFERENCE
 
-    _observation, payload = _read(tmp_path, handle.namespace, handle.artifact_id)
+    _observation, payload = _read(tmp_path, handle.artifact_id)
     result = EvidenceCardBuilder(ReferenceStore(tmp_path)).build(
         _draft("SUBJECT B QUOTE"),
         scope=_scope(),
@@ -195,7 +207,15 @@ def test_b_subject_search_reader_builder_chain(tmp_path) -> None:
     assert result.evidence[0].provenance["artifact_namespace"] == "subject_reference"
 
 
-def test_c_same_artifact_id_is_read_from_requested_namespace(tmp_path) -> None:
+def test_c_bare_id_collision_resolves_to_research_and_stays_addressable(
+    tmp_path,
+) -> None:
+    """同一个裸 id 同时存在于两个语料时，agent 层确定性取研究语料。
+
+    真实数据里不会出现这种碰撞——两侧 artifact_id 的派生输入结构不同；这里只把
+    平局规则固定下来，并确认自带参考语料仍可由底层 reader 显式寻址。
+    """
+
     _put(
         ReferenceStore(tmp_path),
         work_id="research_work",
@@ -211,18 +231,26 @@ def test_c_same_artifact_id_is_read_from_requested_namespace(tmp_path) -> None:
         text="SUBJECT CONTENT",
     )
 
-    _subject_observation, subject = _read(
+    _observation, research = _read(tmp_path, "artifact_same")
+    assert research["namespace"] == "research_reference"
+    assert research["text"] == "RESEARCH CONTENT"
+
+    subject = _read_explicit(
         tmp_path, ArtifactNamespace.SUBJECT_REFERENCE, "artifact_same"
     )
-    _research_observation, research = _read(
-        tmp_path, ArtifactNamespace.RESEARCH_REFERENCE, "artifact_same"
-    )
-    assert subject["text"] == "SUBJECT CONTENT"
-    assert research["text"] == "RESEARCH CONTENT"
-    assert subject["read_id"] != research["read_id"]
+    assert subject.text == "SUBJECT CONTENT"
+    assert subject.read_id != research["read_id"]
 
 
-def test_d_wrong_namespace_fails_without_fallback(tmp_path) -> None:
+def test_d_subject_only_artifact_is_readable_from_the_agent_layer(tmp_path) -> None:
+    """回归守卫：只存在于自带参考语料的制品，agent 层必须能读到。
+
+    生产实测（MG19333vrw，真实模型）：模型调用 reference_search 拿到自带参考
+    语料的 artifact_id，reader 的 namespace 落成默认值 research_reference，于是
+    每次读取都以 ``unknown artifact_id`` 失败（同一 id 重试 4 次），既不能换一篇
+    读也不能重新检索，最终预算耗尽、产出 0 张卡。根因是让模型猜制品属于哪个语料。
+    """
+
     _put(
         SubjectReferenceStore(tmp_path),
         work_id="subject_only",
@@ -231,8 +259,13 @@ def test_d_wrong_namespace_fails_without_fallback(tmp_path) -> None:
         text="ONLY SUBJECT",
     )
 
+    _observation, payload = _read(tmp_path, "artifact_x")
+    assert payload["namespace"] == "subject_reference"
+    assert payload["text"] == "ONLY SUBJECT"
+
+    # 只有两个语料都不存在的 id 才允许失败
     with pytest.raises(ValueError, match="unknown artifact_id"):
-        _read(tmp_path, ArtifactNamespace.RESEARCH_REFERENCE, "artifact_x")
+        _read(tmp_path, "artifact_missing")
 
 
 def test_e_harness_trace_preserves_both_read_namespaces(tmp_path) -> None:
@@ -250,12 +283,8 @@ def test_e_harness_trace_preserves_both_read_namespaces(tmp_path) -> None:
         title="Subject trace",
         text="SUBJECT TRACE",
     )
-    research_observation, _payload = _read(
-        tmp_path, ArtifactNamespace.RESEARCH_REFERENCE, "research_artifact"
-    )
-    subject_observation, _payload = _read(
-        tmp_path, ArtifactNamespace.SUBJECT_REFERENCE, "subject_artifact"
-    )
+    research_observation, _payload = _read(tmp_path, "research_artifact")
+    subject_observation, _payload = _read(tmp_path, "subject_artifact")
     trace = [
         SimpleNamespace(kind="tool_result", observation=research_observation),
         SimpleNamespace(kind="tool_result", observation=subject_observation),

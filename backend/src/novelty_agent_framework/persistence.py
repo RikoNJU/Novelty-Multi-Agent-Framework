@@ -362,6 +362,18 @@ class ReferenceStore:
             sha256=artifact.sha256,
         )
 
+    def find_artifact(self, paper_id: str, artifact_id: str) -> Artifact | None:
+        """只查 Manifest 的制品索引，不触碰磁盘；不存在时返回 None。"""
+
+        return next(
+            (
+                item
+                for item in self.load_manifest(paper_id).artifacts
+                if item.artifact_id == artifact_id
+            ),
+            None,
+        )
+
     def verify_artifact_file(
         self,
         paper_id: str,
@@ -369,11 +381,7 @@ class ReferenceStore:
     ) -> tuple[Artifact, Path, bytes]:
         """Resolve one manifest Artifact and verify path, existence and SHA-256."""
 
-        manifest = self.load_manifest(paper_id)
-        artifact = next(
-            (item for item in manifest.artifacts if item.artifact_id == artifact_id),
-            None,
-        )
+        artifact = self.find_artifact(paper_id, artifact_id)
         if artifact is None:
             # 带上查的是哪个命名空间：模型常把研究语料与论文自带参考语料的
             # artifact_id 混用，明确的提示能让它下一轮自己改对 namespace。
