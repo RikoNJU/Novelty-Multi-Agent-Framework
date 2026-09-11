@@ -573,6 +573,39 @@ def test_database_search_without_artifact_ids_imposes_no_reader_requirement() ->
     assert len(example.received) == 1
 
 
+def test_reader_requirement_rejections_do_not_consume_tool_budget() -> None:
+    """回归守卫：被策略拒绝的调用没有执行任何工具，不该占用调用预算。
+
+    实测一个 16 次预算的任务里被这类拒绝白吃掉 5 次（31%），模型因此没机会写
+    finish draft。循环仍受 max_turns 约束，不存在无限拒绝的风险。
+    """
+
+    database = DatabaseStubTool(artifact_ids=["a-1"])
+    reader = ArtifactReaderStub()
+    example = ExampleTool()
+    model = ScriptedModelClient(
+        database_call(),
+        call(call_id="call_2"),  # 未先读 → 被拒
+        call(call_id="call_3"),  # 仍未读 → 再被拒
+        reader_call("a-1", call_id="call_4"),
+        ModelResponse(content="finished"),
+    )
+    harness = ToolCallHarness(
+        model,
+        ResearcherToolRegistry([database, reader, example]),
+        config=ToolCallHarnessConfig(max_turns=6, max_tool_calls=2),
+    )
+
+    result = run_harness(
+        harness, system_prompt="system", initial_user_message="task"
+    )
+
+    # 两次拒绝 + 一次 database_search + 一次 reader，真实调用只有 2 次
+    assert result.final_content == "finished"
+    assert [item.artifact_id for item in reader.received] == ["a-1"]
+    assert example.received == []
+
+
 def test_failed_reader_releases_its_own_artifact_requirement() -> None:
     """回归守卫：读取失败必须释放该制品的约束。
 

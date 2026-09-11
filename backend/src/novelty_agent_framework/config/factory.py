@@ -347,8 +347,8 @@ def build_workflow(
                 max_results_per_call=int(web_cfg.get("max_results_per_call", 50)),
             )
         )
-    researcher_tools.extend(
-        [
+    if browser_cfg.get("enabled", True):
+        researcher_tools.append(
             BrowserTool(
                 PlaywrightBrowserBackend(
                     network_mode=str(browser_cfg.get("network_mode", "inherit")),
@@ -359,19 +359,18 @@ def build_workflow(
                     max_text_chars=int(browser_cfg.get("max_text_chars", 500_000)),
                 ),
                 store,
+            )
+        )
+    researcher_tools.append(
+        ReaderTool(
+            ReferenceArtifactReaderTool(
+                store,
+                max_chars_per_read=int(reader_cfg.get("max_chars_per_read", 16_000)),
             ),
-            ReaderTool(
-                ReferenceArtifactReaderTool(
-                    store,
-                    max_chars_per_read=int(
-                        reader_cfg.get("max_chars_per_read", 16_000)
-                    ),
-                ),
-                default_chars_per_read=int(
-                    reader_cfg.get("default_chars_per_read", 8_000)
-                ),
+            default_chars_per_read=int(
+                reader_cfg.get("default_chars_per_read", 8_000)
             ),
-        ]
+        )
     )
     tool_registry = ResearcherToolRegistry(researcher_tools)
     budget_cfg = raw.get("task_researcher", {})
@@ -551,8 +550,8 @@ def _build_workflow_from_application_config(
                 max_results_per_call=web.max_results_per_call,
             )
         )
-    researcher_tools.extend(
-        [
+    if browser.enabled:
+        researcher_tools.append(
             BrowserTool(
                 PlaywrightBrowserBackend(
                     network_mode=browser.network_mode,
@@ -561,14 +560,15 @@ def _build_workflow_from_application_config(
                     max_text_chars=browser.max_text_chars,
                 ),
                 store,
+            )
+        )
+    researcher_tools.append(
+        ReaderTool(
+            ReferenceArtifactReaderTool(
+                store, max_chars_per_read=reader.max_chars_per_read
             ),
-            ReaderTool(
-                ReferenceArtifactReaderTool(
-                    store, max_chars_per_read=reader.max_chars_per_read
-                ),
-                default_chars_per_read=reader.default_chars_per_read,
-            ),
-        ]
+            default_chars_per_read=reader.default_chars_per_read,
+        )
     )
     tool_registry = ResearcherToolRegistry(researcher_tools)
     researcher = config.researcher

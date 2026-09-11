@@ -76,6 +76,9 @@ class WebSearchConfig(ConfigModel):
 
 class BrowserConfig(ConfigModel):
     backend: Literal["playwright"]
+    # 与 web_search 同理：运行环境未安装浏览器运行库时该工具必然失败，却照样
+    # 消耗模型预算（实测每轮白扔 2 次调用）。需要时显式打开并安装 playwright。
+    enabled: bool = True
     network_mode: Literal["inherit", "direct"] = "inherit"
     navigation_timeout_ms: int = Field(gt=0)
     max_html_chars: int = Field(gt=0)

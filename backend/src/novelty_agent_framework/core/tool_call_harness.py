@@ -220,11 +220,14 @@ class ToolCallHarness:
                 ):
                     # 软性拒绝：不杀死任务，向模型回传拒绝消息（含必须读取的
                     # artifact_id），让它下一轮自我纠正；审计日志保留完整记录。
+                    #
+                    # 这里**不**递增 tool_calls_used：本次什么都没执行，却要占掉
+                    # 一个调用名额，实测一个 16 次预算的任务里被白吃掉 5 次（31%）。
+                    # 循环本身仍受 max_turns 约束，不存在无限拒绝的风险。
                     detail = (
                         "reader required after database_search returned artifact_ids"
                     )
                     _append_error(log, detail)
-                    tool_calls_used += 1
                     rejection = ChatMessage(
                         role="tool",
                         tool_call_id=tool_call.id,

@@ -124,7 +124,11 @@ def test_cross_field_limits_fail_fast(tmp_path: Path, mutate):
 def test_typed_config_builds_default_tool_workflow_without_legacy_projection(
     monkeypatch,
 ):
-    """默认配置下 web_search 不注册：缺凭据时它必然失败，却照样消耗模型预算。"""
+    """默认配置只注册三个工具。
+
+    web_search 与 browser 默认关闭：缺少凭据或浏览器运行库时它们必然失败，
+    却照样消耗模型预算（实测每轮分别白扔近 40% 与 2 次调用）。
+    """
 
     config = load_application_config()
     monkeypatch.setattr(
@@ -133,7 +137,7 @@ def test_typed_config_builds_default_tool_workflow_without_legacy_projection(
     )
     workflow = build_workflow(config)
     assert workflow.services.task_researcher.tools.names == (
-        "reference_search", "database_search", "browser", "reader"
+        "reference_search", "database_search", "reader"
     )
     database = workflow.services.task_researcher.tools.get("database_search")
     planner = next(iter(database.tools_by_source.values())).search_planner
@@ -144,9 +148,10 @@ def test_typed_config_builds_default_tool_workflow_without_legacy_projection(
     )
 
 
-def test_enabling_web_search_restores_the_fifth_tool():
+def test_enabling_optional_tools_restores_them():
     config = load_application_config()
     config.researcher.tools.web_search.enabled = True
+    config.researcher.tools.browser.enabled = True
 
     workflow = build_workflow(config)
 
