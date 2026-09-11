@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Annotated, TypeAlias
 
-from pydantic import Field, StringConstraints, field_validator, model_validator
+from pydantic import ConfigDict, Field, StringConstraints, field_validator, model_validator
 
 from .domain import EvidenceCard, StrictModel
 from .references import (
@@ -118,6 +118,16 @@ class ReferenceReadRequest(StrictModel):
 
 
 class ReferenceReadResult(StrictModel):
+    """一次受限读取的结果。
+
+    ``text`` 必须逐字保留：它既是引文的唯一来源，又由 ``char_start``/``char_end``
+    精确描述区间。``StrictModel`` 默认 strip 字符串首尾空白，一旦切片以空白开头
+    或结尾，"区间长度 == 正文长度" 就不成立——读取会直接失败，或者更糟：正文被
+    静默改动而区间照旧。实测模型读到第 16000 字符之后必然报错，因此这里显式关闭。
+    """
+
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=False)
+
     namespace: ArtifactNamespace
     read_id: NonEmptyStr
     work_id: NonEmptyStr

@@ -206,7 +206,6 @@ def test_merge_manifest_keeps_entries_from_concurrent_writers(tmp_path):
 
 def test_merge_record_allows_late_work_id_binding(tmp_path):
     """Browser 会先写入记录、之后才补上 work_id；这不算身份冲突。"""
-
     source = SourceRecord(
         source_record_id="rec-1",
         work_id=None,
@@ -223,3 +222,37 @@ def test_merge_record_allows_late_work_id_binding(tmp_path):
     merge_record(target, bound)
 
     assert target["rec-1"].work_id == "work-1"
+
+
+def test_read_slice_preserves_boundary_whitespace(tmp_path):
+    """回归守卫：读取必须逐字返回，区间长度与正文长度必须一致。
+
+    ``StrictModel`` 默认 ``str_strip_whitespace=True``，会把切片首尾空白悄悄去掉，
+    于是 ``char_end - char_start != len(text)``：读取以空白结尾的片段时会直接抛
+    ``ValidationError``（实测模型读到第 16000 字符之后必然失败），即使侥幸通过，
+    返回给模型的正文也已经不是原文——对一个靠逐字引文与字符定位的系统是硬伤。
+    """
+
+    paper_workspace("paper-1", output_root=tmp_path)
+    store = ReferenceStore(tmp_path)
+    content = "alpha beta " * 40
+    store.write_document(
+        "paper-1",
+        work_id="work-1",
+        artifact_id="artifact-1",
+        extension="txt",
+        content=content,
+    )
+    store.merge_manifest(
+        "paper-1",
+        works=[_work("work-1")],
+        artifacts=[_artifact("artifact-1", "work-1", content)],
+    )
+
+    result = store.read_document_slice(
+        "paper-1", artifact_id="artifact-1", char_start=10, max_chars=11
+    )
+
+    assert result.text.startswith(" "), "切片以空白开头，正是触发 strip 缺陷的条件"
+    assert result.text == content[10:21]
+    assert result.char_end - result.char_start == len(result.text)

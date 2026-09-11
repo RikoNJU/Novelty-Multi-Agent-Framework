@@ -6,11 +6,19 @@ import httpx
 import pymupdf
 import pytest
 
+from novelty_agent_framework.tools.database_search.providers import arxiv as arxiv_module
 from novelty_agent_framework.tools.database_search.providers.arxiv import (
     ArxivFullTextTool,
     ArxivMetadataTool,
     ArxivSearchTool,
 )
+
+
+@pytest.fixture(autouse=True)
+def _reset_arxiv_throttle(monkeypatch):
+    """节流时间戳是模块级共享的，测试之间必须重置，否则会相互影响。"""
+
+    monkeypatch.setattr(arxiv_module, "_LAST_REQUEST_AT", 0.0)
 
 ATOM_ENTRY = """<?xml version="1.0" encoding="UTF-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom" xmlns:arxiv="http://arxiv.org/schemas/atom">
@@ -120,6 +128,59 @@ def test_search_retries_on_5xx_then_succeeds():
 
     assert calls["n"] == 3
     assert len(hits) == 1
+
+
+def test_search_retries_on_429_and_honours_retry_after(monkeypatch):
+    """429 是限流而非请求错误，必须重试。
+
+    实测线上就是在这里挂的：429 直接抛出，一次检索执行就此失败，
+    整篇论文的 arXiv 召回全部落空。
+    """
+
+    sleeps: list[float] = []
+    monkeypatch.setattr(
+        "novelty_agent_framework.tools.database_search.providers.arxiv.time.sleep",
+        lambda seconds: sleeps.append(seconds),
+    )
+    calls = {"n": 0}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls["n"] += 1
+        if calls["n"] == 1:
+            return httpx.Response(429, headers={"Retry-After": "7"}, text="slow down")
+        return httpx.Response(200, text=ATOM_ENTRY)
+
+    tool = ArxivSearchTool(client=make_client(handler), min_interval=0.0, max_retries=2)
+    hits = tool.search("q")
+
+    assert calls["n"] == 2
+    assert len(hits) == 1
+    assert 7.0 in sleeps, "应当遵守 Retry-After"
+
+
+def test_throttle_is_shared_across_tool_instances(monkeypatch):
+    """节流状态是模块级共享的。
+
+    工作流、bootstrap CLI、多来源各自构建 ArxivSearchTool；若各自计时，
+    叠加速率就会超过 arXiv 的单来源限制并触发 429。
+    """
+
+    sleeps: list[float] = []
+    monkeypatch.setattr(
+        "novelty_agent_framework.tools.database_search.providers.arxiv.time.sleep",
+        lambda seconds: sleeps.append(seconds),
+    )
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, text=ATOM_ENTRY)
+
+    first = ArxivSearchTool(client=make_client(handler), min_interval=5.0)
+    second = ArxivSearchTool(client=make_client(handler), min_interval=5.0)
+    first.search("q1")
+    second.search("q2")
+
+    assert len(sleeps) == 1, "第二个实例必须等待第一个实例让出的间隔"
+    assert sleeps[0] == pytest.approx(5.0, abs=0.25)
 
 
 def test_search_raises_on_4xx_without_retry():

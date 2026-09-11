@@ -56,6 +56,9 @@ class DatabaseSearchConfig(ConfigModel):
 
 class WebSearchConfig(ConfigModel):
     backend: Literal["baidu"]
+    # 关闭后该工具不再注册进 Researcher 工具表。缺少可用凭据时它每次调用都
+    # 必然失败，却照样消耗模型预算（实测 22 次调用 0 成功，占近 40% 预算）。
+    enabled: bool = True
     default_max_results: int = Field(gt=0)
     max_results_per_call: int = Field(gt=0)
     baidu: dict[str, Any]

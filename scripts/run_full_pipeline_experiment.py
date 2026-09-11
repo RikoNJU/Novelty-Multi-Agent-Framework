@@ -39,6 +39,9 @@ EXPERIMENT_ID = "MG19333vrw_FullPipeline_LocatorDisabled"
 SAMPLE_EXPERIMENT_ID = "MF2033k6lC_LocatorDisabled_SampledOneTask"
 DEFAULT_PAPER_ID = "MG19333vrw-locator-off-full"
 EXPERIMENT_DIR = PROJECT_ROOT / "docs" / "experiments" / EXPERIMENT_ID
+# bootstrap 会以约 4 秒间隔连续请求 arXiv 数分钟；紧接着工作流还要继续检索，
+# 不给一段冷却窗口时整体很容易触发 429（实测 6 条检索执行因此失败）。
+BOOTSTRAP_COOLDOWN_SECONDS = 20.0
 _call_context: contextvars.ContextVar[dict[str, str]] = contextvars.ContextVar(
     "experiment_call_context", default={}
 )
@@ -267,6 +270,9 @@ def _bootstrap(paper_id: str) -> tuple[dict[str, Any], float]:
         elapsed_seconds=round(elapsed, 6),
         stderr=completed.stderr[-2000:],
     )
+    if completed.returncode == 0 and BOOTSTRAP_COOLDOWN_SECONDS > 0:
+        time.sleep(BOOTSTRAP_COOLDOWN_SECONDS)
+        payload["cooldown_seconds"] = BOOTSTRAP_COOLDOWN_SECONDS
     return payload, elapsed
 
 

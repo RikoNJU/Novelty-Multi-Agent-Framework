@@ -121,9 +121,11 @@ def test_cross_field_limits_fail_fast(tmp_path: Path, mutate):
         load_application_config(researcher_path=path)
 
 
-def test_typed_config_builds_five_tool_workflow_without_legacy_projection(
+def test_typed_config_builds_default_tool_workflow_without_legacy_projection(
     monkeypatch,
 ):
+    """默认配置下 web_search 不注册：缺凭据时它必然失败，却照样消耗模型预算。"""
+
     config = load_application_config()
     monkeypatch.setattr(
         "novelty_agent_framework.config.factory.legacy_shape",
@@ -131,7 +133,7 @@ def test_typed_config_builds_five_tool_workflow_without_legacy_projection(
     )
     workflow = build_workflow(config)
     assert workflow.services.task_researcher.tools.names == (
-        "reference_search", "database_search", "web_search", "browser", "reader"
+        "reference_search", "database_search", "browser", "reader"
     )
     database = workflow.services.task_researcher.tools.get("database_search")
     planner = next(iter(database.tools_by_source.values())).search_planner
@@ -139,4 +141,15 @@ def test_typed_config_builds_five_tool_workflow_without_legacy_projection(
     assert (
         workflow.services.search_planner._model_alias
         == config.search_planner.model.alias
+    )
+
+
+def test_enabling_web_search_restores_the_fifth_tool():
+    config = load_application_config()
+    config.researcher.tools.web_search.enabled = True
+
+    workflow = build_workflow(config)
+
+    assert workflow.services.task_researcher.tools.names == (
+        "reference_search", "database_search", "web_search", "browser", "reader"
     )

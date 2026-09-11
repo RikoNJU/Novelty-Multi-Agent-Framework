@@ -19,7 +19,10 @@ def test_perturbed_config_reaches_runtime_objects(tmp_path):
         min_interval_seconds=0.07, timeout_seconds=4, max_retries=1,
         full_text_max_chars=4321,
     )
-    researcher_raw["tools"]["web_search"].update(default_max_results=4, max_results_per_call=6)
+    # 默认配置关闭了 web_search；本用例验证配置注入，因此显式打开它
+    researcher_raw["tools"]["web_search"].update(
+        enabled=True, default_max_results=4, max_results_per_call=6
+    )
     researcher_raw["tools"]["web_search"]["baidu"]["timeout_seconds"] = 7
     researcher_raw["tools"]["browser"].update(
         network_mode="direct",

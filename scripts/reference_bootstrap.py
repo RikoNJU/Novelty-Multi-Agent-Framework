@@ -28,6 +28,15 @@ def parser() -> argparse.ArgumentParser:
     result.add_argument("--max-concurrency", type=int, default=4)
     result.add_argument("--provider", choices=("arxiv",))
     result.add_argument("--dry-run", action="store_true")
+    result.add_argument(
+        "--min-interval",
+        type=float,
+        default=4.0,
+        help=(
+            "arXiv 请求最小间隔（秒）。默认略高于 arXiv 规定的 3 秒，"
+            "因为紧接着工作流还会继续检索，贴着上限跑容易触发 429。"
+        ),
+    )
     return result
 
 
@@ -35,7 +44,9 @@ async def run(args: argparse.Namespace) -> int:
     root = Path(args.output_root)
     paper_path = paper_workspace(args.paper_id, output_root=root) / "paper-input" / "others" / "paper.json"
     paper = PaperInput.model_validate(json.loads(paper_path.read_text(encoding="utf-8")))
-    registry = ReferenceProviderRegistry([] if args.dry_run else [ArxivSearchTool()])
+    registry = ReferenceProviderRegistry(
+        [] if args.dry_run else [ArxivSearchTool(min_interval=args.min_interval)]
+    )
     if not args.dry_run:
         capable = [
             provider_id

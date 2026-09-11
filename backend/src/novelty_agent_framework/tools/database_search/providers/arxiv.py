@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import re
+import threading
 import time
 import xml.etree.ElementTree as ET
 from collections.abc import Mapping, Sequence
@@ -36,6 +37,29 @@ ATOM_NS = "{http://www.w3.org/2005/Atom}"
 ARXIV_NS = "{http://arxiv.org/schemas/atom}"
 
 _VERSION_RE = re.compile(r"v\d+$")
+
+# arXiv 按来源 IP 限流（约每 3 秒一次请求）。工作流、bootstrap CLI 以及多来源
+# 会各自构建 ArxivSearchTool 实例；若各自计时，叠加速率就会超限并触发 429，
+# 因此节流状态放到模块级共享。
+_THROTTLE_LOCK = threading.Lock()
+_LAST_REQUEST_AT = 0.0
+
+# 429 是限流（重试即可），5xx 是服务端瞬时故障；其余 4xx 是请求本身有问题。
+_RETRYABLE_STATUS = frozenset({429, 500, 502, 503, 504})
+_MAX_RETRY_DELAY_SECONDS = 60.0
+
+
+def _is_retryable(status_code: int) -> bool:
+    return status_code in _RETRYABLE_STATUS
+
+
+def _retry_delay(response: httpx.Response, attempt: int) -> float:
+    """优先遵守 Retry-After，否则指数退避（2s、4s、8s…），并设上限。"""
+
+    header = (response.headers.get("Retry-After") or "").strip()
+    if header.isdigit():
+        return min(float(header), _MAX_RETRY_DELAY_SECONDS)
+    return min(2.0 * (2**attempt), _MAX_RETRY_DELAY_SECONDS)
 
 
 class ArxivQueryAdapter(QueryAdapter):
@@ -201,10 +225,8 @@ class ArxivSearchTool(SearchTool):
         self._base_url = base_url
         self._min_interval = min_interval
         self._max_retries = max_retries
-        self._last_request_at = 0.0
 
     def search(self, query: str, *, limit: int = 10) -> Sequence[SearchHit]:
-        self._throttle()
         params = urlencode({"search_query": query, "start": 0, "max_results": limit})
         response = self._get(f"{self._base_url}?{params}")
         root = ET.fromstring(response.text)
@@ -238,21 +260,29 @@ class ArxivSearchTool(SearchTool):
         return self.search(f'ti:"{escaped}"', limit=limit)
 
     def _throttle(self) -> None:
-        elapsed = time.monotonic() - self._last_request_at
-        if elapsed < self._min_interval:
-            time.sleep(self._min_interval - elapsed)
-        self._last_request_at = time.monotonic()
+        """全进程共享的节流：多个 ArxivSearchTool 实例（工作流、bootstrap、
+        多来源）不再各自计时，否则叠加起来的请求速率会超过 arXiv 的单实例限制。
+        """
+
+        global _LAST_REQUEST_AT
+        with _THROTTLE_LOCK:
+            elapsed = time.monotonic() - _LAST_REQUEST_AT
+            if elapsed < self._min_interval:
+                time.sleep(self._min_interval - elapsed)
+            _LAST_REQUEST_AT = time.monotonic()
 
     def _get(self, url: str) -> httpx.Response:
+        # 每次尝试都重新节流：重试不能绕过速率限制，否则退避反而加剧限流。
         for attempt in range(self._max_retries + 1):
+            self._throttle()
             response = self._client.get(url)
             try:
                 response.raise_for_status()
                 return response
             except httpx.HTTPStatusError:
-                if attempt >= self._max_retries or response.status_code < 500:
+                if attempt >= self._max_retries or not _is_retryable(response.status_code):
                     raise
-                time.sleep(1.0 * (attempt + 1))
+                time.sleep(_retry_delay(response, attempt))
         raise AssertionError("unreachable")
 
 
