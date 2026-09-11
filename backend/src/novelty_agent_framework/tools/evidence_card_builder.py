@@ -60,61 +60,70 @@ class EvidenceCardBuilder:
         warnings: list[str] = []
         resolved_works: set[tuple[ArtifactNamespace, str]] = set()
 
-        for card_draft in draft.cards:
-            matched_by_quote = [
-                self._matching_reads(quote, reads, indexes)
-                for quote in card_draft.quotes
-            ]
-            candidate_sets = [
-                {(read.namespace, read.work_id) for read, _artifact in matches}
-                for matches in matched_by_quote
-            ]
-            resolved = set.intersection(*candidate_sets)
-            if not resolved:
-                raise ValueError("cross-work or inconsistent quote provenance")
-            if len(resolved) > 1:
-                raise ValueError("ambiguous quote provenance")
-            namespace, work_id = next(iter(resolved))
-            work_address = (namespace, work_id)
-            if work_address in resolved_works:
-                raise ValueError(f"duplicate evidence card for work {work_id}")
-            resolved_works.add(work_address)
-            index = indexes[namespace]
-            work = index.works.get(work_id)
-            if work is None:
-                raise ValueError(f"missing Work {work_id}")
+        for position, card_draft in enumerate(draft.cards, start=1):
+            try:
+                matched_by_quote = [
+                    self._matching_reads(quote, reads, indexes)
+                    for quote in card_draft.quotes
+                ]
+                candidate_sets = [
+                    {(read.namespace, read.work_id) for read, _artifact in matches}
+                    for matches in matched_by_quote
+                ]
+                resolved = set.intersection(*candidate_sets)
+                if not resolved:
+                    raise ValueError("cross-work or inconsistent quote provenance")
+                if len(resolved) > 1:
+                    raise ValueError("ambiguous quote provenance")
+                namespace, work_id = next(iter(resolved))
+                work_address = (namespace, work_id)
+                if work_address in resolved_works:
+                    raise ValueError(f"duplicate evidence card for work {work_id}")
+                index = indexes[namespace]
+                work = index.works.get(work_id)
+                if work is None:
+                    raise ValueError(f"missing Work {work_id}")
 
-            evidence, sources = self._build_card_items(
-                card_draft,
-                matched_by_quote,
-                work,
-                namespace,
-                index,
-                scope,
-                warnings,
-            )
-            card = EvidenceCard(
-                card_id=_stable_id(
-                    "card",
-                    scope.subject_paper_id,
-                    scope.novelty_point.point_id,
-                    scope.research_task.task_id,
-                    namespace.value,
-                    work_id,
-                ),
-                task_id=scope.research_task.task_id,
-                novelty_point_id=scope.novelty_point.point_id,
-                document_title=work.title,
-                main_contribution=card_draft.main_contribution,
-                overlaps=card_draft.overlaps,
-                differences=card_draft.differences,
-                sources=sources,
-                cited_by_paper=None,
-                possible_baseline=card_draft.possible_baseline,
-                relevance=card_draft.relevance,
-                confidence=card_draft.confidence,
-                evidence_ids=[item.evidence_id for item in evidence],
-            )
+                evidence, sources = self._build_card_items(
+                    card_draft,
+                    matched_by_quote,
+                    work,
+                    namespace,
+                    index,
+                    scope,
+                    warnings,
+                )
+                card = EvidenceCard(
+                    card_id=_stable_id(
+                        "card",
+                        scope.subject_paper_id,
+                        scope.novelty_point.point_id,
+                        scope.research_task.task_id,
+                        namespace.value,
+                        work_id,
+                    ),
+                    task_id=scope.research_task.task_id,
+                    novelty_point_id=scope.novelty_point.point_id,
+                    document_title=work.title,
+                    main_contribution=card_draft.main_contribution,
+                    overlaps=card_draft.overlaps,
+                    differences=card_draft.differences,
+                    sources=sources,
+                    cited_by_paper=None,
+                    possible_baseline=card_draft.possible_baseline,
+                    relevance=card_draft.relevance,
+                    confidence=card_draft.confidence,
+                    evidence_ids=[item.evidence_id for item in evidence],
+                )
+            except ValueError as exc:
+                # 单张卡的溯源问题只丢弃这一张，同任务其它卡照常产出。
+                # 此前这里直接向上抛，导致一条引文失配就作废整轮检索（实测
+                # 整轮 0 卡）；受影响的工作不会被登记，后续卡仍可引用它。
+                warnings.append(
+                    f"dropped evidence card #{position}: {type(exc).__name__}: {exc}"
+                )
+                continue
+            resolved_works.add(work_address)
             all_evidence.extend(evidence)
             cards.append(card)
 

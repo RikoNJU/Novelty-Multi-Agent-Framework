@@ -283,24 +283,41 @@ def test_multiple_reads_quotes_and_whitespace_grounding(tmp_path) -> None:
     assert all(item.provenance["read_id"] == "read_wrk_a" for item in result.evidence)
 
 
-def test_ungrounded_cross_work_and_ambiguous_quotes_fail(tmp_path) -> None:
+def test_ungrounded_cross_work_and_ambiguous_quotes_drop_only_that_card(
+    tmp_path,
+) -> None:
+    """回归守卫：单张卡的溯源问题只丢弃该卡，不作废同任务其它卡。
+
+    此前 build() 直接向上抛，一条引文失配就作废整轮检索——实测某次 live 运行
+    已经产出 finish draft，却因此整轮 0 张卡。
+    """
+
     compiler = builder(tmp_path)
     reads = [read(), read("wrk_b", "art_b", TEXT_B)]
-    with pytest.raises(ValueError, match="ungrounded quote"):
-        compiler.build(
-            finish(card(quote("Paraphrased but absent"))),
-            scope=scope(), read_results=reads,
-        )
-    with pytest.raises(ValueError, match="cross-work"):
-        compiler.build(
+
+    for draft, reason in (
+        (finish(card(quote("Paraphrased but absent"))), "ungrounded quote"),
+        (
             finish(card(quote("Alpha unique quote."), quote("Beta unique quote."))),
-            scope=scope(), read_results=reads,
-        )
-    with pytest.raises(ValueError, match="ambiguous"):
-        compiler.build(
-            finish(card(quote("Shared technical statement."))),
-            scope=scope(), read_results=reads,
-        )
+            "cross-work",
+        ),
+        (finish(card(quote("Shared technical statement."))), "ambiguous"),
+    ):
+        result = compiler.build(draft, scope=scope(), read_results=reads)
+        assert result.evidence_cards == []
+        assert any(reason in warning for warning in result.warnings)
+
+    # 同一份 draft 里混入可溯源的好卡时，好卡必须留下
+    mixed = compiler.build(
+        finish(
+            card(quote("Paraphrased but absent")),
+            card(quote("Alpha unique quote.")),
+        ),
+        scope=scope(),
+        read_results=reads,
+    )
+    assert [item.document_title for item in mixed.evidence_cards] == ["Trusted Work A"]
+    assert any("ungrounded quote" in warning for warning in mixed.warnings)
 
 
 def test_candidate_intersection_disambiguates_shared_quote(tmp_path) -> None:
@@ -313,26 +330,32 @@ def test_candidate_intersection_disambiguates_shared_quote(tmp_path) -> None:
     assert {item.work_id for item in result.evidence} == {"wrk_a"}
 
 
-def test_missing_or_mismatched_artifact_fails_explicitly(tmp_path) -> None:
+def test_missing_or_mismatched_artifact_drops_the_card(tmp_path) -> None:
     compiler = builder(tmp_path)
-    with pytest.raises(ValueError, match="missing Artifact"):
-        compiler.build(
-            finish(card(quote("Alpha unique quote."))),
-            scope=scope(), read_results=[read(artifact="art_missing")],
-        )
-    with pytest.raises(ValueError, match="Artifact.work_id mismatch"):
-        compiler.build(
-            finish(card(quote("Alpha unique quote."))),
-            scope=scope(), read_results=[read(work="wrk_b", artifact="art_a")],
-        )
+    result = compiler.build(
+        finish(card(quote("Alpha unique quote."))),
+        scope=scope(), read_results=[read(artifact="art_missing")],
+    )
+    assert result.evidence_cards == []
+    assert any("missing Artifact" in warning for warning in result.warnings)
+
+    result = compiler.build(
+        finish(card(quote("Alpha unique quote."))),
+        scope=scope(), read_results=[read(work="wrk_b", artifact="art_a")],
+    )
+    assert result.evidence_cards == []
+    assert any("Artifact.work_id mismatch" in warning for warning in result.warnings)
 
 
-def test_duplicate_work_drafts_are_rejected(tmp_path) -> None:
+def test_duplicate_work_drafts_keep_the_first_card(tmp_path) -> None:
     duplicate = card(quote("Alpha unique quote."))
-    with pytest.raises(ValueError, match="duplicate evidence card for work"):
-        builder(tmp_path).build(
-            finish(duplicate, duplicate), scope=scope(), read_results=[read()]
-        )
+    result = builder(tmp_path).build(
+        finish(duplicate, duplicate), scope=scope(), read_results=[read()]
+    )
+    assert len(result.evidence_cards) == 1
+    assert any(
+        "duplicate evidence card for work" in warning for warning in result.warnings
+    )
 
 
 def test_ids_and_duplicate_read_selection_are_deterministic(tmp_path) -> None:

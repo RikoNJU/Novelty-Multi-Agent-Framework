@@ -2,6 +2,9 @@ from pathlib import Path
 
 from backend.env import PromptLibrary
 
+from novelty_agent_framework.schemas import NoveltyPoint
+from novelty_agent_framework.workflows.research_task import _project_novelty_point
+
 
 PROMPTS_ROOT = Path("backend/src/novelty_agent_framework/prompts")
 
@@ -39,3 +42,30 @@ def test_researcher_prompt_renders_exact_quote_and_empty_finish_policy() -> None
     assert "exact supporting span in Reader text" in system
     assert "cards=[] and a concrete no_evidence_reason" in system
     assert "Never force a card" in system
+
+
+def test_novelty_point_projection_hides_source_locations() -> None:
+    """回归守卫：source_locations 不保证逐字，不能暴露给 Researcher。
+
+    PointExtractor 会顺手清理 PDF 抽取残留（实测把论文里的
+    ``(model F _ { 2 } ) ) )`` 从引文中间去掉），于是 source_locations 里的
+    「引文」并不逐字。模型看到这种带引号、还标了章节的现成字符串，会直接当作
+    引文写进 finish draft，随后必然被判 ungrounded——引文只能来自成功的 Reader 观测。
+    """
+
+    point = NoveltyPoint(
+        point_id="NP-1",
+        claim="推理能力主要来自 o_proj",
+        technical_features=["Delta Stethoscope"],
+        source_locations=[
+            "Section 2.3: 'simply tuning o_proj and layernorm leads to strong "
+            "reasoning ability'"
+        ],
+    )
+
+    projected = _project_novelty_point(point)
+
+    assert "source_locations" not in projected
+    assert projected["claim"] == "推理能力主要来自 o_proj"
+    assert projected["technical_features"] == ["Delta Stethoscope"]
+    assert projected["point_id"] == "NP-1"
