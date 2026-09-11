@@ -1,3 +1,4 @@
+import hashlib
 import json
 from datetime import datetime, timezone
 
@@ -6,13 +7,21 @@ from pydantic import ValidationError
 
 import novelty_agent_framework.persistence as persistence
 from novelty_agent_framework.persistence import (
+    ReferenceStore,
     load_reference_manifest,
     paper_workspace,
     persist_reference_manifest,
     reference_documents_dir,
     reference_workspace,
 )
-from novelty_agent_framework.schemas import ReferenceManifest
+from novelty_agent_framework.schemas import (
+    Artifact,
+    ArtifactRole,
+    ContentExtent,
+    ReferenceManifest,
+    Work,
+    WorkType,
+)
 
 
 def test_workspace_initializes_empty_reference_manifest(tmp_path):
@@ -82,3 +91,64 @@ def test_corrupt_or_invalid_manifest_is_not_silently_replaced(tmp_path):
     path.write_text(json.dumps({"subject_paper_id": "paper-1"}), encoding="utf-8")
     with pytest.raises(ValidationError):
         load_reference_manifest("paper-1", output_root=tmp_path)
+
+
+def test_write_document_is_byte_exact_so_declared_sha256_verifies(tmp_path):
+    """回归守卫：文本模式写入曾在 Windows 上把 ``\\n`` 翻译成 ``\\r\\n``。
+
+    落盘字节与调用方计算 sha256 时所用的 ``content.encode()`` 不一致，
+    ``verify_artifact_file`` 因而抛 sha256 mismatch，完整性门会拒绝所有卡片。
+    """
+
+    store = ReferenceStore(tmp_path)
+    content = "first line\nsecond line\n"
+    path = store.write_document(
+        "paper-1",
+        work_id="work-1",
+        artifact_id="artifact-1",
+        extension="txt",
+        content=content,
+    )
+    assert path.read_bytes() == content.encode("utf-8")
+    assert b"\r\n" not in path.read_bytes()
+
+    manifest = store.load_manifest("paper-1")
+    store.persist_manifest(
+        "paper-1",
+        manifest.model_copy(
+            update={
+                "works": [
+                    Work(work_id="work-1", work_type=WorkType.ARTICLE, title="Work 1")
+                ],
+                "artifacts": [
+                    Artifact(
+                        artifact_id="artifact-1",
+                        work_id="work-1",
+                        role=ArtifactRole.EXTRACTED_TEXT,
+                        media_type="text/plain",
+                        relative_path="documents/work-1/artifact-1.txt",
+                        sha256=hashlib.sha256(content.encode("utf-8")).hexdigest(),
+                        byte_size=len(content.encode("utf-8")),
+                        content_extent=ContentExtent.FULL,
+                        acquired_at=datetime(2026, 9, 11, tzinfo=timezone.utc),
+                    )
+                ],
+            }
+        ),
+    )
+
+    _artifact, _path, raw = store.verify_artifact_file("paper-1", "artifact-1")
+    assert raw == content.encode("utf-8")
+
+
+def test_persisted_text_uses_lf_line_endings(tmp_path):
+    """仓库会提交这些产物，固定 LF 才能保证跨平台 diff 与哈希稳定。"""
+
+    manifest = ReferenceManifest(
+        subject_paper_id="paper-1",
+        updated_at=datetime(2026, 8, 17, tzinfo=timezone.utc),
+    )
+    path = persist_reference_manifest("paper-1", manifest, output_root=tmp_path)
+    raw = path.read_bytes()
+    assert b"\r\n" not in raw
+    assert raw.endswith(b"\n")

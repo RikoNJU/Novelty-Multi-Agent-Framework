@@ -199,6 +199,7 @@ class ReferenceStore:
             with tempfile.NamedTemporaryFile(
                 mode="w",
                 encoding="utf-8",
+                newline="\n",
                 dir=directory,
                 prefix=f".{safe_artifact_id}.",
                 suffix=".tmp",
@@ -674,6 +675,7 @@ def _write_json(path: Path, payload: Any) -> None:
     path.write_text(
         json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
+        newline="\n",
     )
 
 
@@ -685,6 +687,7 @@ def _atomic_write_json(path: Path, payload: Any) -> None:
         with tempfile.NamedTemporaryFile(
             mode="w",
             encoding="utf-8",
+            newline="\n",
             dir=path.parent,
             prefix=f".{path.name}.",
             suffix=".tmp",

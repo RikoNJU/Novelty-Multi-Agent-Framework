@@ -62,7 +62,7 @@ class MarkdownRenderer(ReportRenderer):
         if destination.suffix.lower() != self.output_suffix:
             destination = destination.with_suffix(self.output_suffix)
         destination.parent.mkdir(parents=True, exist_ok=True)
-        destination.write_text(rendered.rstrip() + "\n", encoding="utf-8")
+        destination.write_text(rendered.rstrip() + "\n", encoding="utf-8", newline="\n")
         return destination
 
 
