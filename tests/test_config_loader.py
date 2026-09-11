@@ -15,7 +15,7 @@ from novelty_agent_framework.config.loader import (
 
 def test_split_files_load_and_project_settings_are_slim():
     config = load_application_config()
-    project = json.loads(DEFAULT_PROJECT_PATH.read_text())
+    project = json.loads(DEFAULT_PROJECT_PATH.read_text(encoding="utf-8"))
     assert not {"models", "agents", "task_researcher", "retrieval"} & set(project)
     assert config.models and config.researcher.version == config.search_planner.version == 1
     assert config.researcher.model.alias == "deepseek-flash"
@@ -23,7 +23,7 @@ def test_split_files_load_and_project_settings_are_slim():
 
 
 def test_example_files_contain_no_secret_values():
-    combined = "\n".join(path.read_text() for path in (
+    combined = "\n".join(path.read_text(encoding="utf-8") for path in (
         DEFAULT_MODELS_PATH, DEFAULT_RESEARCHER_PATH, DEFAULT_SEARCH_PLANNER_PATH
     ))
     assert "api_key_env" in combined
@@ -32,7 +32,7 @@ def test_example_files_contain_no_secret_values():
 
 
 def test_invalid_numeric_value_fails_fast(tmp_path):
-    raw = json.loads(DEFAULT_RESEARCHER_PATH.read_text())
+    raw = json.loads(DEFAULT_RESEARCHER_PATH.read_text(encoding="utf-8"))
     raw["harness"]["max_turns"] = 0
     path = tmp_path / "researcher.json"
     path.write_text(json.dumps(raw), encoding="utf-8")
@@ -41,7 +41,7 @@ def test_invalid_numeric_value_fails_fast(tmp_path):
 
 
 def test_unknown_model_alias_fails_fast(tmp_path):
-    raw = json.loads(DEFAULT_RESEARCHER_PATH.read_text())
+    raw = json.loads(DEFAULT_RESEARCHER_PATH.read_text(encoding="utf-8"))
     raw["model"]["alias"] = "missing-model"
     path = tmp_path / "researcher.json"
     path.write_text(json.dumps(raw), encoding="utf-8")
@@ -82,7 +82,7 @@ def test_search_planner_example_filename_is_canonical():
 
 
 def test_browser_network_mode_defaults_to_inherit(tmp_path: Path):
-    raw = json.loads(DEFAULT_RESEARCHER_PATH.read_text())
+    raw = json.loads(DEFAULT_RESEARCHER_PATH.read_text(encoding="utf-8"))
     raw["tools"]["browser"].pop("network_mode", None)
     path = tmp_path / "researcher.json"
     path.write_text(json.dumps(raw), encoding="utf-8")
@@ -91,7 +91,7 @@ def test_browser_network_mode_defaults_to_inherit(tmp_path: Path):
 
 
 def test_browser_network_mode_rejects_invalid_value(tmp_path: Path):
-    raw = json.loads(DEFAULT_RESEARCHER_PATH.read_text())
+    raw = json.loads(DEFAULT_RESEARCHER_PATH.read_text(encoding="utf-8"))
     raw["tools"]["browser"]["network_mode"] = "automatic"
     path = tmp_path / "researcher.json"
     path.write_text(json.dumps(raw), encoding="utf-8")
@@ -113,7 +113,7 @@ def test_browser_network_mode_rejects_invalid_value(tmp_path: Path):
     ],
 )
 def test_cross_field_limits_fail_fast(tmp_path: Path, mutate):
-    raw = json.loads(DEFAULT_RESEARCHER_PATH.read_text())
+    raw = json.loads(DEFAULT_RESEARCHER_PATH.read_text(encoding="utf-8"))
     mutate(raw)
     path = tmp_path / "researcher.json"
     path.write_text(json.dumps(raw), encoding="utf-8")

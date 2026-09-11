@@ -106,7 +106,7 @@ def test_client_call_is_persisted_and_aggregated(monkeypatch, tmp_path: Path) ->
     manager.finish_run("SUCCESS")
     manager.deactivate()
 
-    call = json.loads(next((manager.run_dir / "llm_calls").glob("*.json")).read_text())
+    call = json.loads(next((manager.run_dir / "llm_calls").glob("*.json")).read_text(encoding="utf-8"))
     assert call["llm_call_id"] == "llm_0001"
     assert call["stage_name"] == "coordinator"
     assert call["request_id"] == "request-1"
@@ -114,7 +114,7 @@ def test_client_call_is_persisted_and_aggregated(monkeypatch, tmp_path: Path) ->
     assert call["billing"]["currency"] == "RMB"
     assert call["billing"]["amount"] is not None
 
-    summary = json.loads((manager.run_dir / "summary.json").read_text())
+    summary = json.loads((manager.run_dir / "summary.json").read_text(encoding="utf-8"))
     totals = summary["llm_usage"]["totals"]
     assert totals["calls"] == 1
     assert totals["input_tokens"] == 1000
@@ -122,4 +122,4 @@ def test_client_call_is_persisted_and_aggregated(monkeypatch, tmp_path: Path) ->
     assert totals["output_tokens"] == 500
     assert totals["reasoning_tokens"] == 100
     assert totals["amount_rmb"] > 0
-    assert "## LLM Token Usage and Cost" in (manager.run_dir / "summary.md").read_text()
+    assert "## LLM Token Usage and Cost" in (manager.run_dir / "summary.md").read_text(encoding="utf-8")

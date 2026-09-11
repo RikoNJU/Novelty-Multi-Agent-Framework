@@ -415,7 +415,7 @@ def test_supplement_dispatches_only_new_tasks():
     assert result.evidence_cards
     assert len(planner.calls) == 4
     summary_path = next(Path("outputs/paper-test/runtime").glob("*/summary.json"))
-    checks = json.loads(summary_path.read_text())[
+    checks = json.loads(summary_path.read_text(encoding="utf-8"))[
         "final_evidence_sufficiency_checks"
     ]
     assert len(checks) == 2
@@ -457,7 +457,7 @@ def test_no_tasks_branch_does_not_hang():
     assert researcher.calls == []
     assert result.insufficient_final_evidence_points
     summary_path = next(Path("outputs/paper-test/runtime").glob("*/summary.json"))
-    check = json.loads(summary_path.read_text())[
+    check = json.loads(summary_path.read_text(encoding="utf-8"))[
         "final_evidence_sufficiency_checks"
     ][0]
     assert check["check_status"] == "INSUFFICIENT"
