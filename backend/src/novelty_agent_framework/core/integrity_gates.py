@@ -6,8 +6,9 @@ from collections import Counter
 from dataclasses import dataclass
 from typing import Any, Sequence
 
-from ..persistence import ReferenceStore
+from ..persistence import ReferenceStore, reference_store_for_artifact_namespace
 from ..schemas import (
+    ArtifactNamespace,
     Evidence,
     EvidenceCard,
     NoveltyPoint,
@@ -15,6 +16,60 @@ from ..schemas import (
     ResearchTask,
 )
 from ..tools.evidence_card_builder import normalize_quote_whitespace
+
+_DEFAULT_NAMESPACE = ArtifactNamespace.RESEARCH_REFERENCE
+
+
+@dataclass(frozen=True)
+class _ManifestIndex:
+    """单个命名空间的 Manifest 索引及其存储。"""
+
+    works: dict[str, Any]
+    artifacts: dict[str, Any]
+    store: ReferenceStore
+
+
+def _evidence_namespace(evidence: Evidence) -> ArtifactNamespace:
+    """Evidence 的来源命名空间；Builder 会把它写进 provenance。
+
+    历史卡片没有这个字段，回退到研究语料——与改造前的行为一致。
+    """
+
+    raw = (evidence.provenance or {}).get("artifact_namespace")
+    if not raw:
+        return _DEFAULT_NAMESPACE
+    try:
+        return ArtifactNamespace(raw)
+    except ValueError:
+        return _DEFAULT_NAMESPACE
+
+
+def _manifest_indexes(
+    paper_id: str,
+    namespaces: set[ArtifactNamespace],
+    reference_store: ReferenceStore,
+) -> dict[ArtifactNamespace, _ManifestIndex]:
+    """按命名空间分别加载 Manifest。
+
+    研究语料（``references/``）与论文自带参考语料（``subject_references/``）是两套
+    独立存储。``EvidenceCardBuilder`` 已按命名空间分别索引，门控必须保持一致，
+    否则来自自带参考语料的合法证据会被误判为「缺失 Work/Artifact」——实测两张
+    这样的卡片被 Gate A 拒掉，而它们本来是通过 Validator 的有效证据。
+    """
+
+    indexes: dict[ArtifactNamespace, _ManifestIndex] = {}
+    for namespace in namespaces:
+        store = reference_store_for_artifact_namespace(
+            namespace, output_root=reference_store.output_root
+        )
+        # Loading validates the manifest's own Work/SourceRecord/Artifact relations.
+        manifest = store.load_manifest(paper_id)
+        indexes[namespace] = _ManifestIndex(
+            works={item.work_id: item for item in manifest.works},
+            artifacts={item.artifact_id: item for item in manifest.artifacts},
+            store=store,
+        )
+    return indexes
 
 
 @dataclass(frozen=True)
@@ -67,9 +122,11 @@ def validate_synthesis_input(
     """Filter cards whose deterministic provenance chain is incomplete."""
 
     # Loading validates the manifest's own Work/SourceRecord/Artifact relations.
-    manifest = reference_store.load_manifest(paper_id)
-    works = {item.work_id: item for item in manifest.works}
-    artifacts = {item.artifact_id: item for item in manifest.artifacts}
+    indexes = _manifest_indexes(
+        paper_id,
+        {_evidence_namespace(item) for item in evidence} | {_DEFAULT_NAMESPACE},
+        reference_store,
+    )
     point_ids = {item.point_id for item in novelty_points}
     task_ids = {task.task_id for task in tasks}
     task_pairs = {(task.task_id, task.novelty_point_id) for task in tasks}
@@ -77,8 +134,8 @@ def validate_synthesis_input(
     for item in evidence:
         evidence_candidates.setdefault(item.evidence_id, []).append(item)
     card_id_counts = Counter(card.card_id for card in cards)
-    verified_files: dict[str, bytes] = {}
-    file_errors: dict[str, str] = {}
+    verified_files: dict[tuple[ArtifactNamespace, str], bytes] = {}
+    file_errors: dict[tuple[ArtifactNamespace, str], str] = {}
 
     accepted: list[EvidenceCard] = []
     rejected: list[tuple[EvidenceCard, tuple[str, ...]]] = []
@@ -117,10 +174,8 @@ def validate_synthesis_input(
                 _validate_evidence_chain(
                     card,
                     item,
-                    works=works,
-                    artifacts=artifacts,
+                    indexes=indexes,
                     paper_id=paper_id,
-                    reference_store=reference_store,
                     verified_files=verified_files,
                     file_errors=file_errors,
                 )
@@ -139,12 +194,10 @@ def _validate_evidence_chain(
     card: EvidenceCard,
     evidence: Evidence,
     *,
-    works: dict[str, Any],
-    artifacts: dict[str, Any],
+    indexes: dict[ArtifactNamespace, _ManifestIndex],
     paper_id: str,
-    reference_store: ReferenceStore,
-    verified_files: dict[str, bytes],
-    file_errors: dict[str, str],
+    verified_files: dict[tuple[ArtifactNamespace, str], bytes],
+    file_errors: dict[tuple[ArtifactNamespace, str], str],
 ) -> list[str]:
     reasons: list[str] = []
     if evidence.task_id != card.task_id:
@@ -157,9 +210,17 @@ def _validate_evidence_chain(
             f"cross-point Evidence: {evidence.evidence_id} belongs to "
             f"{evidence.novelty_point_id}, not {card.novelty_point_id}"
         )
-    if evidence.work_id not in works:
+    namespace = _evidence_namespace(evidence)
+    index = indexes.get(namespace)
+    if index is None:
+        reasons.append(
+            f"missing manifest for namespace {namespace.value}: "
+            f"{evidence.evidence_id}"
+        )
+        return reasons
+    if evidence.work_id not in index.works:
         reasons.append(f"missing Work: {evidence.work_id}")
-    artifact = artifacts.get(evidence.artifact_id)
+    artifact = index.artifacts.get(evidence.artifact_id)
     if artifact is None:
         reasons.append(f"missing Artifact: {evidence.artifact_id}")
         return reasons
@@ -169,15 +230,17 @@ def _validate_evidence_chain(
             f"{artifact.work_id}, not {evidence.work_id}"
         )
 
-    if artifact.artifact_id not in verified_files and artifact.artifact_id not in file_errors:
+    # 缓存键必须带上命名空间：两个语料里可能存在同名的裸 artifact_id。
+    key = (namespace, artifact.artifact_id)
+    if key not in verified_files and key not in file_errors:
         try:
-            _verified, _path, raw = reference_store.verify_artifact_file(
+            _verified, _path, raw = index.store.verify_artifact_file(
                 paper_id, artifact.artifact_id
             )
-            verified_files[artifact.artifact_id] = raw
+            verified_files[key] = raw
         except (OSError, ValueError) as exc:
-            file_errors[artifact.artifact_id] = f"{type(exc).__name__}: {exc}"
-    file_error = file_errors.get(artifact.artifact_id)
+            file_errors[key] = f"{type(exc).__name__}: {exc}"
+    file_error = file_errors.get(key)
     if file_error is not None:
         reasons.append(f"invalid Artifact file {artifact.artifact_id}: {file_error}")
         return reasons
@@ -191,7 +254,7 @@ def _validate_evidence_chain(
     if start is None or end is None:
         reasons.append(f"incomplete character locator: {evidence.evidence_id}")
         return reasons
-    raw = verified_files[artifact.artifact_id]
+    raw = verified_files[key]
     try:
         text = raw.decode("utf-8")
     except UnicodeDecodeError:
