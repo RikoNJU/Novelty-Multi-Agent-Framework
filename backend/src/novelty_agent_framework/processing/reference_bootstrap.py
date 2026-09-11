@@ -225,27 +225,19 @@ class ReferenceBootstrapService:
             raise ValueError("paper_id is required for materialization")
         work, record, _ = self.adapter.adapt_hit(hit, provider_id, datetime.now(timezone.utc))
         artifacts: list[Artifact] = []
-        manifest = self.store.load_manifest(paper_id)
         if hit.abstract.strip():
             artifact_id = self.adapter.stable_id("art", record.source_record_id, "abstract")
             self.store.write_document(paper_id, work_id=work.work_id, artifact_id=artifact_id, extension="txt", content=hit.abstract)
             artifacts.append(Artifact(artifact_id=artifact_id, work_id=work.work_id, source_record_id=record.source_record_id, role=ArtifactRole.ABSTRACT, media_type="text/plain", relative_path=f"documents/{work.work_id}/{artifact_id}.txt", sha256=hashlib.sha256(hit.abstract.encode()).hexdigest(), byte_size=len(hit.abstract.encode()), content_extent=ContentExtent.FULL, acquired_at=datetime.now(timezone.utc), provenance={"source": "search_hit.abstract"}))
-        merged = _merge_manifest(manifest, [work], [record], artifacts)
-        self.store.persist_manifest(paper_id, merged)
+        # 在锁内重新读取再合并：bootstrap 并发解析多条引文，各自持有旧副本整份
+        # 写回会互相覆盖（条目静默消失，只剩悬空制品）。
+        self.store.merge_manifest(paper_id, works=[work], source_records=[record], artifacts=artifacts)
         attempts[-1] = attempts[-1].model_copy(update={"selected_work_id": work.work_id})
         return ReferenceBootstrapEntry(reference_id=reference_id, ordinal=ordinal, raw_reference=raw, parsed=parsed, resolution_status=ResolutionStatus.RESOLVED, resolved_work_id=work.work_id, attempts=attempts)
 
     @staticmethod
     def _attempt(reference_id: str, provider_id: str, method: str, query: str, status: str, hits: list[SearchHit] | None = None, error: str | None = None) -> ReferenceResolveAttempt:
         return ReferenceResolveAttempt(attempt_id=StructuredRetrievalAdapter.stable_id("att", reference_id, provider_id, method, str(len(hits or []))), provider_id=provider_id, method=method, query_or_identifier=query, status=status, candidate_work_ids=[StructuredRetrievalAdapter.stable_id("candidate", _hit_key(h)) for h in hits or []], error=error)
-
-
-def _merge_manifest(manifest: ReferenceManifest, works: list[Any], records: list[Any], artifacts: list[Any]) -> ReferenceManifest:
-    def merge(old: list[Any], new: list[Any], key: str) -> list[Any]:
-        values = {getattr(item, key): item for item in old}
-        values.update({getattr(item, key): item for item in new})
-        return list(values.values())
-    return manifest.model_copy(update={"updated_at": datetime.now(timezone.utc), "works": merge(manifest.works, works, "work_id"), "source_records": merge(manifest.source_records, records, "source_record_id"), "artifacts": merge(manifest.artifacts, artifacts, "artifact_id")})
 
 
 def _text(value: str) -> str:

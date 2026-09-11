@@ -13,12 +13,14 @@ import os
 import re
 import shutil
 import tempfile
+import threading
 from collections.abc import Iterable
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
 from .schemas import (
+    AccessStatus,
     Artifact,
     ArtifactNamespace,
     EvidenceCard,
@@ -35,11 +37,82 @@ from .schemas import (
     RejectedEvidence,
     ResearchTask,
     SearchPlan,
+    SourceRecord,
     TaskResearchResult,
+    Work,
 )
 
 DEFAULT_OUTPUTS_DIR = Path("outputs")
 STORAGE_VERSION = "test-version-local-file"
+
+# Manifest 是「读-改-写」共享状态：多个 Researcher 任务并发检索时，
+# 若各自先 load、隔一段 await 后再 persist 整份覆盖，就会互相抹掉条目
+# （落盘文件仍在，但 list.json 里没有记录，reader 随即报 unknown artifact_id）。
+# 所有 manifest 写入共用一把可重入锁，并且合并必须在锁内重新读取。
+_MANIFEST_WRITE_LOCK = threading.RLock()
+
+
+def merge_reference_manifest(
+    manifest: ReferenceManifest,
+    *,
+    works: Sequence[Work] = (),
+    source_records: Sequence[SourceRecord] = (),
+    artifacts: Sequence[Artifact] = (),
+) -> ReferenceManifest:
+    """把新增的 Work/SourceRecord/Artifact 合并进既有 Manifest。"""
+
+    work_map = {item.work_id: item for item in manifest.works}
+    record_map = {item.source_record_id: item for item in manifest.source_records}
+    artifact_map = {item.artifact_id: item for item in manifest.artifacts}
+    for work in works:
+        merge_work(work_map, work)
+    for record in source_records:
+        merge_record(record_map, record)
+    for artifact in artifacts:
+        existing = artifact_map.get(artifact.artifact_id)
+        if existing is not None and (
+            existing.work_id != artifact.work_id
+            or existing.sha256 != artifact.sha256
+            or existing.relative_path != artifact.relative_path
+        ):
+            raise ValueError(f"artifact {artifact.artifact_id} conflicts with manifest")
+        artifact_map.setdefault(artifact.artifact_id, artifact)
+    return ReferenceManifest(
+        schema_version=manifest.schema_version,
+        subject_paper_id=manifest.subject_paper_id,
+        updated_at=datetime.now(timezone.utc),
+        works=list(work_map.values()),
+        source_records=list(record_map.values()),
+        artifacts=list(artifact_map.values()),
+    )
+
+
+def merge_work(target: dict[str, Work], value: Work) -> None:
+    if value.work_id not in target:
+        target[value.work_id] = value
+
+
+def merge_record(target: dict[str, SourceRecord], value: SourceRecord) -> None:
+    existing = target.get(value.source_record_id)
+    if existing is None:
+        target[value.source_record_id] = value
+        return
+    if existing.source_id != value.source_id:
+        raise ValueError(f"source_record {value.source_record_id} has identity conflict")
+    if (
+        existing.work_id is not None
+        and value.work_id is not None
+        and existing.work_id != value.work_id
+    ):
+        raise ValueError(f"source_record {value.source_record_id} has identity conflict")
+    updates: dict[str, Any] = {}
+    if existing.work_id is None and value.work_id is not None:
+        # 记录可以先入库、之后由 Browser 等工具补上 work_id。
+        updates["work_id"] = value.work_id
+    if value.access_status == AccessStatus.FULL_TEXT_ACQUIRED:
+        updates["access_status"] = value.access_status
+    if updates:
+        target[value.source_record_id] = existing.model_copy(update=updates)
 
 
 def paper_workspace(
@@ -165,11 +238,36 @@ class ReferenceStore:
         if manifest.subject_paper_id != paper_id:
             raise ValueError("manifest subject_paper_id does not match paper_id")
         path = self._workspace(paper_id) / "list.json"
-        _atomic_write_json(
-            path,
-            ReferenceManifest.model_validate(manifest).model_dump(mode="json"),
-        )
+        with _MANIFEST_WRITE_LOCK:
+            _atomic_write_json(
+                path,
+                ReferenceManifest.model_validate(manifest).model_dump(mode="json"),
+            )
         return path
+
+    def merge_manifest(
+        self,
+        paper_id: str,
+        *,
+        works: Sequence[Work] = (),
+        source_records: Sequence[SourceRecord] = (),
+        artifacts: Sequence[Artifact] = (),
+    ) -> ReferenceManifest:
+        """在锁内「重新读取 → 合并 → 写回」，避免并发写入互相覆盖。
+
+        调用方不应先 load_manifest 再 persist_manifest：两次调用之间其它任务的
+        更新会被整份覆盖掉，留下「文件已落盘但 manifest 无记录」的悬空制品。
+        """
+
+        with _MANIFEST_WRITE_LOCK:
+            merged = merge_reference_manifest(
+                self.load_manifest(paper_id),
+                works=works,
+                source_records=source_records,
+                artifacts=artifacts,
+            )
+            self.persist_manifest(paper_id, merged)
+            return merged
 
     def write_document(
         self,
@@ -277,7 +375,12 @@ class ReferenceStore:
             None,
         )
         if artifact is None:
-            raise ValueError(f"unknown artifact_id {artifact_id!r}")
+            # 带上查的是哪个命名空间：模型常把研究语料与论文自带参考语料的
+            # artifact_id 混用，明确的提示能让它下一轮自己改对 namespace。
+            raise ValueError(
+                f"unknown artifact_id {artifact_id!r} in the "
+                f"{self.namespace.value} manifest"
+            )
         references_dir = self._workspace(paper_id).resolve()
         path = (references_dir / artifact.relative_path).resolve()
         if not path.is_relative_to(references_dir):

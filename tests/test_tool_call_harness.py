@@ -155,6 +155,19 @@ class ArtifactReaderStub:
         )
 
 
+class FailingArtifactReaderStub(ArtifactReaderStub):
+    """读取总是失败：模拟 artifact 不在当前 namespace manifest 里的情况。"""
+
+    async def ainvoke(self, arguments, *, scope):
+        self.received.append(arguments)
+        return ResearcherToolObservation(
+            tool_name="reader",
+            arguments=arguments.model_dump(),
+            succeeded=False,
+            error=f"ValueError: unknown artifact_id {arguments.artifact_id!r}",
+        )
+
+
 def call(arguments=None, *, call_id="call_1") -> ModelResponse:
     return ModelResponse(
         content=None,
@@ -558,3 +571,63 @@ def test_database_search_without_artifact_ids_imposes_no_reader_requirement() ->
 
     assert result.final_content == "finished"
     assert len(example.received) == 1
+
+
+def test_failed_reader_releases_its_own_artifact_requirement() -> None:
+    """回归守卫：读取失败必须释放该制品的约束。
+
+    否则当 artifact 永远读不出来时（例如 manifest 里没有登记该 id），模型既不能
+    换一篇读、也不能重新检索——其它工具全被策略拒绝——只能反复重试同一个坏 id
+    直到耗尽整轮预算。实测某次运行在 46 秒内重复了 4 次同一个 id。
+    """
+
+    database = DatabaseStubTool(artifact_ids=["a-1"])
+    reader = FailingArtifactReaderStub()
+    example = ExampleTool()
+    model = ScriptedModelClient(
+        database_call(),
+        reader_call("a-1"),
+        call(call_id="call_3"),
+        ModelResponse(content="finished"),
+    )
+    harness = ToolCallHarness(
+        model,
+        ResearcherToolRegistry([database, reader, example]),
+        config=ToolCallHarnessConfig(max_turns=5, max_tool_calls=5),
+    )
+
+    result = run_harness(
+        harness, system_prompt="system", initial_user_message="task"
+    )
+
+    assert result.final_content == "finished"
+    assert [item.artifact_id for item in reader.received] == ["a-1"]
+    # 失败之后其它工具必须重新可用，而不是被永久锁死
+    assert len(example.received) == 1
+
+
+def test_failed_reader_keeps_other_required_artifacts_locked() -> None:
+    """释放只针对失败的那一个 id，其余仍需先读，避免约束被一次性架空。"""
+
+    database = DatabaseStubTool(artifact_ids=["a-1", "a-2"])
+    reader = FailingArtifactReaderStub()
+    example = ExampleTool()
+    model = ScriptedModelClient(
+        database_call(),
+        reader_call("a-2"),
+        call(call_id="call_3"),
+        ModelResponse(content="finished"),
+    )
+    harness = ToolCallHarness(
+        model,
+        ResearcherToolRegistry([database, reader, example]),
+        config=ToolCallHarnessConfig(max_turns=5, max_tool_calls=5),
+    )
+
+    result = run_harness(
+        harness, system_prompt="system", initial_user_message="task"
+    )
+
+    assert result.final_content == "finished"
+    # a-1 仍未读取，因此普通工具调用依然被拒绝
+    assert example.received == []

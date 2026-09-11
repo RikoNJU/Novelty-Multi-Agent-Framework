@@ -9,16 +9,20 @@ import novelty_agent_framework.persistence as persistence
 from novelty_agent_framework.persistence import (
     ReferenceStore,
     load_reference_manifest,
+    merge_record,
     paper_workspace,
     persist_reference_manifest,
     reference_documents_dir,
     reference_workspace,
 )
 from novelty_agent_framework.schemas import (
+    AccessStatus,
     Artifact,
     ArtifactRole,
     ContentExtent,
     ReferenceManifest,
+    SourceKind,
+    SourceRecord,
     Work,
     WorkType,
 )
@@ -152,3 +156,70 @@ def test_persisted_text_uses_lf_line_endings(tmp_path):
     raw = path.read_bytes()
     assert b"\r\n" not in raw
     assert raw.endswith(b"\n")
+
+
+def _artifact(artifact_id: str, work_id: str, content: str) -> Artifact:
+    return Artifact(
+        artifact_id=artifact_id,
+        work_id=work_id,
+        role=ArtifactRole.EXTRACTED_TEXT,
+        media_type="text/plain",
+        relative_path=f"documents/{work_id}/{artifact_id}.txt",
+        sha256=hashlib.sha256(content.encode()).hexdigest(),
+        byte_size=len(content.encode()),
+        content_extent=ContentExtent.FULL,
+        acquired_at=datetime(2026, 9, 11, tzinfo=timezone.utc),
+    )
+
+
+def _work(work_id: str) -> Work:
+    return Work(work_id=work_id, work_type=WorkType.ARTICLE, title=work_id)
+
+
+def test_merge_manifest_keeps_entries_from_concurrent_writers(tmp_path):
+    """回归守卫：manifest 是「读-改-写」共享状态，必须合并而不是整份覆盖。
+
+    structured_retrieval / browser 在 load_manifest 与 persist_manifest 之间
+    有多次 await，6 个 Researcher 任务并行时会各自基于旧副本整份写回，后写者
+    抹掉先写者的条目——正文文件仍在磁盘上，但清单里没有记录，reader 随即报
+    unknown artifact_id（实测表现为同一个 id 反复读取失败）。
+    """
+
+    paper_workspace("paper-1", output_root=tmp_path)
+    store = ReferenceStore(tmp_path)
+
+    store.merge_manifest(
+        "paper-1",
+        works=[_work("work-a")],
+        artifacts=[_artifact("art_a", "work-a", "A")],
+    )
+    store.merge_manifest(
+        "paper-1",
+        works=[_work("work-b")],
+        artifacts=[_artifact("art_b", "work-b", "B")],
+    )
+
+    manifest = store.load_manifest("paper-1")
+    assert {item.artifact_id for item in manifest.artifacts} == {"art_a", "art_b"}
+    assert {item.work_id for item in manifest.works} == {"work-a", "work-b"}
+
+
+def test_merge_record_allows_late_work_id_binding(tmp_path):
+    """Browser 会先写入记录、之后才补上 work_id；这不算身份冲突。"""
+
+    source = SourceRecord(
+        source_record_id="rec-1",
+        work_id=None,
+        source_id="demo",
+        source_kind=SourceKind.WEB,
+        title="Rec",
+        access_status=AccessStatus.METADATA_ONLY,
+        observed_at=datetime(2026, 9, 11, tzinfo=timezone.utc),
+    )
+    bound = source.model_copy(update={"work_id": "work-1"})
+
+    target: dict = {}
+    merge_record(target, source)
+    merge_record(target, bound)
+
+    assert target["rec-1"].work_id == "work-1"
