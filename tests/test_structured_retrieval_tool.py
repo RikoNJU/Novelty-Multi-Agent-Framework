@@ -378,3 +378,80 @@ def test_sync_invoke_rejects_running_event_loop(tmp_path):
             tool.invoke(request())
 
     asyncio.run(call())
+
+
+def test_concurrent_retrievals_do_not_orphan_artifacts(tmp_path):
+    """回归守卫：并行研究任务不得让 manifest 丢更新。
+
+    ``ainvoke`` 在 load_manifest 与 persist_manifest 之间跨越多次 await，
+    若各自基于开头读到的副本整份写回，最后落盘者会抹掉其它任务写入的
+    Work/SourceRecord/Artifact —— 正文文件仍在磁盘上，但清单里没有记录，
+    reader 随后报 ``unknown artifact_id``，而且因为 reader 强制约束挡住了
+    重新检索，这些制品再也补不回来。
+    """
+
+    class PerCallSearcher:
+        """每次检索返回一篇不同的文献，让 4 个任务产出 4 组独立制品。"""
+
+        source_id = "demo"
+
+        def __init__(self) -> None:
+            self.calls = 0
+
+        def search(self, query, *, limit=10):
+            self.calls += 1
+            index = self.calls
+
+            async def result():
+                return [
+                    SearchHit(
+                        document_id=f"2305.{index:05d}",
+                        source_id="demo",
+                        external_id=f"2305.{index:05d}v1",
+                        title=f"Paper {index}",
+                        abstract=f"{ABSTRACT} call {index}",
+                        authors=("Alice",),
+                        year=2023,
+                        doi=f"10.1/example-{index}",
+                        url=f"https://example.test/{index}",
+                        full_text_url=f"https://example.test/{index}.pdf",
+                    )
+                ]
+
+            return result()
+
+    source = RetrievalSource(
+        source_id="demo",
+        query_adapter=DemoQueryAdapter(),
+        search_tool=PerCallSearcher(),
+        metadata_tool=Metadata(),
+        full_text_tool=FullTexts(),
+    )
+    store = ReferenceStore(tmp_path)
+    tool = StructuredSourceRetrievalTool(
+        search_planner=Planner(asynchronous=True),
+        source=source,
+        reference_store=store,
+        candidate_limit=2,
+    )
+
+    async def run_all():
+        return await asyncio.gather(*(tool.ainvoke(request()) for _ in range(4)))
+
+    bundles = asyncio.run(run_all())
+
+    produced = {item.artifact_id for bundle in bundles for item in bundle.artifacts}
+    assert len(produced) >= 4, "每个任务都应当产出独立制品"
+
+    manifest = store.load_manifest("paper-1")
+    assert {item.artifact_id for item in manifest.artifacts} == produced, (
+        "manifest 丢失了并发任务写入的制品"
+    )
+    on_disk = {
+        path.stem
+        for path in (tmp_path / "paper-1" / "references" / "documents").glob("*/*.txt")
+    }
+    assert on_disk == produced, "存在已落盘但未登记的悬空正文"
+    assert {item.work_id for item in manifest.works} >= {
+        item.work_id for bundle in bundles for item in bundle.works
+    }
