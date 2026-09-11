@@ -564,8 +564,18 @@ def main() -> int:
     )
     parser.add_argument("--sample-one-task", action="store_true")
     parser.add_argument("--seed", type=int, default=20260831)
+    parser.add_argument(
+        "--experiment-id",
+        default=None,
+        help=(
+            "实验输出目录名（docs/experiments/<id>）。缺省沿用内置常量，"
+            "换论文跑时请显式指定，以免覆盖历史实验报告。"
+        ),
+    )
     args = parser.parse_args()
     global EXPERIMENT_DIR
+    if args.experiment_id:
+        EXPERIMENT_DIR = PROJECT_ROOT / "docs" / "experiments" / args.experiment_id
     source_metrics_path = EXPERIMENT_DIR / "metrics.json"
     if args.sample_one_task:
         EXPERIMENT_DIR = PROJECT_ROOT / "docs" / "experiments" / SAMPLE_EXPERIMENT_ID
@@ -576,7 +586,8 @@ def main() -> int:
         previous_metrics = json.loads(source_metrics_path.read_text(encoding="utf-8"))
     original_complete = recorder.install_model_hook()
     metrics: dict[str, Any] = {
-        "experiment_id": SAMPLE_EXPERIMENT_ID if args.sample_one_task else EXPERIMENT_ID,
+        "experiment_id": args.experiment_id
+        or (SAMPLE_EXPERIMENT_ID if args.sample_one_task else EXPERIMENT_ID),
         "paper_id": args.paper_id,
         "started_at": utc_now(), "status": "RUNNING", "input_pdf": str(args.pdf),
         "input_size_bytes": args.pdf.stat().st_size if args.pdf.is_file() else None,
