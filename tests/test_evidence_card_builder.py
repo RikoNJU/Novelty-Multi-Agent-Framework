@@ -29,6 +29,7 @@ from novelty_agent_framework.schemas import (
     WorkType,
 )
 from novelty_agent_framework.tools import EvidenceCardBuilder, ResearcherToolRegistry
+from novelty_agent_framework.tools.evidence_card_builder import _quote_matches
 from conftest import minimal_search_plan
 
 NOW = datetime(2026, 8, 25, tzinfo=timezone.utc)
@@ -371,3 +372,24 @@ def test_no_evidence_finish_and_registry_boundary(tmp_path) -> None:
     assert result.evidence == result.evidence_cards == []
     assert result.warnings == ["no evidence: No grounded source"]
     assert "evidence_card_builder" not in ResearcherToolRegistry().names
+
+
+def test_quote_matching_folds_typographic_variants() -> None:
+    """回归守卫：模型转述正文时会把排版字符写成 ASCII 等价形式。
+
+    实测一条 224 字的引文仅因原文的弯引号 ’ 被写成直引号 ' 就被判为
+    ungrounded，导致整轮 0 张证据卡。归一化必须容忍这类长度不变的字形差异，
+    但绝不能放宽到「词面不同也能通过」。
+    """
+
+    source = "the Transformer\u2019s multi-head self-attention (MHSA) module \u2014 see Fig. 2"
+
+    assert _quote_matches(
+        "the Transformer's multi-head self-attention (MHSA) module - see Fig. 2",
+        source,
+    )
+    # 词面不同仍然必须判否
+    assert not _quote_matches(
+        "the Transformer's multi-head self-attention (MHSA) mechanism - see Fig. 2",
+        source,
+    )

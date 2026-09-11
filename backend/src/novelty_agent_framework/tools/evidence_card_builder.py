@@ -277,10 +277,46 @@ def _quote_matches(quote: str, text: str) -> bool:
     return quote in text or _normalize_whitespace(quote) in _normalize_whitespace(text)
 
 
-def normalize_quote_whitespace(value: str) -> str:
-    """Canonical quote whitespace used by both the builder and integrity gates."""
+# 模型转述正文时会把排版字符「规范化」：弯引号写成直引号、en/em dash 写成连字符、
+# 不换行空格写成普通空格。这些字形差异肉眼不可见，却足以让整条引文无法溯源——
+# 实测一条 224 字的引文仅因 ’ 与 ' 之差被判定为 ungrounded。
+# 注意：必须是**长度不变**的 1:1 替换，否则 _normalized_spans 的偏移映射会失效。
+_TYPOGRAPHIC_FOLD = str.maketrans(
+    {
+        "\u2018": "'",
+        "\u2019": "'",
+        "\u201b": "'",
+        "\u201c": '"',
+        "\u201d": '"',
+        "\u201f": '"',
+        "\u2010": "-",
+        "\u2011": "-",
+        "\u2012": "-",
+        "\u2013": "-",
+        "\u2014": "-",
+        "\u2015": "-",
+        "\u2212": "-",
+        "\u00a0": " ",
+        "\u2007": " ",
+        "\u202f": " ",
+    }
+)
 
-    return re.sub(r"\s+", " ", value).strip()
+
+def fold_quote_typography(value: str) -> str:
+    """把排版变体折叠为 ASCII 等价形式（1:1，长度不变）。"""
+
+    return value.translate(_TYPOGRAPHIC_FOLD)
+
+
+def normalize_quote_whitespace(value: str) -> str:
+    """引文比较的统一归一化，builder 与完整性门共用。
+
+    先折叠排版变体，再折叠空白——两者都是模型复现正文时的常见偏差。
+    此前只处理空白，于是仅一个弯引号之差就会让引文溯源失败。
+    """
+
+    return re.sub(r"\s+", " ", fold_quote_typography(value)).strip()
 
 
 _normalize_whitespace = normalize_quote_whitespace
@@ -304,7 +340,7 @@ def _normalized_spans(value: str) -> tuple[str, list[tuple[int, int]]]:
             spans.append((index, end))
             index = end
         else:
-            chars.append(value[index])
+            chars.append(fold_quote_typography(value[index]))
             spans.append((index, index + 1))
             index += 1
     return "".join(chars), spans
