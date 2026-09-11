@@ -132,6 +132,8 @@ def test_markdown_renderer_reads_workspace_and_uses_default_paths(
     assert "引文：Exact source text." in content
     assert "位置：artifact art_x chars:0-18" in content
     assert "存在部分技术差异" in content
+    assert "最终有效证据数量" in content
+    assert "| NP-1 | 1 | 有证据 |" in content
     assert "{{" not in content
 
 

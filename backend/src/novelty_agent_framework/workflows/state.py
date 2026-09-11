@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from operator import add
 from typing import Annotated, TypedDict
 
@@ -10,8 +10,10 @@ from ..schemas import (
     EvidenceCard,
     EvidenceReviewDecision,
     Evidence,
+    InsufficientFinalEvidence,
     NoveltyBrief,
     NoveltyPoint,
+    NoveltyPointReview,
     NoveltyReport,
     PaperInput,
     RejectedEvidence,
@@ -28,6 +30,7 @@ from ..ports import (
     SearchPlanner,
     TaskResearcher,
 )
+from ..core.runtime_artifacts import RuntimeDebugConfig
 
 
 class NoveltyState(TypedDict, total=False):
@@ -51,10 +54,14 @@ class NoveltyState(TypedDict, total=False):
     evidence_cards: list[EvidenceCard]
     rejected_evidence: list[RejectedEvidence]
     review_decisions: list[EvidenceReviewDecision]
-    coverage_gaps: list[str]
+    novelty_reviews: list[NoveltyPointReview]
+    insufficient_final_evidence_points: list[InsufficientFinalEvidence]
     issues: Annotated[list[WorkflowIssue], add]
     rounds: int
     report: NoveltyReport
+    synthesis_integrity: dict
+    integrity_rejected_card_ids: Annotated[list[str], add]
+    report_integrity: dict
     rendered_report_path: str
 
 
@@ -64,16 +71,17 @@ class NoveltyWorkflowConfig:
 
     max_rounds: int = 2
     max_concurrency: int = 4
-    minimum_evidence_per_point: int = 1
+    min_final_evidence_cards_per_point: int = 1
     candidate_limit_per_task: int = 8
+    runtime_debug: RuntimeDebugConfig = field(default_factory=RuntimeDebugConfig)
 
     def __post_init__(self) -> None:
         if self.max_rounds < 1:
             raise ValueError("max_rounds 必须至少为 1")
         if self.max_concurrency < 1:
             raise ValueError("max_concurrency 必须至少为 1")
-        if self.minimum_evidence_per_point < 1:
-            raise ValueError("minimum_evidence_per_point 必须至少为 1")
+        if self.min_final_evidence_cards_per_point < 1:
+            raise ValueError("min_final_evidence_cards_per_point 必须至少为 1")
         if self.candidate_limit_per_task < 1:
             raise ValueError("candidate_limit_per_task 必须至少为 1")
 

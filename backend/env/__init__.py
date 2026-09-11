@@ -3,6 +3,7 @@ from .model_client import (
     ContentPart,
     ImageContentPart,
     ModelCallOptions,
+    ModelCallEvent,
     ModelClient,
     ModelClientError,
     ModelProfile,
@@ -11,6 +12,8 @@ from .model_client import (
     ModelRuntimeConfig,
     ModelToolCall,
     OpenAICompatibleChatClient,
+    reset_model_call_observer,
+    set_model_call_observer,
     ToolDefinition,
     build_model_client,
 )
@@ -27,6 +30,7 @@ __all__ = [
     "ContentPart",
     "ImageContentPart",
     "ModelCallOptions",
+    "ModelCallEvent",
     "ModelClient",
     "ModelClientError",
     "ModelProfile",
@@ -42,4 +46,6 @@ __all__ = [
     "ToolDefinition",
     "build_model_client",
     "parse_front_matter",
+    "reset_model_call_observer",
+    "set_model_call_observer",
 ]

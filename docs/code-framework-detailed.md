@@ -144,7 +144,7 @@ Service 是 Router 和 Workflow 之间的中间层。它知道“某个请求对
 
 该目录存放 Multi-Agent 协作流程。当前 `novelty.py` 定义 LangGraph 节点、路由和默认 Agent 装配方式，`state.py` 定义共享状态、配置和依赖容器。
 
-Workflow 负责回答“Agent 之间如何协作”：先由 Coordinator 规划，再并行调用 Research Agent，随后进行证据校验和覆盖度判断，必要时补充检索，最后生成报告。
+Workflow 负责回答“Agent 之间如何协作”：先由 Coordinator 规划，再并行调用 Research Agent，随后进行证据校验、复核、溯源完整性检查和最终有效证据数量检查，必要时补充检索，最后生成报告。
 
 该目录不应该直接写具体模型调用、数据库查询或长 Prompt。它应依赖 `ports/` 中的抽象接口，并使用 `schemas/` 中的数据结构来保证流程稳定。
 
@@ -236,7 +236,9 @@ PaperInput
 plan
 → parallel_research
 → validate_evidence
-→ assess_coverage
+→ review_evidence
+→ validate_synthesis_input
+→ check_final_evidence_sufficiency
 → plan_supplement 或 synthesize_report
 ```
 
@@ -249,8 +251,8 @@ plan
 | `_plan` | `NoveltyState` | brief 和 research tasks | 生成初始查新计划 |
 | `_parallel_research` | research tasks | raw evidence cards 和 issues | 并行执行文献调研 |
 | `_validate_evidence` | raw evidence cards | accepted/rejected evidence | 进行证据门控 |
-| `_assess_coverage` | brief 和有效证据 | coverage gaps | 判断每个查新点证据是否足够 |
-| `_plan_supplement` | coverage gaps | 补充 research tasks | 针对缺口追加检索 |
+| `_check_final_evidence_sufficiency` | brief 和最终有效证据 | `insufficient_final_evidence_points` | 仅按查新点计数并与系统门槛比较 |
+| `_plan_supplement` | `insufficient_final_evidence_points` | 补充 research tasks | 针对数量未达门槛的查新点追加检索 |
 | `_synthesize_report` | 全部有效证据和缺口 | `NoveltyReport` | 形成最终查新结论 |
 
 ### 4.7 `workflows/novelty.py` 中的默认装配

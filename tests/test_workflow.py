@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import json
+import threading
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
@@ -13,16 +16,26 @@ from novelty_agent_framework.agents import (
     DemoCoordinator,
     DemoPointExtractor,
     DemoSearchPlanner,
+    EvidenceValidationConfig,
+    build_paper_digest,
 )
 from novelty_agent_framework.ports import ValidationResult
+from novelty_agent_framework.persistence import ReferenceStore
 from novelty_agent_framework.schemas import (
+    Artifact,
+    ArtifactRole,
+    ContentExtent,
+    Evidence,
     EvidenceCard,
+    EvidenceLocator,
     EvidenceSource,
     NoveltyBrief,
     PaperInput,
     TaskResearchRequest,
     TaskResearchResult,
     TaskResearchStatus,
+    Work,
+    WorkType,
 )
 from novelty_agent_framework.workflows import (
     NoveltyWorkflow,
@@ -46,7 +59,9 @@ def make_paper(claims: int = 1) -> PaperInput:
     )
 
 
-def make_card(request: TaskResearchRequest) -> EvidenceCard:
+def make_card(
+    request: TaskResearchRequest, evidence_id: str = "fixture-evidence"
+) -> EvidenceCard:
     task = request.research_task
     point = request.novelty_point
     return EvidenceCard(
@@ -67,6 +82,7 @@ def make_card(request: TaskResearchRequest) -> EvidenceCard:
         ],
         relevance=0.9,
         confidence=0.9,
+        evidence_ids=[evidence_id],
     )
 
 
@@ -77,6 +93,8 @@ class RecordingTaskResearcher:
         self.calls: list[TaskResearchRequest] = []
         self.active = 0
         self.max_active = 0
+        self.reference_store = ReferenceStore()
+        self.store_lock = threading.RLock()
 
     async def ainvoke(self, request: TaskResearchRequest) -> TaskResearchResult:
         self.calls.append(request)
@@ -87,12 +105,75 @@ class RecordingTaskResearcher:
         if request.research_task.task_id == self.fail_task:
             raise RuntimeError("task failed")
         cards = []
+        evidence = []
         if not (self.first_round_empty and request.research_task.attempt == 1):
-            cards = [make_card(request)]
+            task = request.research_task
+            point = request.novelty_point
+            quote = "Grounded quote."
+            work_id = f"work-{point.point_id}-{task.task_id}"
+            artifact_id = f"artifact-{point.point_id}-{task.task_id}"
+            evidence_id = f"evidence-{point.point_id}-{task.task_id}"
+            with self.store_lock:
+                manifest = self.reference_store.load_manifest(
+                    request.subject_paper_id
+                )
+                self.reference_store.write_document(
+                    request.subject_paper_id,
+                    work_id=work_id,
+                    artifact_id=artifact_id,
+                    extension="txt",
+                    content=quote,
+                )
+                self.reference_store.persist_manifest(
+                    request.subject_paper_id,
+                    manifest.model_copy(
+                        update={
+                            "works": [
+                                *manifest.works,
+                                Work(
+                                    work_id=work_id,
+                                    work_type=WorkType.ARTICLE,
+                                    title=f"Candidate {point.point_id} {task.task_id}",
+                                ),
+                            ],
+                            "artifacts": [
+                                *manifest.artifacts,
+                                Artifact(
+                                    artifact_id=artifact_id,
+                                    work_id=work_id,
+                                    role=ArtifactRole.EXTRACTED_TEXT,
+                                    media_type="text/plain",
+                                    relative_path=(
+                                        f"documents/{work_id}/{artifact_id}.txt"
+                                    ),
+                                    sha256=hashlib.sha256(quote.encode()).hexdigest(),
+                                    content_extent=ContentExtent.FULL,
+                                    acquired_at=datetime.now(timezone.utc),
+                                ),
+                            ],
+                            "updated_at": datetime.now(timezone.utc),
+                        }
+                    ),
+                )
+            evidence = [
+                Evidence(
+                    evidence_id=evidence_id,
+                    work_id=work_id,
+                    artifact_id=artifact_id,
+                    novelty_point_id=point.point_id,
+                    task_id=task.task_id,
+                    quote=quote,
+                    locator=EvidenceLocator(char_start=0, char_end=len(quote)),
+                    interpretation="fixture",
+                    confidence=0.9,
+                )
+            ]
+            cards = [make_card(request, evidence_id)]
         return TaskResearchResult(
             task_id=request.research_task.task_id,
             novelty_point_id=request.novelty_point.point_id,
             status=TaskResearchStatus.COMPLETED,
+            evidence=evidence,
             evidence_cards=cards,
             steps_used=1,
         )
@@ -144,6 +225,91 @@ def test_graph_replaces_fixed_retrieval_nodes():
     assert "parallel_research" not in nodes
 
 
+def _final_evidence_sufficiency_state(card_count: int):
+    paper = make_paper()
+    point = DemoPointExtractor().extract(
+        build_paper_digest(paper), previous_brief=None, attempt=1
+    )[0]
+    brief = DemoCoordinator().plan(paper, points=[point], attempt=1)
+    task = brief.research_tasks[0]
+    request = TaskResearchRequest(
+        subject_paper_id=paper.paper_id,
+        run_id="run-sufficiency-test",
+        novelty_point=point,
+        research_task=task,
+        search_plan=DemoSearchPlanner().plan(point, task),
+    )
+    cards = [
+        make_card(request).model_copy(update={"card_id": f"CARD-{index}"})
+        for index in range(card_count)
+    ]
+    return {"paper": paper, "brief": brief, "evidence_cards": cards, "rounds": 1}
+
+
+def test_final_evidence_sufficiency_passes_at_configured_cut():
+    workflow, _ = build_workflow(
+        min_final_evidence_cards_per_point=2,
+        max_rounds=2,
+    )
+    checked = asyncio.run(
+        workflow._check_final_evidence_sufficiency(
+            _final_evidence_sufficiency_state(2)
+        )
+    )
+    assert checked["insufficient_final_evidence_points"] == []
+    assert asyncio.run(
+        workflow._route_after_evidence_sufficiency_check(
+            {**_final_evidence_sufficiency_state(2), **checked}
+        )
+    ) == "synthesize"
+
+
+def test_final_evidence_sufficiency_records_count_below_cut_and_supplements():
+    workflow, _ = build_workflow(
+        min_final_evidence_cards_per_point=2,
+        max_rounds=2,
+    )
+    state = _final_evidence_sufficiency_state(1)
+    checked = asyncio.run(workflow._check_final_evidence_sufficiency(state))
+    item = checked["insufficient_final_evidence_points"][0]
+    assert item.novelty_point_id == "NP-1"
+    assert item.valid_card_count == 1
+    assert item.required_card_count == 2
+    assert asyncio.run(
+        workflow._route_after_evidence_sufficiency_check({**state, **checked})
+    ) == "supplement"
+
+
+def test_zero_cards_is_insufficient_final_evidence():
+    workflow, _ = build_workflow(min_final_evidence_cards_per_point=2)
+    checked = asyncio.run(
+        workflow._check_final_evidence_sufficiency(
+            _final_evidence_sufficiency_state(0)
+        )
+    )
+    item = checked["insufficient_final_evidence_points"][0]
+    assert item.valid_card_count == 0
+    assert item.reason == "insufficient_final_evidence"
+
+
+def test_final_evidence_sufficiency_stops_supplement_at_round_limit():
+    workflow, _ = build_workflow(
+        min_final_evidence_cards_per_point=2,
+        max_rounds=1,
+    )
+    state = _final_evidence_sufficiency_state(0)
+    checked = asyncio.run(workflow._check_final_evidence_sufficiency(state))
+    assert checked["insufficient_final_evidence_points"]
+    assert asyncio.run(
+        workflow._route_after_evidence_sufficiency_check({**state, **checked})
+    ) == "synthesize"
+
+
+def test_final_evidence_cut_rejects_values_below_one():
+    with pytest.raises(ValueError, match="min_final_evidence_cards_per_point"):
+        NoveltyWorkflowConfig(min_final_evidence_cards_per_point=0)
+
+
 def test_each_task_is_isolated_and_fan_out_runs_concurrently():
     planner = RecordingPlanner()
     workflow, researcher = build_workflow(planner=planner, max_concurrency=4)
@@ -171,6 +337,60 @@ def test_validator_runs_once_after_current_round_fan_in():
     assert validator.calls == [(2, 2)]
 
 
+def test_locator_gate_can_be_disabled_without_disabling_quote_gate():
+    point = DemoPointExtractor().extract(
+        build_paper_digest(make_paper()), previous_brief=None, attempt=1
+    )[0]
+    task = DemoCoordinator().plan(make_paper(), points=[point], attempt=1).research_tasks[0]
+    request = TaskResearchRequest(
+        subject_paper_id="paper-test",
+        run_id="run-test",
+        novelty_point=point,
+        research_task=task,
+        search_plan=DemoSearchPlanner().plan(point, task),
+    )
+    card = make_card(request)
+    without_location = card.model_copy(
+        update={"sources": [card.sources[0].model_copy(update={"location": None})]}
+    )
+    validator = DefaultEvidenceValidator(
+        EvidenceValidationConfig(
+            require_direct_quote=True,
+            require_source_location=False,
+        )
+    )
+    assert validator.validate([without_location], tasks=[task]).accepted == (
+        without_location,
+    )
+
+    without_quote = without_location.model_copy(
+        update={"sources": [without_location.sources[0].model_copy(update={"quote": None})]}
+    )
+    rejected = validator.validate([without_quote], tasks=[task]).rejected
+    assert rejected == ((without_quote.card_id, "缺少原文摘录"),)
+
+
+def test_locator_gate_remains_enabled_by_default():
+    point = DemoPointExtractor().extract(
+        build_paper_digest(make_paper()), previous_brief=None, attempt=1
+    )[0]
+    task = DemoCoordinator().plan(make_paper(), points=[point], attempt=1).research_tasks[0]
+    request = TaskResearchRequest(
+        subject_paper_id="paper-test",
+        run_id="run-test",
+        novelty_point=point,
+        research_task=task,
+        search_plan=DemoSearchPlanner().plan(point, task),
+    )
+    card = make_card(request)
+    without_location = card.model_copy(
+        update={"sources": [card.sources[0].model_copy(update={"location": None})]}
+    )
+    assert DefaultEvidenceValidator().validate(
+        [without_location], tasks=[task]
+    ).rejected == ((without_location.card_id, "缺少原文位置"),)
+
+
 def test_single_task_failure_does_not_cancel_siblings():
     researcher = RecordingTaskResearcher(fail_task="T-1")
     workflow, _ = build_workflow(researcher, max_rounds=1)
@@ -194,6 +414,15 @@ def test_supplement_dispatches_only_new_tasks():
     ]
     assert result.evidence_cards
     assert len(planner.calls) == 4
+    summary_path = next(Path("outputs/paper-test/runtime").glob("*/summary.json"))
+    checks = json.loads(summary_path.read_text())[
+        "final_evidence_sufficiency_checks"
+    ]
+    assert len(checks) == 2
+    assert checks[0]["check_status"] == "INSUFFICIENT"
+    assert checks[0]["actual_next_stage"] == "plan_supplement"
+    assert checks[1]["check_status"] == "PASS"
+    assert checks[1]["actual_next_stage"] == "synthesize_report"
 
 
 class NoTaskCoordinator(DemoCoordinator):
@@ -201,7 +430,15 @@ class NoTaskCoordinator(DemoCoordinator):
         brief = super().plan(paper, points=points, attempt=attempt)
         return brief.model_copy(update={"research_tasks": []})
 
-    def plan_supplement(self, paper, *, brief, existing_evidence, coverage_gaps, attempt):
+    def plan_supplement(
+        self,
+        paper,
+        *,
+        brief,
+        existing_evidence,
+        insufficient_final_evidence_points,
+        attempt,
+    ):
         return brief.model_copy(update={"research_tasks": []})
 
 
@@ -218,7 +455,14 @@ def test_no_tasks_branch_does_not_hang():
     )
     result = workflow.run(make_paper())
     assert researcher.calls == []
-    assert result.coverage_gaps
+    assert result.insufficient_final_evidence_points
+    summary_path = next(Path("outputs/paper-test/runtime").glob("*/summary.json"))
+    check = json.loads(summary_path.read_text())[
+        "final_evidence_sufficiency_checks"
+    ][0]
+    assert check["check_status"] == "INSUFFICIENT"
+    assert check["round_limit_allows_supplement"] is False
+    assert check["actual_next_stage"] == "synthesize_report"
 
 
 def test_task_audit_and_compatibility_files_are_written():

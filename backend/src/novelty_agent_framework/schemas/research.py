@@ -34,6 +34,39 @@ class TaskResearchRequest(StrictModel):
         return self
 
 
+class NoveltyPointReviewRequest(StrictModel):
+    """Reviewer 单次调用的查新点级、受约束输入。"""
+
+    subject_paper_id: NonEmptyStr
+    novelty_point: NoveltyPoint
+    tasks: list[ResearchTask] = Field(default_factory=list)
+    cards: list[EvidenceCard] = Field(default_factory=list)
+    evidence: list[Evidence] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def validate_bindings(self) -> "NoveltyPointReviewRequest":
+        point_id = self.novelty_point.point_id
+        if any(task.novelty_point_id != point_id for task in self.tasks):
+            raise ValueError("all tasks must belong to novelty_point")
+        if any(card.novelty_point_id != point_id for card in self.cards):
+            raise ValueError("all cards must belong to novelty_point")
+        if any(item.novelty_point_id != point_id for item in self.evidence):
+            raise ValueError("all evidence must belong to novelty_point")
+        evidence_ids = {item.evidence_id for item in self.evidence}
+        unresolved = {
+            evidence_id
+            for card in self.cards
+            for evidence_id in card.evidence_ids
+            if evidence_id not in evidence_ids
+        }
+        if unresolved:
+            raise ValueError(
+                "card evidence_ids are absent from request evidence: "
+                + ", ".join(sorted(unresolved))
+            )
+        return self
+
+
 class CallToolAction(StrictModel):
     action: Literal["call_tool"]
     tool_name: NonEmptyStr

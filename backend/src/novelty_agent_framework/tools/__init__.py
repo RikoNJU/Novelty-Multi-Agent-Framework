@@ -15,7 +15,7 @@ from .browser_runtime import (
 )
 from .database_search import DatabaseSearchTool
 from .evidence_card_builder import EvidenceCardBuilder
-from .reader import ReaderTool, ReferenceReaderResearcherTool
+from .reader import ReaderTool, ReferenceReaderResearcherTool, ReviewerReaderTool
 from .reference_reader import ReferenceArtifactReaderTool
 from .reference_search import ReferenceSearchTool
 from .renderer import (
@@ -49,6 +49,7 @@ __all__ = [
     "MarkdownRenderer",
     "PlaywrightBrowserBackend",
     "ReaderTool",
+    "ReviewerReaderTool",
     "ReferenceArtifactReaderTool",
     "ReferenceReaderResearcherTool",
     "ReferenceSearchTool",

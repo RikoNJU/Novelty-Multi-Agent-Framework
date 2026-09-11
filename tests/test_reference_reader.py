@@ -9,6 +9,7 @@ from novelty_agent_framework.persistence import ReferenceStore
 from novelty_agent_framework.schemas import (
     AccessStatus,
     Artifact,
+    ArtifactNamespace,
     ArtifactRole,
     ContentExtent,
     ReferenceManifest,
@@ -77,6 +78,7 @@ def test_reader_returns_stable_global_slice(tmp_path):
     first = asyncio.run(reader.ainvoke(request))
     second = asyncio.run(reader.ainvoke(request))
     assert first == second
+    assert first.namespace == ArtifactNamespace.RESEARCH_REFERENCE
     assert first.text == "34567"
     assert (first.char_start, first.char_end, first.has_more) == (3, 8, True)
 

@@ -123,7 +123,7 @@ async def run():
         search_planner=DemoSearchPlanner(),
         point_extractor=FixedPointExtractor(), validator=PassthroughValidator()),
         NoveltyWorkflowConfig(max_rounds=1, max_concurrency=1,
-                              minimum_evidence_per_point=1))
+                              min_final_evidence_cards_per_point=1))
     started_at = datetime.now(timezone.utc).isoformat()
     started = time.perf_counter()
     result = await workflow.arun(_paper())
@@ -147,7 +147,8 @@ async def run():
         "started_at": started_at, "finished_at": datetime.now(timezone.utc).isoformat(),
         "model_alias": alias, "model": measured.model,
         "workflow_nodes": ["extract_points", "plan", "dispatch_research_tasks",
-            "run_research_task", "validate_evidence", "assess_coverage",
+            "run_research_task", "validate_evidence",
+            "check_final_evidence_sufficiency",
             "synthesize_report", "render_report"],
         "dispatch_task_count": len(recording.requests),
         "tool_sequence": [event.tool_call.name for event in tool_events],

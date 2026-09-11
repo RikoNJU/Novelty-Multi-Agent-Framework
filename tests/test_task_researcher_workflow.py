@@ -31,7 +31,8 @@ class FakeReader:
 
     async def ainvoke(self, arguments, *, scope):
         self.max_chars = arguments.max_chars
-        read = {"read_id": "read-1", "work_id": "work-1", "artifact_id": "artifact-1",
+        read = {"namespace": "research_reference", "read_id": "read-1",
+                "work_id": "work-1", "artifact_id": "artifact-1",
                 "role": "extracted_text", "char_start": 0, "char_end": 5,
                 "text": "quote", "has_more": False, "sha256": "abc"}
         return ResearcherToolObservation(tool_name="reader",

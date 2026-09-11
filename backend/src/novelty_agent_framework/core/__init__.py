@@ -5,6 +5,13 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from .errors import WorkflowExecutionError
+from .runtime_artifacts import (
+    RuntimeArtifactManager,
+    RuntimeDebugConfig,
+    StageHandle,
+    ToolCallHandle,
+    current_runtime_artifacts,
+)
 
 if TYPE_CHECKING:
     from .tool_call_harness import (
@@ -21,7 +28,15 @@ _HARNESS_EXPORTS = (
     "ToolCallHarnessResult",
 )
 
-__all__ = ["WorkflowExecutionError", *_HARNESS_EXPORTS]
+__all__ = [
+    "WorkflowExecutionError",
+    "RuntimeArtifactManager",
+    "RuntimeDebugConfig",
+    "StageHandle",
+    "ToolCallHandle",
+    "current_runtime_artifacts",
+    *_HARNESS_EXPORTS,
+]
 
 
 def __getattr__(name: str) -> Any:

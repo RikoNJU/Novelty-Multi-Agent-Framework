@@ -4,13 +4,21 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
+import threading
 from collections import defaultdict
 from collections.abc import Sequence
+from datetime import datetime, timezone
+
+from ..persistence import ReferenceStore
 
 from ..schemas import (
     ConclusionLevel,
+    Artifact,
+    ArtifactRole,
+    ContentExtent,
     EvidenceCard,
     EvidenceSource,
+    InsufficientFinalEvidence,
     NoveltyBrief,
     NoveltyConclusion,
     NoveltyPoint,
@@ -25,6 +33,8 @@ from ..schemas import (
     TaskResearchRequest,
     TaskResearchResult,
     TaskResearchStatus,
+    Work,
+    WorkType,
 )
 from ..ports import FullTextTool, MetadataTool, SearchHit
 from ..tools.database_search.adapter import QueryAdapter, QueryAdapterError
@@ -83,10 +93,12 @@ class DemoCoordinator:
         *,
         brief: NoveltyBrief,
         existing_evidence: Sequence[EvidenceCard],
-        coverage_gaps: Sequence[str],
+        insufficient_final_evidence_points: Sequence[InsufficientFinalEvidence],
         attempt: int,
     ) -> NoveltyBrief:
-        missing_ids = {gap.split(":", 1)[0] for gap in coverage_gaps}
+        missing_ids = {
+            item.novelty_point_id for item in insufficient_final_evidence_points
+        }
         tasks = [
             task
             for point in brief.novelty_points
@@ -102,7 +114,7 @@ class DemoCoordinator:
         brief: NoveltyBrief,
         evidence: Sequence[EvidenceCard],
         rejected_evidence: Sequence[str],
-        coverage_gaps: Sequence[str],
+        insufficient_final_evidence_points: Sequence[InsufficientFinalEvidence],
     ) -> NoveltyReport:
         grouped: dict[str, list[EvidenceCard]] = defaultdict(list)
         for card in evidence:
@@ -155,7 +167,13 @@ class DemoCoordinator:
                 if card.possible_baseline and card.cited_by_paper is False
             }
         )
-        limitations = list(coverage_gaps)
+        limitations = [
+            (
+                f"{item.novelty_point_id}: 最终有效 EvidenceCard 数量为 "
+                f"{item.valid_card_count}，系统门槛为 {item.required_card_count}"
+            )
+            for item in insufficient_final_evidence_points
+        ]
         if rejected_evidence:
             limitations.append(f"有 {len(rejected_evidence)} 条候选证据未通过质量门槛")
 
@@ -276,15 +294,58 @@ class DemoSearchTool:
 class DemoTaskResearcher:
     """默认离线主图使用的单任务确定性 Researcher。"""
 
+    def __init__(self, reference_store: ReferenceStore | None = None) -> None:
+        self.reference_store = reference_store or ReferenceStore()
+        self._store_lock = threading.RLock()
+
     async def ainvoke(self, request: TaskResearchRequest) -> TaskResearchResult:
         task = request.research_task
         point = request.novelty_point
         evidence_id = f"EVD-{point.point_id}-{task.task_id}"
         quote = "This synthetic passage is used only to validate the workflow."
+        work_id = f"demo-work-{point.point_id}"
+        artifact_id = f"demo-artifact-{point.point_id}"
+        with self._store_lock:
+            manifest = self.reference_store.load_manifest(request.subject_paper_id)
+            if not any(item.artifact_id == artifact_id for item in manifest.artifacts):
+                self.reference_store.write_document(
+                    request.subject_paper_id,
+                    work_id=work_id,
+                    artifact_id=artifact_id,
+                    extension="txt",
+                    content=quote,
+                )
+                work = Work(
+                    work_id=work_id,
+                    work_type=WorkType.ARTICLE,
+                    title=f"Demo Related Work {point.point_id}",
+                )
+                artifact = Artifact(
+                    artifact_id=artifact_id,
+                    work_id=work_id,
+                    role=ArtifactRole.EXTRACTED_TEXT,
+                    media_type="text/plain",
+                    relative_path=f"documents/{work_id}/{artifact_id}.txt",
+                    sha256=hashlib.sha256(quote.encode("utf-8")).hexdigest(),
+                    byte_size=len(quote.encode("utf-8")),
+                    content_extent=ContentExtent.FULL,
+                    acquired_at=datetime.now(timezone.utc),
+                    provenance={"tool": "demo_task_researcher"},
+                )
+                self.reference_store.persist_manifest(
+                    request.subject_paper_id,
+                    manifest.model_copy(
+                        update={
+                            "works": [*manifest.works, work],
+                            "artifacts": [*manifest.artifacts, artifact],
+                            "updated_at": datetime.now(timezone.utc),
+                        }
+                    ),
+                )
         evidence = Evidence(
             evidence_id=evidence_id,
-            work_id=f"demo-work-{point.point_id}",
-            artifact_id=f"demo-artifact-{point.point_id}",
+            work_id=work_id,
+            artifact_id=artifact_id,
             novelty_point_id=point.point_id,
             task_id=task.task_id,
             quote=quote,

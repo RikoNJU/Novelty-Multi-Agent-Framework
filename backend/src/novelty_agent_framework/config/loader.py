@@ -146,6 +146,11 @@ def effective_safe_config(config: ApplicationConfig) -> dict[str, Any]:
     """Reproducible runtime view without API keys or environment values."""
 
     return {
+        "workflow": config.project.workflow.model_dump(mode="json"),
+        "runtime_debug": config.project.runtime_debug.model_dump(mode="json"),
+        "processing": config.project.processing,
+        "coordinator": config.coordinator.model_dump(mode="json"),
+        "point_extractor": config.point_extractor.model_dump(mode="json"),
         "researcher": config.researcher.model_dump(mode="json"),
         "search_planner": config.search_planner.model_dump(mode="json"),
         "reviewer": (

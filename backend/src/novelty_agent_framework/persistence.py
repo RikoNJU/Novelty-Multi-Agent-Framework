@@ -19,10 +19,12 @@ from pathlib import Path
 from typing import Any, Mapping, Sequence
 
 from .schemas import (
+    Artifact,
     ArtifactNamespace,
     EvidenceCard,
     EvidenceReviewDecision,
     NoveltyPoint,
+    NoveltyPointReview,
     NoveltyReport,
     PaperDocument,
     PaperInput,
@@ -223,13 +225,7 @@ class ReferenceStore:
     ) -> ReferenceReadResult:
         """仅按 Manifest 中的文本 Artifact ID 读取受限字符片段。"""
 
-        manifest = self.load_manifest(paper_id)
-        artifact = next(
-            (item for item in manifest.artifacts if item.artifact_id == artifact_id),
-            None,
-        )
-        if artifact is None:
-            raise ValueError(f"unknown artifact_id {artifact_id!r}")
+        artifact, _path, raw = self.verify_artifact_file(paper_id, artifact_id)
         if artifact.media_type not in {
             "text/plain",
             "text/markdown",
@@ -239,16 +235,6 @@ class ReferenceStore:
             raise ValueError(
                 f"artifact {artifact_id} media_type {artifact.media_type!r} is not readable text"
             )
-        references_dir = self._workspace(paper_id).resolve()
-        path = (references_dir / artifact.relative_path).resolve()
-        if not path.is_relative_to(references_dir):
-            raise ValueError(f"artifact {artifact_id} path escapes references workspace")
-        if not path.is_file():
-            raise FileNotFoundError(f"artifact {artifact_id} content file is missing")
-        raw = path.read_bytes()
-        digest = hashlib.sha256(raw).hexdigest()
-        if digest != artifact.sha256:
-            raise ValueError(f"artifact {artifact_id} sha256 mismatch")
         try:
             text = raw.decode("utf-8")
         except UnicodeDecodeError as exc:
@@ -259,9 +245,13 @@ class ReferenceStore:
             )
         char_end = min(len(text), char_start + max_chars)
         read_id = "read_" + hashlib.sha256(
-            f"{artifact_id}\x1f{char_start}\x1f{char_end}\x1f{artifact.sha256}".encode()
+            (
+                f"{artifact_namespace_for_reference_namespace(self.namespace).value}"
+                f"\x1f{artifact_id}\x1f{char_start}\x1f{char_end}\x1f{artifact.sha256}"
+            ).encode()
         ).hexdigest()[:24]
         return ReferenceReadResult(
+            namespace=artifact_namespace_for_reference_namespace(self.namespace),
             read_id=read_id,
             work_id=artifact.work_id,
             artifact_id=artifact.artifact_id,
@@ -272,6 +262,32 @@ class ReferenceStore:
             has_more=char_end < len(text),
             sha256=artifact.sha256,
         )
+
+    def verify_artifact_file(
+        self,
+        paper_id: str,
+        artifact_id: str,
+    ) -> tuple[Artifact, Path, bytes]:
+        """Resolve one manifest Artifact and verify path, existence and SHA-256."""
+
+        manifest = self.load_manifest(paper_id)
+        artifact = next(
+            (item for item in manifest.artifacts if item.artifact_id == artifact_id),
+            None,
+        )
+        if artifact is None:
+            raise ValueError(f"unknown artifact_id {artifact_id!r}")
+        references_dir = self._workspace(paper_id).resolve()
+        path = (references_dir / artifact.relative_path).resolve()
+        if not path.is_relative_to(references_dir):
+            raise ValueError(f"artifact {artifact_id} path escapes references workspace")
+        if not path.is_file():
+            raise FileNotFoundError(f"artifact {artifact_id} content file is missing")
+        raw = path.read_bytes()
+        digest = hashlib.sha256(raw).hexdigest()
+        if digest != artifact.sha256:
+            raise ValueError(f"artifact {artifact_id} sha256 mismatch")
+        return artifact, path, raw
 
 
 class SubjectReferenceStore(ReferenceStore):
@@ -296,6 +312,18 @@ class SubjectReferenceStore(ReferenceStore):
         path = self._workspace(paper_id) / "bootstrap.json"
         _atomic_write_json(path, manifest.model_dump(mode="json"))
         return path
+
+
+def artifact_namespace_for_reference_namespace(
+    namespace: ReferenceNamespace,
+) -> ArtifactNamespace:
+    """Map a physical ReferenceStore namespace to its public artifact address."""
+
+    mapping = {
+        ReferenceNamespace.RESEARCH: ArtifactNamespace.RESEARCH_REFERENCE,
+        ReferenceNamespace.SUBJECT_REFERENCE: ArtifactNamespace.SUBJECT_REFERENCE,
+    }
+    return mapping[ReferenceNamespace(namespace)]
 
 
 def reference_store_for_artifact_namespace(
@@ -512,6 +540,26 @@ def persist_evidence_cards(
             decision.model_dump(mode="json") for decision in review_decisions
         ]
     _write_json(path, payload)
+    return path
+
+
+def persist_novelty_reviews(
+    paper: PaperInput,
+    reviews: Sequence[NoveltyPointReview],
+    *,
+    output_root: str | Path = DEFAULT_OUTPUTS_DIR,
+) -> Path:
+    """写出 Reviewer 的正式查新点级业务产物。"""
+
+    workspace = paper_workspace(paper, output_root=output_root)
+    path = workspace / "novelty-reviews.json"
+    _write_json(
+        path,
+        {
+            "paper_id": paper.paper_id,
+            "reviews": [item.model_dump(mode="json") for item in reviews],
+        },
+    )
     return path
 
 

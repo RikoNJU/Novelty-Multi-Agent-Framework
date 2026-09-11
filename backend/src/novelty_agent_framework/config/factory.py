@@ -24,6 +24,7 @@ from ..agents import (
     SearchPlannerAgent,
 )
 from ..agents.search_plan_compiler import SemanticLimits
+from ..core.runtime_artifacts import RuntimeDebugConfig
 from ..tools import (
     BaiduSearchBackend,
     BrowserTool,
@@ -32,6 +33,7 @@ from ..tools import (
     ReferenceArtifactReaderTool,
     ReferenceSearchTool,
     ReaderTool,
+    ReviewerReaderTool,
     ResearcherToolRegistry,
     WebSearchTool,
 )
@@ -285,6 +287,13 @@ def build_workflow(
         if isinstance(reviewer_model_invocation, Mapping)
         else None
     )
+    workflow_cfg = raw.get("workflow", {})
+    researcher_runtime = raw.get("researcher_runtime", {})
+    runtime_tools = researcher_runtime.get("tools", {})
+    web_cfg = runtime_tools.get("web_search", {})
+    browser_cfg = runtime_tools.get("browser", {})
+    reader_cfg = runtime_tools.get("reader", {})
+    store = ReferenceStore()
     reviewer = (
         NoveltyEvidenceReviewer(
             prompts=prompts,
@@ -297,18 +306,25 @@ def build_workflow(
                 fail_closed=bool(reviewer_cfg.get("fail_closed", True)),
             ),
             model_options=reviewer_model_options,
+            tool_registry=ResearcherToolRegistry(
+                [
+                    ReviewerReaderTool(
+                        ReferenceArtifactReaderTool(
+                            store,
+                            max_chars_per_read=int(
+                                reader_cfg.get("max_chars_per_read", 16_000)
+                            ),
+                        ),
+                        default_chars_per_read=int(
+                            reader_cfg.get("default_chars_per_read", 8_000)
+                        ),
+                    )
+                ]
+            ),
         )
         if reviewer_cfg.get("enabled", False)
         else None
     )
-
-    workflow_cfg = raw.get("workflow", {})
-    researcher_runtime = raw.get("researcher_runtime", {})
-    runtime_tools = researcher_runtime.get("tools", {})
-    web_cfg = runtime_tools.get("web_search", {})
-    browser_cfg = runtime_tools.get("browser", {})
-    reader_cfg = runtime_tools.get("reader", {})
-    store = ReferenceStore()
     tool_registry = ResearcherToolRegistry(
         [
             ReferenceSearchTool(SubjectReferenceStore()),
@@ -397,13 +413,32 @@ def build_workflow(
         config=NoveltyWorkflowConfig(
             max_rounds=int(workflow_cfg.get("max_rounds", 2)),
             max_concurrency=int(workflow_cfg.get("max_concurrency", 4)),
-            minimum_evidence_per_point=int(
-                workflow_cfg.get("minimum_evidence_per_point", 1)
+            min_final_evidence_cards_per_point=int(
+                workflow_cfg.get("min_final_evidence_cards_per_point", 1)
             ),
             candidate_limit_per_task=int(
                 retrieval_cfg.get("candidate_limit_per_task", 8)
             ),
+            runtime_debug=RuntimeDebugConfig(
+                enabled=bool(raw.get("runtime_debug", {}).get("enabled", True)),
+                output_root=Path(
+                    raw.get("runtime_debug", {}).get("output_root", "outputs")
+                ),
+                archive_root=Path(
+                    raw.get("runtime_debug", {}).get(
+                        "archive_root", "docs/experiments/runtime"
+                    )
+                ),
+                max_inline_bytes=int(
+                    raw.get("runtime_debug", {}).get("max_inline_bytes", 256_000)
+                ),
+                llm_pricing_path=Path(
+                    raw.get("runtime_debug", {}).get("llm_pricing_path")
+                    or RuntimeDebugConfig().llm_pricing_path
+                ),
+            ),
         ),
+        runtime_config=raw,
     )
 
 
@@ -451,23 +486,6 @@ def _build_workflow_from_application_config(
         ),
         prompt_name=config.search_planner.prompt,
     )
-    reviewer = (
-        NoveltyEvidenceReviewer(
-            prompts=prompts,
-            models=registry,
-            config=EvidenceReviewerConfig(
-                enabled=True,
-                model_alias=config.reviewer.model.alias,
-                temperature=config.reviewer.model.temperature,
-                max_cards_per_call=config.reviewer.max_cards_per_call,
-                fail_closed=config.reviewer.fail_closed,
-            ),
-            model_options=_typed_model_options(config.reviewer.model),
-        )
-        if config.reviewer is not None and config.reviewer.enabled
-        else None
-    )
-
     database = config.researcher.tools.database_search
     retrieval = {
         "active_source": database.active_source,
@@ -481,6 +499,32 @@ def _build_workflow_from_application_config(
     browser = config.researcher.tools.browser
     reader = config.researcher.tools.reader
     store = ReferenceStore()
+    reviewer = (
+        NoveltyEvidenceReviewer(
+            prompts=prompts,
+            models=registry,
+            config=EvidenceReviewerConfig(
+                enabled=True,
+                model_alias=config.reviewer.model.alias,
+                temperature=config.reviewer.model.temperature,
+                max_cards_per_call=config.reviewer.max_cards_per_call,
+                fail_closed=config.reviewer.fail_closed,
+            ),
+            model_options=_typed_model_options(config.reviewer.model),
+            tool_registry=ResearcherToolRegistry(
+                [
+                    ReviewerReaderTool(
+                        ReferenceArtifactReaderTool(
+                            store, max_chars_per_read=reader.max_chars_per_read
+                        ),
+                        default_chars_per_read=reader.default_chars_per_read,
+                    )
+                ]
+            ),
+        )
+        if config.reviewer is not None and config.reviewer.enabled
+        else None
+    )
     tool_registry = ResearcherToolRegistry(
         [
             ReferenceSearchTool(SubjectReferenceStore()),
@@ -532,6 +576,7 @@ def _build_workflow_from_application_config(
         ),
     )
     workflow = config.project.workflow
+    runtime_debug = config.project.runtime_debug
     return NoveltyWorkflow(
         NoveltyWorkflowServices(
             coordinator=coordinator,
@@ -543,9 +588,23 @@ def _build_workflow_from_application_config(
         config=NoveltyWorkflowConfig(
             max_rounds=workflow.max_rounds,
             max_concurrency=workflow.max_concurrency,
-            minimum_evidence_per_point=workflow.minimum_evidence_per_point,
+            min_final_evidence_cards_per_point=(
+                workflow.min_final_evidence_cards_per_point
+            ),
             candidate_limit_per_task=database.candidate_limit_per_task,
+            runtime_debug=RuntimeDebugConfig(
+                enabled=runtime_debug.enabled,
+                output_root=Path(runtime_debug.output_root),
+                archive_root=Path(runtime_debug.archive_root),
+                max_inline_bytes=runtime_debug.max_inline_bytes,
+                llm_pricing_path=(
+                    Path(runtime_debug.llm_pricing_path)
+                    if runtime_debug.llm_pricing_path
+                    else RuntimeDebugConfig().llm_pricing_path
+                ),
+            ),
         ),
+        runtime_config=config.model_dump(mode="json"),
     )
 
 

@@ -8,15 +8,18 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Protocol, Sequence
+from typing import Any, Awaitable, Protocol, Sequence
 
 from ..schemas import (
     EvidenceCard,
     EvidenceReviewDecision,
     EvidenceSource,
+    InsufficientFinalEvidence,
     ExternalIdentifier,
     NoveltyBrief,
     NoveltyPoint,
+    NoveltyPointReview,
+    NoveltyPointReviewRequest,
     NoveltyReport,
     PaperDigest,
     PaperDocument,
@@ -120,7 +123,7 @@ class NoveltyCoordinator(Protocol):
         *,
         brief: NoveltyBrief,
         existing_evidence: Sequence[EvidenceCard],
-        coverage_gaps: Sequence[str],
+        insufficient_final_evidence_points: Sequence[InsufficientFinalEvidence],
         attempt: int,
     ) -> NoveltyBrief:
         """针对证据缺口生成补充调研任务。"""
@@ -132,7 +135,7 @@ class NoveltyCoordinator(Protocol):
         brief: NoveltyBrief,
         evidence: Sequence[EvidenceCard],
         rejected_evidence: Sequence[str],
-        coverage_gaps: Sequence[str],
+        insufficient_final_evidence_points: Sequence[InsufficientFinalEvidence],
     ) -> NoveltyReport:
         """从全局视角汇总证据并形成查新报告。"""
 
@@ -185,21 +188,18 @@ class ValidationResult:
 
 
 class EvidenceReviewer(Protocol):
-    """对通过 Validator 的证据卡进行语义与证据一致性审查。"""
+    """综合当前查新点的 Cards/Evidence 并给出信息判定。"""
 
     def review(
         self,
-        cards: Sequence[EvidenceCard],
-        *,
-        points: Sequence[NoveltyPoint],
-        tasks: Sequence[ResearchTask],
-    ) -> "ReviewResult":
+        request: NoveltyPointReviewRequest,
+    ) -> NoveltyPointReview | Awaitable[NoveltyPointReview]:
         ...
 
 
 @dataclass(frozen=True)
 class ReviewResult:
-    """Reviewer 的标准输出。"""
+    """旧逐卡 Reviewer 输出，仅保留迁移期调用兼容。"""
 
     accepted: tuple[EvidenceCard, ...]
     rejected: tuple[tuple[str, str], ...]

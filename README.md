@@ -23,9 +23,13 @@ Evidence Compiler                  确定性绑定 quote、Artifact 和字符位
   ↓
 EvidenceValidator                  证据质量门控与去重
   ↓
-Coverage Assessment
-  ├─ 证据不足 → Coordinator.plan_supplement → 重新经过完整检索链
-  └─ 达到轮次上限或覆盖充分
+EvidenceReviewer                   证据复核
+  ↓
+Provenance Integrity Gate         过滤溯源链不完整的 Card
+  ↓
+Final Evidence Sufficiency Check  按查新点检查最终有效 Card 数量
+  ├─ 数量不足 且轮次未耗尽 → Coordinator.plan_supplement → 重新经过完整检索链
+  └─ 数量达标或轮次耗尽
   ↓
 Coordinator.synthesize             生成结构化 NoveltyReport
   ↓
@@ -41,7 +45,9 @@ START
 → dispatch_research_tasks
 → run_research_task                每个 ResearchTask 运行一个 LangGraph 子图
 → validate_evidence
-→ assess_coverage
+→ review_evidence
+→ validate_synthesis_input
+→ check_final_evidence_sufficiency
   ├─ plan_supplement → dispatch_research_tasks → ...
   └─ synthesize_report → render_report
 → END
@@ -64,8 +70,15 @@ START
 `StructuredSourceRetrievalTool` 接收一个 `NoveltyPoint`、一个对应的
 `ResearchTask` 和 `source_id`，确定性执行 `SearchPlanner → RetrievalSource →
 Metadata/FullText`，保存 `Work / SourceRecord / Artifact`，并返回 Evidence 为空的
-`ResearchBundle`。它不包含 Researcher、EvidenceCard、EvidenceValidator、覆盖度判断
+`ResearchBundle`。它不包含 Researcher、EvidenceCard、EvidenceValidator、最终证据数量判断
 或报告生成。它通过通用 Researcher 工具注册表接入任务子图。
+
+`Final Evidence Sufficiency Check` 在 Validator、Reviewer 和 Provenance
+Integrity Gate 之后，对每个 `NoveltyPoint` 的最终有效 `EvidenceCard`
+数量进行确定性检查。数量低于系统配置
+`min_final_evidence_cards_per_point` 时，记录结构化
+`insufficient_final_evidence` 事实。V0 继续使用现有补检回边。该节点仅
+判断 Card 数量，不评价检索范围、来源多样性、证据质量或新颖性结论。
 
 arXiv 是当前能力完整的结构化来源，但 Tool 不假设所有来源都能取得全文。Coordinator
 分发任务后，由每个 Researcher Agent 决定是否调用该 Tool。WebSearch、Browser 与
@@ -113,6 +126,30 @@ Observation 留在 trace 中，仅把各工具的 model-context projection 放�
 
 `null_catalog` 只验证数据源注册、配置选择、QueryAdapter/SearchTool 替换和空结果处理；它不模拟真实文献数据库，不验证 FullTextTool、MetadataTool 的跨来源兼容性，也不用于正式查新。用户自制本地数据库导入仍是 `experiments/` 下未实现、未接入工作流的探索功能。
 
+Reviewer 排障可运行：
+
+```bash
+python scripts/reviewer_diagnostics.py outputs/<paper_id>
+```
+
+该命令只读检查 `novelty-reviews.json`、Card→Evidence 引用闭包、RelevantWork
+引用、补检旁路信号，以及 Runtime Artifact 中 Reviewer 的 Reader 调用；输出不会复制
+Evidence quote 或 Reader 正文。`review_evidence` 阶段的 `meta.json` 和运行
+`summary.json` / `summary.md` 也包含按查新点整理的白名单、漏评、重复评审、未解析
+Evidence 与 Card 保留情况。
+
+跨 Namespace 参考文献资产链排障可运行：
+
+```bash
+python scripts/reference_namespace_diagnostics.py outputs/<paper_id>
+python scripts/reference_namespace_diagnostics.py outputs/<paper_id> \
+  --namespace subject_reference --artifact-id <artifact_id>
+```
+
+该命令只读检查两个 manifest、Artifact 文件完整性、Reader 输入/输出 namespace
+一致性及 Evidence provenance 回指，不输出 Reader 正文或 Evidence quote。跨 namespace
+出现相同裸 `artifact_id` 会作为需要 namespace-aware 访问的提示，而不会被判定为错误。
+
 ChinaXiv 接入状态：暂停，未注册为可用数据源。截至 2026-08-14，官网关键词检索仅验证到 HTML 表单，未发现可稳定直接调用的公开关键词 API；OAI-PMH 候选端点从当前网络返回“无权访问”而非 OAI XML，因而无法验证元数据收割、详情元数据和公开 PDF 契约。项目不会以网页爬虫或未经验证的协议假设冒充正式 ChinaXiv 支持。待取得官方接口文档或可稳定访问的 OAI-PMH 响应后再继续实现。
 
 ## 项目结构
@@ -122,6 +159,7 @@ backend/env/                              统一模型客户端、模型注册�
 backend/src/novelty_agent_framework/
 ├── agents/                              Coordinator、PointExtractor、SearchPlanner、Researcher、Validator、Demo
 ├── config/                              配置加载和真实工作流组合根
+├── diagnostics/                         LLM usage 归一化与 RMB 计费
 ├── ports/                               可替换能力接口
 ├── processing/                          PDF 文本层解析、OCR 兜底、章节与标题提取
 ├── prompts/                             版本化 Agent 提示词
@@ -156,6 +194,13 @@ outputs/<paper_id>/
 ```
 
 真实实验还可额外写出 `run-metrics.json`，记录墙钟时间和逐次模型 usage。
+
+开启 `runtime_debug` 时，每次生产模型调用还会写入
+`outputs/<paper_id>/runtime/<run_id>/llm_calls/`。单次记录包含模型、阶段、耗时、
+输入/缓存输入/输出/推理 token、所用单价档及 RMB 金额；`summary.json` 和
+`summary.md` 提供按模型与整次运行的汇总。单价表位于
+`backend/src/novelty_agent_framework/config/llm_pricing.json`，未知单价会标为
+`UNPRICED`，不会按 0 元处理。
 
 `retrieval-plans.json` 按查新点保存 `research_tasks`、数据库无关 `search_plans`、真正执行的 `executed_queries`，以及供现有 Renderer 使用的 `query_plan.queries`。
 
@@ -242,7 +287,10 @@ workflow = build_workflow(config)
 result = workflow.run(PaperInput.model_validate(paper_data))
 ```
 
-当前示例配置中的 `Pro/zai-org/GLM-4.7` 在第一次原型实验时被 SiliconFlow 返回 `Model disabled`。真实运行前应把 Coordinator 配置为当前可用模型；实验使用 `deepseek-flash` 临时替代。
+当前默认配置已将 Coordinator、PointExtractor、Researcher、SearchPlanner、Reviewer
+以及文本处理的 LLM 兜底统一为 `deepseek-flash`；OCR 保留专用的
+`deepseek-ocr`。仍可分别通过 `NOVELTY_COORDINATOR_MODEL`、
+`NOVELTY_RESEARCH_MODEL` 和 `NOVELTY_SEARCH_PLANNER_MODEL` 显式覆盖。
 
 ### Renderer 与 API
 

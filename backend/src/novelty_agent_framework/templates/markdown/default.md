@@ -61,13 +61,9 @@
 
 {{ evidence_list }}
 
-### 6.3 证据覆盖情况
+### 6.3 最终有效证据数量
 
-{{ evidence_coverage }}
-
-### 6.4 未充分覆盖的内容
-
-{{ coverage_gaps }}
+{{ final_evidence_counts }}
 
 ---
 

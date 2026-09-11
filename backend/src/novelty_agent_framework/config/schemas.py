@@ -158,7 +158,15 @@ class CorsConfig(ConfigModel):
 class WorkflowConfig(ConfigModel):
     max_rounds: int = Field(gt=0)
     max_concurrency: int = Field(gt=0)
-    minimum_evidence_per_point: int = Field(ge=0)
+    min_final_evidence_cards_per_point: int = Field(ge=1)
+
+
+class RuntimeDebugSettingsConfig(ConfigModel):
+    enabled: bool = True
+    output_root: str = "outputs"
+    archive_root: str = "docs/experiments/runtime"
+    max_inline_bytes: int = Field(default=256_000, gt=0)
+    llm_pricing_path: str | None = None
 
 
 class ProjectSettingsConfig(ConfigModel):
@@ -166,6 +174,9 @@ class ProjectSettingsConfig(ConfigModel):
     cors: CorsConfig
     workflow: WorkflowConfig
     processing: dict[str, Any]
+    runtime_debug: RuntimeDebugSettingsConfig = Field(
+        default_factory=RuntimeDebugSettingsConfig
+    )
 
 
 class ApplicationConfig(ConfigModel):

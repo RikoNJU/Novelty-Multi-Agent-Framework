@@ -5,10 +5,12 @@ from __future__ import annotations
 import hashlib
 import re
 from collections.abc import Sequence
+from dataclasses import dataclass
 
-from ..persistence import ReferenceStore
+from ..persistence import ReferenceStore, reference_store_for_artifact_namespace
 from ..schemas import (
     Artifact,
+    ArtifactNamespace,
     Evidence,
     EvidenceCard,
     EvidenceCardBuilderResult,
@@ -22,6 +24,13 @@ from ..schemas import (
     TaskResearchRequest,
     Work,
 )
+
+
+@dataclass(frozen=True)
+class _ManifestIndex:
+    works: dict[str, Work]
+    artifacts: dict[str, Artifact]
+    records: dict[str, SourceRecord]
 
 
 class EvidenceCardBuilder:
@@ -45,22 +54,19 @@ class EvidenceCardBuilder:
                 warnings=[f"no evidence: {draft.no_evidence_reason}"]
             )
 
-        manifest = self.reference_store.load_manifest(scope.subject_paper_id)
-        works = {item.work_id: item for item in manifest.works}
-        artifacts = {item.artifact_id: item for item in manifest.artifacts}
-        records = {item.source_record_id: item for item in manifest.source_records}
+        indexes = self._manifest_indexes(scope.subject_paper_id, reads)
         all_evidence: list[Evidence] = []
         cards: list[EvidenceCard] = []
         warnings: list[str] = []
-        resolved_works: set[str] = set()
+        resolved_works: set[tuple[ArtifactNamespace, str]] = set()
 
         for card_draft in draft.cards:
             matched_by_quote = [
-                self._matching_reads(quote, reads, artifacts, records)
+                self._matching_reads(quote, reads, indexes)
                 for quote in card_draft.quotes
             ]
             candidate_sets = [
-                {read.work_id for read, _artifact in matches}
+                {(read.namespace, read.work_id) for read, _artifact in matches}
                 for matches in matched_by_quote
             ]
             resolved = set.intersection(*candidate_sets)
@@ -68,11 +74,13 @@ class EvidenceCardBuilder:
                 raise ValueError("cross-work or inconsistent quote provenance")
             if len(resolved) > 1:
                 raise ValueError("ambiguous quote provenance")
-            work_id = next(iter(resolved))
-            if work_id in resolved_works:
+            namespace, work_id = next(iter(resolved))
+            work_address = (namespace, work_id)
+            if work_address in resolved_works:
                 raise ValueError(f"duplicate evidence card for work {work_id}")
-            resolved_works.add(work_id)
-            work = works.get(work_id)
+            resolved_works.add(work_address)
+            index = indexes[namespace]
+            work = index.works.get(work_id)
             if work is None:
                 raise ValueError(f"missing Work {work_id}")
 
@@ -80,8 +88,8 @@ class EvidenceCardBuilder:
                 card_draft,
                 matched_by_quote,
                 work,
-                artifacts,
-                records,
+                namespace,
+                index,
                 scope,
                 warnings,
             )
@@ -91,6 +99,7 @@ class EvidenceCardBuilder:
                     scope.subject_paper_id,
                     scope.novelty_point.point_id,
                     scope.research_task.task_id,
+                    namespace.value,
                     work_id,
                 ),
                 task_id=scope.research_task.task_id,
@@ -115,18 +124,38 @@ class EvidenceCardBuilder:
             warnings=list(dict.fromkeys(warnings)),
         )
 
+    def _manifest_indexes(
+        self,
+        paper_id: str,
+        reads: Sequence[ReferenceReadResult],
+    ) -> dict[ArtifactNamespace, _ManifestIndex]:
+        indexes: dict[ArtifactNamespace, _ManifestIndex] = {}
+        for namespace in dict.fromkeys(read.namespace for read in reads):
+            store = reference_store_for_artifact_namespace(
+                namespace, output_root=self.reference_store.output_root
+            )
+            manifest = store.load_manifest(paper_id)
+            indexes[namespace] = _ManifestIndex(
+                works={item.work_id: item for item in manifest.works},
+                artifacts={item.artifact_id: item for item in manifest.artifacts},
+                records={
+                    item.source_record_id: item for item in manifest.source_records
+                },
+            )
+        return indexes
+
     @staticmethod
     def _matching_reads(
         quote: EvidenceQuoteDraft,
         reads: Sequence[ReferenceReadResult],
-        artifacts: dict[str, Artifact],
-        records: dict[str, SourceRecord],
+        indexes: dict[ArtifactNamespace, _ManifestIndex],
     ) -> list[tuple[ReferenceReadResult, Artifact]]:
         matches: list[tuple[ReferenceReadResult, Artifact]] = []
         for read in reads:
             if not _quote_matches(quote.quote, read.text):
                 continue
-            artifact = artifacts.get(read.artifact_id)
+            index = indexes[read.namespace]
+            artifact = index.artifacts.get(read.artifact_id)
             if artifact is None:
                 raise ValueError(f"missing Artifact {read.artifact_id}")
             if artifact.work_id != read.work_id:
@@ -135,7 +164,7 @@ class EvidenceCardBuilder:
                 )
             if (
                 artifact.source_record_id is not None
-                and artifact.source_record_id not in records
+                and artifact.source_record_id not in index.records
             ):
                 raise ValueError(
                     f"Artifact {artifact.artifact_id} references missing SourceRecord"
@@ -150,8 +179,8 @@ class EvidenceCardBuilder:
         draft: EvidenceCardDraft,
         matched_by_quote: Sequence[list[tuple[ReferenceReadResult, Artifact]]],
         work: Work,
-        artifacts: dict[str, Artifact],
-        records: dict[str, SourceRecord],
+        namespace: ArtifactNamespace,
+        index: _ManifestIndex,
         scope: TaskResearchRequest,
         warnings: list[str],
     ) -> tuple[list[Evidence], list[EvidenceSource]]:
@@ -160,9 +189,13 @@ class EvidenceCardBuilder:
         for quote, matches in zip(draft.quotes, matched_by_quote, strict=True):
             read, artifact = min(
                 (
-                    item for item in matches if item[0].work_id == work.work_id
+                    item
+                    for item in matches
+                    if item[0].namespace == namespace
+                    and item[0].work_id == work.work_id
                 ),
                 key=lambda item: (
+                    item[0].namespace.value,
                     item[0].artifact_id,
                     item[0].char_start,
                     item[0].char_end,
@@ -170,14 +203,14 @@ class EvidenceCardBuilder:
                 ),
             )
             # Re-resolve rather than trusting the tuple retained during matching.
-            persisted_artifact = artifacts.get(read.artifact_id)
+            persisted_artifact = index.artifacts.get(read.artifact_id)
             if persisted_artifact is None:
                 raise ValueError(f"missing Artifact {read.artifact_id}")
             if persisted_artifact.work_id != work.work_id:
                 raise ValueError(
                     f"Artifact.work_id mismatch for {read.artifact_id}"
                 )
-            record = _resolve_source_record(persisted_artifact, work, records)
+            record = _resolve_source_record(persisted_artifact, work, index.records)
             if record is None:
                 warnings.append(f"missing source record for work {work.work_id}")
             local_start, local_end = _find_quote_span(quote.quote, read.text)
@@ -190,6 +223,7 @@ class EvidenceCardBuilder:
                     scope.subject_paper_id,
                     scope.novelty_point.point_id,
                     scope.research_task.task_id,
+                    namespace.value,
                     work.work_id,
                     persisted_artifact.artifact_id,
                     normalized_quote,
@@ -206,6 +240,7 @@ class EvidenceCardBuilder:
                 confidence=quote.confidence,
                 provenance={
                     "builder": "evidence_card_builder",
+                    "artifact_namespace": namespace.value,
                     "read_id": read.read_id,
                     "read_char_start": read.char_start,
                     "read_char_end": read.char_end,
@@ -242,8 +277,13 @@ def _quote_matches(quote: str, text: str) -> bool:
     return quote in text or _normalize_whitespace(quote) in _normalize_whitespace(text)
 
 
-def _normalize_whitespace(value: str) -> str:
+def normalize_quote_whitespace(value: str) -> str:
+    """Canonical quote whitespace used by both the builder and integrity gates."""
+
     return re.sub(r"\s+", " ", value).strip()
+
+
+_normalize_whitespace = normalize_quote_whitespace
 
 
 _WS_RE = re.compile(r"\s")

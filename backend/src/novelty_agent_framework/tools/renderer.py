@@ -170,12 +170,6 @@ def _build_markdown_context(
         for query in plan.get("query_plan", {}).get("queries", [])
     )
     sources = _evidence_sources(accepted)
-    insufficient = [
-        conclusion.get("novelty_point_id", "")
-        for conclusion in report.get("conclusions", [])
-        if conclusion.get("level") == "insufficient"
-    ]
-
     purpose = paper.get("abstract") or "基于论文技术内容开展公开文献检索与新颖性对比。"
     technical_summary = _technical_summary(paper, points)
     scope_terms = _unique(
@@ -201,9 +195,9 @@ def _build_markdown_context(
             f"通过 {len(accepted)} 张，拒绝 {len(rejected)} 张。"
         ),
         "evidence_list": _format_evidence(accepted),
-        "evidence_coverage": _format_coverage(points, accepted_by_point),
-        "coverage_gaps": "\n".join(f"- {point_id}：证据不足" for point_id in insufficient)
-        or "无。",
+        "final_evidence_counts": _format_final_evidence_counts(
+            points, accepted_by_point
+        ),
         "novelty_conclusions": _format_conclusions(
             report.get("conclusions", []), point_by_id
         ),
@@ -280,7 +274,7 @@ def _format_evidence(cards: list[Mapping[str, Any]]) -> str:
     return "\n\n".join(sections)
 
 
-def _format_coverage(
+def _format_final_evidence_counts(
     points: list[Mapping[str, Any]],
     accepted_by_point: Mapping[str, list[Mapping[str, Any]]],
 ) -> str:
@@ -288,8 +282,8 @@ def _format_coverage(
     for point in points:
         point_id = point.get("point_id", "—")
         count = len(accepted_by_point.get(point_id, []))
-        rows.append(f"| {_cell(point_id)} | {count} | {'已覆盖' if count else '未覆盖'} |")
-    return "\n".join(rows) if points else "无查新点覆盖数据。"
+        rows.append(f"| {_cell(point_id)} | {count} | {'有证据' if count else '0 Card'} |")
+    return "\n".join(rows) if points else "无查新点最终证据数据。"
 
 
 def _format_conclusions(

@@ -1,8 +1,9 @@
-"""证据 Reviewer：对通过 Validator 的 EvidenceCard 进行语义与证据一致性审查。"""
+"""查新点级 Reviewer：综合 EvidenceCard/Evidence 并按需回读原文。"""
 
 from __future__ import annotations
 
 import json
+import re
 from datetime import datetime, timezone
 from collections.abc import Sequence
 from dataclasses import dataclass
@@ -13,15 +14,21 @@ from pydantic import ValidationError
 from backend.env import ChatMessage, ModelCallOptions, ModelClient, ModelRegistry, PromptLibrary
 
 from ..ports import EvidenceReviewer, ReviewResult
+from ..core import ToolCallHarness, ToolCallHarnessConfig
 from ..schemas import (
     EvidenceCard,
     EvidenceReviewDecision,
     EvidenceReviewIssue,
     IssueSeverity,
     NoveltyPoint,
+    NoveltyPointReview,
+    NoveltyPointReviewRequest,
+    ReviewStatus,
+    SupplementRequest,
     ResearchTask,
     ReviewVerdict,
 )
+from ..tools.researcher_registry import ResearcherToolRegistry
 
 _ALLOWED_ISSUE_CODES = frozenset(
     {
@@ -53,40 +60,34 @@ class EvidenceReviewerConfig:
     temperature: float = 0.0
     max_cards_per_call: int = 8
     fail_closed: bool = True
+    max_steps: int = 8
+    max_tool_calls: int = 6
+    max_total_read_chars: int = 32_000
 
     def __post_init__(self) -> None:
         if not 0.0 <= self.temperature <= 2.0:
             raise ValueError("temperature 必须位于 0 到 2 之间")
         if self.max_cards_per_call < 1:
             raise ValueError("max_cards_per_call 必须至少为 1")
+        if min(self.max_steps, self.max_tool_calls, self.max_total_read_chars) < 1:
+            raise ValueError("reviewer harness budgets must be positive")
 
 
 class DemoEvidenceReviewer:
-    """Null/Demo 实现：不调用 LLM，所有输入卡原样 ACCEPT。"""
+    """Null/Demo 实现：不伪造语义判断，显式返回证据不足。"""
 
     def review(
-        self,
-        cards: Sequence[EvidenceCard],
-        *,
-        points: Sequence[NoveltyPoint],
-        tasks: Sequence[ResearchTask],
-    ) -> ReviewResult:
-        decisions = tuple(
-            EvidenceReviewDecision(
-                card_id=card.card_id,
-                verdict=ReviewVerdict.ACCEPT,
-                issues=[],
-                reviewed_confidence=card.confidence,
-            )
-            for card in cards
-        )
-        return ReviewResult(
-            accepted=tuple(cards), rejected=(), needs_more=(), decisions=decisions
+        self, request: NoveltyPointReviewRequest
+    ) -> NoveltyPointReview:
+        request = NoveltyPointReviewRequest.model_validate(request)
+        return _insufficient_review(
+            request.novelty_point.point_id,
+            "Demo Reviewer 不执行新颖性语义判定。",
         )
 
 
 class NoveltyEvidenceReviewer(EvidenceReviewer):
-    """基于 LLM 的证据 Reviewer。"""
+    """基于 LLM 与受限 Reader Harness 的查新点级 Reviewer。"""
 
     def __init__(
         self,
@@ -96,20 +97,113 @@ class NoveltyEvidenceReviewer(EvidenceReviewer):
         models: ModelRegistry | None = None,
         config: EvidenceReviewerConfig | None = None,
         model_options: ModelCallOptions | None = None,
+        tool_registry: ResearcherToolRegistry | None = None,
     ) -> None:
         self.model_client = model_client
         self._prompts = prompts
         self._models = models
         self.config = config or EvidenceReviewerConfig()
         self.model_options = model_options
+        self.tools = tool_registry or ResearcherToolRegistry()
+        self.harness = ToolCallHarness(
+            self._client(),
+            self.tools,
+            config=ToolCallHarnessConfig(
+                max_turns=self.config.max_steps,
+                max_tool_calls=self.config.max_tool_calls,
+                per_tool_limits={"reader": self.config.max_tool_calls},
+                max_total_read_chars=self.config.max_total_read_chars,
+            ),
+        )
 
     def review(
+        self,
+        request: NoveltyPointReviewRequest | Sequence[EvidenceCard],
+        *,
+        points: Sequence[NoveltyPoint] = (),
+        tasks: Sequence[ResearchTask] = (),
+    ) -> Any:
+        """评审一个查新点；旧的 cards 调用形状仅保留迁移兼容。"""
+
+        if isinstance(request, NoveltyPointReviewRequest):
+            return self._review_point(request)
+        return self._review_cards_legacy(request, points=points, tasks=tasks)
+
+    async def _review_point(
+        self, request: NoveltyPointReviewRequest
+    ) -> NoveltyPointReview:
+        request = NoveltyPointReviewRequest.model_validate(request)
+        if not request.cards or not request.evidence:
+            return _insufficient_review(
+                request.novelty_point.point_id,
+                "当前查新点没有可供可靠判定的已绑定证据。",
+            )
+
+        system, user = self._render_point_prompt(request)
+        try:
+            result = await self.harness.run(
+                system_prompt=system,
+                initial_user_message=user,
+                scope=request,
+                options=self.model_options
+                or ModelCallOptions(
+                    temperature=self.config.temperature,
+                    tool_choice="auto",
+                ),
+            )
+            review = NoveltyPointReview.model_validate_json(
+                _extract_json(result.final_content)
+            )
+            return _validate_review_references(review, request)
+        except Exception as exc:
+            if not self.config.fail_closed:
+                raise
+            return _insufficient_review(
+                request.novelty_point.point_id,
+                f"Reviewer 无法完成可靠判定：{type(exc).__name__}: {exc}"[:500],
+            )
+
+    def _render_point_prompt(
+        self, request: NoveltyPointReviewRequest
+    ) -> tuple[str, str]:
+        variables = {
+            "today": datetime.now(timezone.utc).date().isoformat(),
+            "novelty_point_json": json.dumps(
+                request.novelty_point.model_dump(mode="json"), ensure_ascii=False
+            ),
+            "tasks_json": json.dumps(
+                [item.model_dump(mode="json") for item in request.tasks],
+                ensure_ascii=False,
+            ),
+            "cards_json": json.dumps(
+                [item.model_dump(mode="json") for item in request.cards],
+                ensure_ascii=False,
+            ),
+            "evidence_json": json.dumps(
+                [item.model_dump(mode="json") for item in request.evidence],
+                ensure_ascii=False,
+            ),
+            "review_schema": json.dumps(
+                NoveltyPointReview.model_json_schema(), ensure_ascii=False
+            ),
+        }
+        if self._prompts is not None:
+            rendered = self._prompts.render(
+                "reviewer/review_evidence", **variables
+            )
+            return rendered.system, rendered.user
+        return _fallback_point_system_prompt(), "\n".join(
+            f"{key}: {value}" for key, value in variables.items()
+        )
+
+    def _review_cards_legacy(
         self,
         cards: Sequence[EvidenceCard],
         *,
         points: Sequence[NoveltyPoint],
         tasks: Sequence[ResearchTask],
     ) -> ReviewResult:
+        """临时兼容旧调用方；正式 Workflow 不再使用逐卡过滤结果。"""
         if not cards:
             return ReviewResult(accepted=(), rejected=(), needs_more=(), decisions=())
 
@@ -158,8 +252,13 @@ class NoveltyEvidenceReviewer(EvidenceReviewer):
         variables = {
             "today": today,
             "points_json": json.dumps(payload["points"], ensure_ascii=False),
+            "novelty_point_json": json.dumps(
+                payload["points"][0] if payload["points"] else {},
+                ensure_ascii=False,
+            ),
             "tasks_json": json.dumps(payload["tasks"], ensure_ascii=False),
             "cards_json": json.dumps(payload["cards"], ensure_ascii=False),
+            "evidence_json": "[]",
             "review_schema": json.dumps(payload["review_schema"], ensure_ascii=False),
         }
         if self._prompts is not None:
@@ -318,3 +417,55 @@ def _fallback_system_prompt() -> str:
         "不能猜测。输出必须是 JSON：{\"decisions\": [EvidenceReviewDecision, ...]}。"
         "禁止输出开场白、解释性 Markdown 或自由文本。"
     )
+
+
+def _fallback_point_system_prompt() -> str:
+    return (
+        "你是查新点级信息判定 Agent。只依据输入 EvidenceCard、Evidence 和 reader "
+        "回读结果综合多个 Work；不得搜索或使用模型记忆补充事实。证据充分时输出 "
+        "NoveltyPointReview；证据不足时输出 insufficient_evidence，不能猜测。"
+    )
+
+
+def _extract_json(content: str | None) -> str:
+    text = (content or "").strip()
+    fence = re.search(r"```(?:json)?\s*(.*?)```", text, re.DOTALL)
+    if fence:
+        text = fence.group(1).strip()
+    start, end = text.find("{"), text.rfind("}")
+    return text[start : end + 1] if start != -1 and end > start else text
+
+
+def _insufficient_review(point_id: str, reason: str) -> NoveltyPointReview:
+    return NoveltyPointReview(
+        novelty_point_id=point_id,
+        status=ReviewStatus.INSUFFICIENT_EVIDENCE,
+        supplement_request=SupplementRequest(reason=reason),
+    )
+
+
+def _validate_review_references(
+    review: NoveltyPointReview,
+    request: NoveltyPointReviewRequest,
+) -> NoveltyPointReview:
+    if review.novelty_point_id != request.novelty_point.point_id:
+        raise ValueError("review novelty_point_id is outside request scope")
+    cards = {item.card_id: item for item in request.cards}
+    evidence = {item.evidence_id: item for item in request.evidence}
+    for work in review.highly_relevant_works:
+        if any(card_id not in cards for card_id in work.card_ids):
+            raise ValueError("relevant work cites an unknown card_id")
+        cited_evidence = []
+        for evidence_id in work.evidence_ids:
+            item = evidence.get(evidence_id)
+            if item is None:
+                raise ValueError("relevant work cites an unknown evidence_id")
+            if item.work_id != work.work_id:
+                raise ValueError("relevant work_id does not match cited evidence")
+            cited_evidence.append(evidence_id)
+        if any(
+            not set(cards[card_id].evidence_ids).intersection(cited_evidence)
+            for card_id in work.card_ids
+        ):
+            raise ValueError("relevant work card_ids are not linked to cited evidence")
+    return review

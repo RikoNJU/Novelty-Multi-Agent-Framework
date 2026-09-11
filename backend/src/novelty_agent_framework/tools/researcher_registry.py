@@ -10,7 +10,6 @@ from typing import Any, Protocol
 from ..schemas import (
     ResearcherToolObservation,
     StrictModel,
-    TaskResearchRequest,
 )
 
 
@@ -20,7 +19,7 @@ class ResearcherTool(Protocol):
     args_schema: type[StrictModel]
 
     async def ainvoke(
-        self, arguments: StrictModel, *, scope: TaskResearchRequest
+        self, arguments: StrictModel, *, scope: Any
     ) -> ResearcherToolObservation: ...
 
 
@@ -63,7 +62,7 @@ class ResearcherToolRegistry:
         tool_name: str,
         arguments: dict[str, Any],
         *,
-        scope: TaskResearchRequest,
+        scope: Any,
     ) -> ResearcherToolObservation:
         started = time.monotonic()
         try:
@@ -93,7 +92,7 @@ class ResearcherToolRegistry:
         tool_name: str,
         arguments: StrictModel,
         *,
-        scope: TaskResearchRequest,
+        scope: Any,
         started: float | None = None,
     ) -> ResearcherToolObservation:
         """Execute one already-canonicalized argument object."""
