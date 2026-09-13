@@ -6,12 +6,31 @@ import json
 from backend.env import ModelResponse, ModelToolCall
 
 from novelty_agent_framework.agents import DemoQueryAdapter
+from novelty_agent_framework.core import RuntimeArtifactManager, RuntimeDebugConfig
 from novelty_agent_framework.persistence import ReferenceStore
 from novelty_agent_framework.ports import SearchHit as DatabaseHit
-from novelty_agent_framework.schemas import NoveltyPoint, ResearchTask, SearchConcept, SearchPlan, SearchStrategy, TaskResearchRequest
-from novelty_agent_framework.tools import BrowserTool, EvidenceCardBuilder, ReaderTool, ReferenceArtifactReaderTool, ResearcherToolRegistry, WebSearchTool
+from novelty_agent_framework.schemas import (
+    NoveltyPoint,
+    ResearchTask,
+    SearchConcept,
+    SearchPlan,
+    SearchStrategy,
+    TaskResearchRequest,
+)
+from novelty_agent_framework.tools import (
+    BrowserTool,
+    EvidenceCardBuilder,
+    ReaderTool,
+    ReferenceArtifactReaderTool,
+    ResearcherToolRegistry,
+    WebSearchTool,
+)
 from novelty_agent_framework.tools.browser_backend import BrowserFetchResult
-from novelty_agent_framework.tools.database_search import DatabaseSearchTool, RetrievalSource, StructuredSourceRetrievalTool
+from novelty_agent_framework.tools.database_search import (
+    DatabaseSearchTool,
+    RetrievalSource,
+    StructuredSourceRetrievalTool,
+)
 from novelty_agent_framework.tools.web_search_backend import SearchBackendResult, SearchHit
 from novelty_agent_framework.workflows import TaskResearcherConfig, TaskResearcherWorkflow
 from conftest import minimal_search_plan
@@ -44,6 +63,13 @@ class DatabaseBackend:
             abstract=DB_TEXT, authors=("Alice",), year=2024,
             url="https://db.example/work/1",
         )]
+
+
+class FailingDatabaseBackend:
+    source_id = "demo"
+
+    def search(self, query, *, limit=10):
+        raise TimeoutError(f"database timed out for {query}")
 
 
 class WebBackend:
@@ -156,6 +182,35 @@ class DatabaseReaderModel(ScriptedFullToolModel):
         return response
 
 
+class FailureAwareModel:
+    def __init__(self):
+        self.step = 0
+        self.failure_context = None
+
+    async def acomplete(self, messages, *, options=None):
+        if self.step == 0:
+            response = ModelResponse(
+                content=None,
+                tool_calls=[
+                    ModelToolCall(
+                        "db-failed", "database_search", {"source_id": "demo"}
+                    )
+                ],
+            )
+        else:
+            self.failure_context = json.loads(messages[-1].content)
+            response = ModelResponse(
+                content=json.dumps(
+                    {
+                        "cards": [],
+                        "no_evidence_reason": "database execution failed",
+                    }
+                )
+            )
+        self.step += 1
+        return response
+
+
 def test_single_task_uses_scope_plan_without_legacy_planner(tmp_path):
     store = ReferenceStore(tmp_path)
     internal = StructuredSourceRetrievalTool(
@@ -246,3 +301,76 @@ def test_scripted_four_tool_chain_shares_handles_and_builds_evidence(tmp_path):
     assert len(manifest.source_records) == 2
     assert len(manifest.artifacts) == 2
     assert database.reference_store is web.reference_store is browser.reference_store is reader.reader.reference_store is store
+
+
+def test_failed_database_observation_reaches_model_runtime_and_is_not_trusted(
+    tmp_path,
+):
+    store = ReferenceStore(tmp_path / "references")
+    internal = StructuredSourceRetrievalTool(
+        source=RetrievalSource(
+            source_id="demo",
+            query_adapter=DemoQueryAdapter(),
+            search_tool=FailingDatabaseBackend(),
+        ),
+        reference_store=store,
+    )
+    registry = ResearcherToolRegistry(
+        [DatabaseSearchTool({"demo": internal}, store)]
+    )
+    model = FailureAwareModel()
+    workflow = TaskResearcherWorkflow(
+        model,
+        registry,
+        EvidenceCardBuilder(store),
+        config=TaskResearcherConfig(max_steps=3, max_tool_calls=2),
+    )
+    request = TaskResearchRequest(
+        subject_paper_id="failed-database",
+        run_id="failed-database-run",
+        novelty_point=NoveltyPoint(point_id="NP-1", claim="graph novelty"),
+        research_task=ResearchTask(
+            task_id="T-1",
+            novelty_point_id="NP-1",
+            task_type="search",
+            language="en",
+        ),
+        search_plan=minimal_search_plan("T-1", "NP-1"),
+    )
+    manager = RuntimeArtifactManager(
+        request.subject_paper_id,
+        config=RuntimeDebugConfig(
+            output_root=tmp_path / "outputs",
+            archive_root=tmp_path / "archive",
+        ),
+        run_id=request.run_id,
+        enabled_tools=["database_search"],
+    )
+    manager.activate()
+    try:
+        result = asyncio.run(workflow.ainvoke(request))
+    finally:
+        manager.deactivate()
+    manager.finish_run("SUCCESS")
+
+    assert result.research_bundles == []
+    assert model.failure_context["succeeded"] is False
+    assert "search executions failed" in model.failure_context["error"]
+    assert model.failure_context["execution_summary"]["all_failed"] is True
+    record = json.loads(
+        next((manager.run_dir / "tools").glob("*.json")).read_text(encoding="utf-8")
+    )
+    assert record["execution_status"] == "FAILED"
+    assert record["business_status"] != "EMPTY"
+    assert record["failure_phase"] == "TOOL_EXECUTION"
+    assert record["raw_result"]["payload"]["research_bundle"]
+    summary = json.loads((manager.run_dir / "summary.json").read_text(encoding="utf-8"))
+    assert summary["tool_calls"] == [
+        {
+            "calls": 1,
+            "empty": 0,
+            "failed": 1,
+            "success": 0,
+            "tool_name": "database_search",
+        }
+    ]

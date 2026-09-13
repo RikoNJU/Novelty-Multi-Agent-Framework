@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import time
-from collections.abc import Mapping
+from collections import Counter
+from collections.abc import Mapping, Sequence
 from typing import Any
 
 from ...persistence import ReferenceStore
@@ -12,10 +13,37 @@ from ...schemas import (
     DatabaseSearchItem,
     DatabaseSearchResult,
     ResearcherToolObservation,
+    SearchExecution,
+    SearchExecutionStatus,
     StructuredSourceRetrievalRequest,
     TaskResearchRequest,
 )
 from .structured_retrieval import StructuredSourceRetrievalTool
+
+
+def _summarize_search_executions(
+    executions: Sequence[SearchExecution],
+) -> dict[str, int | bool]:
+    """Aggregate provider-neutral SearchExecution status facts."""
+
+    counts = Counter(execution.status for execution in executions)
+    total = len(executions)
+    failed = counts[SearchExecutionStatus.FAILED]
+    usable = (
+        counts[SearchExecutionStatus.SUCCEEDED]
+        + counts[SearchExecutionStatus.PARTIAL]
+    )
+    all_failed = total > 0 and failed == total
+    return {
+        "total": total,
+        "succeeded": counts[SearchExecutionStatus.SUCCEEDED],
+        "partial": counts[SearchExecutionStatus.PARTIAL],
+        "failed": failed,
+        "requires_human": counts[SearchExecutionStatus.REQUIRES_HUMAN],
+        "degraded": failed > 0 and usable > 0,
+        "all_failed": all_failed,
+        "no_execution": total == 0,
+    }
 
 
 class DatabaseSearchTool:
@@ -99,16 +127,44 @@ class DatabaseSearchTool:
                     abstract_preview=preview,
                 )
             )
+        execution_summary = _summarize_search_executions(bundle.search_executions)
+        warnings = list(bundle.warnings)
+        if execution_summary["degraded"]:
+            warnings.append(
+                "database search degraded: "
+                f"{execution_summary['failed']}/{execution_summary['total']} "
+                "search executions failed"
+            )
         result = DatabaseSearchResult(
             source_id=source_id,
             results=items,
-            warnings=bundle.warnings,
+            warnings=warnings,
         )
+        succeeded = not (
+            execution_summary["no_execution"] or execution_summary["all_failed"]
+        )
+        if execution_summary["no_execution"]:
+            summary = "数据库检索执行失败：没有产生 search execution"
+            error = "no_search_execution: database search produced no search executions"
+        elif execution_summary["all_failed"]:
+            total = execution_summary["total"]
+            summary = (
+                f"数据库检索执行失败：{total}/{total} search executions failed"
+            )
+            error = f"all {total} search executions failed"
+        else:
+            summary = f"数据库检索召回 {len(items)} 个候选作品"
+            error = None
+            if execution_summary["degraded"]:
+                summary += (
+                    "；部分执行失败："
+                    f"{execution_summary['failed']}/{execution_summary['total']}"
+                )
         return ResearcherToolObservation(
             tool_name=self.name,
             arguments=arguments.model_dump(mode="json"),
-            succeeded=True,
-            summary=f"数据库检索召回 {len(items)} 个候选作品",
+            succeeded=succeeded,
+            summary=summary,
             payload={
                 "research_bundle": bundle.model_dump(mode="json"),
                 "database_search_result": result.model_dump(mode="json"),
@@ -119,7 +175,9 @@ class DatabaseSearchTool:
                     item.model_dump(mode="json") for item in bundle.source_records
                 ],
                 "artifacts": [item.model_dump(mode="json") for item in bundle.artifacts],
+                "execution_summary": execution_summary,
             },
+            error=error,
             elapsed_ms=int((time.monotonic() - started) * 1_000),
         )
 
@@ -130,6 +188,8 @@ class DatabaseSearchTool:
         return {
             "succeeded": observation.succeeded,
             "summary": observation.summary,
+            "error": observation.error,
+            "execution_summary": observation.payload["execution_summary"],
             "source_id": result["source_id"],
             "results": result["results"],
             "warnings": result["warnings"],

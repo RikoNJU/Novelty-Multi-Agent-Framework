@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+from datetime import datetime, timezone
 
 import pytest
 from pydantic import ValidationError
@@ -10,15 +11,26 @@ from novelty_agent_framework.agents import DemoQueryAdapter
 from novelty_agent_framework.persistence import ReferenceStore
 from novelty_agent_framework.ports import FullText, SearchHit
 from novelty_agent_framework.schemas import (
+    AccessStatus,
     DatabaseSearchArguments,
     NoveltyPoint,
+    ResearchBundle,
     ResearchTask,
+    SearchExecution,
+    SearchExecutionStatus,
+    SourceKind,
+    SourceRecord,
     TaskResearchRequest,
+    Work,
+    WorkType,
 )
 from novelty_agent_framework.tools.database_search import (
     DatabaseSearchTool,
     RetrievalSource,
     StructuredSourceRetrievalTool,
+)
+from novelty_agent_framework.tools.database_search.tool import (
+    _summarize_search_executions,
 )
 from conftest import minimal_search_plan
 
@@ -74,6 +86,76 @@ class SecondFullTexts(FullTexts):
 
 class SecondQueryAdapter(DemoQueryAdapter):
     database = "demo2"
+
+
+def execution(status: SearchExecutionStatus, index: int) -> SearchExecution:
+    now = datetime.now(timezone.utc)
+    return SearchExecution(
+        execution_id=f"execution-{index}",
+        run_id="run-1",
+        tool_name="structured_source_retrieval",
+        source_id="demo",
+        query=f"query-{index}",
+        status=status,
+        started_at=now,
+        completed_at=now,
+        error=(
+            "TimeoutError: timed out"
+            if status == SearchExecutionStatus.FAILED
+            else None
+        ),
+    )
+
+
+def bundle(*statuses: SearchExecutionStatus, with_result: bool = False) -> ResearchBundle:
+    now = datetime.now(timezone.utc)
+    return ResearchBundle(
+        bundle_id="bundle-1",
+        producer="structured_source_retrieval:demo",
+        search_executions=[
+            execution(status, index) for index, status in enumerate(statuses)
+        ],
+        works=(
+            [Work(work_id="work-1", work_type=WorkType.ARTICLE, title="Candidate")]
+            if with_result
+            else []
+        ),
+        source_records=(
+            [
+                SourceRecord(
+                    source_record_id="record-1",
+                    work_id="work-1",
+                    source_id="demo",
+                    source_kind=SourceKind.STRUCTURED_DATABASE,
+                    title="Candidate",
+                    access_status=AccessStatus.DISCOVERED,
+                    observed_at=now,
+                )
+            ]
+            if with_result
+            else []
+        ),
+    )
+
+
+class StaticRetrieval:
+    source_id = "demo"
+
+    def __init__(self, value: ResearchBundle, store: ReferenceStore):
+        self.value = value
+        self.reference_store = store
+
+    async def ainvoke(self, _request):
+        return self.value
+
+
+def observe_bundle(tmp_path, value: ResearchBundle):
+    store = ReferenceStore(tmp_path)
+    tool = DatabaseSearchTool({"demo": StaticRetrieval(value, store)}, store)
+    observation = asyncio.run(
+        tool.ainvoke(DatabaseSearchArguments(source_id="demo"), scope=scope())
+    )
+    return tool, observation
 
 
 def scope() -> TaskResearchRequest:
@@ -156,6 +238,99 @@ def test_unknown_source_fails_clearly(tmp_path):
     with pytest.raises(ValueError, match="unavailable"):
         asyncio.run(tool.ainvoke(DatabaseSearchArguments(source_id="other"), scope=scope()))
     assert planner.calls == []
+
+
+def test_execution_summary_counts_provider_neutral_statuses():
+    summary = _summarize_search_executions(
+        [
+            execution(SearchExecutionStatus.SUCCEEDED, 1),
+            execution(SearchExecutionStatus.PARTIAL, 2),
+            execution(SearchExecutionStatus.FAILED, 3),
+            execution(SearchExecutionStatus.REQUIRES_HUMAN, 4),
+        ]
+    )
+
+    assert summary == {
+        "total": 4,
+        "succeeded": 1,
+        "partial": 1,
+        "failed": 1,
+        "requires_human": 1,
+        "degraded": True,
+        "all_failed": False,
+        "no_execution": False,
+    }
+
+
+def test_execution_summary_all_failed_is_structured_failure(tmp_path):
+    tool, observation = observe_bundle(
+        tmp_path,
+        bundle(*([SearchExecutionStatus.FAILED] * 3)),
+    )
+
+    assert observation.succeeded is False
+    assert observation.error == "all 3 search executions failed"
+    assert observation.payload["execution_summary"] == {
+        "total": 3,
+        "succeeded": 0,
+        "partial": 0,
+        "failed": 3,
+        "requires_human": 0,
+        "degraded": False,
+        "all_failed": True,
+        "no_execution": False,
+    }
+    projected = tool.project_model_context(observation)
+    assert projected["succeeded"] is False
+    assert projected["error"] == observation.error
+    assert projected["execution_summary"]["failed"] == 3
+
+
+def test_successful_empty_is_not_execution_failure(tmp_path):
+    _, observation = observe_bundle(
+        tmp_path, bundle(SearchExecutionStatus.SUCCEEDED)
+    )
+
+    assert observation.succeeded is True
+    assert observation.payload["database_search_result"]["results"] == []
+    assert observation.error is None
+
+
+def test_mixed_execution_is_succeeded_and_degraded(tmp_path):
+    _, observation = observe_bundle(
+        tmp_path,
+        bundle(
+            SearchExecutionStatus.SUCCEEDED,
+            SearchExecutionStatus.FAILED,
+            SearchExecutionStatus.FAILED,
+            with_result=True,
+        ),
+    )
+
+    summary = observation.payload["execution_summary"]
+    assert observation.succeeded is True
+    assert len(observation.payload["database_search_result"]["results"]) == 1
+    assert summary["degraded"] is True
+    assert summary["failed"] == 2
+    assert any(
+        "2/3 search executions failed" in warning
+        for warning in observation.payload["database_search_result"]["warnings"]
+    )
+
+
+def test_partial_execution_is_succeeded(tmp_path):
+    _, observation = observe_bundle(tmp_path, bundle(SearchExecutionStatus.PARTIAL))
+
+    assert observation.succeeded is True
+    assert observation.payload["execution_summary"]["partial"] == 1
+
+
+def test_no_execution_is_structured_failure(tmp_path):
+    _, observation = observe_bundle(tmp_path, bundle())
+
+    assert observation.succeeded is False
+    assert observation.error.startswith("no_search_execution:")
+    assert observation.payload["execution_summary"]["no_execution"] is True
 
 
 def test_scope_planning_persistence_projection_and_deduplication(tmp_path):

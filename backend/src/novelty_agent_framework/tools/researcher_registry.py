@@ -122,6 +122,13 @@ class ResearcherToolRegistry:
         """Project a full audit observation into the model-visible data plane."""
 
         if not observation.succeeded:
+            tool = self.get(tool_name)
+            projector = getattr(tool, "project_model_context", None)
+            if projector is not None and observation.payload:
+                projected = projector(observation)
+                if not isinstance(projected, dict):
+                    raise TypeError("tool model-context projector must return a dict")
+                return projected
             return {
                 "succeeded": False,
                 "summary": observation.summary,
