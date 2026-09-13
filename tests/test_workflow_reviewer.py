@@ -145,6 +145,8 @@ def test_reviewer_none_transparently_preserves_legacy_format():
     persisted = json.loads(open("outputs/review/evidence-cards.json", encoding="utf-8").read())
     assert "validator_accepted_cards" not in persisted
     assert "review_decisions" not in persisted
+    assert result["issues"][0].code == "reviewer_unavailable"
+    assert result["issues"][0].severity == IssueSeverity.ERROR
 
 
 def test_reviewer_crash_is_fail_closed_and_audited():

@@ -139,7 +139,7 @@ class SearchPlannerConfig(ConfigModel):
 
 class ReviewerConfig(ConfigModel):
     version: int = Field(ge=1)
-    enabled: bool = False
+    enabled: bool = True
     model: ModelInvocationConfig
     prompt: str = Field(min_length=1)
     max_cards_per_call: int = Field(gt=0)

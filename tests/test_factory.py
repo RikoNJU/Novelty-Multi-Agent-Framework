@@ -1,5 +1,6 @@
 import json
 from dataclasses import fields
+from types import SimpleNamespace
 
 import pytest
 
@@ -15,8 +16,10 @@ from novelty_agent_framework.tools import (
 from novelty_agent_framework.tools.database_search import RetrievalSourceRegistry
 from novelty_agent_framework.workflows import NoveltyWorkflowServices, TaskResearcherWorkflow
 from novelty_agent_framework.config import (
+    ReviewerRequiredError,
     build_model_registry,
     build_structured_source_retrieval_tool,
+    build_standard_full_workflow,
     build_workflow,
     load_config,
 )
@@ -104,17 +107,45 @@ def test_build_workflow_env_overrides_role_model(monkeypatch):
 
 
 def test_reviewer_composition_root_respects_enabled_switch():
-    disabled = load_application_config()
-    assert build_workflow(disabled).services.reviewer is None
-
-    enabled = disabled.model_copy(
-        update={
-            "reviewer": disabled.reviewer.model_copy(update={"enabled": True})
-        }
-    )
+    enabled = load_application_config()
     reviewer = build_workflow(enabled).services.reviewer
     assert isinstance(reviewer, NoveltyEvidenceReviewer)
     assert reviewer.tools.names == ("reader",)
+
+    disabled = enabled.model_copy(
+        update={
+            "reviewer": enabled.reviewer.model_copy(update={"enabled": False})
+        }
+    )
+    assert build_workflow(disabled).services.reviewer is None
+
+
+def test_standard_full_workflow_requires_enabled_reviewer(monkeypatch):
+    config = load_application_config()
+    assert build_standard_full_workflow(config).services.reviewer is not None
+
+    disabled = config.model_copy(
+        update={"reviewer": config.reviewer.model_copy(update={"enabled": False})}
+    )
+    with pytest.raises(
+        ReviewerRequiredError, match=r"reviewer_required.*reviewer\.enabled=false"
+    ):
+        build_standard_full_workflow(disabled)
+
+    missing = config.model_copy(update={"reviewer": None})
+    with pytest.raises(ReviewerRequiredError, match=r"reviewer_required.*config is missing"):
+        build_standard_full_workflow(missing)
+
+    monkeypatch.setattr(
+        "novelty_agent_framework.config.factory.build_workflow",
+        lambda *_args, **_kwargs: SimpleNamespace(
+            services=SimpleNamespace(reviewer=None)
+        ),
+    )
+    with pytest.raises(
+        ReviewerRequiredError, match=r"reviewer_required.*construction.*unavailable"
+    ):
+        build_standard_full_workflow(config)
 
 
 def test_build_workflow_does_not_mutate_input_config(monkeypatch):

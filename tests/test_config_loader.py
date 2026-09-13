@@ -8,6 +8,7 @@ from novelty_agent_framework.config import build_workflow, load_application_conf
 from novelty_agent_framework.config.loader import (
     DEFAULT_MODELS_PATH,
     DEFAULT_PROJECT_PATH,
+    DEFAULT_REVIEWER_PATH,
     DEFAULT_RESEARCHER_PATH,
     DEFAULT_SEARCH_PLANNER_PATH,
 )
@@ -20,6 +21,8 @@ def test_split_files_load_and_project_settings_are_slim():
     assert config.models and config.researcher.version == config.search_planner.version == 1
     assert config.researcher.model.alias == "deepseek-flash"
     assert config.search_planner.model.alias == "deepseek-flash"
+    assert config.reviewer is not None
+    assert config.reviewer.enabled is True
 
 
 def test_example_files_contain_no_secret_values():
@@ -38,6 +41,18 @@ def test_invalid_numeric_value_fails_fast(tmp_path):
     path.write_text(json.dumps(raw), encoding="utf-8")
     with pytest.raises(ValidationError):
         load_application_config(researcher_path=path)
+
+
+def test_reviewer_schema_defaults_to_enabled(tmp_path):
+    raw = json.loads(DEFAULT_REVIEWER_PATH.read_text(encoding="utf-8"))
+    raw.pop("enabled")
+    path = tmp_path / "reviewer.json"
+    path.write_text(json.dumps(raw), encoding="utf-8")
+
+    config = load_application_config(reviewer_path=path)
+
+    assert config.reviewer is not None
+    assert config.reviewer.enabled is True
 
 
 def test_unknown_model_alias_fails_fast(tmp_path):

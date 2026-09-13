@@ -26,7 +26,7 @@ from backend.env.model_client import OpenAICompatibleChatClient, _load_dev_env
 from novelty_agent_framework.agents import DefaultEvidenceValidator, EvidenceValidationConfig
 from novelty_agent_framework.config import (
     build_model_registry,
-    build_workflow,
+    build_standard_full_workflow,
     effective_safe_config,
     load_application_config,
 )
@@ -618,6 +618,9 @@ def main() -> int:
         # This experiment is intentionally a single-round control for both the
         # sampled and full MG19333vrw runs.
         config.project.workflow.max_rounds = 1
+        # Production full-pipeline preflight must happen before MinerU,
+        # bootstrap, search, or any other costly work begins.
+        workflow = build_standard_full_workflow(config)
         metrics["model_overrides"] = {
             "active": [name for name in MODEL_OVERRIDE_ENV_NAMES if os.environ.get(name)],
             "verified_without_overrides": not any(
@@ -685,10 +688,7 @@ def main() -> int:
             if not bootstrap["success"]:
                 raise RuntimeError("Reference Bootstrap did not become ready")
         paper_path = workspace / "paper-input" / "others" / "paper.json"
-        if config.reviewer is not None:
-            config.reviewer.enabled = True
         metrics["effective_config"] = effective_safe_config(config)
-        workflow = build_workflow(config)
         if fixed_points is not None:
             class PersistedPointExtractor:
                 def extract(self, *_args, **_kwargs):

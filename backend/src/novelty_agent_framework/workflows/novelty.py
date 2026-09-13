@@ -543,6 +543,14 @@ class NoveltyWorkflow:
                 )
                 for point in state.get("novelty_points", [])
             ]
+            issues = [
+                WorkflowIssue(
+                    node="review_evidence",
+                    code="reviewer_unavailable",
+                    message="Reviewer 未提供或未运行；该结果不是证据不足裁定。",
+                    severity=IssueSeverity.ERROR,
+                )
+            ]
         else:
             try:
                 evidence_by_id = {

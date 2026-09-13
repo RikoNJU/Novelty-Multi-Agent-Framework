@@ -33,7 +33,7 @@ def test_paper_input_entrypoint_passes_stable_identity(tmp_path, monkeypatch) ->
     )
     monkeypatch.setattr(live, "_load_dev_env", lambda: None)
     monkeypatch.setattr(live, "load_application_config", lambda: config)
-    monkeypatch.setattr(live, "build_workflow", lambda _config: Workflow())
+    monkeypatch.setattr(live, "build_standard_full_workflow", lambda _config: Workflow())
     monkeypatch.setattr(
         sys,
         "argv",

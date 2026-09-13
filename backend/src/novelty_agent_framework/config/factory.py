@@ -447,6 +447,38 @@ def build_workflow(
     )
 
 
+class ReviewerRequiredError(RuntimeError):
+    """标准完整工作流缺少必需 Reviewer 时的配置错误。"""
+
+    code = "reviewer_required"
+
+
+def build_standard_full_workflow(
+    config: ApplicationConfig,
+    *,
+    source_registry: RetrievalSourceRegistry | None = None,
+) -> NoveltyWorkflow:
+    """构造标准 Full/PaperInput workflow，并强制 Reviewer 装配契约。"""
+
+    if config.reviewer is None:
+        raise ReviewerRequiredError(
+            "reviewer_required: Standard full workflow requires Reviewer, "
+            "but reviewer config is missing"
+        )
+    if not config.reviewer.enabled:
+        raise ReviewerRequiredError(
+            "reviewer_required: Standard full workflow requires Reviewer, "
+            "but reviewer.enabled=false"
+        )
+    workflow = build_workflow(config, source_registry=source_registry)
+    if workflow.services.reviewer is None:
+        raise ReviewerRequiredError(
+            "reviewer_required: Standard full workflow requires Reviewer, "
+            "but Reviewer service construction returned unavailable"
+        )
+    return workflow
+
+
 def _build_workflow_from_application_config(
     config: ApplicationConfig,
     *,
