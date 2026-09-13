@@ -110,29 +110,19 @@ class BrowserTool:
             extension="txt",
             content=fetched.text,
         )
-        artifacts_by_id = {
-            item.artifact_id: item for item in manifest.artifacts
-        }
-        artifacts_by_id[artifact_id] = artifact
         updated_record = record.model_copy(
             update={
                 "work_id": work_id,
                 "access_status": AccessStatus.FULL_TEXT_ACQUIRED,
             }
         )
-        source_records = list(manifest.source_records)
-        source_records[record_index] = updated_record
-        updated_manifest = manifest.model_copy(
-            update={
-                "works": list(works_by_id.values()),
-                "source_records": source_records,
-                "artifacts": list(artifacts_by_id.values()),
-                "updated_at": acquired_at,
-            }
-        )
-        self.reference_store.persist_manifest(
+        # 在锁内重新读取再合并：fetch 期间其它并发任务可能已经写入 manifest，
+        # 用 fetch 之前读到的副本整份覆盖会丢掉它们的 Work/SourceRecord/Artifact。
+        self.reference_store.merge_manifest(
             scope.subject_paper_id,
-            updated_manifest,
+            works=list(works_by_id.values()),
+            source_records=[updated_record],
+            artifacts=[artifact],
         )
         result = BrowserResult(
             source_record_id=record.source_record_id,

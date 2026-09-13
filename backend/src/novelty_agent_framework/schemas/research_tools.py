@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Annotated, TypeAlias
 
-from pydantic import Field, StringConstraints, field_validator, model_validator
+from pydantic import ConfigDict, Field, StringConstraints, field_validator, model_validator
 
 from .domain import EvidenceCard, StrictModel
 from .references import (
@@ -94,7 +94,14 @@ class BrowserResult(StrictModel):
 
 
 class ReaderArguments(StrictModel):
-    namespace: ArtifactNamespace = ArtifactNamespace.RESEARCH_REFERENCE
+    """Agent 可见的读取参数。
+
+    这里**没有** namespace：artifact_id 由工具生成、模型只是转述，它没有可靠
+    依据判断制品属于研究语料还是论文自带参考语料。实测把 namespace 交给模型
+    （默认值 research_reference）会让 reference_search 召回的自带参考语料全部
+    读失败，因此命名空间由 ReaderTool 按制品归属自动判定。
+    """
+
     artifact_id: NonEmptyStr
     char_start: int = Field(default=0, ge=0)
     max_chars: int = Field(default=8_000, ge=1, le=16_000)
@@ -111,6 +118,16 @@ class ReferenceReadRequest(StrictModel):
 
 
 class ReferenceReadResult(StrictModel):
+    """一次受限读取的结果。
+
+    ``text`` 必须逐字保留：它既是引文的唯一来源，又由 ``char_start``/``char_end``
+    精确描述区间。``StrictModel`` 默认 strip 字符串首尾空白，一旦切片以空白开头
+    或结尾，"区间长度 == 正文长度" 就不成立——读取会直接失败，或者更糟：正文被
+    静默改动而区间照旧。实测模型读到第 16000 字符之后必然报错，因此这里显式关闭。
+    """
+
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=False)
+
     namespace: ArtifactNamespace
     read_id: NonEmptyStr
     work_id: NonEmptyStr

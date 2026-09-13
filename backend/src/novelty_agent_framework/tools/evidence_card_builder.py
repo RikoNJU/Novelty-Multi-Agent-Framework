@@ -60,61 +60,70 @@ class EvidenceCardBuilder:
         warnings: list[str] = []
         resolved_works: set[tuple[ArtifactNamespace, str]] = set()
 
-        for card_draft in draft.cards:
-            matched_by_quote = [
-                self._matching_reads(quote, reads, indexes)
-                for quote in card_draft.quotes
-            ]
-            candidate_sets = [
-                {(read.namespace, read.work_id) for read, _artifact in matches}
-                for matches in matched_by_quote
-            ]
-            resolved = set.intersection(*candidate_sets)
-            if not resolved:
-                raise ValueError("cross-work or inconsistent quote provenance")
-            if len(resolved) > 1:
-                raise ValueError("ambiguous quote provenance")
-            namespace, work_id = next(iter(resolved))
-            work_address = (namespace, work_id)
-            if work_address in resolved_works:
-                raise ValueError(f"duplicate evidence card for work {work_id}")
-            resolved_works.add(work_address)
-            index = indexes[namespace]
-            work = index.works.get(work_id)
-            if work is None:
-                raise ValueError(f"missing Work {work_id}")
+        for position, card_draft in enumerate(draft.cards, start=1):
+            try:
+                matched_by_quote = [
+                    self._matching_reads(quote, reads, indexes)
+                    for quote in card_draft.quotes
+                ]
+                candidate_sets = [
+                    {(read.namespace, read.work_id) for read, _artifact in matches}
+                    for matches in matched_by_quote
+                ]
+                resolved = set.intersection(*candidate_sets)
+                if not resolved:
+                    raise ValueError("cross-work or inconsistent quote provenance")
+                if len(resolved) > 1:
+                    raise ValueError("ambiguous quote provenance")
+                namespace, work_id = next(iter(resolved))
+                work_address = (namespace, work_id)
+                if work_address in resolved_works:
+                    raise ValueError(f"duplicate evidence card for work {work_id}")
+                index = indexes[namespace]
+                work = index.works.get(work_id)
+                if work is None:
+                    raise ValueError(f"missing Work {work_id}")
 
-            evidence, sources = self._build_card_items(
-                card_draft,
-                matched_by_quote,
-                work,
-                namespace,
-                index,
-                scope,
-                warnings,
-            )
-            card = EvidenceCard(
-                card_id=_stable_id(
-                    "card",
-                    scope.subject_paper_id,
-                    scope.novelty_point.point_id,
-                    scope.research_task.task_id,
-                    namespace.value,
-                    work_id,
-                ),
-                task_id=scope.research_task.task_id,
-                novelty_point_id=scope.novelty_point.point_id,
-                document_title=work.title,
-                main_contribution=card_draft.main_contribution,
-                overlaps=card_draft.overlaps,
-                differences=card_draft.differences,
-                sources=sources,
-                cited_by_paper=None,
-                possible_baseline=card_draft.possible_baseline,
-                relevance=card_draft.relevance,
-                confidence=card_draft.confidence,
-                evidence_ids=[item.evidence_id for item in evidence],
-            )
+                evidence, sources = self._build_card_items(
+                    card_draft,
+                    matched_by_quote,
+                    work,
+                    namespace,
+                    index,
+                    scope,
+                    warnings,
+                )
+                card = EvidenceCard(
+                    card_id=_stable_id(
+                        "card",
+                        scope.subject_paper_id,
+                        scope.novelty_point.point_id,
+                        scope.research_task.task_id,
+                        namespace.value,
+                        work_id,
+                    ),
+                    task_id=scope.research_task.task_id,
+                    novelty_point_id=scope.novelty_point.point_id,
+                    document_title=work.title,
+                    main_contribution=card_draft.main_contribution,
+                    overlaps=card_draft.overlaps,
+                    differences=card_draft.differences,
+                    sources=sources,
+                    cited_by_paper=None,
+                    possible_baseline=card_draft.possible_baseline,
+                    relevance=card_draft.relevance,
+                    confidence=card_draft.confidence,
+                    evidence_ids=[item.evidence_id for item in evidence],
+                )
+            except ValueError as exc:
+                # 单张卡的溯源问题只丢弃这一张，同任务其它卡照常产出。
+                # 此前这里直接向上抛，导致一条引文失配就作废整轮检索（实测
+                # 整轮 0 卡）；受影响的工作不会被登记，后续卡仍可引用它。
+                warnings.append(
+                    f"dropped evidence card #{position}: {type(exc).__name__}: {exc}"
+                )
+                continue
+            resolved_works.add(work_address)
             all_evidence.extend(evidence)
             cards.append(card)
 
@@ -277,10 +286,46 @@ def _quote_matches(quote: str, text: str) -> bool:
     return quote in text or _normalize_whitespace(quote) in _normalize_whitespace(text)
 
 
-def normalize_quote_whitespace(value: str) -> str:
-    """Canonical quote whitespace used by both the builder and integrity gates."""
+# 模型转述正文时会把排版字符「规范化」：弯引号写成直引号、en/em dash 写成连字符、
+# 不换行空格写成普通空格。这些字形差异肉眼不可见，却足以让整条引文无法溯源——
+# 实测一条 224 字的引文仅因 ’ 与 ' 之差被判定为 ungrounded。
+# 注意：必须是**长度不变**的 1:1 替换，否则 _normalized_spans 的偏移映射会失效。
+_TYPOGRAPHIC_FOLD = str.maketrans(
+    {
+        "\u2018": "'",
+        "\u2019": "'",
+        "\u201b": "'",
+        "\u201c": '"',
+        "\u201d": '"',
+        "\u201f": '"',
+        "\u2010": "-",
+        "\u2011": "-",
+        "\u2012": "-",
+        "\u2013": "-",
+        "\u2014": "-",
+        "\u2015": "-",
+        "\u2212": "-",
+        "\u00a0": " ",
+        "\u2007": " ",
+        "\u202f": " ",
+    }
+)
 
-    return re.sub(r"\s+", " ", value).strip()
+
+def fold_quote_typography(value: str) -> str:
+    """把排版变体折叠为 ASCII 等价形式（1:1，长度不变）。"""
+
+    return value.translate(_TYPOGRAPHIC_FOLD)
+
+
+def normalize_quote_whitespace(value: str) -> str:
+    """引文比较的统一归一化，builder 与完整性门共用。
+
+    先折叠排版变体，再折叠空白——两者都是模型复现正文时的常见偏差。
+    此前只处理空白，于是仅一个弯引号之差就会让引文溯源失败。
+    """
+
+    return re.sub(r"\s+", " ", fold_quote_typography(value)).strip()
 
 
 _normalize_whitespace = normalize_quote_whitespace
@@ -304,7 +349,7 @@ def _normalized_spans(value: str) -> tuple[str, list[tuple[int, int]]]:
             spans.append((index, end))
             index = end
         else:
-            chars.append(value[index])
+            chars.append(fold_quote_typography(value[index]))
             spans.append((index, index + 1))
             index += 1
     return "".join(chars), spans

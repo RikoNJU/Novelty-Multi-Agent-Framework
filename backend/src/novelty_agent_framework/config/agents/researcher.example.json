@@ -10,13 +10,14 @@
   },
   "prompt": "research/native_tool_loop",
   "harness": {
-    "max_turns": 12,
-    "max_total_tool_calls": 10,
+    "max_turns": 18,
+    "max_total_tool_calls": 16,
     "per_tool_limits": {
-      "database_search": 3,
+      "reference_search": 4,
+      "database_search": 4,
       "web_search": 5,
       "browser": 3,
-      "reader": 8
+      "reader": 10
     }
   },
   "tools": {
@@ -29,9 +30,9 @@
       "providers": {
         "arxiv": {
           "enabled": true,
-          "min_interval_seconds": 3,
+          "min_interval_seconds": 4,
           "timeout_seconds": 20,
-          "max_retries": 2,
+          "max_retries": 4,
           "full_text_max_chars": 100000
         },
         "null_catalog": {
@@ -42,6 +43,7 @@
     },
     "web_search": {
       "backend": "baidu",
+      "enabled": false,
       "default_max_results": 10,
       "max_results_per_call": 50,
       "baidu": {
@@ -50,6 +52,7 @@
     },
     "browser": {
       "backend": "playwright",
+      "enabled": false,
       "network_mode": "inherit",
       "navigation_timeout_ms": 30000,
       "max_html_chars": 2000000,
@@ -58,7 +61,7 @@
     "reader": {
       "default_chars_per_read": 8000,
       "max_chars_per_read": 16000,
-      "max_total_read_chars": 48000
+      "max_total_read_chars": 120000
     }
   }
 }

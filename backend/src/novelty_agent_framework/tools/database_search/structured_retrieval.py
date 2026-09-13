@@ -11,7 +11,7 @@ from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from typing import Any, TypeVar, cast
 
-from ...persistence import ReferenceStore
+from ...persistence import ReferenceStore, merge_record, merge_work
 from ...ports import FullText, SearchHit, SearchPlanner
 from ...schemas import (
     AccessStatus,
@@ -19,7 +19,6 @@ from ...schemas import (
     ArtifactRole,
     ContentExtent,
     ExternalIdentifier,
-    ReferenceManifest,
     ResearchBundle,
     SearchExecution,
     SearchExecutionStatus,
@@ -179,7 +178,6 @@ class StructuredSourceRetrievalTool:
                 f"request source_id {request.source_id!r} does not match "
                 f"tool source_id {self.source_id!r}"
             )
-        manifest = self.reference_store.load_manifest(request.subject_paper_id)
         plan = request.search_plan
         chain = build_fallback_chain(plan)
         pending, failed, unique_hits, chain_warnings = await self._search(chain, request)
@@ -202,8 +200,8 @@ class StructuredSourceRetrievalTool:
                 )
                 continue
             warnings.extend(hit_warnings)
-            _merge_work(works, work)
-            _merge_record(records, record)
+            merge_work(works, work)
+            merge_record(records, record)
             mapped[key] = (work, record)
 
         executions = [*failed]
@@ -308,13 +306,14 @@ class StructuredSourceRetrievalTool:
                     update={"access_status": AccessStatus.FULL_TEXT_ACQUIRED}
                 )
 
-        merged = _merge_manifest(
-            manifest,
-            list(works.values()),
-            list(records.values()),
-            list(artifacts.values()),
+        # 在锁内重新读取再合并：本方法中间有多次 await，其它并发任务可能已经写入，
+        # 直接整份覆盖会丢掉它们的 Work/Artifact（reader 随后报 unknown artifact_id）。
+        self.reference_store.merge_manifest(
+            request.subject_paper_id,
+            works=list(works.values()),
+            source_records=list(records.values()),
+            artifacts=list(artifacts.values()),
         )
-        self.reference_store.persist_manifest(request.subject_paper_id, merged)
         return ResearchBundle(
             bundle_id=self.adapter.stable_id(
                 "bnd",
@@ -577,57 +576,6 @@ class StructuredSourceRetrievalTool:
             content_extent=extent,
             acquired_at=datetime.now(timezone.utc),
             provenance=provenance,
-        )
-
-
-def _merge_manifest(
-    manifest: ReferenceManifest,
-    works: Sequence[Work],
-    records: Sequence[SourceRecord],
-    artifacts: Sequence[Artifact],
-) -> ReferenceManifest:
-    work_map = {item.work_id: item for item in manifest.works}
-    record_map = {item.source_record_id: item for item in manifest.source_records}
-    artifact_map = {item.artifact_id: item for item in manifest.artifacts}
-    for work in works:
-        _merge_work(work_map, work)
-    for record in records:
-        _merge_record(record_map, record)
-    for artifact in artifacts:
-        existing = artifact_map.get(artifact.artifact_id)
-        if existing is not None and (
-            existing.work_id != artifact.work_id
-            or existing.sha256 != artifact.sha256
-            or existing.relative_path != artifact.relative_path
-        ):
-            raise ValueError(f"artifact {artifact.artifact_id} conflicts with manifest")
-        artifact_map.setdefault(artifact.artifact_id, artifact)
-    return ReferenceManifest(
-        schema_version=manifest.schema_version,
-        subject_paper_id=manifest.subject_paper_id,
-        updated_at=datetime.now(timezone.utc),
-        works=list(work_map.values()),
-        source_records=list(record_map.values()),
-        artifacts=list(artifact_map.values()),
-    )
-
-
-def _merge_work(target: dict[str, Work], value: Work) -> None:
-    existing = target.get(value.work_id)
-    if existing is None:
-        target[value.work_id] = value
-
-
-def _merge_record(target: dict[str, SourceRecord], value: SourceRecord) -> None:
-    existing = target.get(value.source_record_id)
-    if existing is None:
-        target[value.source_record_id] = value
-        return
-    if existing.work_id != value.work_id or existing.source_id != value.source_id:
-        raise ValueError(f"source_record {value.source_record_id} has identity conflict")
-    if value.access_status == AccessStatus.FULL_TEXT_ACQUIRED:
-        target[value.source_record_id] = existing.model_copy(
-            update={"access_status": value.access_status}
         )
 
 

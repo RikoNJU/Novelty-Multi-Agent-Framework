@@ -9,7 +9,7 @@ from novelty_agent_framework.config.loader import (
 
 
 def test_perturbed_config_reaches_runtime_objects(tmp_path):
-    researcher_raw = json.loads(DEFAULT_RESEARCHER_PATH.read_text())
+    researcher_raw = json.loads(DEFAULT_RESEARCHER_PATH.read_text(encoding="utf-8"))
     researcher_raw["model"].update(temperature=0.17, max_tokens=321, timeout_seconds=12)
     researcher_raw["harness"].update(max_turns=7, max_total_tool_calls=6)
     researcher_raw["harness"]["per_tool_limits"]["browser"] = 2
@@ -19,9 +19,13 @@ def test_perturbed_config_reaches_runtime_objects(tmp_path):
         min_interval_seconds=0.07, timeout_seconds=4, max_retries=1,
         full_text_max_chars=4321,
     )
-    researcher_raw["tools"]["web_search"].update(default_max_results=4, max_results_per_call=6)
+    # 默认配置关闭了 web_search 与 browser；本用例验证配置注入，因此显式打开它们
+    researcher_raw["tools"]["web_search"].update(
+        enabled=True, default_max_results=4, max_results_per_call=6
+    )
     researcher_raw["tools"]["web_search"]["baidu"]["timeout_seconds"] = 7
     researcher_raw["tools"]["browser"].update(
+        enabled=True,
         network_mode="direct",
         navigation_timeout_ms=4321,
         max_html_chars=2222,
@@ -31,7 +35,7 @@ def test_perturbed_config_reaches_runtime_objects(tmp_path):
         default_chars_per_read=1000, max_chars_per_read=1234,
         max_total_read_chars=2345,
     )
-    planner_raw = json.loads(DEFAULT_SEARCH_PLANNER_PATH.read_text())
+    planner_raw = json.loads(DEFAULT_SEARCH_PLANNER_PATH.read_text(encoding="utf-8"))
     planner_raw["model"].update(temperature=0.19, max_tokens=654, timeout_seconds=13)
     planner_raw["max_attempts"] = 1
     planner_raw["prompt"] = "search_planner/custom"

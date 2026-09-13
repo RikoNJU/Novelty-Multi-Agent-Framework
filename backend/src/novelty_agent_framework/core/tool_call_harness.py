@@ -220,11 +220,14 @@ class ToolCallHarness:
                 ):
                     # 软性拒绝：不杀死任务，向模型回传拒绝消息（含必须读取的
                     # artifact_id），让它下一轮自我纠正；审计日志保留完整记录。
+                    #
+                    # 这里**不**递增 tool_calls_used：本次什么都没执行，却要占掉
+                    # 一个调用名额，实测一个 16 次预算的任务里被白吃掉 5 次（31%）。
+                    # 循环本身仍受 max_turns 约束，不存在无限拒绝的风险。
                     detail = (
                         "reader required after database_search returned artifact_ids"
                     )
                     _append_error(log, detail)
-                    tool_calls_used += 1
                     rejection = ChatMessage(
                         role="tool",
                         tool_call_id=tool_call.id,
@@ -338,13 +341,16 @@ class ToolCallHarness:
             per_tool_counts[tool_call.name] = tool_count + 1
             if tool_call.name == "database_search" and observation.succeeded:
                 required_reader_artifact_ids = _database_artifact_ids(observation)
-            elif (
-                tool_call.name == "reader"
-                and observation.succeeded
-                and required_reader_artifact_ids
-            ):
-                # 仅成功读取后才释放约束；失败/错误 artifact 不解除要求。
-                required_reader_artifact_ids.clear()
+            elif tool_call.name == "reader" and required_reader_artifact_ids:
+                if observation.succeeded:
+                    required_reader_artifact_ids.clear()
+                else:
+                    # 失败时释放「这一个」制品的约束。否则该 id 永远读不出来时，
+                    # 模型既不能换一篇读、也不能重新检索（其它工具全被拒），只能
+                    # 反复重试同一个坏 id 直到耗尽整轮预算。
+                    attempted = tool_call.arguments.get("artifact_id")
+                    if isinstance(attempted, str):
+                        required_reader_artifact_ids.discard(attempted)
             if tool_call.name == "reader" and observation.succeeded:
                 read = observation.payload.get("read_result", {})
                 start, end = read.get("char_start"), read.get("char_end")

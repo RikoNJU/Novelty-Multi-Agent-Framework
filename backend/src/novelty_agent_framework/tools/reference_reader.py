@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 
 from ..persistence import ReferenceStore, reference_store_for_artifact_namespace
-from ..schemas import ReferenceReadRequest, ReferenceReadResult
+from ..schemas import ArtifactNamespace, ReferenceReadRequest, ReferenceReadResult
 
 
 class ReferenceArtifactReaderTool:
@@ -22,6 +22,24 @@ class ReferenceArtifactReaderTool:
             raise ValueError("max_chars_per_read must be in 1..16000")
         self.reference_store = reference_store or ReferenceStore()
         self.max_chars_per_read = max_chars_per_read
+
+    def locate(self, paper_id: str, artifact_id: str) -> ArtifactNamespace | None:
+        """返回该 artifact_id 实际所在的公开命名空间，研究语料优先；都没有则 None。
+
+        只查两份 Manifest，不触碰磁盘。存在的 id 保证可解析，冲突（同一个裸 id
+        同时存在于两个语料）在真实数据里不会出现——两边 id 的派生输入完全不同。
+        """
+
+        for namespace in (
+            ArtifactNamespace.RESEARCH_REFERENCE,
+            ArtifactNamespace.SUBJECT_REFERENCE,
+        ):
+            store = reference_store_for_artifact_namespace(
+                namespace, output_root=self.reference_store.output_root
+            )
+            if store.find_artifact(paper_id, artifact_id) is not None:
+                return namespace
+        return None
 
     async def ainvoke(self, request: ReferenceReadRequest) -> ReferenceReadResult:
         request = ReferenceReadRequest.model_validate(request)

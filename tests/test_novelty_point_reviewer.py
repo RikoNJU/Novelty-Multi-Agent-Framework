@@ -260,7 +260,7 @@ def test_workflow_persists_point_reviews_without_filtering_or_routing(tmp_path, 
     reviewed = asyncio.run(workflow._review_evidence(state))
     assert reviewed["evidence_cards"] == request.cards
     payload = json.loads(
-        (tmp_path / "outputs/paper-1/novelty-reviews.json").read_text()
+        (tmp_path / "outputs/paper-1/novelty-reviews.json").read_text(encoding="utf-8")
     )
     assert payload["reviews"][0]["novelty_point_id"] == "NP-1"
     assert asyncio.run(

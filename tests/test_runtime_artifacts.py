@@ -39,7 +39,7 @@ def test_incremental_run_stage_tool_and_archived_summary(tmp_path: Path) -> None
         stage_names=["researcher", "writer"],
     )
     assert manager.run_dir is not None
-    manifest = json.loads((manager.run_dir / "manifest.json").read_text())
+    manifest = json.loads((manager.run_dir / "manifest.json").read_text(encoding="utf-8"))
     assert manifest["status"] == "RUNNING"
 
     manager.activate()
@@ -50,7 +50,7 @@ def test_incremental_run_stage_tool_and_archived_summary(tmp_path: Path) -> None
         resolved_arguments={"query": "novelty", "max_results": 10},
         agent_tool_call_id="model-call-7",
     )
-    running = json.loads(tool.path.read_text())
+    running = json.loads(tool.path.read_text(encoding="utf-8"))
     assert running["execution_status"] == "RUNNING"
     manager.finish_tool_call(
         tool,
@@ -61,8 +61,8 @@ def test_incremental_run_stage_tool_and_archived_summary(tmp_path: Path) -> None
     manager.deactivate()
     _, archive = manager.finish_run("SUCCESS")
 
-    recorded = json.loads(tool.path.read_text())
-    stage_meta = json.loads((stage.directory / "meta.json").read_text())
+    recorded = json.loads(tool.path.read_text(encoding="utf-8"))
+    stage_meta = json.loads((stage.directory / "meta.json").read_text(encoding="utf-8"))
     assert "debug_details" not in stage_meta
     assert recorded["tool_call_id"] == "tool_0001"
     assert recorded["agent_tool_call_id"] == "model-call-7"
@@ -72,12 +72,12 @@ def test_incremental_run_stage_tool_and_archived_summary(tmp_path: Path) -> None
     assert recorded["resolved_arguments"]["max_results"] == 10
     assert recorded["raw_result"]["http_status"] == 200
     assert recorded["normalized_result"] == {"results": []}
-    summary = json.loads((manager.run_dir / "summary.json").read_text())
+    summary = json.loads((manager.run_dir / "summary.json").read_text(encoding="utf-8"))
     assert summary["run"]["status"] == "SUCCESS"
     assert any(item["stage_name"] == "writer" and item["status"] == "NOT_RUN"
                for item in summary["stages"])
     not_run_meta = json.loads(
-        (manager.run_dir / "stages" / "not_run_writer" / "meta.json").read_text()
+        (manager.run_dir / "stages" / "not_run_writer" / "meta.json").read_text(encoding="utf-8")
     )
     assert not_run_meta["status"] == "NOT_RUN"
     assert summary["tool_calls"] == [{
@@ -104,7 +104,7 @@ def test_failures_preserve_raw_result_error_and_traceback(tmp_path: Path) -> Non
         manager.deactivate()
         manager.finish_run("FAILED", error=exc)
 
-    payload = json.loads(call.path.read_text())
+    payload = json.loads(call.path.read_text(encoding="utf-8"))
     assert payload["execution_status"] == "FAILED"
     assert payload["business_status"] == "INVALID"
     assert payload["raw_result"] == {"status": 200}
@@ -134,7 +134,7 @@ def test_recursive_redaction_and_large_value_reference(tmp_path: Path) -> None:
         if path.is_file()
     )
     assert secret not in all_text
-    stage_input = json.loads((stage.directory / "input.json").read_text())
+    stage_input = json.loads((stage.directory / "input.json").read_text(encoding="utf-8"))
     assert stage_input["password"] == "***REDACTED***"
     assert stage_input["text"]["type"] == "content_reference"
     assert stage_input["text"]["size"] == 100
@@ -210,7 +210,7 @@ def test_harness_records_agent_and_schema_resolved_arguments(tmp_path: Path) -> 
     manager.deactivate()
     manager.finish_run("SUCCESS")
 
-    payload = json.loads(next((manager.run_dir / "tools").glob("*.json")).read_text())
+    payload = json.loads(next((manager.run_dir / "tools").glob("*.json")).read_text(encoding="utf-8"))
     assert payload["agent_arguments"] == {"query": "q"}
     assert payload["resolved_arguments"] == {"query": "q", "max_results": 10}
     assert payload["execution_status"] == "SUCCESS"
@@ -272,7 +272,7 @@ def test_final_evidence_sufficiency_facts_are_in_stage_and_summary(
     manager.deactivate()
     manager.finish_run("SUCCESS")
 
-    meta = json.loads((stage.directory / "meta.json").read_text())
+    meta = json.loads((stage.directory / "meta.json").read_text(encoding="utf-8"))
     details = meta["debug_details"]["final_evidence_sufficiency"]
     assert details["configured_cut"] == 2
     assert details["check_status"] == "INSUFFICIENT"
@@ -294,14 +294,14 @@ def test_final_evidence_sufficiency_facts_are_in_stage_and_summary(
     assert details["output_matches_calculation"] is True
     assert details["round_limit_allows_supplement"] is True
 
-    summary = json.loads((manager.run_dir / "summary.json").read_text())
+    summary = json.loads((manager.run_dir / "summary.json").read_text(encoding="utf-8"))
     check = summary["final_evidence_sufficiency_checks"][0]
     assert check["stage_status"] == "SUCCESS"
     assert check["actual_next_stage"] == "plan_supplement"
     assert check["reported_insufficient_final_evidence_points"][0][
         "reason"
     ] == "insufficient_final_evidence"
-    markdown = (manager.run_dir / "summary.md").read_text()
+    markdown = (manager.run_dir / "summary.md").read_text(encoding="utf-8")
     assert "## Final Evidence Sufficiency Checks" in markdown
     assert "| NP-2 | 1 | 2 | INSUFFICIENT |" in markdown
 
@@ -362,7 +362,7 @@ def test_reviewer_scope_and_output_facts_are_in_stage_and_summary(
     manager.deactivate()
     manager.finish_run("SUCCESS")
 
-    meta = json.loads((stage.directory / "meta.json").read_text())
+    meta = json.loads((stage.directory / "meta.json").read_text(encoding="utf-8"))
     details = meta["debug_details"]["reviewer_information_adjudication"]
     assert details["cards_preserved"] is True
     assert details["missing_review_point_ids"] == ["NP-2"]
@@ -370,9 +370,9 @@ def test_reviewer_scope_and_output_facts_are_in_stage_and_summary(
     assert details["point_scopes"][0]["allowed_artifact_ids"] == ["A-1"]
     assert details["supplement_requests_control_route"] is False
 
-    summary = json.loads((manager.run_dir / "summary.json").read_text())
+    summary = json.loads((manager.run_dir / "summary.json").read_text(encoding="utf-8"))
     check = summary["reviewer_information_adjudication_checks"][0]
     assert check["actual_next_stage"] == "validate_synthesis_input"
-    markdown = (manager.run_dir / "summary.md").read_text()
+    markdown = (manager.run_dir / "summary.md").read_text(encoding="utf-8")
     assert "## Reviewer Information Adjudication" in markdown
     assert "| NP-1 | insufficient_evidence | - | 0 | True |" in markdown

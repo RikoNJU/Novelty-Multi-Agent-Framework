@@ -169,7 +169,7 @@ class TaskResearcherWorkflow:
     def _render_prompt(self, request: TaskResearchRequest) -> tuple[str, str]:
         variables = {
             "novelty_point_json": json.dumps(
-                request.novelty_point.model_dump(mode="json"), ensure_ascii=False
+                _project_novelty_point(request.novelty_point), ensure_ascii=False
             ),
             "research_task_json": json.dumps(
                 request.research_task.model_dump(mode="json"), ensure_ascii=False
@@ -247,6 +247,21 @@ def _partial(
 
 def _safe_error(exc: Exception) -> str:
     return f"{type(exc).__name__}: {exc}"[:500]
+
+def _project_novelty_point(point: Any) -> dict:
+    """模型上下文投影：剔除 ``source_locations``。
+
+    ``source_locations`` 是 PointExtractor 生成的、给人看的定位提示，**不保证
+    逐字**——它会顺手清理 PDF 抽取残留（例如把 ``(model F _ { 2 } ) ) )`` 去掉）。
+    但字符串本身带引号、还标着章节，模型会把它当成现成的引文直接写进 finish
+    draft，随后必然被 EvidenceCardBuilder 判为 ungrounded，白白作废整轮检索。
+    引文只应来自成功的 Reader 观测，因此这里不把它暴露给模型。
+    """
+
+    payload = point.model_dump(mode="json")
+    payload.pop("source_locations", None)
+    return payload
+
 
 def _project_search_plan(plan: SearchPlan) -> dict:
     """模型上下文投影：只给最小语义（terms + expression），不给 ID/level/name/description/绑定。

@@ -14,7 +14,7 @@ from novelty_agent_framework.core.integrity_gates import (
     validate_synthesis_input,
 )
 from novelty_agent_framework.core.runtime_artifacts import RuntimeDebugConfig
-from novelty_agent_framework.persistence import ReferenceStore
+from novelty_agent_framework.persistence import ReferenceStore, SubjectReferenceStore
 from novelty_agent_framework.schemas import (
     Artifact,
     ArtifactRole,
@@ -151,6 +151,92 @@ def _gate_a(tmp_path: Path, *, cards=None, evidence=None):
     return result, store, path
 
 
+def _subject_store(tmp_path: Path) -> SubjectReferenceStore:
+    """与 ``_store`` 相同的结构，但写入论文自带参考语料命名空间。"""
+
+    store = SubjectReferenceStore(tmp_path)
+    store.write_document(
+        "paper-1",
+        work_id="work-1",
+        artifact_id="artifact-1",
+        extension="txt",
+        content=TEXT,
+    )
+    manifest = store.load_manifest("paper-1")
+    store.persist_manifest(
+        "paper-1",
+        manifest.model_copy(
+            update={
+                "works": [
+                    Work(work_id="work-1", work_type=WorkType.ARTICLE, title="Work 1")
+                ],
+                "artifacts": [
+                    Artifact(
+                        artifact_id="artifact-1",
+                        work_id="work-1",
+                        role=ArtifactRole.EXTRACTED_TEXT,
+                        media_type="text/plain",
+                        relative_path="documents/work-1/artifact-1.txt",
+                        sha256=hashlib.sha256(TEXT.encode()).hexdigest(),
+                        byte_size=len(TEXT.encode()),
+                        content_extent=ContentExtent.FULL,
+                        acquired_at=NOW,
+                    )
+                ],
+                "updated_at": NOW,
+            }
+        ),
+    )
+    return store
+
+
+def test_gate_a_accepts_evidence_from_the_subject_reference_namespace(
+    tmp_path: Path,
+) -> None:
+    """回归守卫：来自论文自带参考语料的证据必须能通过 Gate A。
+
+    Builder 按命名空间分别索引，而 Gate A 原先只加载研究语料那一份 Manifest，
+    于是自带参考语料里的合法证据被误判为「缺失 Work/Artifact」——实测两张已经
+    通过 Validator 的有效卡就这样被拒掉，直接拉低最终有效卡数量。
+    """
+
+    _store(tmp_path)  # 研究语料存在，但与本证据无关
+    _subject_store(tmp_path)  # 证据真正所在的语料
+
+    result = validate_synthesis_input(
+        [_card()],
+        evidence=[_evidence(provenance={"artifact_namespace": "subject_reference"})],
+        tasks=[_task()],
+        novelty_points=[_point()],
+        paper_id="paper-1",
+        reference_store=ReferenceStore(tmp_path),
+    )
+
+    assert result.rejected == ()
+    assert result.accepted == (_card(),)
+
+
+def test_gate_a_still_rejects_evidence_absent_from_its_own_namespace(
+    tmp_path: Path,
+) -> None:
+    """命名空间感知不得放松校验：声称来自自带参考语料、但那里没有该制品，仍须拒绝。"""
+
+    _store(tmp_path)  # 只写入研究语料
+
+    result = validate_synthesis_input(
+        [_card()],
+        evidence=[_evidence(provenance={"artifact_namespace": "subject_reference"})],
+        tasks=[_task()],
+        novelty_points=[_point()],
+        paper_id="paper-1",
+        reference_store=ReferenceStore(tmp_path),
+    )
+
+    reasons = " ".join(result.rejected[0][1])
+    assert "missing Work: work-1" in reasons
+    assert "missing Artifact: artifact-1" in reasons
+
+
 def test_gate_a_accepts_complete_chain_and_normalized_quote(tmp_path: Path) -> None:
     result, _store_value, _path = _gate_a(tmp_path)
     assert result.accepted == (_card(),)
@@ -269,7 +355,12 @@ def test_gate_a_rejects_artifact_and_locator_damage(
         outside = tmp_path / "outside.txt"
         outside.write_text(TEXT, encoding="utf-8")
         path.unlink()
-        path.symlink_to(outside)
+        try:
+            path.symlink_to(outside)
+        except (OSError, NotImplementedError) as exc:
+            # Windows 未开启开发者模式时没有创建符号链接的特权；manifest schema
+            # 已拒绝 ../ 形式的 relative_path，因此无法用其它方式构造逃逸路径。
+            pytest.skip(f"symlink creation is unavailable on this platform: {exc}")
     else:
         evidence = _evidence(quote="different quote")
     result = validate_synthesis_input(
@@ -354,7 +445,7 @@ def test_gate_b_failure_does_not_block_report_persistence(tmp_path: Path, monkey
         claimed_contributions=["claim"],
     )
     result = workflow.run(paper)
-    persisted = json.loads(Path("outputs/paper-1/report.json").read_text())
+    persisted = json.loads(Path("outputs/paper-1/report.json").read_text(encoding="utf-8"))
     assert persisted == result.report.model_dump(mode="json")
     assert Path("outputs/paper-1/report/paper-1-report.md").is_file()
 
@@ -364,13 +455,13 @@ def test_gate_b_failure_does_not_block_report_persistence(tmp_path: Path, monkey
         )
     )
     assert len(gate_outputs) == 1
-    gate = json.loads(gate_outputs[0].read_text())
+    gate = json.loads(gate_outputs[0].read_text(encoding="utf-8"))
     assert gate["report_integrity"]["validation_passed"] is False
-    gate_meta = json.loads((gate_outputs[0].parent / "meta.json").read_text())
+    gate_meta = json.loads((gate_outputs[0].parent / "meta.json").read_text(encoding="utf-8"))
     assert gate_meta["status"] == "SUCCESS"
     assert gate_meta["validation_result"]["validation_passed"] is False
     summaries = list(Path("outputs/paper-1/runtime").glob("*/summary.json"))
-    summary = json.loads(summaries[0].read_text())
+    summary = json.loads(summaries[0].read_text(encoding="utf-8"))
     gate_summaries = {
         item["stage_name"]: item for item in summary["integrity_gates"]
     }
@@ -415,8 +506,8 @@ def test_complete_workflow_records_both_gate_passes(tmp_path: Path, monkeypatch)
     summary_path = next(
         Path("outputs/valid-chain/runtime").glob("*/summary.json")
     )
-    summary = json.loads(summary_path.read_text())
-    manifest = json.loads((summary_path.parent / "manifest.json").read_text())
+    summary = json.loads(summary_path.read_text(encoding="utf-8"))
+    manifest = json.loads((summary_path.parent / "manifest.json").read_text(encoding="utf-8"))
     gate_results = {
         item["stage_name"]: item for item in summary["integrity_gates"]
     }
@@ -551,7 +642,7 @@ def test_gate_a_failure_is_runtime_only_and_run_continues(
     summary_path = next(
         Path("outputs/broken-chain/runtime").glob("*/summary.json")
     )
-    summary = json.loads(summary_path.read_text())
+    summary = json.loads(summary_path.read_text(encoding="utf-8"))
     gate_a = next(
         item
         for item in summary["integrity_gates"]
@@ -564,7 +655,7 @@ def test_gate_a_failure_is_runtime_only_and_run_continues(
         any("missing Artifact" in reason for reason in rejected["reasons"])
         for rejected in gate_a["rejected_cards"]
     )
-    formal_report = Path("outputs/broken-chain/report.json").read_text()
+    formal_report = Path("outputs/broken-chain/report.json").read_text(encoding="utf-8")
     assert "missing Artifact" not in formal_report
 
 

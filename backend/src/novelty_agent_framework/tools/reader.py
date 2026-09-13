@@ -51,7 +51,7 @@ class ReaderTool:
         result = await self.reader.ainvoke(
             ReferenceReadRequest(
                 subject_paper_id=scope.subject_paper_id,
-                namespace=arguments.namespace,
+                namespace=self._namespace_for(scope.subject_paper_id, arguments),
                 artifact_id=arguments.artifact_id,
                 char_start=arguments.char_start,
                 max_chars=arguments.max_chars,
@@ -68,6 +68,24 @@ class ReaderTool:
             payload={"read_result": result.model_dump(mode="json")},
             elapsed_ms=int((time.monotonic() - started) * 1000),
         )
+
+    def _namespace_for(
+        self, subject_paper_id: str, arguments: ReaderArguments
+    ) -> ArtifactNamespace:
+        """按制品实际归属判定命名空间。
+
+        模型只转述工具给出的 artifact_id，无法判断它属于研究语料还是论文自带
+        参考语料（实测唯一的失败原因就是这里被默认成了 research_reference），
+        所以归属由工具查 Manifest 决定，而不是让模型猜。
+        """
+
+        namespace = self.reader.locate(subject_paper_id, arguments.artifact_id)
+        if namespace is None:
+            raise ValueError(
+                f"unknown artifact_id {arguments.artifact_id!r} in the research or "
+                "subject reference manifest"
+            )
+        return namespace
 
     def project_model_context(
         self, observation: ResearcherToolObservation
@@ -114,8 +132,6 @@ class ReviewerReaderTool(ReaderTool):
             for item in scope.evidence
             if item.evidence_id in referenced_evidence_ids
         }
-        if arguments.namespace is not ArtifactNamespace.RESEARCH_REFERENCE:
-            raise PermissionError("reviewer may only read research-reference artifacts")
         if arguments.artifact_id not in allowed_artifact_ids:
             raise PermissionError(
                 f"artifact {arguments.artifact_id!r} is outside reviewer scope"
@@ -124,7 +140,8 @@ class ReviewerReaderTool(ReaderTool):
         result = await self.reader.ainvoke(
             ReferenceReadRequest(
                 subject_paper_id=scope.subject_paper_id,
-                namespace=arguments.namespace,
+                # Reviewer 只能回读研究语料；自带参考语料不在其职责范围内。
+                namespace=ArtifactNamespace.RESEARCH_REFERENCE,
                 artifact_id=arguments.artifact_id,
                 char_start=arguments.char_start,
                 max_chars=arguments.max_chars,

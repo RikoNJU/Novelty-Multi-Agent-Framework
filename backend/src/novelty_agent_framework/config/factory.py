@@ -325,15 +325,17 @@ def build_workflow(
         if reviewer_cfg.get("enabled", False)
         else None
     )
-    tool_registry = ResearcherToolRegistry(
-        [
-            ReferenceSearchTool(SubjectReferenceStore()),
-            build_database_search_tool(
-                retrieval_cfg,
-                reference_store=store,
-                source_registry=source_registry,
-                max_concurrency=int(retrieval_cfg["max_concurrency"]),
-            ),
+    researcher_tools: list[Any] = [
+        ReferenceSearchTool(SubjectReferenceStore()),
+        build_database_search_tool(
+            retrieval_cfg,
+            reference_store=store,
+            source_registry=source_registry,
+            max_concurrency=int(retrieval_cfg["max_concurrency"]),
+        ),
+    ]
+    if web_cfg.get("enabled", True):
+        researcher_tools.append(
             WebSearchTool(
                 BaiduSearchBackend(
                     timeout_seconds=float(
@@ -343,7 +345,10 @@ def build_workflow(
                 store,
                 default_max_results=int(web_cfg.get("default_max_results", 10)),
                 max_results_per_call=int(web_cfg.get("max_results_per_call", 50)),
-            ),
+            )
+        )
+    if browser_cfg.get("enabled", True):
+        researcher_tools.append(
             BrowserTool(
                 PlaywrightBrowserBackend(
                     network_mode=str(browser_cfg.get("network_mode", "inherit")),
@@ -354,20 +359,20 @@ def build_workflow(
                     max_text_chars=int(browser_cfg.get("max_text_chars", 500_000)),
                 ),
                 store,
+            )
+        )
+    researcher_tools.append(
+        ReaderTool(
+            ReferenceArtifactReaderTool(
+                store,
+                max_chars_per_read=int(reader_cfg.get("max_chars_per_read", 16_000)),
             ),
-            ReaderTool(
-                ReferenceArtifactReaderTool(
-                    store,
-                    max_chars_per_read=int(
-                        reader_cfg.get("max_chars_per_read", 16_000)
-                    ),
-                ),
-                default_chars_per_read=int(
-                    reader_cfg.get("default_chars_per_read", 8_000)
-                ),
+            default_chars_per_read=int(
+                reader_cfg.get("default_chars_per_read", 8_000)
             ),
-        ]
+        )
     )
+    tool_registry = ResearcherToolRegistry(researcher_tools)
     budget_cfg = raw.get("task_researcher", {})
     task_researcher = TaskResearcherWorkflow(
         research_model,
@@ -525,15 +530,17 @@ def _build_workflow_from_application_config(
         if config.reviewer is not None and config.reviewer.enabled
         else None
     )
-    tool_registry = ResearcherToolRegistry(
-        [
-            ReferenceSearchTool(SubjectReferenceStore()),
-            build_database_search_tool(
-                retrieval,
-                reference_store=store,
-                source_registry=source_registry,
-                max_concurrency=database.max_concurrency,
-            ),
+    researcher_tools: list[Any] = [
+        ReferenceSearchTool(SubjectReferenceStore()),
+        build_database_search_tool(
+            retrieval,
+            reference_store=store,
+            source_registry=source_registry,
+            max_concurrency=database.max_concurrency,
+        ),
+    ]
+    if web.enabled:
+        researcher_tools.append(
             WebSearchTool(
                 BaiduSearchBackend(
                     timeout_seconds=float(web.baidu.get("timeout_seconds", 30.0))
@@ -541,7 +548,10 @@ def _build_workflow_from_application_config(
                 store,
                 default_max_results=web.default_max_results,
                 max_results_per_call=web.max_results_per_call,
-            ),
+            )
+        )
+    if browser.enabled:
+        researcher_tools.append(
             BrowserTool(
                 PlaywrightBrowserBackend(
                     network_mode=browser.network_mode,
@@ -550,15 +560,17 @@ def _build_workflow_from_application_config(
                     max_text_chars=browser.max_text_chars,
                 ),
                 store,
+            )
+        )
+    researcher_tools.append(
+        ReaderTool(
+            ReferenceArtifactReaderTool(
+                store, max_chars_per_read=reader.max_chars_per_read
             ),
-            ReaderTool(
-                ReferenceArtifactReaderTool(
-                    store, max_chars_per_read=reader.max_chars_per_read
-                ),
-                default_chars_per_read=reader.default_chars_per_read,
-            ),
-        ]
+            default_chars_per_read=reader.default_chars_per_read,
+        )
     )
+    tool_registry = ResearcherToolRegistry(researcher_tools)
     researcher = config.researcher
     task_researcher = TaskResearcherWorkflow(
         registry.client_for(researcher.model.alias),

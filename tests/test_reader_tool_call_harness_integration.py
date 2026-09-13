@@ -190,7 +190,6 @@ def test_real_reader_vertical_slice_exposes_definition_and_reads_store(tmp_path)
         char_start + max_chars,
     )
     assert result.trace[3].observation.arguments == {
-        "namespace": ArtifactNamespace.RESEARCH_REFERENCE.value,
         "artifact_id": ARTIFACT_ID,
         "char_start": char_start,
         "max_chars": max_chars,

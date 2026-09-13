@@ -40,6 +40,9 @@ EXPERIMENT_ID = f"MG19333vrw_FullPipeline_{DATE_ID}"
 SAMPLE_EXPERIMENT_ID = "MF2033k6lC_LocatorDisabled_SampledOneTask"
 DEFAULT_PAPER_ID = "MG19333vrw-locator-off-full"
 EXPERIMENT_DIR = PROJECT_ROOT / "docs" / "experiments" / EXPERIMENT_ID
+# bootstrap 会以约 4 秒间隔连续请求 arXiv 数分钟；紧接着工作流还要继续检索，
+# 不给一段冷却窗口时整体很容易触发 429（实测 6 条检索执行因此失败）。
+BOOTSTRAP_COOLDOWN_SECONDS = 20.0
 _call_context: contextvars.ContextVar[dict[str, str]] = contextvars.ContextVar(
     "experiment_call_context", default={}
 )
@@ -268,6 +271,9 @@ def _bootstrap(paper_id: str) -> tuple[dict[str, Any], float]:
         elapsed_seconds=round(elapsed, 6),
         stderr=completed.stderr[-2000:],
     )
+    if completed.returncode == 0 and BOOTSTRAP_COOLDOWN_SECONDS > 0:
+        time.sleep(BOOTSTRAP_COOLDOWN_SECONDS)
+        payload["cooldown_seconds"] = BOOTSTRAP_COOLDOWN_SECONDS
     return payload, elapsed
 
 
@@ -565,8 +571,18 @@ def main() -> int:
     )
     parser.add_argument("--sample-one-task", action="store_true")
     parser.add_argument("--seed", type=int, default=20260831)
+    parser.add_argument(
+        "--experiment-id",
+        default=None,
+        help=(
+            "实验输出目录名（docs/experiments/<id>）。缺省沿用内置常量，"
+            "换论文跑时请显式指定，以免覆盖历史实验报告。"
+        ),
+    )
     args = parser.parse_args()
     global EXPERIMENT_DIR
+    if args.experiment_id:
+        EXPERIMENT_DIR = PROJECT_ROOT / "docs" / "experiments" / args.experiment_id
     source_metrics_path = EXPERIMENT_DIR / "metrics.json"
     if args.sample_one_task:
         EXPERIMENT_DIR = PROJECT_ROOT / "docs" / "experiments" / SAMPLE_EXPERIMENT_ID
@@ -577,7 +593,8 @@ def main() -> int:
         previous_metrics = json.loads(source_metrics_path.read_text(encoding="utf-8"))
     original_complete = recorder.install_model_hook()
     metrics: dict[str, Any] = {
-        "experiment_id": SAMPLE_EXPERIMENT_ID if args.sample_one_task else EXPERIMENT_ID,
+        "experiment_id": args.experiment_id
+        or (SAMPLE_EXPERIMENT_ID if args.sample_one_task else EXPERIMENT_ID),
         "paper_id": args.paper_id,
         "started_at": utc_now(), "status": "RUNNING", "input_pdf": str(args.pdf),
         "input_size_bytes": args.pdf.stat().st_size if args.pdf.is_file() else None,
