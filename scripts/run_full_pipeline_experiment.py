@@ -35,7 +35,8 @@ from novelty_agent_framework.processing import DefaultPaperProcessor
 from novelty_agent_framework.processing.mineru_parser import MineruSettings
 from novelty_agent_framework.schemas import NoveltyPoint, PaperInput
 
-EXPERIMENT_ID = "MG19333vrw_FullPipeline_LocatorDisabled"
+DATE_ID = datetime.now().astimezone().strftime("%Y%m%d")
+EXPERIMENT_ID = f"MG19333vrw_FullPipeline_{DATE_ID}"
 SAMPLE_EXPERIMENT_ID = "MF2033k6lC_LocatorDisabled_SampledOneTask"
 DEFAULT_PAPER_ID = "MG19333vrw-locator-off-full"
 EXPERIMENT_DIR = PROJECT_ROOT / "docs" / "experiments" / EXPERIMENT_ID
@@ -416,7 +417,7 @@ def _write_outputs(metrics: dict[str, Any], result: Any | None) -> None:
         for call in metrics.get("model_calls", []):
             stream.write(json.dumps(call, ensure_ascii=False) + "\n")
     (EXPERIMENT_DIR / "README.md").write_text(
-        "# MG19333vrw Full Pipeline / Locator Disabled\n\n"
+        f"# {metrics.get('experiment_id')}\n\n"
         "See `report.md`, `effective-config.json`, `metrics.json`, and "
         "`model_calls.jsonl`.\n", encoding="utf-8"
     )
@@ -517,7 +518,7 @@ MinerU internal inference tokens: N/A
 
 ## 14. 与上次实验对比
 
-| 指标 | 上轮 Full Workflow | 本轮 Locator Disabled |
+| 指标 | 上轮 Full Workflow | 本轮 Full Pipeline |
 |---|---:|---:|
 | PDF parser | text_layer | {metrics.get('paper_processing', {}).get('source')} |
 | NoveltyPoints | 2 | {metrics.get('workflow', {}).get('novelty_points')} |
