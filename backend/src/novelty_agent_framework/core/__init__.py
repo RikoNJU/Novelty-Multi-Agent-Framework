@@ -12,6 +12,7 @@ from .runtime_artifacts import (
     ToolCallHandle,
     current_runtime_artifacts,
 )
+from .run_identity import display_path, file_run_identity, sha256_file
 
 if TYPE_CHECKING:
     from .tool_call_harness import (
@@ -32,6 +33,9 @@ __all__ = [
     "WorkflowExecutionError",
     "RuntimeArtifactManager",
     "RuntimeDebugConfig",
+    "display_path",
+    "file_run_identity",
+    "sha256_file",
     "StageHandle",
     "ToolCallHandle",
     "current_runtime_artifacts",

@@ -31,6 +31,7 @@ from novelty_agent_framework.config import (
     load_application_config,
 )
 from novelty_agent_framework.persistence import persist_paper_input
+from novelty_agent_framework.core.run_identity import file_run_identity
 from novelty_agent_framework.processing import DefaultPaperProcessor
 from novelty_agent_framework.processing.mineru_parser import MineruSettings
 from novelty_agent_framework.schemas import NoveltyPoint, PaperInput
@@ -683,6 +684,7 @@ def main() -> int:
             metrics["reference_bootstrap"] = bootstrap
             if not bootstrap["success"]:
                 raise RuntimeError("Reference Bootstrap did not become ready")
+        paper_path = workspace / "paper-input" / "others" / "paper.json"
         if config.reviewer is not None:
             config.reviewer.enabled = True
         metrics["effective_config"] = effective_safe_config(config)
@@ -718,7 +720,12 @@ def main() -> int:
         )
         _wrap_workflow(workflow, recorder)
         workflow_started = time.perf_counter()
-        result = workflow.run(paper)
+        result = workflow.run(
+            paper,
+            run_identity=file_run_identity(
+                "full_pipeline", paper_path, project_root=PROJECT_ROOT
+            ),
+        )
         workflow_elapsed = time.perf_counter() - workflow_started
         report_path = workspace / "report" / f"{args.paper_id}-report.md"
         raw_cards_path = workspace / "evidence-cards.json"

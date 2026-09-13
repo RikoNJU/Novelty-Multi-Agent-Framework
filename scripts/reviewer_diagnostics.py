@@ -35,7 +35,7 @@ def _load_json(path: Path, errors: list[str]) -> Any:
         return {}
 
 
-def inspect_workspace(workspace: Path) -> dict[str, Any]:
+def inspect_workspace(workspace: Path, *, run_id: str | None = None) -> dict[str, Any]:
     """Return a deterministic, source-text-free Reviewer diagnostic report."""
 
     workspace = Path(workspace)
@@ -157,9 +157,13 @@ def inspect_workspace(workspace: Path) -> dict[str, Any]:
             "supplement_request is informational and does not control V0 routing"
         )
 
-    runtime_stage_files = sorted(
-        (workspace / "runtime").glob("*/stages/*_review_evidence/meta.json")
+    runtime_root = workspace / "runtime"
+    stage_pattern = (
+        f"{run_id}/stages/*_review_evidence/meta.json"
+        if run_id is not None
+        else "*/stages/*_review_evidence/meta.json"
     )
+    runtime_stage_files = sorted(runtime_root.glob(stage_pattern))
     runtime_checks = []
     for path in runtime_stage_files:
         payload = _load_json(path, errors)
@@ -181,7 +185,12 @@ def inspect_workspace(workspace: Path) -> dict[str, Any]:
             )
 
     reader_calls = []
-    reader_call_files = sorted((workspace / "runtime").glob("*/tools/*_reader.json"))
+    reader_pattern = (
+        f"{run_id}/tools/*_reader.json"
+        if run_id is not None
+        else "*/tools/*_reader.json"
+    )
+    reader_call_files = sorted(runtime_root.glob(reader_pattern))
     for path in reader_call_files:
         payload = _load_json(path, errors)
         if payload.get("stage_name") != "review_evidence":
@@ -203,6 +212,7 @@ def inspect_workspace(workspace: Path) -> dict[str, Any]:
     unique_errors = list(dict.fromkeys(errors))
     return {
         "workspace": str(workspace),
+        "run_id": run_id,
         "ok": not unique_errors,
         "counts": {
             "novelty_points": len(point_ids),
@@ -227,9 +237,10 @@ def inspect_workspace(workspace: Path) -> dict[str, Any]:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("workspace", type=Path, help="outputs/<paper_id> 目录")
+    parser.add_argument("--run-id", help="只检查指定 Runtime run 的 stage/tool 记录")
     parser.add_argument("--compact", action="store_true", help="输出单行 JSON")
     args = parser.parse_args()
-    report = inspect_workspace(args.workspace)
+    report = inspect_workspace(args.workspace, run_id=args.run_id)
     print(
         json.dumps(
             report,

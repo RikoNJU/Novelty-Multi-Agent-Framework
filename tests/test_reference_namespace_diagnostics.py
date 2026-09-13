@@ -173,3 +173,36 @@ def test_diagnostics_requires_and_resolves_complete_address(tmp_path) -> None:
     assert report["ok"] is False
     assert report["address_lookup"]["found"] is False
     assert any("unknown artifact address" in item for item in report["errors"])
+
+
+def test_runtime_reader_checks_are_isolated_by_run_id(tmp_path) -> None:
+    workspace = _workspace(tmp_path)
+    _write(
+        workspace / "runtime/run-2/tools/0001_reader.json",
+        {
+            "tool_name": "reader",
+            "execution_status": "SUCCESS",
+            "resolved_arguments": {
+                "namespace": "subject_reference",
+                "artifact_id": "artifact_same",
+            },
+            "raw_result": {
+                "payload": {
+                    "read_result": {
+                        "namespace": "research_reference",
+                        "artifact_id": "artifact_same",
+                    }
+                }
+            },
+        },
+    )
+
+    run_1 = inspect_workspace(workspace, run_id="run-1")
+    run_2 = inspect_workspace(workspace, run_id="run-2")
+
+    assert run_1["ok"] is True
+    assert len(run_1["reader_calls"]) == 1
+    assert run_1["reader_calls"][0]["namespace_match"] is True
+    assert run_2["ok"] is False
+    assert len(run_2["reader_calls"]) == 1
+    assert run_2["reader_calls"][0]["namespace_match"] is False

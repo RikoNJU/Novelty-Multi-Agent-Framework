@@ -17,7 +17,7 @@ from novelty_agent_framework.schemas import (
     Work,
     WorkType,
 )
-from scripts.reader_failure_diagnostics import inspect_workspace
+from scripts.reader_failure_diagnostics import inspect_run
 
 
 NOW = datetime(2026, 9, 11, tzinfo=timezone.utc)
@@ -65,6 +65,7 @@ def _reader_call(
     namespace: str | None,
     artifact_id: str,
     message: str | None,
+    run_id: str = "run-1",
 ) -> None:
     resolved = {
         "artifact_id": artifact_id,
@@ -74,10 +75,11 @@ def _reader_call(
     if namespace is not None:
         resolved["namespace"] = namespace
     _write(
-        workspace / f"runtime/run-1/tools/{index:04d}_reader.json",
+        workspace / f"runtime/{run_id}/tools/{index:04d}_reader.json",
         {
             "tool_name": "reader",
             "tool_call_id": f"tool_{index:04d}",
+            "agent_tool_call_id": f"agent_{index:04d}",
             "stage_name": "run_research_task",
             "execution_status": "FAILED" if message else "SUCCESS",
             "agent_arguments": {"artifact_id": artifact_id},
@@ -120,14 +122,17 @@ def _workspace(tmp_path: Path) -> Path:
     return workspace
 
 
-def test_diagnostics_classifies_each_reader_failure(tmp_path) -> None:
-    report = inspect_workspace(_workspace(tmp_path))
+def _inspect(workspace: Path, run_id: str = "run-1"):
+    return inspect_run(workspace, workspace / "runtime" / run_id)
 
-    assert report["ok"] is True
+
+def test_diagnostics_classifies_each_reader_failure(tmp_path) -> None:
+    report = _inspect(_workspace(tmp_path))
+
+    assert report["status"] == "WARNING"
     assert report["counts"]["reader_calls"] == 4
-    assert report["counts"]["reader_failures"] == 3
+    assert report["counts"]["failed"] == 3
     assert report["classification_counts"] == {
-        "SUCCEEDED": 1,
         "WRONG_NAMESPACE": 1,
         "LOST_MANIFEST_ENTRY": 1,
         "NEVER_PERSISTED": 1,
@@ -135,26 +140,25 @@ def test_diagnostics_classifies_each_reader_failure(tmp_path) -> None:
 
 
 def test_diagnostics_prioritises_lost_manifest_entry_in_verdict(tmp_path) -> None:
-    report = inspect_workspace(_workspace(tmp_path))
+    report = _inspect(_workspace(tmp_path))
 
-    # 悬空制品与命名空间错误同时存在时，先报更严重的丢更新
-    assert "并发丢更新" in report["verdict"]
+    assert report["verdict"]["primary_code"] == "LOST_MANIFEST_ENTRY"
     orphan = next(
-        item for item in report["failures"] if item["artifact_id"] == "art_orphan"
+        item for item in report["findings"] if item["artifact_id"] == "art_orphan"
     )
-    assert orphan["classification"] == "LOST_MANIFEST_ENTRY"
+    assert orphan["reason_code"] == "LOST_MANIFEST_ENTRY"
     assert orphan["error_type"] == "ValueError"
 
 
 def test_diagnostics_reports_missing_runtime_records(tmp_path) -> None:
     workspace = tmp_path / "outputs" / "paper-empty"
-    workspace.mkdir(parents=True)
+    (workspace / "runtime" / "run-empty" / "tools").mkdir(parents=True)
 
-    report = inspect_workspace(workspace)
+    report = _inspect(workspace, "run-empty")
 
     assert report["counts"]["reader_calls"] == 0
+    assert report["status"] == "INCOMPLETE"
     assert report["classification_counts"] == {}
-    assert any("runtime_debug" in item for item in report["warnings"])
 
 
 def test_diagnostics_handles_new_contract_records_without_namespace(tmp_path) -> None:
@@ -183,9 +187,100 @@ def test_diagnostics_handles_new_contract_records_without_namespace(tmp_path) ->
         message=unknown.format(repr("art_nowhere")),
     )
 
-    report = inspect_workspace(workspace)
+    report = _inspect(workspace)
 
     assert report["classification_counts"] == {
         "LOST_MANIFEST_ENTRY": 1,
         "NEVER_PERSISTED": 1,
     }
+
+
+def test_diagnostics_only_counts_the_selected_run(tmp_path) -> None:
+    workspace = _workspace(tmp_path)
+    _reader_call(
+        workspace,
+        1,
+        namespace=None,
+        artifact_id="other-run-artifact",
+        message="unknown artifact_id 'other-run-artifact'",
+        run_id="run-2",
+    )
+
+    report = _inspect(workspace, "run-1")
+
+    assert report["counts"]["reader_calls"] == 4
+    assert all(item["artifact_id"] != "other-run-artifact" for item in report["findings"])
+
+
+def test_known_reader_errors_are_structurally_classified_and_redacted(tmp_path) -> None:
+    workspace = _workspace(tmp_path)
+    messages = {
+        10: "artifact art_ok sha256 mismatch api_key=top-secret",
+        11: "artifact art_ok media_type 'application/pdf' is not readable text",
+        12: "artifact art_ok is not valid UTF-8 text",
+        13: "char_start 999 exceeds artifact art_ok length",
+        14: "reader scope rejected: outside request scope",
+        15: "artifact art_ok content file is missing",
+    }
+    for index, message in messages.items():
+        _reader_call(
+            workspace,
+            index,
+            namespace=None,
+            artifact_id="art_ok",
+            message=message,
+            run_id="run-errors",
+        )
+
+    report = _inspect(workspace, "run-errors")
+
+    assert report["classification_counts"] == {
+        "SHA256_MISMATCH": 1,
+        "UNREADABLE_MEDIA_TYPE": 1,
+        "UTF8_DECODE_ERROR": 1,
+        "CHAR_RANGE_ERROR": 1,
+        "SCOPE_REJECTED": 1,
+        "MISSING_CONTENT_FILE": 1,
+    }
+    assert "top-secret" not in json.dumps(report)
+
+
+def test_corrupt_tool_json_marks_diagnostic_error(tmp_path) -> None:
+    workspace = tmp_path / "outputs" / PAPER_ID
+    path = workspace / "runtime" / "broken-run" / "tools" / "0001_reader.json"
+    path.parent.mkdir(parents=True)
+    path.write_text("{broken", encoding="utf-8")
+
+    report = _inspect(workspace, "broken-run")
+
+    assert report["status"] == "ERROR"
+    assert report["errors"]
+
+
+def test_successful_reader_call_passes_and_running_call_warns(tmp_path) -> None:
+    workspace = _workspace(tmp_path)
+    _reader_call(
+        workspace,
+        1,
+        namespace=None,
+        artifact_id="art_ok",
+        message=None,
+        run_id="success-run",
+    )
+    assert _inspect(workspace, "success-run")["status"] == "OK"
+
+    running_path = workspace / "runtime" / "running-run" / "tools" / "0001_reader.json"
+    _write(
+        running_path,
+        {
+            "tool_name": "reader",
+            "tool_call_id": "tool-running",
+            "stage_name": "run_research_task",
+            "execution_status": "RUNNING",
+            "resolved_arguments": {"artifact_id": "art_ok"},
+        },
+    )
+    report = _inspect(workspace, "running-run")
+    assert report["status"] == "WARNING"
+    assert report["counts"]["incomplete"] == 1
+    assert report["classification_counts"] == {"INCOMPLETE_RECORD": 1}

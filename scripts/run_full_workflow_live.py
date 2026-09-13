@@ -18,7 +18,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from backend.env.model_client import _load_dev_env
 from novelty_agent_framework.config import build_workflow, load_application_config
+from novelty_agent_framework.core.run_identity import file_run_identity
 from novelty_agent_framework.schemas import PaperInput
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 
 def main() -> None:
@@ -35,10 +38,14 @@ def main() -> None:
     config.project.workflow.max_concurrency = args.max_concurrency
     workflow = build_workflow(config)
 
-    paper = PaperInput.model_validate_json(
-        args.paper_json.read_text(encoding="utf-8")
+    paper_json = args.paper_json.resolve(strict=True)
+    paper = PaperInput.model_validate_json(paper_json.read_text(encoding="utf-8"))
+    result = workflow.run(
+        paper,
+        run_identity=file_run_identity(
+            "paper_input", paper_json, project_root=PROJECT_ROOT
+        ),
     )
-    result = workflow.run(paper)
     payload = json.loads(result.model_dump_json())
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(

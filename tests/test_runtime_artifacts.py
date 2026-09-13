@@ -87,6 +87,53 @@ def test_incremental_run_stage_tool_and_archived_summary(tmp_path: Path) -> None
     assert archive is not None
     assert (archive / "summary.json").is_file()
     assert (archive / "summary.md").is_file()
+    diagnostic = manager.run_dir / "diagnostics" / "reader.json"
+    assert json.loads(diagnostic.read_text(encoding="utf-8"))["status"] == "INCOMPLETE"
+    assert (archive / "diagnostics" / "reader.json").is_file()
+    assert (archive / "diagnostics" / "reference_namespace.json").is_file()
+    assert (archive / "diagnostics" / "reviewer.json").is_file()
+    namespace_detail = json.loads(
+        (manager.run_dir / "diagnostics" / "reference_namespace.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    reviewer_detail = json.loads(
+        (manager.run_dir / "diagnostics" / "reviewer.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert namespace_detail["scope"]["run_id"] == "run-1"
+    assert namespace_detail["report"]["run_id"] == "run-1"
+    assert reviewer_detail["scope"]["run_id"] == "run-1"
+    assert reviewer_detail["report"]["run_id"] == "run-1"
+    assert summary["diagnostics"][0]["artifact"] == "diagnostics/reader.json"
+    assert "## Runtime Diagnostics" in (manager.run_dir / "summary.md").read_text(
+        encoding="utf-8"
+    )
+
+
+def test_run_identity_is_written_to_manifest_and_summary(tmp_path: Path) -> None:
+    identity = {
+        "entrypoint": "paper_input",
+        "input_identity": {
+            "paper_json": "fixtures/experiments/case/paper.json",
+            "paper_sha256": "a" * 64,
+            "novelty_point_id": None,
+            "task_id": None,
+            "search_plan_id": None,
+        },
+    }
+    manager = RuntimeArtifactManager(
+        "paper", config=_config(tmp_path), run_id="identity-run", run_identity=identity
+    )
+    manager.finish_run("SUCCESS")
+
+    manifest = json.loads((manager.run_dir / "manifest.json").read_text(encoding="utf-8"))
+    summary = json.loads((manager.run_dir / "summary.json").read_text(encoding="utf-8"))
+    assert manifest["entrypoint"] == "paper_input"
+    assert manifest["input_identity"] == identity["input_identity"]
+    assert summary["run"]["entrypoint"] == "paper_input"
+    assert summary["run"]["input_identity"] == identity["input_identity"]
 
 
 def test_failures_preserve_raw_result_error_and_traceback(tmp_path: Path) -> None:
@@ -153,6 +200,62 @@ def test_disabled_recorder_has_no_filesystem_side_effect(tmp_path: Path) -> None
     assert manager.finish_run("SUCCESS") == (None, None)
     assert not (tmp_path / "outputs").exists()
     assert not (tmp_path / "docs").exists()
+
+
+class _BrokenDiagnostic:
+    name = "broken"
+    schema_version = "1.0"
+
+    def inspect(self, context):
+        raise RuntimeError("diagnostic exploded")
+
+
+def test_diagnostic_failure_does_not_change_success_business_status(tmp_path: Path) -> None:
+    manager = RuntimeArtifactManager(
+        "paper",
+        config=_config(tmp_path),
+        run_id="success-run",
+        diagnostics=[_BrokenDiagnostic()],
+    )
+    manager.record_outcome({"task_status": "partial"})
+    manager.finish_run("SUCCESS")
+
+    manifest = json.loads((manager.run_dir / "manifest.json").read_text(encoding="utf-8"))
+    summary = json.loads((manager.run_dir / "summary.json").read_text(encoding="utf-8"))
+    detail = json.loads(
+        (manager.run_dir / "diagnostics" / "broken.json").read_text(encoding="utf-8")
+    )
+    assert manifest["status"] == "SUCCESS"
+    assert manifest["runtime_diagnostics"] == [
+        {"diagnostic_name": "broken", "schema_version": "1.0"}
+    ]
+    assert summary["run"]["status"] == "SUCCESS"
+    assert summary["outcome"] == {"task_status": "partial"}
+    assert summary["diagnostics"][0]["status"] == "ERROR"
+    assert detail["status"] == "ERROR"
+
+
+def test_finish_run_automatically_classifies_current_reader_failure(tmp_path: Path) -> None:
+    manager = RuntimeArtifactManager("paper", config=_config(tmp_path), run_id="reader-run")
+    call = manager.start_tool_call(
+        "reader",
+        agent_arguments={"artifact_id": "art_missing"},
+        resolved_arguments={"artifact_id": "art_missing", "char_start": 0, "max_chars": 10},
+        agent_tool_call_id="agent-call-1",
+    )
+    manager.fail_tool_call(call, ValueError("unknown artifact_id 'art_missing'"))
+    manager.finish_run("SUCCESS")
+
+    detail = json.loads(
+        (manager.run_dir / "diagnostics" / "reader.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    summary = json.loads((manager.run_dir / "summary.json").read_text(encoding="utf-8"))
+    assert detail["status"] == "WARNING"
+    assert detail["classification_counts"] == {"NEVER_PERSISTED": 1}
+    assert detail["findings"][0]["agent_tool_call_id"] == "agent-call-1"
+    assert summary["diagnostics"][0]["primary_code"] == "NEVER_PERSISTED"
 
 
 class _DefaultArguments(StrictModel):

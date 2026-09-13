@@ -848,7 +848,12 @@ class NoveltyWorkflow:
             raise WorkflowExecutionError(f"Markdown 报告渲染失败：{exc}") from exc
         return {"rendered_report_path": str(path)}
 
-    async def arun(self, paper: PaperInput | dict[str, Any]) -> NoveltyRunResult:
+    async def arun(
+        self,
+        paper: PaperInput | dict[str, Any],
+        *,
+        run_identity: Mapping[str, Any] | None = None,
+    ) -> NoveltyRunResult:
         """异步执行一次完整查新工作流。"""
 
         paper_input = PaperInput.model_validate(paper)
@@ -879,6 +884,7 @@ class NoveltyWorkflow:
             paper_input.paper_id,
             config=self.config.runtime_debug,
             run_id=run_id,
+            run_identity=run_identity,
             runtime_config=self.runtime_config or {
                 "workflow": {
                     "max_rounds": self.config.max_rounds,
@@ -925,13 +931,18 @@ class NoveltyWorkflow:
         finally:
             manager.deactivate()
 
-    def run(self, paper: PaperInput | dict[str, Any]) -> NoveltyRunResult:
+    def run(
+        self,
+        paper: PaperInput | dict[str, Any],
+        *,
+        run_identity: Mapping[str, Any] | None = None,
+    ) -> NoveltyRunResult:
         """同步入口；异步应用应直接调用 arun。"""
 
         try:
             asyncio.get_running_loop()
         except RuntimeError:
-            return asyncio.run(self.arun(paper))
+            return asyncio.run(self.arun(paper, run_identity=run_identity))
         raise RuntimeError("检测到正在运行的事件循环，请改用 await workflow.arun(...) ")
 
 

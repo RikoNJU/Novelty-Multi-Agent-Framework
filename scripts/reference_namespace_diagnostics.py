@@ -85,6 +85,7 @@ def inspect_workspace(
     *,
     namespace: ArtifactNamespace | str | None = None,
     artifact_id: str | None = None,
+    run_id: str | None = None,
 ) -> dict[str, Any]:
     """Return deterministic diagnostics without source or quote text."""
 
@@ -171,8 +172,14 @@ def inspect_workspace(
                 f"unknown artifact address: {selected_namespace.value}/{artifact_id}"
             )
 
+    runtime_root = workspace / "runtime"
+    reader_pattern = (
+        f"{run_id}/tools/*_reader.json"
+        if run_id is not None
+        else "*/tools/*_reader.json"
+    )
     reader_calls: list[dict[str, Any]] = []
-    for path in sorted((workspace / "runtime").glob("*/tools/*_reader.json")):
+    for path in sorted(runtime_root.glob(reader_pattern)):
         payload = _load_json(path, errors)
         if not isinstance(payload, dict):
             continue
@@ -237,6 +244,7 @@ def inspect_workspace(
     unique_errors = list(dict.fromkeys(errors))
     return {
         "workspace": str(workspace),
+        "run_id": run_id,
         "ok": not unique_errors,
         "namespaces": namespace_reports,
         "artifact_id_collisions": artifact_id_collisions,
@@ -257,6 +265,7 @@ def main() -> int:
         help="与 --artifact-id 一起检查一个完整 Artifact 地址",
     )
     parser.add_argument("--artifact-id")
+    parser.add_argument("--run-id", help="只检查指定 Runtime run 的 Reader 调用")
     parser.add_argument("--compact", action="store_true", help="输出单行 JSON")
     args = parser.parse_args()
     try:
@@ -264,6 +273,7 @@ def main() -> int:
             args.workspace,
             namespace=args.namespace,
             artifact_id=args.artifact_id,
+            run_id=args.run_id,
         )
     except ValueError as exc:
         parser.error(str(exc))

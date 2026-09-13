@@ -23,7 +23,7 @@ import uuid
 from datetime import date, datetime, timezone
 from enum import Enum
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any, Mapping, Sequence
 
 from backend.env import (
     ModelCallEvent,
@@ -31,6 +31,11 @@ from backend.env import (
     set_model_call_observer,
 )
 
+from ..diagnostics import (
+    DEFAULT_RUNTIME_DIAGNOSTICS,
+    RuntimeDiagnostic,
+    RuntimeDiagnosticContext,
+)
 from ..diagnostics.llm_usage import DEFAULT_PRICING_PATH, LlmPricingCatalog
 
 try:
@@ -112,20 +117,26 @@ class RuntimeArtifactManager:
         *,
         config: RuntimeDebugConfig | None = None,
         run_id: str | None = None,
+        run_identity: Mapping[str, Any] | None = None,
         runtime_config: Mapping[str, Any] | None = None,
         model_provider: str | None = None,
         model_name: str | None = None,
         enabled_tools: list[str] | tuple[str, ...] = (),
         stage_names: list[str] | tuple[str, ...] = (),
+        diagnostics: Sequence[RuntimeDiagnostic] | None = None,
     ) -> None:
         self.config = config or RuntimeDebugConfig()
         self.paper_id = paper_id
         self.run_id = run_id or _new_run_id()
+        self.run_identity = dict(run_identity or {})
         self.runtime_config = dict(runtime_config or {})
         self.model_provider = model_provider
         self.model_name = model_name
         self.enabled_tools = list(enabled_tools)
         self.stage_names = list(dict.fromkeys(stage_names))
+        self.diagnostics = tuple(
+            DEFAULT_RUNTIME_DIAGNOSTICS if diagnostics is None else diagnostics
+        )
         self.started_at = _now()
         self._monotonic_started = time.monotonic()
         self._lock = threading.RLock()
@@ -137,6 +148,8 @@ class RuntimeArtifactManager:
         self._tool_records: list[dict[str, Any]] = []
         self._llm_call_records: list[dict[str, Any]] = []
         self._error_records: list[dict[str, Any]] = []
+        self._diagnostic_results: list[dict[str, Any]] = []
+        self._outcome: dict[str, Any] | None = None
         self._activation_token: (
             contextvars.Token[RuntimeArtifactManager | None] | None
         ) = None
@@ -182,6 +195,11 @@ class RuntimeArtifactManager:
         if self._activation_token is not None:
             _current_run.reset(self._activation_token)
             self._activation_token = None
+
+    def record_outcome(self, outcome: Mapping[str, Any]) -> None:
+        """Attach a compact, structured business outcome to the run summary."""
+
+        self._outcome = dict(outcome)
 
     def record_model_call(self, event: ModelCallEvent) -> None:
         """Persist one model call and its normalized token/cost accounting."""
@@ -466,8 +484,8 @@ class RuntimeArtifactManager:
             if error is not None:
                 self._persist_error(self._error_payload(error, stage=_current_stage.get()))
             finished = _now()
-            self._write_manifest(status, end_time=finished)
             self._write_not_run_stages()
+            self._run_diagnostics(status)
             summary = _prepare_value(
                 self._build_summary(status, finished),
                 max_inline_bytes=self.config.max_inline_bytes,
@@ -476,6 +494,7 @@ class RuntimeArtifactManager:
             summary_md = self.run_dir / "summary.md"
             self._write_json(summary_json, summary)
             _atomic_write_text(summary_md, _render_summary(summary))
+            self._write_manifest(status, end_time=finished)
             archive = (
                 Path(self.config.archive_root)
                 / f"{_safe_segment(self.paper_id)}_{finished.date().isoformat()}"
@@ -484,7 +503,51 @@ class RuntimeArtifactManager:
             archive.mkdir(parents=True, exist_ok=False)
             shutil.copy2(summary_json, archive / "summary.json")
             shutil.copy2(summary_md, archive / "summary.md")
+            diagnostics_dir = self.run_dir / "diagnostics"
+            if diagnostics_dir.is_dir():
+                shutil.copytree(diagnostics_dir, archive / "diagnostics")
             return summary_json, archive
+
+    def _run_diagnostics(self, terminal_status: str) -> None:
+        if not self.diagnostics:
+            return
+        diagnostics_dir = self.run_dir / "diagnostics"
+        diagnostics_dir.mkdir(parents=False, exist_ok=False)
+        context = RuntimeDiagnosticContext(
+            paper_id=self.paper_id,
+            run_id=self.run_id,
+            workspace=Path(self.config.output_root) / _safe_segment(self.paper_id),
+            run_dir=self.run_dir,
+            terminal_status=terminal_status,
+        )
+        for diagnostic in self.diagnostics:
+            try:
+                result = diagnostic.inspect(context)
+                if not isinstance(result, dict):
+                    raise TypeError("diagnostic result must be a dictionary")
+            except Exception as exc:  # diagnostics must never replace business status
+                result = {
+                    "diagnostic_name": diagnostic.name,
+                    "schema_version": diagnostic.schema_version,
+                    "status": "ERROR",
+                    "scope": {"paper_id": self.paper_id, "run_id": self.run_id},
+                    "counts": {},
+                    "classification_counts": {},
+                    "verdict": {
+                        "primary_code": None,
+                        "summary": "诊断器执行失败",
+                    },
+                    "findings": [],
+                    "errors": [f"{type(exc).__name__}: {exc}"],
+                    "warnings": [],
+                }
+            prepared = _prepare_value(
+                result, max_inline_bytes=self.config.max_inline_bytes
+            )
+            self._write_json(
+                diagnostics_dir / f"{_safe_segment(diagnostic.name)}.json", prepared
+            )
+            self._diagnostic_results.append(prepared)
 
     def _write_not_run_stages(self) -> None:
         executed_names = {item["stage_name"] for item in self._stage_records}
@@ -530,6 +593,12 @@ class RuntimeArtifactManager:
             "model_provider": self.model_provider,
             "model_name": self.model_name,
             "enabled_tools": self.enabled_tools,
+            "entrypoint": self.run_identity.get("entrypoint"),
+            "input_identity": self.run_identity.get("input_identity", {}),
+            "runtime_diagnostics": [
+                {"diagnostic_name": item.name, "schema_version": item.schema_version}
+                for item in self.diagnostics
+            ],
             "runtime_config": self.runtime_config,
         }
         self._write_json(self.run_dir / "manifest.json", manifest)
@@ -611,6 +680,8 @@ class RuntimeArtifactManager:
                 "start_time": _iso(self.started_at),
                 "end_time": _iso(finished),
                 "duration_ms": _elapsed_ms(self._monotonic_started),
+                "entrypoint": self.run_identity.get("entrypoint"),
+                "input_identity": self.run_identity.get("input_identity", {}),
             },
             "environment": {
                 "git_branch": _git_identity()[0],
@@ -623,6 +694,25 @@ class RuntimeArtifactManager:
             "tool_calls": list(tool_stats.values()),
             "llm_usage": _summarize_llm_usage(self._llm_call_records),
             "errors": list(self._error_records),
+            "diagnostics": [
+                {
+                    "diagnostic_name": item.get("diagnostic_name"),
+                    "schema_version": item.get("schema_version"),
+                    "status": item.get("status"),
+                    "artifact": (
+                        f"diagnostics/{item.get('diagnostic_name')}.json"
+                    ),
+                    "counts": item.get("counts", {}),
+                    "classification_counts": item.get(
+                        "classification_counts", {}
+                    ),
+                    "primary_code": (item.get("verdict") or {}).get(
+                        "primary_code"
+                    ),
+                }
+                for item in self._diagnostic_results
+            ],
+            "outcome": self._outcome,
             "integrity_gates": integrity_gates,
             "final_evidence_sufficiency_checks": (
                 final_evidence_sufficiency_checks
@@ -1239,6 +1329,8 @@ def _render_summary(summary: Mapping[str, Any]) -> str:
     lines = [
         "# Runtime Summary", "", "## Run", "",
         f"Paper ID: {run['paper_id']}", f"Run ID: {run['run_id']}",
+        f"Entrypoint: {run.get('entrypoint') or '-'}",
+        f"Input Identity: {json.dumps(run.get('input_identity', {}), ensure_ascii=False)}",
         f"Status: {run['status']}", f"Start: {run['start_time']}",
         f"End: {run['end_time']}", f"Duration: {run['duration_ms']} ms", "",
         "## Environment", "", f"Git Branch: {environment['git_branch']}",
@@ -1259,6 +1351,44 @@ def _render_summary(summary: Mapping[str, Any]) -> str:
         f"{item['failed']} | {item['empty']} |"
         for item in summary["tool_calls"]
     )
+    lines.extend(
+        [
+            "",
+            "## Runtime Diagnostics",
+            "",
+            "| Diagnostic | Status | Calls | Failed | Primary finding | Detail |",
+            "|---|---|---:|---:|---|---|",
+        ]
+    )
+    diagnostics = summary.get("diagnostics", [])
+    if diagnostics:
+        lines.extend(
+            f"| {item.get('diagnostic_name')} | {item.get('status')} | "
+            f"{item.get('counts', {}).get('reader_calls', 0)} | "
+            f"{item.get('counts', {}).get('failed', 0)} | "
+            f"{item.get('primary_code') or '-'} | `{item.get('artifact')}` |"
+            for item in diagnostics
+        )
+        for item in diagnostics:
+            counts = item.get("classification_counts", {})
+            if counts:
+                lines.extend(
+                    [
+                        "",
+                        f"{item.get('diagnostic_name')} classifications: "
+                        + ", ".join(
+                            f"{code}={count}" for code, count in sorted(counts.items())
+                        ),
+                    ]
+                )
+    else:
+        lines.append("| - | SKIPPED | 0 | 0 | - | - |")
+    outcome = summary.get("outcome")
+    lines.extend(["", "## Run Outcome", ""])
+    if isinstance(outcome, Mapping):
+        lines.extend(f"- {key}: {value}" for key, value in outcome.items())
+    else:
+        lines.append("- None")
     llm_usage = summary.get("llm_usage", {})
     llm_totals = llm_usage.get("totals", {})
     lines.extend(

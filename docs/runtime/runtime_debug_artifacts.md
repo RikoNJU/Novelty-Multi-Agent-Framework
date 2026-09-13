@@ -8,13 +8,18 @@ outputs/{paper_id}/runtime/{run_id}/
 ├── manifest.json
 ├── stages/
 ├── tools/
+├── llm_calls/
 ├── errors/
+├── diagnostics/
+│   ├── reader.json
+│   ├── reference_namespace.json
+│   └── reviewer.json
 ├── summary.json
 └── summary.md
 ```
 
 Terminal runs (`SUCCESS`, `FAILED`, and `INTERRUPTED`) also archive both summary
-files under:
+files and diagnostics under:
 
 ```text
 docs/experiments/runtime/{paper_id}_{date}/{run_id}/
@@ -51,6 +56,48 @@ Values under keys matching `api_key`, `token`, `secret`, `password`,
 SHA-256 metadata rather than duplicated inline. Existing `Path` values are
 represented as artifact references containing path, size, and SHA-256 when the
 target is a file.
+
+## Standard entrypoints and run identity
+
+The three standard entrypoints are truncation levels of one workflow, not three
+independent business implementations:
+
+| Entrypoint | Script | Role |
+|---|---|---|
+| Full Pipeline | `scripts/run_full_pipeline_experiment.py` | PDF/MinerU end-to-end acceptance |
+| PaperInput Pipeline | `scripts/run_full_workflow_live.py` | primary experiment entrypoint, including Run A |
+| Single Task | `scripts/run_single_research_task.py` | exact TaskResearcher + Gate A reproduction |
+
+After Full Pipeline has produced `PaperInput`, it invokes the same
+`NoveltyWorkflow(PaperInput)` used by PaperInput Pipeline. Its legacy `Recorder`
+is retained only for pre-PaperInput timing and old experiment-report
+compatibility; workflow stages, model/tool calls, and diagnostics use Runtime
+Debug as their authoritative source. Do not add new workflow diagnostics to the
+legacy Recorder.
+
+Single Task requires `--paper-json`, `--point-id`, and `--task-id`. The point,
+task, and corresponding SearchPlan must each match exactly; language is reported
+from the selected task and is never used to select the first matching task.
+Both `run_research_task` and Gate A (`validate_synthesis_input`) are finalized
+before the run receives its terminal status.
+
+Every manifest and summary records an `entrypoint` plus `input_identity`. The
+latter contains the explicit PaperInput path and SHA-256, as well as point/task/
+SearchPlan IDs when applicable. These fields are runtime metadata only and are
+never copied into `PaperInput.metadata` or prompts.
+
+## Current-run diagnostics
+
+Runtime finalization runs the Reader failure, reference namespace, and Reviewer
+inspectors against exactly the current `run_id`. Workspace manifests and
+business artifacts remain the paper-level state those checks validate. Each CLI
+also accepts `--run-id`; omitting it preserves its historical workspace view.
+
+Diagnostic status uses `OK`, `WARNING`, `ERROR`, or `INCOMPLETE`. Missing early
+business outputs and absent Reader calls are incomplete observations, not
+business failures. Inspector exceptions are captured in their diagnostic JSON
+and summary index and never change the workflow's terminal result. Diagnostics
+are observational: they do not retry, repair, or mutate business state.
 
 ## Final Evidence Sufficiency Check
 

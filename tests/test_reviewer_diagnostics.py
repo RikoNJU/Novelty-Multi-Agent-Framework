@@ -130,3 +130,25 @@ def test_inspector_finds_missing_review_and_unresolved_evidence(tmp_path):
     assert report["ok"] is False
     assert report["missing_review_point_ids"] == ["NP-1"]
     assert report["unresolved_evidence_ids"] == ["E-missing"]
+
+
+def test_runtime_reviewer_records_are_isolated_by_run_id(tmp_path):
+    workspace = _workspace(tmp_path)
+    _write(
+        workspace / "runtime/run-2/tools/0002_reader.json",
+        {
+            "stage_name": "review_evidence",
+            "execution_status": "FAILED",
+            "resolved_arguments": {"artifact_id": "A-2"},
+            "error": {"type": "ValueError", "message": "missing"},
+        },
+    )
+
+    run_1 = inspect_workspace(workspace, run_id="run-1")
+    run_2 = inspect_workspace(workspace, run_id="run-2")
+
+    assert run_1["counts"]["reviewer_reader_calls"] == 1
+    assert run_1["reader_calls"][0]["artifact_id"] == "A-1"
+    assert run_2["counts"]["reviewer_reader_calls"] == 1
+    assert run_2["reader_calls"][0]["artifact_id"] == "A-2"
+    assert run_2["counts"]["runtime_review_stages"] == 0
