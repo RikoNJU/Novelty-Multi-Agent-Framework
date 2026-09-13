@@ -63,6 +63,7 @@ class EvidenceReviewerConfig:
     max_steps: int = 8
     max_tool_calls: int = 6
     max_total_read_chars: int = 32_000
+    prompt_name: str = "reviewer/review_evidence"
 
     def __post_init__(self) -> None:
         if not 0.0 <= self.temperature <= 2.0:
@@ -71,6 +72,8 @@ class EvidenceReviewerConfig:
             raise ValueError("max_cards_per_call 必须至少为 1")
         if min(self.max_steps, self.max_tool_calls, self.max_total_read_chars) < 1:
             raise ValueError("reviewer harness budgets must be positive")
+        if not self.prompt_name.strip():
+            raise ValueError("prompt_name 不能为空")
 
 
 class DemoEvidenceReviewer:
@@ -189,7 +192,7 @@ class NoveltyEvidenceReviewer(EvidenceReviewer):
         }
         if self._prompts is not None:
             rendered = self._prompts.render(
-                "reviewer/review_evidence", **variables
+                self.config.prompt_name, **variables
             )
             return rendered.system, rendered.user
         return _fallback_point_system_prompt(), "\n".join(
@@ -262,7 +265,7 @@ class NoveltyEvidenceReviewer(EvidenceReviewer):
             "review_schema": json.dumps(payload["review_schema"], ensure_ascii=False),
         }
         if self._prompts is not None:
-            rendered = self._prompts.render("reviewer/review_evidence", **variables)
+            rendered = self._prompts.render(self.config.prompt_name, **variables)
             system, user = rendered.system, rendered.user
         else:
             system = _fallback_system_prompt()

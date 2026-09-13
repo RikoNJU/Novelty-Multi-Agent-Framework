@@ -312,6 +312,7 @@ def build_workflow(
                 temperature=float(reviewer_cfg.get("temperature", 0.0)),
                 max_cards_per_call=int(reviewer_cfg.get("max_cards_per_call", 8)),
                 fail_closed=bool(reviewer_cfg.get("fail_closed", True)),
+                prompt_name=str(reviewer_cfg.get("prompt", "reviewer/review_evidence")),
             ),
             model_options=reviewer_model_options,
             tool_registry=ResearcherToolRegistry(
@@ -562,6 +563,7 @@ def _build_workflow_from_application_config(
                 temperature=config.reviewer.model.temperature,
                 max_cards_per_call=config.reviewer.max_cards_per_call,
                 fail_closed=config.reviewer.fail_closed,
+                prompt_name=config.reviewer.prompt,
             ),
             model_options=_typed_model_options(config.reviewer.model),
             tool_registry=ResearcherToolRegistry(
