@@ -18,7 +18,6 @@ from novelty_agent_framework.persistence import ReferenceStore, SubjectReference
 from novelty_agent_framework.schemas import (
     Artifact,
     ArtifactRole,
-    ConclusionLevel,
     ContentExtent,
     Evidence,
     EvidenceCard,
@@ -27,10 +26,13 @@ from novelty_agent_framework.schemas import (
     NoveltyConclusion,
     NoveltyBrief,
     NoveltyPoint,
+    NoveltyPointReview,
     NoveltyReport,
+    NoveltyVerdict,
     PaperInput,
     RejectedEvidence,
     ResearchTask,
+    ReviewStatus,
     TaskResearchRequest,
     TaskResearchResult,
     TaskResearchStatus,
@@ -388,11 +390,23 @@ def _report(conclusions: list[NoveltyConclusion]) -> NoveltyReport:
 def _conclusion(point_id="NP-1", supporting=None, counter=None):
     return NoveltyConclusion(
         novelty_point_id=point_id,
-        level=ConclusionLevel.PARTIAL,
+        review_status=ReviewStatus.REVIEWED,
+        verdict=NoveltyVerdict.PARTIALLY_NOVEL,
+        verdict_reason="review reason",
         summary="summary",
         supporting_card_ids=supporting or [],
         counter_card_ids=counter or [],
         confidence=0.5,
+    )
+
+
+def _review(point_id="NP-1", *, confidence=0.5):
+    return NoveltyPointReview(
+        novelty_point_id=point_id,
+        status=ReviewStatus.REVIEWED,
+        verdict=NoveltyVerdict.PARTIALLY_NOVEL,
+        verdict_reason="review reason",
+        confidence=confidence,
     )
 
 
@@ -401,6 +415,7 @@ def test_gate_b_accepts_complete_point_and_card_references() -> None:
         _report([_conclusion(supporting=["card-1"])]),
         novelty_points=[_point()],
         evidence_cards=[_card()],
+        novelty_reviews=[_review()],
     )
     assert result.validation_passed is True
     assert result.referenced_card_count == 1
@@ -412,6 +427,7 @@ def test_gate_b_reports_missing_duplicate_and_unknown_conclusions() -> None:
         _report([_conclusion(), _conclusion(), _conclusion("NP-99")]),
         novelty_points=[_point(), _point("NP-2")],
         evidence_cards=[],
+        novelty_reviews=[_review(), _review("NP-2")],
     )
     assert result.validation_passed is False
     assert "duplicate conclusion: NP-1" in result.issues
@@ -427,12 +443,32 @@ def test_gate_b_reports_unknown_cross_point_duplicates_and_conflict() -> None:
         ),
         novelty_points=[_point()],
         evidence_cards=[card],
+        novelty_reviews=[_review()],
     )
     joined = "\n".join(result.issues)
     assert "unknown card reference: missing" in joined
     assert "cross-point reference: NP-1 -> card-1 (belongs to NP-2)" in joined
     assert "duplicate supporting card reference" in joined
     assert "supporting/counter conflict" in joined
+
+
+def test_gate_b_reports_review_drift_and_unknown_review() -> None:
+    conclusion = _conclusion().model_copy(update={"confidence": 0.9})
+    result = validate_report_integrity(
+        _report([conclusion]),
+        novelty_points=[_point()],
+        evidence_cards=[],
+        novelty_reviews=[_review(), _review("NP-99")],
+    )
+
+    assert result.validation_passed is False
+    assert "unknown review: NP-99" in result.issues
+    assert any("fields=confidence" in issue for issue in result.issues)
+    assert result.review_count == 2
+    assert result.conclusion_count == 1
+    assert result.matched_count == 0
+    assert result.mismatch_count == 2
+    assert result.mismatched_point_ids == ("NP-1", "NP-99")
 
 
 def test_gate_b_failure_does_not_block_report_persistence(tmp_path: Path, monkeypatch) -> None:
@@ -524,6 +560,18 @@ def test_complete_workflow_records_both_gate_passes(tmp_path: Path, monkeypatch)
     )
     assert gate_results["validate_synthesis_input"]["validation_passed"] is True
     assert gate_results["validate_report_integrity"]["validation_passed"] is True
+    assert gate_results["validate_report_integrity"]["review_count"] == 1
+    assert gate_results["validate_report_integrity"]["conclusion_count"] == 1
+    assert gate_results["validate_report_integrity"]["matched_count"] == 1
+    assert gate_results["validate_report_integrity"]["mismatch_count"] == 0
+    synthesize_input = json.loads(
+        next(
+            Path("outputs/valid-chain/runtime").glob(
+                "*/stages/*_synthesize_report/input.json"
+            )
+        ).read_text(encoding="utf-8")
+    )
+    assert len(synthesize_input["novelty_reviews"]) == 1
     assert stage_order.index("review_evidence") < stage_order.index(
         "validate_synthesis_input"
     ) < stage_order.index("check_final_evidence_sufficiency")
@@ -546,12 +594,14 @@ def test_gate_a_reasons_do_not_enter_formal_report() -> None:
         workflow._synthesize_report(
             {
                 "paper": paper,
+                "novelty_points": [point],
                 "brief": NoveltyBrief(
                     paper_summary="summary",
                     novelty_points=[point],
                     research_tasks=[_task()],
                 ),
                 "evidence_cards": [],
+                "novelty_reviews": [_review()],
                 "rejected_evidence": [
                     RejectedEvidence(
                         card_id="gate-only",

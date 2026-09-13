@@ -1,6 +1,5 @@
 from .api import HealthResponse
 from .domain import (
-    ConclusionLevel,
     EvidenceCard,
     EvidenceReviewDecision,
     EvidenceReviewIssue,
@@ -104,7 +103,6 @@ from .research_tools import (
 )
 
 __all__ = [
-    "ConclusionLevel",
     "AccessStatus",
     "Artifact",
     "ArtifactHandle",

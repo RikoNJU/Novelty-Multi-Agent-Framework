@@ -15,19 +15,25 @@ from novelty_agent_framework.persistence import (
     persist_workflow_input,
 )
 from novelty_agent_framework.schemas import (
-    ConclusionLevel,
     EvidenceCard,
     EvidenceSource,
     NoveltyConclusion,
     NoveltyPoint,
     NoveltyReport,
+    NoveltyVerdict,
     PaperInput,
+    RelevantWork,
     ResearchTask,
     SearchConcept,
     SearchPlan,
+    ReviewStatus,
     SearchStrategy,
 )
-from novelty_agent_framework.tools.renderer import ReportRenderError, render_report
+from novelty_agent_framework.tools.renderer import (
+    ReportRenderError,
+    _format_conclusions,
+    render_report,
+)
 
 
 def seed_workspace() -> None:
@@ -80,10 +86,20 @@ def seed_workspace() -> None:
         conclusions=[
             NoveltyConclusion(
                 novelty_point_id="NP-1",
-                level=ConclusionLevel.PARTIAL,
+                review_status=ReviewStatus.REVIEWED,
+                verdict=NoveltyVerdict.PARTIALLY_NOVEL,
+                verdict_reason="既有工作覆盖部分特征。",
                 summary="存在部分技术差异。",
                 supporting_card_ids=["C1"],
                 confidence=0.8,
+                highly_relevant_works=[
+                    RelevantWork(
+                        work_id="work-1",
+                        card_ids=["C1"],
+                        evidence_ids=["E1"],
+                        relevance_reason="直接覆盖核心特征。",
+                    )
+                ],
             )
         ],
     )
@@ -132,9 +148,41 @@ def test_markdown_renderer_reads_workspace_and_uses_default_paths(
     assert "引文：Exact source text." in content
     assert "位置：artifact art_x chars:0-18" in content
     assert "存在部分技术差异" in content
+    assert "Reviewer 裁定：** 部分新颖" in content
+    assert "work-1：直接覆盖核心特征" in content
     assert "最终有效证据数量" in content
     assert "| NP-1 | 1 | 有证据 |" in content
     assert "{{" not in content
+
+
+@pytest.mark.parametrize(
+    ("status", "verdict", "expected"),
+    [
+        ("reviewed", "novel", "新颖"),
+        ("reviewed", "partially_novel", "部分新颖"),
+        ("reviewed", "not_novel", "不新颖"),
+        ("insufficient_evidence", None, "证据不足，无法裁定"),
+    ],
+)
+def test_renderer_uses_authoritative_report_verdict(status, verdict, expected):
+    rendered = _format_conclusions(
+        [
+            {
+                "novelty_point_id": "NP-1",
+                "review_status": status,
+                "verdict": verdict,
+                "verdict_reason": None if verdict is None else "review reason",
+                "confidence": None if verdict is None else 0.75,
+                "summary": "report summary",
+                "highly_relevant_works": [],
+            }
+        ],
+        {"NP-1": {"claim": "claim"}},
+    )
+
+    assert f"Reviewer 裁定：** {expected}" in rendered
+    if verdict == "not_novel":
+        assert "弱创新" not in rendered
 
 
 def test_renderer_rejects_unsupported_format() -> None:

@@ -219,37 +219,6 @@ class RejectedEvidence(StrictModel):
     reason: str
 
 
-class ConclusionLevel(StrEnum):
-    """查新结论的受控枚举。"""
-
-    STRONG = "strong"
-    PARTIAL = "partial"
-    WEAK = "weak"
-    INSUFFICIENT = "insufficient"
-
-
-class NoveltyConclusion(StrictModel):
-    """单个查新点的最终结论。"""
-
-    novelty_point_id: str
-    level: ConclusionLevel
-    summary: str
-    supporting_card_ids: list[str] = Field(default_factory=list)
-    counter_card_ids: list[str] = Field(default_factory=list)
-    confidence: float = Field(ge=0.0, le=1.0)
-
-
-class NoveltyReport(StrictModel):
-    """查新工作流输出给后续系统的报告。"""
-
-    paper_id: str
-    conclusions: list[NoveltyConclusion] = Field(default_factory=list)
-    missing_references: list[str] = Field(default_factory=list)
-    missing_baselines: list[str] = Field(default_factory=list)
-    citation_issues: list[str] = Field(default_factory=list)
-    limitations: list[str] = Field(default_factory=list)
-
-
 class IssueSeverity(StrEnum):
     WARNING = "warning"
     ERROR = "error"
@@ -344,7 +313,45 @@ class NoveltyPointReview(StrictModel):
                 raise ValueError("reviewed result requires verdict_reason")
             if self.confidence is None:
                 raise ValueError("reviewed result requires confidence")
+        elif self.verdict is not None:
+            raise ValueError("insufficient_evidence result cannot have verdict")
         return self
+
+
+class NoveltyConclusion(StrictModel):
+    """单个查新点的最终结论；新颖性字段直接继承 Reviewer。"""
+
+    novelty_point_id: str = Field(min_length=1)
+    review_status: ReviewStatus
+    verdict: NoveltyVerdict | None = None
+    verdict_reason: str | None = None
+    confidence: float | None = Field(default=None, ge=0.0, le=1.0)
+    summary: str
+    supporting_card_ids: list[str] = Field(default_factory=list)
+    counter_card_ids: list[str] = Field(default_factory=list)
+    highly_relevant_works: list[RelevantWork] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def validate_review_semantics(self) -> "NoveltyConclusion":
+        if self.review_status is ReviewStatus.REVIEWED:
+            if self.verdict is None or not self.verdict_reason:
+                raise ValueError("reviewed conclusion requires verdict and verdict_reason")
+            if self.confidence is None:
+                raise ValueError("reviewed conclusion requires confidence")
+        elif self.verdict is not None:
+            raise ValueError("insufficient_evidence conclusion cannot have verdict")
+        return self
+
+
+class NoveltyReport(StrictModel):
+    """查新工作流输出给后续系统的报告。"""
+
+    paper_id: str
+    conclusions: list[NoveltyConclusion] = Field(default_factory=list)
+    missing_references: list[str] = Field(default_factory=list)
+    missing_baselines: list[str] = Field(default_factory=list)
+    citation_issues: list[str] = Field(default_factory=list)
+    limitations: list[str] = Field(default_factory=list)
 
 
 class InsufficientFinalEvidence(StrictModel):

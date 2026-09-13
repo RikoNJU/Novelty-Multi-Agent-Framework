@@ -12,7 +12,6 @@ from datetime import datetime, timezone
 from ..persistence import ReferenceStore
 
 from ..schemas import (
-    ConclusionLevel,
     Artifact,
     ArtifactRole,
     ContentExtent,
@@ -22,6 +21,7 @@ from ..schemas import (
     NoveltyBrief,
     NoveltyConclusion,
     NoveltyPoint,
+    NoveltyPointReview,
     NoveltyReport,
     PaperInput,
     ResearchTask,
@@ -113,6 +113,7 @@ class DemoCoordinator:
         *,
         brief: NoveltyBrief,
         evidence: Sequence[EvidenceCard],
+        novelty_reviews: Sequence[NoveltyPointReview],
         rejected_evidence: Sequence[str],
         insufficient_final_evidence_points: Sequence[InsufficientFinalEvidence],
     ) -> NoveltyReport:
@@ -121,15 +122,24 @@ class DemoCoordinator:
             grouped[card.novelty_point_id].append(card)
 
         conclusions: list[NoveltyConclusion] = []
+        reviews_by_id = {
+            review.novelty_point_id: review for review in novelty_reviews
+        }
         for point in brief.novelty_points:
             cards = grouped[point.point_id]
+            review = reviews_by_id.get(point.point_id)
+            if review is None:
+                raise ValueError(f"missing review: {point.point_id}")
             if not cards:
                 conclusions.append(
                     NoveltyConclusion(
                         novelty_point_id=point.point_id,
-                        level=ConclusionLevel.INSUFFICIENT,
+                        review_status=review.status,
+                        verdict=review.verdict,
+                        verdict_reason=review.verdict_reason,
                         summary="当前检索范围内缺少足够的可追溯文献证据。",
-                        confidence=0.0,
+                        confidence=review.confidence,
+                        highly_relevant_works=review.highly_relevant_works,
                     )
                 )
                 continue
@@ -137,23 +147,23 @@ class DemoCoordinator:
             has_overlap = any(card.overlaps for card in cards)
             has_difference = any(card.differences for card in cards)
             if has_overlap and has_difference:
-                level = ConclusionLevel.PARTIAL
                 summary = "相关文献与该查新点存在技术重合，同时保留可辨识差异。"
             elif has_overlap:
-                level = ConclusionLevel.WEAK
                 summary = "现有证据显示该查新点与已有工作高度重合。"
             else:
-                level = ConclusionLevel.STRONG
                 summary = "当前证据未显示关键技术重合，但结论受检索范围限制。"
 
             conclusions.append(
                 NoveltyConclusion(
                     novelty_point_id=point.point_id,
-                    level=level,
+                    review_status=review.status,
+                    verdict=review.verdict,
+                    verdict_reason=review.verdict_reason,
                     summary=summary,
                     supporting_card_ids=[card.card_id for card in cards],
                     counter_card_ids=[card.card_id for card in cards if card.overlaps],
-                    confidence=sum(card.confidence for card in cards) / len(cards),
+                    confidence=review.confidence,
+                    highly_relevant_works=review.highly_relevant_works,
                 )
             )
 

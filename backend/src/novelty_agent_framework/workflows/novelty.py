@@ -18,6 +18,7 @@ from novelty_agent_framework.core.integrity_gates import (
     validate_report_integrity,
     validate_synthesis_input,
 )
+from novelty_agent_framework.core.report_binding import bind_reviews_to_report
 from novelty_agent_framework.core.runtime_artifacts import (
     RuntimeArtifactManager,
     current_runtime_artifacts,
@@ -813,12 +814,19 @@ class NoveltyWorkflow:
                 state["paper"],
                 brief=state["brief"],
                 evidence=state.get("evidence_cards", []),
+                novelty_reviews=state.get("novelty_reviews", []),
                 rejected_evidence=rejected_reasons,
                 insufficient_final_evidence_points=state.get(
                     "insufficient_final_evidence_points", []
                 ),
             )
-            report = NoveltyReport.model_validate(await _resolve(report_value))
+            draft = NoveltyReport.model_validate(await _resolve(report_value))
+            report = bind_reviews_to_report(
+                draft,
+                novelty_reviews=state.get("novelty_reviews", []),
+                novelty_points=state.get("novelty_points", []),
+                evidence_cards=state.get("evidence_cards", []),
+            )
         except (ValidationError, TypeError, ValueError) as exc:
             raise WorkflowExecutionError(f"Coordinator 未生成合法 NoveltyReport：{exc}") from exc
 
@@ -835,6 +843,7 @@ class NoveltyWorkflow:
             state["report"],
             novelty_points=state.get("novelty_points", []),
             evidence_cards=state.get("evidence_cards", []),
+            novelty_reviews=state.get("novelty_reviews", []),
         )
         return {"report_integrity": result.audit()}
 

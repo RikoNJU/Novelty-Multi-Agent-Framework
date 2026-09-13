@@ -12,6 +12,7 @@ from ..schemas import (
     Evidence,
     EvidenceCard,
     NoveltyPoint,
+    NoveltyPointReview,
     NoveltyReport,
     ResearchTask,
 )
@@ -98,6 +99,11 @@ class ReportIntegrityResult:
     checked_conclusion_count: int
     referenced_card_count: int
     reference_occurrence_count: int
+    review_count: int
+    conclusion_count: int
+    matched_count: int
+    mismatch_count: int
+    mismatched_point_ids: tuple[str, ...]
     issues: tuple[str, ...]
 
     def audit(self) -> dict[str, Any]:
@@ -106,6 +112,11 @@ class ReportIntegrityResult:
             "checked_conclusion_count": self.checked_conclusion_count,
             "referenced_card_count": self.referenced_card_count,
             "reference_occurrence_count": self.reference_occurrence_count,
+            "review_count": self.review_count,
+            "conclusion_count": self.conclusion_count,
+            "matched_count": self.matched_count,
+            "mismatch_count": self.mismatch_count,
+            "mismatched_point_ids": list(self.mismatched_point_ids),
             "issues": list(self.issues),
         }
 
@@ -279,8 +290,9 @@ def validate_report_integrity(
     *,
     novelty_points: Sequence[NoveltyPoint],
     evidence_cards: Sequence[EvidenceCard],
+    novelty_reviews: Sequence[NoveltyPointReview],
 ) -> ReportIntegrityResult:
-    """Check report point coverage and references without modifying the report."""
+    """Check point, card, and authoritative Reviewer closure."""
 
     expected = Counter(point.point_id for point in novelty_points)
     actual = Counter(item.novelty_point_id for item in report.conclusions)
@@ -292,6 +304,56 @@ def validate_report_integrity(
             issues.append(f"duplicate conclusion: {point_id}")
     for point_id in actual.keys() - expected.keys():
         issues.append(f"unknown conclusion: {point_id}")
+
+    review_counts = Counter(review.novelty_point_id for review in novelty_reviews)
+    mismatched_point_ids: set[str] = set()
+    matched_count = 0
+    for point_id, count in expected.items():
+        if review_counts[point_id] < count:
+            issues.append(f"missing review: {point_id}")
+            mismatched_point_ids.add(point_id)
+        elif review_counts[point_id] > count:
+            issues.append(f"duplicate review: {point_id}")
+            mismatched_point_ids.add(point_id)
+        if actual[point_id] != count:
+            mismatched_point_ids.add(point_id)
+    for point_id in review_counts.keys() - expected.keys():
+        issues.append(f"unknown review: {point_id}")
+        mismatched_point_ids.add(point_id)
+
+    reviews_by_id = {
+        review.novelty_point_id: review
+        for review in novelty_reviews
+        if review_counts[review.novelty_point_id] == 1
+    }
+    conclusions_by_id = {
+        conclusion.novelty_point_id: conclusion
+        for conclusion in report.conclusions
+        if actual[conclusion.novelty_point_id] == 1
+    }
+    for point_id in expected:
+        review = reviews_by_id.get(point_id)
+        conclusion = conclusions_by_id.get(point_id)
+        if review is None or conclusion is None:
+            continue
+        mismatches = []
+        if conclusion.review_status != review.status:
+            mismatches.append("review_status")
+        if conclusion.verdict != review.verdict:
+            mismatches.append("verdict")
+        if conclusion.verdict_reason != review.verdict_reason:
+            mismatches.append("verdict_reason")
+        if conclusion.confidence != review.confidence:
+            mismatches.append("confidence")
+        if conclusion.highly_relevant_works != review.highly_relevant_works:
+            mismatches.append("highly_relevant_works")
+        if mismatches:
+            issues.append(
+                f"review/conclusion mismatch: {point_id} fields={','.join(mismatches)}"
+            )
+            mismatched_point_ids.add(point_id)
+        else:
+            matched_count += 1
 
     cards_by_id = {card.card_id: card for card in evidence_cards}
     referenced: list[str] = []
@@ -328,6 +390,11 @@ def validate_report_integrity(
         checked_conclusion_count=len(report.conclusions),
         referenced_card_count=len(set(referenced)),
         reference_occurrence_count=len(referenced),
+        review_count=len(novelty_reviews),
+        conclusion_count=len(report.conclusions),
+        matched_count=matched_count,
+        mismatch_count=len(mismatched_point_ids),
+        mismatched_point_ids=tuple(sorted(mismatched_point_ids)),
         issues=unique_issues,
     )
 

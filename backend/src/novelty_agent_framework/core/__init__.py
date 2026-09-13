@@ -13,6 +13,7 @@ from .runtime_artifacts import (
     current_runtime_artifacts,
 )
 from .run_identity import display_path, file_run_identity, sha256_file
+from .report_binding import bind_reviews_to_report
 
 if TYPE_CHECKING:
     from .tool_call_harness import (
@@ -39,6 +40,7 @@ __all__ = [
     "StageHandle",
     "ToolCallHandle",
     "current_runtime_artifacts",
+    "bind_reviews_to_report",
     *_HARNESS_EXPORTS,
 ]
 

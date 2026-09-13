@@ -10,12 +10,13 @@ import pytest
 from backend.env import ModelResponse, PromptLibrary
 from novelty_agent_framework.agents import NoveltyCoordinatorAgent
 from novelty_agent_framework.schemas import (
-    ConclusionLevel,
     NoveltyBrief,
-    NoveltyConclusion,
     NoveltyPoint,
+    NoveltyPointReview,
     NoveltyReport,
+    NoveltyVerdict,
     PaperInput,
+    ReviewStatus,
 )
 
 PROMPTS_ROOT = Path("backend/src/novelty_agent_framework/prompts")
@@ -56,7 +57,9 @@ def _report_json() -> str:
             "conclusions": [
                 {
                     "novelty_point_id": "NP-1",
-                    "level": "partial",
+                    "review_status": "reviewed",
+                    "verdict": "partially_novel",
+                    "verdict_reason": "存在已知重合，但完整组合仍有差异。",
                     "summary": "存在部分技术差异",
                     "supporting_card_ids": ["C1"],
                     "counter_card_ids": [],
@@ -69,6 +72,16 @@ def _report_json() -> str:
             "limitations": [],
         },
         ensure_ascii=False,
+)
+
+
+def _review() -> NoveltyPointReview:
+    return NoveltyPointReview(
+        novelty_point_id="NP-1",
+        status=ReviewStatus.REVIEWED,
+        verdict=NoveltyVerdict.PARTIALLY_NOVEL,
+        verdict_reason="存在已知重合，但完整组合仍有差异。",
+        confidence=0.8,
     )
 
 
@@ -87,12 +100,13 @@ def test_synthesize_accepts_markdown_fenced_json() -> None:
         _paper(),
         brief=_brief(),
         evidence=[],
+        novelty_reviews=[_review()],
         rejected_evidence=[],
         insufficient_final_evidence_points=[],
     )
     assert isinstance(report, NoveltyReport)
     assert report.paper_id == "paper-1"
-    assert report.conclusions[0].level is ConclusionLevel.PARTIAL
+    assert report.conclusions[0].verdict is NoveltyVerdict.PARTIALLY_NOVEL
     assert client.calls == 1
 
 
@@ -102,6 +116,7 @@ def test_synthesize_retries_once_when_first_response_is_not_json() -> None:
         _paper(),
         brief=_brief(),
         evidence=[],
+        novelty_reviews=[_review()],
         rejected_evidence=[],
         insufficient_final_evidence_points=[],
     )
@@ -117,6 +132,7 @@ def test_synthesize_fails_after_both_attempts() -> None:
             _paper(),
             brief=_brief(),
             evidence=[],
+            novelty_reviews=[_review()],
             rejected_evidence=[],
             insufficient_final_evidence_points=[],
         )

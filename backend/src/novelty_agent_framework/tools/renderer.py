@@ -293,20 +293,37 @@ def _format_conclusions(
     if not conclusions:
         return "未生成结构化查新结论。"
     labels = {
-        "strong": "强创新",
-        "partial": "部分创新",
-        "weak": "弱创新",
-        "insufficient": "证据不足",
+        "novel": "新颖",
+        "partially_novel": "部分新颖",
+        "not_novel": "不新颖",
     }
     sections = []
     for conclusion in conclusions:
         point_id = conclusion.get("novelty_point_id", "—")
         claim = point_by_id.get(point_id, {}).get("claim", "")
+        status = conclusion.get("review_status")
+        verdict = conclusion.get("verdict")
+        label = (
+            "证据不足，无法裁定"
+            if status == "insufficient_evidence"
+            else labels.get(verdict, verdict or "—")
+        )
+        confidence = conclusion.get("confidence")
+        confidence_text = "—" if confidence is None else f"{confidence:.2f}"
+        relevant = conclusion.get("highly_relevant_works", [])
+        relevant_text = "\n".join(
+            f"  - {item.get('work_id', '—')}：{item.get('relevance_reason', '—')} "
+            f"(cards: {', '.join(item.get('card_ids', [])) or '—'})"
+            for item in relevant
+        ) or "  - 无"
         sections.append(
-            f"### {point_id} · {labels.get(conclusion.get('level'), conclusion.get('level', '—'))}\n\n"
+            f"### {point_id} · {label}\n\n"
             f"{claim}\n\n"
-            f"**结论：** {conclusion.get('summary', '—')}  \n"
-            f"**置信度：** {conclusion.get('confidence', 0):.2f}"
+            f"**Reviewer 裁定：** {label}  \n"
+            f"**裁定理由：** {conclusion.get('verdict_reason') or '—'}  \n"
+            f"**置信度：** {confidence_text}  \n"
+            f"**报告摘要：** {conclusion.get('summary', '—')}  \n"
+            f"**高度相关 Work：**\n{relevant_text}"
         )
     return "\n\n".join(sections)
 

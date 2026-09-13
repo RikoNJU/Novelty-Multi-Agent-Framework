@@ -134,6 +134,7 @@ class NoveltyCoordinator(Protocol):
         *,
         brief: NoveltyBrief,
         evidence: Sequence[EvidenceCard],
+        novelty_reviews: Sequence[NoveltyPointReview],
         rejected_evidence: Sequence[str],
         insufficient_final_evidence_points: Sequence[InsufficientFinalEvidence],
     ) -> NoveltyReport:

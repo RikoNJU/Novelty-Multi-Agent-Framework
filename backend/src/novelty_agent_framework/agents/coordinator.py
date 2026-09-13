@@ -27,6 +27,7 @@ from ..schemas import (
     InsufficientFinalEvidence,
     NoveltyBrief,
     NoveltyPoint,
+    NoveltyPointReview,
     NoveltyReport,
     PaperInput,
     ResearchTask,
@@ -183,6 +184,7 @@ class NoveltyCoordinatorAgent(NoveltyCoordinator):
         *,
         brief: NoveltyBrief,
         evidence: Sequence[EvidenceCard],
+        novelty_reviews: Sequence[NoveltyPointReview],
         rejected_evidence: Sequence[str],
         insufficient_final_evidence_points: Sequence[InsufficientFinalEvidence],
     ) -> NoveltyReport:
@@ -196,6 +198,9 @@ class NoveltyCoordinatorAgent(NoveltyCoordinator):
             "paper": paper.model_dump(mode="json"),
             "brief": brief.model_dump(mode="json"),
             "evidence": [item.model_dump(mode="json") for item in evidence],
+            "novelty_reviews": [
+                item.model_dump(mode="json") for item in novelty_reviews
+            ],
             "rejected_evidence": list(rejected_evidence),
             "insufficient_final_evidence_points": [
                 item.model_dump(mode="json")
@@ -209,6 +214,9 @@ class NoveltyCoordinatorAgent(NoveltyCoordinator):
                 "paper_json": json.dumps(payload["paper"], ensure_ascii=False),
                 "brief_json": json.dumps(payload["brief"], ensure_ascii=False),
                 "evidence_json": json.dumps(payload["evidence"], ensure_ascii=False),
+                "novelty_reviews_json": json.dumps(
+                    payload["novelty_reviews"], ensure_ascii=False
+                ),
                 "rejected_evidence_json": json.dumps(
                     payload["rejected_evidence"], ensure_ascii=False
                 ),
@@ -222,7 +230,10 @@ class NoveltyCoordinatorAgent(NoveltyCoordinator):
             payload=payload,
             system_prompt=self._system_prompt(),
             fallback_user_prompt=(
-                "请基于有效 EvidenceCard 生成最终 NoveltyReport JSON。每个结论必须"
+                "Reviewer 是新颖性裁定唯一权威来源。请逐字段复制 Reviewer 的"
+                " review_status、verdict、verdict_reason、confidence 和"
+                " highly_relevant_works，并基于有效 EvidenceCard 生成最终"
+                " NoveltyReport JSON。每个结论必须"
                 "绑定 supporting_card_ids 或明确标记证据不足，不得编造文献。"
                 "若 accepted 证据为空但有 rejected_evidence，请在 limitations 说明拒绝原因，"
                 "不要把“技术性拒绝”写成“未检索到文献”。"
@@ -316,6 +327,7 @@ class NoveltyCoordinatorAgent(NoveltyCoordinator):
         return (
             "你是论文查新 Multi-Agent 系统的 Coordinator。"
             "你负责全局规划、任务拆分、补充检索规划和最终证据汇总。"
+            "Reviewer 是新颖性裁定唯一权威来源，你不得改写其裁定字段。"
             "你不能编造文献、DOI、URL 或证据位置；证据不足时必须显式说明。"
             "你的输出必须严格符合调用方要求的 JSON schema。"
         )
