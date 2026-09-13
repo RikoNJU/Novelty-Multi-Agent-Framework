@@ -53,12 +53,15 @@ class EvidenceReviewerConfig:
     temperature: float = 0.0
     max_cards_per_call: int = 8
     fail_closed: bool = True
+    prompt_name: str = "reviewer/review_evidence"
 
     def __post_init__(self) -> None:
         if not 0.0 <= self.temperature <= 2.0:
             raise ValueError("temperature 必须位于 0 到 2 之间")
         if self.max_cards_per_call < 1:
             raise ValueError("max_cards_per_call 必须至少为 1")
+        if not self.prompt_name.strip():
+            raise ValueError("prompt_name 不能为空")
 
 
 class DemoEvidenceReviewer:
@@ -163,7 +166,7 @@ class NoveltyEvidenceReviewer(EvidenceReviewer):
             "review_schema": json.dumps(payload["review_schema"], ensure_ascii=False),
         }
         if self._prompts is not None:
-            rendered = self._prompts.render("reviewer/review_evidence", **variables)
+            rendered = self._prompts.render(self.config.prompt_name, **variables)
             system, user = rendered.system, rendered.user
         else:
             system = _fallback_system_prompt()
