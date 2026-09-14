@@ -526,9 +526,10 @@ class ArxivFullTextTool(FullTextTool):
 
     def _try_get(self, url: str) -> httpx.Response | None:
         try:
-            response = self._client.get(url)
-            response.raise_for_status()
-            return response
+            with _REQUEST_GATE:
+                response = self._client.get(url)
+                response.raise_for_status()
+                return response
         except httpx.HTTPError:
             return None
 
@@ -567,10 +568,11 @@ class ArxivMetadataTool(MetadataTool):
 
     def _resolve_live(self, doc_id: str) -> EvidenceSource | None:
         try:
-            response = self._client.get(
-                f"{self._base_url}?id_list={doc_id}&max_results=1"
-            )
-            response.raise_for_status()
+            with _REQUEST_GATE:
+                response = self._client.get(
+                    f"{self._base_url}?id_list={doc_id}&max_results=1"
+                )
+                response.raise_for_status()
         except httpx.HTTPError:
             return None
         try:

@@ -472,6 +472,55 @@ def test_single_flight_gate_covers_retry_wait_and_retry(monkeypatch):
     assert first_attempts == 2
 
 
+def test_request_gate_is_shared_by_search_metadata_and_fulltext():
+    search_started = threading.Event()
+    release_search = threading.Event()
+    metadata_started = threading.Event()
+    fulltext_started = threading.Event()
+    state_lock = threading.Lock()
+    in_flight = 0
+    max_in_flight = 0
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal in_flight, max_in_flight
+        url = str(request.url)
+        with state_lock:
+            in_flight += 1
+            max_in_flight = max(max_in_flight, in_flight)
+        try:
+            if "search_query=" in url:
+                search_started.set()
+                assert release_search.wait(timeout=1.0)
+                return httpx.Response(200, text=ATOM_ENTRY)
+            if "id_list=" in url:
+                metadata_started.set()
+                return httpx.Response(200, text=ATOM_ENTRY)
+            fulltext_started.set()
+            return httpx.Response(200, text=HTML_BODY)
+        finally:
+            with state_lock:
+                in_flight -= 1
+
+    client = make_client(handler)
+    search = ArxivSearchTool(client=client, min_interval=0.0)
+    metadata = ArxivMetadataTool(client=client)
+    fulltext = ArxivFullTextTool(client=client)
+
+    with ThreadPoolExecutor(max_workers=3) as executor:
+        search_future = executor.submit(search.search, "single-flight")
+        assert search_started.wait(timeout=1.0)
+        metadata_future = executor.submit(metadata.resolve, "2305.12345")
+        fulltext_future = executor.submit(fulltext.fetch, "2305.12345")
+        assert not metadata_started.wait(timeout=0.05)
+        assert not fulltext_started.wait(timeout=0.05)
+        release_search.set()
+        assert len(search_future.result(timeout=1.0)) == 1
+        assert metadata_future.result(timeout=1.0) is not None
+        assert fulltext_future.result(timeout=1.0) is not None
+
+    assert max_in_flight == 1
+
+
 def test_search_raises_on_4xx_without_retry():
     calls = {"n": 0}
 

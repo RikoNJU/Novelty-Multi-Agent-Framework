@@ -23,7 +23,7 @@ Run E = NOT RUN
 
 提交：`beef156 fix(arxiv): serialize provider search lifecycles`
 
-新增全进程共享的 arXiv search gate。ResearchTask 和 bootstrap coroutine 仍然可以并行，但每个 `ArxivSearchTool` execution 从以下阶段开始独占 gate：
+新增全进程共享的 arXiv provider gate。ResearchTask 和 bootstrap coroutine 仍然可以并行，但每个 `ArxivSearchTool` execution 从以下阶段开始独占 gate：
 
 ```text
 circuit permission
@@ -35,6 +35,8 @@ circuit permission
 ```
 
 不同 `ArxivSearchTool` 实例共用同一个 gate；另一个 execution 不能在前一个 execution 的 HTTP 在途期间进入，也不能插入其 retry/backoff 链。half-open probe 同样受此 gate 保护，排队调用只会在 probe 完成后重新检查 circuit。
+
+`ArxivMetadataTool` 与 `ArxivFullTextTool` 的 HTTP 请求也复用同一 gate。跨 Search、Metadata、FullText 的并发测试确认最大同时在途请求数为 1；Search 的 gate ownership 仍覆盖整条 retry 生命周期，Metadata/FullText 则按各自单次 HTTP 生命周期持有。
 
 ### BOOTSTRAP-ASYNC-01
 
@@ -100,13 +102,13 @@ A 已包含 1 次有界 retry，最终仍为 ReadTimeout。因为连 HTTP status
 
 ## 5. 测试
 
-- arXiv provider、single-flight、retry/circuit/config 定向测试：30 项通过；
+- arXiv provider、single-flight、retry/circuit/config 定向测试：31 项通过；
 - bootstrap 与 StructuredRetrieval 异步边界：19 项通过；
 - smoke Gate 离线测试覆盖：
   - A/B hit 后 C `200 + EMPTY` 才允许 Query 层判断；
   - A HTTP 429 时 B/C 短路；
   - A HTTP 200 但 Atom parse failure 时 B/C 短路。
-- arXiv、bootstrap、StructuredRetrieval、adapter 与配置注入相关回归：81 项通过。
+- arXiv、bootstrap、StructuredRetrieval、adapter 与配置注入相关回归：82 项通过。
 
 涉及 `asyncio.to_thread` 的测试在允许线程调度的环境执行；命令沙箱会在该边界阻塞。
 
