@@ -29,6 +29,8 @@ class SmokeCase:
     case_id: str
     purpose: str
     query: str
+    parameter_name: str = "search_query"
+    limit: int | None = None
     expected_arxiv_id: str | None = None
     expected_title: str | None = None
 
@@ -37,7 +39,9 @@ DEFAULT_CASES = (
     SmokeCase(
         case_id="A",
         purpose="known_arxiv_id",
-        query="id:1706.03762",
+        query="1706.03762",
+        parameter_name="id_list",
+        limit=1,
         expected_arxiv_id="1706.03762",
     ),
     SmokeCase(
@@ -66,11 +70,18 @@ def probe_case(
 ) -> dict[str, Any]:
     """Probe once and preserve HTTP → Atom → entry as separate gates."""
 
-    url = f"{tool._base_url}?{urlencode({'search_query': case.query, 'start': 0, 'max_results': limit})}"
+    parameters: dict[str, str | int] = {
+        case.parameter_name: case.query,
+        "max_results": case.limit or limit,
+    }
+    if case.parameter_name == "search_query":
+        parameters["start"] = 0
+    url = f"{tool._base_url}?{urlencode(parameters)}"
     result: dict[str, Any] = {
         "case": case.case_id,
         "purpose": case.purpose,
         "query": case.query,
+        "request_parameter": case.parameter_name,
         "http_status": None,
         "http_200": False,
         "atom_parsed": False,
@@ -143,6 +154,7 @@ def run_smoke(
                     "case": skipped.case_id,
                     "purpose": skipped.purpose,
                     "query": skipped.query,
+                    "request_parameter": skipped.parameter_name,
                     "classification": "SKIPPED_UPSTREAM_GATE",
                 }
                 for skipped in cases[index:]

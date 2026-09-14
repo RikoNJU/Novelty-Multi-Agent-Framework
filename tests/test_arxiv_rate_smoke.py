@@ -48,6 +48,28 @@ def test_smoke_measures_c_empty_only_after_a_and_b_pass(monkeypatch):
     assert result["query_layer_decision_allowed"] is True
 
 
+def test_case_a_uses_id_list_instead_of_search_query(monkeypatch):
+    monkeypatch.setattr(arxiv_module, "_LAST_REQUEST_AT", 0.0)
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return httpx.Response(200, text=_feed())
+
+    tool = ArxivSearchTool(
+        client=httpx.Client(transport=httpx.MockTransport(handler)),
+        min_interval=0.0,
+    )
+    result = run_smoke(tool=tool)
+
+    first = requests[0]
+    assert first.url.params["id_list"] == "1706.03762"
+    assert first.url.params["max_results"] == "1"
+    assert "start" not in first.url.params
+    assert "search_query" not in first.url.params
+    assert result["cases"][0]["request_parameter"] == "id_list"
+
+
 def test_smoke_stops_after_provider_access_failure(monkeypatch):
     monkeypatch.setattr(arxiv_module, "_LAST_REQUEST_AT", 0.0)
     calls = 0
