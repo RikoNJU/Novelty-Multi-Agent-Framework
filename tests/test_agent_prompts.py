@@ -191,6 +191,62 @@ def test_coordinator_supplement_renders_prompt_from_library():
     assert "SearchPlan" in messages[1].content
 
 
+def test_coordinator_supplement_prompt_carries_enabled_languages():
+    """补检轮必须把启用语言交给模型，避免先生成再丢弃已关闭语言的任务。"""
+
+    from novelty_agent_framework.schemas import NoveltyBrief
+
+    brief = NoveltyBrief(
+        paper_summary="测试论文摘要",
+        research_problem="测试论文",
+        novelty_points=list(POINTS),
+        keywords_zh=["多智能体"],
+        keywords_en=["multi-agent"],
+        research_tasks=[],
+    )
+    client = RecordingModelClient(TASKS_JSON)
+    agent = NoveltyCoordinatorAgent(
+        model_client=client,
+        prompts=PromptLibrary(PROMPTS_ROOT),
+        enabled_task_languages=("en",),
+    )
+
+    agent.plan_supplement(
+        make_paper(),
+        brief=brief,
+        existing_evidence=[],
+        insufficient_final_evidence_points=[
+            InsufficientFinalEvidence(
+                novelty_point_id="NP-1",
+                valid_card_count=0,
+                required_card_count=1,
+            )
+        ],
+        attempt=2,
+    )
+
+    messages, _ = client.calls[0]
+    assert '["en"]' in messages[1].content
+    assert "已被关闭的语言不得出现在输出中" in messages[0].content
+    assert agent.enabled_task_languages == ("en",)
+
+
+def test_coordinator_normalizes_and_rejects_language_codes():
+    agent = NoveltyCoordinatorAgent(
+        model_client=RecordingModelClient(TASKS_JSON),
+        prompts=PromptLibrary(PROMPTS_ROOT),
+        enabled_task_languages=["EN", " en ", "zh"],
+    )
+    assert agent.enabled_task_languages == ("en", "zh")
+
+    with pytest.raises(ValueError, match="enabled_task_languages"):
+        NoveltyCoordinatorAgent(
+            model_client=RecordingModelClient(TASKS_JSON),
+            prompts=PromptLibrary(PROMPTS_ROOT),
+            enabled_task_languages=(),
+        )
+
+
 def test_research_renders_prompt_and_validates_cards():
     client = RecordingModelClient(json.dumps([CARD_JSON]))
     agent = NoveltyResearchAgent(

@@ -8,6 +8,7 @@ import json
 import re
 import uuid
 from collections.abc import Awaitable
+from collections.abc import Sequence
 from dataclasses import replace
 from pathlib import Path
 from typing import Any, Callable, Mapping, TypeVar, cast
@@ -342,6 +343,38 @@ class NoveltyWorkflow:
             )
         return {"novelty_points": validated, "issues": issues}
 
+    def _apply_task_language_gate(
+        self, tasks: Sequence[ResearchTask], *, node: str
+    ) -> tuple[list[ResearchTask], list[WorkflowIssue]]:
+        """按配置过滤被关闭语言的调研任务，使其不进入规划与派发。
+
+        任务生成、Prompt 和工具代码全部保留；这里只做确定性闸门，并为每个
+        被跳过的任务留下审计 Issue。
+        """
+
+        enabled = {
+            str(code).strip().lower() for code in self.config.enabled_task_languages
+        }
+        kept: list[ResearchTask] = []
+        issues: list[WorkflowIssue] = []
+        for task in tasks:
+            language = (task.language or "").strip().lower()
+            if language in enabled:
+                kept.append(task)
+                continue
+            issues.append(
+                WorkflowIssue(
+                    node=node,
+                    code="task_language_disabled",
+                    message=(
+                        f"语言 {task.language!r} 已关闭，跳过 "
+                        f"{task.novelty_point_id}/{task.task_id} 的方案生成与调研执行。"
+                    ),
+                    task_id=task.task_id,
+                )
+            )
+        return kept, issues
+
     async def _plan(self, state: NoveltyState) -> dict[str, Any]:
         try:
             brief_value = self.services.coordinator.plan(
@@ -353,11 +386,15 @@ class NoveltyWorkflow:
         except (ValidationError, TypeError, ValueError) as exc:
             raise WorkflowExecutionError(f"Coordinator 未生成合法 NoveltyBrief：{exc}") from exc
 
+        tasks, issues = self._apply_task_language_gate(
+            brief.research_tasks, node="plan"
+        )
         return {
-            "brief": brief,
-            "research_tasks": list(brief.research_tasks),
-            "all_research_tasks": list(brief.research_tasks),
+            "brief": brief.model_copy(update={"research_tasks": tasks}),
+            "research_tasks": tasks,
+            "all_research_tasks": tasks,
             "rounds": 1,
+            "issues": issues,
         }
 
     async def _dispatch_node(self, state: NoveltyState) -> dict[str, Any]:
@@ -824,15 +861,19 @@ class NoveltyWorkflow:
 
         existing_tasks = state.get("all_research_tasks", [])
         task_by_key = {_task_key(task): task for task in existing_tasks}
-        for task in brief.research_tasks:
+        new_tasks, issues = self._apply_task_language_gate(
+            brief.research_tasks, node="plan_supplement"
+        )
+        for task in new_tasks:
             task_by_key[_task_key(task)] = task
 
         all_tasks = list(task_by_key.values())
         return {
-            "brief": brief,
-            "research_tasks": list(brief.research_tasks),
+            "brief": brief.model_copy(update={"research_tasks": new_tasks}),
+            "research_tasks": new_tasks,
             "all_research_tasks": all_tasks,
             "rounds": next_round,
+            "issues": issues,
         }
 
     async def _synthesize_report(self, state: NoveltyState) -> dict[str, Any]:

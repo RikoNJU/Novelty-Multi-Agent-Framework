@@ -57,6 +57,7 @@ async def _invoke_provider(
 @dataclass
 class _PendingExecution:
     execution_id: str
+    sequence: int
     query: CompiledQuery
     started_at: datetime
     completed_at: datetime
@@ -214,7 +215,8 @@ class StructuredSourceRetrievalTool:
             merge_record(records, record)
             mapped[key] = (work, record)
 
-        executions = [*failed]
+        # 失败项先入列、成功项后补，下面必须显式恢复真实执行顺序。
+        executions: list[tuple[int, SearchExecution]] = [*failed]
         for item in pending:
             results: list[SearchResultRef] = []
             seen_records: set[str] = set()
@@ -234,23 +236,26 @@ class StructuredSourceRetrievalTool:
                 seen_records.add(record_id)
                 results.append(SearchResultRef(source_record_id=record_id, rank=rank))
             executions.append(
-                SearchExecution(
-                    execution_id=item.execution_id,
-                    run_id=request.run_id,
-                    tool_name=self.name,
-                    source_id=self.source_id,
-                    query=item.query.query,
+                (
+                    item.sequence,
+                    SearchExecution(
+                        execution_id=item.execution_id,
+                        run_id=request.run_id,
+                        tool_name=self.name,
+                        source_id=self.source_id,
+                        query=item.query.query,
                         parameters=_query_parameters(
                             item.query, self.candidate_limit, variant=item.variant
                         ),
-                    status=(
-                        SearchExecutionStatus.PARTIAL
-                        if partial
-                        else SearchExecutionStatus.SUCCEEDED
+                        status=(
+                            SearchExecutionStatus.PARTIAL
+                            if partial
+                            else SearchExecutionStatus.SUCCEEDED
+                        ),
+                        started_at=item.started_at,
+                        completed_at=item.completed_at,
+                        results=results,
                     ),
-                    started_at=item.started_at,
-                    completed_at=item.completed_at,
-                    results=results,
                 )
             )
 
@@ -334,9 +339,12 @@ class StructuredSourceRetrievalTool:
                 self.source_id,
             ),
             producer=f"{self.name}:{self.source_id}",
-            search_executions=sorted(
-                executions, key=lambda value: value.started_at
-            ),
+            # 按执行序号排序：系统时钟分辨率可能是毫秒级且可被校正，同一 tick 内的
+            # 多次执行会得到相同的 started_at，时间戳无法恢复真实执行顺序。
+            search_executions=[
+                execution
+                for _, execution in sorted(executions, key=lambda pair: pair[0])
+            ],
             works=list(works.values()),
             source_records=list(records.values()),
             artifacts=list(artifacts.values()),
@@ -387,14 +395,14 @@ class StructuredSourceRetrievalTool:
         request: StructuredSourceRetrievalRequest,
     ) -> tuple[
         list[_PendingExecution],
-        list[SearchExecution],
+        list[tuple[int, SearchExecution]],
         dict[str, SearchHit],
         list[str],
     ]:
         """沿放宽链执行检索：基础策略命中则跳过其放宽变体，零命中自动降级。"""
 
         pending: list[_PendingExecution] = []
-        failed: list[SearchExecution] = []
+        failed: list[tuple[int, SearchExecution]] = []
         unique: dict[str, SearchHit] = {}
         warnings: list[str] = []
         base_hit: dict[str, bool] = {}
@@ -440,19 +448,22 @@ class StructuredSourceRetrievalTool:
                     ]
                 except Exception as exc:
                     failed.append(
-                        SearchExecution(
-                            execution_id=execution_id,
-                            run_id=request.run_id,
-                            tool_name=self.name,
-                            source_id=self.source_id,
-                            query=query.query,
-                            parameters=_query_parameters(
-                                query, self.candidate_limit, variant=variant
+                        (
+                            execution_index,
+                            SearchExecution(
+                                execution_id=execution_id,
+                                run_id=request.run_id,
+                                tool_name=self.name,
+                                source_id=self.source_id,
+                                query=query.query,
+                                parameters=_query_parameters(
+                                    query, self.candidate_limit, variant=variant
+                                ),
+                                status=SearchExecutionStatus.FAILED,
+                                started_at=started,
+                                completed_at=datetime.now(timezone.utc),
+                                error=_safe_error(exc),
                             ),
-                            status=SearchExecutionStatus.FAILED,
-                            started_at=started,
-                            completed_at=datetime.now(timezone.utc),
-                            error=_safe_error(exc),
                         )
                     )
                     provider_failed = True
@@ -460,6 +471,7 @@ class StructuredSourceRetrievalTool:
                 pending.append(
                     _PendingExecution(
                         execution_id=execution_id,
+                        sequence=execution_index,
                         query=query,
                         started_at=started,
                         completed_at=datetime.now(timezone.utc),

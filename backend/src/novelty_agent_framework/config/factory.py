@@ -110,6 +110,14 @@ def build_prompt_library(root: str | Path | None = None) -> PromptLibrary:
     return PromptLibrary(root or PROMPTS_ROOT)
 
 
+def _legacy_task_languages(config: Mapping[str, Any]) -> tuple[str, ...]:
+    """读取 legacy 配置中的启用语言，缺省保持中英文双语。"""
+
+    return tuple(
+        config.get("workflow", {}).get("enabled_task_languages", ("zh", "en"))
+    )
+
+
 def build_agents(
     config: Mapping[str, Any],
     registry: ModelRegistry,
@@ -133,6 +141,7 @@ def build_agents(
         models=registry,
         model_alias=coordinator_cfg.get("model", "coordinator"),
         temperature=float(coordinator_cfg.get("temperature", 0.2)),
+        enabled_task_languages=_legacy_task_languages(config),
     )
     research = NoveltyResearchAgent(
         prompts=prompts,
@@ -272,6 +281,7 @@ def build_workflow(
         models=registry,
         model_alias=coordinator_cfg.get("model", "coordinator"),
         temperature=float(coordinator_cfg.get("temperature", 0.2)),
+        enabled_task_languages=_legacy_task_languages(raw),
     )
     point_extractor = NoveltyPointExtractorAgent(
         prompts=prompts,
@@ -432,6 +442,9 @@ def build_workflow(
             candidate_limit_per_task=int(
                 retrieval_cfg.get("candidate_limit_per_task", 8)
             ),
+            enabled_task_languages=tuple(
+                workflow_cfg.get("enabled_task_languages", ("zh", "en"))
+            ),
             runtime_debug=RuntimeDebugConfig(
                 enabled=bool(raw.get("runtime_debug", {}).get("enabled", True)),
                 output_root=resolved_output_root,
@@ -504,6 +517,9 @@ def _build_workflow_from_application_config(
         models=registry,
         model_alias=config.coordinator.model.alias,
         temperature=config.coordinator.model.temperature,
+        enabled_task_languages=tuple(
+            config.project.workflow.enabled_task_languages
+        ),
         model_options=_typed_model_options(
             config.coordinator.model,
             response_format={"type": "json_object"},
@@ -652,6 +668,7 @@ def _build_workflow_from_application_config(
                 workflow.min_final_evidence_cards_per_point
             ),
             candidate_limit_per_task=database.candidate_limit_per_task,
+            enabled_task_languages=tuple(workflow.enabled_task_languages),
             runtime_debug=RuntimeDebugConfig(
                 enabled=runtime_debug.enabled,
                 output_root=resolved_output_root,

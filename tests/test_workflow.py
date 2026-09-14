@@ -513,6 +513,44 @@ def test_supplement_dispatches_only_new_tasks():
     assert checks[1]["actual_next_stage"] == "synthesize_report"
 
 
+def test_disabled_language_tasks_are_not_planned_or_dispatched():
+    """关闭 zh 后，中文任务既不进入 SearchPlanner，也不派发给 Researcher。"""
+
+    researcher = RecordingTaskResearcher(first_round_empty=True)
+    planner = RecordingPlanner()
+    workflow, _ = build_workflow(
+        researcher,
+        planner=planner,
+        max_rounds=2,
+        enabled_task_languages=("en",),
+    )
+
+    result = workflow.run(make_paper())
+
+    assert result.rounds == 2
+    assert [call.research_task.task_id for call in researcher.calls] == [
+        "T-2",
+        "T-R2-2",
+    ]
+    assert {call.research_task.language for call in researcher.calls} == {"en"}
+    assert [task.task_id for _, task in planner.calls] == ["T-2", "T-R2-2"]
+    assert [task.task_id for task in result.brief.research_tasks] == ["T-R2-2"]
+    language_issues = [
+        issue for issue in result.issues if issue.code == "task_language_disabled"
+    ]
+    assert [issue.task_id for issue in language_issues] == ["T-1", "T-R2-1"]
+
+
+def test_enabled_task_languages_defaults_to_both_languages():
+    workflow, _ = build_workflow()
+    assert workflow.config.enabled_task_languages == ("zh", "en")
+
+
+def test_empty_enabled_task_languages_is_rejected():
+    with pytest.raises(ValueError, match="enabled_task_languages"):
+        NoveltyWorkflowConfig(enabled_task_languages=())
+
+
 class NoTaskCoordinator(DemoCoordinator):
     def plan(self, paper, *, points, attempt):
         brief = super().plan(paper, points=points, attempt=attempt)

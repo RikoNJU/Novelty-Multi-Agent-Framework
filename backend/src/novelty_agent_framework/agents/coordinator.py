@@ -35,6 +35,19 @@ from ..schemas import (
 from ..ports import NoveltyCoordinator
 
 
+def _normalize_task_languages(values: Sequence[str]) -> tuple[str, ...]:
+    """归一化启用语言代码，并拒绝空配置。"""
+
+    normalized = tuple(
+        dict.fromkeys(
+            str(value).strip().lower() for value in values if str(value).strip()
+        )
+    )
+    if not normalized:
+        raise ValueError("enabled_task_languages 不能为空")
+    return normalized
+
+
 class NoveltyCoordinatorAgent(NoveltyCoordinator):
     """负责查新任务中的全局判断和信息汇总。
 
@@ -56,6 +69,7 @@ class NoveltyCoordinatorAgent(NoveltyCoordinator):
         model_alias: str | None = None,
         temperature: float = 0.2,
         model_options: ModelCallOptions | None = None,
+        enabled_task_languages: Sequence[str] = ("zh", "en"),
     ) -> None:
         self.model_client = model_client
         self._prompts = prompts
@@ -63,6 +77,9 @@ class NoveltyCoordinatorAgent(NoveltyCoordinator):
         self._model_alias = model_alias
         self.temperature = temperature
         self.model_options = model_options
+        self.enabled_task_languages = _normalize_task_languages(
+            enabled_task_languages
+        )
 
     def plan(
         self,
@@ -130,6 +147,9 @@ class NoveltyCoordinatorAgent(NoveltyCoordinator):
                     payload["insufficient_final_evidence_points"], ensure_ascii=False
                 ),
                 "attempt": attempt,
+                "enabled_languages_json": json.dumps(
+                    list(self.enabled_task_languages), ensure_ascii=False
+                ),
                 "task_schema": json.dumps(
                     ResearchTask.model_json_schema(), ensure_ascii=False
                 ),

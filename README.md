@@ -11,7 +11,7 @@ PaperInput
   ↓
 PointExtractor                     从论文提取“查什么”
   ↓
-Coordinator.plan                   把查新点拆成中英文 ResearchTask
+Coordinator.plan                   把查新点拆成中英文 ResearchTask（按启用语言过滤）
   ↓
 dispatch_research_tasks            按任务动态 fan-out
   ↓
@@ -64,6 +64,14 @@ START
 - TaskResearcher 子图负责预算、重复调用限制和局部失败隔离，主 Workflow 负责
   fan-out/fan-in、Validator、补检和终止控制；
 - Task 的工作流身份是 `(novelty_point_id, task_id)`，因为 `task_id` 只在单个查新点内唯一。
+- 调研任务语言由 `workflow.enabled_task_languages` 控制。当前配置为 `["en"]`：
+  首轮任务分工是确定性的中英文双路（不调用模型）；补检轮会把启用语言写入 Prompt，
+  要求模型只生成启用语言的 ResearchTask。此外仍有确定性闸门在 SearchPlanner 之前
+  拦截违规任务，并记录 `task_language_disabled` 审计 Issue。任务生成、Prompt 与工具
+  代码全部保留，改回 `["zh", "en"]` 即可恢复。
+- `web_search` 与 `browser` 由 `researcher.tools.web_search.enabled` 和
+  `researcher.tools.browser.enabled` 控制，当前配置均为 `false`，默认不注册进
+  Researcher 工具表；工具实现、测试与 Harness 验证全部保留，改为 `true` 即可恢复。
 
 ### StructuredSourceRetrievalTool
 

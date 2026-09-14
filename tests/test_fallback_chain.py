@@ -24,6 +24,7 @@ from novelty_agent_framework.tools.database_search import (
     RetrievalSource,
     StructuredSourceRetrievalTool,
 )
+from novelty_agent_framework.tools.database_search import structured_retrieval
 
 
 def make_plan(*, concepts=None, strategies=None) -> SearchPlan:
@@ -283,4 +284,56 @@ def test_empty_then_provider_failure_stops_remaining_chain(tmp_path) -> None:
         "failed",
     ]
     assert bundle.search_executions[0].results == []
+    assert len(searcher.calls) == 2
+
+
+def test_execution_order_survives_identical_timestamps(tmp_path, monkeypatch) -> None:
+    """同一时钟 tick 内的多次执行仍须按真实执行顺序记录。
+
+    系统时钟分辨率可能是毫秒级（Windows 为 15.625ms）且时间可被校正，两次
+    执行会得到完全相同的 started_at；顺序必须由执行序号决定，不能退化为
+    “失败项优先”的内部排列。
+    """
+
+    real_datetime = structured_retrieval.datetime
+
+    class FrozenDatetime(real_datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return real_datetime.fromtimestamp(1_700_000_000.0, tz)
+
+    monkeypatch.setattr(structured_retrieval, "datetime", FrozenDatetime)
+
+    class EmptyThenFailureSearcher(QuerySearcher):
+        def __init__(self) -> None:
+            super().__init__({})
+
+        def search(self, query: str, *, limit: int = 10):
+            self.calls.append(query)
+            if len(self.calls) == 1:
+                return []
+            raise ConnectionError("provider unavailable")
+
+    searcher = EmptyThenFailureSearcher()
+    source = RetrievalSource(
+        source_id="demo",
+        query_adapter=DemoQueryAdapter(),
+        search_tool=searcher,
+    )
+    tool = StructuredSourceRetrievalTool(
+        source=source,
+        reference_store=ReferenceStore(tmp_path),
+    )
+
+    bundle = asyncio.run(tool.ainvoke(make_request()))
+
+    # 前提校验：时钟被冻结，两条记录的时间戳完全相同
+    assert len({item.started_at for item in bundle.search_executions}) == 1
+    assert [item.status.value for item in bundle.search_executions] == [
+        "succeeded",
+        "failed",
+    ]
+    assert [
+        item.parameters.get("strategy_id") for item in bundle.search_executions
+    ] == ["S1", "S1-fb1"]
     assert len(searcher.calls) == 2

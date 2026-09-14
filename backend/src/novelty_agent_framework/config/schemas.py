@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 class ConfigModel(BaseModel):
@@ -165,6 +165,20 @@ class WorkflowConfig(ConfigModel):
     max_rounds: int = Field(gt=0)
     max_concurrency: int = Field(gt=0)
     min_final_evidence_cards_per_point: int = Field(ge=1)
+    # 启用的调研任务语言。关闭的语言不进入 SearchPlanner 与 Researcher；
+    # 任务生成、Prompt 与工具代码保留，随时可通过配置恢复。
+    enabled_task_languages: list[str] = Field(
+        default_factory=lambda: ["zh", "en"]
+    )
+
+    @field_validator("enabled_task_languages")
+    @classmethod
+    def non_empty_language_codes(cls, value: list[str]) -> list[str]:
+        if not value or any(not item.strip() for item in value):
+            raise ValueError(
+                "enabled_task_languages must contain non-empty language codes"
+            )
+        return value
 
 
 class RuntimeDebugSettingsConfig(ConfigModel):

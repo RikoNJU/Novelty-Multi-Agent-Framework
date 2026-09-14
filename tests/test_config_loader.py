@@ -194,3 +194,33 @@ def test_enabling_optional_tools_restores_them():
     assert workflow.services.task_researcher.tools.names == (
         "reference_search", "database_search", "web_search", "browser", "reader"
     )
+
+
+def test_default_config_runs_english_tasks_only():
+    """当前策略：只执行英文调研任务，中文任务不再进入规划与派发。
+
+    任务生成、Prompt 与工具代码保留，仅由配置闸门关闭，可随时恢复。
+    """
+
+    config = load_application_config()
+
+    assert config.project.workflow.enabled_task_languages == ["en"]
+    assert config.researcher.tools.web_search.enabled is False
+    assert config.researcher.tools.browser.enabled is False
+
+    workflow = build_workflow(config)
+
+    assert workflow.config.enabled_task_languages == ("en",)
+    assert workflow.services.task_researcher.tools.names == (
+        "reference_search", "database_search", "reader"
+    )
+
+
+def test_empty_enabled_task_languages_fails_fast(tmp_path):
+    raw = json.loads(DEFAULT_PROJECT_PATH.read_text(encoding="utf-8"))
+    raw["workflow"]["enabled_task_languages"] = []
+    path = tmp_path / "settings.json"
+    path.write_text(json.dumps(raw), encoding="utf-8")
+
+    with pytest.raises(ValidationError):
+        load_application_config(project_path=path)
