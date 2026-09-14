@@ -85,6 +85,18 @@ def test_extra_body_filtered_by_supported_params():
     assert "reasoning_effort" not in payload
 
 
+@pytest.mark.parametrize("enabled", [False, True])
+def test_enable_thinking_boolean_reaches_final_payload(enabled):
+    client = make_client()
+
+    payload = client._build_payload(
+        [ChatMessage(role="user", content="hello")],
+        ModelCallOptions(extra_body={"enable_thinking": enabled}),
+    )
+
+    assert payload["enable_thinking"] is enabled
+
+
 def test_vendor_defaults_only_when_supported():
     client = make_client(
         defaults={

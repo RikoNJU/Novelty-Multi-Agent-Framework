@@ -19,6 +19,7 @@ from novelty_agent_framework.agents import (
     EvidenceValidationConfig,
     build_paper_digest,
 )
+from novelty_agent_framework.core.errors import WorkflowExecutionError
 from novelty_agent_framework.ports import ValidationResult
 from novelty_agent_framework.persistence import ReferenceStore
 from novelty_agent_framework.schemas import (
@@ -199,6 +200,11 @@ class RecordingPlanner(DemoSearchPlanner):
         return super().plan(point, task)
 
 
+class AlwaysFailingPlanner:
+    def plan(self, point, task):
+        raise ValueError(f"planner failed for {point.point_id}/{task.task_id}")
+
+
 def build_workflow(researcher=None, validator=None, planner=None, **config):
     researcher = researcher or RecordingTaskResearcher()
     return NoveltyWorkflow(
@@ -327,6 +333,61 @@ def test_each_task_is_isolated_and_fan_out_runs_concurrently():
         and call.search_plan.novelty_point_id == call.novelty_point.point_id
         for call in researcher.calls
     )
+
+
+def _six_task_planning_state():
+    paper = make_paper(claims=3)
+    points = DemoPointExtractor().extract(
+        build_paper_digest(paper), previous_brief=None, attempt=1
+    )
+    brief = DemoCoordinator().plan(paper, points=points, attempt=1)
+    plans = [
+        DemoSearchPlanner().plan(
+            next(point for point in points if point.point_id == task.novelty_point_id),
+            task,
+        )
+        for task in brief.research_tasks
+    ]
+    return {
+        "paper": paper,
+        "run_id": "run-plan-completeness",
+        "novelty_points": points,
+        "research_tasks": brief.research_tasks,
+        "all_research_tasks": brief.research_tasks,
+        "search_plans": plans,
+        "rounds": 1,
+    }
+
+
+def test_six_tasks_five_plans_fails_closed_before_research_dispatch():
+    workflow, _ = build_workflow()
+    state = _six_task_planning_state()
+    state["search_plans"] = state["search_plans"][:-1]
+
+    with pytest.raises(WorkflowExecutionError, match="completeness check failed"):
+        asyncio.run(workflow._dispatch_research_tasks(state))
+
+
+def test_six_tasks_six_plans_dispatches_all_tasks():
+    workflow, _ = build_workflow()
+    state = _six_task_planning_state()
+
+    sends = asyncio.run(workflow._dispatch_research_tasks(state))
+
+    assert len(sends) == 6
+
+
+def test_planner_failure_marks_runtime_failed(tmp_path):
+    workflow, _ = build_workflow(planner=AlwaysFailingPlanner(), max_rounds=1)
+
+    with pytest.raises(WorkflowExecutionError, match="completeness check failed"):
+        workflow.run(make_paper())
+
+    manifest_path = next(
+        (tmp_path / "outputs" / "paper-test" / "runtime").glob("*/manifest.json")
+    )
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    assert manifest["status"] == "FAILED"
 
 
 def test_validator_runs_once_after_current_round_fan_in():

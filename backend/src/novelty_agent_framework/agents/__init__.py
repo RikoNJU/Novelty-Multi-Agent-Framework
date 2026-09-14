@@ -19,7 +19,7 @@ from .point_extractor import (
     build_paper_digest,
 )
 from .research import NoveltyResearchAgent
-from .search_planner import SearchPlannerAgent
+from .search_planner import SearchPlannerAgent, SearchPlannerExhaustedError
 
 __all__ = [
     "DemoPointExtractor",
@@ -38,5 +38,6 @@ __all__ = [
     "NoveltyPointExtractorAgent",
     "NoveltyResearchAgent",
     "SearchPlannerAgent",
+    "SearchPlannerExhaustedError",
     "build_paper_digest",
 ]

@@ -4,7 +4,12 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from novelty_agent_framework.config import build_workflow, load_application_config
+from backend.env import ChatMessage, ModelCallOptions
+from novelty_agent_framework.config import (
+    build_model_registry,
+    build_workflow,
+    load_application_config,
+)
 from novelty_agent_framework.config.loader import (
     DEFAULT_MODELS_PATH,
     DEFAULT_PROJECT_PATH,
@@ -88,6 +93,22 @@ def test_default_text_llm_roles_are_unified_on_deepseek_v4_flash():
     assert aliases == {"deepseek-flash"}
     assert config.models["deepseek-flash"].model == "deepseek-ai/DeepSeek-V4-Flash"
     assert config.project.processing["ocr_model"] == "deepseek-ocr"
+
+
+def test_official_deepseek_profile_supports_enable_thinking():
+    config = load_application_config(environ={"DEEPSEEK_API_KEY": "test-key"})
+
+    profile = config.models["deepseek-official-flash"]
+    client = build_model_registry(config).client_for("deepseek-official-flash")
+    payload = client._build_payload(
+        [ChatMessage(role="user", content="hello")],
+        ModelCallOptions(extra_body={"enable_thinking": False}),
+    )
+
+    assert profile.base_url == "https://api.deepseek.com"
+    assert profile.model == "deepseek-v4-flash"
+    assert "enable_thinking" in profile.supported_params
+    assert payload["enable_thinking"] is False
 
 
 def test_search_planner_example_filename_is_canonical():

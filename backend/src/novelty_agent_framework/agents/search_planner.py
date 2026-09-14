@@ -31,6 +31,36 @@ from .search_plan_compiler import (
 )
 
 
+class SearchPlannerExhaustedError(ValueError):
+    """SearchPlanner exhausted its bounded retries with audit-ready context."""
+
+    def __init__(
+        self,
+        *,
+        novelty_point_id: str,
+        task_id: str,
+        attempts: int,
+        last_error: str,
+        failure_category: str,
+    ) -> None:
+        self.novelty_point_id = novelty_point_id
+        self.task_id = task_id
+        self.attempts = attempts
+        self.last_error = last_error
+        self.failure_category = failure_category
+        self.audit = {
+            "novelty_point_id": novelty_point_id,
+            "task_id": task_id,
+            "attempts": attempts,
+            "last_error": last_error,
+            "failure_category": failure_category,
+        }
+        super().__init__(
+            "SearchPlanner retries exhausted: "
+            + json.dumps(self.audit, ensure_ascii=False, sort_keys=True)
+        )
+
+
 class SearchPlannerAgent(SearchPlanner):
     """用 LLM 生成最小契约 SearchPlanDraft，并补全为运行时 SearchPlan。"""
 
@@ -70,7 +100,8 @@ class SearchPlannerAgent(SearchPlanner):
                 "ResearchTask.novelty_point_id 与 NoveltyPoint.point_id 不一致"
             )
 
-        last_error: ValueError | None = None
+        last_error: Exception | None = None
+        failure_category = "unknown"
         retry_reason = ""
         for attempt_index in range(self.max_attempts):
             try:
@@ -85,15 +116,22 @@ class SearchPlannerAgent(SearchPlanner):
                 )
             except SearchPlanCompilationError as exc:
                 last_error = exc
+                failure_category = "plan_compilation_error"
                 retry_reason = _format_compilation_feedback(exc)
             except ModelClientError as exc:
                 last_error = exc
+                failure_category = "model_client_error"
                 retry_reason = f"模型网络调用失败：{exc}（将重试）"
             except ValueError as exc:
                 last_error = exc
+                failure_category = "invalid_model_output"
                 retry_reason = f"格式校验失败：{exc}"
-        raise ValueError(
-            f"SearchPlanner {self.max_attempts} 次生成均失败：{last_error or '未知错误'}"
+        raise SearchPlannerExhaustedError(
+            novelty_point_id=point.point_id,
+            task_id=task.task_id,
+            attempts=self.max_attempts,
+            last_error=str(last_error or "未知错误"),
+            failure_category=failure_category,
         ) from last_error
 
     def _complete_json(
@@ -138,7 +176,7 @@ class SearchPlannerAgent(SearchPlanner):
         )
         try:
             return json.loads(response.content)
-        except json.JSONDecodeError as exc:
+        except (json.JSONDecodeError, TypeError) as exc:
             raise ValueError("SearchPlanner 返回内容不是合法 JSON") from exc
 
     def _client(self) -> ModelClient:

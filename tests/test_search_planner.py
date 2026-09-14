@@ -13,7 +13,10 @@ from types import SimpleNamespace
 import pytest
 
 from backend.env import ModelClientError, ModelResponse, PromptLibrary
-from novelty_agent_framework.agents import SearchPlannerAgent
+from novelty_agent_framework.agents import (
+    SearchPlannerAgent,
+    SearchPlannerExhaustedError,
+)
 from novelty_agent_framework.schemas import NoveltyPoint, ResearchTask, SearchPlan
 
 PROMPTS_ROOT = Path("backend/src/novelty_agent_framework/prompts")
@@ -222,10 +225,18 @@ def test_retries_after_model_network_error_then_succeeds() -> None:
 def test_invalid_schema_fails_after_one_retry() -> None:
     client = StubModelClient("{}", "{}")
 
-    with pytest.raises(ValueError, match="3 次生成均失败"):
+    with pytest.raises(SearchPlannerExhaustedError) as raised:
         build_agent(client).plan(make_point(), make_task())
 
     assert len(client.calls) == 3
+    assert raised.value.audit == {
+        "novelty_point_id": "NP-1",
+        "task_id": "T-1",
+        "attempts": 3,
+        "last_error": raised.value.last_error,
+        "failure_category": "invalid_model_output",
+    }
+    assert "SearchPlanDraft schema" in raised.value.last_error
 
 
 def test_legacy_v1_output_is_rejected() -> None:
@@ -238,7 +249,7 @@ def test_legacy_v1_output_is_rejected() -> None:
     }
     client = StubModelClient(json.dumps(legacy), json.dumps(legacy))
 
-    with pytest.raises(ValueError, match="3 次生成均失败"):
+    with pytest.raises(SearchPlannerExhaustedError):
         build_agent(client).plan(make_point(), task)
 
     assert len(client.calls) == 3

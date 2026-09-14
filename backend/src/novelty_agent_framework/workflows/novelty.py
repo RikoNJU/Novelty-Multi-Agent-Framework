@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import inspect
+import json
 import re
 import uuid
 from collections.abc import Awaitable
@@ -411,6 +412,9 @@ class NoveltyWorkflow:
         tasks = state.get("research_tasks", [])
         if not tasks:
             return "validate_evidence"
+        _require_complete_search_plans(
+            state.get("all_research_tasks", tasks), state.get("search_plans", [])
+        )
         points = {item.point_id: item for item in state.get("novelty_points", [])}
         plans = {
             (item.novelty_point_id, item.task_id): item
@@ -965,3 +969,27 @@ class NoveltyWorkflow:
 
 def _task_key(task: ResearchTask) -> tuple[str, str]:
     return task.novelty_point_id, task.task_id
+
+
+def _require_complete_search_plans(
+    tasks: list[ResearchTask], plans: list[SearchPlan]
+) -> None:
+    """Fail closed when planning fan-in does not exactly cover current tasks."""
+
+    expected = {_task_key(task) for task in tasks}
+    actual = {(plan.novelty_point_id, plan.task_id) for plan in plans}
+    missing = sorted(expected - actual)
+    unexpected = sorted(actual - expected)
+    duplicate_count = len(plans) - len(actual)
+    if missing or unexpected or duplicate_count:
+        detail = {
+            "expected_task_count": len(tasks),
+            "search_plan_count": len(plans),
+            "missing_task_keys": [list(key) for key in missing],
+            "unexpected_plan_keys": [list(key) for key in unexpected],
+            "duplicate_plan_count": duplicate_count,
+        }
+        raise WorkflowExecutionError(
+            "SearchPlan completeness check failed: "
+            + json.dumps(detail, ensure_ascii=False, sort_keys=True)
+        )
