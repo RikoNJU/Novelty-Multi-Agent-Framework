@@ -5,6 +5,9 @@ from __future__ import annotations
 
 import asyncio
 
+import httpx
+import pytest
+
 from novelty_agent_framework.agents import DemoQueryAdapter
 from novelty_agent_framework.agents.search_plan_compiler import build_fallback_chain
 from novelty_agent_framework.persistence import ReferenceStore
@@ -211,20 +214,27 @@ def test_all_zero_hits_exhausts_chain_without_error(tmp_path) -> None:
     assert bundle.source_records == []
 
 
-def test_search_failure_continues_chain_and_keeps_audit(tmp_path) -> None:
-    q_s1 = _query("C1 AND C2")
-
+@pytest.mark.parametrize(
+    "failure",
+    [
+        httpx.ReadTimeout(
+            "read timed out", request=httpx.Request("GET", "https://example.test")
+        ),
+        httpx.HTTPStatusError(
+            "service unavailable",
+            request=httpx.Request("GET", "https://example.test"),
+            response=httpx.Response(503),
+        ),
+    ],
+)
+def test_search_failure_stops_chain_and_keeps_audit(tmp_path, failure) -> None:
     class FlakySearcher(QuerySearcher):
         def __init__(self) -> None:
             super().__init__({})
-            self.first = True
 
         def search(self, query: str, *, limit: int = 10):
             self.calls.append(query)
-            if self.first:
-                self.first = False
-                raise RuntimeError("boom")
-            return []
+            raise failure
 
     searcher = FlakySearcher()
     source = RetrievalSource(
@@ -240,5 +250,37 @@ def test_search_failure_continues_chain_and_keeps_audit(tmp_path) -> None:
     bundle = asyncio.run(tool.ainvoke(make_request()))
 
     assert bundle.search_executions[0].status.value == "failed"
-    assert bundle.search_executions[0].error.startswith("RuntimeError")
-    assert len(bundle.search_executions) == 6
+    assert len(bundle.search_executions) == 1
+    assert len(searcher.calls) == 1
+
+
+def test_empty_then_provider_failure_stops_remaining_chain(tmp_path) -> None:
+    class EmptyThenFailureSearcher(QuerySearcher):
+        def __init__(self) -> None:
+            super().__init__({})
+
+        def search(self, query: str, *, limit: int = 10):
+            self.calls.append(query)
+            if len(self.calls) == 1:
+                return []
+            raise ConnectionError("provider unavailable")
+
+    searcher = EmptyThenFailureSearcher()
+    source = RetrievalSource(
+        source_id="demo",
+        query_adapter=DemoQueryAdapter(),
+        search_tool=searcher,
+    )
+    tool = StructuredSourceRetrievalTool(
+        source=source,
+        reference_store=ReferenceStore(tmp_path),
+    )
+
+    bundle = asyncio.run(tool.ainvoke(make_request()))
+
+    assert [item.status.value for item in bundle.search_executions] == [
+        "succeeded",
+        "failed",
+    ]
+    assert bundle.search_executions[0].results == []
+    assert len(searcher.calls) == 2

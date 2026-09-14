@@ -248,18 +248,26 @@ def test_tool_constructor_has_no_researcher_or_validator_dependencies():
     assert forbidden.isdisjoint(parameters)
 
 
-def test_search_execution_rank_empty_success_and_failure_recovery(tmp_path):
+def test_search_execution_failure_stops_chain(tmp_path):
     ordered = [hit("a", external_id="a-v2"), hit("b", external_id="b-v1")]
     tool, _, _, _, _ = build_tool(
         tmp_path, fail_first=True, values=ordered, full_text=False
     )
     bundle = asyncio.run(tool.ainvoke(request()))
-    assert [item.status.value for item in bundle.search_executions] == [
-        "failed",
-        "succeeded",
-    ]
+
+    assert [item.status.value for item in bundle.search_executions] == ["failed"]
     assert "secret-token" not in bundle.search_executions[0].error
-    assert [item.rank for item in bundle.search_executions[1].results] == [1, 2]
+
+
+def test_search_execution_rank_and_empty_success(tmp_path):
+    ordered = [hit("a", external_id="a-v2"), hit("b", external_id="b-v1")]
+    tool, _, _, _, _ = build_tool(
+        tmp_path, values=ordered, full_text=False
+    )
+    bundle = asyncio.run(tool.ainvoke(request()))
+
+    assert bundle.search_executions[0].status.value == "succeeded"
+    assert [item.rank for item in bundle.search_executions[0].results] == [1, 2]
 
     empty_tool, _, _, _, _ = build_tool(tmp_path / "empty", values=[])
     empty = asyncio.run(

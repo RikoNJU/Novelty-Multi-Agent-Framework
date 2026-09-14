@@ -399,6 +399,7 @@ class StructuredSourceRetrievalTool:
         warnings: list[str] = []
         base_hit: dict[str, bool] = {}
         execution_index = 0
+        provider_failed = False
 
         for variant in chain:
             if len(unique) >= self.candidate_limit:
@@ -454,7 +455,8 @@ class StructuredSourceRetrievalTool:
                             error=_safe_error(exc),
                         )
                     )
-                    continue
+                    provider_failed = True
+                    break
                 pending.append(
                     _PendingExecution(
                         execution_id=execution_id,
@@ -471,6 +473,8 @@ class StructuredSourceRetrievalTool:
                     unique.setdefault(_candidate_key(hit), hit)
                 if len(unique) >= self.candidate_limit:
                     break
+            if provider_failed:
+                break
 
         return (
             pending,
