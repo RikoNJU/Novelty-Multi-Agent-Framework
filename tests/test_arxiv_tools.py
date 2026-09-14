@@ -324,7 +324,7 @@ def test_successful_cooldown_probe_closes_circuit(monkeypatch):
     assert calls["n"] == 3
 
 
-def test_circuit_allows_only_one_half_open_probe():
+def test_circuit_half_open_probe_remains_single_flight():
     calls = {"n": 0}
     probe_started = threading.Event()
     release_probe = threading.Event()
@@ -351,11 +351,12 @@ def test_circuit_allows_only_one_half_open_probe():
     with ThreadPoolExecutor(max_workers=2) as executor:
         probe = executor.submit(tool.search, "probe")
         assert probe_started.wait(timeout=1.0)
-        with pytest.raises(ArxivCircuitOpenError):
-            tool.search("concurrent")
+        concurrent = executor.submit(tool.search, "concurrent")
+        assert calls["n"] == 2, "第二个请求必须在 single-flight gate 等待"
         release_probe.set()
         assert len(probe.result(timeout=1.0)) == 1
-    assert calls["n"] == 2
+        assert len(concurrent.result(timeout=1.0)) == 1
+    assert calls["n"] == 3
 
 
 def test_throttle_is_shared_across_tool_instances(monkeypatch):
@@ -381,6 +382,94 @@ def test_throttle_is_shared_across_tool_instances(monkeypatch):
 
     assert len(sleeps) == 1, "第二个实例必须等待第一个实例让出的间隔"
     assert sleeps[0] == pytest.approx(5.0, abs=0.25)
+
+
+def test_search_http_is_single_flight_across_tool_instances():
+    """ResearchTask 可并行，但跨 provider 实例最多一个 arXiv HTTP 在途。"""
+
+    first_started = threading.Event()
+    release_first = threading.Event()
+    second_started = threading.Event()
+    state_lock = threading.Lock()
+    in_flight = 0
+    max_in_flight = 0
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal in_flight, max_in_flight
+        query = request.url.params["search_query"]
+        with state_lock:
+            in_flight += 1
+            max_in_flight = max(max_in_flight, in_flight)
+        try:
+            if query == "first":
+                first_started.set()
+                assert release_first.wait(timeout=1.0)
+            else:
+                second_started.set()
+            return httpx.Response(200, text=ATOM_ENTRY)
+        finally:
+            with state_lock:
+                in_flight -= 1
+
+    first = ArxivSearchTool(client=make_client(handler), min_interval=0.0)
+    second = ArxivSearchTool(client=make_client(handler), min_interval=0.0)
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        first_future = executor.submit(first.search, "first")
+        assert first_started.wait(timeout=1.0)
+        second_future = executor.submit(second.search, "second")
+        assert not second_started.wait(timeout=0.05)
+        release_first.set()
+        assert len(first_future.result(timeout=1.0)) == 1
+        assert len(second_future.result(timeout=1.0)) == 1
+
+    assert max_in_flight == 1
+
+
+def test_single_flight_gate_covers_retry_wait_and_retry(monkeypatch):
+    """另一 execution 不能插入当前 execution 的 retry/backoff 生命周期。"""
+
+    retry_waiting = threading.Event()
+    release_retry = threading.Event()
+    second_started = threading.Event()
+    first_attempts = 0
+
+    def controlled_sleep(seconds: float) -> None:
+        assert seconds == pytest.approx(0.1)
+        retry_waiting.set()
+        assert release_retry.wait(timeout=1.0)
+
+    monkeypatch.setattr(arxiv_module.time, "sleep", controlled_sleep)
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal first_attempts
+        query = request.url.params["search_query"]
+        if query == "first":
+            first_attempts += 1
+            if first_attempts == 1:
+                return httpx.Response(500)
+        else:
+            second_started.set()
+        return httpx.Response(200, text=ATOM_ENTRY)
+
+    first = ArxivSearchTool(
+        client=make_client(handler),
+        min_interval=0.0,
+        max_retries=1,
+        max_retry_delay=0.1,
+    )
+    second = ArxivSearchTool(client=make_client(handler), min_interval=0.0)
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        first_future = executor.submit(first.search, "first")
+        assert retry_waiting.wait(timeout=1.0)
+        second_future = executor.submit(second.search, "second")
+        assert not second_started.wait(timeout=0.05)
+        release_retry.set()
+        assert len(first_future.result(timeout=1.0)) == 1
+        assert len(second_future.result(timeout=1.0)) == 1
+
+    assert first_attempts == 2
 
 
 def test_search_raises_on_4xx_without_retry():

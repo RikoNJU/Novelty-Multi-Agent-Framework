@@ -44,6 +44,13 @@ _VERSION_RE = re.compile(r"v\d+$")
 _THROTTLE_LOCK = threading.Lock()
 _LAST_REQUEST_AT = 0.0
 
+# arXiv HTTP single-flight gate。锁的持有范围不是单次 ``client.get``，而是
+# 一次 provider execution 的完整生命周期：检查 circuit、等待限速、HTTP、
+# retry/backoff，直到返回或最终失败。这样 ResearchTask 仍可并行执行，但任意
+# 时刻全进程最多只有一个 arXiv search request 在途，且另一条 execution 不会
+# 插入前一条 execution 的 retry 链。
+_REQUEST_GATE = threading.Lock()
+
 # 429 是限流（重试即可），5xx 是服务端瞬时故障；其余 4xx 是请求本身有问题。
 _RETRYABLE_STATUS = frozenset({429, 500, 502, 503, 504})
 _RETRYABLE_TRANSPORT_ERRORS = (
@@ -362,55 +369,56 @@ class ArxivSearchTool(SearchTool):
         )
 
     def _get(self, url: str) -> httpx.Response:
-        was_probe = self._acquire_circuit_permission()
-        deadline = time.monotonic() + self._retry_budget_seconds
-        last_retryable: Exception | None = None
-        # 每次尝试都重新节流：重试不能绕过速率限制，否则退避反而加剧限流。
-        for attempt in range(self._max_retries + 1):
-            if not self._throttle(deadline=deadline):
-                self._raise_retryable(
-                    last_retryable or self._budget_error(url),
-                    was_probe=was_probe,
-                )
-            remaining = deadline - time.monotonic()
-            if remaining <= 0:
-                self._raise_retryable(
-                    last_retryable or self._budget_error(url),
-                    was_probe=was_probe,
-                )
-            try:
-                response = self._client.get(
-                    url,
-                    timeout=min(self._timeout, remaining),
-                )
-                response.raise_for_status()
-                self._record_success()
-                return response
-            except httpx.HTTPStatusError as exc:
-                if not _is_retryable(response.status_code):
+        with _REQUEST_GATE:
+            was_probe = self._acquire_circuit_permission()
+            deadline = time.monotonic() + self._retry_budget_seconds
+            last_retryable: Exception | None = None
+            # 每次尝试都重新节流：重试不能绕过速率限制，否则退避反而加剧限流。
+            for attempt in range(self._max_retries + 1):
+                if not self._throttle(deadline=deadline):
+                    self._raise_retryable(
+                        last_retryable or self._budget_error(url),
+                        was_probe=was_probe,
+                    )
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    self._raise_retryable(
+                        last_retryable or self._budget_error(url),
+                        was_probe=was_probe,
+                    )
+                try:
+                    response = self._client.get(
+                        url,
+                        timeout=min(self._timeout, remaining),
+                    )
+                    response.raise_for_status()
                     self._record_success()
-                    raise
-                last_retryable = exc
-            except _RETRYABLE_TRANSPORT_ERRORS as exc:
-                last_retryable = exc
+                    return response
+                except httpx.HTTPStatusError as exc:
+                    if not _is_retryable(response.status_code):
+                        self._record_success()
+                        raise
+                    last_retryable = exc
+                except _RETRYABLE_TRANSPORT_ERRORS as exc:
+                    last_retryable = exc
 
-            if attempt >= self._max_retries:
-                self._raise_retryable(last_retryable, was_probe=was_probe)
-            remaining = deadline - time.monotonic()
-            delay = (
-                _retry_delay(
-                    response,
-                    attempt,
-                    max_delay=self._max_retry_delay,
+                if attempt >= self._max_retries:
+                    self._raise_retryable(last_retryable, was_probe=was_probe)
+                remaining = deadline - time.monotonic()
+                delay = (
+                    _retry_delay(
+                        response,
+                        attempt,
+                        max_delay=self._max_retry_delay,
+                    )
+                    if isinstance(last_retryable, httpx.HTTPStatusError)
+                    else min(2.0 * (2**attempt), self._max_retry_delay)
                 )
-                if isinstance(last_retryable, httpx.HTTPStatusError)
-                else min(2.0 * (2**attempt), self._max_retry_delay)
-            )
-            if remaining <= 0 or delay >= remaining:
-                if remaining > 0:
-                    time.sleep(remaining)
-                self._raise_retryable(last_retryable, was_probe=was_probe)
-            time.sleep(delay)
+                if remaining <= 0 or delay >= remaining:
+                    if remaining > 0:
+                        time.sleep(remaining)
+                    self._raise_retryable(last_retryable, was_probe=was_probe)
+                time.sleep(delay)
         raise AssertionError("unreachable")
 
 
