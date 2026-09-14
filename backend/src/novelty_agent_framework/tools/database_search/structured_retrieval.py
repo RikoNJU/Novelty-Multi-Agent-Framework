@@ -6,7 +6,7 @@ import asyncio
 import hashlib
 import inspect
 import re
-from collections.abc import Awaitable, Mapping, Sequence
+from collections.abc import Awaitable, Callable, Mapping, Sequence
 from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from typing import Any, TypeVar, cast
@@ -38,7 +38,17 @@ from .retrieval_sources import RetrievalSource
 T = TypeVar("T")
 
 
-async def _resolve(value: T | Awaitable[T]) -> T:
+async def _invoke_provider(
+    func: Callable[..., T | Awaitable[T]],
+    /,
+    *args: Any,
+    **kwargs: Any,
+) -> T:
+    """Invoke provider capabilities without running synchronous I/O on the loop."""
+
+    if inspect.iscoroutinefunction(func):
+        return await cast(Awaitable[T], func(*args, **kwargs))
+    value = await asyncio.to_thread(func, *args, **kwargs)
     if inspect.isawaitable(value):
         return await cast(Awaitable[T], value)
     return value
@@ -417,10 +427,10 @@ class StructuredSourceRetrievalTool:
                 )
                 try:
                     raw_hits = list(
-                        await _resolve(
-                            self.source.search_tool.search(
-                                query.query, limit=self.candidate_limit
-                            )
+                        await _invoke_provider(
+                            self.source.search_tool.search,
+                            query.query,
+                            limit=self.candidate_limit,
                         )
                     )
                     hits = [
@@ -479,8 +489,9 @@ class StructuredSourceRetrievalTool:
         async def enrich(key: str, hit: SearchHit) -> tuple[str, SearchHit, str | None]:
             async with semaphore:
                 try:
-                    metadata = await _resolve(
-                        self.source.metadata_tool.resolve(hit.document_id)
+                    metadata = await _invoke_provider(
+                        self.source.metadata_tool.resolve,
+                        hit.document_id,
                     )
                 except Exception as exc:
                     return key, hit, f"metadata {hit.document_id}: {_safe_error(exc)}"
@@ -511,8 +522,9 @@ class StructuredSourceRetrievalTool:
         async def fetch(key: str, hit: SearchHit) -> tuple[str, FullText | None, str | None]:
             async with semaphore:
                 try:
-                    value = await _resolve(
-                        self.source.full_text_tool.fetch(hit.document_id)
+                    value = await _invoke_provider(
+                        self.source.full_text_tool.fetch,
+                        hit.document_id,
                     )
                     return key, value, None
                 except Exception as exc:
