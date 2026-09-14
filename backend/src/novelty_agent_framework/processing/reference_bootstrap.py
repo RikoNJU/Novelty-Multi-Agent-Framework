@@ -161,12 +161,20 @@ class ReferenceBootstrapService:
             async with semaphore:
                 entry = await self._resolve_one(paper_id, reference_id, ordinal, raw, provider=provider, dry_run=dry_run)
                 existing[reference_id] = entry
-                current = ReferenceBootstrapManifest(subject_paper_id=paper_id, entries=sorted(existing.values(), key=lambda x: x.ordinal))
+                current = ReferenceBootstrapManifest(
+                    subject_paper_id=paper_id,
+                    references_digest=references_digest(references),
+                    entries=sorted(existing.values(), key=lambda x: x.ordinal),
+                )
                 self.store.persist_bootstrap(paper_id, current)
                 return entry
 
         entries = await asyncio.gather(*(run(i, raw) for i, raw in enumerate(references, 1)))
-        result = ReferenceBootstrapManifest(subject_paper_id=paper_id, entries=list(entries))
+        result = ReferenceBootstrapManifest(
+            subject_paper_id=paper_id,
+            references_digest=references_digest(references),
+            entries=list(entries),
+        )
         self.store.persist_bootstrap(paper_id, result)
         return result
 
@@ -242,6 +250,14 @@ class ReferenceBootstrapService:
 
 def _text(value: str) -> str:
     return re.sub(r"[^\w]+", "", unicodedata.normalize("NFKC", value).casefold())
+
+
+def references_digest(references: Iterable[str]) -> str:
+    """Return an order-sensitive identity for the PaperInput reference list."""
+
+    normalized = [" ".join(item.split()) for item in references]
+    payload = "\n".join(normalized).encode("utf-8")
+    return hashlib.sha256(payload).hexdigest()
 
 
 def _doi(value: str) -> str:

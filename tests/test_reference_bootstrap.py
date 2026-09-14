@@ -2,10 +2,16 @@ from __future__ import annotations
 
 import asyncio
 
+import pytest
+
 from novelty_agent_framework.persistence import ReferenceStore, SubjectReferenceStore
 from novelty_agent_framework.ports import SearchHit
-from novelty_agent_framework.processing.reference_bootstrap import CitationMatcher, CitationParser, ReferenceBootstrapService, ReferenceProviderRegistry
-from novelty_agent_framework.schemas import ArtifactNamespace, ExternalIdentifier, ParsedCitation, ReferenceNamespace, ReferenceSearchArguments, ResolutionStatus
+from novelty_agent_framework.processing.paper_input_bootstrap import (
+    PaperInputReferenceBootstrapError,
+    prepare_paper_input_references,
+)
+from novelty_agent_framework.processing.reference_bootstrap import CitationMatcher, CitationParser, ReferenceBootstrapService, ReferenceProviderRegistry, references_digest
+from novelty_agent_framework.schemas import ArtifactNamespace, ExternalIdentifier, PaperInput, ParsedCitation, ReferenceBootstrapManifest, ReferenceNamespace, ReferenceSearchArguments, ResolutionStatus
 from novelty_agent_framework.tools import ReferenceSearchTool
 from novelty_agent_framework.tools.database_search.providers.arxiv import ArxivSearchTool
 
@@ -152,3 +158,152 @@ def test_real_arxiv_provider_resolves_citation_through_bootstrap_service(tmp_pat
     assert result.entries[0].resolution_status == ResolutionStatus.RESOLVED
     assert result.entries[0].resolved_work_id
     assert SubjectReferenceStore(tmp_path).load_manifest("paper-3").works
+
+
+def _paper(references=None):
+    return PaperInput(
+        paper_id="paper-input-run",
+        title="Paper",
+        full_text="body",
+        references=references
+        or ["Alice Zhang. Deterministic Reference Resolution. 2024. doi:10.1000/demo"],
+    )
+
+
+def test_paper_input_bootstrap_refreshes_missing_cache_and_snapshots(tmp_path):
+    stable_root = tmp_path / "stable"
+    run_root = tmp_path / "runs" / "0001"
+    paper = _paper()
+    service = ReferenceBootstrapService(
+        ReferenceProviderRegistry([FakeProvider()]),
+        SubjectReferenceStore(stable_root),
+    )
+
+    manifest = prepare_paper_input_references(
+        paper,
+        stable_output_root=stable_root,
+        run_output_root=run_root,
+        service=service,
+    )
+
+    assert manifest.references_digest == references_digest(paper.references)
+    assert manifest.bootstrap_ready
+    assert (run_root / paper.paper_id / "paper-input" / "others" / "paper.json").is_file()
+    assert (run_root / paper.paper_id / "subject_references" / "bootstrap.json").is_file()
+    found = ReferenceSearchTool(SubjectReferenceStore(run_root)).search(
+        paper.paper_id,
+        ReferenceSearchArguments(query="bootstrap citation"),
+    )
+    assert found.results
+
+
+def test_ready_cache_is_reused_without_bootstrap_and_snapshot_is_independent(tmp_path):
+    stable_root = tmp_path / "stable"
+    paper = _paper()
+    first_service = ReferenceBootstrapService(
+        ReferenceProviderRegistry([FakeProvider()]),
+        SubjectReferenceStore(stable_root),
+    )
+    prepare_paper_input_references(
+        paper,
+        stable_output_root=stable_root,
+        run_output_root=tmp_path / "runs" / "0001",
+        service=first_service,
+    )
+
+    class MustNotRun:
+        async def bootstrap(self, *_args, **_kwargs):
+            raise AssertionError("ready cache should be reused")
+
+    run_root = tmp_path / "runs" / "0002"
+    prepare_paper_input_references(
+        paper,
+        stable_output_root=stable_root,
+        run_output_root=run_root,
+        service=MustNotRun(),
+    )
+    stable_bootstrap = (
+        stable_root / paper.paper_id / "subject_references" / "bootstrap.json"
+    )
+    stable_bootstrap.write_text("{}", encoding="utf-8")
+
+    assert SubjectReferenceStore(run_root).load_bootstrap(paper.paper_id).bootstrap_ready
+
+
+def test_reference_digest_mismatch_forces_bootstrap_refresh(tmp_path):
+    stable_root = tmp_path / "stable"
+    initial = _paper()
+    service = ReferenceBootstrapService(
+        ReferenceProviderRegistry([FakeProvider()]),
+        SubjectReferenceStore(stable_root),
+    )
+    prepare_paper_input_references(
+        initial,
+        stable_output_root=stable_root,
+        run_output_root=tmp_path / "runs" / "0001",
+        service=service,
+    )
+    changed = _paper(["A different citation without identifiers. 2020."])
+
+    refreshed = prepare_paper_input_references(
+        changed,
+        stable_output_root=stable_root,
+        run_output_root=tmp_path / "runs" / "0002",
+        service=service,
+    )
+
+    assert refreshed.references_digest == references_digest(changed.references)
+    assert refreshed.entries[0].raw_reference == changed.references[0]
+
+
+def test_force_option_refreshes_an_already_ready_cache(tmp_path):
+    stable_root = tmp_path / "stable"
+    paper = _paper()
+    delegate = ReferenceBootstrapService(
+        ReferenceProviderRegistry([FakeProvider()]),
+        SubjectReferenceStore(stable_root),
+    )
+    prepare_paper_input_references(
+        paper,
+        stable_output_root=stable_root,
+        run_output_root=tmp_path / "runs" / "0001",
+        service=delegate,
+    )
+
+    class RecordingService:
+        calls = 0
+
+        async def bootstrap(self, *args, **kwargs):
+            self.calls += 1
+            assert kwargs["force"] is True
+            return await delegate.bootstrap(*args, **kwargs)
+
+    recorder = RecordingService()
+    prepare_paper_input_references(
+        paper,
+        stable_output_root=stable_root,
+        run_output_root=tmp_path / "runs" / "0002",
+        force=True,
+        service=recorder,
+    )
+
+    assert recorder.calls == 1
+
+
+def test_non_ready_bootstrap_fails_paper_input_pipeline(tmp_path):
+    paper = _paper()
+
+    class IncompleteService:
+        async def bootstrap(self, paper_id, references, **_kwargs):
+            return ReferenceBootstrapManifest(
+                subject_paper_id=paper_id,
+                references_digest=references_digest(references),
+            )
+
+    with pytest.raises(PaperInputReferenceBootstrapError, match="not ready"):
+        prepare_paper_input_references(
+            paper,
+            stable_output_root=tmp_path / "stable",
+            run_output_root=tmp_path / "runs" / "0001",
+            service=IncompleteService(),
+        )

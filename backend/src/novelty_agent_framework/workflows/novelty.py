@@ -8,6 +8,8 @@ import json
 import re
 import uuid
 from collections.abc import Awaitable
+from dataclasses import replace
+from pathlib import Path
 from typing import Any, Callable, Mapping, TypeVar, cast
 
 from langgraph.graph import END, START, StateGraph
@@ -142,18 +144,33 @@ class NoveltyWorkflow:
         config: NoveltyWorkflowConfig | None = None,
         *,
         runtime_config: Mapping[str, Any] | None = None,
+        output_root: str | Path | None = None,
     ) -> None:
         self.services = services
         self.config = config or NoveltyWorkflowConfig()
+        self.output_root = Path(
+            output_root
+            if output_root is not None
+            else self.config.runtime_debug.output_root
+        )
+        if Path(self.config.runtime_debug.output_root) != self.output_root:
+            self.config = replace(
+                self.config,
+                runtime_debug=replace(
+                    self.config.runtime_debug, output_root=self.output_root
+                ),
+            )
         self.validator = services.validator or DefaultEvidenceValidator()
         self.point_extractor = services.point_extractor or DemoPointExtractor()
         evidence_builder = getattr(services.task_researcher, "evidence_builder", None)
         self.reference_store = (
             getattr(evidence_builder, "reference_store", None)
             or getattr(services.task_researcher, "reference_store", None)
-            or ReferenceStore()
+            or ReferenceStore(self.output_root)
         )
         self.runtime_config = dict(runtime_config or {})
+        self.last_runtime_run_id: str | None = None
+        self.last_rendered_report_path: str | None = None
         self.graph = self._build_graph()
 
     def _build_graph(self) -> Any:
@@ -281,7 +298,7 @@ class NoveltyWorkflow:
         return recorded
 
     async def _extract_points(self, state: NoveltyState) -> dict[str, Any]:
-        persist_workflow_input(state["paper"])
+        persist_workflow_input(state["paper"], output_root=self.output_root)
         try:
             digest = build_paper_digest(state["paper"])
             points_value = self.point_extractor.extract(
@@ -301,7 +318,9 @@ class NoveltyWorkflow:
         if not validated:
             raise WorkflowExecutionError("查新点提取结果为空")
         # 测试版持久化：写入该论文独立工作目录（后续可替换为数据库存储）
-        persist_novelty_points(state["paper"], validated)
+        persist_novelty_points(
+            state["paper"], validated, output_root=self.output_root
+        )
         missing_english = [
             point.point_id
             for point in validated
@@ -383,7 +402,10 @@ class NoveltyWorkflow:
                 steps_used=0,
             )
             persist_task_research_result(
-                state["subject_paper_id"], result, attempt=task.attempt
+                state["subject_paper_id"],
+                result,
+                attempt=task.attempt,
+                output_root=self.output_root,
             )
             return {
                 "search_plans": [],
@@ -426,6 +448,7 @@ class NoveltyWorkflow:
             search_plans=state.get("search_plans", []),
             rounds=state.get("rounds", 0),
             point_order=[item.point_id for item in state.get("novelty_points", [])],
+            output_root=self.output_root,
         )
         sends = []
         for task in tasks:
@@ -483,7 +506,10 @@ class NoveltyWorkflow:
                 )
             ]
         persist_task_research_result(
-            state["subject_paper_id"], result, attempt=task.attempt
+            state["subject_paper_id"],
+            result,
+            attempt=task.attempt,
+            output_root=self.output_root,
         )
         return {
             "task_research_results": [result],
@@ -500,6 +526,7 @@ class NoveltyWorkflow:
             search_plans=state.get("search_plans", []),
             rounds=state.get("rounds", 0),
             point_order=[item.point_id for item in state.get("novelty_points", [])],
+            output_root=self.output_root,
         )
         result_value = self.validator.validate(
             state.get("raw_evidence_cards", []),
@@ -673,8 +700,11 @@ class NoveltyWorkflow:
             review_decisions=audit_decisions,
             accepted_cards=accepted,
             rejected_evidence=rejected,
+            output_root=self.output_root,
         )
-        persist_novelty_reviews(state["paper"], reviews)
+        persist_novelty_reviews(
+            state["paper"], reviews, output_root=self.output_root
+        )
         return {
             "evidence_cards": accepted,
             "rejected_evidence": rejected,
@@ -753,6 +783,7 @@ class NoveltyWorkflow:
             review_decisions=(state.get("review_decisions") or None),
             accepted_cards=accepted,
             rejected_evidence=rejected,
+            output_root=self.output_root,
         )
         return {
             "evidence_cards": accepted,
@@ -854,7 +885,9 @@ class NoveltyWorkflow:
     async def _persist_report(self, state: NoveltyState) -> dict[str, Any]:
         """Persist the unchanged report after the non-blocking output gate."""
 
-        persist_report(state["paper"], state["report"])
+        persist_report(
+            state["paper"], state["report"], output_root=self.output_root
+        )
         return {}
 
     async def _render_report(self, state: NoveltyState) -> dict[str, Any]:
@@ -864,6 +897,7 @@ class NoveltyWorkflow:
             path = render_report(
                 output_format="markdown",
                 paper_name=state["paper"].paper_id,
+                output_root=self.output_root,
             )
         except (OSError, ValueError, RuntimeError) as exc:
             raise WorkflowExecutionError(f"Markdown 报告渲染失败：{exc}") from exc
@@ -879,6 +913,8 @@ class NoveltyWorkflow:
 
         paper_input = PaperInput.model_validate(paper)
         run_id = f"run-{uuid.uuid4().hex}"
+        self.last_runtime_run_id = run_id
+        self.last_rendered_report_path = None
         initial: NoveltyState = {
             "paper": paper_input,
             "run_id": run_id,
@@ -940,6 +976,7 @@ class NoveltyWorkflow:
                 rounds=final.get("rounds", 0),
                 report=final["report"],
             )
+            self.last_rendered_report_path = final.get("rendered_report_path")
         except (KeyboardInterrupt, asyncio.CancelledError) as exc:
             manager.finish_run("INTERRUPTED", error=exc)
             raise

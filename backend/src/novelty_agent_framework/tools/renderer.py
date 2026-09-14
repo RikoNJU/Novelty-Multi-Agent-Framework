@@ -33,6 +33,7 @@ class ReportRenderer(ABC):
         template_path: str | Path,
         paper_name: str,
         save_path: str | Path,
+        output_root: str | Path = DEFAULT_OUTPUTS_DIR,
     ) -> Path:
         """读取 paper 工作目录并将报告写入 save_path。"""
 
@@ -48,12 +49,13 @@ class MarkdownRenderer(ReportRenderer):
         template_path: str | Path,
         paper_name: str,
         save_path: str | Path,
+        output_root: str | Path = DEFAULT_OUTPUTS_DIR,
     ) -> Path:
         template = Path(template_path)
         if not template.is_file():
             raise ReportRenderError(f"Markdown 模板不存在：{template}")
 
-        workspace = paper_workspace(paper_name)
+        workspace = paper_workspace(paper_name, output_root=output_root)
         data = _load_workspace_data(workspace)
         context = _build_markdown_context(paper_name, data)
         rendered = _render_template(template.read_text(encoding="utf-8"), context)
@@ -97,6 +99,7 @@ def render_report(
     template_path: str | Path | None = None,
     paper_name: str = "",
     save_path: str | Path | None = None,
+    output_root: str | Path = DEFAULT_OUTPUTS_DIR,
 ) -> Path:
     """统一报告渲染入口。
 
@@ -107,7 +110,7 @@ def render_report(
     if not paper_name.strip():
         raise ReportRenderError("paper_name 不能为空")
     renderer = RendererFactory.create(output_format)
-    workspace = paper_workspace(paper_name)
+    workspace = paper_workspace(paper_name, output_root=output_root)
     template = Path(template_path) if template_path else _default_template(renderer)
     destination = (
         Path(save_path)
@@ -118,6 +121,7 @@ def render_report(
         template_path=template,
         paper_name=paper_name,
         save_path=destination,
+        output_root=output_root,
     )
 
 

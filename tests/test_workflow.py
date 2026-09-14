@@ -88,13 +88,19 @@ def make_card(
 
 
 class RecordingTaskResearcher:
-    def __init__(self, *, fail_task: str | None = None, first_round_empty=False):
+    def __init__(
+        self,
+        *,
+        fail_task: str | None = None,
+        first_round_empty=False,
+        output_root: str | Path = "outputs",
+    ):
         self.fail_task = fail_task
         self.first_round_empty = first_round_empty
         self.calls: list[TaskResearchRequest] = []
         self.active = 0
         self.max_active = 0
-        self.reference_store = ReferenceStore()
+        self.reference_store = ReferenceStore(output_root)
         self.store_lock = threading.RLock()
 
     async def ainvoke(self, request: TaskResearchRequest) -> TaskResearchResult:
@@ -206,7 +212,8 @@ class AlwaysFailingPlanner:
 
 
 def build_workflow(researcher=None, validator=None, planner=None, **config):
-    researcher = researcher or RecordingTaskResearcher()
+    output_root = config.pop("output_root", "outputs")
+    researcher = researcher or RecordingTaskResearcher(output_root=output_root)
     return NoveltyWorkflow(
         NoveltyWorkflowServices(
             coordinator=DemoCoordinator(),
@@ -216,6 +223,7 @@ def build_workflow(researcher=None, validator=None, planner=None, **config):
             validator=validator,
         ),
         NoveltyWorkflowConfig(**config),
+        output_root=output_root,
     ), researcher
 
 
@@ -388,6 +396,25 @@ def test_planner_failure_marks_runtime_failed(tmp_path):
     )
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     assert manifest["status"] == "FAILED"
+
+
+def test_sequential_runs_with_same_paper_id_do_not_overwrite(tmp_path):
+    first_root = tmp_path / "runs" / "0001"
+    second_root = tmp_path / "runs" / "0002"
+    first, _ = build_workflow(output_root=first_root, max_rounds=1)
+    second, _ = build_workflow(output_root=second_root, max_rounds=1)
+
+    first.run(make_paper().model_copy(update={"title": "Run A"}))
+    second.run(make_paper().model_copy(update={"title": "Run B"}))
+
+    relative = Path("paper-test/paper-input/others/paper.json")
+    first_paper = json.loads((first_root / relative).read_text(encoding="utf-8"))
+    second_paper = json.loads((second_root / relative).read_text(encoding="utf-8"))
+    assert first_paper["title"] == "Run A"
+    assert second_paper["title"] == "Run B"
+    assert not (tmp_path / "outputs" / "paper-test").exists()
+    assert next((first_root / "paper-test/runtime").iterdir()).is_dir()
+    assert (first_root / "paper-test/report/paper-test-report.md").is_file()
 
 
 def test_validator_runs_once_after_current_round_fan_in():

@@ -2,18 +2,61 @@ from __future__ import annotations
 
 import json
 import sys
+from concurrent.futures import ThreadPoolExecutor
 from types import SimpleNamespace
+
+import pytest
 
 from scripts import run_full_workflow_live as live
 
 
-def test_paper_input_entrypoint_passes_stable_identity(tmp_path, monkeypatch) -> None:
+def test_run_directory_allocation_starts_at_0001_and_increments(tmp_path):
+    root = tmp_path / "runs"
+
+    first_number, first = live.allocate_run_directory(root)
+    second_number, second = live.allocate_run_directory(root)
+
+    assert (first_number, first.name) == (1, "0001")
+    assert (second_number, second.name) == (2, "0002")
+
+
+def test_run_directory_allocation_ignores_non_numeric_directories(tmp_path):
+    root = tmp_path / "runs"
+    (root / "0001").mkdir(parents=True)
+    (root / "0002").mkdir()
+    (root / "notes").mkdir()
+
+    number, path = live.allocate_run_directory(root)
+
+    assert (number, path.name) == (3, "0003")
+
+
+def test_explicit_run_number_never_overwrites(tmp_path):
+    root = tmp_path / "runs"
+    number, path = live.allocate_run_directory(root, 4)
+
+    assert (number, path.name) == (4, "0004")
+    with pytest.raises(FileExistsError):
+        live.allocate_run_directory(root, 4)
+
+
+def test_concurrent_run_directory_allocation_is_unique(tmp_path):
+    root = tmp_path / "runs"
+
+    with ThreadPoolExecutor(max_workers=8) as executor:
+        allocated = list(executor.map(lambda _: live.allocate_run_directory(root), range(8)))
+
+    assert sorted(number for number, _ in allocated) == list(range(1, 9))
+    assert len({path for _, path in allocated}) == 8
+
+
+def test_paper_input_entrypoint_uses_numbered_workspace(tmp_path, monkeypatch) -> None:
     paper_json = tmp_path / "paper.json"
     paper_json.write_text(
         json.dumps({"paper_id": "paper-1", "title": "Paper", "full_text": "body"}),
         encoding="utf-8",
     )
-    output = tmp_path / "result.json"
+    runs_root = tmp_path / "runs"
     captured = {}
 
     class Result:
@@ -21,6 +64,9 @@ def test_paper_input_entrypoint_passes_stable_identity(tmp_path, monkeypatch) ->
             return json.dumps({"ok": True})
 
     class Workflow:
+        last_runtime_run_id = "run-runtime-id"
+        last_rendered_report_path = "/run/0001/paper-1/report/report.md"
+
         def run(self, paper, *, run_identity=None):
             captured["paper"] = paper
             captured["run_identity"] = run_identity
@@ -33,7 +79,17 @@ def test_paper_input_entrypoint_passes_stable_identity(tmp_path, monkeypatch) ->
     )
     monkeypatch.setattr(live, "_load_dev_env", lambda: None)
     monkeypatch.setattr(live, "load_application_config", lambda: config)
-    monkeypatch.setattr(live, "build_standard_full_workflow", lambda _config: Workflow())
+
+    def build(_config, *, output_root):
+        captured["output_root"] = output_root
+        return Workflow()
+
+    monkeypatch.setattr(live, "build_standard_full_workflow", build)
+    monkeypatch.setattr(
+        live,
+        "prepare_paper_input_references",
+        lambda paper, **kwargs: captured.update(bootstrap=(paper, kwargs)),
+    )
     monkeypatch.setattr(
         sys,
         "argv",
@@ -41,16 +97,25 @@ def test_paper_input_entrypoint_passes_stable_identity(tmp_path, monkeypatch) ->
             "run_full_workflow_live.py",
             "--paper-json",
             str(paper_json),
-            "--output",
-            str(output),
+            "--runs-root",
+            str(runs_root),
         ],
     )
 
     live.main()
 
+    run_dir = runs_root / "0001"
     identity = captured["run_identity"]
+    manifest = json.loads((run_dir / "run.json").read_text(encoding="utf-8"))
     assert captured["paper"].paper_id == "paper-1"
+    assert captured["output_root"] == run_dir.resolve()
+    assert captured["bootstrap"][1]["run_output_root"] == run_dir.resolve()
     assert identity["entrypoint"] == "paper_input"
+    assert identity["run_number"] == 1
     assert len(identity["input_identity"]["paper_sha256"]) == 64
-    assert identity["input_identity"]["novelty_point_id"] is None
-    assert json.loads(output.read_text(encoding="utf-8")) == {"ok": True}
+    assert json.loads((run_dir / "result.json").read_text(encoding="utf-8")) == {
+        "ok": True
+    }
+    assert manifest["status"] == "SUCCESS"
+    assert manifest["runtime_run_id"] == "run-runtime-id"
+    assert manifest["result_path"] == str((run_dir / "result.json").resolve())

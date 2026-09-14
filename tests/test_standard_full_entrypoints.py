@@ -25,9 +25,15 @@ def test_paper_input_pipeline_fails_before_main_workflow(tmp_path, monkeypatch):
         json.dumps({"paper_id": "paper-1", "title": "Paper", "full_text": "body"}),
         encoding="utf-8",
     )
-    output = tmp_path / "result.json"
+    runs_root = tmp_path / "runs"
+    bootstrap_calls = []
     monkeypatch.setattr(live, "_load_dev_env", lambda: None)
     monkeypatch.setattr(live, "load_application_config", _disabled_config)
+    monkeypatch.setattr(
+        live,
+        "prepare_paper_input_references",
+        lambda *_args, **_kwargs: bootstrap_calls.append(True),
+    )
     monkeypatch.setattr(
         sys,
         "argv",
@@ -35,8 +41,10 @@ def test_paper_input_pipeline_fails_before_main_workflow(tmp_path, monkeypatch):
             "run_full_workflow_live.py",
             "--paper-json",
             str(paper_json),
-            "--output",
-            str(output),
+            "--runs-root",
+            str(runs_root),
+            "--run-number",
+            "1",
         ],
     )
 
@@ -45,7 +53,11 @@ def test_paper_input_pipeline_fails_before_main_workflow(tmp_path, monkeypatch):
     ):
         live.main()
 
-    assert not output.exists()
+    manifest = json.loads((runs_root / "0001" / "run.json").read_text())
+    assert manifest["status"] == "FAILED"
+    assert manifest["runtime_run_id"] is None
+    assert not (runs_root / "0001" / "result.json").exists()
+    assert bootstrap_calls == []
 
 
 def test_full_pipeline_fails_before_paper_processing(tmp_path, monkeypatch):

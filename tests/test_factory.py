@@ -106,6 +106,24 @@ def test_build_workflow_env_overrides_role_model(monkeypatch):
     assert workflow.services.coordinator._client().profile.model == "model-b"
 
 
+def test_typed_workflow_output_root_reaches_all_stores_and_runtime(tmp_path):
+    output_root = tmp_path / "runs" / "0001"
+    workflow = build_workflow(load_application_config(), output_root=output_root)
+    researcher = workflow.services.task_researcher
+
+    assert workflow.output_root == output_root
+    assert workflow.config.runtime_debug.output_root == output_root
+    assert workflow.runtime_config["project"]["runtime_debug"]["output_root"] == str(
+        output_root
+    )
+    assert researcher.evidence_builder.reference_store.output_root == output_root
+    assert researcher.tools.get("reference_search").store.output_root == output_root
+    assert (
+        researcher.tools.get("database_search").reference_store.output_root
+        == output_root
+    )
+
+
 def test_reviewer_composition_root_respects_enabled_switch():
     enabled = load_application_config()
     reviewer = build_workflow(enabled).services.reviewer

@@ -36,7 +36,7 @@ from novelty_agent_framework.tools.renderer import (
 )
 
 
-def seed_workspace() -> None:
+def seed_workspace(output_root: str | Path = "outputs") -> None:
     paper = PaperInput(
         paper_id="renderer-paper",
         title="Renderer Test | Paper",
@@ -103,8 +103,8 @@ def seed_workspace() -> None:
             )
         ],
     )
-    persist_workflow_input(paper)
-    persist_novelty_points(paper, [point])
+    persist_workflow_input(paper, output_root=output_root)
+    persist_novelty_points(paper, [point], output_root=output_root)
     persist_retrieval_plans(
         paper,
         [task],
@@ -121,14 +121,16 @@ def seed_workspace() -> None:
         ],
         rounds=1,
         point_order=["NP-1"],
+        output_root=output_root,
     )
     persist_evidence_cards(
         paper,
         raw_cards=[card],
         accepted_cards=[card],
         rejected_evidence=[],
+        output_root=output_root,
     )
-    persist_report(paper, report)
+    persist_report(paper, report, output_root=output_root)
 
 
 def test_markdown_renderer_reads_workspace_and_uses_default_paths(
@@ -219,3 +221,14 @@ def test_custom_template_and_save_path(
     assert json.loads(
         (tmp_path / "outputs/renderer-paper/report.json").read_text(encoding="utf-8")
     )["paper_id"] == "renderer-paper"
+
+
+def test_renderer_reads_only_the_requested_output_root(tmp_path: Path) -> None:
+    run_root = tmp_path / "runs" / "0002"
+    seed_workspace(run_root)
+
+    path = render_report(paper_name="renderer-paper", output_root=run_root)
+
+    assert path == run_root / "renderer-paper/report/renderer-paper-report.md"
+    assert path.is_file()
+    assert not (tmp_path / "outputs" / "renderer-paper").exists()

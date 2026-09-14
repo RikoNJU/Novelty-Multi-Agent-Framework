@@ -2,6 +2,10 @@
 
 from .mineru_parser import MineruError, MineruParser, MineruSettings
 from .paper_processor import DefaultPaperProcessor
+from .paper_input_bootstrap import (
+    PaperInputReferenceBootstrapError,
+    prepare_paper_input_references,
+)
 from .reference_bootstrap import (
     CitationMatcher,
     CitationParser,
@@ -17,9 +21,11 @@ __all__ = [
     "MineruError",
     "MineruParser",
     "MineruSettings",
+    "PaperInputReferenceBootstrapError",
     "ReferenceBootstrapService",
     "ReferenceProviderRegistry",
     "TextifyResult",
     "assemble_marked_text",
+    "prepare_paper_input_references",
     "textify",
 ]

@@ -236,16 +236,19 @@ def build_workflow(
     *,
     config_path: str | Path | None = None,
     source_registry: RetrievalSourceRegistry | None = None,
+    output_root: str | Path | None = None,
 ) -> NoveltyWorkflow:
     """从配置构建完整工作流；``config`` 优先于 ``config_path``。"""
 
     if isinstance(config, ApplicationConfig):
         return _build_workflow_from_application_config(
-            config, source_registry=source_registry
+            config, source_registry=source_registry, output_root=output_root
         )
     if config is None and config_path is None:
         return _build_workflow_from_application_config(
-            load_application_config(), source_registry=source_registry
+            load_application_config(),
+            source_registry=source_registry,
+            output_root=output_root,
         )
 
     raw = (
@@ -293,7 +296,12 @@ def build_workflow(
     web_cfg = runtime_tools.get("web_search", {})
     browser_cfg = runtime_tools.get("browser", {})
     reader_cfg = runtime_tools.get("reader", {})
-    store = ReferenceStore()
+    resolved_output_root = Path(
+        output_root
+        if output_root is not None
+        else raw.get("runtime_debug", {}).get("output_root", "outputs")
+    )
+    store = ReferenceStore(resolved_output_root)
     reviewer = (
         NoveltyEvidenceReviewer(
             prompts=prompts,
@@ -326,7 +334,7 @@ def build_workflow(
         else None
     )
     researcher_tools: list[Any] = [
-        ReferenceSearchTool(SubjectReferenceStore()),
+        ReferenceSearchTool(SubjectReferenceStore(resolved_output_root)),
         build_database_search_tool(
             retrieval_cfg,
             reference_store=store,
@@ -426,9 +434,7 @@ def build_workflow(
             ),
             runtime_debug=RuntimeDebugConfig(
                 enabled=bool(raw.get("runtime_debug", {}).get("enabled", True)),
-                output_root=Path(
-                    raw.get("runtime_debug", {}).get("output_root", "outputs")
-                ),
+                output_root=resolved_output_root,
                 archive_root=Path(
                     raw.get("runtime_debug", {}).get(
                         "archive_root", "docs/experiments/runtime"
@@ -443,7 +449,8 @@ def build_workflow(
                 ),
             ),
         ),
-        runtime_config=raw,
+        runtime_config=_runtime_config_with_output_root(raw, resolved_output_root),
+        output_root=resolved_output_root,
     )
 
 
@@ -457,6 +464,7 @@ def build_standard_full_workflow(
     config: ApplicationConfig,
     *,
     source_registry: RetrievalSourceRegistry | None = None,
+    output_root: str | Path | None = None,
 ) -> NoveltyWorkflow:
     """构造标准 Full/PaperInput workflow，并强制 Reviewer 装配契约。"""
 
@@ -470,7 +478,9 @@ def build_standard_full_workflow(
             "reviewer_required: Standard full workflow requires Reviewer, "
             "but reviewer.enabled=false"
         )
-    workflow = build_workflow(config, source_registry=source_registry)
+    workflow = build_workflow(
+        config, source_registry=source_registry, output_root=output_root
+    )
     if workflow.services.reviewer is None:
         raise ReviewerRequiredError(
             "reviewer_required: Standard full workflow requires Reviewer, "
@@ -483,6 +493,7 @@ def _build_workflow_from_application_config(
     config: ApplicationConfig,
     *,
     source_registry: RetrievalSourceRegistry | None = None,
+    output_root: str | Path | None = None,
 ) -> NoveltyWorkflow:
     """Build the production workflow directly from validated typed fields."""
 
@@ -535,7 +546,12 @@ def _build_workflow_from_application_config(
     web = config.researcher.tools.web_search
     browser = config.researcher.tools.browser
     reader = config.researcher.tools.reader
-    store = ReferenceStore()
+    resolved_output_root = Path(
+        output_root
+        if output_root is not None
+        else config.project.runtime_debug.output_root
+    )
+    store = ReferenceStore(resolved_output_root)
     reviewer = (
         NoveltyEvidenceReviewer(
             prompts=prompts,
@@ -563,7 +579,7 @@ def _build_workflow_from_application_config(
         else None
     )
     researcher_tools: list[Any] = [
-        ReferenceSearchTool(SubjectReferenceStore()),
+        ReferenceSearchTool(SubjectReferenceStore(resolved_output_root)),
         build_database_search_tool(
             retrieval,
             reference_store=store,
@@ -638,7 +654,7 @@ def _build_workflow_from_application_config(
             candidate_limit_per_task=database.candidate_limit_per_task,
             runtime_debug=RuntimeDebugConfig(
                 enabled=runtime_debug.enabled,
-                output_root=Path(runtime_debug.output_root),
+                output_root=resolved_output_root,
                 archive_root=Path(runtime_debug.archive_root),
                 max_inline_bytes=runtime_debug.max_inline_bytes,
                 llm_pricing_path=(
@@ -648,8 +664,26 @@ def _build_workflow_from_application_config(
                 ),
             ),
         ),
-        runtime_config=config.model_dump(mode="json"),
+        runtime_config=_runtime_config_with_output_root(
+            config.model_dump(mode="json"), resolved_output_root
+        ),
+        output_root=resolved_output_root,
     )
+
+
+def _runtime_config_with_output_root(
+    config: Mapping[str, Any], output_root: Path
+) -> dict[str, Any]:
+    """Keep Runtime Debug's captured config aligned with its physical workspace."""
+
+    payload = copy.deepcopy(dict(config))
+    if isinstance(payload.get("project"), dict):
+        payload["project"].setdefault("runtime_debug", {})["output_root"] = str(
+            output_root
+        )
+    else:
+        payload.setdefault("runtime_debug", {})["output_root"] = str(output_root)
+    return payload
 
 
 def _normalized_retrieval_config(config: Mapping[str, Any]) -> dict[str, Any]:

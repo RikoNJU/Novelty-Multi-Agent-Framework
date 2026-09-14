@@ -59,9 +59,9 @@ class ReferenceBootstrapEntry(StrictModel):
 class ReferenceBootstrapManifest(StrictModel):
     schema_version: NonEmptyStr = "1.0"
     subject_paper_id: NonEmptyStr
+    references_digest: str | None = None
     entries: list[ReferenceBootstrapEntry] = Field(default_factory=list)
 
     @property
     def bootstrap_ready(self) -> bool:
         return all(entry.attempts for entry in self.entries)
-
