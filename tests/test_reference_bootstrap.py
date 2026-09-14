@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import threading
 
 import pytest
 
@@ -158,6 +159,91 @@ def test_real_arxiv_provider_resolves_citation_through_bootstrap_service(tmp_pat
     assert result.entries[0].resolution_status == ResolutionStatus.RESOLVED
     assert result.entries[0].resolved_work_id
     assert SubjectReferenceStore(tmp_path).load_manifest("paper-3").works
+
+
+def test_sync_identifier_provider_does_not_block_bootstrap_event_loop(tmp_path):
+    provider_threads: list[int] = []
+    release = threading.Event()
+    released_by_event_loop = False
+
+    class BlockingProvider:
+        source_id = "blocking"
+
+        def resolve_identifier(self, identifier):
+            provider_threads.append(threading.get_ident())
+            nonlocal released_by_event_loop
+            released_by_event_loop = release.wait(timeout=0.5)
+            return _arxiv_hit(identifier.value)
+
+    service = ReferenceBootstrapService(
+        ReferenceProviderRegistry([BlockingProvider()]),
+        SubjectReferenceStore(tmp_path),
+    )
+
+    async def run() -> int:
+        event_loop_thread = threading.get_ident()
+        task = asyncio.create_task(
+            service.bootstrap(
+                "paper-async-id",
+                ["Vaswani et al. Attention Is All You Need. 2017. arXiv:1706.03762"],
+            )
+        )
+        await asyncio.sleep(0.01)
+        release.set()
+        result = await task
+        assert result.entries[0].resolution_status == ResolutionStatus.RESOLVED
+        return event_loop_thread
+
+    event_loop_thread = asyncio.run(run())
+
+    assert released_by_event_loop is True
+    assert provider_threads and provider_threads[0] != event_loop_thread
+
+
+def test_sync_known_item_provider_does_not_block_bootstrap_event_loop(tmp_path):
+    provider_threads: list[int] = []
+    release = threading.Event()
+    released_by_event_loop = False
+
+    class BlockingProvider:
+        source_id = "blocking"
+
+        def search_known_item(self, citation, *, limit=5):
+            provider_threads.append(threading.get_ident())
+            nonlocal released_by_event_loop
+            released_by_event_loop = release.wait(timeout=0.5)
+            return [
+                SearchHit(
+                    document_id="1706.03762",
+                    title=citation.title or "Attention Is All You Need",
+                    year=citation.year,
+                    source_id="blocking",
+                )
+            ]
+
+    service = ReferenceBootstrapService(
+        ReferenceProviderRegistry([BlockingProvider()]),
+        SubjectReferenceStore(tmp_path),
+    )
+
+    async def run() -> int:
+        event_loop_thread = threading.get_ident()
+        task = asyncio.create_task(
+            service.bootstrap(
+                "paper-async-title",
+                ["Vaswani et al. Attention Is All You Need. 2017."],
+            )
+        )
+        await asyncio.sleep(0.01)
+        release.set()
+        result = await task
+        assert result.entries[0].resolution_status == ResolutionStatus.RESOLVED
+        return event_loop_thread
+
+    event_loop_thread = asyncio.run(run())
+
+    assert released_by_event_loop is True
+    assert provider_threads and provider_threads[0] != event_loop_thread
 
 
 def _paper(references=None):

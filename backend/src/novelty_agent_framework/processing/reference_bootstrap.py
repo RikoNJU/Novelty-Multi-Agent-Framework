@@ -4,13 +4,12 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
-import inspect
 import re
 import unicodedata
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from difflib import SequenceMatcher
-from typing import Any, Awaitable, Iterable, TypeVar, cast
+from typing import Any, Iterable
 
 from ..persistence import SubjectReferenceStore
 from ..ports import SearchHit
@@ -26,13 +25,10 @@ from ..schemas import (
     ReferenceResolveAttempt,
     ResolutionStatus,
 )
-from ..tools.database_search.structured_retrieval import StructuredRetrievalAdapter
-
-T = TypeVar("T")
-
-
-async def _await(value: T | Awaitable[T]) -> T:
-    return await cast(Awaitable[T], value) if inspect.isawaitable(value) else value
+from ..tools.database_search.structured_retrieval import (
+    StructuredRetrievalAdapter,
+    _invoke_provider,
+)
 
 
 class CitationParser:
@@ -194,7 +190,10 @@ class ReferenceBootstrapService:
                     if resolver is None:
                         continue
                     try:
-                        hit = await _await(resolver(ExternalIdentifier(namespace=namespace, value=value)))
+                        hit = await _invoke_provider(
+                            resolver,
+                            ExternalIdentifier(namespace=namespace, value=value),
+                        )
                     except Exception as exc:
                         attempts.append(self._attempt(reference_id, provider_id, f"{namespace}_exact", value, "failed", error=f"{type(exc).__name__}: {exc}"[:1000]))
                         continue
@@ -209,7 +208,7 @@ class ReferenceBootstrapService:
                 if search is None:
                     continue
                 try:
-                    hits = list(await _await(search(parsed, limit=5)))
+                    hits = list(await _invoke_provider(search, parsed, limit=5))
                 except Exception as exc:
                     attempts.append(self._attempt(reference_id, provider_id, "known_item", parsed.title or raw, "failed", error=f"{type(exc).__name__}: {exc}"[:1000]))
                     continue
