@@ -1,0 +1,114 @@
+{
+  "search_plans": [
+    {
+      "concepts": [
+        {
+          "alias": [
+            "fine- and coarse-grained attention Transformer",
+            "music Transformer with hybrid attention"
+          ],
+          "concept_id": "C1",
+          "exclude": [],
+          "importance": 3,
+          "name": "Museformer",
+          "role": "method",
+          "terms": [
+            "Museformer",
+            "fine-coarse attention Transformer"
+          ]
+        },
+        {
+          "alias": [
+            "local bar attention",
+            "fine attention over relevant bars"
+          ],
+          "concept_id": "C2",
+          "exclude": [],
+          "importance": 3,
+          "name": "fine-grained attention",
+          "role": "feature",
+          "terms": [
+            "fine-grained attention",
+            "bar-level attention"
+          ]
+        },
+        {
+          "alias": [
+            "global summary attention",
+            "coarse attention over bar summaries"
+          ],
+          "concept_id": "C3",
+          "exclude": [],
+          "importance": 3,
+          "name": "coarse-grained attention",
+          "role": "feature",
+          "terms": [
+            "coarse-grained attention",
+            "bar summarization attention"
+          ]
+        },
+        {
+          "alias": [
+            "musical structure",
+            "bar-level structure"
+          ],
+          "concept_id": "C4",
+          "exclude": [],
+          "importance": 2,
+          "name": "music bars",
+          "role": "object",
+          "terms": [
+            "music bars",
+            "music structure"
+          ]
+        },
+        {
+          "alias": [
+            "music composition",
+            "melody generation"
+          ],
+          "concept_id": "C5",
+          "exclude": [
+            "speech synthesis",
+            "image generation"
+          ],
+          "importance": 1,
+          "name": "music generation",
+          "role": "setting",
+          "terms": [
+            "music generation",
+            "symbolic music generation"
+          ]
+        }
+      ],
+      "novelty_point_id": "NP-1",
+      "strategies": [
+        {
+          "description": "Museformer AND fine-grained attention AND coarse-grained attention",
+          "expression": "C1 AND C2 AND C3",
+          "level": "strict",
+          "strategy_id": "S1",
+          "use_alias": false,
+          "use_exclude": true
+        },
+        {
+          "description": "fine-grained attention AND coarse-grained attention AND music generation",
+          "expression": "C2 AND C3 AND C5",
+          "level": "medium",
+          "strategy_id": "S2",
+          "use_alias": true,
+          "use_exclude": true
+        },
+        {
+          "description": "Museformer OR music generation",
+          "expression": "C1 OR C5",
+          "level": "broad",
+          "strategy_id": "S3",
+          "use_alias": true,
+          "use_exclude": true
+        }
+      ],
+      "task_id": "T-2"
+    }
+  ]
+}

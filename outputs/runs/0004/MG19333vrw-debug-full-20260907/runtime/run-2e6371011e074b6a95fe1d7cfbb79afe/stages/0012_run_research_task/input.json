@@ -1,0 +1,144 @@
+{
+  "current_point": {
+    "claim": "提出一种结合细粒度和粗粒度注意力的Transformer变体模型（Museformer），用于音乐生成；其中细粒度注意力使每个token直接关注与音乐结构最相关小节的所有token，粗粒度注意力使每个token只关注其他小节的总结信息而非每个具体token。",
+    "claim_en": "We propose Museformer, a Transformer model with a novel fine- and coarse-grained attention for music generation: with the fine-grained attention, a token directly attends to all the tokens of the bars most relevant to music structures; with the coarse-grained attention, a token only attends to the summarization of the other bars rather than each token of them.",
+    "point_id": "NP-1",
+    "source_locations": [
+      "中文摘要",
+      "英文摘要",
+      "第三章 3.2.3 细-粗粒度注意力机制"
+    ],
+    "technical_features": [
+      "结合细粒度和粗粒度注意力的Transformer变体模型",
+      "细粒度注意力：每个token直接关注与音乐结构最相关小节的所有token",
+      "粗粒度注意力：每个token只关注其他小节的总结信息，而非每个具体token",
+      "该模型用于音乐生成任务"
+    ],
+    "technical_features_en": [
+      "A Transformer model with a novel fine- and coarse-grained attention",
+      "Fine-grained attention: a token directly attends to all the tokens of the bars most relevant to music structures",
+      "Coarse-grained attention: a token only attends to the summarization of the other bars rather than each token of them",
+      "Applied to music generation"
+    ]
+  },
+  "current_search_plan": {
+    "concepts": [
+      {
+        "alias": [
+          "fine- and coarse-grained attention Transformer",
+          "music Transformer with hybrid attention"
+        ],
+        "concept_id": "C1",
+        "exclude": [],
+        "importance": 3,
+        "name": "Museformer",
+        "role": "method",
+        "terms": [
+          "Museformer",
+          "fine-coarse attention Transformer"
+        ]
+      },
+      {
+        "alias": [
+          "local bar attention",
+          "fine attention over relevant bars"
+        ],
+        "concept_id": "C2",
+        "exclude": [],
+        "importance": 3,
+        "name": "fine-grained attention",
+        "role": "feature",
+        "terms": [
+          "fine-grained attention",
+          "bar-level attention"
+        ]
+      },
+      {
+        "alias": [
+          "global summary attention",
+          "coarse attention over bar summaries"
+        ],
+        "concept_id": "C3",
+        "exclude": [],
+        "importance": 3,
+        "name": "coarse-grained attention",
+        "role": "feature",
+        "terms": [
+          "coarse-grained attention",
+          "bar summarization attention"
+        ]
+      },
+      {
+        "alias": [
+          "musical structure",
+          "bar-level structure"
+        ],
+        "concept_id": "C4",
+        "exclude": [],
+        "importance": 2,
+        "name": "music bars",
+        "role": "object",
+        "terms": [
+          "music bars",
+          "music structure"
+        ]
+      },
+      {
+        "alias": [
+          "music composition",
+          "melody generation"
+        ],
+        "concept_id": "C5",
+        "exclude": [
+          "speech synthesis",
+          "image generation"
+        ],
+        "importance": 1,
+        "name": "music generation",
+        "role": "setting",
+        "terms": [
+          "music generation",
+          "symbolic music generation"
+        ]
+      }
+    ],
+    "novelty_point_id": "NP-1",
+    "strategies": [
+      {
+        "description": "Museformer AND fine-grained attention AND coarse-grained attention",
+        "expression": "C1 AND C2 AND C3",
+        "level": "strict",
+        "strategy_id": "S1",
+        "use_alias": false,
+        "use_exclude": true
+      },
+      {
+        "description": "fine-grained attention AND coarse-grained attention AND music generation",
+        "expression": "C2 AND C3 AND C5",
+        "level": "medium",
+        "strategy_id": "S2",
+        "use_alias": true,
+        "use_exclude": true
+      },
+      {
+        "description": "Museformer OR music generation",
+        "expression": "C1 OR C5",
+        "level": "broad",
+        "strategy_id": "S3",
+        "use_alias": true,
+        "use_exclude": true
+      }
+    ],
+    "task_id": "T-2"
+  },
+  "current_task": {
+    "attempt": 1,
+    "description": "针对该查新点执行英文文献检索。",
+    "language": "en",
+    "novelty_point_id": "NP-1",
+    "task_id": "T-2",
+    "task_type": "literature_search"
+  },
+  "run_id": "run-2e6371011e074b6a95fe1d7cfbb79afe",
+  "subject_paper_id": "MG19333vrw-debug-full-20260907"
+}

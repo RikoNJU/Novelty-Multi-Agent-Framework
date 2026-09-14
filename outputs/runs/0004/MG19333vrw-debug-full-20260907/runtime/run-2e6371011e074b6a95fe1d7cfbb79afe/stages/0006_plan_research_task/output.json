@@ -1,0 +1,118 @@
+{
+  "search_plans": [
+    {
+      "concepts": [
+        {
+          "alias": [
+            "曲式结构",
+            "音乐段落结构"
+          ],
+          "concept_id": "C1",
+          "exclude": [],
+          "importance": 3,
+          "name": "音乐结构",
+          "role": "object",
+          "terms": [
+            "音乐结构",
+            "音乐结构分析",
+            "乐曲结构分析"
+          ]
+        },
+        {
+          "alias": [
+            "自相似矩阵",
+            "相似度矩阵"
+          ],
+          "concept_id": "C2",
+          "exclude": [
+            "文本相似度",
+            "语义相似度"
+          ],
+          "importance": 3,
+          "name": "相似度统计",
+          "role": "method",
+          "terms": [
+            "相似度统计",
+            "相似度计算",
+            "相似性度量"
+          ]
+        },
+        {
+          "alias": [
+            "结构边界小节",
+            "结构单元"
+          ],
+          "concept_id": "C3",
+          "exclude": [],
+          "importance": 3,
+          "name": "结构相关小节",
+          "role": "object",
+          "terms": [
+            "结构相关小节",
+            "小节选择",
+            "关键小节"
+          ]
+        },
+        {
+          "alias": [
+            "fine-grained attention",
+            "注意力建模"
+          ],
+          "concept_id": "C4",
+          "exclude": [],
+          "importance": 2,
+          "name": "细粒度注意力",
+          "role": "method",
+          "terms": [
+            "细粒度注意力",
+            "注意力机制",
+            "多轨音乐注意力"
+          ]
+        },
+        {
+          "alias": [
+            "符号音乐",
+            "MIDI音乐"
+          ],
+          "concept_id": "C5",
+          "exclude": [],
+          "importance": 1,
+          "name": "多轨音乐",
+          "role": "setting",
+          "terms": [
+            "多轨音乐",
+            "音乐音频"
+          ]
+        }
+      ],
+      "novelty_point_id": "NP-2",
+      "strategies": [
+        {
+          "description": "音乐结构 AND 相似度统计 AND 结构相关小节",
+          "expression": "C1 AND C2 AND C3",
+          "level": "strict",
+          "strategy_id": "S1",
+          "use_alias": false,
+          "use_exclude": true
+        },
+        {
+          "description": "音乐结构 AND 相似度统计 AND 结构相关小节 AND 细粒度注意力",
+          "expression": "C1 AND C2 AND C3 AND C4",
+          "level": "medium",
+          "strategy_id": "S2",
+          "use_alias": true,
+          "use_exclude": true
+        },
+        {
+          "description": "音乐结构 OR 相似度统计 OR 细粒度注意力",
+          "expression": "C1 OR C2 OR C4",
+          "level": "broad",
+          "strategy_id": "S3",
+          "use_alias": true,
+          "use_exclude": true
+        }
+      ],
+      "task_id": "T-1"
+    }
+  ]
+}
