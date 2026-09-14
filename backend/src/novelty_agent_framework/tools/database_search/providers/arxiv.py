@@ -46,20 +46,37 @@ _LAST_REQUEST_AT = 0.0
 
 # 429 是限流（重试即可），5xx 是服务端瞬时故障；其余 4xx 是请求本身有问题。
 _RETRYABLE_STATUS = frozenset({429, 500, 502, 503, 504})
-_MAX_RETRY_DELAY_SECONDS = 60.0
+_RETRYABLE_TRANSPORT_ERRORS = (
+    httpx.ReadTimeout,
+    httpx.ConnectTimeout,
+    httpx.ConnectError,
+)
+
+
+class ArxivCircuitOpenError(RuntimeError):
+    """Raised without I/O while the arXiv source circuit is open."""
+
+
+class ArxivRetryBudgetExceeded(httpx.TimeoutException):
+    """Raised when retry/throttle waits consume the per-execution budget."""
 
 
 def _is_retryable(status_code: int) -> bool:
     return status_code in _RETRYABLE_STATUS
 
 
-def _retry_delay(response: httpx.Response, attempt: int) -> float:
+def _retry_delay(
+    response: httpx.Response,
+    attempt: int,
+    *,
+    max_delay: float,
+) -> float:
     """优先遵守 Retry-After，否则指数退避（2s、4s、8s…），并设上限。"""
 
     header = (response.headers.get("Retry-After") or "").strip()
     if header.isdigit():
-        return min(float(header), _MAX_RETRY_DELAY_SECONDS)
-    return min(2.0 * (2**attempt), _MAX_RETRY_DELAY_SECONDS)
+        return min(float(header), max_delay)
+    return min(2.0 * (2**attempt), max_delay)
 
 
 class ArxivQueryAdapter(QueryAdapter):
@@ -208,7 +225,7 @@ def parse_entry(entry: ET.Element) -> SearchHit:
 
 
 class ArxivSearchTool(SearchTool):
-    """arXiv 检索薄适配器：单查询、Atom 解析、3 秒限流、5xx 重试。"""
+    """arXiv 检索：限流、有界重试，以及最小线程安全熔断器。"""
 
     source_id = "arxiv"
 
@@ -220,11 +237,32 @@ class ArxivSearchTool(SearchTool):
         min_interval: float = 3.0,
         timeout: float = 20.0,
         max_retries: int = 2,
+        max_retry_delay: float = 5.0,
+        retry_budget_seconds: float = 45.0,
+        circuit_failure_threshold: int = 2,
+        circuit_cooldown_seconds: float = 60.0,
     ) -> None:
+        if timeout <= 0:
+            raise ValueError("timeout must be positive")
+        if min_interval < 0 or max_retries < 0 or max_retry_delay < 0:
+            raise ValueError("retry and throttle values must be non-negative")
+        if retry_budget_seconds <= 0:
+            raise ValueError("retry_budget_seconds must be positive")
+        if circuit_failure_threshold < 1 or circuit_cooldown_seconds < 0:
+            raise ValueError("circuit breaker values are invalid")
         self._client = client or httpx.Client(timeout=timeout, follow_redirects=True)
         self._base_url = base_url
         self._min_interval = min_interval
+        self._timeout = timeout
         self._max_retries = max_retries
+        self._max_retry_delay = max_retry_delay
+        self._retry_budget_seconds = retry_budget_seconds
+        self._circuit_failure_threshold = circuit_failure_threshold
+        self._circuit_cooldown_seconds = circuit_cooldown_seconds
+        self._circuit_lock = threading.Lock()
+        self._consecutive_failures = 0
+        self._circuit_open_until = 0.0
+        self._probe_in_flight = False
 
     def search(self, query: str, *, limit: int = 10) -> Sequence[SearchHit]:
         params = urlencode({"search_query": query, "start": 0, "max_results": limit})
@@ -259,30 +297,120 @@ class ArxivSearchTool(SearchTool):
         escaped = _escape_query_term(citation.title)
         return self.search(f'ti:"{escaped}"', limit=limit)
 
-    def _throttle(self) -> None:
+    def _throttle(self, *, deadline: float) -> bool:
         """全进程共享的节流：多个 ArxivSearchTool 实例（工作流、bootstrap、
         多来源）不再各自计时，否则叠加起来的请求速率会超过 arXiv 的单实例限制。
+
+        返回 ``False`` 表示等待到 deadline 也无法取得请求时隙。
         """
 
         global _LAST_REQUEST_AT
         with _THROTTLE_LOCK:
             elapsed = time.monotonic() - _LAST_REQUEST_AT
             if elapsed < self._min_interval:
-                time.sleep(self._min_interval - elapsed)
+                delay = self._min_interval - elapsed
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    return False
+                if delay >= remaining:
+                    time.sleep(remaining)
+                    return False
+                time.sleep(delay)
             _LAST_REQUEST_AT = time.monotonic()
+            return True
+
+    def _acquire_circuit_permission(self) -> bool:
+        """Return whether this call is the single half-open probe."""
+
+        now = time.monotonic()
+        with self._circuit_lock:
+            if self._circuit_open_until <= 0:
+                return False
+            if now < self._circuit_open_until or self._probe_in_flight:
+                raise ArxivCircuitOpenError(
+                    "arxiv circuit is open after consecutive provider failures"
+                )
+            self._probe_in_flight = True
+            return True
+
+    def _record_success(self) -> None:
+        with self._circuit_lock:
+            self._consecutive_failures = 0
+            self._circuit_open_until = 0.0
+            self._probe_in_flight = False
+
+    def _record_retryable_failure(self, *, was_probe: bool) -> None:
+        now = time.monotonic()
+        with self._circuit_lock:
+            self._probe_in_flight = False
+            self._consecutive_failures += 1
+            if (
+                was_probe
+                or self._consecutive_failures >= self._circuit_failure_threshold
+            ):
+                self._circuit_open_until = now + self._circuit_cooldown_seconds
+
+    def _raise_retryable(self, error: Exception, *, was_probe: bool) -> None:
+        self._record_retryable_failure(was_probe=was_probe)
+        raise error
+
+    @staticmethod
+    def _budget_error(url: str) -> ArxivRetryBudgetExceeded:
+        return ArxivRetryBudgetExceeded(
+            "arxiv retry budget exhausted",
+            request=httpx.Request("GET", url),
+        )
 
     def _get(self, url: str) -> httpx.Response:
+        was_probe = self._acquire_circuit_permission()
+        deadline = time.monotonic() + self._retry_budget_seconds
+        last_retryable: Exception | None = None
         # 每次尝试都重新节流：重试不能绕过速率限制，否则退避反而加剧限流。
         for attempt in range(self._max_retries + 1):
-            self._throttle()
-            response = self._client.get(url)
+            if not self._throttle(deadline=deadline):
+                self._raise_retryable(
+                    last_retryable or self._budget_error(url),
+                    was_probe=was_probe,
+                )
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                self._raise_retryable(
+                    last_retryable or self._budget_error(url),
+                    was_probe=was_probe,
+                )
             try:
+                response = self._client.get(
+                    url,
+                    timeout=min(self._timeout, remaining),
+                )
                 response.raise_for_status()
+                self._record_success()
                 return response
-            except httpx.HTTPStatusError:
-                if attempt >= self._max_retries or not _is_retryable(response.status_code):
+            except httpx.HTTPStatusError as exc:
+                if not _is_retryable(response.status_code):
+                    self._record_success()
                     raise
-                time.sleep(_retry_delay(response, attempt))
+                last_retryable = exc
+            except _RETRYABLE_TRANSPORT_ERRORS as exc:
+                last_retryable = exc
+
+            if attempt >= self._max_retries:
+                self._raise_retryable(last_retryable, was_probe=was_probe)
+            remaining = deadline - time.monotonic()
+            delay = (
+                _retry_delay(
+                    response,
+                    attempt,
+                    max_delay=self._max_retry_delay,
+                )
+                if isinstance(last_retryable, httpx.HTTPStatusError)
+                else min(2.0 * (2**attempt), self._max_retry_delay)
+            )
+            if remaining <= 0 or delay >= remaining:
+                if remaining > 0:
+                    time.sleep(remaining)
+                self._raise_retryable(last_retryable, was_probe=was_probe)
+            time.sleep(delay)
         raise AssertionError("unreachable")
 
 
@@ -467,6 +595,15 @@ def build_arxiv_source(config: Mapping[str, Any]) -> RetrievalSource:
             client=client,
             min_interval=float(config["min_interval_seconds"]),
             max_retries=int(config["max_retries"]),
+            timeout=timeout_seconds,
+            max_retry_delay=float(config.get("max_retry_delay_seconds", 5.0)),
+            retry_budget_seconds=float(config.get("retry_budget_seconds", 45.0)),
+            circuit_failure_threshold=int(
+                config.get("circuit_failure_threshold", 2)
+            ),
+            circuit_cooldown_seconds=float(
+                config.get("circuit_cooldown_seconds", 60.0)
+            ),
         ),
         full_text_tool=ArxivFullTextTool(
             client=client, max_chars=int(config["full_text_max_chars"])

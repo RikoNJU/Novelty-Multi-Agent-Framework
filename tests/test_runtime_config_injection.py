@@ -17,6 +17,8 @@ def test_perturbed_config_reaches_runtime_objects(tmp_path):
     database.update(candidate_limit_per_task=3, full_text_limit_per_task=2, max_concurrency=5)
     database["providers"]["arxiv"].update(
         min_interval_seconds=0.07, timeout_seconds=4, max_retries=1,
+        max_retry_delay_seconds=2, retry_budget_seconds=7,
+        circuit_failure_threshold=3, circuit_cooldown_seconds=11,
         full_text_max_chars=4321,
     )
     # 默认配置关闭了 web_search 与 browser；本用例验证配置注入，因此显式打开它们
@@ -66,6 +68,10 @@ def test_perturbed_config_reaches_runtime_objects(tmp_path):
     assert internal.max_concurrency == 5
     assert internal.source.search_tool._min_interval == 0.07
     assert internal.source.search_tool._max_retries == 1
+    assert internal.source.search_tool._max_retry_delay == 2
+    assert internal.source.search_tool._retry_budget_seconds == 7
+    assert internal.source.search_tool._circuit_failure_threshold == 3
+    assert internal.source.search_tool._circuit_cooldown_seconds == 11
     assert internal.source.full_text_tool._max_chars == 4321
     assert web.default_max_results == 4 and web.max_results_per_call == 6
     assert web.backend.timeout_seconds == 7

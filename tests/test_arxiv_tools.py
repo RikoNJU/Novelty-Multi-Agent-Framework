@@ -2,12 +2,17 @@
 
 from __future__ import annotations
 
+import threading
+import time
+from concurrent.futures import ThreadPoolExecutor
+
 import httpx
 import pymupdf
 import pytest
 
 from novelty_agent_framework.tools.database_search.providers import arxiv as arxiv_module
 from novelty_agent_framework.tools.database_search.providers.arxiv import (
+    ArxivCircuitOpenError,
     ArxivFullTextTool,
     ArxivMetadataTool,
     ArxivSearchTool,
@@ -150,12 +155,207 @@ def test_search_retries_on_429_and_honours_retry_after(monkeypatch):
             return httpx.Response(429, headers={"Retry-After": "7"}, text="slow down")
         return httpx.Response(200, text=ATOM_ENTRY)
 
-    tool = ArxivSearchTool(client=make_client(handler), min_interval=0.0, max_retries=2)
+    tool = ArxivSearchTool(
+        client=make_client(handler),
+        min_interval=0.0,
+        max_retries=2,
+        max_retry_delay=10.0,
+    )
     hits = tool.search("q")
 
     assert calls["n"] == 2
     assert len(hits) == 1
     assert 7.0 in sleeps, "应当遵守 Retry-After"
+
+
+def test_search_bounds_retry_after_by_max_delay(monkeypatch):
+    sleeps: list[float] = []
+    monkeypatch.setattr(arxiv_module.time, "sleep", sleeps.append)
+    calls = {"n": 0}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls["n"] += 1
+        if calls["n"] == 1:
+            return httpx.Response(429, headers={"Retry-After": "30"})
+        return httpx.Response(200, text=ATOM_ENTRY)
+
+    tool = ArxivSearchTool(
+        client=make_client(handler),
+        min_interval=0.0,
+        max_retries=1,
+        max_retry_delay=4.0,
+    )
+
+    assert len(tool.search("q")) == 1
+    assert sleeps == [4.0]
+
+
+@pytest.mark.parametrize(
+    "exception_type",
+    [httpx.ReadTimeout, httpx.ConnectTimeout, httpx.ConnectError],
+)
+def test_search_retries_transport_failures_with_bound(exception_type):
+    calls = {"n": 0}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls["n"] += 1
+        raise exception_type("transient failure", request=request)
+
+    tool = ArxivSearchTool(
+        client=make_client(handler),
+        min_interval=0.0,
+        max_retries=1,
+        max_retry_delay=0.0,
+        circuit_failure_threshold=10,
+    )
+
+    with pytest.raises(exception_type):
+        tool.search("q")
+    assert calls["n"] == 2
+
+
+def test_retry_budget_bounds_attempts_and_backoff(monkeypatch):
+    clock = [0.0]
+    monkeypatch.setattr(arxiv_module.time, "monotonic", lambda: clock[0])
+    monkeypatch.setattr(
+        arxiv_module.time,
+        "sleep",
+        lambda seconds: clock.__setitem__(0, clock[0] + seconds),
+    )
+    calls = {"n": 0}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls["n"] += 1
+        clock[0] += 4.0
+        raise httpx.ReadTimeout("read timed out", request=request)
+
+    tool = ArxivSearchTool(
+        client=make_client(handler),
+        min_interval=0.0,
+        max_retries=10,
+        max_retry_delay=2.0,
+        retry_budget_seconds=5.0,
+        circuit_failure_threshold=10,
+    )
+
+    with pytest.raises(httpx.ReadTimeout):
+        tool.search("q")
+    assert calls["n"] == 1
+    assert clock[0] == pytest.approx(5.0)
+
+
+def test_circuit_opens_after_consecutive_final_failures():
+    calls = {"n": 0}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls["n"] += 1
+        raise httpx.ConnectError("offline", request=request)
+
+    tool = ArxivSearchTool(
+        client=make_client(handler),
+        min_interval=0.0,
+        max_retries=0,
+        circuit_failure_threshold=2,
+        circuit_cooldown_seconds=60.0,
+    )
+
+    with pytest.raises(httpx.ConnectError):
+        tool.search("q1")
+    with pytest.raises(httpx.ConnectError):
+        tool.search("q2")
+    with pytest.raises(ArxivCircuitOpenError):
+        tool.search("q3")
+    assert calls["n"] == 2
+
+
+def test_failed_cooldown_probe_reopens_circuit(monkeypatch):
+    clock = [0.0]
+    monkeypatch.setattr(arxiv_module.time, "monotonic", lambda: clock[0])
+    calls = {"n": 0}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls["n"] += 1
+        raise httpx.ConnectError("offline", request=request)
+
+    tool = ArxivSearchTool(
+        client=make_client(handler),
+        min_interval=0.0,
+        max_retries=0,
+        circuit_failure_threshold=1,
+        circuit_cooldown_seconds=10.0,
+    )
+
+    with pytest.raises(httpx.ConnectError):
+        tool.search("q1")
+    with pytest.raises(ArxivCircuitOpenError):
+        tool.search("q2")
+    clock[0] = 11.0
+    with pytest.raises(httpx.ConnectError):
+        tool.search("probe")
+    with pytest.raises(ArxivCircuitOpenError):
+        tool.search("q3")
+    assert calls["n"] == 2
+
+
+def test_successful_cooldown_probe_closes_circuit(monkeypatch):
+    clock = [0.0]
+    monkeypatch.setattr(arxiv_module.time, "monotonic", lambda: clock[0])
+    calls = {"n": 0}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls["n"] += 1
+        if calls["n"] == 1:
+            raise httpx.ConnectError("offline", request=request)
+        return httpx.Response(200, text=ATOM_ENTRY)
+
+    tool = ArxivSearchTool(
+        client=make_client(handler),
+        min_interval=0.0,
+        max_retries=0,
+        circuit_failure_threshold=1,
+        circuit_cooldown_seconds=10.0,
+    )
+
+    with pytest.raises(httpx.ConnectError):
+        tool.search("q1")
+    clock[0] = 11.0
+    assert len(tool.search("probe")) == 1
+    assert len(tool.search("normal")) == 1
+    assert calls["n"] == 3
+
+
+def test_circuit_allows_only_one_half_open_probe():
+    calls = {"n": 0}
+    probe_started = threading.Event()
+    release_probe = threading.Event()
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls["n"] += 1
+        if calls["n"] == 1:
+            raise httpx.ConnectError("offline", request=request)
+        probe_started.set()
+        assert release_probe.wait(timeout=1.0)
+        return httpx.Response(200, text=ATOM_ENTRY)
+
+    tool = ArxivSearchTool(
+        client=make_client(handler),
+        min_interval=0.0,
+        max_retries=0,
+        circuit_failure_threshold=1,
+        circuit_cooldown_seconds=0.01,
+    )
+    with pytest.raises(httpx.ConnectError):
+        tool.search("q1")
+    time.sleep(0.02)
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        probe = executor.submit(tool.search, "probe")
+        assert probe_started.wait(timeout=1.0)
+        with pytest.raises(ArxivCircuitOpenError):
+            tool.search("concurrent")
+        release_probe.set()
+        assert len(probe.result(timeout=1.0)) == 1
+    assert calls["n"] == 2
 
 
 def test_throttle_is_shared_across_tool_instances(monkeypatch):
@@ -190,10 +390,16 @@ def test_search_raises_on_4xx_without_retry():
         calls["n"] += 1
         return httpx.Response(404)
 
-    tool = ArxivSearchTool(client=make_client(handler), min_interval=0.0)
+    tool = ArxivSearchTool(
+        client=make_client(handler),
+        min_interval=0.0,
+        circuit_failure_threshold=1,
+    )
     with pytest.raises(httpx.HTTPStatusError):
         tool.search("q")
-    assert calls["n"] == 1
+    with pytest.raises(httpx.HTTPStatusError):
+        tool.search("q-again")
+    assert calls["n"] == 2
 
 
 def test_fulltext_html_success():
