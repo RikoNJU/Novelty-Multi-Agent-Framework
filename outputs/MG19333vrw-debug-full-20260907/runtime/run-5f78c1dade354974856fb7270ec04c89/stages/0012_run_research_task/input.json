@@ -1,0 +1,150 @@
+{
+  "current_point": {
+    "claim": "提出一种结合细粒度和粗粒度注意力的Transformer变体模型Museformer，其中细粒度注意力使每个token直接关注到与音乐结构最相关的小节的所有token，粗粒度注意力使每个token只关注其他小节的总结信息而非每个具体token。",
+    "claim_en": "Propose Museformer, a Transformer variant with fine- and coarse-grained attention, where the fine-grained attention enables a token to directly attend to all the tokens of the bars most relevant to music structures, and the coarse-grained attention lets a token only attend to the summarization of the other bars rather than each token of them.",
+    "point_id": "NP-1",
+    "source_locations": [
+      "摘要",
+      "3.2.3 细-粗粒度注意力机制",
+      "3.2.2 多层结构"
+    ],
+    "technical_features": [
+      "细粒度注意力机制",
+      "粗粒度注意力机制",
+      "结构相关小节",
+      "其他小节的总结信息（summary token）",
+      "细-粗粒度注意力结合"
+    ],
+    "technical_features_en": [
+      "fine-grained attention",
+      "coarse-grained attention",
+      "structure-related bars",
+      "summarization of other bars",
+      "combination of fine- and coarse-grained attention"
+    ]
+  },
+  "current_search_plan": {
+    "concepts": [
+      {
+        "alias": [
+          "Museformer",
+          "hierarchical attention Transformer"
+        ],
+        "concept_id": "C1",
+        "exclude": [],
+        "importance": 3,
+        "name": "Transformer variant model",
+        "role": "method",
+        "terms": [
+          "Transformer variant model",
+          "fine-grained attention",
+          "coarse-grained attention"
+        ]
+      },
+      {
+        "alias": [
+          "musical structure bars",
+          "structure-relevant measures"
+        ],
+        "concept_id": "C2",
+        "exclude": [],
+        "importance": 3,
+        "name": "music structure related bars",
+        "role": "feature",
+        "terms": [
+          "music structure related bars",
+          "bar-level attention",
+          "structure-aware attention"
+        ]
+      },
+      {
+        "alias": [
+          "summary token",
+          "bar-level summary vector"
+        ],
+        "concept_id": "C3",
+        "exclude": [],
+        "importance": 3,
+        "name": "bar summarization token",
+        "role": "feature",
+        "terms": [
+          "bar summarization token",
+          "summary of other bars",
+          "coarse attention summary representation"
+        ]
+      },
+      {
+        "alias": [
+          "combined fine-coarse attention",
+          "dual-granularity attention"
+        ],
+        "concept_id": "C4",
+        "exclude": [],
+        "importance": 2,
+        "name": "fine- and coarse-grained attention combination",
+        "role": "method",
+        "terms": [
+          "fine- and coarse-grained attention combination",
+          "hybrid attention mechanism",
+          "multi-level attention"
+        ]
+      },
+      {
+        "alias": [
+          "music language modeling",
+          "pop music generation"
+        ],
+        "concept_id": "C5",
+        "exclude": [
+          "speech generation"
+        ],
+        "importance": 1,
+        "name": "symbolic music generation",
+        "role": "setting",
+        "terms": [
+          "symbolic music generation",
+          "long-sequence music modeling",
+          "music transformer"
+        ]
+      }
+    ],
+    "novelty_point_id": "NP-1",
+    "strategies": [
+      {
+        "description": "Transformer variant model AND music structure related bars AND bar summarization token",
+        "expression": "C1 AND C2 AND C3",
+        "level": "strict",
+        "strategy_id": "S1",
+        "use_alias": false,
+        "use_exclude": true
+      },
+      {
+        "description": "Transformer variant model AND music structure related bars AND bar summarization token AND fine- and coarse-grained attention combination",
+        "expression": "C1 AND C2 AND C3 AND C4",
+        "level": "medium",
+        "strategy_id": "S2",
+        "use_alias": true,
+        "use_exclude": true
+      },
+      {
+        "description": "Transformer variant model OR music structure related bars OR bar summarization token OR fine- and coarse-grained attention combination OR symbolic music generation",
+        "expression": "C1 OR C2 OR C3 OR C4 OR C5",
+        "level": "broad",
+        "strategy_id": "S3",
+        "use_alias": true,
+        "use_exclude": true
+      }
+    ],
+    "task_id": "T-2"
+  },
+  "current_task": {
+    "attempt": 1,
+    "description": "针对该查新点执行英文文献检索。",
+    "language": "en",
+    "novelty_point_id": "NP-1",
+    "task_id": "T-2",
+    "task_type": "literature_search"
+  },
+  "run_id": "run-5f78c1dade354974856fb7270ec04c89",
+  "subject_paper_id": "MG19333vrw-debug-full-20260907"
+}
