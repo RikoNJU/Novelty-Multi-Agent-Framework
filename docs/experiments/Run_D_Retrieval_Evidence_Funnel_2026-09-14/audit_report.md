@@ -9,6 +9,8 @@ Run D 的执行完整性与运行隔离均通过：`3 NoveltyPoint → 6 Researc
 
 业务证据闭环未形成，但丢失位置已经确定：**6 个 ResearchTask 均在 retrieval hit 层归零**。`reference_search` 的当前 Run namespace 正确，但 bootstrap 的 85 条引用全部因 arXiv provider 故障未解析，故 19 次调用全部 `SUCCESS + EMPTY`；`database_search` 的 9 次真实 arXiv outer call 全部失败，另有 6 次模型选择的 `null_catalog` 调用成功但为空。最终没有 Artifact，Reader 没有可读输入，EvidenceCard 和 Reviewer 可用证据均为 0。
 
+这里的“归零”是漏斗计数，不是 arXiv 零召回结论。Run D 中 arXiv successful search executions 为 0，观测到的是 `429 / ReadTimeout / CircuitOpen`，没有稳定的 `HTTP 200 + EMPTY`；因此 provider access failure 已确认，而 query recall 尚未得到有效测量。
+
 因此本轮判定如下：
 
 - Run D 完整性、隔离性、可审计性：`PASS`；
