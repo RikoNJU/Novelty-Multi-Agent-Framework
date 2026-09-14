@@ -1,0 +1,133 @@
+{
+  "check": "ARXIV-ACCESS-01",
+  "completed_at": "2026-09-14T06:46:41Z",
+  "known_arxiv_id": "1706.03762",
+  "targets": {
+    "abs_page": "https://arxiv.org/abs/1706.03762",
+    "export_api": "https://export.arxiv.org/api/query?id_list=1706.03762&max_results=1"
+  },
+  "proxy_environment_present": [
+    "HTTP_PROXY",
+    "HTTPS_PROXY",
+    "NO_PROXY",
+    "http_proxy",
+    "https_proxy",
+    "no_proxy"
+  ],
+  "httpx": [
+    {
+      "trust_env": true,
+      "target": "abs_page",
+      "status": 200,
+      "http_version": "HTTP/1.1",
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 43644,
+      "elapsed_seconds": 1.065
+    },
+    {
+      "trust_env": true,
+      "target": "export_api",
+      "status": 200,
+      "http_version": "HTTP/1.1",
+      "content_type": "application/atom+xml; charset=utf-8",
+      "bytes": 2962,
+      "elapsed_seconds": 0.787,
+      "atom_parsed": true,
+      "entry_count": 1
+    },
+    {
+      "trust_env": false,
+      "target": "abs_page",
+      "status": 200,
+      "http_version": "HTTP/1.1",
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 43644,
+      "elapsed_seconds": 0.292
+    },
+    {
+      "trust_env": false,
+      "target": "export_api",
+      "status": 200,
+      "http_version": "HTTP/1.1",
+      "content_type": "application/atom+xml; charset=utf-8",
+      "bytes": 2962,
+      "elapsed_seconds": 0.747,
+      "atom_parsed": true,
+      "entry_count": 1
+    }
+  ],
+  "curl": [
+    {
+      "proxy_mode": "environment",
+      "target": "abs_page",
+      "status": 200,
+      "remote_ip": "127.0.0.1",
+      "elapsed_seconds": 1.018307
+    },
+    {
+      "proxy_mode": "environment",
+      "target": "export_api",
+      "status": 200,
+      "remote_ip": "127.0.0.1",
+      "elapsed_seconds": 0.627789
+    },
+    {
+      "proxy_mode": "noproxy",
+      "target": "abs_page",
+      "status": 200,
+      "remote_ip": "151.101.131.42",
+      "elapsed_seconds": 0.423950
+    },
+    {
+      "proxy_mode": "noproxy",
+      "target": "export_api",
+      "status": 200,
+      "remote_ip": "146.75.47.42",
+      "elapsed_seconds": 1.014066
+    }
+  ],
+  "canonical_smoke": {
+    "provider_access": "PARTIAL",
+    "structured_query_recall": "NOT_MEASURED",
+    "query_layer_decision_allowed": false,
+    "cases": [
+      {
+        "case": "A",
+        "request": "id_list=1706.03762&max_results=1",
+        "http_status": 200,
+        "atom_parsed": true,
+        "entry_count": 1,
+        "expected_match": true,
+        "classification": "VALID_HIT"
+      },
+      {
+        "case": "B",
+        "request": "search_query=ti:\"Attention Is All You Need\"&start=0&max_results=5",
+        "http_status": null,
+        "atom_parsed": false,
+        "entry_count": null,
+        "classification": "PROVIDER_ACCESS_FAILURE",
+        "error_type": "ReadTimeout"
+      },
+      {
+        "case": "C",
+        "classification": "SKIPPED_UPSTREAM_GATE"
+      }
+    ]
+  },
+  "additional_observation": {
+    "description": "A non-canonical id_list request sent immediately after the diagnostic burst returned an explicit rate-limit response.",
+    "request": "id_list=1706.03762&start=0&max_results=5",
+    "status": 429
+  },
+  "verdict": {
+    "environment_proxy_problem": false,
+    "lower_level_network_failure": false,
+    "persistent_export_api_failure": false,
+    "explicit_rate_limiting_observed": true,
+    "known_id_access_recovered": true,
+    "title_search_access_recovered": false,
+    "structured_query_recall_measured": false,
+    "run_e_allowed": false
+  }
+}

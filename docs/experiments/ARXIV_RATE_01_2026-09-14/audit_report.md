@@ -17,6 +17,8 @@ Run E = NOT RUN
 
 这也修正 Run D 的表述：Run D 的 arXiv successful search executions 为 0，观测到 `429 / ReadTimeout / CircuitOpen`，不是稳定的 `HTTP 200 + EMPTY`，所以不能称为“arXiv 零召回”。
 
+后续 `ARXIV-ACCESS-01` 已进一步验证：普通页面和 known-ID export API 在 httpx 默认代理、httpx 强制直连、curl 默认代理、curl 绕过代理下均可返回 200；Case A 改用官方 `id_list` 后也得到 `200 + 1 entry`。本报告的 `smoke_result.json` 保留首次诊断的历史事实；当前访问边界与最终 canonical smoke 以 `docs/experiments/ARXIV_ACCESS_01_2026-09-14/` 为准。
+
 ## 2. 实现
 
 ### Provider single-flight
