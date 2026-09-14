@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Annotated, TypeAlias
+from typing import Annotated
 
 from pydantic import ConfigDict, Field, StringConstraints, field_validator, model_validator
 
@@ -210,7 +210,3 @@ class EvidenceCardBuilderResult(StrictModel):
     evidence: list[Evidence] = Field(default_factory=list)
     evidence_cards: list[EvidenceCard] = Field(default_factory=list)
     warnings: list[str] = Field(default_factory=list)
-
-
-# Deprecated name retained for import compatibility during schema migration.
-ReferenceReaderToolArguments: TypeAlias = ReaderArguments

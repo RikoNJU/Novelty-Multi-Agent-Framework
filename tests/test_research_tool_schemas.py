@@ -12,7 +12,6 @@ from novelty_agent_framework.schemas import (
     EvidenceCardBuilderRequest,
     ResearchFinishDraft,
     ReaderArguments,
-    ReferenceReaderToolArguments,
     WebSearchArguments,
 )
 from novelty_agent_framework.schemas import research, research_tools
@@ -28,9 +27,8 @@ def test_tool_schema_module_imports_without_implementations() -> None:
     assert request.draft.no_evidence_reason == "none found"
 
 
-def test_reader_uses_canonical_arguments_and_legacy_alias() -> None:
+def test_reader_uses_canonical_arguments() -> None:
     assert ReaderTool.args_schema is ReaderArguments
-    assert ReferenceReaderToolArguments is ReaderArguments
     with pytest.raises(ValidationError):
         ReaderTool.args_schema.model_validate(
             {"artifact_id": "art_1", "unexpected": True}
@@ -40,6 +38,4 @@ def test_reader_uses_canonical_arguments_and_legacy_alias() -> None:
 def test_workflow_schema_does_not_define_concrete_tool_arguments() -> None:
     source = inspect.getsource(research)
     assert "class ReaderArguments" not in source
-    assert "class ReferenceReaderToolArguments" not in source
-    assert "class StructuredRetrievalToolArguments" not in source
     assert research_tools.ReaderArguments.__module__.endswith("research_tools")

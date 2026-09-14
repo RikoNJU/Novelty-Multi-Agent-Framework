@@ -13,7 +13,6 @@ from .factory import (
     build_source_registry,
     build_structured_source_retrieval_tool,
 )
-from .legacy_tool import StructuredRetrievalResearcherTool
 from .providers.null_catalog import (
     NullQueryAdapter,
     NullSearchTool,
@@ -37,7 +36,6 @@ __all__ = [
     "RetrievalSource",
     "RetrievalSourceRegistry",
     "StructuredRetrievalAdapter",
-    "StructuredRetrievalResearcherTool",
     "StructuredSourceRetrievalTool",
     "build_null_catalog_source",
     "build_database_search_tool",

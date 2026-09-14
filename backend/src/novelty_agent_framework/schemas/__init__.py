@@ -77,7 +77,6 @@ from .search_plan_draft import (
     SearchPlanDraft,
     SearchStrategyDraft,
 )
-from .legacy_research_tools import StructuredRetrievalToolArguments
 from .research_tools import (
     BrowserArtifactItem,
     BrowserArguments,
@@ -91,7 +90,6 @@ from .research_tools import (
     EvidenceQuoteDraft,
     ResearchFinishDraft,
     ReaderArguments,
-    ReferenceReaderToolArguments,
     ReferenceReadRequest,
     ReferenceReadResult,
     ReferenceSearchArguments,
@@ -177,7 +175,6 @@ __all__ = [
     "EvidenceQuoteDraft",
     "ResearchFinishDraft",
     "FinishResearchAction",
-    "ReferenceReaderToolArguments",
     "ReaderArguments",
     "ReferenceReadRequest",
     "ReferenceReadResult",
@@ -186,7 +183,6 @@ __all__ = [
     "ReferenceSearchResult",
     "ResearcherAction",
     "ResearcherToolObservation",
-    "StructuredRetrievalToolArguments",
     "TaskResearchRequest",
     "NoveltyPointReviewRequest",
     "TaskResearchResult",

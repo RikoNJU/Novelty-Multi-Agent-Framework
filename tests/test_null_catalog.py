@@ -2,51 +2,27 @@
 
 from __future__ import annotations
 
-import json
 from collections.abc import Mapping, Sequence
-from pathlib import Path
 from typing import Any
 
 import pytest
-from backend.env import ModelResponse, ModelToolCall
 
-from novelty_agent_framework.agents import (
-    DemoCoordinator,
-    DemoPointExtractor,
-    DemoSearchPlanner,
-)
-from novelty_agent_framework.persistence import ReferenceStore
 from novelty_agent_framework.config import build_retrieval_source
 from novelty_agent_framework.ports import SearchHit
 from novelty_agent_framework.schemas import (
-    CallToolAction,
-    FinishResearchAction,
-    PaperInput,
     SearchConcept,
     SearchPlan,
     SearchStrategy,
-)
-from novelty_agent_framework.tools import (
-    EvidenceCardBuilder,
-    ResearcherToolRegistry,
 )
 from novelty_agent_framework.tools.database_search import (
     NullQueryAdapter,
     NullSearchTool,
     RetrievalSource,
     RetrievalSourceRegistry,
-    StructuredSourceRetrievalTool,
-    StructuredRetrievalResearcherTool,
 )
 from novelty_agent_framework.tools.database_search.providers.arxiv import ArxivQueryAdapter
 from novelty_agent_framework.tools.database_search.providers.null_catalog import (
     build_null_catalog_source,
-)
-from novelty_agent_framework.workflows import (
-    NoveltyWorkflow,
-    NoveltyWorkflowConfig,
-    NoveltyWorkflowServices,
-    TaskResearcherWorkflow,
 )
 
 
@@ -61,50 +37,6 @@ def _config(active_source: str) -> dict[str, Any]:
             },
         }
     }
-
-
-def _paper() -> PaperInput:
-    return PaperInput(
-        paper_id="null-source-test",
-        title="Source selection",
-        abstract="Explicit source selection",
-        full_text="Explicit source selection must not depend on task language.",
-        claimed_contributions=["A source-independent retrieval workflow"],
-    )
-
-
-def _workflow(source: RetrievalSource) -> NoveltyWorkflow:
-    class RetrieveThenFinishModel:
-        async def acomplete(self, messages, *, options=None):
-            if not any(message.role == "tool" for message in messages):
-                return ModelResponse(content=None, tool_calls=[ModelToolCall(
-                    id="retrieval-call", name="structured_source_retrieval",
-                    arguments={"source_id": source.source_id})])
-            return ModelResponse(content=json.dumps(
-                {"cards": [], "no_evidence_reason": "catalog is empty"}))
-
-    store = ReferenceStore()
-    retrieval = StructuredSourceRetrievalTool(
-        search_planner=DemoSearchPlanner(),
-        source=source,
-        reference_store=store,
-    )
-    task_researcher = TaskResearcherWorkflow(
-        RetrieveThenFinishModel(),
-        ResearcherToolRegistry(
-            [StructuredRetrievalResearcherTool({source.source_id: retrieval})]
-        ),
-        EvidenceCardBuilder(store),
-    )
-    return NoveltyWorkflow(
-        NoveltyWorkflowServices(
-            coordinator=DemoCoordinator(),
-            task_researcher=task_researcher,
-            search_planner=DemoSearchPlanner(),
-            point_extractor=DemoPointExtractor(),
-        ),
-        NoveltyWorkflowConfig(max_rounds=1),
-    )
 
 
 class StubArxivSearchTool:

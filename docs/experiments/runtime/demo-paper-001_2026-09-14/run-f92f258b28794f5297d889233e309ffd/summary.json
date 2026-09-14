@@ -1,0 +1,594 @@
+{
+  "diagnostics": [
+    {
+      "artifact": "diagnostics/reader.json",
+      "classification_counts": {},
+      "counts": {
+        "failed": 0,
+        "incomplete": 0,
+        "reader_calls": 0,
+        "succeeded": 0
+      },
+      "diagnostic_name": "reader",
+      "primary_code": null,
+      "schema_version": "1.0",
+      "status": "INCOMPLETE"
+    },
+    {
+      "artifact": "diagnostics/reference_namespace.json",
+      "classification_counts": {},
+      "counts": {
+        "errors": 4,
+        "evidence_bindings": 4,
+        "namespace_integrity_failures": 0,
+        "reader_calls": 0,
+        "warnings": 0
+      },
+      "diagnostic_name": "reference_namespace",
+      "primary_code": null,
+      "schema_version": "1.0",
+      "status": "ERROR"
+    },
+    {
+      "artifact": "diagnostics/reviewer.json",
+      "classification_counts": {},
+      "counts": {
+        "evidence": 4,
+        "novelty_points": 2,
+        "reviewer_reader_calls": 0,
+        "reviews": 2,
+        "runtime_review_stages": 1,
+        "validator_accepted_cards": 2
+      },
+      "diagnostic_name": "reviewer",
+      "primary_code": null,
+      "schema_version": "1.0",
+      "status": "WARNING"
+    }
+  ],
+  "environment": {
+    "git_branch": "hyl",
+    "git_commit": "7e624ff4fae3ffc6c4588580c64aa2635f32b58a",
+    "model_name": null,
+    "model_provider": null,
+    "python_version": "3.11.16"
+  },
+  "errors": [],
+  "final_evidence_sufficiency_checks": [
+    {
+      "actual_next_stage": "synthesize_report",
+      "calculated_insufficient_final_evidence_points": [],
+      "calculated_insufficient_point_ids": [],
+      "calculated_status": "PASS",
+      "check_status": "PASS",
+      "configured_cut": 1,
+      "counted_final_valid_card_count": 2,
+      "ignored_card_count": 0,
+      "input_final_valid_card_count": 2,
+      "max_rounds": 2,
+      "output_matches_calculation": true,
+      "point_results": [
+        {
+          "novelty_point_id": "NP-1",
+          "required_card_count": 1,
+          "status": "PASS",
+          "valid_card_count": 1
+        },
+        {
+          "novelty_point_id": "NP-2",
+          "required_card_count": 1,
+          "status": "PASS",
+          "valid_card_count": 1
+        }
+      ],
+      "reported_insufficient_final_evidence_points": [],
+      "round": 1,
+      "round_limit_allows_supplement": false,
+      "stage_id": "stage_0016",
+      "stage_status": "SUCCESS"
+    }
+  ],
+  "integrity_gates": [
+    {
+      "accepted_card_count": 2,
+      "accepted_card_ids": [
+        "CARD-NP-1-T-1",
+        "CARD-NP-2-T-1"
+      ],
+      "checked_card_count": 2,
+      "rejected_card_count": 0,
+      "rejected_card_ids": [],
+      "rejected_cards": [],
+      "stage_name": "validate_synthesis_input",
+      "validation_passed": true
+    },
+    {
+      "checked_conclusion_count": 2,
+      "conclusion_count": 2,
+      "issues": [
+        "supporting/counter conflict: NP-1 -> CARD-NP-1-T-1",
+        "supporting/counter conflict: NP-2 -> CARD-NP-2-T-1"
+      ],
+      "matched_count": 2,
+      "mismatch_count": 0,
+      "mismatched_point_ids": [],
+      "reference_occurrence_count": 4,
+      "referenced_card_count": 2,
+      "review_count": 2,
+      "stage_name": "validate_report_integrity",
+      "validation_passed": false
+    }
+  ],
+  "last_completed_stage": "render_report",
+  "llm_usage": {
+    "by_model": [],
+    "totals": {
+      "amount_rmb": 0.0,
+      "cached_input_tokens": 0,
+      "calls": 0,
+      "cost_completeness": "COMPLETE",
+      "currency": "RMB",
+      "failed_calls": 0,
+      "free_calls": 0,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "priced_calls": 0,
+      "reasoning_tokens": 0,
+      "successful_calls": 0,
+      "total_tokens": 0,
+      "unpriced_calls": 0,
+      "usage_unavailable_calls": 0
+    }
+  },
+  "outcome": null,
+  "reviewer_information_adjudication_checks": [
+    {
+      "actual_next_stage": "validate_synthesis_input",
+      "cards_preserved": true,
+      "duplicate_review_point_ids": [],
+      "expected_point_ids": [
+        "NP-1",
+        "NP-2"
+      ],
+      "input_card_ids": [
+        "CARD-NP-1-T-1",
+        "CARD-NP-2-T-1"
+      ],
+      "missing_review_point_ids": [],
+      "output_card_ids": [
+        "CARD-NP-1-T-1",
+        "CARD-NP-2-T-1"
+      ],
+      "point_scopes": [
+        {
+          "allowed_artifact_ids": [
+            "demo-artifact-NP-1"
+          ],
+          "card_ids": [
+            "CARD-NP-1-T-1"
+          ],
+          "novelty_point_id": "NP-1",
+          "referenced_evidence_ids": [
+            "EVD-NP-1-T-1"
+          ],
+          "unresolved_evidence_ids": []
+        },
+        {
+          "allowed_artifact_ids": [
+            "demo-artifact-NP-2"
+          ],
+          "card_ids": [
+            "CARD-NP-2-T-1"
+          ],
+          "novelty_point_id": "NP-2",
+          "referenced_evidence_ids": [
+            "EVD-NP-2-T-1"
+          ],
+          "unresolved_evidence_ids": []
+        }
+      ],
+      "review_results": [
+        {
+          "confidence": null,
+          "has_supplement_request": true,
+          "highly_relevant_work_count": 0,
+          "novelty_point_id": "NP-1",
+          "status": "insufficient_evidence",
+          "supplement_reason": "Reviewer 未启用，未执行查新点级信息判定。",
+          "verdict": null
+        },
+        {
+          "confidence": null,
+          "has_supplement_request": true,
+          "highly_relevant_work_count": 0,
+          "novelty_point_id": "NP-2",
+          "status": "insufficient_evidence",
+          "supplement_reason": "Reviewer 未启用，未执行查新点级信息判定。",
+          "verdict": null
+        }
+      ],
+      "reviewed_point_ids": [
+        "NP-1",
+        "NP-2"
+      ],
+      "stage_id": "stage_0014",
+      "stage_status": "SUCCESS",
+      "supplement_requests_control_route": false,
+      "unexpected_review_point_ids": [],
+      "unresolved_evidence_ids": []
+    }
+  ],
+  "run": {
+    "duration_ms": 235,
+    "end_time": "2026-09-14T09:09:05.537659+00:00",
+    "entrypoint": null,
+    "input_identity": {},
+    "paper_id": "demo-paper-001",
+    "run_id": "run-f92f258b28794f5297d889233e309ffd",
+    "start_time": "2026-09-14T09:09:05.313693+00:00",
+    "status": "SUCCESS"
+  },
+  "stages": [
+    {
+      "duration": 0.0,
+      "duration_ms": 0,
+      "error": null,
+      "finished_at": "2026-09-14T09:09:05.396647+00:00",
+      "stage_id": "stage_0001",
+      "stage_name": "extract_points",
+      "started_at": "2026-09-14T09:09:05.393473+00:00",
+      "status": "SUCCESS",
+      "validation_result": null
+    },
+    {
+      "duration": 0.0,
+      "duration_ms": 0,
+      "error": null,
+      "finished_at": "2026-09-14T09:09:05.402377+00:00",
+      "stage_id": "stage_0002",
+      "stage_name": "plan",
+      "started_at": "2026-09-14T09:09:05.400020+00:00",
+      "status": "SUCCESS",
+      "validation_result": null
+    },
+    {
+      "duration": 0.0,
+      "duration_ms": 0,
+      "error": null,
+      "finished_at": "2026-09-14T09:09:05.408046+00:00",
+      "stage_id": "stage_0003",
+      "stage_name": "dispatch_planning_tasks",
+      "started_at": "2026-09-14T09:09:05.405752+00:00",
+      "status": "SUCCESS",
+      "validation_result": null
+    },
+    {
+      "duration": 0.0,
+      "duration_ms": 0,
+      "error": null,
+      "finished_at": "2026-09-14T09:09:05.413379+00:00",
+      "stage_id": "stage_0004",
+      "stage_name": "plan_research_task",
+      "started_at": "2026-09-14T09:09:05.411342+00:00",
+      "status": "SUCCESS",
+      "validation_result": null
+    },
+    {
+      "duration": 0.0,
+      "duration_ms": 0,
+      "error": null,
+      "finished_at": "2026-09-14T09:09:05.417837+00:00",
+      "stage_id": "stage_0005",
+      "stage_name": "plan_research_task",
+      "started_at": "2026-09-14T09:09:05.415531+00:00",
+      "status": "SUCCESS",
+      "validation_result": null
+    },
+    {
+      "duration": 0.0,
+      "duration_ms": 0,
+      "error": null,
+      "finished_at": "2026-09-14T09:09:05.422177+00:00",
+      "stage_id": "stage_0006",
+      "stage_name": "plan_research_task",
+      "started_at": "2026-09-14T09:09:05.419888+00:00",
+      "status": "SUCCESS",
+      "validation_result": null
+    },
+    {
+      "duration": 0.0,
+      "duration_ms": 0,
+      "error": null,
+      "finished_at": "2026-09-14T09:09:05.426736+00:00",
+      "stage_id": "stage_0007",
+      "stage_name": "plan_research_task",
+      "started_at": "2026-09-14T09:09:05.424692+00:00",
+      "status": "SUCCESS",
+      "validation_result": null
+    },
+    {
+      "duration": 0.0,
+      "duration_ms": 0,
+      "error": null,
+      "finished_at": "2026-09-14T09:09:05.432293+00:00",
+      "stage_id": "stage_0008",
+      "stage_name": "dispatch_research_tasks",
+      "started_at": "2026-09-14T09:09:05.428772+00:00",
+      "status": "SUCCESS",
+      "validation_result": null
+    },
+    {
+      "duration": 0.0,
+      "duration_ms": 0,
+      "error": null,
+      "finished_at": "2026-09-14T09:09:05.440533+00:00",
+      "stage_id": "stage_0009",
+      "stage_name": "run_research_task",
+      "started_at": "2026-09-14T09:09:05.435508+00:00",
+      "status": "SUCCESS",
+      "validation_result": null
+    },
+    {
+      "duration": 0.0,
+      "duration_ms": 0,
+      "error": null,
+      "finished_at": "2026-09-14T09:09:05.447441+00:00",
+      "stage_id": "stage_0010",
+      "stage_name": "run_research_task",
+      "started_at": "2026-09-14T09:09:05.443137+00:00",
+      "status": "SUCCESS",
+      "validation_result": null
+    },
+    {
+      "duration": 0.016,
+      "duration_ms": 16,
+      "error": null,
+      "finished_at": "2026-09-14T09:09:05.454225+00:00",
+      "stage_id": "stage_0011",
+      "stage_name": "run_research_task",
+      "started_at": "2026-09-14T09:09:05.449458+00:00",
+      "status": "SUCCESS",
+      "validation_result": null
+    },
+    {
+      "duration": 0.0,
+      "duration_ms": 0,
+      "error": null,
+      "finished_at": "2026-09-14T09:09:05.460902+00:00",
+      "stage_id": "stage_0012",
+      "stage_name": "run_research_task",
+      "started_at": "2026-09-14T09:09:05.456310+00:00",
+      "status": "SUCCESS",
+      "validation_result": null
+    },
+    {
+      "duration": 0.0,
+      "duration_ms": 0,
+      "error": null,
+      "finished_at": "2026-09-14T09:09:05.469523+00:00",
+      "stage_id": "stage_0013",
+      "stage_name": "validate_evidence",
+      "started_at": "2026-09-14T09:09:05.464414+00:00",
+      "status": "SUCCESS",
+      "validation_result": null
+    },
+    {
+      "debug_details": {
+        "reviewer_information_adjudication": {
+          "cards_preserved": true,
+          "duplicate_review_point_ids": [],
+          "expected_point_ids": [
+            "NP-1",
+            "NP-2"
+          ],
+          "input_card_ids": [
+            "CARD-NP-1-T-1",
+            "CARD-NP-2-T-1"
+          ],
+          "missing_review_point_ids": [],
+          "output_card_ids": [
+            "CARD-NP-1-T-1",
+            "CARD-NP-2-T-1"
+          ],
+          "point_scopes": [
+            {
+              "allowed_artifact_ids": [
+                "demo-artifact-NP-1"
+              ],
+              "card_ids": [
+                "CARD-NP-1-T-1"
+              ],
+              "novelty_point_id": "NP-1",
+              "referenced_evidence_ids": [
+                "EVD-NP-1-T-1"
+              ],
+              "unresolved_evidence_ids": []
+            },
+            {
+              "allowed_artifact_ids": [
+                "demo-artifact-NP-2"
+              ],
+              "card_ids": [
+                "CARD-NP-2-T-1"
+              ],
+              "novelty_point_id": "NP-2",
+              "referenced_evidence_ids": [
+                "EVD-NP-2-T-1"
+              ],
+              "unresolved_evidence_ids": []
+            }
+          ],
+          "review_results": [
+            {
+              "confidence": null,
+              "has_supplement_request": true,
+              "highly_relevant_work_count": 0,
+              "novelty_point_id": "NP-1",
+              "status": "insufficient_evidence",
+              "supplement_reason": "Reviewer 未启用，未执行查新点级信息判定。",
+              "verdict": null
+            },
+            {
+              "confidence": null,
+              "has_supplement_request": true,
+              "highly_relevant_work_count": 0,
+              "novelty_point_id": "NP-2",
+              "status": "insufficient_evidence",
+              "supplement_reason": "Reviewer 未启用，未执行查新点级信息判定。",
+              "verdict": null
+            }
+          ],
+          "reviewed_point_ids": [
+            "NP-1",
+            "NP-2"
+          ],
+          "supplement_requests_control_route": false,
+          "unexpected_review_point_ids": [],
+          "unresolved_evidence_ids": []
+        }
+      },
+      "duration": 0.0,
+      "duration_ms": 0,
+      "error": null,
+      "finished_at": "2026-09-14T09:09:05.478375+00:00",
+      "stage_id": "stage_0014",
+      "stage_name": "review_evidence",
+      "started_at": "2026-09-14T09:09:05.472506+00:00",
+      "status": "SUCCESS",
+      "validation_result": null
+    },
+    {
+      "duration": 0.0,
+      "duration_ms": 0,
+      "error": null,
+      "finished_at": "2026-09-14T09:09:05.491817+00:00",
+      "stage_id": "stage_0015",
+      "stage_name": "validate_synthesis_input",
+      "started_at": "2026-09-14T09:09:05.481869+00:00",
+      "status": "SUCCESS",
+      "validation_result": {
+        "accepted_card_count": 2,
+        "accepted_card_ids": [
+          "CARD-NP-1-T-1",
+          "CARD-NP-2-T-1"
+        ],
+        "checked_card_count": 2,
+        "rejected_card_count": 0,
+        "rejected_card_ids": [],
+        "rejected_cards": [],
+        "validation_passed": true
+      }
+    },
+    {
+      "debug_details": {
+        "final_evidence_sufficiency": {
+          "calculated_insufficient_final_evidence_points": [],
+          "calculated_insufficient_point_ids": [],
+          "calculated_status": "PASS",
+          "check_status": "PASS",
+          "configured_cut": 1,
+          "counted_final_valid_card_count": 2,
+          "ignored_card_count": 0,
+          "input_final_valid_card_count": 2,
+          "max_rounds": 2,
+          "output_matches_calculation": true,
+          "point_results": [
+            {
+              "novelty_point_id": "NP-1",
+              "required_card_count": 1,
+              "status": "PASS",
+              "valid_card_count": 1
+            },
+            {
+              "novelty_point_id": "NP-2",
+              "required_card_count": 1,
+              "status": "PASS",
+              "valid_card_count": 1
+            }
+          ],
+          "reported_insufficient_final_evidence_points": [],
+          "round": 1,
+          "round_limit_allows_supplement": false
+        }
+      },
+      "duration": 0.0,
+      "duration_ms": 0,
+      "error": null,
+      "finished_at": "2026-09-14T09:09:05.499734+00:00",
+      "stage_id": "stage_0016",
+      "stage_name": "check_final_evidence_sufficiency",
+      "started_at": "2026-09-14T09:09:05.494328+00:00",
+      "status": "SUCCESS",
+      "validation_result": null
+    },
+    {
+      "duration": 0.0,
+      "duration_ms": 0,
+      "error": null,
+      "finished_at": "2026-09-14T09:09:05.507190+00:00",
+      "stage_id": "stage_0017",
+      "stage_name": "synthesize_report",
+      "started_at": "2026-09-14T09:09:05.502071+00:00",
+      "status": "SUCCESS",
+      "validation_result": null
+    },
+    {
+      "duration": 0.0,
+      "duration_ms": 0,
+      "error": null,
+      "finished_at": "2026-09-14T09:09:05.514454+00:00",
+      "stage_id": "stage_0018",
+      "stage_name": "validate_report_integrity",
+      "started_at": "2026-09-14T09:09:05.510231+00:00",
+      "status": "SUCCESS",
+      "validation_result": {
+        "checked_conclusion_count": 2,
+        "conclusion_count": 2,
+        "issues": [
+          "supporting/counter conflict: NP-1 -> CARD-NP-1-T-1",
+          "supporting/counter conflict: NP-2 -> CARD-NP-2-T-1"
+        ],
+        "matched_count": 2,
+        "mismatch_count": 0,
+        "mismatched_point_ids": [],
+        "reference_occurrence_count": 4,
+        "referenced_card_count": 2,
+        "review_count": 2,
+        "validation_passed": false
+      }
+    },
+    {
+      "duration": 0.0,
+      "duration_ms": 0,
+      "error": null,
+      "finished_at": "2026-09-14T09:09:05.522268+00:00",
+      "stage_id": "stage_0019",
+      "stage_name": "persist_report",
+      "started_at": "2026-09-14T09:09:05.516815+00:00",
+      "status": "SUCCESS",
+      "validation_result": null
+    },
+    {
+      "duration": 0.0,
+      "duration_ms": 0,
+      "error": null,
+      "finished_at": "2026-09-14T09:09:05.535000+00:00",
+      "stage_id": "stage_0020",
+      "stage_name": "render_report",
+      "started_at": "2026-09-14T09:09:05.524349+00:00",
+      "status": "SUCCESS",
+      "validation_result": null
+    },
+    {
+      "duration": null,
+      "duration_ms": null,
+      "error": null,
+      "finished_at": null,
+      "stage_id": null,
+      "stage_name": "plan_supplement",
+      "started_at": null,
+      "status": "NOT_RUN"
+    }
+  ],
+  "tool_calls": []
+}

@@ -165,7 +165,7 @@ async def run():
             registry.get("reader").reader.reference_store is store,
             builder.reference_store is store)),
         "old_path_calls": {"NoveltyResearchAgent.decide": 0,
-            "StructuredSourceRetrievalTool": 0, "StructuredRetrievalResearcherTool": 0,
+            "StructuredSourceRetrievalTool": 0,
             "compile_evidence_drafts": 0},
         "task_elapsed_ms": recording.elapsed_ms, "workflow_elapsed_ms": workflow_ms,
         "model_elapsed_ms_per_turn": [call["elapsed_ms"] for call in measured.calls],

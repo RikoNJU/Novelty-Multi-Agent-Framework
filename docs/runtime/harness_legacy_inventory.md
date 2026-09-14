@@ -1,7 +1,8 @@
 # Harness runtime path inventory
 
 This inventory records the soft-deprecation boundary after the task-scoped Harness
-became the formal runtime. Nothing listed here is physically removed in this phase.
+became the formal runtime. Entries marked REMOVED were physically deleted in the
+cleanup pass; everything else listed here is still retained.
 
 ## ACTIVE
 
@@ -14,13 +15,19 @@ became the formal runtime. Nothing listed here is physically removed in this pha
 - `SearchTool`, `FullTextTool`, `MetadataTool`: active provider-side ports behind
   `RetrievalSource`; they are not Researcher-facing tools.
 
+## REMOVED
+
+- `StructuredRetrievalResearcherTool` (formerly `tools/database_search/legacy_tool.py`)
+  and `StructuredRetrievalToolArguments` (formerly `schemas/legacy_research_tools.py`):
+  deleted, together with their package re-exports. Use `DatabaseSearchTool` and
+  `DatabaseSearchArguments`.
+- `ReferenceReaderToolArguments`: deleted alias for `ReaderArguments`; import
+  `ReaderArguments` directly.
+
 ## COMPATIBILITY
 
 - `StructuredSourceRetrievalTool.search_planner` and matching factory arguments:
   retained for old constructors, ignored by the active execution path.
-- `StructuredRetrievalResearcherTool` and `StructuredRetrievalToolArguments`: retained
-  for historical experiments and null-catalog regressions. New code must use
-  `DatabaseSearchTool`.
 - `NoveltyResearchAgent` / `LiteratureResearchAgent`: retained for older tests and
   experiments; the formal workflow uses `TaskResearcherWorkflow`.
 - `DemoQueryAdapter`: used by deterministic database tests.
@@ -37,3 +44,5 @@ became the formal runtime. Nothing listed here is physically removed in this pha
 - New code must not call Planner from database retrieval.
 - Runtime-owned task, paper, run, and plan fields come from `TaskResearchRequest`.
 - Compatibility symbols must not acquire new behavior before a separate removal task.
+- Removed symbols must not be reintroduced; `DatabaseSearchTool` is the only
+  Researcher-facing database tool.
