@@ -31,6 +31,7 @@ from ..ports import (
     TaskResearcher,
 )
 from ..core.runtime_artifacts import RuntimeDebugConfig
+from ..core.retrieval_coverage import RetrievalCoverage
 
 
 class NoveltyState(TypedDict, total=False):
@@ -56,6 +57,8 @@ class NoveltyState(TypedDict, total=False):
     review_decisions: list[EvidenceReviewDecision]
     novelty_reviews: list[NoveltyPointReview]
     insufficient_final_evidence_points: list[InsufficientFinalEvidence]
+    retrieval_coverage: list[RetrievalCoverage]
+    subject_reference_resolution: dict
     issues: Annotated[list[WorkflowIssue], add]
     rounds: int
     report: NoveltyReport
@@ -73,6 +76,8 @@ class NoveltyWorkflowConfig:
     max_concurrency: int = 4
     min_final_evidence_cards_per_point: int = 1
     candidate_limit_per_task: int = 8
+    #: 每个查新点最多联网解析多少篇候选参考文献（0 表示不预筛、解析全部）。
+    reference_prefilter_limit: int = 4
     # 启用的调研任务语言。关闭的语言不再进入 SearchPlanner 与 Researcher；
     # 任务生成、Prompt 与工具代码全部保留，随时可通过配置恢复。
     enabled_task_languages: tuple[str, ...] = ("zh", "en")
@@ -87,6 +92,8 @@ class NoveltyWorkflowConfig:
             raise ValueError("min_final_evidence_cards_per_point 必须至少为 1")
         if self.candidate_limit_per_task < 1:
             raise ValueError("candidate_limit_per_task 必须至少为 1")
+        if self.reference_prefilter_limit < 0:
+            raise ValueError("reference_prefilter_limit 不能为负")
         if not self.enabled_task_languages:
             raise ValueError("enabled_task_languages 不能为空")
         if any(not str(code).strip() for code in self.enabled_task_languages):

@@ -64,6 +64,13 @@ START
 - TaskResearcher 子图负责预算、重复调用限制和局部失败隔离，主 Workflow 负责
   fan-out/fan-in、Validator、补检和终止控制；
 - Task 的工作流身份是 `(novelty_point_id, task_id)`，因为 `task_id` 只在单个查新点内唯一。
+- 检索覆盖由确定性代码判定（`core/retrieval_coverage.py`）：只有“必要来源全部
+  成功执行”才允许出具基于“未检索到”的结论（`novel` / `partially_novel`）；
+  覆盖不完整时这些裁定强制降级为证据不足，避免把检索失败或零命中写成“具有
+  新颖性”。失败执行作为覆盖事实单独落盘（`retrieval_executions`），并在
+  runtime summary 与 `summary.md` 的 `## Retrieval Coverage` 可查。0 卡原因由代码
+  写成固定措辞（`zero_card_reason`），并确定性写入报告的 `limitations`，因此
+  “检索失败 / 成功但零命中 / 有命中未过门控”在产物里必然是不同的表述。
 - 调研任务语言由 `workflow.enabled_task_languages` 控制。当前配置为 `["en"]`：
   首轮任务分工是确定性的中英文双路（不调用模型）；补检轮会把启用语言写入 Prompt，
   要求模型只生成启用语言的 ResearchTask。此外仍有确定性闸门在 SearchPlanner 之前

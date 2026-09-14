@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import asyncio
 import shutil
+from collections.abc import Mapping
 from pathlib import Path
+from typing import Any
 
 from pydantic import ValidationError
 
@@ -14,8 +16,13 @@ from ..persistence import (
     subject_reference_workspace,
 )
 from ..schemas import PaperInput, ReferenceBootstrapManifest
-from ..tools.database_search.providers.arxiv import ArxivSearchTool
+from ..schemas import ReferenceBootstrapEntry, ResolutionStatus
+from ..tools.database_search.providers.arxiv import build_arxiv_search_tool
+from ..tools.database_search.structured_retrieval import (
+    StructuredRetrievalAdapter,
+)
 from .reference_bootstrap import (
+    CitationParser,
     ReferenceBootstrapService,
     ReferenceProviderRegistry,
     references_digest,
@@ -34,18 +41,31 @@ def prepare_paper_input_references(
     force: bool = False,
     max_concurrency: int = 4,
     service: ReferenceBootstrapService | None = None,
+    defer_resolution: bool = False,
+    arxiv_options: Mapping[str, Any] | None = None,
 ) -> ReferenceBootstrapManifest:
-    """Validate/refresh the stable cache and snapshot it into one isolated run."""
+    """Validate/refresh the stable cache and snapshot it into one isolated run.
+
+    ``defer_resolution=True`` 时只做本地解析（不触网），每个条目记为 SKIPPED，
+    联网解析交给工作流在产生查新点后按点挑选。
+    """
 
     stable_root = Path(stable_output_root)
     run_root = Path(run_output_root)
     persist_workflow_input(paper, output_root=run_root)
+    if defer_resolution:
+        manifest = _parsed_only_manifest(paper)
+        SubjectReferenceStore(run_root).persist_bootstrap(
+            paper.paper_id, manifest
+        )
+        return manifest
+
     stable_store = SubjectReferenceStore(stable_root)
     cached = _load_valid_cache(stable_store, paper)
 
     if force or cached is None:
         bootstrap = service or ReferenceBootstrapService(
-            ReferenceProviderRegistry([ArxivSearchTool()]),
+            ReferenceProviderRegistry([build_arxiv_search_tool(arxiv_options)]),
             stable_store,
             max_concurrency=max_concurrency,
         )
@@ -76,6 +96,38 @@ def prepare_paper_input_references(
             "run-scoped subject-reference snapshot failed validation"
         )
     return snapshot
+
+
+def _parsed_only_manifest(paper: PaperInput) -> ReferenceBootstrapManifest:
+    """构造只含本地解析结果的台账：零网络请求，条目状态为 SKIPPED。
+
+    ``bootstrap_ready`` 对 SKIPPED 条目视为已就绪，因此返回的台账可直接快照到
+    运行目录；真正联网解析由工作流根据查新点挑选后进行。
+    """
+
+    parser = CitationParser()
+    adapter = StructuredRetrievalAdapter()
+    entries: list[ReferenceBootstrapEntry] = []
+    for ordinal, raw in enumerate(paper.references, 1):
+        if not raw.strip():
+            continue
+        entries.append(
+            ReferenceBootstrapEntry(
+                reference_id=adapter.stable_id(
+                    "ref", paper.paper_id, str(ordinal), raw
+                ),
+                ordinal=ordinal,
+                raw_reference=raw,
+                parsed=parser.parse(raw),
+                resolution_status=ResolutionStatus.SKIPPED,
+                attempts=[],
+            )
+        )
+    return ReferenceBootstrapManifest(
+        subject_paper_id=paper.paper_id,
+        references_digest=references_digest(paper.references),
+        entries=entries,
+    )
 
 
 def _load_valid_cache(

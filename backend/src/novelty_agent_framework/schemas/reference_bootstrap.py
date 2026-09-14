@@ -17,6 +17,8 @@ class ResolutionStatus(StrEnum):
     AMBIGUOUS = "ambiguous"
     NOT_FOUND = "not_found"
     FAILED = "failed"
+    #: 预筛未选中：没有发起过任何网络检索，不代表“查不到”。
+    SKIPPED = "skipped"
 
 
 class ParsedCitation(StrictModel):
@@ -64,4 +66,7 @@ class ReferenceBootstrapManifest(StrictModel):
 
     @property
     def bootstrap_ready(self) -> bool:
-        return all(entry.attempts for entry in self.entries)
+        return all(
+            entry.attempts or entry.resolution_status == ResolutionStatus.SKIPPED
+            for entry in self.entries
+        )

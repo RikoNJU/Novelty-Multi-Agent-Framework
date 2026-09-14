@@ -19,19 +19,34 @@ def render_prompt():
     )
 
 
-def test_researcher_prompt_renders_attempt3_retrieval_policy() -> None:
+def test_researcher_prompt_renders_database_only_retrieval_policy() -> None:
     rendered = render_prompt()
 
-    assert rendered.version == "2"
-    assert "Prefer database_search as the primary discovery tool" in rendered.system
-    assert "For Chinese-language research tasks" in rendered.system
+    assert rendered.version == "3"
+    assert "Rely on database_search as the discovery tool" in rendered.system
+    assert "revise the query terms taken from the SearchPlan" in rendered.system
     assert "Search results and snippets are discovery metadata, not evidence" in rendered.system
-    assert "Never issue consecutive web_search calls" in rendered.system
     assert "Never guess an\nunlisted database source_id" in rendered.system
-    assert "the next tool call MUST be reader" in rendered.system
-    assert "Do not call\ndatabase_search, web_search, or browser again" in rendered.system
+    assert (
+        "the next tool\ncall MUST be reader for one returned artifact_id"
+        in rendered.system
+    )
+    assert (
+        "Do not call database_search\nagain until that Artifact has been read"
+        in rendered.system
+    )
     assert "When reference_search is available" in rendered.system
     assert "Do not decide whether a source is evidentiary based only on search snippets" in rendered.system
+
+
+def test_researcher_prompt_excludes_web_search_and_browser_policy() -> None:
+    """回归守卫：v3 起不再向 Researcher 暴露 web_search / browser 策略。"""
+
+    system = render_prompt().system.lower()
+
+    assert "web_search" not in system
+    assert "web search" not in system
+    assert "browser" not in system
 
 
 def test_researcher_prompt_renders_exact_quote_and_empty_finish_policy() -> None:

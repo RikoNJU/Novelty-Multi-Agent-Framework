@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import re
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 
 from backend.env import ModelCallOptions, ModelClient, PromptLibrary
@@ -15,6 +16,7 @@ from ..schemas import (
     SearchPlan,
     ResearchBundle,
     ResearchFinishDraft,
+    SearchExecution,
     TaskResearchRequest,
 )
 from ..schemas import TaskResearchResult, TaskResearchStatus
@@ -107,10 +109,12 @@ class TaskResearcherWorkflow:
         except ToolCallHarnessError as exc:
             reads, read_warnings = _trusted_reads(exc.trace)
             bundles, bundle_warnings = _trusted_bundles(exc.trace)
+            executions = _retrieval_executions(exc.trace)
             return _partial(
                 request,
                 reads=reads,
                 bundles=bundles,
+                executions=executions,
                 warnings=[
                     f"native tool harness failed: {exc}",
                     *read_warnings,
@@ -126,6 +130,7 @@ class TaskResearcherWorkflow:
 
         reads, read_warnings = _trusted_reads(harness_result.trace)
         bundles, bundle_warnings = _trusted_bundles(harness_result.trace)
+        executions = _retrieval_executions(harness_result.trace)
         try:
             draft = ResearchFinishDraft.model_validate_json(
                 _extract_finish_json(harness_result.final_content)
@@ -137,6 +142,7 @@ class TaskResearcherWorkflow:
                 bundles=bundles,
                 warnings=[*read_warnings, *bundle_warnings,
                           f"invalid ResearchFinishDraft: {_safe_error(exc)}"],
+                executions=executions,
                 steps=harness_result.turns_used,
             )
 
@@ -151,6 +157,7 @@ class TaskResearcherWorkflow:
                 bundles=bundles,
                 warnings=[*read_warnings, *bundle_warnings,
                           f"evidence builder failed: {_safe_error(exc)}"],
+                executions=executions,
                 steps=harness_result.turns_used,
             )
 
@@ -160,6 +167,7 @@ class TaskResearcherWorkflow:
             status=TaskResearchStatus.COMPLETED,
             read_results=reads,
             research_bundles=bundles,
+            retrieval_executions=executions,
             evidence=built.evidence,
             evidence_cards=built.evidence_cards,
             warnings=[*read_warnings, *bundle_warnings, *built.warnings],
@@ -208,6 +216,42 @@ def _trusted_reads(trace) -> tuple[list[ReferenceReadResult], list[str]]:
     return reads, warnings
 
 
+def _retrieval_executions(trace) -> list[SearchExecution]:
+    """收集每个检索执行的确定性事实，包含失败执行。
+
+    ``_trusted_bundles`` 只接收 ``succeeded`` 观测，因此全失败的检索在任务产物里
+    会完全消失；但“某个来源检索失败”本身是覆盖判定必须知道的事实，所以这里
+    独立收集。该列表不进入证据链，只决定该任务能否支撑否定性结论。
+    """
+
+    executions: list[SearchExecution] = []
+    seen: set[str] = set()
+    for event in trace:
+        observation = event.observation
+        if event.kind != "tool_result" or observation is None:
+            continue
+        payload = observation.payload or {}
+        raw = payload.get("search_executions")
+        if raw is None:
+            bundle_payload = payload.get("research_bundle")
+            if bundle_payload is None:
+                bundle_payload = payload.get("bundle")
+            if isinstance(bundle_payload, Mapping):
+                raw = bundle_payload.get("search_executions")
+        for item in raw or []:
+            try:
+                execution = SearchExecution.model_validate(item)
+            except (ValidationError, ValueError, TypeError):
+                continue
+            # 同一个执行会在后续调用的 bundle 里重复出现（共享 request gate 会把
+            # 之前的执行一并带回），按 execution_id 去重，否则覆盖计数被成倍放大。
+            if execution.execution_id in seen:
+                continue
+            seen.add(execution.execution_id)
+            executions.append(execution)
+    return executions
+
+
 def _trusted_bundles(trace) -> tuple[list[ResearchBundle], list[str]]:
     bundles: list[ResearchBundle] = []
     warnings: list[str] = []
@@ -232,7 +276,7 @@ def _turns_in_trace(trace) -> int:
 
 
 def _partial(
-    request, *, reads=None, bundles=None, warnings=None, steps=0
+    request, *, reads=None, bundles=None, executions=None, warnings=None, steps=0
 ) -> TaskResearchResult:
     return TaskResearchResult(
         task_id=request.research_task.task_id,
@@ -240,6 +284,7 @@ def _partial(
         status=TaskResearchStatus.PARTIAL,
         read_results=reads or [],
         research_bundles=bundles or [],
+        retrieval_executions=executions or [],
         warnings=warnings or [],
         steps_used=steps,
     )

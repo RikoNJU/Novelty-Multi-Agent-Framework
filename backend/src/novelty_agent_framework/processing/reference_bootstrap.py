@@ -4,7 +4,10 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
+import math
 import re
+from collections import Counter
+from collections.abc import Sequence
 import unicodedata
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -36,13 +39,21 @@ class CitationParser:
     ARXIV = re.compile(r"(?i)(?:arxiv\s*:\s*|arxiv\.org/(?:abs|pdf)/)([a-z.-]+/\d{7}|\d{4}\.\d{4,5})(?:v\d+)?")
     URL = re.compile(r"https?://[^\s<>\]\[\"']+")
     YEAR = re.compile(r"(?<!\d)((?:18|19|20)\d{2})(?!\d)")
+    # GB/T 7714 的文献类型标识：题名以它结尾，其后才是刊名/会议名等出处。
+    # 长代码排在前面，避免 [J/OL] 被 [J] 提前匹配。
+    TYPE_MARKER = re.compile(
+        r"\[\s*(?:EB/OL|DB/OL|CP/DK|J/OL|C/OL|M/OL|D/OL|DB|CP|EB|J|C|M|D|R|S|N|P|G|Z)\s*\]",
+        re.IGNORECASE,
+    )
+    # 序号标记（[1] / [12]）不是文献类型。
+    ORDINAL_MARKER = re.compile(r"^\s*\[\d{1,4}\]\s*")
 
     def parse(self, raw: str) -> ParsedCitation:
         text = " ".join(raw.split())
         doi_match = self.DOI.search(text)
         arxiv_match = self.ARXIV.search(text)
         url_match = self.URL.search(text)
-        year_match = self.YEAR.search(text)
+        year_match = self._find_year(text)
         doi = doi_match.group(1).rstrip(".,;)") if doi_match else None
         url = url_match.group(0).rstrip(".,;)") if url_match else None
         # A deliberately conservative title heuristic: quoted text first, then
@@ -58,7 +69,11 @@ class CitationParser:
             prefix = text.split(title, 1)[0].strip(" []().,;，。").replace(" et al", "")
             if prefix and len(prefix) < 160:
                 authors = [item.strip() for item in re.split(r",|，|\band\b|和", prefix) if item.strip()]
-        warnings = [] if any((title, doi, arxiv_match, url)) else ["citation could not be structurally parsed"]
+        authors, title = self._split_gbt7714(text, title, authors)
+        if title:
+            warnings = []
+        else:
+            warnings = ["citation could not be structurally parsed"]
         return ParsedCitation(
             title=title,
             authors=authors,
@@ -68,6 +83,57 @@ class CitationParser:
             arxiv_id=arxiv_match.group(1) if arxiv_match else None,
             warnings=warnings,
         )
+
+    def _split_gbt7714(
+        self, text: str, title: str | None, authors: list[str]
+    ) -> tuple[list[str], str | None]:
+        """按文献类型标识切出作者段与题名段。
+
+        GB/T 7714 形如 ``[1] 作者 A, 作者 B. 题名[J]. 刊名, 年, 卷(期): 页码.``；
+        没有类型标识时保留原启发式结果，避免改变既有行为。
+        """
+
+        marker = self.TYPE_MARKER.search(text)
+        if marker is None:
+            return authors, title
+        head = self.ORDINAL_MARKER.sub("", text[: marker.start()], count=1)
+        author_part, separator, title_part = head.partition(". ")
+        title_text = (title_part if separator else head).strip(" .;,，。")
+        if not title_text:
+            return authors, title
+        parsed_authors: list[str] = []
+        if separator:
+            cleaned = author_part.strip(" []().,;，。").replace(" et al", "")
+            if cleaned and len(cleaned) < 160:
+                parsed_authors = [
+                    item.strip(" .")
+                    for item in re.split(r",|，|;|；|\band\b|和", cleaned)
+                    if item.strip(" .")
+                ]
+        return (parsed_authors or authors), title_text
+
+    def _find_year(self, text: str) -> re.Match[str] | None:
+        """定位出版年，避免把标识符里的数字当成年份。
+
+        arXiv ID 形如 ``1907.04931``，直接全局匹配年份会把 1907 误判为出版年
+        （实测 ``[7] ... arXiv preprint arXiv:1907.04931, 2019.`` 被判成 1907）。
+        所以先屏蔽 DOI/arXiv/URL 片段，再优先在文献类型标识之后（即出处区）找年份。
+        """
+
+        marker = self.TYPE_MARKER.search(text)
+        if marker is not None:
+            found = self.YEAR.search(self._mask_identifiers(text[marker.end() :]))
+            if found is not None:
+                return found
+        return self.YEAR.search(self._mask_identifiers(text))
+
+    def _mask_identifiers(self, text: str) -> str:
+        """把 DOI/arXiv/URL 替换为等长空白，保留其余文本的偏移语义。"""
+
+        masked = text
+        for pattern in (self.DOI, self.ARXIV, self.URL):
+            masked = pattern.sub(lambda match: " " * len(match.group(0)), masked)
+        return masked
 
 
 @dataclass(frozen=True)
@@ -114,6 +180,83 @@ class CitationMatcher:
         return 0.75 * title_score + 0.15 * author_score + 0.10 * year_score
 
 
+@dataclass(frozen=True)
+class ReferenceTarget:
+    """一个待检索目标（通常是查新点），用于挑选值得联网解析的参考文献。"""
+
+    target_id: str
+    text: str
+
+
+def _tokens(value: str) -> list[str]:
+    """与 ReferenceSearchTool 一致的词元切分（拉丁词 + 单个中文字）。"""
+
+    normalized = unicodedata.normalize("NFKC", value).casefold()
+    latin = re.findall(r"[a-z0-9]+", normalized)
+    chinese = re.findall(r"[\u4e00-\u9fff]", normalized)
+    return latin + chinese
+
+
+def _reference_text(parsed: ParsedCitation, raw: str) -> str:
+    """参考文献的可比文本：题名为主，作者与年份补充。"""
+
+    parts = [parsed.title or raw, " ".join(parsed.authors)]
+    if parsed.year is not None:
+        parts.append(str(parsed.year))
+    return " ".join(part for part in parts if part)
+
+
+def select_reference_ordinals(
+    references: Sequence[str],
+    targets: Sequence[ReferenceTarget],
+    *,
+    per_target_limit: int,
+    parser: CitationParser | None = None,
+    min_score: float = 0.0,
+    include_direct_identifiers: bool = False,
+) -> list[int]:
+    """按词面相关性为每个目标挑选 top-K 参考文献，返回并集（升序）。
+
+    纯本地计算，不触网。未选中不代表“查不到”，只是本轮不为此发起检索；
+    这样 90 条参考文献不会全部变成 90 次 arXiv 请求。
+    目标为空或 ``per_target_limit <= 0`` 时退化为“全选”，保持原有行为。
+    """
+
+    if not targets or per_target_limit <= 0:
+        return list(range(1, len(references) + 1))
+    resolved_parser = parser or CitationParser()
+    parsed = [resolved_parser.parse(raw) for raw in references]
+    documents = [Counter(_tokens(_reference_text(item, raw))) for item, raw in zip(parsed, references)]
+    document_frequency: Counter[str] = Counter()
+    for terms in documents:
+        document_frequency.update(terms.keys())
+    total = len(documents)
+    selected: set[int] = set()
+    for target in targets:
+        query = Counter(_tokens(target.text))
+        if not query:
+            continue
+        scored: list[tuple[float, int]] = []
+        for ordinal, terms in enumerate(documents, start=1):
+            score = 0.0
+            for token, query_tf in query.items():
+                document_tf = terms.get(token, 0)
+                if not document_tf:
+                    continue
+                weight = math.log((total + 1) / (document_frequency[token] + 1)) + 1.0
+                score += query_tf * document_tf * weight
+            if score > min_score:
+                scored.append((score, ordinal))
+        scored.sort(key=lambda item: (-item[0], item[1]))
+        for _score, ordinal in scored[:per_target_limit]:
+            selected.add(ordinal)
+    if include_direct_identifiers:
+        for ordinal, item in enumerate(parsed, start=1):
+            if item.arxiv_id or item.doi or item.url:
+                selected.add(ordinal)
+    return sorted(selected)
+
+
 class ReferenceProviderRegistry:
     def __init__(self, providers: Iterable[Any] = ()) -> None:
         self._providers: dict[str, Any] = {}
@@ -136,6 +279,8 @@ class ReferenceProviderRegistry:
 
 
 class ReferenceBootstrapService:
+
+
     def __init__(self, registry: ReferenceProviderRegistry, store: SubjectReferenceStore | None = None, *, matcher: CitationMatcher | None = None, parser: CitationParser | None = None, max_concurrency: int = 4) -> None:
         if max_concurrency < 1:
             raise ValueError("max_concurrency must be positive")
@@ -144,15 +289,72 @@ class ReferenceBootstrapService:
         self.max_concurrency = max_concurrency
         self.adapter = StructuredRetrievalAdapter()
 
-    async def bootstrap(self, paper_id: str, references: list[str], *, force: bool = False, retry_failed: bool = False, provider: str | None = None, dry_run: bool = False) -> ReferenceBootstrapManifest:
+    async def bootstrap(
+        self,
+        paper_id: str,
+        references: list[str],
+        *,
+        force: bool = False,
+        retry_failed: bool = False,
+        provider: str | None = None,
+        dry_run: bool = False,
+        targets: Sequence[ReferenceTarget] | None = None,
+        per_target_limit: int = 0,
+    ) -> ReferenceBootstrapManifest:
+        """解析参考文献；给定 ``targets`` 时只联网解析被选中的少数条目。
+
+        未选中的条目记录为 ``SKIPPED``：它表示“本轮没有为它发起检索”，不是
+        “查不到”。这样 90 条参考文献不会变成 90 次 arXiv 请求。
+        """
         ledger = self.store.load_bootstrap(paper_id)
         existing = {entry.reference_id: entry for entry in ledger.entries}
         semaphore = asyncio.Semaphore(self.max_concurrency)
 
+        filtering = bool(targets) and per_target_limit > 0
+        selected = set(
+            select_reference_ordinals(
+                references,
+                targets or (),
+                per_target_limit=per_target_limit,
+                parser=self.parser,
+            )
+        )
+
         async def run(ordinal: int, raw: str) -> ReferenceBootstrapEntry:
             reference_id = self.adapter.stable_id("ref", paper_id, str(ordinal), raw)
             old = existing.get(reference_id)
-            if old and not force and not (retry_failed and old.resolution_status in {ResolutionStatus.FAILED, ResolutionStatus.NOT_FOUND}):
+            if filtering and ordinal not in selected:
+                # 预筛未命中：保留已有结果，绝不为此发起网络请求。
+                if old is not None:
+                    return old
+                return ReferenceBootstrapEntry(
+                    reference_id=reference_id,
+                    ordinal=ordinal,
+                    raw_reference=raw,
+                    parsed=self.parser.parse(raw),
+                    resolution_status=ResolutionStatus.SKIPPED,
+                    attempts=[],
+                )
+            if filtering:
+                # 选中项只在“从未尝试过”（SKIPPED/缺失）、force 或 retry_failed
+                # 时才联网；已解析过的条目跨运行复用，不重复烧请求。
+                needs_attempt = old is None or (
+                    old.resolution_status is ResolutionStatus.SKIPPED
+                )
+                if (
+                    retry_failed
+                    and old is not None
+                    and old.resolution_status
+                    in {ResolutionStatus.FAILED, ResolutionStatus.NOT_FOUND}
+                ):
+                    needs_attempt = True
+                if not needs_attempt and not force:
+                    return old
+            elif old and not force and not (
+                retry_failed
+                and old.resolution_status
+                in {ResolutionStatus.FAILED, ResolutionStatus.NOT_FOUND}
+            ):
                 return old
             async with semaphore:
                 entry = await self._resolve_one(paper_id, reference_id, ordinal, raw, provider=provider, dry_run=dry_run)

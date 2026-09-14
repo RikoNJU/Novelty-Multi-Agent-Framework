@@ -51,6 +51,12 @@ _LAST_REQUEST_AT = 0.0
 # 插入前一条 execution 的 retry 链。
 _REQUEST_GATE = threading.Lock()
 
+#: arXiv 官方要求不超过每 3 秒 1 次请求；实测贴着 3 秒仍会被 429，
+#: 因此代码默认留出余量。工作流与 bootstrap 都应使用这一下限或更高。
+DEFAULT_MIN_INTERVAL_SECONDS = 5.0
+#: 429 表示已超出配额：重试前必须等更久，否则只会把限流窗口拖长。
+DEFAULT_RATE_LIMIT_WAIT_SECONDS = 30.0
+
 # 429 是限流（重试即可），5xx 是服务端瞬时故障；其余 4xx 是请求本身有问题。
 _RETRYABLE_STATUS = frozenset({429, 500, 502, 503, 504})
 _RETRYABLE_TRANSPORT_ERRORS = (
@@ -84,6 +90,29 @@ def _retry_delay(
     if header.isdigit():
         return min(float(header), max_delay)
     return min(2.0 * (2**attempt), max_delay)
+
+
+def _wait_for_request_slot(min_interval: float, *, deadline: float) -> bool:
+    """全进程共享的 arXiv 节流；返回 False 表示等到 deadline 也拿不到时隙。
+
+    检索、参考文献 bootstrap、元数据核验都走同一个模块级时隙，否则各条链路
+    各自计时，叠加快率会超过 arXiv 的单 IP 限制并触发 429。
+    """
+
+    global _LAST_REQUEST_AT
+    with _THROTTLE_LOCK:
+        elapsed = time.monotonic() - _LAST_REQUEST_AT
+        if elapsed < min_interval:
+            delay = min_interval - elapsed
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                return False
+            if delay >= remaining:
+                time.sleep(remaining)
+                return False
+            time.sleep(delay)
+        _LAST_REQUEST_AT = time.monotonic()
+        return True
 
 
 class ArxivQueryAdapter(QueryAdapter):
@@ -241,13 +270,14 @@ class ArxivSearchTool(SearchTool):
         *,
         client: httpx.Client | None = None,
         base_url: str = ARXIV_QUERY_URL,
-        min_interval: float = 3.0,
+        min_interval: float = DEFAULT_MIN_INTERVAL_SECONDS,
         timeout: float = 20.0,
         max_retries: int = 2,
-        max_retry_delay: float = 5.0,
-        retry_budget_seconds: float = 45.0,
-        circuit_failure_threshold: int = 2,
-        circuit_cooldown_seconds: float = 60.0,
+        max_retry_delay: float = 15.0,
+        retry_budget_seconds: float = 90.0,
+        rate_limit_wait: float = DEFAULT_RATE_LIMIT_WAIT_SECONDS,
+        circuit_failure_threshold: int = 3,
+        circuit_cooldown_seconds: float = 120.0,
     ) -> None:
         if timeout <= 0:
             raise ValueError("timeout must be positive")
@@ -257,6 +287,8 @@ class ArxivSearchTool(SearchTool):
             raise ValueError("retry_budget_seconds must be positive")
         if circuit_failure_threshold < 1 or circuit_cooldown_seconds < 0:
             raise ValueError("circuit breaker values are invalid")
+        if rate_limit_wait <= 0:
+            raise ValueError("rate_limit_wait must be positive")
         self._client = client or httpx.Client(timeout=timeout, follow_redirects=True)
         self._base_url = base_url
         self._min_interval = min_interval
@@ -264,6 +296,7 @@ class ArxivSearchTool(SearchTool):
         self._max_retries = max_retries
         self._max_retry_delay = max_retry_delay
         self._retry_budget_seconds = retry_budget_seconds
+        self._rate_limit_wait = rate_limit_wait
         self._circuit_failure_threshold = circuit_failure_threshold
         self._circuit_cooldown_seconds = circuit_cooldown_seconds
         self._circuit_lock = threading.Lock()
@@ -305,26 +338,9 @@ class ArxivSearchTool(SearchTool):
         return self.search(f'ti:"{escaped}"', limit=limit)
 
     def _throttle(self, *, deadline: float) -> bool:
-        """全进程共享的节流：多个 ArxivSearchTool 实例（工作流、bootstrap、
-        多来源）不再各自计时，否则叠加起来的请求速率会超过 arXiv 的单实例限制。
+        """实例侧入口：统一走模块级共享节流。"""
 
-        返回 ``False`` 表示等待到 deadline 也无法取得请求时隙。
-        """
-
-        global _LAST_REQUEST_AT
-        with _THROTTLE_LOCK:
-            elapsed = time.monotonic() - _LAST_REQUEST_AT
-            if elapsed < self._min_interval:
-                delay = self._min_interval - elapsed
-                remaining = deadline - time.monotonic()
-                if remaining <= 0:
-                    return False
-                if delay >= remaining:
-                    time.sleep(remaining)
-                    return False
-                time.sleep(delay)
-            _LAST_REQUEST_AT = time.monotonic()
-            return True
+        return _wait_for_request_slot(self._min_interval, deadline=deadline)
 
     def _acquire_circuit_permission(self) -> bool:
         """Return whether this call is the single half-open probe."""
@@ -368,6 +384,16 @@ class ArxivSearchTool(SearchTool):
             request=httpx.Request("GET", url),
         )
 
+    def _rate_limit_wait_for(self, response: httpx.Response) -> float:
+        """429 的等待时间：优先 Retry-After，否则用更长的固定退避。
+
+        429 意味着已超出 arXiv 配额，短退避重试只会把限流窗口拖长。
+        """
+
+        header = (response.headers.get("Retry-After") or "").strip()
+        advertised = float(header) if header.isdigit() else 0.0
+        return max(advertised, self._rate_limit_wait)
+
     def _get(self, url: str) -> httpx.Response:
         with _REQUEST_GATE:
             was_probe = self._acquire_circuit_permission()
@@ -405,15 +431,20 @@ class ArxivSearchTool(SearchTool):
                 if attempt >= self._max_retries:
                     self._raise_retryable(last_retryable, was_probe=was_probe)
                 remaining = deadline - time.monotonic()
-                delay = (
-                    _retry_delay(
+                if (
+                    isinstance(last_retryable, httpx.HTTPStatusError)
+                    and last_retryable.response.status_code == 429
+                ):
+                    # 429 = 已超配额：等得更久，不受 max_retry_delay 的小上限约束。
+                    delay = self._rate_limit_wait_for(last_retryable.response)
+                elif isinstance(last_retryable, httpx.HTTPStatusError):
+                    delay = _retry_delay(
                         response,
                         attempt,
                         max_delay=self._max_retry_delay,
                     )
-                    if isinstance(last_retryable, httpx.HTTPStatusError)
-                    else min(2.0 * (2**attempt), self._max_retry_delay)
-                )
+                else:
+                    delay = min(2.0 * (2**attempt), self._max_retry_delay)
                 if remaining <= 0 or delay >= remaining:
                     if remaining > 0:
                         time.sleep(remaining)
@@ -553,9 +584,11 @@ class ArxivMetadataTool(MetadataTool):
         client: httpx.Client | None = None,
         base_url: str = ARXIV_QUERY_URL,
         timeout: float = 20.0,
+        min_interval: float = DEFAULT_MIN_INTERVAL_SECONDS,
     ) -> None:
         self._client = client or httpx.Client(timeout=timeout, follow_redirects=True)
         self._base_url = base_url
+        self._min_interval = min_interval
         self._cache: dict[str, EvidenceSource | None] = {}
 
     def resolve(self, document_id: str) -> EvidenceSource | None:
@@ -569,6 +602,12 @@ class ArxivMetadataTool(MetadataTool):
     def _resolve_live(self, doc_id: str) -> EvidenceSource | None:
         try:
             with _REQUEST_GATE:
+                # 元数据核验同样是 export API 请求，必须占用同一个限速时隙。
+                if not _wait_for_request_slot(
+                    self._min_interval,
+                    deadline=time.monotonic() + 2 * self._min_interval,
+                ):
+                    return None
                 response = self._client.get(
                     f"{self._base_url}?id_list={doc_id}&max_results=1"
                 )
@@ -601,22 +640,48 @@ def build_arxiv_source(config: Mapping[str, Any]) -> RetrievalSource:
     return RetrievalSource(
         source_id="arxiv",
         query_adapter=ArxivQueryAdapter(render_v2=render_v2),
-        search_tool=ArxivSearchTool(
-            client=client,
-            min_interval=float(config["min_interval_seconds"]),
-            max_retries=int(config["max_retries"]),
-            timeout=timeout_seconds,
-            max_retry_delay=float(config.get("max_retry_delay_seconds", 5.0)),
-            retry_budget_seconds=float(config.get("retry_budget_seconds", 45.0)),
-            circuit_failure_threshold=int(
-                config.get("circuit_failure_threshold", 2)
-            ),
-            circuit_cooldown_seconds=float(
-                config.get("circuit_cooldown_seconds", 60.0)
-            ),
-        ),
+        search_tool=build_arxiv_search_tool(config, client=client),
         full_text_tool=ArxivFullTextTool(
             client=client, max_chars=int(config["full_text_max_chars"])
         ),
-        metadata_tool=ArxivMetadataTool(client=client),
+        metadata_tool=ArxivMetadataTool(
+            client=client,
+            min_interval=float(
+                config.get("min_interval_seconds", DEFAULT_MIN_INTERVAL_SECONDS)
+            ),
+        ),
+    )
+
+
+def build_arxiv_search_tool(
+    options: Mapping[str, Any] | None = None,
+    *,
+    client: httpx.Client | None = None,
+) -> ArxivSearchTool:
+    """按配置构造 arXiv 检索工具，供工作流、bootstrap 与诊断共用。
+
+    bootstrap 曾直接用默认值（3 秒间隔、熔断阈值 2），比工作流自身更激进，
+    两条链路叠加时很容易触发 429。现在两边都从同一份配置取值。
+    """
+
+    config = dict(options or {})
+    timeout = float(config.get("timeout_seconds", 20.0))
+    return ArxivSearchTool(
+        client=client or httpx.Client(timeout=timeout, follow_redirects=True),
+        min_interval=float(
+            config.get("min_interval_seconds", DEFAULT_MIN_INTERVAL_SECONDS)
+        ),
+        timeout=timeout,
+        max_retries=int(config.get("max_retries", 2)),
+        max_retry_delay=float(config.get("max_retry_delay_seconds", 15.0)),
+        retry_budget_seconds=float(config.get("retry_budget_seconds", 90.0)),
+        rate_limit_wait=float(
+            config.get("rate_limit_wait_seconds", DEFAULT_RATE_LIMIT_WAIT_SECONDS)
+        ),
+        circuit_failure_threshold=int(
+            config.get("circuit_failure_threshold", 3)
+        ),
+        circuit_cooldown_seconds=float(
+            config.get("circuit_cooldown_seconds", 120.0)
+        ),
     )

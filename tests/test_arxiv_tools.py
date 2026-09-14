@@ -160,6 +160,9 @@ def test_search_retries_on_429_and_honours_retry_after(monkeypatch):
         min_interval=0.0,
         max_retries=2,
         max_retry_delay=10.0,
+        retry_budget_seconds=60.0,
+        # 本用例只验证 Retry-After 被遵守：把固定下限调低以便观察 7 秒。
+        rate_limit_wait=1.0,
     )
     hits = tool.search("q")
 
@@ -168,7 +171,37 @@ def test_search_retries_on_429_and_honours_retry_after(monkeypatch):
     assert 7.0 in sleeps, "应当遵守 Retry-After"
 
 
-def test_search_bounds_retry_after_by_max_delay(monkeypatch):
+def test_rate_limit_wait_floor_applies_without_retry_after(monkeypatch):
+    """429 且无 Retry-After 时用更长的固定等待，且不被 max_retry_delay 截断。"""
+
+    sleeps: list[float] = []
+    monkeypatch.setattr(arxiv_module.time, "sleep", sleeps.append)
+    calls = {"n": 0}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls["n"] += 1
+        if calls["n"] == 1:
+            return httpx.Response(429)
+        return httpx.Response(200, text=ATOM_ENTRY)
+
+    tool = ArxivSearchTool(
+        client=make_client(handler),
+        min_interval=0.0,
+        max_retries=1,
+        max_retry_delay=1.0,
+        retry_budget_seconds=60.0,
+        rate_limit_wait=12.0,
+    )
+
+    assert len(tool.search("q")) == 1
+    assert 12.0 in sleeps
+    assert 1.0 not in sleeps, "429 不应被 max_retry_delay 截断"
+
+
+
+def test_rate_limit_wait_is_not_capped_by_max_retry_delay(monkeypatch):
+    """429 的等待由 rate_limit_wait 决定；max_retry_delay 只约束其他重试。"""
+
     sleeps: list[float] = []
     monkeypatch.setattr(arxiv_module.time, "sleep", sleeps.append)
     calls = {"n": 0}
@@ -184,10 +217,11 @@ def test_search_bounds_retry_after_by_max_delay(monkeypatch):
         min_interval=0.0,
         max_retries=1,
         max_retry_delay=4.0,
+        retry_budget_seconds=60.0,
     )
 
     assert len(tool.search("q")) == 1
-    assert sleeps == [4.0]
+    assert sleeps == [30.0]
 
 
 @pytest.mark.parametrize(
@@ -503,7 +537,8 @@ def test_request_gate_is_shared_by_search_metadata_and_fulltext():
 
     client = make_client(handler)
     search = ArxivSearchTool(client=client, min_interval=0.0)
-    metadata = ArxivMetadataTool(client=client)
+    # 本用例验证的是 single-flight 闸门；把限速间隔设为 0 以免引入真实等待。
+    metadata = ArxivMetadataTool(client=client, min_interval=0.0)
     fulltext = ArxivFullTextTool(client=client)
 
     with ThreadPoolExecutor(max_workers=3) as executor:

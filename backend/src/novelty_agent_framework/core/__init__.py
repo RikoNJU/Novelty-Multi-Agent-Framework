@@ -14,6 +14,16 @@ from .runtime_artifacts import (
 )
 from .run_identity import display_path, file_run_identity, sha256_file
 from .report_binding import bind_reviews_to_report
+from .retrieval_coverage import (
+    RetrievalCoverage,
+    apply_coverage_policy,
+    assess_coverage,
+    assess_point_coverage,
+    coverage_limitations,
+    required_retrieval_sources,
+    zero_card_reason,
+    testing_only_retrieval_sources,
+)
 
 if TYPE_CHECKING:
     from .tool_call_harness import (
@@ -41,6 +51,14 @@ __all__ = [
     "ToolCallHandle",
     "current_runtime_artifacts",
     "bind_reviews_to_report",
+    "RetrievalCoverage",
+    "apply_coverage_policy",
+    "assess_coverage",
+    "assess_point_coverage",
+    "coverage_limitations",
+    "required_retrieval_sources",
+    "zero_card_reason",
+    "testing_only_retrieval_sources",
     *_HARNESS_EXPORTS,
 ]
 

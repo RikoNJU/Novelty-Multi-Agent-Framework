@@ -37,6 +37,11 @@ from ..diagnostics import (
     RuntimeDiagnosticContext,
 )
 from ..diagnostics.llm_usage import DEFAULT_PRICING_PATH, LlmPricingCatalog
+from .retrieval_coverage import (
+    assess_coverage,
+    required_retrieval_sources,
+    testing_only_retrieval_sources,
+)
 
 try:
     from pydantic import BaseModel
@@ -645,6 +650,7 @@ class RuntimeArtifactManager:
         ]
         final_evidence_sufficiency_checks = []
         reviewer_information_adjudication_checks = []
+        retrieval_coverage_checks = []
         for index, item in enumerate(self._stage_records):
             details = item.get("debug_details")
             if not isinstance(details, Mapping):
@@ -669,6 +675,15 @@ class RuntimeArtifactManager:
                         "stage_id": item["stage_id"],
                         "stage_status": item["status"],
                         **details["reviewer_information_adjudication"],
+                        "actual_next_stage": next_stage,
+                    }
+                )
+            if details.get("retrieval_coverage"):
+                retrieval_coverage_checks.append(
+                    {
+                        "stage_id": item["stage_id"],
+                        "stage_status": item["status"],
+                        "coverages": details["retrieval_coverage"],
                         "actual_next_stage": next_stage,
                     }
                 )
@@ -720,6 +735,7 @@ class RuntimeArtifactManager:
             "reviewer_information_adjudication_checks": (
                 reviewer_information_adjudication_checks
             ),
+            "retrieval_coverage_checks": (retrieval_coverage_checks),
             "last_completed_stage": completed[-1]["stage_name"] if completed else None,
         }
 
@@ -995,7 +1011,7 @@ def _stage_debug_details(
     runtime_config: Mapping[str, Any],
 ) -> dict[str, Any] | None:
     if stage_name == "review_evidence":
-        return _reviewer_debug_details(stage_input, stage_output)
+        return _reviewer_debug_details(stage_input, stage_output, runtime_config)
     if stage_name != "check_final_evidence_sufficiency":
         return None
     state = _as_mapping(stage_input)
@@ -1091,7 +1107,9 @@ def _stage_debug_details(
 
 
 def _reviewer_debug_details(
-    stage_input: Any, stage_output: Any
+    stage_input: Any,
+    stage_output: Any,
+    runtime_config: Mapping[str, Any],
 ) -> dict[str, Any] | None:
     """Build an IDs-only Reviewer audit without copying source text."""
 
@@ -1223,8 +1241,38 @@ def _reviewer_debug_details(
             "point_scopes": point_scopes,
             "review_results": review_results,
             "supplement_requests_control_route": False,
-        }
+        },
+        "retrieval_coverage": _retrieval_coverage_details(
+            stage_input, runtime_config
+        ),
     }
+
+
+def _retrieval_coverage_details(
+    stage_input: Any, runtime_config: Mapping[str, Any]
+) -> list[dict[str, Any]]:
+    """按查新点汇总检索覆盖事实，供 runtime 审计查看。
+
+    覆盖状态由确定性代码给出，模型不得参与；此处只把已有事实重新汇总落盘。
+    """
+
+    state = _as_mapping(stage_input)
+    if state is None:
+        return []
+    brief = _as_mapping(state.get("brief")) or {}
+    point_values = brief.get("novelty_points", state.get("novelty_points", []))
+    point_ids = [
+        point_id
+        for point in _as_sequence(point_values)
+        if (point_id := _field_value(point, "point_id")) is not None
+    ]
+    coverages = assess_coverage(
+        point_ids=point_ids,
+        task_results=_as_sequence(state.get("task_research_results", [])),
+        required_sources=required_retrieval_sources(runtime_config),
+        testing_only_sources=testing_only_retrieval_sources(runtime_config),
+    )
+    return [item.model_dump(mode="json") for item in coverages]
 
 
 def _as_mapping(value: Any) -> Mapping[str, Any] | None:
@@ -1474,6 +1522,32 @@ def _render_summary(summary: Mapping[str, Any]) -> str:
                 f"{item.get('highly_relevant_work_count')} | "
                 f"{item.get('has_supplement_request')} |"
                 for item in check.get("review_results", [])
+            )
+            lines.append("")
+    else:
+        lines.append("- None")
+    lines.extend(["", "## Retrieval Coverage", ""])
+    coverage_checks = summary.get("retrieval_coverage_checks", [])
+    if coverage_checks:
+        for check in coverage_checks:
+            lines.extend(
+                [
+                    f"### Stage {check.get('stage_id')}",
+                    "",
+                    f"Stage status: {check.get('stage_status')}",
+                    f"Actual next stage: {check.get('actual_next_stage')}",
+                    "",
+                    "| Novelty Point | Coverage | Required Sources | Failed | Not Attempted | Zero Hit |",
+                    "|---|---|---|---|---|---|",
+                ]
+            )
+            lines.extend(
+                f"| {item.get('novelty_point_id')} | {item.get('state')} | "
+                f"{', '.join(item.get('required_sources', [])) or '-'} | "
+                f"{', '.join(item.get('failed_sources', [])) or '-'} | "
+                f"{', '.join(item.get('not_attempted_sources', [])) or '-'} | "
+                f"{', '.join(item.get('zero_hit_sources', [])) or '-'} |"
+                for item in check.get("coverages", [])
             )
             lines.append("")
     else:

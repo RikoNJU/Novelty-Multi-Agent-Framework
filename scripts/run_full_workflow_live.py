@@ -18,6 +18,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from collections.abc import Mapping
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from backend.env.model_client import _load_dev_env
@@ -41,6 +43,21 @@ def parser() -> argparse.ArgumentParser:
     result.add_argument("--max-concurrency", type=int, default=1)
     result.add_argument("--force-reference-bootstrap", action="store_true")
     return result
+
+
+def arxiv_limits_from_config(config: Any) -> dict[str, Any]:
+    """从应用配置里取 arXiv 限速参数；配置形状不完整时退回空字典。
+
+    保持防御式读取：入口测试会注入只含必要字段的简化配置对象，而真实入口传入
+    的是完整的 ApplicationConfig。
+    """
+
+    researcher = getattr(config, "researcher", None)
+    tools = getattr(researcher, "tools", None)
+    database = getattr(tools, "database_search", None)
+    providers = getattr(database, "providers", None)
+    options = providers.get("arxiv") if isinstance(providers, Mapping) else None
+    return dict(options) if isinstance(options, Mapping) else {}
 
 
 def allocate_run_directory(
@@ -111,7 +128,12 @@ def main() -> None:
             stable_output_root=stable_root,
             run_output_root=run_dir,
             force=args.force_reference_bootstrap,
-            max_concurrency=args.max_concurrency,
+            # bootstrap 是长批次：串行执行，避免与工作流检索叠加请求。
+            max_concurrency=1,
+            # 入口只做本地解析；联网解析由工作流在产生查新点后按点预筛。
+            defer_resolution=True,
+            # 与工作流共用同一份 arXiv 限速/熔断参数。
+            arxiv_options=arxiv_limits_from_config(config),
         )
         result = workflow.run(paper, run_identity=identity)
         payload = json.loads(result.model_dump_json())

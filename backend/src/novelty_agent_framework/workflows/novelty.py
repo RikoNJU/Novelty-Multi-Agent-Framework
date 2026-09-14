@@ -23,6 +23,15 @@ from novelty_agent_framework.core.integrity_gates import (
     validate_synthesis_input,
 )
 from novelty_agent_framework.core.report_binding import bind_reviews_to_report
+from novelty_agent_framework.core.retrieval_coverage import (
+    RetrievalCoverage,
+    apply_coverage_policy,
+    assess_coverage,
+    coverage_limitations,
+    required_retrieval_sources,
+    testing_only_retrieval_sources,
+    zero_card_reason,
+)
 from novelty_agent_framework.core.runtime_artifacts import (
     RuntimeArtifactManager,
     current_runtime_artifacts,
@@ -75,6 +84,7 @@ T = TypeVar("T")
 
 _STAGE_NAMES = (
     "extract_points",
+    "resolve_subject_references",
     "plan",
     "dispatch_planning_tasks",
     "plan_research_task",
@@ -179,6 +189,13 @@ class NoveltyWorkflow:
         builder.add_node(
             "extract_points", self._record_stage("extract_points", self._extract_points)
         )
+        builder.add_node(
+            "resolve_subject_references",
+            self._record_stage(
+                "resolve_subject_references",
+                self._resolve_subject_references,
+            ),
+        )
         builder.add_node("plan", self._record_stage("plan", self._plan))
         builder.add_node(
             "dispatch_planning_tasks",
@@ -241,7 +258,8 @@ class NoveltyWorkflow:
         )
 
         builder.add_edge(START, "extract_points")
-        builder.add_edge("extract_points", "plan")
+        builder.add_edge("extract_points", "resolve_subject_references")
+        builder.add_edge("resolve_subject_references", "plan")
         builder.add_edge("plan", "dispatch_planning_tasks")
         builder.add_conditional_edges(
             "dispatch_planning_tasks",
@@ -297,6 +315,117 @@ class NoveltyWorkflow:
 
         recorded.__name__ = f"runtime_recorded_{stage_name}"
         return recorded
+
+    async def _resolve_subject_references(
+        self, state: NoveltyState
+    ) -> dict[str, Any]:
+        """按查新点预筛参考文献，只联网解析命中的少数条目。
+
+        入口阶段只做了本地解析（条目状态 SKIPPED）；这里才按查新点挑选值得联网的
+        参考文献，避免 90 条引用变成 90 次 arXiv 请求（耗时并触发 429 限流）。
+        """
+
+        paper = state["paper"]
+        points = list(state.get("novelty_points", []))
+        limit = self.config.reference_prefilter_limit
+        if not paper.references or not points or limit <= 0:
+            return {}
+
+        from ..persistence import SubjectReferenceStore
+        from ..processing.reference_bootstrap import (
+            ReferenceBootstrapService,
+            ReferenceProviderRegistry,
+            ReferenceTarget,
+        )
+        from ..tools.database_search.providers.arxiv import (
+            build_arxiv_search_tool,
+        )
+
+        # 只有入口阶段确实准备了本地台账（defer_resolution）才联网：否则说明这条
+        # 链路已在入口解析完毕，或者根本没有参考文献语料库。
+        store = SubjectReferenceStore(self.output_root)
+        try:
+            ledger = store.load_bootstrap(paper.paper_id)
+        except Exception:
+            return {}
+        if not any(not entry.attempts for entry in ledger.entries):
+            return {}
+
+        targets = [
+            ReferenceTarget(
+                target_id=point.point_id,
+                text=" ".join(
+                    [
+                        point.claim,
+                        point.claim_en,
+                        *point.technical_features,
+                        *point.technical_features_en,
+                    ]
+                ).strip(),
+            )
+            for point in points
+        ]
+        service = ReferenceBootstrapService(
+            ReferenceProviderRegistry(
+                [build_arxiv_search_tool(self._arxiv_options())]
+            ),
+            SubjectReferenceStore(self.output_root),
+            # bootstrap 是长批次：串行执行，不与工作流检索叠加请求。
+            max_concurrency=1,
+        )
+        try:
+            manifest = await service.bootstrap(
+                paper.paper_id,
+                list(paper.references),
+                targets=targets,
+                per_target_limit=limit,
+            )
+        except Exception as exc:
+            # 参考文献解析失败不应击穿查新主流程。
+            return {
+                "issues": [
+                    WorkflowIssue(
+                        node="resolve_subject_references",
+                        code="subject_reference_resolution_failed",
+                        message=(
+                            "按查新点解析参考文献失败："
+                            f"{_safe_error(exc)}"
+                        ),
+                        severity=IssueSeverity.WARNING,
+                    )
+                ]
+            }
+
+        attempted = [entry for entry in manifest.entries if entry.attempts]
+        return {
+            "subject_reference_resolution": {
+                "total": len(manifest.entries),
+                "attempted": len(attempted),
+                "resolved": sum(
+                    1
+                    for entry in attempted
+                    if entry.resolution_status.value == "resolved"
+                ),
+                "skipped": len(manifest.entries) - len(attempted),
+            }
+        }
+
+    def _arxiv_options(self) -> dict[str, Any]:
+        """读取配置里的 arXiv 限速参数，供 bootstrap 与工作流共用。
+
+        bootstrap 以前用构造函数默认值（比工作流更激进），两条链路叠加极易 429。
+        """
+
+        providers = (
+            (self.runtime_config or {}).get("researcher", {})
+            .get("tools", {})
+            .get("database_search", {})
+            .get("providers", {})
+        )
+        options = (
+            providers.get("arxiv") if isinstance(providers, Mapping) else None
+        )
+        return dict(options) if isinstance(options, Mapping) else {}
 
     async def _extract_points(self, state: NoveltyState) -> dict[str, Any]:
         persist_workflow_input(state["paper"], output_root=self.output_root)
@@ -592,6 +721,27 @@ class NoveltyWorkflow:
             "issues": issues,
         }
 
+    def _assess_retrieval_coverage(
+        self, state: NoveltyState
+    ) -> list[RetrievalCoverage]:
+        """按查新点聚合检索覆盖事实。
+
+        必要来源来自配置（启用且非 testing_only），执行成败来自工具观测；
+        两者共同决定该点能否支撑基于“未检索到”的否定性结论。
+        """
+
+        point_ids = [
+            point.point_id for point in state.get("novelty_points", [])
+        ]
+        return assess_coverage(
+            point_ids=point_ids,
+            task_results=state.get("task_research_results", []),
+            required_sources=required_retrieval_sources(self.runtime_config),
+            testing_only_sources=testing_only_retrieval_sources(
+                self.runtime_config
+            ),
+        )
+
     async def _review_evidence(self, state: NoveltyState) -> dict[str, Any]:
         """按 NoveltyPoint 综合证据；Reviewer 不过滤 Validator 放行的卡片。"""
 
@@ -728,6 +878,52 @@ class NoveltyWorkflow:
                     )
                 ]
 
+        # 覆盖不完整时，基于“未检索到”的裁定不成立，降级为证据不足。
+        coverage = self._assess_retrieval_coverage(state)
+        reviews, downgrades = apply_coverage_policy(reviews, coverage)
+
+        # 0 卡时 Reviewer 根本不会运行（代码短路），所以“为什么没有证据”必须由
+        # 覆盖事实自己回答；否则检索失败与检索成功但零命中会写成同一句话。
+        cards_by_point: dict[str, int] = {}
+        for card in accepted:
+            cards_by_point[card.novelty_point_id] = (
+                cards_by_point.get(card.novelty_point_id, 0) + 1
+            )
+        coverage_by_point = {
+            item.novelty_point_id: item for item in coverage
+        }
+        reasoned: list[NoveltyPointReview] = []
+        for review in reviews:
+            item = coverage_by_point.get(review.novelty_point_id)
+            if (
+                item is not None
+                and not cards_by_point.get(review.novelty_point_id, 0)
+                and review.status is ReviewStatus.INSUFFICIENT_EVIDENCE
+            ):
+                review = review.model_copy(
+                    update={
+                        "supplement_request": SupplementRequest(
+                            reason=zero_card_reason(item)
+                        )
+                    }
+                )
+            reasoned.append(review)
+        reviews = reasoned
+        issues.extend(
+            WorkflowIssue(
+                node="review_evidence",
+                code="retrieval_coverage_insufficient",
+                message=(
+                    f"检索覆盖不完整（{downgrade.coverage_state.value}），"
+                    f"查新点 {downgrade.novelty_point_id} 的 "
+                    f"{downgrade.previous_verdict.value} 裁定降级为证据不足："
+                    f"{downgrade.reason}"
+                ),
+                severity=IssueSeverity.WARNING,
+            )
+            for downgrade in downgrades
+        )
+
         persist_evidence_cards(
             state["paper"],
             raw_cards=state.get("raw_evidence_cards", []),
@@ -747,6 +943,7 @@ class NoveltyWorkflow:
             "rejected_evidence": rejected,
             "review_decisions": decisions,
             "novelty_reviews": reviews,
+            "retrieval_coverage": coverage,
             "issues": issues,
         }
 
@@ -895,6 +1092,7 @@ class NoveltyWorkflow:
                 insufficient_final_evidence_points=state.get(
                     "insufficient_final_evidence_points", []
                 ),
+                retrieval_coverage=state.get("retrieval_coverage", []),
             )
             draft = NoveltyReport.model_validate(await _resolve(report_value))
             report = bind_reviews_to_report(
@@ -908,6 +1106,30 @@ class NoveltyWorkflow:
 
         if report.paper_id != state["paper"].paper_id:
             raise WorkflowExecutionError("NoveltyReport.paper_id 与输入论文不一致")
+        # 报告局限由代码补齐：不让“检索失败 / 成功但零命中”只依赖模型措辞。
+        card_counts: dict[str, int] = {}
+        for card in state.get("evidence_cards", []):
+            card_counts[card.novelty_point_id] = (
+                card_counts.get(card.novelty_point_id, 0) + 1
+            )
+        coverage_lines = coverage_limitations(
+            state.get("retrieval_coverage", []),
+            zero_card_points=[
+                point.point_id
+                for point in state.get("novelty_points", [])
+                if not card_counts.get(point.point_id, 0)
+            ],
+        )
+        if coverage_lines:
+            report = report.model_copy(
+                update={
+                    "limitations": list(
+                        dict.fromkeys(
+                            [*report.limitations, *coverage_lines]
+                        )
+                    )
+                }
+            )
         return {"report": report}
 
     async def _validate_report_integrity(

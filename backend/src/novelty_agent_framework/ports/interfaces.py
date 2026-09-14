@@ -9,6 +9,10 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Awaitable, Protocol, Sequence
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ..core.retrieval_coverage import RetrievalCoverage
 
 from ..schemas import (
     EvidenceCard,
@@ -137,6 +141,7 @@ class NoveltyCoordinator(Protocol):
         novelty_reviews: Sequence[NoveltyPointReview],
         rejected_evidence: Sequence[str],
         insufficient_final_evidence_points: Sequence[InsufficientFinalEvidence],
+        retrieval_coverage: Sequence["RetrievalCoverage"] = (),
     ) -> NoveltyReport:
         """从全局视角汇总证据并形成查新报告。"""
 

@@ -12,6 +12,7 @@ from novelty_agent_framework.ports import SearchHit as DatabaseHit
 from novelty_agent_framework.schemas import (
     NoveltyPoint,
     ResearchTask,
+    SearchExecutionStatus,
     SearchConcept,
     SearchPlan,
     SearchStrategy,
@@ -354,6 +355,11 @@ def test_failed_database_observation_reaches_model_runtime_and_is_not_trusted(
     manager.finish_run("SUCCESS")
 
     assert result.research_bundles == []
+    # 失败执行不进入 research_bundles，但必须作为检索覆盖事实保留下来：
+    # 否则该任务的全失败会从产物里消失，覆盖判定只剩“零命中”。
+    assert len(result.retrieval_executions) == 1
+    assert result.retrieval_executions[0].source_id == "demo"
+    assert result.retrieval_executions[0].status is SearchExecutionStatus.FAILED
     assert model.failure_context["succeeded"] is False
     assert "search executions failed" in model.failure_context["error"]
     assert model.failure_context["execution_summary"]["all_failed"] is True

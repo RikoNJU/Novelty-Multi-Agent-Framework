@@ -11,7 +11,15 @@ from novelty_agent_framework.processing.paper_input_bootstrap import (
     PaperInputReferenceBootstrapError,
     prepare_paper_input_references,
 )
-from novelty_agent_framework.processing.reference_bootstrap import CitationMatcher, CitationParser, ReferenceBootstrapService, ReferenceProviderRegistry, references_digest
+from novelty_agent_framework.processing.reference_bootstrap import (
+    CitationMatcher,
+    CitationParser,
+    ReferenceBootstrapService,
+    ReferenceProviderRegistry,
+    ReferenceTarget,
+    references_digest,
+    select_reference_ordinals,
+)
 from novelty_agent_framework.schemas import ArtifactNamespace, ExternalIdentifier, PaperInput, ParsedCitation, ReferenceBootstrapManifest, ReferenceNamespace, ReferenceSearchArguments, ResolutionStatus
 from novelty_agent_framework.tools import ReferenceSearchTool
 from novelty_agent_framework.tools.database_search.providers.arxiv import ArxivSearchTool
@@ -29,7 +37,172 @@ class FakeProvider:
         return []
 
 
+GB_T_REFERENCES = [
+    "[1] ABDI H, WILLIAMS L J. Principal component analysis[J]. Wiley interdisciplinary reviews: computational statistics, 2010, 2(4) : 433 - 459",
+    "[2] HAMILTON W, YING Z. Inductive representation learning on large graphs[C] // NIPS. 2017",
+    "[3] ZENG H, ZHOU H. Graphsaint: Graph sampling based inductive learning method[J]. arXiv preprint arXiv:1907.04931, 2019.",
+    "[4] 张三, 李四. 大规模时序图表示学习[J]. 计算机学报, 2021, 44(3): 1-15",
+]
+
+
 def test_parser_extracts_identifiers():
+    parsed = CitationParser().parse(
+        'Alice Zhang. "Deterministic Reference Resolution". 2024. '
+        "doi:10.1000/demo https://example.test/paper"
+    )
+    assert parsed.doi == "10.1000/demo"
+    assert parsed.year == 2024
+    assert parsed.url == "https://example.test/paper"
+
+
+def test_parser_reads_gbt7714_reference_fields() -> None:
+    parser = CitationParser()
+    journal, conference, preprint, _chinese = [
+        parser.parse(raw) for raw in GB_T_REFERENCES
+    ]
+
+    assert journal.title == "Principal component analysis"
+    assert journal.authors == ["ABDI H", "WILLIAMS L J"]
+    assert journal.year == 2010
+    assert conference.title == "Inductive representation learning on large graphs"
+    assert conference.authors == ["HAMILTON W", "YING Z"]
+    assert preprint.arxiv_id == "1907.04931"
+
+
+def test_parser_prefers_publication_year_over_arxiv_id_digits() -> None:
+    """arXiv ID ``1907.04931`` 里的 1907 不得被当成出版年。"""
+
+    citation = CitationParser().parse(GB_T_REFERENCES[2])
+
+    assert citation.year == 2019
+
+
+def test_selector_picks_lexically_related_references() -> None:
+    target = ReferenceTarget(
+        target_id="NP-1",
+        text="inductive representation learning on large graphs",
+    )
+
+    assert select_reference_ordinals(
+        GB_T_REFERENCES, [target], per_target_limit=1
+    ) == [2]
+
+
+def test_selector_falls_back_to_all_without_targets_or_limit() -> None:
+    target = ReferenceTarget(target_id="NP-1", text="graph")
+
+    assert select_reference_ordinals(
+        GB_T_REFERENCES, [], per_target_limit=2
+    ) == [1, 2, 3, 4]
+    assert select_reference_ordinals(
+        GB_T_REFERENCES, [target], per_target_limit=0
+    ) == [1, 2, 3, 4]
+
+
+def test_bootstrap_with_targets_only_resolves_selected_references(tmp_path) -> None:
+    """预筛命中的才联网解析，其余标为 SKIPPED 且不重复请求。"""
+
+    class CountingProvider:
+        source_id = "arxiv"
+
+        def __init__(self) -> None:
+            self.calls = 0
+
+        def resolve_identifier(self, identifier):
+            self.calls += 1
+            return None
+
+        def search_known_item(self, citation, *, limit=5):
+            self.calls += 1
+            return []
+
+    provider = CountingProvider()
+    service = ReferenceBootstrapService(
+        ReferenceProviderRegistry([provider]), SubjectReferenceStore(tmp_path)
+    )
+    target = ReferenceTarget(
+        target_id="NP-1",
+        text="inductive representation learning on large graphs",
+    )
+
+    result = asyncio.run(
+        service.bootstrap(
+            "paper-filter",
+            GB_T_REFERENCES,
+            targets=[target],
+            per_target_limit=1,
+        )
+    )
+
+    statuses = {entry.ordinal: entry.resolution_status for entry in result.entries}
+    assert provider.calls == 1
+    assert statuses[2] != ResolutionStatus.SKIPPED
+    assert statuses[1] == ResolutionStatus.SKIPPED
+    assert statuses[3] == ResolutionStatus.SKIPPED
+    assert statuses[4] == ResolutionStatus.SKIPPED
+    assert result.bootstrap_ready
+
+    provider.calls = 0
+    again = asyncio.run(
+        service.bootstrap(
+            "paper-filter",
+            GB_T_REFERENCES,
+            targets=[target],
+            per_target_limit=1,
+        )
+    )
+    assert provider.calls == 0
+    assert [entry.ordinal for entry in again.entries] == [1, 2, 3, 4]
+
+
+def test_defer_resolution_writes_parsed_only_manifest(tmp_path) -> None:
+    """defer 模式只做本地解析，不触网，台账依然 ready。"""
+
+    paper = PaperInput(
+        paper_id="paper-defer",
+        title="Paper",
+        full_text="body",
+        references=GB_T_REFERENCES,
+    )
+    run_root = tmp_path / "runs" / "0001"
+
+    manifest = prepare_paper_input_references(
+        paper,
+        stable_output_root=tmp_path / "stable",
+        run_output_root=run_root,
+        defer_resolution=True,
+    )
+
+    assert manifest.bootstrap_ready
+    assert [entry.resolution_status for entry in manifest.entries] == [
+        ResolutionStatus.SKIPPED
+    ] * len(GB_T_REFERENCES)
+    assert manifest.entries[0].parsed.title == "Principal component analysis"
+    persisted = SubjectReferenceStore(run_root).load_bootstrap("paper-defer")
+    assert len(persisted.entries) == len(GB_T_REFERENCES)
+    # 稳定缓存不被写入：defer 模式不产生跨运行的副作用
+    assert SubjectReferenceStore(tmp_path / "stable").load_bootstrap(
+        "paper-defer"
+    ).entries == []
+
+
+def test_workflow_reference_node_is_noop_without_manifest(tmp_path) -> None:
+    from novelty_agent_framework.schemas import NoveltyPoint
+    from novelty_agent_framework.workflows import NoveltyWorkflow
+
+    workflow = NoveltyWorkflow.default()
+    workflow.output_root = tmp_path / "outputs"
+    state = {
+        "paper": PaperInput(
+            paper_id="paper-none",
+            title="Paper",
+            full_text="body",
+            references=GB_T_REFERENCES,
+        ),
+        "novelty_points": [NoveltyPoint(point_id="NP-1", claim="claim")],
+    }
+
+    assert asyncio.run(workflow._resolve_subject_references(state)) == {}
     parsed = CitationParser().parse('Alice Zhang. "Deterministic Reference Resolution". 2024. doi:10.1000/demo https://example.test/paper')
     assert parsed.doi == "10.1000/demo"
     assert parsed.year == 2024

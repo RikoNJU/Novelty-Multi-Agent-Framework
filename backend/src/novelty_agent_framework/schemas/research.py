@@ -8,7 +8,7 @@ from typing import Annotated, Any, Literal
 from pydantic import Field, StringConstraints, model_validator
 
 from .domain import EvidenceCard, NoveltyPoint, ResearchTask, SearchPlan, StrictModel
-from .references import Evidence, ResearchBundle
+from .references import Evidence, ResearchBundle, SearchExecution
 from .research_tools import ResearchFinishDraft, ReferenceReadResult
 
 NonEmptyStr = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
@@ -110,6 +110,9 @@ class TaskResearchResult(StrictModel):
     novelty_point_id: NonEmptyStr
     status: TaskResearchStatus
     research_bundles: list[ResearchBundle] = Field(default_factory=list)
+    # 检索执行的确定性事实，包含失败执行。``research_bundles`` 只接收成功观测，
+    # 失败事实若不单独收集就完全缺失，而它决定该任务能否支撑否定性结论。
+    retrieval_executions: list[SearchExecution] = Field(default_factory=list)
     read_results: list[ReferenceReadResult] = Field(default_factory=list)
     evidence: list[Evidence] = Field(default_factory=list)
     evidence_cards: list[EvidenceCard] = Field(default_factory=list)

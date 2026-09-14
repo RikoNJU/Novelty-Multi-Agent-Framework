@@ -10,6 +10,7 @@ from collections.abc import Sequence
 from datetime import datetime, timezone
 
 from ..persistence import ReferenceStore
+from ..core.retrieval_coverage import RetrievalCoverage
 
 from ..schemas import (
     Artifact,
@@ -116,6 +117,7 @@ class DemoCoordinator:
         novelty_reviews: Sequence[NoveltyPointReview],
         rejected_evidence: Sequence[str],
         insufficient_final_evidence_points: Sequence[InsufficientFinalEvidence],
+        retrieval_coverage: Sequence[RetrievalCoverage] = (),
     ) -> NoveltyReport:
         grouped: dict[str, list[EvidenceCard]] = defaultdict(list)
         for card in evidence:
@@ -186,6 +188,9 @@ class DemoCoordinator:
         ]
         if rejected_evidence:
             limitations.append(f"有 {len(rejected_evidence)} 条候选证据未通过质量门槛")
+        # 检索覆盖相关的 limitations 由工作流确定性补齐（见 NoveltyWorkflow
+        # ._synthesize_report），演示实现不重复写入。
+        del retrieval_coverage
 
         return NoveltyReport(
             paper_id=paper.paper_id,

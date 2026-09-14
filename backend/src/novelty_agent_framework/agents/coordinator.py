@@ -33,6 +33,7 @@ from ..schemas import (
     ResearchTask,
 )
 from ..ports import NoveltyCoordinator
+from ..core.retrieval_coverage import RetrievalCoverage
 
 
 def _normalize_task_languages(values: Sequence[str]) -> tuple[str, ...]:
@@ -207,6 +208,7 @@ class NoveltyCoordinatorAgent(NoveltyCoordinator):
         novelty_reviews: Sequence[NoveltyPointReview],
         rejected_evidence: Sequence[str],
         insufficient_final_evidence_points: Sequence[InsufficientFinalEvidence],
+        retrieval_coverage: Sequence[RetrievalCoverage] = (),
     ) -> NoveltyReport:
         """汇总全部有效证据，形成最终查新报告。
 
@@ -226,6 +228,9 @@ class NoveltyCoordinatorAgent(NoveltyCoordinator):
                 item.model_dump(mode="json")
                 for item in insufficient_final_evidence_points
             ],
+            "retrieval_coverage": [
+                item.model_dump(mode="json") for item in retrieval_coverage
+            ],
         }
         data = self._complete_json(
             prompt_name="coordinator/synthesize",
@@ -242,6 +247,9 @@ class NoveltyCoordinatorAgent(NoveltyCoordinator):
                 ),
                 "insufficient_final_evidence_points_json": json.dumps(
                     payload["insufficient_final_evidence_points"], ensure_ascii=False
+                ),
+                "retrieval_coverage_json": json.dumps(
+                    payload["retrieval_coverage"], ensure_ascii=False
                 ),
                 "report_schema": json.dumps(
                     NoveltyReport.model_json_schema(), ensure_ascii=False
