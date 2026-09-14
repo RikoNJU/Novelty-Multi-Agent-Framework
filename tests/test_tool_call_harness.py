@@ -297,19 +297,28 @@ def test_full_observation_is_logged_while_projection_reaches_model() -> None:
     }
 
 
-def test_multiple_tool_calls_execute_first_only() -> None:
+@pytest.mark.parametrize("call_count", [2, 3])
+def test_multiple_tool_calls_keep_only_first_in_execution_and_history(
+    call_count: int,
+) -> None:
     tool = ExampleTool()
     response = ModelResponse(
         content=None,
-        tool_calls=(
-            ModelToolCall(id="call_1", name="example", arguments={"value": "1"}),
-            ModelToolCall(id="call_2", name="example", arguments={"value": "2"}),
+        tool_calls=tuple(
+            ModelToolCall(
+                id=f"call_{index}",
+                name="example",
+                arguments={"value": str(index)},
+            )
+            for index in range(1, call_count + 1)
         ),
     )
+    model = ScriptedModelClient(response, ModelResponse(content="finished"))
     result = run_harness(
         ToolCallHarness(
-            ScriptedModelClient(response, ModelResponse(content="finished")),
+            model,
             ResearcherToolRegistry([tool]),
+            config=ToolCallHarnessConfig(max_tool_calls=1),
         ),
         system_prompt="system",
         initial_user_message="task",
@@ -317,10 +326,48 @@ def test_multiple_tool_calls_execute_first_only() -> None:
 
     assert [item.value for item in tool.received] == ["1"]
     assert result.final_content == "finished"
+    assert result.tool_calls_used == 1
+    second_context = model.calls[1][0]
+    assert [call.id for call in second_context[2].tool_calls] == ["call_1"]
+    assert second_context[3].tool_call_id == "call_1"
+    assert all(
+        dropped_id not in repr(second_context)
+        for dropped_id in [f"call_{index}" for index in range(2, call_count + 1)]
+    )
     error_events = [event for event in result.trace if event.kind == "error"]
-    assert error_events
-    assert "multiple tool calls" in error_events[0].detail
-    assert "dropped example" in error_events[0].detail
+    policy = json.loads(error_events[0].detail)
+    assert policy == {
+        "policy": "SERIAL_FIRST_CALL",
+        "selected_tool_call_id": "call_1",
+        "dropped_tool_call_ids": [
+            f"call_{index}" for index in range(2, call_count + 1)
+        ],
+    }
+
+
+def test_failed_selected_call_still_produces_protocol_valid_history() -> None:
+    tool = ExampleTool()
+    response = ModelResponse(
+        content=None,
+        tool_calls=(
+            ModelToolCall(id="bad_1", name="example", arguments={"wrong": "value"}),
+            ModelToolCall(id="dropped_2", name="example", arguments={"value": "2"}),
+        ),
+    )
+    model = ScriptedModelClient(response, ModelResponse(content="recovered"))
+
+    result = run_harness(
+        ToolCallHarness(model, ResearcherToolRegistry([tool])),
+        system_prompt="system",
+        initial_user_message="task",
+    )
+
+    context = model.calls[1][0]
+    assert [call.id for call in context[2].tool_calls] == ["bad_1"]
+    assert context[3].tool_call_id == "bad_1"
+    assert json.loads(context[3].content)["succeeded"] is False
+    assert "dropped_2" not in repr(context)
+    assert result.tool_calls_used == 1
 
 
 @pytest.mark.parametrize("failure", ["validation", "execution"])

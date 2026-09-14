@@ -8,7 +8,7 @@ This module will bridge:
 The first implementation is serial:
 - 0 tool calls -> finish
 - 1 tool call -> execute and continue
-- >1 tool calls -> protocol/policy error
+- >1 tool calls -> retain and execute only the first call
 
 Business tool implementations do not belong here.
 """
@@ -135,18 +135,16 @@ class ToolCallHarness:
                     "model call failed", trace=tuple(log)
                 ) from exc
 
-            assistant_message = ChatMessage(
-                role="assistant",
-                content=response.content,
-                tool_calls=tuple(response.tool_calls),
-            )
-            log.append(
-                ToolCallHarnessEvent(
-                    kind="assistant_response", message=assistant_message
-                )
-            )
-
             if not response.tool_calls:
+                assistant_message = ChatMessage(
+                    role="assistant",
+                    content=response.content,
+                )
+                log.append(
+                    ToolCallHarnessEvent(
+                        kind="assistant_response", message=assistant_message
+                    )
+                )
                 log.append(
                     ToolCallHarnessEvent(kind="finish", detail="model finished")
                 )
@@ -157,22 +155,39 @@ class ToolCallHarness:
                     turns_used=turn,
                 )
 
-            if len(response.tool_calls) > 1:
-                # 串行策略：每轮至多执行一个工具调用。多调用场景下取第一个
-                # 执行（模型下一轮会基于结果继续），其余丢弃并记录审计日志，
-                # 而不是让整个研究任务失败（R1 等模型常并行发起多个调用）。
+            original_tool_calls = tuple(response.tool_calls)
+            dropped_tool_calls = original_tool_calls[1:]
+            if dropped_tool_calls:
                 _append_error(
                     log,
-                    "serial harness policy: multiple tool calls; "
-                    "executing first only, dropped "
-                    + ", ".join(call.name for call in response.tool_calls[1:]),
+                    json.dumps(
+                        {
+                            "policy": "SERIAL_FIRST_CALL",
+                            "selected_tool_call_id": original_tool_calls[0].id,
+                            "dropped_tool_call_ids": [
+                                call.id for call in dropped_tool_calls
+                            ],
+                        },
+                        sort_keys=True,
+                    ),
                 )
                 response = ModelResponse(
                     content=response.content,
-                    tool_calls=response.tool_calls[:1],
+                    tool_calls=original_tool_calls[:1],
                     raw=response.raw,
                     usage=response.usage,
                 )
+
+            assistant_message = ChatMessage(
+                role="assistant",
+                content=response.content,
+                tool_calls=tuple(response.tool_calls),
+            )
+            log.append(
+                ToolCallHarnessEvent(
+                    kind="assistant_response", message=assistant_message
+                )
+            )
 
             tool_call = response.tool_calls[0]
             try:
