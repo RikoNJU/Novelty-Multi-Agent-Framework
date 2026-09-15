@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 import json
+import asyncio
 import re
 from datetime import datetime, timezone
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Any
 
 from pydantic import ValidationError
@@ -65,6 +66,8 @@ class EvidenceReviewerConfig:
     max_tool_calls: int = 6
     max_total_read_chars: int = 32_000
     prompt_name: str = "reviewer/review_evidence"
+    card_timeout_seconds: float = 240.0
+    summary_timeout_seconds: float = 180.0
 
     def __post_init__(self) -> None:
         if not 0.0 <= self.temperature <= 2.0:
@@ -73,6 +76,8 @@ class EvidenceReviewerConfig:
             raise ValueError("max_cards_per_call 必须至少为 1")
         if min(self.max_steps, self.max_tool_calls, self.max_total_read_chars) < 1:
             raise ValueError("reviewer harness budgets must be positive")
+        if min(self.card_timeout_seconds, self.summary_timeout_seconds) <= 0:
+            raise ValueError("reviewer timeouts must be positive")
         if not self.prompt_name.strip():
             raise ValueError("prompt_name 不能为空")
 
@@ -134,7 +139,7 @@ class NoveltyEvidenceReviewer(EvidenceReviewer):
         return self._review_cards_legacy(request, points=points, tasks=tasks)
 
     async def _review_point(
-        self, request: NoveltyPointReviewRequest
+        self, request: NoveltyPointReviewRequest, *, card_only: bool = False
     ) -> NoveltyPointReview:
         request = NoveltyPointReviewRequest.model_validate(request)
         if not request.cards or not request.evidence:
@@ -144,8 +149,23 @@ class NoveltyEvidenceReviewer(EvidenceReviewer):
             )
 
         system, user = self._render_point_prompt(request)
+        if card_only:
+            system += (
+                "\n本轮只核验一张 Card 对应的一篇论文，是中间结果，不作最终查新裁定。"
+                "复用 NoveltyPointReview 格式；verdict 仅描述该文献与查新点的关系。"
+                "记录已覆盖特征、差异、引用可靠性和证据局限；部分相关文献也必须保留。"
+                "不得因单篇未覆盖完整组合而丢弃它。优先使用输入 Evidence 原文，"
+                "仅在存在具体疑问时回读，避免重复读取相同片段。理由简洁，不超过300字。"
+            )
         try:
-            result = await self.harness.run(
+            harness = self.harness
+            if card_only:
+                harness = ToolCallHarness(self._client(), self.tools, config=replace(
+                    self.harness.config, max_turns=min(self.config.max_steps, 6),
+                    max_tool_calls=min(self.config.max_tool_calls, 4),
+                    per_tool_limits={"reader": min(self.config.max_tool_calls, 4)},
+                ))
+            result = await harness.run(
                 system_prompt=system,
                 initial_user_message=user,
                 scope=request,
@@ -168,6 +188,60 @@ class NoveltyEvidenceReviewer(EvidenceReviewer):
             return _insufficient_review(
                 request.novelty_point.point_id,
                 f"Reviewer 无法完成可靠判定：{type(exc).__name__}: {exc}"[:500],
+            )
+
+    async def review_card(self, request: NoveltyPointReviewRequest) -> NoveltyPointReview:
+        """Reuse the existing review contract for one indexed intermediate result."""
+        if len(request.cards) != 1:
+            raise ValueError("review_card requires exactly one card")
+        try:
+            return await asyncio.wait_for(
+                self._review_point(request, card_only=True), self.config.card_timeout_seconds
+            )
+        except TimeoutError:
+            return _insufficient_review(request.novelty_point.point_id, "单卡评审超过时间预算，核验未完成。")
+
+    async def summarize_reviews(self, request, card_reviews) -> NoveltyPointReview:
+        """Synthesize compact card reviews; validate against originals locally."""
+        system = (
+            "你是查新点级汇总 Reviewer。综合带索引的单卡核验结果和已核验关键引文，"
+            "输出一个 NoveltyPointReview。单卡结果是派生分析，不是原始证据。"
+            "必须区分单篇公开完整组合与多篇分别公开部分特征，不能将后者等同于前者。"
+            "保留部分相关文献；单卡失败或证据不足必须体现在结论局限中。"
+            "本轮不可调用工具，不得用模型记忆填补缺口；不能据获取失败裁定新颖。"
+            "只能引用输入已核验的 work_id、card_id 和 evidence_id。"
+            "只使用论文证据，网页补充资料不得用于裁定。"
+            "关键引文可能截短，quote_truncated=true 表示未提供完整引文；"
+            "不得将未展示内容视为不存在。遇到矛盾或关键缺口，明确标记不确定性，"
+            "必要时返回 insufficient_evidence 并在 supplement_request 中列明待复核索引。"
+            "理由简洁，不重复逐卡全文；只输出严格 JSON。"
+        )
+        try:
+            rows, validated_ids = _compact_summary_rows(request, card_reviews)
+            user = json.dumps({
+                "today": datetime.now(timezone.utc).date().isoformat(),
+                "novelty_point": request.novelty_point.model_dump(mode="json"),
+                "card_reviews": rows,
+                "review_schema": NoveltyPointReview.model_json_schema(),
+            }, ensure_ascii=False)
+            response = await asyncio.wait_for(self._client().acomplete(
+                [ChatMessage(role="system", content=system), ChatMessage(role="user", content=user)],
+                options=replace(self.model_options or ModelCallOptions(), tools=(), tool_choice="none",
+                                timeout_seconds=self.config.summary_timeout_seconds),
+            ), self.config.summary_timeout_seconds)
+            if response.tool_calls:
+                raise ValueError("summary attempted a tool call")
+            review = NoveltyPointReview.model_validate_json(_extract_json(response.content))
+            if any(evidence_id not in validated_ids for work in review.highly_relevant_works
+                   for evidence_id in work.evidence_ids):
+                raise ValueError("summary cites evidence not verified by a card review")
+            return _validate_review_references(review, request)
+        except Exception as exc:
+            if not self.config.fail_closed:
+                raise
+            return _insufficient_review(
+                request.novelty_point.point_id,
+                f"Reviewer 汇总失败：{type(exc).__name__}: {exc}"[:500],
             )
 
     def _render_point_prompt(
@@ -451,6 +525,48 @@ def _insufficient_review(point_id: str, reason: str) -> NoveltyPointReview:
         status=ReviewStatus.INSUFFICIENT_EVIDENCE,
         supplement_request=SupplementRequest(reason=reason),
     )
+
+
+def _compact_summary_rows(request, card_reviews):
+    """Project existing indexed results; never serialize full Card/Evidence objects.
+
+    At most two exact quote prefixes (600 characters each) accompany each card.
+    All verified evidence IDs remain available even when their quotes are omitted.
+    """
+    cards = {card.card_id: card for card in request.cards}
+    evidence = {item.evidence_id: item for item in request.evidence}
+    rows, validated_ids = [], set()
+    for row in card_reviews:
+        card = cards.get(row.get("card_id"))
+        if card is None or row.get("novelty_point_id") != request.novelty_point.point_id:
+            raise ValueError("indexed card review is outside request scope")
+        compact = {key: row[key] for key in ("index", "card_id", "novelty_point_id", "status")}
+        compact["document_title"] = card.document_title
+        if row.get("status") != "completed":
+            compact["error"] = str(row.get("error", "单卡核验未完成"))[:500]
+            rows.append(compact)
+            continue
+        review = NoveltyPointReview.model_validate(row.get("review"))
+        single = NoveltyPointReviewRequest(
+            subject_paper_id=request.subject_paper_id,
+            novelty_point=request.novelty_point, tasks=request.tasks, cards=[card],
+            evidence=[item for item in request.evidence if item.evidence_id in card.evidence_ids],
+        )
+        _validate_review_references(review, single)
+        ids = list(dict.fromkeys(
+            eid for work in review.highly_relevant_works for eid in work.evidence_ids
+        ))
+        validated_ids.update(ids)
+        compact["review"] = review.model_dump(mode="json")
+        compact["key_quotes"] = [{
+            "evidence_id": eid, "work_id": evidence[eid].work_id,
+            "artifact_id": evidence[eid].artifact_id,
+            "quote": evidence[eid].quote[:600],
+            "quote_truncated": len(evidence[eid].quote) > 600,
+        } for eid in ids[:2]]
+        compact["omitted_quote_count"] = max(0, len(ids) - 2)
+        rows.append(compact)
+    return rows, validated_ids
 
 
 def _validate_review_references(

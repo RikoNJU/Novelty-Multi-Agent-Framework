@@ -134,6 +134,8 @@ def legacy_shape(config: ApplicationConfig) -> dict[str, Any]:
                     config.reviewer.fail_closed if config.reviewer else True
                 ),
                 "max_steps": config.reviewer.max_steps if config.reviewer else 14,
+                "card_timeout_seconds": config.reviewer.card_timeout_seconds if config.reviewer else 240,
+                "summary_timeout_seconds": config.reviewer.summary_timeout_seconds if config.reviewer else 180,
                 "max_tool_calls": (
                     config.reviewer.max_tool_calls if config.reviewer else 12
                 ),

@@ -5,6 +5,8 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import json
+from dataclasses import replace
+from pathlib import Path
 
 import pytest
 from pydantic import ValidationError
@@ -142,6 +144,17 @@ def _reviewer(client, reader):
     )
 
 
+def test_batch_reviewer_reader_checks_each_artifact_scope():
+    reader = RecordingReader()
+    tool = ReviewerReaderTool(reader)
+    observation = asyncio.run(tool.ainvoke(tool.args_schema.model_validate({"reads": [
+        {"artifact_id": "artifact-1"}, {"artifact_id": "outside"},
+    ]}), scope=_request()))
+    assert [request.artifact_id for request in reader.requests] == ["artifact-1"]
+    assert len(observation.payload["read_results"]) == 1
+    assert observation.payload["read_errors"][0]["error_type"] == "PermissionError"
+
+
 def test_review_request_rejects_unresolved_card_evidence_ids():
     request = _request()
     with pytest.raises(ValidationError, match="absent from request evidence"):
@@ -277,3 +290,216 @@ def test_workflow_persists_point_reviews_without_filtering_or_routing(tmp_path, 
             {**state, **reviewed, "insufficient_final_evidence_points": []}
         )
     ) == "synthesize"
+
+
+@pytest.mark.parametrize("failure", [None, "type_error", "wrong_point"])
+@pytest.mark.parametrize("concurrency", [1, 2])
+def test_parallel_reviews_preserve_point_bundles_order_and_failure_isolation(
+    tmp_path, monkeypatch, failure, concurrency
+):
+    monkeypatch.chdir(tmp_path)
+    seed = _request()
+    points, tasks, evidence, cards = [], [], [], []
+    for index in range(3):
+        point_id = f"NP-{index + 1}"
+        points.append(seed.novelty_point.model_copy(update={"point_id": point_id}))
+        tasks.append(seed.tasks[0].model_copy(update={"novelty_point_id": point_id}))
+        for document in range(2):
+            key = f"{index}-{document}"
+            evidence.append(seed.evidence[0].model_copy(update={
+                "novelty_point_id": point_id, "evidence_id": f"E-{key}",
+                "work_id": f"W-{key}", "artifact_id": f"A-{key}",
+            }))
+            cards.append(seed.cards[0].model_copy(update={
+                "novelty_point_id": point_id, "card_id": f"C-{key}",
+                "evidence_ids": [f"E-{key}"],
+            }))
+
+    async def run():
+        class ConcurrentReviewer:
+            active = 0
+            peak = 0
+
+            def __init__(self):
+                self.overlap = asyncio.Event()
+                self.requests = []
+
+            async def review(self, request):
+                self.requests.append(request)
+                self.active += 1
+                self.peak = max(self.peak, self.active)
+                if self.active == concurrency:
+                    self.overlap.set()
+                try:
+                    # With concurrency=2, serial scheduling fails the timeout.
+                    await self.overlap.wait()
+                    await asyncio.sleep(0)
+                    point_id = request.novelty_point.point_id
+                    if point_id == "NP-2" and failure == "type_error":
+                        raise TypeError("internal reviewer failure")
+                    return NoveltyPointReview.model_validate({
+                        "novelty_point_id": "wrong" if point_id == "NP-2" and failure == "wrong_point" else point_id,
+                        "status": "insufficient_evidence",
+                        "supplement_request": {"reason": f"reviewed {point_id}"},
+                    })
+                finally:
+                    self.active -= 1
+
+        reviewer = ConcurrentReviewer()
+        workflow = _workflow(reviewer)
+        workflow.config = replace(workflow.config, max_concurrency=concurrency)
+        result = await asyncio.wait_for(workflow._review_evidence({
+            "paper": PaperInput(paper_id="paper-1", title="Paper", full_text="body"),
+            "novelty_points": points, "all_research_tasks": tasks,
+            "raw_evidence": evidence, "raw_evidence_cards": cards,
+            "validator_accepted_cards": cards,
+        }), timeout=5)
+        assert reviewer.peak == concurrency
+        assert len(reviewer.requests) == 3
+        for request in reviewer.requests:
+            point_id = request.novelty_point.point_id
+            assert len(request.cards) == len(request.evidence) == 2
+            assert all(c.novelty_point_id == point_id for c in request.cards)
+            assert all(e.novelty_point_id == point_id for e in request.evidence)
+            assert all(t.novelty_point_id == point_id for t in request.tasks)
+        assert result["evidence_cards"] == cards
+        assert [r.novelty_point_id for r in result["novelty_reviews"]] == [p.point_id for p in points]
+        assert len(result["issues"]) == (1 if failure else 0)
+        assert result["novelty_reviews"][0].supplement_request.reason == "reviewed NP-1"
+        assert result["novelty_reviews"][2].supplement_request.reason == "reviewed NP-3"
+
+    asyncio.run(run())
+
+
+@pytest.mark.parametrize("failed_card", [False, True])
+def test_card_parallel_checkpoint_then_single_summary(tmp_path, monkeypatch, failed_card):
+    monkeypatch.chdir(tmp_path)
+    request = _request()
+    second = request.cards[0].model_copy(update={"card_id": "C-2"})
+    cards = [*request.cards, second]
+
+    async def run():
+        class TwoStageReviewer:
+            def __init__(self):
+                self.started = 0
+                self.barrier = asyncio.Event()
+                self.summary_calls = 0
+
+            async def review(self, request):
+                raise AssertionError("unexpected point review")
+
+            async def review_card(self, single):
+                assert len(single.cards) == 1
+                self.started += 1
+                if self.started == 2:
+                    self.barrier.set()
+                await self.barrier.wait()
+                if failed_card and single.cards[0].card_id == "C-2":
+                    raise RuntimeError("single card failure")
+                return NoveltyPointReview.model_validate_json(_review_json("insufficient_evidence"))
+
+            async def summarize_reviews(self, full, rows):
+                self.summary_calls += 1
+                assert len(full.cards) == 2
+                assert full.evidence == request.evidence
+                saved = json.loads(Path("outputs/paper-1/novelty-reviews.json").read_text())
+                assert saved["reviews"] == []
+                assert saved["phase"] == "card_review"
+                assert saved["card_reviews"] == rows
+                assert [row["index"] for row in rows] == [1, 2]
+                assert [row["status"] for row in rows] == ["completed", "failed" if failed_card else "completed"]
+                return NoveltyPointReview.model_validate_json(_review_json())
+
+        reviewer = TwoStageReviewer()
+        result = await asyncio.wait_for(_workflow(reviewer)._review_evidence({
+            "paper": PaperInput(paper_id="paper-1", title="Paper", full_text="body"),
+            "novelty_points": [request.novelty_point], "all_research_tasks": request.tasks,
+            "raw_evidence": request.evidence, "validator_accepted_cards": cards,
+        }), 5)
+        saved = json.loads(Path("outputs/paper-1/novelty-reviews.json").read_text())
+        assert saved["phase"] == "complete"
+        assert len(saved["card_reviews"]) == 2
+        assert len(saved["reviews"]) == reviewer.summary_calls == 1
+        assert result["evidence_cards"] == cards
+
+    asyncio.run(run())
+
+
+def _indexed_review():
+    return {"index": 1, "card_id": "C-1", "novelty_point_id": "NP-1",
+            "status": "completed", "review": json.loads(_review_json())}
+
+
+def test_summary_is_one_tool_free_call_with_compact_verified_quotes():
+    client = ScriptedClient(ModelResponse(content=_review_json()))
+    reviewer = _reviewer(client, RecordingReader())
+    request = _request()
+    request.cards[0].main_contribution = "FULL_CARD_BODY_" * 1000
+    request.tasks[0].description = "FULL_TASK_BODY_" * 1000
+    request.evidence[0].interpretation = "FULL_INTERPRETATION_" * 1000
+    request.evidence[0].provenance = {"detail": "FULL_PROVENANCE_" * 1000}
+    result = asyncio.run(reviewer.summarize_reviews(request, [_indexed_review()]))
+    assert result.status.value == "reviewed"
+    assert len(client.calls) == 1
+    messages, options = client.calls[0]
+    assert options.tool_choice == "none" and options.tools == ()
+    assert "source text" in messages[1].content
+    payload = json.loads(messages[1].content)
+    assert set(payload) == {"today", "novelty_point", "card_reviews", "review_schema"}
+    assert payload["card_reviews"][0]["index"] == 1
+    for marker in ("FULL_CARD_BODY_", "FULL_TASK_BODY_", "FULL_INTERPRETATION_", "FULL_PROVENANCE_"):
+        assert marker not in messages[1].content
+    assert request.cards[0].main_contribution.startswith("FULL_CARD_BODY_")
+
+
+def test_summary_limits_quotes_and_excludes_unreviewed_evidence():
+    request = _request()
+    seed = request.evidence[0]
+    request.evidence = [seed.model_copy(update={
+        "evidence_id": f"E-{i}", "quote": str(i) * 900 + "UNSENT_SUFFIX",
+    }) for i in range(1, 5)]
+    request.cards[0].evidence_ids = [e.evidence_id for e in request.evidence]
+    row = _indexed_review()
+    row["review"]["highly_relevant_works"][0]["evidence_ids"] = ["E-1", "E-2", "E-3"]
+    client = ScriptedClient(ModelResponse(content=_review_json()))
+    asyncio.run(_reviewer(client, RecordingReader()).summarize_reviews(request, [row]))
+    user = client.calls[0][0][1].content
+    data = json.loads(user)["card_reviews"][0]
+    assert len(data["key_quotes"]) == 2
+    assert all(len(q["quote"]) == 600 and q["quote_truncated"] for q in data["key_quotes"])
+    assert data["omitted_quote_count"] == 1
+    assert "UNSENT_SUFFIX" not in user and "E-4" not in user
+
+
+def test_summary_cannot_cite_evidence_not_verified_in_card_stage():
+    request = _request()
+    request.evidence.append(request.evidence[0].model_copy(update={"evidence_id": "E-unreviewed"}))
+    request.cards[0].evidence_ids.append("E-unreviewed")
+    output = json.loads(_review_json())
+    output["highly_relevant_works"][0]["evidence_ids"] = ["E-unreviewed"]
+    client = ScriptedClient(ModelResponse(content=json.dumps(output)))
+    result = asyncio.run(_reviewer(client, RecordingReader()).summarize_reviews(request, [_indexed_review()]))
+    assert result.status.value == "insufficient_evidence"
+    assert "not verified" in result.supplement_request.reason
+
+
+def test_summary_invalid_json_fails_closed_without_an_extra_model_call():
+    client = ScriptedClient(ModelResponse(content="invalid JSON"))
+    result = asyncio.run(_reviewer(client, RecordingReader()).summarize_reviews(_request(), []))
+    assert result.status.value == "insufficient_evidence"
+    assert len(client.calls) == 1
+
+
+def test_card_and_summary_timeouts_are_bounded():
+    class WaitingClient:
+        async def acomplete(self, messages, *, options=None):
+            await asyncio.Event().wait()
+
+    async def run():
+        reviewer = _reviewer(WaitingClient(), RecordingReader())
+        reviewer.config = replace(reviewer.config, card_timeout_seconds=0.01, summary_timeout_seconds=0.01)
+        card = await asyncio.wait_for(reviewer.review_card(_request()), 1)
+        summary = await asyncio.wait_for(reviewer.summarize_reviews(_request(), []), 1)
+        assert card.status.value == summary.status.value == "insufficient_evidence"
+
+    asyncio.run(run())

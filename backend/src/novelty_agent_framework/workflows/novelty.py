@@ -567,6 +567,7 @@ class NoveltyWorkflow:
         decisions = []
         issues: list[WorkflowIssue] = []
         audit_decisions = None
+        card_reviews = None
 
         if self.services.reviewer is None:
             reviews = [
@@ -585,10 +586,71 @@ class NoveltyWorkflow:
             ]
         else:
             try:
+                # Detect the legacy signature before scheduling any point reviews.
+                # A TypeError inside a modern reviewer must not restart a batch.
+                inspect.signature(self.services.reviewer.review).bind(None)
                 evidence_by_id = {
                     item.evidence_id: item for item in state.get("raw_evidence", [])
                 }
-                for point in state.get("novelty_points", []):
+                semaphore = asyncio.Semaphore(self.config.max_concurrency)
+                two_stage = callable(getattr(self.services.reviewer, "review_card", None)) and callable(
+                    getattr(self.services.reviewer, "summarize_reviews", None)
+                )
+                if two_stage:
+                    card_reviews = [
+                        {"index": index, "card_id": card.card_id,
+                         "novelty_point_id": card.novelty_point_id,
+                         "status": "pending", "review": None}
+                        for index, card in enumerate(validator_accepted, 1)
+                    ]
+                def checkpoint():
+                    # Synchronous single-event-loop write; workers never replace
+                    # the file with their own partial view.
+                    persist_novelty_reviews(
+                        state["paper"], [], output_root=self.output_root,
+                        card_reviews=card_reviews, phase="card_review",
+                    )
+                if two_stage:
+                    checkpoint()
+
+                async def review_point(point):
+                    try:
+                        return await invoke_point(point), None
+                    except Exception as exc:
+                        safe_error = _safe_error(exc)
+                        return _insufficient_point_review(
+                            point.point_id, f"Reviewer 执行失败：{safe_error}"
+                        ), WorkflowIssue(
+                            node="review_evidence", code="review_failed",
+                            message=f"Reviewer {point.point_id} 执行失败：{safe_error}",
+                            severity=IssueSeverity.ERROR,
+                        )
+
+                async def review_card(request, card):
+                    row = next(r for r in card_reviews if r["card_id"] == card.card_id
+                               and r["novelty_point_id"] == card.novelty_point_id)
+                    async with semaphore:
+                        row["status"] = "running"
+                        checkpoint()
+                        try:
+                            single = NoveltyPointReviewRequest(
+                                subject_paper_id=request.subject_paper_id,
+                                novelty_point=request.novelty_point, tasks=request.tasks,
+                                cards=[card], evidence=[e for e in request.evidence
+                                                       if e.evidence_id in card.evidence_ids],
+                            )
+                            result = NoveltyPointReview.model_validate(await _resolve(
+                                self.services.reviewer.review_card(single)
+                            ))
+                            if result.novelty_point_id != card.novelty_point_id:
+                                raise ValueError("card review returned a different point")
+                            row.update(status="completed", review=result.model_dump(mode="json"))
+                        except Exception as exc:
+                            row.update(status="failed", error=_safe_error(exc))
+                        checkpoint()
+                    return row
+
+                async def invoke_point(point):
                     point_cards = [
                         card for card in validator_accepted
                         if card.novelty_point_id == point.point_id
@@ -613,8 +675,29 @@ class NoveltyWorkflow:
                             == point.point_id
                         ],
                     )
-                    review = await _resolve(self.services.reviewer.review(request))
-                    reviews.append(NoveltyPointReview.model_validate(review))
+                    if two_stage and request.cards and request.evidence:
+                        rows = await asyncio.gather(*(review_card(request, card) for card in request.cards))
+                        if all(row["status"] == "failed" for row in rows):
+                            return _insufficient_point_review(point.point_id, "全部单卡评审执行失败。")
+                        async with semaphore:
+                            review = await _resolve(self.services.reviewer.summarize_reviews(request, rows))
+                    else:
+                        async with semaphore:
+                            review = await _resolve(self.services.reviewer.review(request))
+                    review = NoveltyPointReview.model_validate(review)
+                    if review.novelty_point_id != point.point_id:
+                        raise ValueError("Reviewer returned a different novelty_point_id")
+                    return review
+
+                # gather preserves point order; persistence happens once after all
+                # reviews finish. Each point receives all its cards and evidence.
+                outcomes = await asyncio.gather(*(
+                    review_point(point) for point in state.get("novelty_points", [])
+                ))
+                for review, issue in outcomes:
+                    reviews.append(review)
+                    if issue is not None:
+                        issues.append(issue)
             except TypeError:
                 # 迁移桥：兼容仍实现旧 cards/points/tasks 接口的外部 Reviewer。
                 try:
@@ -703,7 +786,8 @@ class NoveltyWorkflow:
             output_root=self.output_root,
         )
         persist_novelty_reviews(
-            state["paper"], reviews, output_root=self.output_root
+            state["paper"], reviews, output_root=self.output_root,
+            card_reviews=card_reviews,
         )
         return {
             "evidence_cards": accepted,

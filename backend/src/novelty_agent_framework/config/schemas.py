@@ -147,6 +147,8 @@ class ReviewerConfig(ConfigModel):
     max_steps: int = Field(default=14, gt=0)
     max_tool_calls: int = Field(default=12, gt=0)
     max_total_read_chars: int = Field(default=96_000, gt=0)
+    card_timeout_seconds: float = Field(default=240, gt=0)
+    summary_timeout_seconds: float = Field(default=180, gt=0)
 
 
 class RoleAgentConfig(ConfigModel):

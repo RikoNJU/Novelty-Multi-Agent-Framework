@@ -660,16 +660,20 @@ def persist_novelty_reviews(
     reviews: Sequence[NoveltyPointReview],
     *,
     output_root: str | Path = DEFAULT_OUTPUTS_DIR,
+    card_reviews: Sequence[dict[str, Any]] | None = None,
+    phase: str = "complete",
 ) -> Path:
     """写出 Reviewer 的正式查新点级业务产物。"""
 
     workspace = paper_workspace(paper, output_root=output_root)
     path = workspace / "novelty-reviews.json"
-    _write_json(
+    _atomic_write_json(
         path,
         {
             "paper_id": paper.paper_id,
             "reviews": [item.model_dump(mode="json") for item in reviews],
+            **({"phase": phase, "card_reviews": list(card_reviews)}
+               if card_reviews is not None else {}),
         },
     )
     return path

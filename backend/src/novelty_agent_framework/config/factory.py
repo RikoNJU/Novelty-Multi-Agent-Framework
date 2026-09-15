@@ -318,6 +318,8 @@ def build_workflow(
                 temperature=float(reviewer_cfg.get("temperature", 0.0)),
                 max_cards_per_call=int(reviewer_cfg.get("max_cards_per_call", 8)),
                 fail_closed=bool(reviewer_cfg.get("fail_closed", True)),
+                card_timeout_seconds=float(reviewer_cfg.get("card_timeout_seconds", 240)),
+                summary_timeout_seconds=float(reviewer_cfg.get("summary_timeout_seconds", 180)),
                 max_steps=int(reviewer_cfg.get("max_steps", 14)),
                 max_tool_calls=int(reviewer_cfg.get("max_tool_calls", 12)),
                 max_total_read_chars=int(
@@ -575,6 +577,8 @@ def _build_workflow_from_application_config(
                 temperature=config.reviewer.model.temperature,
                 max_cards_per_call=config.reviewer.max_cards_per_call,
                 fail_closed=config.reviewer.fail_closed,
+                card_timeout_seconds=config.reviewer.card_timeout_seconds,
+                summary_timeout_seconds=config.reviewer.summary_timeout_seconds,
                 max_steps=config.reviewer.max_steps,
                 max_tool_calls=config.reviewer.max_tool_calls,
                 max_total_read_chars=config.reviewer.max_total_read_chars,
