@@ -8,7 +8,7 @@ from typing import Annotated, Any, Literal
 from pydantic import Field, StringConstraints, model_validator
 
 from .domain import EvidenceCard, NoveltyPoint, ResearchTask, SearchPlan, StrictModel
-from .references import Evidence, ResearchBundle
+from .references import Evidence, ResearchBundle, SearchExecution
 from .research_tools import ResearchFinishDraft, ReferenceReadResult
 
 NonEmptyStr = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
@@ -130,6 +130,7 @@ class TaskResearchResult(StrictModel):
     read_results: list[ReferenceReadResult] = Field(default_factory=list)
     evidence: list[Evidence] = Field(default_factory=list)
     evidence_cards: list[EvidenceCard] = Field(default_factory=list)
+    search_executions: list[SearchExecution] = Field(default_factory=list)
     candidate_audit: list[CandidateAuditRecord] = Field(default_factory=list)
     warnings: list[str] = Field(default_factory=list)
     steps_used: int = Field(ge=0)

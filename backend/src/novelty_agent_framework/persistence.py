@@ -723,22 +723,22 @@ def persist_task_retrieval_audit(
     )
     executed_queries: list[dict[str, Any]] = []
     for result in results:
-        for bundle in result.research_bundles:
-            for execution in bundle.search_executions:
-                executed_queries.append(
-                    {
-                        "database": execution.source_id,
-                        "task_id": result.task_id,
-                        "novelty_point_id": result.novelty_point_id,
-                        "strategy_id": execution.parameters.get("strategy_id", ""),
-                        "level": execution.parameters.get("level", ""),
-                        "query": execution.query,
-                        "status": execution.status.value,
-                        "results": [
-                            item.model_dump(mode="json") for item in execution.results
-                        ],
-                    }
-                )
+        executions = {(execution.execution_id, execution.started_at): execution for bundle in result.research_bundles
+                      for execution in bundle.search_executions}
+        executions.update({(execution.execution_id, execution.started_at): execution for execution in result.search_executions})
+        for execution in executions.values():
+            status = execution.status.value
+            result_marker = ("zero_hits" if status == "succeeded" and not execution.results else
+                             "has_hits" if status == "succeeded" else status)
+            executed_queries.append({
+                "database": execution.source_id, "task_id": result.task_id,
+                "novelty_point_id": result.novelty_point_id,
+                "strategy_id": execution.parameters.get("strategy_id", ""),
+                "level": execution.parameters.get("level", ""),
+                "query": execution.query, "status": status, "result_marker": result_marker,
+                "error": execution.error,
+                "results": [item.model_dump(mode="json") for item in execution.results],
+            })
     return persist_retrieval_plans(
         paper,
         tasks,

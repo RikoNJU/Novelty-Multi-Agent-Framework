@@ -136,18 +136,26 @@ class ReviewerReaderTool(ReaderTool):
             raise PermissionError(
                 f"artifact {arguments.artifact_id!r} is outside reviewer scope"
             )
+        addresses = {
+            (ArtifactNamespace(item.provenance.get("artifact_namespace", "research_reference")), item.work_id)
+            for item in scope.evidence
+            if item.evidence_id in referenced_evidence_ids and item.artifact_id == arguments.artifact_id
+        }
+        if len(addresses) != 1:
+            raise PermissionError("ambiguous reviewer artifact address")
+        namespace, work_id = next(iter(addresses))
         started = time.monotonic()
         result = await self.reader.ainvoke(
             ReferenceReadRequest(
                 subject_paper_id=scope.subject_paper_id,
-                # Reviewer 只能回读研究语料；自带参考语料不在其职责范围内。
-                namespace=ArtifactNamespace.RESEARCH_REFERENCE,
+                namespace=namespace,
                 artifact_id=arguments.artifact_id,
                 char_start=arguments.char_start,
                 max_chars=arguments.max_chars,
             )
         )
-        if result.artifact_id not in allowed_artifact_ids:
+        if (result.artifact_id != arguments.artifact_id
+                or result.namespace != namespace or result.work_id != work_id):
             raise PermissionError("reader returned an artifact outside reviewer scope")
         return ResearcherToolObservation(
             tool_name=self.name,

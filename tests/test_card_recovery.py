@@ -80,7 +80,7 @@ def test_invalid_finalization_is_bounded_and_retains_reads(tmp_path, last):
     reader = Reader([read()])
     model = ScriptedModelClient(call("first"), last)
     result = asyncio.run(workflow(tmp_path, model, reader, max_steps=1).ainvoke(scope()))
-    assert len(model.calls) == 2 and len(reader.calls) == 1
+    assert len(model.calls) == (2 if last.tool_calls else 3) and len(reader.calls) == 1
     assert result.status.value == "partial" and not result.evidence_cards
     assert len(result.read_results) == 1
     assert result.candidate_audit[0].status == "read_task_interrupted"

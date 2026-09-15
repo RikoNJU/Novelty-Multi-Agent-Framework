@@ -20,12 +20,13 @@ from ..schemas import (
     WebSearchItem,
     WebSearchResult,
 )
-from .web_search_backend import SearchBackend, SearchHit
+from ..schemas.research_tools import NonEmptyStr
+from .web_search_backend import SearchBackend, SearchHit, _validate_baidu_query, BaiduSearchError
 
 
 class WebSearchTool:
     name = "web_search"
-    description = "搜索 Web 以发现候选来源；搜索结果本身不是证据。"
+    description = "搜索 Web 补充资料；搜索结果本身不是证据。query只填写短关键词，不要解释、推理或整段研究任务。"
     args_schema = WebSearchArguments
 
     def __init__(
@@ -39,6 +40,11 @@ class WebSearchTool:
         if not backend.name.strip():
             raise ValueError("search backend name cannot be empty")
         self.backend = backend
+        query_description = "只传检索词，不传解释、推理过程或任务全文。"
+        if backend.name == "baidu":
+            query_description += ("最多72单位：ASCII字符含空格计1，非ASCII计2。建议不超过60单位。"
+                                  "示例：图摘要 分布式GNN；graph summarization distributed GNN。")
+            self.description += query_description
         self.reference_store = reference_store or ReferenceStore()
         if not 1 <= default_max_results <= max_results_per_call <= 100:
             raise ValueError("web search result limits are invalid")
@@ -47,6 +53,7 @@ class WebSearchTool:
         self.args_schema = create_model(
             f"ConfiguredWebSearchArguments{default_max_results}_{max_results_per_call}",
             __base__=WebSearchArguments,
+            query=(NonEmptyStr, Field(description=query_description)),
             max_results=(int, Field(default=default_max_results, ge=1, le=max_results_per_call)),
         )
 
@@ -62,6 +69,18 @@ class WebSearchTool:
             raise ValueError(
                 f"max_results exceeds web_search limit {self.max_results_per_call}"
             )
+        if self.backend.name == "baidu":
+            try:
+                _validate_baidu_query(arguments.query)
+            except BaiduSearchError as exc:
+                return ResearcherToolObservation(
+                    tool_name=self.name, arguments=arguments.model_dump(mode="json"), succeeded=False,
+                    error=str(exc), summary="查询未发送，请缩短关键词后重试，不要原样重复。",
+                    payload={"error_code": "INVALID_QUERY", "query_units": sum(
+                        1 if ord(c) < 128 else 2 for c in arguments.query.strip()),
+                        "max_query_units": 72, "retry_instruction":
+                        "ASCII（含空格）计1，非ASCII计2；只传短关键词，例如 graph summarization distributed GNN。不要加入解释或推理。"},
+                )
         backend_result = await self.backend.search(
             arguments.query,
             max_results=max_results,
@@ -133,6 +152,8 @@ class WebSearchTool:
     def project_model_context(
         self, observation: ResearcherToolObservation
     ) -> dict[str, Any]:
+        if not observation.succeeded:
+            return {"succeeded": False, "error": observation.error, **observation.payload}
         result = observation.payload["search_result"]
         return {
             "succeeded": observation.succeeded,

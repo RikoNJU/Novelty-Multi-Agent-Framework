@@ -10,6 +10,7 @@ from dataclasses import dataclass, field, replace
 from backend.env import ChatMessage, ModelCallOptions, ModelClient, PromptLibrary
 from pydantic import ValidationError
 
+from ..core.format_repair import repair_json
 from ..core import ToolCallHarness, ToolCallHarnessConfig, ToolCallHarnessError
 from ..schemas import (
     ReferenceReadResult,
@@ -19,6 +20,7 @@ from ..schemas import (
     TaskResearchRequest,
 )
 from ..schemas import TaskResearchResult, TaskResearchStatus
+from ..schemas.references import SearchExecution
 from ..tools import EvidenceCardBuilder, ResearcherToolRegistry
 from .candidate_audit import build_candidate_audit
 
@@ -99,7 +101,7 @@ class TaskResearcherWorkflow:
 
     async def ainvoke(self, request: TaskResearchRequest) -> TaskResearchResult:
         result, trace = await self._research(request)
-        return result.model_copy(update={"candidate_audit": build_candidate_audit(
+        return result.model_copy(update={"search_executions": _search_audit(trace), "candidate_audit": build_candidate_audit(
             trace, result.read_results, result.evidence, result.evidence_cards,
             interrupted=result.status == TaskResearchStatus.PARTIAL,
         )})
@@ -136,18 +138,23 @@ class TaskResearcherWorkflow:
 
         reads, read_warnings = _trusted_reads(harness_result.trace)
         bundles, bundle_warnings = _trusted_bundles(harness_result.trace)
+        format_turns = 0
+        format_warnings = []
         try:
-            draft = ResearchFinishDraft.model_validate_json(
-                _extract_finish_json(harness_result.final_content)
-            )
-        except (ValidationError, ValueError) as exc:
+            try:
+                draft, format_warnings = _parse_finish(harness_result.final_content)
+            except (ValidationError, ValueError):
+                format_turns = 1
+                repaired = await repair_json(self.model_client, harness_result.final_content,
+                                             ResearchFinishDraft.model_json_schema(), self.config.model_options)
+                draft, format_warnings = _parse_finish(repaired)
+                format_warnings.append("single format repair recovered ResearchFinishDraft")
+        except Exception as exc:
             return _partial(
-                request,
-                reads=reads,
-                bundles=bundles,
+                request, reads=reads, bundles=bundles,
                 warnings=[*read_warnings, *bundle_warnings,
-                          f"invalid ResearchFinishDraft: {_safe_error(exc)}"],
-                steps=harness_result.turns_used,
+                          f"invalid ResearchFinishDraft after bounded recovery: {_safe_error(exc)}"],
+                steps=harness_result.turns_used + format_turns,
             ), harness_result.trace
 
         try:
@@ -161,7 +168,7 @@ class TaskResearcherWorkflow:
                 bundles=bundles,
                 warnings=[*read_warnings, *bundle_warnings,
                           f"evidence builder failed: {_safe_error(exc)}"],
-                steps=harness_result.turns_used,
+                steps=harness_result.turns_used + format_turns,
             ), harness_result.trace
 
         correction_turns = 0
@@ -182,8 +189,8 @@ class TaskResearcherWorkflow:
             research_bundles=bundles,
             evidence=built.evidence,
             evidence_cards=built.evidence_cards,
-            warnings=[*stop_warnings, *read_warnings, *bundle_warnings, *built.warnings],
-            steps_used=harness_result.turns_used + correction_turns,
+            warnings=[*stop_warnings, *read_warnings, *bundle_warnings, *format_warnings, *built.warnings],
+            steps_used=harness_result.turns_used + format_turns + correction_turns,
         ), harness_result.trace
 
     async def _correct_rejected_cards(self, draft, built, reads, request):
@@ -274,6 +281,16 @@ class TaskResearcherWorkflow:
         return note
 
 
+def _parse_finish(content):
+    payload = json.loads(_extract_finish_json(content))
+    warnings = []
+    if isinstance(payload, dict) and isinstance(payload.get("cards"), list) and payload["cards"]:
+        if payload.get("no_evidence_reason") is not None:
+            warnings.append("moved conflicting no_evidence_reason to warnings: " + str(payload["no_evidence_reason"]))
+            payload = {**payload, "no_evidence_reason": None}
+    return ResearchFinishDraft.model_validate(payload), warnings
+
+
 def _trusted_reads(trace) -> tuple[list[ReferenceReadResult], list[str]]:
     reads: list[ReferenceReadResult] = []
     warnings: list[str] = []
@@ -289,6 +306,30 @@ def _trusted_reads(trace) -> tuple[list[ReferenceReadResult], list[str]]:
         except (ValidationError, ValueError, TypeError) as exc:
             warnings.append(f"ignored malformed reader observation: {_safe_error(exc)}")
     return reads, warnings
+
+
+def _search_audit(trace) -> list[SearchExecution]:
+    executions = {}
+    for event in trace:
+        observation = event.observation
+        if event.kind != "tool_result" or observation is None:
+            continue
+        if observation.tool_name not in {"database_search", "structured_source_retrieval"}:
+            continue
+        payload = observation.payload
+        bundle = payload.get("research_bundle") or payload.get("bundle") or {}
+        rows = payload.get("search_executions", [])
+        rows = rows if isinstance(rows, list) else []
+        if isinstance(bundle, dict):
+            nested = bundle.get("search_executions", [])
+            rows = [*rows, *(nested if isinstance(nested, list) else [])]
+        for row in rows:
+            try:
+                execution = SearchExecution.model_validate(row)
+                executions[(execution.execution_id, execution.started_at)] = execution
+            except (ValidationError, ValueError, TypeError):
+                continue  # Malformed audit metadata must never discard evidence.
+    return list(executions.values())
 
 
 def _trusted_bundles(trace) -> tuple[list[ResearchBundle], list[str]]:

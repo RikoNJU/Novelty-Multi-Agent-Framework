@@ -264,7 +264,17 @@ def _format_query_plans(plans: list[Mapping[str, Any]]) -> str:
     sections = []
     for plan in plans:
         queries = plan.get("query_plan", {}).get("queries", [])
-        body = "\n".join(f"  - `{query}`" for query in queries) or "  - 无"
+        executions = plan.get("executed_queries", [])
+        if executions:
+            labels = {"zero_hits": "零命中", "has_hits": "有命中", "failed": "执行失败",
+                      "partial": "部分成功", "requires_human": "需人工处理"}
+            body = "\n".join(
+                f"  - `{item.get('query', '')}`（{item.get('database', '未知来源')}；"
+                f"{labels.get(item.get('result_marker'), item.get('status', '状态未知'))}）"
+                for item in executions
+            )
+        else:
+            body = "\n".join(f"  - `{query}`" for query in queries) or "  - 无"
         sections.append(f"- **{plan.get('novelty_point_id', '未知查新点')}**\n{body}")
     return "\n".join(sections)
 

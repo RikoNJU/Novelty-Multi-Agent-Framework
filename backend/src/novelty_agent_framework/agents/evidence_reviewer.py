@@ -14,6 +14,7 @@ from pydantic import ValidationError
 from backend.env import ChatMessage, ModelCallOptions, ModelClient, ModelRegistry, PromptLibrary
 
 from ..ports import EvidenceReviewer, ReviewResult
+from ..core.format_repair import repair_json
 from ..core import ToolCallHarness, ToolCallHarnessConfig
 from ..schemas import (
     EvidenceCard,
@@ -154,9 +155,12 @@ class NoveltyEvidenceReviewer(EvidenceReviewer):
                     tool_choice="auto",
                 ),
             )
-            review = NoveltyPointReview.model_validate_json(
-                _extract_json(result.final_content)
-            )
+            try:
+                review = NoveltyPointReview.model_validate_json(_extract_json(result.final_content))
+            except (ValidationError, ValueError):
+                repaired = await repair_json(self._client(), result.final_content,
+                                             NoveltyPointReview.model_json_schema(), self.model_options)
+                review = NoveltyPointReview.model_validate_json(_extract_json(repaired))
             return _validate_review_references(review, request)
         except Exception as exc:
             if not self.config.fail_closed:

@@ -190,6 +190,10 @@ class DatabaseSearchTool:
             "summary": observation.summary,
             "error": observation.error,
             "execution_summary": observation.payload["execution_summary"],
+            "result_marker": ("zero_hits" if observation.succeeded and not result["results"]
+                              and not observation.payload["execution_summary"].get("degraded")
+                              else "has_hits" if observation.succeeded and result["results"]
+                              else "partial" if observation.succeeded else "failed"),
             "source_id": result["source_id"],
             "results": result["results"],
             "warnings": result["warnings"],
