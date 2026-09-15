@@ -1,0 +1,930 @@
+diff --git a/backend/src/novelty_agent_framework/agents/evidence_reviewer.py b/backend/src/novelty_agent_framework/agents/evidence_reviewer.py
+index 5026518..bba633d 100644
+--- a/backend/src/novelty_agent_framework/agents/evidence_reviewer.py
++++ b/backend/src/novelty_agent_framework/agents/evidence_reviewer.py
+@@ -14,6 +14,7 @@ from pydantic import ValidationError
+ from backend.env import ChatMessage, ModelCallOptions, ModelClient, ModelRegistry, PromptLibrary
+ 
+ from ..ports import EvidenceReviewer, ReviewResult
++from ..core.format_repair import repair_json
+ from ..core import ToolCallHarness, ToolCallHarnessConfig
+ from ..schemas import (
+     EvidenceCard,
+@@ -154,9 +155,12 @@ class NoveltyEvidenceReviewer(EvidenceReviewer):
+                     tool_choice="auto",
+                 ),
+             )
+-            review = NoveltyPointReview.model_validate_json(
+-                _extract_json(result.final_content)
+-            )
++            try:
++                review = NoveltyPointReview.model_validate_json(_extract_json(result.final_content))
++            except (ValidationError, ValueError):
++                repaired = await repair_json(self._client(), result.final_content,
++                                             NoveltyPointReview.model_json_schema(), self.model_options)
++                review = NoveltyPointReview.model_validate_json(_extract_json(repaired))
+             return _validate_review_references(review, request)
+         except Exception as exc:
+             if not self.config.fail_closed:
+@@ -427,6 +431,8 @@ def _fallback_point_system_prompt() -> str:
+         "你是查新点级信息判定 Agent。只依据输入 EvidenceCard、Evidence 和 reader "
+         "回读结果综合多个 Work；不得搜索或使用模型记忆补充事实。证据充分时输出 "
+         "NoveltyPointReview；证据不足时输出 insufficient_evidence，不能猜测。"
++        "仅使用论文 Evidence；source_kind=web_supplement 或旧 web_supplement_evidence "
++        "仅为补充资料，不得用于裁定。LLM summary 不能作为原始 Evidence。"
+     )
+ 
+ 
+diff --git a/backend/src/novelty_agent_framework/persistence.py b/backend/src/novelty_agent_framework/persistence.py
+index f63c594..22a3d45 100644
+--- a/backend/src/novelty_agent_framework/persistence.py
++++ b/backend/src/novelty_agent_framework/persistence.py
+@@ -723,22 +723,22 @@ def persist_task_retrieval_audit(
+     )
+     executed_queries: list[dict[str, Any]] = []
+     for result in results:
+-        for bundle in result.research_bundles:
+-            for execution in bundle.search_executions:
+-                executed_queries.append(
+-                    {
+-                        "database": execution.source_id,
+-                        "task_id": result.task_id,
+-                        "novelty_point_id": result.novelty_point_id,
+-                        "strategy_id": execution.parameters.get("strategy_id", ""),
+-                        "level": execution.parameters.get("level", ""),
+-                        "query": execution.query,
+-                        "status": execution.status.value,
+-                        "results": [
+-                            item.model_dump(mode="json") for item in execution.results
+-                        ],
+-                    }
+-                )
++        executions = {(execution.execution_id, execution.started_at): execution for bundle in result.research_bundles
++                      for execution in bundle.search_executions}
++        executions.update({(execution.execution_id, execution.started_at): execution for execution in result.search_executions})
++        for execution in executions.values():
++            status = execution.status.value
++            result_marker = ("zero_hits" if status == "succeeded" and not execution.results else
++                             "has_hits" if status == "succeeded" else status)
++            executed_queries.append({
++                "database": execution.source_id, "task_id": result.task_id,
++                "novelty_point_id": result.novelty_point_id,
++                "strategy_id": execution.parameters.get("strategy_id", ""),
++                "level": execution.parameters.get("level", ""),
++                "query": execution.query, "status": status, "result_marker": result_marker,
++                "error": execution.error,
++                "results": [item.model_dump(mode="json") for item in execution.results],
++            })
+     return persist_retrieval_plans(
+         paper,
+         tasks,
+diff --git a/backend/src/novelty_agent_framework/prompts/coordinator/supplement.md b/backend/src/novelty_agent_framework/prompts/coordinator/supplement.md
+index b28e051..484b8dd 100644
+--- a/backend/src/novelty_agent_framework/prompts/coordinator/supplement.md
++++ b/backend/src/novelty_agent_framework/prompts/coordinator/supplement.md
+@@ -1,9 +1,10 @@
+ ---
+ name: coordinator.plan_supplement
+-version: 2
++version: 3
+ system: |
+   你是论文查新 Multi-Agent 系统的 Coordinator，只负责根据最终有效 EvidenceCard 数量低于系统门槛的事实规划新的 ResearchTask。
+   你不能修改查新点，不能生成检索词、SearchPlan、数据库查询语法、候选文献、DOI、URL 或证据位置。
++  你只能生成系统启用语言的 ResearchTask；已被关闭的语言不得出现在输出中。
+   你的输出必须严格符合调用方要求的 JSON schema。
+ ---
+ 请只针对给定的最终有效 EvidenceCard 数量不足事实生成本轮 ResearchTask 列表。
+@@ -11,7 +12,7 @@ system: |
+ 要求：
+ 1. novelty_point_id 只能引用现有规划中的查新点；
+ 2. 根据数量不足事实选择 task_type，优先使用 literature_search、feature_supplement 或 language_supplement；
+-3. language 使用 zh 或 en；若需要两种语言，分别生成任务；
++3. language 只能从系统启用语言 ["zh", "en"] 中取值；同一查新点需要多种启用语言时分别生成任务；
+ 4. description 明确说明本轮为什么查、需要补足什么；
+ 5. 不得新增、删除或改写 NoveltyPoint；
+ 6. 不得生成检索词、同义词、布尔表达式、SearchPlan 或数据库专用语法；
+diff --git a/backend/src/novelty_agent_framework/prompts/coordinator/synthesize.md b/backend/src/novelty_agent_framework/prompts/coordinator/synthesize.md
+index d004e28..93607fb 100644
+--- a/backend/src/novelty_agent_framework/prompts/coordinator/synthesize.md
++++ b/backend/src/novelty_agent_framework/prompts/coordinator/synthesize.md
+@@ -1,15 +1,22 @@
+ ---
+ name: coordinator.synthesize
+-version: 2
++version: 3
+ system: |
+   你是论文查新 Multi-Agent 系统的 Coordinator，负责组织最终报告表达。
+   Reviewer 是新颖性裁定的唯一权威来源。你不得修改 review_status、verdict、verdict_reason、confidence 或 highly_relevant_works，只能逐字段原样复制；你只负责 summary、证据卡分组、limitations 等报告表达。
+   每个结论必须基于可追溯的 EvidenceCard，不得编造文献、DOI、URL 或证据位置；证据不足时必须明确说明检索范围和局限。
++  仅在输入包含明确的检索执行事实时区分检索失败与成功零命中；缺少覆盖事实时必须说明检索覆盖未知，不得由卡片数推断来源执行成功。
++  Web 内容不是相关文献或查新证据，不列网页清单，不用其作事实裁定。只有整份报告完全没有检索到论文时，才能把它作为后续论文检索的简短建议；已有论文但无卡不满足条件。
+   你的输出必须严格符合调用方要求的 JSON schema。
+ ---
+ 请基于有效 EvidenceCard 生成最终 NoveltyReport JSON。每个结论必须绑定 supporting_card_ids 或明确标记证据不足，不得编造文献。
+ 
+-最终有效 Card 数量低于门槛时，只能表述为“最终证据不足”。0 Card 也是证据不足的一种，不得仅根据该检查推断“未检索到相关文献”。若存在被拒绝证据（rejected_evidence 非空），应把拒绝原因写入 limitations，并说明是技术性质疑或格式性拒绝。
++limitations 必须区分以下三种情形，不得混为一谈：
++1. 检索失败：检索覆盖事实显示必要来源执行失败或未执行，此时写明“检索未能形成有效结果”，并指出失败的来源，不得写成“未检索到相关文献”；
++2. 检索成功但零命中：必要来源全部成功执行且没有命中记录，可以表述为“在本次检索范围内未见相关文献报道”，但仍须说明检索范围；
++3. 有命中但未形成有效证据：命中了候选文献但未通过证据门控，应说明门控拒绝的原因，不得写成“未检索到”。
++
++若存在被拒绝证据（rejected_evidence 非空），应把拒绝原因写入 limitations，并说明是技术性质疑或格式性拒绝。
+ 
+ 输入数据：
+ {paper_json}
+diff --git a/backend/src/novelty_agent_framework/prompts/research/native_tool_loop.md b/backend/src/novelty_agent_framework/prompts/research/native_tool_loop.md
+index 5c7ebab..1f99439 100644
+--- a/backend/src/novelty_agent_framework/prompts/research/native_tool_loop.md
++++ b/backend/src/novelty_agent_framework/prompts/research/native_tool_loop.md
+@@ -1,36 +1,38 @@
+ ---
+ name: research/native_tool_loop
+-version: 2
++version: 5
+ system: |
+   You are the formal Researcher for one bounded research task.
+   Use only tools present in the registered tool definitions. Never guess an
+   unlisted database source_id; use only source_id values stated in the
+   database_search tool description.
+   Call at most one tool in each assistant response; wait for its result before the next call.
+-  Retrieval strategy:
+-  - When reference_search is available, inspect the paper author's own reference
+-    corpus first. This is a recall priority only and does not increase evidence weight.
+-  - Prefer database_search as the primary discovery tool when it is likely to
+-    provide relevant scholarly sources.
+-  - If database_search returns insufficient, weak, unavailable, or unusable
+-    candidates, use web_search to broaden recall.
+-  - For Chinese-language research tasks, increase the priority of web_search
+-    because the configured scholarly databases may have limited Chinese coverage.
+-    Web search may be the primary discovery path, while database_search remains
+-    available as a supplement.
++  Core responsibility:
++  - Gather traceable source evidence for the assigned novelty point and task,
++    compare technical overlap and differences, and expose coverage limitations.
++    The Reviewer owns novelty adjudication; do not make a global novelty conclusion.
++  - Apply database_research as the default skill for all task languages.
++    Main path: Database -> source artifact -> text -> Reader -> Evidence.
++  - When reference_search is available, inspect the author's reference corpus first
++    as a recall aid only; it neither replaces database coverage nor increases weight.
++  - Rely on database_search for scholarly discovery. Revise queries within the
++    supplied SearchPlan and remaining budget when appropriate; do not loop on an
++    unavailable provider or displace readable candidates with repeated discovery.
++  - Enter web_supplement only when paper retrieval is unavailable or has yielded
++    no papers. Existing papers with insufficient evidence do not satisfy this condition.
++    Web is supplementary search advice only: never create Evidence or cards from it,
++    even after browser/Reader. Do not enumerate Web sources as related literature.
++    Only the report-wide absence of retrieved papers permits a short Web-based
++    follow-up search recommendation in the report; language alone is not a trigger.
+   - Search results and snippets are discovery metadata, not evidence.
++  - Prefer source originals and extracted source text over summaries. LLM summaries
++    are derived information, never original Evidence, even when exposed by Reader.
++  - Web materials retain source_kind=web_supplement. It is not paper evidence. The workflow binds provenance;
++    do not author evidence_type or source_kind in the finish draft.
+   Acquisition and evaluation policy:
+-  - When browser is registered, after each successful web_search, select one returned SourceRecord and inspect
+-    it with browser before issuing another web_search.
+-  - If browser produces an Artifact, read that Artifact with reader. Evaluate its
+-    evidentiary value only after examining Reader text. Only after that evaluation
+-    may you decide whether another web_search round is necessary.
+-  - Never issue consecutive web_search calls without completing the applicable
+-    browser and reader acquisition cycle between them when browser is registered.
+-  - When browser is not registered, Web search is discovery only. Never call an
+-    unavailable browser or pass a source_record_id to reader as an artifact_id.
+-    Prefer readable database/reference artifacts; do not repeatedly search Web
+-    without an acquisition path. Finish with available evidence or explain the limitation.
++  - Web search is advice-only. Do not call browser or reader to turn Web materials
++    into evidence. Never issue consecutive web_search calls merely to expand recall.
++    Retain internal source records, but do not enumerate them in the report.
+   - If database_search already returns a readable Artifact or artifact_id,
+     the next tool call MUST be reader for one returned artifact_id. Do not call
+     database_search, web_search, or browser again until that Artifact has been
+@@ -40,6 +42,8 @@ system: |
+   - Do not decide whether a source is evidentiary based only on search snippets.
+   - Prioritize unread candidates already returned before expanding discovery.
+     Use the remaining budget information to reserve time for the final JSON.
++  Query constraints:
++  - Only put short search keywords in query; never reasoning, explanations or the full task. For Baidu, the limit is 72 units: ASCII (including spaces) counts 1, non-ASCII counts 2. Aim below 60 units. Good queries: "图摘要 分布式GNN"; "graph summarization distributed GNN". Bad query: a sentence explaining why to search followed by all task features. On INVALID_QUERY, shorten to two or three core concepts; do not repeat the same query. A successful zero-hit result is valid and marked zero_hits; keep it in the audit, never call it a service failure.
+   EvidenceCard quoting rules:
+   - Every quote in a card must be copied verbatim from a successful Reader observation.
+   - Do not paraphrase, summarize, translate, normalize, rewrite, or reconstruct
+@@ -53,6 +57,8 @@ system: |
+   such as work_id, artifact_id, source_record_id, or read_id.
+   It is valid to finish with cards=[] and a concrete no_evidence_reason when no
+   Reader text provides exact support. Never force a card merely to complete the task.
++  If cards is nonempty, omit no_evidence_reason or set it to null.
++  If cards is empty, provide a nonempty no_evidence_reason. These forms are mutually exclusive.
+   When finished, return only one JSON object conforming exactly to the supplied
+   ResearchFinishDraft schema. Do not wrap it in Markdown.
+ ---
+diff --git a/backend/src/novelty_agent_framework/prompts/reviewer/review_evidence.md b/backend/src/novelty_agent_framework/prompts/reviewer/review_evidence.md
+index f38bedf..1eb4242 100644
+--- a/backend/src/novelty_agent_framework/prompts/reviewer/review_evidence.md
++++ b/backend/src/novelty_agent_framework/prompts/reviewer/review_evidence.md
+@@ -1,7 +1,11 @@
+ ---
+ name: reviewer.review_evidence
+-version: 3
++version: 4
+ system: |
++  仅以可追溯论文 Evidence 评审。Web 内容仅是补充资料，不属于相关文献或原始 Evidence。
++  source_kind=web_supplement 或旧 web_supplement_evidence 不得用于查新裁定；
++  发现此类旧证据时按不可用处理，证据不足则明确返回不足，不将网页事实升级为论文证据。
++  LLM summary 是派生信息，不能替代原始 Evidence。
+   你是论文查新系统的查新点级信息判定 Agent，而不是 EvidenceCard 过滤器。
+ 
+   你会收到一个 NoveltyPoint、属于它的 ResearchTask、多个 EvidenceCard，以及这些
+diff --git a/backend/src/novelty_agent_framework/prompts/reviewer/review_evidence_candidate.md b/backend/src/novelty_agent_framework/prompts/reviewer/review_evidence_candidate.md
+index 2fb67be..684e70d 100644
+--- a/backend/src/novelty_agent_framework/prompts/reviewer/review_evidence_candidate.md
++++ b/backend/src/novelty_agent_framework/prompts/reviewer/review_evidence_candidate.md
+@@ -1,7 +1,11 @@
+ ---
+ name: reviewer.review_evidence_candidate
+-version: 1
++version: 2
+ system: |
++  仅以可追溯论文 Evidence 评审。Web 内容仅是补充资料，不属于相关文献或原始 Evidence。
++  source_kind=web_supplement 或旧 web_supplement_evidence 不得用于查新裁定；
++  发现此类旧证据时按不可用处理，证据不足则明确返回不足，不将网页事实升级为论文证据。
++  LLM summary 是派生信息，不能替代原始 Evidence。
+   你是论文查新系统的证据审查 Agent，只检查输入 EvidenceCard 的语义与证据一致性。
+   不得修改 EvidenceCard，不得创造 DOI、URL、引文、页码或论文事实，不使用模型记忆。
+   这是待 benchmark 验证的候选审查标准。
+diff --git a/backend/src/novelty_agent_framework/schemas/references.py b/backend/src/novelty_agent_framework/schemas/references.py
+index 99b4bac..07df5e6 100644
+--- a/backend/src/novelty_agent_framework/schemas/references.py
++++ b/backend/src/novelty_agent_framework/schemas/references.py
+@@ -43,7 +43,8 @@ class PublicationStage(StrEnum):
+ 
+ class SourceKind(StrEnum):
+     STRUCTURED_DATABASE = "structured_database"
+-    WEB = "web"
++    WEB = "web"  # Legacy manifests remain readable.
++    WEB_SUPPLEMENT = "web_supplement"
+     LOCAL = "local"
+     USER_UPLOAD = "user_upload"
+ 
+diff --git a/backend/src/novelty_agent_framework/schemas/research.py b/backend/src/novelty_agent_framework/schemas/research.py
+index 13364a4..da3afc4 100644
+--- a/backend/src/novelty_agent_framework/schemas/research.py
++++ b/backend/src/novelty_agent_framework/schemas/research.py
+@@ -8,7 +8,7 @@ from typing import Annotated, Any, Literal
+ from pydantic import Field, StringConstraints, model_validator
+ 
+ from .domain import EvidenceCard, NoveltyPoint, ResearchTask, SearchPlan, StrictModel
+-from .references import Evidence, ResearchBundle
++from .references import Evidence, ResearchBundle, SearchExecution
+ from .research_tools import ResearchFinishDraft, ReferenceReadResult
+ 
+ NonEmptyStr = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
+@@ -130,6 +130,7 @@ class TaskResearchResult(StrictModel):
+     read_results: list[ReferenceReadResult] = Field(default_factory=list)
+     evidence: list[Evidence] = Field(default_factory=list)
+     evidence_cards: list[EvidenceCard] = Field(default_factory=list)
++    search_executions: list[SearchExecution] = Field(default_factory=list)
+     candidate_audit: list[CandidateAuditRecord] = Field(default_factory=list)
+     warnings: list[str] = Field(default_factory=list)
+     steps_used: int = Field(ge=0)
+diff --git a/backend/src/novelty_agent_framework/tools/browser.py b/backend/src/novelty_agent_framework/tools/browser.py
+index 181b664..7e44087 100644
+--- a/backend/src/novelty_agent_framework/tools/browser.py
++++ b/backend/src/novelty_agent_framework/tools/browser.py
+@@ -8,6 +8,7 @@ from datetime import datetime, timezone
+ 
+ from ..persistence import ReferenceStore
+ from ..schemas import (
++    SourceKind,
+     AccessStatus,
+     Artifact,
+     ArtifactRole,
+@@ -95,6 +96,8 @@ class BrowserTool:
+             extraction_warnings=list(fetched.warnings),
+             provenance={
+                 "tool": self.name,
++                "source_kind": "web_supplement",
++                "content_origin": "source_text",
+                 "backend": self.backend.name,
+                 "run_id": scope.run_id,
+                 "requested_url": fetched.requested_url,
+@@ -114,6 +117,7 @@ class BrowserTool:
+             update={
+                 "work_id": work_id,
+                 "access_status": AccessStatus.FULL_TEXT_ACQUIRED,
++                "source_kind": SourceKind.WEB_SUPPLEMENT,
+             }
+         )
+         # 在锁内重新读取再合并：fetch 期间其它并发任务可能已经写入 manifest，
+diff --git a/backend/src/novelty_agent_framework/tools/database_search/tool.py b/backend/src/novelty_agent_framework/tools/database_search/tool.py
+index 023b396..9245435 100644
+--- a/backend/src/novelty_agent_framework/tools/database_search/tool.py
++++ b/backend/src/novelty_agent_framework/tools/database_search/tool.py
+@@ -190,6 +190,10 @@ class DatabaseSearchTool:
+             "summary": observation.summary,
+             "error": observation.error,
+             "execution_summary": observation.payload["execution_summary"],
++            "result_marker": ("zero_hits" if observation.succeeded and not result["results"]
++                              and not observation.payload["execution_summary"].get("degraded")
++                              else "has_hits" if observation.succeeded and result["results"]
++                              else "partial" if observation.succeeded else "failed"),
+             "source_id": result["source_id"],
+             "results": result["results"],
+             "warnings": result["warnings"],
+diff --git a/backend/src/novelty_agent_framework/tools/evidence_card_builder.py b/backend/src/novelty_agent_framework/tools/evidence_card_builder.py
+index 8d0da17..c66df40 100644
+--- a/backend/src/novelty_agent_framework/tools/evidence_card_builder.py
++++ b/backend/src/novelty_agent_framework/tools/evidence_card_builder.py
+@@ -163,6 +163,7 @@ class EvidenceCardBuilder:
+         indexes: dict[ArtifactNamespace, _ManifestIndex],
+     ) -> list[tuple[ReferenceReadResult, Artifact]]:
+         matches: list[tuple[ReferenceReadResult, Artifact]] = []
++        supplementary_match = False
+         for read in reads:
+             if not _quote_matches(quote.quote, read.text):
+                 continue
+@@ -170,6 +171,13 @@ class EvidenceCardBuilder:
+             artifact = index.artifacts.get(read.artifact_id)
+             if artifact is None:
+                 raise ValueError(f"missing Artifact {read.artifact_id}")
++            if artifact.provenance.get("content_origin") == "llm_summary":
++                continue  # A generated summary cannot become original Evidence via Reader.
++            work = index.works.get(read.work_id)
++            record = _resolve_source_record(artifact, work, index.records) if work else None
++            if _evidence_source_labels(artifact, record)["source_kind"] == "web_supplement":
++                supplementary_match = True
++                continue  # Web material is advice-only, never a paper Evidence/Card.
+             if artifact.work_id != read.work_id:
+                 raise ValueError(
+                     f"Artifact.work_id mismatch for {read.artifact_id}"
+@@ -182,6 +190,8 @@ class EvidenceCardBuilder:
+                     f"Artifact {artifact.artifact_id} references missing SourceRecord"
+                 )
+             matches.append((read, artifact))
++        if not matches and supplementary_match:
++            raise ValueError("web supplementary material cannot be used as evidence")
+         if not matches:
+             raise ValueError(f"ungrounded quote: {quote.quote!r}")
+         return matches
+@@ -251,6 +261,7 @@ class EvidenceCardBuilder:
+                 interpretation=quote.interpretation,
+                 confidence=quote.confidence,
+                 provenance={
++                    **_evidence_source_labels(persisted_artifact, record),
+                     "builder": "evidence_card_builder",
+                     "artifact_namespace": namespace.value,
+                     "read_id": read.read_id,
+@@ -285,6 +296,18 @@ class EvidenceCardBuilder:
+         return evidence, sources
+ 
+ 
++def _evidence_source_labels(artifact: Artifact, record: SourceRecord | None) -> dict[str, str]:
++    # Acquisition lineage takes precedence over a work's bibliographic identity.
++    kind = record.source_kind.value if record is not None else "unknown"
++    if (artifact.provenance.get("source_kind") == "web_supplement"
++            or artifact.provenance.get("tool") == "browser"
++            or kind in {"web", "web_supplement"}):
++        return {"source_kind": "web_supplement", "evidence_type": "web_supplement_evidence"}
++    if kind == "structured_database":
++        return {"source_kind": kind, "evidence_type": "database_evidence"}
++    return {"source_kind": kind, "evidence_type": "unknown"}
++
++
+ def _quote_matches(quote: str, text: str) -> bool:
+     return quote in text or _normalize_whitespace(quote) in _normalize_whitespace(text)
+ 
+diff --git a/backend/src/novelty_agent_framework/tools/reader.py b/backend/src/novelty_agent_framework/tools/reader.py
+index c219dce..0d894b8 100644
+--- a/backend/src/novelty_agent_framework/tools/reader.py
++++ b/backend/src/novelty_agent_framework/tools/reader.py
+@@ -136,18 +136,26 @@ class ReviewerReaderTool(ReaderTool):
+             raise PermissionError(
+                 f"artifact {arguments.artifact_id!r} is outside reviewer scope"
+             )
++        addresses = {
++            (ArtifactNamespace(item.provenance.get("artifact_namespace", "research_reference")), item.work_id)
++            for item in scope.evidence
++            if item.evidence_id in referenced_evidence_ids and item.artifact_id == arguments.artifact_id
++        }
++        if len(addresses) != 1:
++            raise PermissionError("ambiguous reviewer artifact address")
++        namespace, work_id = next(iter(addresses))
+         started = time.monotonic()
+         result = await self.reader.ainvoke(
+             ReferenceReadRequest(
+                 subject_paper_id=scope.subject_paper_id,
+-                # Reviewer 只能回读研究语料；自带参考语料不在其职责范围内。
+-                namespace=ArtifactNamespace.RESEARCH_REFERENCE,
++                namespace=namespace,
+                 artifact_id=arguments.artifact_id,
+                 char_start=arguments.char_start,
+                 max_chars=arguments.max_chars,
+             )
+         )
+-        if result.artifact_id not in allowed_artifact_ids:
++        if (result.artifact_id != arguments.artifact_id
++                or result.namespace != namespace or result.work_id != work_id):
+             raise PermissionError("reader returned an artifact outside reviewer scope")
+         return ResearcherToolObservation(
+             tool_name=self.name,
+diff --git a/backend/src/novelty_agent_framework/tools/renderer.py b/backend/src/novelty_agent_framework/tools/renderer.py
+index 15d8bc4..f1296a3 100644
+--- a/backend/src/novelty_agent_framework/tools/renderer.py
++++ b/backend/src/novelty_agent_framework/tools/renderer.py
+@@ -152,6 +152,8 @@ def _load_workspace_data(workspace: Path) -> dict[str, Any]:
+             json.loads(references.read_text(encoding="utf-8"))
+             if references.is_file() else {}
+         )
++        audit = workspace / "candidate-audit.json"
++        data["candidate_audit"] = json.loads(audit.read_text(encoding="utf-8")) if audit.is_file() else {}
+         return data
+     except (OSError, json.JSONDecodeError) as exc:
+         raise ReportRenderError(f"读取报告输入产物失败：{exc}") from exc
+@@ -166,7 +168,9 @@ def _build_markdown_context(
+     plans = data["plans"].get("novelty_point_plans", [])
+     evidence = data["evidence"]
+     report = data["report"]
+-    accepted = evidence.get("accepted_evidence_cards", [])
++    references = data.get("references", {})
++    accepted = [card for card in evidence.get("accepted_evidence_cards", [])
++                if not _is_web_card(card, references)]
+     rejected = evidence.get("rejected_evidence", [])
+ 
+     point_by_id = {point.get("point_id", ""): point for point in points}
+@@ -211,7 +215,9 @@ def _build_markdown_context(
+         "novelty_conclusions": _format_conclusions(
+             report.get("conclusions", []), point_by_id
+         ),
+-        "limitations": _format_list(report.get("limitations", [])),
++        "limitations": _format_list(report.get("limitations", []))
++        + _web_advice(references, evidence.get("raw_evidence_cards", []),
++                      data.get("candidate_audit", {}).get("tasks", [])),
+         "attachments": _format_attachments(report, rejected)
+         + "\n\n### 检索到的文献\n\n"
+         + _format_retrieved_references(
+@@ -258,7 +264,17 @@ def _format_query_plans(plans: list[Mapping[str, Any]]) -> str:
+     sections = []
+     for plan in plans:
+         queries = plan.get("query_plan", {}).get("queries", [])
+-        body = "\n".join(f"  - `{query}`" for query in queries) or "  - 无"
++        executions = plan.get("executed_queries", [])
++        if executions:
++            labels = {"zero_hits": "零命中", "has_hits": "有命中", "failed": "执行失败",
++                      "partial": "部分成功", "requires_human": "需人工处理"}
++            body = "\n".join(
++                f"  - `{item.get('query', '')}`（{item.get('database', '未知来源')}；"
++                f"{labels.get(item.get('result_marker'), item.get('status', '状态未知'))}）"
++                for item in executions
++            )
++        else:
++            body = "\n".join(f"  - `{query}`" for query in queries) or "  - 无"
+         sections.append(f"- **{plan.get('novelty_point_id', '未知查新点')}**\n{body}")
+     return "\n".join(sections)
+ 
+@@ -362,6 +378,45 @@ def _format_list(items: list[Any]) -> str:
+     return "\n".join(f"- {item}" for item in items) if items else "无。"
+ 
+ 
++def _is_web_record(record: Mapping[str, Any]) -> bool:
++    return (record.get("source_kind") in {"web", "web_supplement"}
++            or record.get("provenance", {}).get("tool") == "web_search")
++
++
++def _is_web_card(card: Mapping[str, Any], manifest: Mapping[str, Any]) -> bool:
++    if card.get("provenance", {}).get("source_kind") in {"web", "web_supplement"}:
++        return True
++    web_urls = {url for record in manifest.get("source_records", []) if _is_web_record(record)
++                for url in (record.get("landing_url"), record.get("full_text_url")) if url}
++    urls = [source.get("url") for source in card.get("sources", []) if source.get("url")]
++    return bool(urls) and all(url in web_urls for url in urls)
++
++
++def _web_advice(manifest: Mapping[str, Any], cards: list[Mapping[str, Any]],
++                tasks: list[Mapping[str, Any]] = ()) -> str:
++    records = manifest.get("source_records", [])
++    if any(candidate.get("namespace") == "subject_reference"
++           for task in tasks for candidate in task.get("candidates", [])):
++        return ""
++    if any(work.get("work_type") != "webpage" for work in manifest.get("works", [])):
++        return ""
++    # No card is not equivalent to no paper: discovered database candidates count.
++    if any(not _is_web_record(record) for record in records):
++        return ""
++    if any(not _is_web_card(card, manifest) for card in cards):
++        return ""
++    web = [record for record in records if _is_web_record(record)]
++    if not web:
++        return ""
++    queries = _unique(record.get("provenance", {}).get("query") for record in web)[:3]
++    topics = "；".join(_cell(" ".join(str(query).split())) for query in queries)
++    advice = (f"可围绕这些网页检索方向调整论文检索词：{topics}。" if topics else
++              "建议利用网页补充资料中的术语线索调整论文检索词，再到学术数据库核验。")
++    return ("\n\n### 无论文可用时的补充信息建议\n\n"
++            "本次未取得论文检索结果；这不证明相关论文不存在。" + advice +
++            "网页内容仅作后续检索建议，不作为相关文献、原始证据或查新结论依据。")
++
++
+ def _format_retrieved_references(
+     manifest: Mapping[str, Any], cards: list[Mapping[str, Any]]
+ ) -> str:
+@@ -369,12 +424,14 @@ def _format_retrieved_references(
+     candidates = [
+         (record.get("title"), record.get("full_text_url") or record.get("landing_url"))
+         for record in manifest.get("source_records", [])
++        if not _is_web_record(record)
+     ]
+     candidates.extend(
+         (card.get("document_title"), source.get("url") or (
+             "https://doi.org/" + source["doi"] if source.get("doi") else None
+         ))
+-        for card in cards for source in card.get("sources", [])
++        for card in cards if not _is_web_card(card, manifest)
++        for source in card.get("sources", [])
+     )
+     rows = []
+     seen = set()
+diff --git a/backend/src/novelty_agent_framework/tools/web_search.py b/backend/src/novelty_agent_framework/tools/web_search.py
+index 1c9170c..684cf07 100644
+--- a/backend/src/novelty_agent_framework/tools/web_search.py
++++ b/backend/src/novelty_agent_framework/tools/web_search.py
+@@ -20,12 +20,13 @@ from ..schemas import (
+     WebSearchItem,
+     WebSearchResult,
+ )
+-from .web_search_backend import SearchBackend, SearchHit
++from ..schemas.research_tools import NonEmptyStr
++from .web_search_backend import SearchBackend, SearchHit, _validate_baidu_query, BaiduSearchError
+ 
+ 
+ class WebSearchTool:
+     name = "web_search"
+-    description = "搜索 Web 以发现候选来源；搜索结果本身不是证据。"
++    description = "搜索 Web 补充资料；搜索结果本身不是证据。query只填写短关键词，不要解释、推理或整段研究任务。"
+     args_schema = WebSearchArguments
+ 
+     def __init__(
+@@ -39,6 +40,11 @@ class WebSearchTool:
+         if not backend.name.strip():
+             raise ValueError("search backend name cannot be empty")
+         self.backend = backend
++        query_description = "只传检索词，不传解释、推理过程或任务全文。"
++        if backend.name == "baidu":
++            query_description += ("最多72单位：ASCII字符含空格计1，非ASCII计2。建议不超过60单位。"
++                                  "示例：图摘要 分布式GNN；graph summarization distributed GNN。")
++            self.description += query_description
+         self.reference_store = reference_store or ReferenceStore()
+         if not 1 <= default_max_results <= max_results_per_call <= 100:
+             raise ValueError("web search result limits are invalid")
+@@ -47,6 +53,7 @@ class WebSearchTool:
+         self.args_schema = create_model(
+             f"ConfiguredWebSearchArguments{default_max_results}_{max_results_per_call}",
+             __base__=WebSearchArguments,
++            query=(NonEmptyStr, Field(description=query_description)),
+             max_results=(int, Field(default=default_max_results, ge=1, le=max_results_per_call)),
+         )
+ 
+@@ -62,6 +69,18 @@ class WebSearchTool:
+             raise ValueError(
+                 f"max_results exceeds web_search limit {self.max_results_per_call}"
+             )
++        if self.backend.name == "baidu":
++            try:
++                _validate_baidu_query(arguments.query)
++            except BaiduSearchError as exc:
++                return ResearcherToolObservation(
++                    tool_name=self.name, arguments=arguments.model_dump(mode="json"), succeeded=False,
++                    error=str(exc), summary="查询未发送，请缩短关键词后重试，不要原样重复。",
++                    payload={"error_code": "INVALID_QUERY", "query_units": sum(
++                        1 if ord(c) < 128 else 2 for c in arguments.query.strip()),
++                        "max_query_units": 72, "retry_instruction":
++                        "ASCII（含空格）计1，非ASCII计2；只传短关键词，例如 graph summarization distributed GNN。不要加入解释或推理。"},
++                )
+         backend_result = await self.backend.search(
+             arguments.query,
+             max_results=max_results,
+@@ -133,6 +152,8 @@ class WebSearchTool:
+     def project_model_context(
+         self, observation: ResearcherToolObservation
+     ) -> dict[str, Any]:
++        if not observation.succeeded:
++            return {"succeeded": False, "error": observation.error, **observation.payload}
+         result = observation.payload["search_result"]
+         return {
+             "succeeded": observation.succeeded,
+@@ -194,7 +215,7 @@ def _source_record(
+         "source_record_id": source_record_id,
+         "work_id": current.work_id if current is not None else None,
+         "source_id": backend_name,
+-        "source_kind": SourceKind.WEB,
++        "source_kind": SourceKind.WEB_SUPPLEMENT,
+         "external_id": (
+             hit.external_id
+             if hit.external_id is not None
+diff --git a/backend/src/novelty_agent_framework/workflows/research_task.py b/backend/src/novelty_agent_framework/workflows/research_task.py
+index ccef9a8..6ed4b20 100644
+--- a/backend/src/novelty_agent_framework/workflows/research_task.py
++++ b/backend/src/novelty_agent_framework/workflows/research_task.py
+@@ -4,11 +4,13 @@ from __future__ import annotations
+ 
+ import json
+ import re
++from pathlib import Path
+ from dataclasses import dataclass, field, replace
+ 
+ from backend.env import ChatMessage, ModelCallOptions, ModelClient, PromptLibrary
+ from pydantic import ValidationError
+ 
++from ..core.format_repair import repair_json
+ from ..core import ToolCallHarness, ToolCallHarnessConfig, ToolCallHarnessError
+ from ..schemas import (
+     ReferenceReadResult,
+@@ -18,6 +20,7 @@ from ..schemas import (
+     TaskResearchRequest,
+ )
+ from ..schemas import TaskResearchResult, TaskResearchStatus
++from ..schemas.references import SearchExecution
+ from ..tools import EvidenceCardBuilder, ResearcherToolRegistry
+ from .candidate_audit import build_candidate_audit
+ 
+@@ -98,7 +101,7 @@ class TaskResearcherWorkflow:
+ 
+     async def ainvoke(self, request: TaskResearchRequest) -> TaskResearchResult:
+         result, trace = await self._research(request)
+-        return result.model_copy(update={"candidate_audit": build_candidate_audit(
++        return result.model_copy(update={"search_executions": _search_audit(trace), "candidate_audit": build_candidate_audit(
+             trace, result.read_results, result.evidence, result.evidence_cards,
+             interrupted=result.status == TaskResearchStatus.PARTIAL,
+         )})
+@@ -135,18 +138,23 @@ class TaskResearcherWorkflow:
+ 
+         reads, read_warnings = _trusted_reads(harness_result.trace)
+         bundles, bundle_warnings = _trusted_bundles(harness_result.trace)
++        format_turns = 0
++        format_warnings = []
+         try:
+-            draft = ResearchFinishDraft.model_validate_json(
+-                _extract_finish_json(harness_result.final_content)
+-            )
+-        except (ValidationError, ValueError) as exc:
++            try:
++                draft, format_warnings = _parse_finish(harness_result.final_content)
++            except (ValidationError, ValueError):
++                format_turns = 1
++                repaired = await repair_json(self.model_client, harness_result.final_content,
++                                             ResearchFinishDraft.model_json_schema(), self.config.model_options)
++                draft, format_warnings = _parse_finish(repaired)
++                format_warnings.append("single format repair recovered ResearchFinishDraft")
++        except Exception as exc:
+             return _partial(
+-                request,
+-                reads=reads,
+-                bundles=bundles,
++                request, reads=reads, bundles=bundles,
+                 warnings=[*read_warnings, *bundle_warnings,
+-                          f"invalid ResearchFinishDraft: {_safe_error(exc)}"],
+-                steps=harness_result.turns_used,
++                          f"invalid ResearchFinishDraft after bounded recovery: {_safe_error(exc)}"],
++                steps=harness_result.turns_used + format_turns,
+             ), harness_result.trace
+ 
+         try:
+@@ -160,13 +168,17 @@ class TaskResearcherWorkflow:
+                 bundles=bundles,
+                 warnings=[*read_warnings, *bundle_warnings,
+                           f"evidence builder failed: {_safe_error(exc)}"],
+-                steps=harness_result.turns_used,
++                steps=harness_result.turns_used + format_turns,
+             ), harness_result.trace
+ 
+         correction_turns = 0
+-        if built.rejections:
++        repairable = [item for item in built.rejections
++                      if item.reason != "web supplementary material cannot be used as evidence"]
++        if repairable:
+             correction_turns = 1
+-            built = await self._correct_rejected_cards(draft, built, reads, request)
++            built = await self._correct_rejected_cards(
++                draft, built.model_copy(update={"rejections": repairable}), reads, request,
++            )
+         stop_warnings = ([f"research stopped; finalization completed: {harness_result.stop_reason}"]
+                          if harness_result.stop_reason else [])
+         return TaskResearchResult(
+@@ -177,8 +189,8 @@ class TaskResearcherWorkflow:
+             research_bundles=bundles,
+             evidence=built.evidence,
+             evidence_cards=built.evidence_cards,
+-            warnings=[*stop_warnings, *read_warnings, *bundle_warnings, *built.warnings],
+-            steps_used=harness_result.turns_used + correction_turns,
++            warnings=[*stop_warnings, *read_warnings, *bundle_warnings, *format_warnings, *built.warnings],
++            steps_used=harness_result.turns_used + format_turns + correction_turns,
+         ), harness_result.trace
+ 
+     async def _correct_rejected_cards(self, draft, built, reads, request):
+@@ -240,13 +252,21 @@ class TaskResearcherWorkflow:
+         }
+         if self.prompts is not None:
+             rendered = self.prompts.render(self.config.prompt_name, **variables)
+-            return rendered.system, rendered.user + "\n\n" + self._capability_note()
++            return rendered.system + self._research_skills(), rendered.user + "\n\n" + self._capability_note()
+         return (
+             "Use only registered tools. Finish with strict ResearchFinishDraft JSON. "
+-            "Never invent provenance handles.",
++            "Never invent provenance handles." + self._research_skills(),
+             "\n".join(f"{key}: {value}" for key, value in variables.items()) + "\n" + self._capability_note(),
+         )
+ 
++    @staticmethod
++    def _research_skills() -> str:
++        root = Path(__file__).resolve().parents[1] / "skills"
++        return "\n\n" + "\n\n".join(
++            (root / name / "SKILL.md").read_text(encoding="utf-8").split("---", 2)[-1].strip()
++            for name in ("database_research", "web_supplement")
++        )
++
+     def _capability_note(self):
+         names = self.tools.names
+         note = "Available tools: " + ", ".join(names) + ". "
+@@ -261,6 +281,16 @@ class TaskResearcherWorkflow:
+         return note
+ 
+ 
++def _parse_finish(content):
++    payload = json.loads(_extract_finish_json(content))
++    warnings = []
++    if isinstance(payload, dict) and isinstance(payload.get("cards"), list) and payload["cards"]:
++        if payload.get("no_evidence_reason") is not None:
++            warnings.append("moved conflicting no_evidence_reason to warnings: " + str(payload["no_evidence_reason"]))
++            payload = {**payload, "no_evidence_reason": None}
++    return ResearchFinishDraft.model_validate(payload), warnings
++
++
+ def _trusted_reads(trace) -> tuple[list[ReferenceReadResult], list[str]]:
+     reads: list[ReferenceReadResult] = []
+     warnings: list[str] = []
+@@ -278,6 +308,30 @@ def _trusted_reads(trace) -> tuple[list[ReferenceReadResult], list[str]]:
+     return reads, warnings
+ 
+ 
++def _search_audit(trace) -> list[SearchExecution]:
++    executions = {}
++    for event in trace:
++        observation = event.observation
++        if event.kind != "tool_result" or observation is None:
++            continue
++        if observation.tool_name not in {"database_search", "structured_source_retrieval"}:
++            continue
++        payload = observation.payload
++        bundle = payload.get("research_bundle") or payload.get("bundle") or {}
++        rows = payload.get("search_executions", [])
++        rows = rows if isinstance(rows, list) else []
++        if isinstance(bundle, dict):
++            nested = bundle.get("search_executions", [])
++            rows = [*rows, *(nested if isinstance(nested, list) else [])]
++        for row in rows:
++            try:
++                execution = SearchExecution.model_validate(row)
++                executions[(execution.execution_id, execution.started_at)] = execution
++            except (ValidationError, ValueError, TypeError):
++                continue  # Malformed audit metadata must never discard evidence.
++    return list(executions.values())
++
++
+ def _trusted_bundles(trace) -> tuple[list[ResearchBundle], list[str]]:
+     bundles: list[ResearchBundle] = []
+     warnings: list[str] = []
+diff --git a/tests/test_card_recovery.py b/tests/test_card_recovery.py
+index d881a55..f869519 100644
+--- a/tests/test_card_recovery.py
++++ b/tests/test_card_recovery.py
+@@ -80,7 +80,7 @@ def test_invalid_finalization_is_bounded_and_retains_reads(tmp_path, last):
+     reader = Reader([read()])
+     model = ScriptedModelClient(call("first"), last)
+     result = asyncio.run(workflow(tmp_path, model, reader, max_steps=1).ainvoke(scope()))
+-    assert len(model.calls) == 2 and len(reader.calls) == 1
++    assert len(model.calls) == (2 if last.tool_calls else 3) and len(reader.calls) == 1
+     assert result.status.value == "partial" and not result.evidence_cards
+     assert len(result.read_results) == 1
+     assert result.candidate_audit[0].status == "read_task_interrupted"
+diff --git a/tests/test_database_search_harness_integration.py b/tests/test_database_search_harness_integration.py
+index b661531..ffe3999 100644
+--- a/tests/test_database_search_harness_integration.py
++++ b/tests/test_database_search_harness_integration.py
+@@ -295,7 +295,10 @@ def test_scripted_four_tool_chain_shares_handles_and_builds_evidence(tmp_path):
+     assert {tool.name for tool in model.options[0].tools} == set(registry.names)
+     assert "structured_source_retrieval" not in {tool.name for tool in model.options[0].tools}
+     assert len(result.read_results) == 2
+-    assert len(result.evidence) == len(result.evidence_cards) == 2
++    assert len(result.evidence) == len(result.evidence_cards) == 1
++    assert result.evidence[0].quote == DB_TEXT
++    assert any("web supplementary material" in warning for warning in result.warnings)
++    assert result.steps_used == 6  # Web policy rejection does not trigger quote repair.
+     assert len(result.research_bundles) == 1
+     assert len(manifest.works) == 2
+     assert len(manifest.source_records) == 2
+diff --git a/tests/test_evidence_card_builder.py b/tests/test_evidence_card_builder.py
+index 72a0a9f..c034836 100644
+--- a/tests/test_evidence_card_builder.py
++++ b/tests/test_evidence_card_builder.py
+@@ -73,7 +73,7 @@ def prepare_store(tmp_path) -> ReferenceStore:
+             source_record_id="src_a",
+             work_id="wrk_a",
+             source_id="test",
+-            source_kind=SourceKind.WEB,
++            source_kind=SourceKind.STRUCTURED_DATABASE,
+             title="Source A",
+             landing_url="https://landing.example/a",
+             full_text_url="https://full.example/a",
+@@ -84,7 +84,7 @@ def prepare_store(tmp_path) -> ReferenceStore:
+             source_record_id="src_b",
+             work_id="wrk_b",
+             source_id="test",
+-            source_kind=SourceKind.WEB,
++            source_kind=SourceKind.STRUCTURED_DATABASE,
+             title="Source B",
+             landing_url="https://landing.example/b",
+             identifiers=[ExternalIdentifier(namespace="doi", value="10.1/source-b")],
+@@ -182,6 +182,8 @@ def test_single_quote_builds_trusted_card_and_evidence(tmp_path) -> None:
+     assert (evidence.work_id, evidence.artifact_id) == ("wrk_a", "art_a")
+     assert evidence.locator == EvidenceLocator(char_start=0, char_end=19)
+     assert evidence.provenance == {
++        "source_kind": "structured_database",
++        "evidence_type": "database_evidence",
+         "builder": "evidence_card_builder",
+         "artifact_namespace": "research_reference",
+         "read_id": "read_wrk_a",
+diff --git a/tests/test_renderer.py b/tests/test_renderer.py
+index 0c98a88..70fff9d 100644
+--- a/tests/test_renderer.py
++++ b/tests/test_renderer.py
+@@ -255,3 +255,43 @@ def test_renderer_reads_only_the_requested_output_root(tmp_path: Path) -> None:
+     assert path == run_root / "renderer-paper/report/renderer-paper-report.md"
+     assert path.is_file()
+     assert not (tmp_path / "outputs" / "renderer-paper").exists()
++
++
++def test_web_material_is_never_listed_and_advice_requires_no_papers(tmp_path):
++    seed_workspace(tmp_path)
++    workspace = tmp_path / 'renderer-paper'
++    path = workspace / 'references/list.json'
++    path.parent.mkdir(exist_ok=True)
++    web = {'source_kind': 'web_supplement', 'title': 'WEB TITLE MUST NOT APPEAR',
++           'landing_url': 'https://web.example/advice',
++           'provenance': {'query': 'graph partitioning'}}
++    path.write_text(json.dumps({'source_records': [web]}))
++    # A paper card already exists: no supplementary advice or Web bibliography.
++    content = render_report(paper_name='renderer-paper', output_root=tmp_path).read_text()
++    assert web['title'] not in content and web['landing_url'] not in content
++    assert '无论文可用时的补充信息建议' not in content
++    evidence_path = workspace / 'evidence-cards.json'
++    evidence = json.loads(evidence_path.read_text())
++    evidence['raw_evidence_cards'] = evidence['accepted_evidence_cards'] = []
++    evidence_path.write_text(json.dumps(evidence))
++    content = render_report(paper_name='renderer-paper', output_root=tmp_path).read_text()
++    assert '无论文可用时的补充信息建议' in content
++    assert 'graph partitioning' in content
++    assert web['title'] not in content and web['landing_url'] not in content
++    # Retrieved paper without a card still prevents a false no-paper recommendation.
++    path.write_text(json.dumps({'source_records': [web, {
++        'source_kind': 'structured_database', 'title': 'Unread paper',
++        'landing_url': 'https://doi.org/10.1/unread'}]}))
++    content = render_report(paper_name='renderer-paper', output_root=tmp_path).read_text()
++    assert '无论文可用时的补充信息建议' not in content
++    assert 'Unread paper' in content
++
++
++def test_legacy_web_card_is_not_rendered_as_related_literature():
++    from novelty_agent_framework.tools.renderer import _format_retrieved_references, _is_web_card
++    manifest = {'source_records': [{'source_kind': 'web', 'title': 'Web source',
++                                    'landing_url': 'https://web.example/a'}]}
++    card = {'document_title': 'Old Web card', 'sources': [{'url': 'https://web.example/a'}]}
++    assert _is_web_card(card, manifest)
++    assert 'Old Web card' not in _format_retrieved_references(manifest, [card])
++    assert 'Web source' not in _format_retrieved_references(manifest, [card])
+diff --git a/tests/test_researcher_prompt_policy.py b/tests/test_researcher_prompt_policy.py
+index c15f987..89092c5 100644
+--- a/tests/test_researcher_prompt_policy.py
++++ b/tests/test_researcher_prompt_policy.py
+@@ -22,9 +22,9 @@ def render_prompt():
+ def test_researcher_prompt_renders_attempt3_retrieval_policy() -> None:
+     rendered = render_prompt()
+ 
+-    assert rendered.version == "2"
+-    assert "Prefer database_search as the primary discovery tool" in rendered.system
+-    assert "For Chinese-language research tasks" in rendered.system
++    assert rendered.version == "5"
++    assert "Rely on database_search for scholarly discovery" in rendered.system
++    assert "language alone is not a trigger" in rendered.system
+     assert "Search results and snippets are discovery metadata, not evidence" in rendered.system
+     assert "Never issue consecutive web_search calls" in rendered.system
+     assert "Never guess an\nunlisted database source_id" in rendered.system
+diff --git a/tests/test_web_search_core.py b/tests/test_web_search_core.py
+index 0f2da92..749b03c 100644
+--- a/tests/test_web_search_core.py
++++ b/tests/test_web_search_core.py
+@@ -127,7 +127,7 @@ def test_metadata_arguments_items_persistence_and_warnings(tmp_path) -> None:
+     manifest = store.load_manifest("paper-1")
+     record = manifest.source_records[0]
+     assert record.source_record_id == item["source_record_id"]
+-    assert record.source_kind is SourceKind.WEB
++    assert record.source_kind is SourceKind.WEB_SUPPLEMENT
+     assert record.source_id == backend.name
+     assert record.landing_url == "https://Example.test/paper#abstract"
+     assert record.access_status is AccessStatus.DISCOVERED

@@ -1,0 +1,249 @@
+{
+  "run": {
+    "trial": 3,
+    "started_at": "2026-09-15T13:02:12.565355+00:00",
+    "status": "SUCCESS",
+    "entrypoint": "paper_input",
+    "source_pdf": "examples/MF2033k6lC.pdf",
+    "mineru_invoked": false,
+    "egress_authorized": true,
+    "pdf_sha256": "1fa48a8cb5d121220ba897a051b1468c2f0cefa211a0f5311c1d74c47aed8c79",
+    "paper_json_sha256": "89fcc578efcc840daa9c4e0698943314f794e096e176c067dbbd6e603d42ea66",
+    "finished_at": "2026-09-15T13:24:48.148384+00:00",
+    "duration_seconds": 1358.7571124039969,
+    "rendered_report_path": "/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/docs/experiments/.full_run_no_mineru/run/MF2033k6lC/report/MF2033k6lC-report.md",
+    "runtime_run_id": "run-c44139b2ff1e462a9b84dea99a7e3a79"
+  },
+  "rounds": 2,
+  "points": [
+    {
+      "point_id": "NP-1",
+      "claim": "提出了一种基于图摘要的大规模时序图表示学习方法GSAERU，通过图摘要压缩图快照，结合图自编码器与循环神经网络，高效生成动态时序图的低维表征。",
+      "claim_en": "Proposed GSAERU, a large-scale sequential graph representation learning method based on graph summarization, which compresses graph snapshots, combines graph autoencoder and recurrent neural network to efficiently generate low-dimensional representations of dynamic sequential graphs.",
+      "technical_features": [
+        "将动态时序图建模为各时刻图快照的序列",
+        "利用图摘要技术压缩原图，输入图自编码器",
+        "利用重构误差训练节点表征",
+        "通过循环神经网络学习时间维度特征与依赖关系"
+      ],
+      "technical_features_en": [
+        "Modeling dynamic sequential graph as a sequence of graph snapshots at each time step",
+        "Compressing original graph via graph summarization and feeding into graph autoencoder",
+        "Training node representations using reconstruction error",
+        "Learning temporal features and dependencies via recurrent neural network"
+      ],
+      "source_locations": [
+        "论文摘要中关于GSAERU的描述"
+      ]
+    },
+    {
+      "point_id": "NP-2",
+      "claim": "提出了一种基于图摘要的分布式图神经网络优化训练算法DSGNN，采用领导者-工作者模式，通过边分割图流划分算法划分图，各工作节点进行基于图摘要的小批量训练，并通过注意力层聚合结果，实现大规模图流数据的快速训练。",
+      "claim_en": "Proposed DSGNN, a distributed graph neural network optimization training algorithm based on graph summarization, which adopts leader-worker mode, partitions the graph with an edge-based graph flow partitioning algorithm, performs graph summarization-based mini-batch training on workers, and aggregates results through an attention layer, enabling efficient training on large-scale graph streaming data.",
+      "technical_features": [
+        "领导节点利用基于边分割的图流划分算法对原图进行划分并分配给各工作节点",
+        "工作节点执行基于图摘要技术的小批量训练",
+        "训练结果通过注意力层返回领导节点",
+        "领导节点汇总结果并计算梯度，同步更新所有计算节点上的模型"
+      ],
+      "technical_features_en": [
+        "The leader partitions the original graph using a graph flow partitioning algorithm based on edge segmentation and assigns subgraphs to workers",
+        "Workers perform mini-batch training based on graph summarization",
+        "Training results are returned to the leader through an attention layer",
+        "The leader aggregates results, computes gradients, and synchronously updates models on all computing nodes"
+      ],
+      "source_locations": [
+        "论文摘要中关于DSGNN的描述"
+      ]
+    },
+    {
+      "point_id": "NP-3",
+      "claim": "提出了一种基于边分割的图流划分算法，用于大规模图流数据的分布式划分，该算法利用图的边信息进行分割，能够适应图数据的不规则性，实现高效且均衡的子图划分。",
+      "claim_en": "Proposed an edge-based graph flow partitioning algorithm for distributed partitioning of large-scale graph streaming data, which utilizes graph edge information for segmentation, adapts to the irregularity of graph data, and enables efficient and balanced subgraph partitioning.",
+      "technical_features": [
+        "基于边分割的划分策略",
+        "针对图流数据的动态划分",
+        "适应图数据的不规则性",
+        "用于分布式场景中的子图分配"
+      ],
+      "technical_features_en": [
+        "Edge-based partitioning strategy",
+        "Dynamic partitioning for graph streaming data",
+        "Adapting to irregularity of graph data",
+        "For subgraph assignment in distributed scenarios"
+      ],
+      "source_locations": [
+        "论文摘要中关于DSGNN的描述"
+      ]
+    }
+  ],
+  "task_count": 8,
+  "task_statuses": {
+    "completed": 7,
+    "partial": 1
+  },
+  "task_warnings": [
+    {
+      "task": "T-1",
+      "warnings": [
+        "no evidence: 无法获取可读取的源文本来支持证据卡片。具体限制：(1) 数据库检索失败——arxiv 和 springer 两个数据库检索均整体执行失败（DATABASE_UNAVAILABLE），未返回任何可读 Artifact；(2) 参考文献池检索（reference_search）针对“分布式图神经网络 图摘要 训练”“图流划分 图神经网络”“图摘要 分布式 训练”等关键词均返回 0 条结果；(3) 由于 browser 工具不可用，web_search 仅作为发现工具使用，返回的 10 个候选均为通用 GNN 综述/教程（如中科院《图神经网络分布式训练》综述、IEEE TPAMI 并行分布式 GNN 分析、GNN 综述等），未发现专门针对 DSGNN 算法或“图摘要+分布式GNN训练+领导者-工作者模式+边分割图流划分”这一完整技术组合的文献，且无获取路径可读取这些候选的全文以提取精确引文。因此无法形成任何基于 Reader 原文的 EvidenceCard，需说明该查新点的中文文献覆盖存在获取性局限。"
+      ]
+    },
+    {
+      "task": "T-R2-1",
+      "warnings": [
+        "no evidence: 无法获取可引用的中文文献证据。数据库检索（springer、arxiv）均执行失败（DATABASE_UNAVAILABLE），无法通过数据库获取相关中文文献。Web搜索返回了高度相关的中文候选来源（如知乎《图流划分算法综述》等，涉及边划分/边分割与图流划分），但browser工具不可用，无法获取这些Web来源的全文文本，且reader只能读取数据库/参考文献artifact，不能读取web source_record_id，因此无法提取可验证的原文引文。参考文献池检索仅返回图神经网络（GNN）系统相关英文文献（AGL、AliGraph等），均不涉及基于边分割的图流划分算法，与查新点NP-3不相关。综上，受工具可用性限制，未能获得支持该创新点的中文文献证据。"
+      ]
+    },
+    {
+      "task": "T-2",
+      "warnings": [
+        "no evidence: Database search failed for both arxiv and springer sources (DATABASE_UNAVAILABLE - all search executions failed consistently). The reference corpus contains only GNN-focused works (AGL, AliGraph, GraphSAINT, GAT, FastGCN, etc.) that do not directly address edge-based graph streaming partitioning. Web search identified potentially relevant candidates (e.g., 'Hybrid Edge Partitioner: Partitioning Large Power-Law Graphs under Memory Constraints' on arXiv), but browser is unavailable, so full-text acquisition from web sources was not possible. The read artifacts (AGL, AliGraph, GraphSAINT abstracts) discuss distributed graph processing and GNN training systems but do not specifically describe an edge-based partitioning algorithm for streaming graph data with balanced subgraph partitioning."
+      ]
+    },
+    {
+      "task": "T-1",
+      "warnings": [
+        "no evidence: 数据库检索失败(DATABASE_UNAVAILABLE):arxiv和springer两个数据库的检索均执行失败('all 1 search executions failed')。参考文献池检索仅返回图神经网络(GNN)相关文献(AGL、AliGraph等),均不直接涉及基于边分割的图流划分算法。Web检索发现了高度相关的中文文献(如知乎《图流划分算法综述》明确讨论边划分/边流模型、图流划分SGP问题;《图分割Graph Partitioning技术总结》讨论边分割与分布式应用),但browser工具不可用,无法获取这些Web来源的全文文本,因此无法通过Reader提取可引用的原文证据。由于无法获取任何可读的、直接支持该查新点的原文文本,无法生成证据卡片。"
+      ]
+    },
+    {
+      "task": "T-2",
+      "warnings": [
+        "invalid ResearchFinishDraft: ValidationError: 1 validation error for ResearchFinishDraft\n  Value error, no_evidence_reason must be absent when cards are present [type=value_error, input_value={'cards': [{'main_contrib... as readable evidence.'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error"
+      ]
+    }
+  ],
+  "external_works": 16,
+  "source_records": 109,
+  "source_kinds": {
+    "web_supplement": 93,
+    "structured_database": 16
+  },
+  "artifacts": 21,
+  "read_count": 22,
+  "raw_cards": 6,
+  "final_cards": 6,
+  "evidence_types": {
+    "database_evidence": 8
+  },
+  "candidate_states": {
+    "acquisition_unavailable": 102,
+    "read_without_card": 10,
+    "not_read": 55,
+    "card_produced": 6,
+    "read_task_interrupted": 2
+  },
+  "recovery": [],
+  "http_counts": {
+    "export.arxiv.org:None": 2,
+    "export.arxiv.org:429": 6,
+    "api.springernature.com:404": 7,
+    "qianfan.baidubce.com:200": 11,
+    "api.springernature.com:200": 12
+  },
+  "model_calls": 124,
+  "reported_tokens": 1170857,
+  "report_exists": true,
+  "issues": [],
+  "reviews": [
+    {
+      "novelty_point_id": "NP-1",
+      "status": "insufficient_evidence",
+      "verdict": null,
+      "verdict_reason": null,
+      "confidence": null,
+      "highly_relevant_works": [],
+      "supplement_request": {
+        "reason": "Reviewer 无法完成可靠判定：ValidationError: 1 validation error for NoveltyPointReview\n  Invalid JSON: expected value at line 1 column 1 [type=json_invalid, input_value='Based on my analysis of ...plemental confirmation.', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/json_invalid",
+        "missing_aspects": [],
+        "suggested_focus": []
+      }
+    },
+    {
+      "novelty_point_id": "NP-2",
+      "status": "reviewed",
+      "verdict": "novel",
+      "verdict_reason": "查新点NP-2主张DSGNN将四要素组合：领导-工作者分布式架构、基于边分割的图流划分、基于图摘要的小批量训练、经注意力层的领导侧聚合与同步更新。已检索证据（AGL、AliGraph、GraphSAINT）虽覆盖分布式GNN训练与大图小批量训练等孤立侧面，但均未呈现该组合：AGL采用参数服务器架构与k-hop邻域子图而非领导-工作者+注意力聚合，且未用图摘要；AliGraph依赖分布式存储与采样算子而非图摘要小批量训练；GraphSAINT仅单机、用图采样而非图摘要、无注意力聚合。按原文对具体判断的支撑程度审查，三条证据均仅能佐证分布式训练与小批量图采样为已有方向，均未能构成对'图摘要+领导-工作者注意力聚合+边分割图流划分+同步更新'组合的完整公开，故判定该组合相对现有证据具备新颖性。",
+      "confidence": 0.7,
+      "highly_relevant_works": [
+        {
+          "work_id": "wrk_ff5aa18cf0cfe7be1ba5e8bd",
+          "card_ids": [
+            "card_1800ebe9811ad96dfd604571"
+          ],
+          "evidence_ids": [
+            "ev_693981aaaf18598c9976bc9a"
+          ],
+          "relevance_reason": "AGL可佐证分布式GNN训练为已有方向，但其用参数服务器架构与k-hop子图，而非本查新点的领导-工作者+注意力聚合+图摘要组合，故为基线而非冲突证据。"
+        },
+        {
+          "work_id": "wrk_e59b8b7248dcc080455b8690",
+          "card_ids": [
+            "card_396b3a2c53a363562c5987e7"
+          ],
+          "evidence_ids": [
+            "ev_5679a77fe3c2a290a816a4e2"
+          ],
+          "relevance_reason": "AliGraph佐证大规模分布式GNN训练为已有研究领域，但依赖分布式存储与采样算子，不采用图摘要小批量训练或领导-工作者注意力聚合，为基线对比文献。"
+        },
+        {
+          "work_id": "wrk_9567984f4fecd1cfc596ae3b",
+          "card_ids": [
+            "card_ea7d9077219f8d5b4a3b1383"
+          ],
+          "evidence_ids": [
+            "ev_12383377eae7730f964722bf"
+          ],
+          "relevance_reason": "GraphSAINT用小批量图采样提升效率，与本查新点的小批量训练侧面相关，但为单机、用采样而非图摘要、无注意力聚合，仅覆盖孤立侧面而非完整组合。"
+        }
+      ],
+      "supplement_request": {
+        "reason": "检索覆盖不完整：证据集仅含英文检索任务T-2的三条文献，中文检索任务T-1未返回任何evidence，故中文文献覆盖缺失，且本查新点指向DSGNN为一篇论文摘要描述，需核对原型出处与更贴近的'图摘要(graph summarization)+分布式图神经网络训练'交叉方向文献，以排除潜在破坏新颖性的组合披露。",
+        "missing_aspects": [
+          "中文文献（T-1）检索结果缺失，需补齐以评估中文语域覆盖",
+          "将图摘要技术应用于分布式GNN训练的组合型文献（图摘要+领导/工作者+注意力聚合）",
+          "边分割图流划分算法及其与图摘要训练联合使用的出处"
+        ],
+        "suggested_focus": [
+          "graph summarization + distributed GNN training (leader-worker, attention aggregation) 交叉检索",
+          "edge-based graph partitioning / edge-cut partitioning 在分布式GNN中的使用",
+          "DSGNN原型论文及引用链（其被引文献是否已披露相同组合）"
+        ]
+      }
+    },
+    {
+      "novelty_point_id": "NP-3",
+      "status": "reviewed",
+      "verdict": "partially_novel",
+      "verdict_reason": "查新点NP-3声称提出了一种基于边分割的图流划分算法，其四个技术特征为：基于边分割的划分策略、针对图流数据的动态划分、适应图数据的不规则性、用于分布式场景中的子图分配。当前唯一证据（wrk_df8c0752cb7bc7b40b51da06，《Scalability and performance in distributed graph databases》）是一篇对现有四种划分策略（Random Vertex、Metis、Random Edge、HDRF）在边切与顶点切范式下针对分布式图数据库的性能对比评测。经核对原文，该文献直接展示了基于边分割的划分策略（Random Edge、HDRF）、适应图数据的动态/不规则性（'dynamic, power-law networks'）以及分布式场景下的子图划分与负载均衡——四个技术特征在该文献中均以既有技术形式出现，尤其是HDRF作为流式边分配策略，已在分布式动态不规则图上被验证。因此查新点声称的四个技术特征并非全新，现有技术已对各项特征给出实质覆盖。但该文献为对比基准评测而非提出查新点所指的具体新型图流划分算法，未直接披露与应用方完全相同的特定算法实现，故判定为部分新颖。",
+      "confidence": 0.62,
+      "highly_relevant_works": [
+        {
+          "work_id": "wrk_df8c0752cb7bc7b40b51da06",
+          "card_ids": [
+            "card_05fe604814671131d009b01e"
+          ],
+          "evidence_ids": [
+            "ev_cd56c09b2f248bb2407794ea",
+            "ev_459431a26cfa43ffb2519ecd",
+            "ev_a47a695e671ab3752b398968"
+          ],
+          "relevance_reason": "该文献对比评测了Random Edge与HDRF等基于边分割的划分策略，明确评估了其在分布式环境中针对动态幂律（不规则）图网络的性能、可扩展性与负载均衡。其四个技术特征（基于边分割策略、动态/流式边分配、适应图数据不规则性、分布式子图划分）与查新点NP-3的四个技术特征高度吻合，构成对查新点主要技术特征的现有技术实质覆盖。虽为对比基准评测而非提出特定新型算法，仍是判定查新点新颖性最相关、最关键的对比文献。"
+        }
+      ],
+      "supplement_request": {
+        "reason": "现有唯一证据为对比基准评测文献，仅间接涉及HDRF等基于边的流式划分，属二手/综述性质参考，未直接披露查新点所指具体图流划分算法的一手来源。为更严谨地支撑部分新颖判定，需补检基于边分割的图流/流式划分算法的原始文献。",
+        "missing_aspects": [
+          "专门针对图流（graph streaming）数据动态划分的算法原始文献（如HDRF、Fennel、Grid、Greedy等边分配算法的提出论文）",
+          "英文核心期刊/会议关于基于边划分实现负载均衡与低重划分代价的图流划分一手文献"
+        ],
+        "suggested_focus": [
+          "检索HDRF、Fennel等流式图划分算法的原始提出文献，确认基于边分割的动态图流划分是否已为公认现有技术",
+          "检索'graph stream partitioning'、'streaming edge partition'、'edge-cut load balancing distributed'相关英文一手文献",
+          "补检中文文献中关于分布式图流划分/边分割算法以确认国内现有技术覆盖情况"
+        ]
+      }
+    }
+  ]
+}

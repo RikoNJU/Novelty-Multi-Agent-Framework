@@ -1,0 +1,148 @@
+{
+  "current_point": {
+    "claim": "提出了一种基于图摘要的分布式图神经网络优化训练算法DSGNN，采用领导者-工作者模式，通过边分割图流划分算法划分图，各工作节点进行基于图摘要的小批量训练，并通过注意力层聚合结果，实现大规模图流数据的快速训练。",
+    "claim_en": "Proposed DSGNN, a distributed graph neural network optimization training algorithm based on graph summarization, which adopts leader-worker mode, partitions the graph with an edge-based graph flow partitioning algorithm, performs graph summarization-based mini-batch training on workers, and aggregates results through an attention layer, enabling efficient training on large-scale graph streaming data.",
+    "point_id": "NP-2",
+    "source_locations": [
+      "论文摘要中关于DSGNN的描述"
+    ],
+    "technical_features": [
+      "领导节点利用基于边分割的图流划分算法对原图进行划分并分配给各工作节点",
+      "工作节点执行基于图摘要技术的小批量训练",
+      "训练结果通过注意力层返回领导节点",
+      "领导节点汇总结果并计算梯度，同步更新所有计算节点上的模型"
+    ],
+    "technical_features_en": [
+      "The leader partitions the original graph using a graph flow partitioning algorithm based on edge segmentation and assigns subgraphs to workers",
+      "Workers perform mini-batch training based on graph summarization",
+      "Training results are returned to the leader through an attention layer",
+      "The leader aggregates results, computes gradients, and synchronously updates models on all computing nodes"
+    ]
+  },
+  "current_search_plan": {
+    "concepts": [
+      {
+        "alias": [
+          "distributed GNN training",
+          "distributed graph learning"
+        ],
+        "concept_id": "C1",
+        "exclude": [],
+        "importance": 3,
+        "name": "distributed graph neural network training",
+        "role": "object",
+        "terms": [
+          "distributed graph neural network training"
+        ]
+      },
+      {
+        "alias": [
+          "graph summary",
+          "graph condensation"
+        ],
+        "concept_id": "C2",
+        "exclude": [],
+        "importance": 3,
+        "name": "graph summarization",
+        "role": "method",
+        "terms": [
+          "graph summarization"
+        ]
+      },
+      {
+        "alias": [
+          "graph flow partitioning",
+          "edge partitioning"
+        ],
+        "concept_id": "C3",
+        "exclude": [],
+        "importance": 2,
+        "name": "graph partitioning",
+        "role": "method",
+        "terms": [
+          "graph partitioning"
+        ]
+      },
+      {
+        "alias": [
+          "leader-follower",
+          "parameter server"
+        ],
+        "concept_id": "C4",
+        "exclude": [],
+        "importance": 2,
+        "name": "leader worker mode",
+        "role": "feature",
+        "terms": [
+          "leader worker mode"
+        ]
+      },
+      {
+        "alias": [
+          "mini-batch",
+          "small batch"
+        ],
+        "concept_id": "C5",
+        "exclude": [],
+        "importance": 2,
+        "name": "mini batch training",
+        "role": "feature",
+        "terms": [
+          "mini batch training"
+        ]
+      },
+      {
+        "alias": [
+          "GNN",
+          "graph network"
+        ],
+        "concept_id": "C6",
+        "exclude": [],
+        "importance": 1,
+        "name": "graph neural network",
+        "role": "escape",
+        "terms": [
+          "graph neural network"
+        ]
+      }
+    ],
+    "novelty_point_id": "NP-2",
+    "strategies": [
+      {
+        "description": "distributed graph neural network training AND graph summarization AND graph partitioning AND leader worker mode",
+        "expression": "C1 AND C2 AND C3 AND C4",
+        "level": "strict",
+        "strategy_id": "S1",
+        "use_alias": false,
+        "use_exclude": true
+      },
+      {
+        "description": "distributed graph neural network training AND graph summarization AND graph partitioning AND leader worker mode AND mini batch training",
+        "expression": "C1 AND C2 AND C3 AND C4 AND C5",
+        "level": "medium",
+        "strategy_id": "S2",
+        "use_alias": true,
+        "use_exclude": true
+      },
+      {
+        "description": "distributed graph neural network training OR graph summarization OR graph partitioning OR leader worker mode OR mini batch training OR graph neural network",
+        "expression": "C1 OR C2 OR C3 OR C4 OR C5 OR C6",
+        "level": "broad",
+        "strategy_id": "S3",
+        "use_alias": true,
+        "use_exclude": true
+      }
+    ],
+    "task_id": "T-2"
+  },
+  "current_task": {
+    "attempt": 1,
+    "description": "针对该查新点执行英文文献检索。",
+    "language": "en",
+    "novelty_point_id": "NP-2",
+    "task_id": "T-2",
+    "task_type": "literature_search"
+  },
+  "run_id": "run-c44139b2ff1e462a9b84dea99a7e3a79",
+  "subject_paper_id": "MF2033k6lC"
+}

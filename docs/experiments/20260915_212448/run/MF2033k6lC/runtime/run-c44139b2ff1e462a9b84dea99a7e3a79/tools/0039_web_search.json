@@ -1,0 +1,561 @@
+{
+  "agent_arguments": {
+    "query": "DSGNN distributed graph summarization GNN training"
+  },
+  "agent_tool_call_id": "01a0a52f39d8792ac71b0030cf27e138",
+  "business_status": "NORMAL",
+  "duration": 0.958098,
+  "duration_ms": 958,
+  "error": null,
+  "execution_status": "SUCCESS",
+  "failure_phase": null,
+  "finished_at": "2026-09-15T13:08:52.243732+00:00",
+  "normalized_result": {
+    "query": "DSGNN distributed graph summarization GNN training",
+    "results": [
+      {
+        "published_at": "2023-03-01T14:09:25",
+        "snippet": "图神经网络(GNNs)是一种在图上学习的深度学习模型,并已成功应用于许多领域。尽管 GNN 有效,但 GNN 有效地扩展到大型图仍然具有挑战性 。作为一种补救措施, 分布式计算 成为训练大规模 GNN 的一种有前途的解决方案,因为它能够提供丰富的计算资源。然而, 图结构的依赖性 增加了实现高效分布式 GNN 训练的难度,导致 大量通信和工作负载不平衡 。近年来,在分布式 GNN 训练方面做出了很多努力,并提出了一系列训练算法和系统。然而,缺乏 对从图处理到分布式执行的优化技术 的系统回顾。在本次调查中,我们分析了分布式 GNN 训练的 三大挑战 ,即 海量特征通信、模型精度损失 和 工作负载不平衡 。然后,我们为分布式 GNN 训练中的优化技术引入了一种 新的分类法 ,以应对上述挑战。新分类法将现有技术分为四类,即 GNN 数据分区、GNN 批处理生成、GNN 执行模型 和 GNN 通信协议 。我们仔细讨论了每个类别中的技术。最后,我们分别总结了用于 多GPU、GPU 集群和 CPU 集群 的现有分布式 GNN 系统,并讨论了可扩展 GNN 的 未来发展方向 。 简介 GNN 是处理图建模问题的强大工具,并已广泛应用于各种应用,包括社交网络(例如,社交垃圾邮件发送者检测 [87、112]、社交网络分析 [91])、生物信息学(例如,蛋白质界面预测 [35]、疾病-基因关联 [83])、药物发现 [11、66]、流量预测[61]、医疗保健 [2、21]、推荐 [32、49、 55、111]、自然语言处理 [134、145] 和其他 [26、85、133、141、144]。通过将图结构信息集成到深度学习模型中,GNN 可以获得比传统机器学习和数据挖掘方法明显更好的结果。 GNN 模型通常包含多图卷积层,其中每个顶点聚合其邻居的最新状态,更新顶点的状态,并将神经网络(即转换)应用于顶点的更新状态。以传统的图卷积网络(GCN)为例,在每一层中,一个顶点使用 求和函数 聚合邻居状态和自己的状态,然后应用 单层MLP 来转换新状态。如果层数为 𝐿,则此类过程重复 𝐿次。第𝐿层生成的顶点状态被下游任务使用,如节点分类、链路预测等。在过去的几年中,许多研究工作在图神经网络模型的设计方面取得了显着进展。突出的模型包括 GCN [108]、GraphSAGE [46]、GAT [95]、GIN [118] 和许多其他特定于应用程序的 GNN 模型 [128、130]。迄今为止,有数十项调查审查了 GNN 模型 [114、116、135、147]。",
+        "source_name": "Tencent腾讯（腾讯官方网）",
+        "source_record_id": "src_1eee03f7afd673e24551ee6f",
+        "title": "【阅读】Distributed Graph Neural Network Training: A Survey——翻译",
+        "url": "https://cloud.tencent.com/developer/article/2230138"
+      },
+      {
+        "published_at": "2023-02-26T11:31:45",
+        "snippet": "来自计算所发布的 研究分布式GNN训练中使用的各种优化技术,提供了分布式GNN训练的全面综述 。 图神经网络(GNNs)在图学习方面的有效性已被证明是广泛应用领域的一种强大的算法模型。为了扩大GNN训练以适应大规模和不断增长的图,最有前途的解决方案是分布式训练,它将训练工作量分布到多个计算节点。然而,对分布式GNN训练的工作流程、计算模式、通信模式和优化技术仍有初步了解。 在本文中,我们通过研究分布式GNN训练中使用的各种优化技术,提供了分布式GNN训练的全面综述 。首先,根据分布式GNN训练的工作流程将其分为几类;此外,还介绍了它们的计算模式和通信模式,以及最新工作提出的优化技术。其次,介绍了分布式GNN训练的软件框架和硬件平台,以加深对分布式GNN训练的了解。第三,将分布式GNN训练与深度神经网络的分布式训练进行了比较,强调了分布式GNN训练的唯一性。最后,讨论了该领域的研究热点和发展机遇。 https://www.zhuanzhi.ai/paper/e85caecb1c45f7412fc38a4f681097ab 1. 概述 图具有强大的数据表示能力,特别是在表示对象之间的关联[1],[2]等方面有着广泛的应用 。许多真实世界的数据可以自然地表示为由一组顶点和边组成的图。以社交网络为例[3],[4],图中的顶点表示人,边表示人在Facebook上的互动[5]。如图1 (a)所示,圆圈代表顶点,箭头代表边。另一个众所周知的例子是知识图[6]、[7],其中顶点表示实体,而边表示实体之间的关系[8]。图神经网络(GNNs)在图[9]-[11]的学习中表现出优于其他算法模型的性能。深度神经网络(DNNs)已广泛应用于分析图像[12]等欧几里德数据。然而,由于图[13]的任意大小和复杂的拓扑结构,非欧氏域的图数据对它们提出了挑战。此外,工业界识别的 深度学习 范式的一个主要弱点是不能有效地进行因果推理,这大大降低了智能系统[14]的认知能力。为此,GNN已成为图学习的主要范式,并赋予智能系统认知能力。如图1 (b)所示。GNN在获取图数据作为输入后,使用前向传播和后向传播来更新模型参数。然后将训练好的模型应用于图任务,包括顶点预测[15](预测特定顶点的属性),链接预测[16](预测两个顶点之间是否存在一条边),图预测[17](预测整个图的属性),如图1 (c)所示。 由于GNN的优越性,它们在许多关键领域的各种实际应用中得到了广泛的应用。这些实际应用包括知识推理[18]、 自然语言处理 [19]、[20]、 机器翻译 [21]、 推荐系统 [22]-[24]、视觉推理",
+        "source_name": "Tencent腾讯（腾讯官方网）",
+        "source_record_id": "src_1dc3274385ea01b5579cbd4d",
+        "title": "GNN如何分布式?中科院综述《图神经网络分布式训练》",
+        "url": "https://cloud.tencent.com/developer/article/2226265"
+      },
+      {
+        "published_at": "2020-10-20T00:00:00",
+        "snippet": "1. 概述 得益于大数据的兴起以及算力的快速提升,机器学习技术在近年取得了革命性的发展。在图像分类、语音识别、自然语言处理等机器学习任务中,数据为大小维度确定且排列有序的欧氏(Euclidean)数据。然而,越来越多的现实场景中,数据是以图(Graph)这种复杂的非欧氏数据来表示的。Graph不但包含数据,也包含数据之间的依赖关系,比如社交网络、蛋白质分子结构、电商平台客户数据等等。数据复杂度的提升,对传统的机器学习算法设计以及其实现技术带来了严峻的挑战。在此背景之下,诸多基于Graph的新型机器学习算法—GNN(图神经网络),在学术界和产业界不断的涌现出来。 GNN对算力和存储器的要求非常高,其算法的软件实现方式非常低效,所以业界对GNN的硬件加速有着非常迫切的需求。我们知道传统的CNN(卷积神经网络网络)硬件加速方案已经有非常多的解决方案;但是,GNN的硬件加速尚未得到充分的讨论和研究,在本文撰写之时,Google和百度皆无法搜索到关于GNN硬件加速的中文研究。本文的撰写动机,旨在将国外最新的GNN算法、加速技术研究、以及笔者对GNN的FPGA加速技术的探讨相结合起来,以全景图的形式展现给读者。 GNN的架构在宏观层面有着很多与传统CNN类似的地方,比如卷积层、Polling、激活函数、机器学习处理器(MLP)和FC层等等模块,都会在GNN中得以应用。下图展示了一个比较简单的GNN架构。 图1:典型的GNN架构(来源:https://arxiv.org/abs/1901.00596) 但是, GNN中的Graph数据卷积计算与传统CNN中的2D卷积计算是不同的。以图2为例,针对红色目标节点的卷积计算,其过程如下: l Graph卷积:以邻居函数采样周边节点特征并计算均值,其邻居节点数量不确定且无序(非欧氏数据)。 l 2D卷积:以卷积核采样周边节点特征并计算加权平均值,其邻居节点数量确定且有序(欧氏数据)。 图2: Graph卷积和2D卷积(来源:https://arxiv.org/abs/1901.00596) 3. GraphSAGE算法简介 学术界已对GNN算法进行了非常多的研究讨论,并提出了数目可观的创新实现方式。其中,斯坦福大学在2017年提出的GraphSAGE是一种用于预测大型图中动态新增未知节点类型的归纳式表征学习算法,特别针对节点数量巨大、且节点特征丰富的图做了优化。如下图所示,GraphSAGE计算过程可分为三个主要步骤: 图3:GraphSAGE算法的视觉表述(来源:http://snap.stanford.edu/graphsage) l 邻节点采样:用于降低复杂度,一般采样2层,每一层采样若干节点 l 聚合:用于生成目标节点的embedding,即graph的低维向量表征",
+        "source_name": "电子六所微型计算机与应用",
+        "source_record_id": "src_fa8a252d78ec30bb59f00ab2",
+        "title": "机器学习实战:GNN(图神经网络)加速器的FPGA解决方案",
+        "url": "https://www.pcachina.com/article/3000123638"
+      },
+      {
+        "published_at": "2025-03-28T23:40:10",
+        "snippet": "Stanford CS224W: Machine Learning with Graphs By Ajay Rao Goparajfor CS 224W course project Fall 2024. https://github.com/AjayRaoGoparaj/CS224W_CUES_Project That’s exactly what I set out to do with the Cognitive Urban Ecosystem Simulator (CUES) Project. Armed with Graph Neural Networks (GNNs), diverse datasets, and an insatiable curiosity, I embarked on a journey to uncover the unseen patterns shaping urban ecosystems. 假如我们能将我们城市的隐藏网络映射出来,以解决城市生活中一些最紧迫的挑战,这正是我着手进行认知城市生态系统模拟器(Cognitive Urban Ecosystem Simulator,CUES)项目的原因。我带着图神经网络(Graph Neural Networks,GNNs)、多样化的数据集和无法满足的好奇心,踏上了揭示塑造城市生态系统的未观察到的模式之旅。 This is more than a technical deep dive — this is a story of discovery, innovation, and the power of graph-based learning to make a difference. Let’s dive in. 这不仅仅是一次技术深度挖掘,这是一个发现、创新以及基于图学习改变世界的力量的故事。让我们深入探讨。 1.The Tools of Discovery: Building Blocks of CUES 1.发现的工具:CUES 的构建模块 Before the GNNs came into play, I needed data. My project leveraged three key datasets: 在GNN 出现之前,我需要数据。我的项目利用了三个关键数据集: ogbn-arxiv: A research paper citation network. Nodes are papers, and edges are citations, mapping the spread of ideas. 一篇研究论文的引用网络。节点是论文,边是引用,映射了思想的传播。 ogbl-ddi: A dataset capturing drug-drug interactions, demonstrating relationships within a sensitive ecosystem. 一个捕捉药物-药物相互作用的数据库,展示了敏感生态系统中关系。 facebook_combined: A social network graph that showcases connections between individuals. 一个展示个人之间连接的社会网络图。 Each dataset added a unique layer of complexity to my graph-based analyses, allowing me to explore a variety of tasks, including node classification, link prediction, and community detection.",
+        "source_name": "北京智源人工智能研究院",
+        "source_record_id": "src_8e8e84db9b220496ddbe43bb",
+        "title": "项目实战 | 绘制未来:GNN 如何解锁城市韧性(Urban Resilience)",
+        "url": "https://hub.baai.ac.cn/view/44486"
+      },
+      {
+        "published_at": "2023-12-28T10:46:00",
+        "snippet": "近年来,图神经网络(Graph Neural Network,GNN)在图数据学习上表现出了优越的性能。然而,当面临现实世界中百万乃至亿级节点数量的大图时,现有的GNN仍面临着诸多局限性,主要包括:(1)消息传递模式中,邻居节点数量随着传播距离指数式增长,这将带来可拓展性问题和过平滑问题;(2)嵌入向量表的参数数量随着节点数量线性增长,当节点数量较多时,巨大的嵌入向量表将难以优化;(3)GNN卷积层和嵌入向量表有着不同的性质,同时优化它们可能导致次优的结果。 为了克服这些问题,我们提出了xGCN——一种采用全新训练方式的GNN模型。xGCN将节点嵌入向量表视为“静态特征”,而不是需要梯度训练的参数,使用无监督的传播过程和一个DNN来更新嵌入向量,能够显著减少模型参数数量、加速模型训练,同时达到更好的预测准确率。文章在4个大规模社交网络数据集上进行了实验,结果表明xGCN在准确率和训练速度方面均超过了基线模型。目前,xGCN模型已被应用在Xbox游戏社交平台的社交推荐业务中。 同时,我们推出了一个轻量的GNN模型工具包:XGCN,旨在帮助用户快速地构建和训练大规模网络上的GNN图嵌入模型。XGCN包含了xGCN以及GraphSAGE、LightGCN等常见GNN模型的实现。我们提供了详细的说明文档,方便用户快速上手进行图数据集处理、模型构建和运行。 该成果“xGCN: An Extreme Graph Convolutional Network for Large-scale Social Link Prediction”发表于2023年国际万维网会议(WWW’23)。WWW是互联网技术领域的顶级会议,是中国计算机学会(CCF)推荐的A类会议。 XGCN项目地址:https://github.com/CGCL-codes/XGCN_library 大规模图数据广泛地存在于现代社会中,例如微信、推特等线上社交平台中的社交网络,和淘宝、亚马逊等购物平台中的商品交易网络。图嵌入(Graph Embedding)作为一种图数据挖掘方法,近年来备受学术界和工业界关注,其中的图神经网络(Graph Neural Network,GNN)方法引入了显式编码图结构的卷积层,表现出了优越的性能。然而,当面临现实世界中的大规模网络时,现有的GNN仍面临着诸多局限性,主要包括: (1)消息传递模式中,邻居节点数量随着传播距离指数式增长,这将带来可拓展性问题和过平滑问题。 (2)在经典的图嵌入任务中,每个节点拥有一个d维的可学习的嵌入向量e。设节点数量为N,则全体嵌入向量构成了一个N x d的矩阵E,即嵌入向量表。该嵌入向量表的参数数量随着节点数量线性增长,当节点数量较多时,嵌入向量表将变得十分庞大。",
+        "source_name": "腾讯网",
+        "source_record_id": "src_4bef717f75570921baa26cdc",
+        "title": "WWW'23:更少的内存,更快的速度,更高的准确度——GNN大图训练暨工具包发布",
+        "url": "https://mp.weixin.qq.com/s?__biz=MzA5OTQ5MDE0Mw==&mid=2651136483&idx=1&sn=4e78e2048235e9111aa301357e244dc9&chksm=8a0d61b63cd8fea329a9d7243a93a9cdb5931cd885c78ef62a91817772f0a9f3fc6cd319ed00&scene=27"
+      },
+      {
+        "published_at": "2025-02-19T00:00:00",
+        "snippet": "中国科大提出新型核外大规模图神经网络训练系统 2月11日,中国科大苏州高等研究院医学影像智能与机器人研究中心DDL实验室团队(Data Darkness Lab)在大规模图神经网络训练系统方面的研究论文“Capsule: an Out-of-Core Training Mechanism for Colossal GNNs”被国际知名学术会议ACM International Conference on Management of Data(SIGMOD)2025录用。 示意图:Capsule系统工作流框架 图神经网络(GNN)的主流训练框架,如DGL和PyG,利用GPU的并行处理能力从图数据中提取结构信息,在推荐系统、自然语言处理、计算化学和生物信息学等领域展现出卓越性能。尽管GPU在GNN训练中提供了强大的计算优势,但其有限的显存容量难以容纳庞大的图数据,因而现有GNN系统在大规模图数据上的扩展性方面仍面临挑战。对此,DDL实验室团队提出了一种新的核外(Out-of-Core)GNN训练框架——Capsule,为大规模图神经网络训练提供了高效的解决方案。与现有的核外GNN框架不同,该系统通过图划分和图裁剪策略将训练子图结构及其特征完全放入GPU显存之中从而消除了反向传播过程中CPU与GPU之间的I/O开销,进而显著提升了系统性能。此外,Capsule通过设计基于最短哈密顿回路的子图加载方式和流水线并行策略,进一步优化了性能。同时,Capsule具备即插即用的特性,能够无缝集成至主流开源GNN训练框架中。在大规模真实图数据集上,Capsule与现有最好的系统相比能够在仅使用22.24%的内存下带来最高12.02倍的性能提升,并提供了关于训练所得嵌入方差的理论上界。",
+        "source_name": "中国科学技术大学网站",
+        "source_record_id": "src_78f57c142213273a6d668688",
+        "title": "中国科大提出新型核外大规模图神经网络训练系统",
+        "url": "https://news.ustc.edu.cn/info/1055/90608.htm"
+      },
+      {
+        "published_at": "2026-09-03T00:00:00",
+        "snippet": "Hybrid Transformer-GNN Model for Multi-Document Summarizationdoi:10.1109/ICSIT65336.2025.11294438MeasurementDeep learningRedundancySemanticsText summarizationCoherenceReinforcement learningTransformersGraph neural networksContext modelingMulti-document summarization (MDS) remains a challenging task due to the complexity of extracting, synthesizing, and generating coherent and non-redundant summaries from multiple related documents. While Deep Learning (DL) techniques, particularly Transformer-based models, have shown significant advancements, they often struggle with redundancy elimination, coherence preservation, and contextual relevance. In this research, we propose a novel Hybrid Transformer-GNN Framework (HTGF) that integrates Transformer networks with Graph Neural Networks (GNNs) to capture document relationships, semantic dependencies, and content importance effectively. Additionally, we incorporate a Reinforcement Learning (RL)-based reward mechanism to optimize summary fluency, coherence, and informativeness. Our framework employs hierarchical attention mechanisms to prioritize key sentences and a novel redundancy-aware contrastive loss function to improve abstraction. We evaluate our model on benchmark datasets and compare its performance against state-of-the-art methods using widely accepted evaluation metrics. Experimental results demonstrate that our approach outperforms existing models in terms of ROUGE scores, coherence, and factual consistency. This research provides a robust and scalable solution to MDS, offering new insights into DL-driven text summarization.Krishna DheeravathCVR College of Engineering,Department of CSE (DS),Hyderabad,IndiaPallati NarsimhuluSymbiosis International (Deemed University),Symbiosis Institute of Technology, Hyderabad Campus,Pune,IndiaPremkumar ChithaluruMahatma Gandhi Institute of Technology,Department of Information Technology,Telangana,India,500075IEEE",
+        "source_name": "无",
+        "source_record_id": "src_7f7e57f8fdc3bce58e1a37ff",
+        "title": "Hybrid Transformer-GNN Model for Multi-Document Summarization",
+        "url": "http://ieeexplore.ieee.org/document/11294438/"
+      },
+      {
+        "published_at": "2024-11-14T13:06:17",
+        "snippet": "图神经网络由于其在处理非欧空间数据和复杂特征方面的优势,受到广泛关注并应用于推荐系统、知识图谱、交通道路分析等场景。 大规模图结构的不规则性、节点特征的复杂性以及训练样本的依赖性给图神经网络模型的计算效率、内存管理以及分布式系统中的通信开销带来巨大压力。本文首先简要介绍图神经网络模型中的消息传递机制,分类介绍常见的图神经网络模型,并分析其在大规模数据训练中面临的困难和挑战;然后对面向大规模数据的图神经网络算法模型进行分类总结和分析,包括基于节点、边和子图的采样算法;接着介绍图神经网络编程框架加速的相关进展,主要包括主流框架的介绍以及优化技术的分类总结和分析。 1 引言 图结构可描述复杂关系,如基因结构、通信网络、交通路线、社交网络等。图计算挖掘结构信息,但无法学习节点特征。神经网络在欧氏空间数据上表现优越,但无法直接应用于非欧氏空间的图数据。图神经网络结合图计算和神经网络优势,处理非欧氏空间数据及其复杂特征,应用于网络链接预测、推荐系统和交通道路分析等场景。实际应用中,图数据规模庞大,如百亿级节点、千亿级边,存储开销超过10TB。GNN在大规模数据中面临计算效率、内存管理和分布式通信开销的挑战。图神经网络模型在大规模数据应用中面临的挑战可分为图数据结构、图神经网络模型、数据规模、硬件平台。 (1) **图数据结构。**图数据结构的不规则性、稀疏性、动态性、节点邻居数量呈幂律分布及样本间相互依赖,对高效访存和分布式计算系统提出挑战。 (2) **图神经网络模型。**节点高维表示是图神经网络的显著特征,提高模型能力,但计算和内存开销增大,尤其在大规模数据中面临挑战。深层图神经网络模型因迭代更新机制,面临邻居节点爆炸问题。 (3) 数据规模。图神经网络整批训练受内存限制,分批训练增大数据划分和迭代更新难度。 (4) 硬件结构。图神经网络模型在图数据结构和复杂特征方面有建模需求,需要灵活的不规则数据读取和高效的密集计算。CPU和GPU各有优势,但无法同时满足这两点需求,增加了大规模图神经网络模型加速的难度。 为了提高[图神经网络(GNN)]模型的可拓展性、加速运行过程和减小内存开销,以应对和缓解相关困难和挑战。研究者在应用模型方面,针对自然语言处理、交通预测和推荐系统等应用场景,提出提高图神经网络处理效率的策略。在算法模型方面,针对内存不足问题,研究采用分批训练,如GraphSage、FastGCN等。在编程框架方面,为解决训练样本依赖性,提出DGL、PyG等编程框架。",
+        "source_name": "CSDN软件开发网",
+        "source_record_id": "src_45df3fcd1dffaf42bc2eb748",
+        "title": "图神经网络研究综述(GNN),非常详细收藏我这一篇就够了!",
+        "url": "https://blog.csdn.net/2401_84495872/article/details/143767861"
+      },
+      {
+        "published_at": "2024-04-08T16:36:06",
+        "snippet": "A Unified Architecture for Accelerating DistributedDNNTraining in Heterogeneous GPU/CPU Clusters 运行DNN训练任务的数据中心集群本质上是异构的。他们有用于计算的gpu和cpu,以及用于分布式训练的网络带宽。然而,现有的分布式DNN训练架构all-reduce和Parameter Server (PS)不能充分利用这些异构资源。本文提出一种新的分布式DNN训练架构BytePS。BytePS可以利用集群中空闲的CPU和带宽资源来加速在gpu上运行的分布式DNN训练任务。它提供了一个既被证明是最优的又被证明是统一的通信框架——现存的all-reduce和PS成为BytePS的两种特殊情况。为了达到实践证明的最优性,BytePS进一步拆分了参数优化器的功能。它引入了一个用于聚合梯度的Summation Service抽象,这对所有优化器都是通用的。求和服务可以通过AVX指令进行加速,可以在cpu上高效运行,而与DNN模型相关的优化算法可以在gpu上进行加速。字节码可以加速主要框架的DNN训练,包括TensorFlow, PyTorch和MXNet。对于多达256个gpu的代表性DNN训练作业,BytePS的性能比最先进的开源all-reduce和PS分别提高了84%和245%。 DNN的训练过程大致分为三个步骤:(1)前向传播(FP),批量地输入训练数据,计算最后结果的损失函数(loss function);(2)反向传播(BP),通过损失函数计算出每个参数的梯度;(3)参数更新,通过得到的梯度,使用求和的方法更新各个参数。并且,在该步骤中会用到一些优化器(如SGD,Adam等)。训练的过程是一个重复以上三个步骤的迭代过程。本文主要优化的是分布式的参数更新过程,提高了GPU节点和CPU节点上的CPU利用率以及网络利用率。 在分布式训练的环境下,数据并行是一种常用的并行方法,即每台机器上都有相同的模型(即相同的一组参数),并行地使用数据进行训练,最后需要收集各个参数的梯度,以更新每台机器上的模型。分布式的参数更新有以下两种方式:(假设模型总的大小为M,一个节点的网络带宽为B。) All-reduce。如下图所示,使用这种方法会将模型的参数n份在n个不同的GPU节点上(每个节点的参数大小为M/n),分布式地进行模型更新。一种常用的All-reduce算法是Ring All-Reduce:(a)每个节点会维护自己负责更新的一部分参数,把其他参数发给下一个节点,在下一个节点进行加和(reduce)后再发给下一个节点,到最后一个节点则能算出总和。(b)算出总和的节点将自己负责的参数发给其他节点。(c)每个节点会有更新后的参数。这样,每个GPU节点的通信量(包括收和发)为2(n-1)M/n。",
+        "source_name": "CSDN软件开发网",
+        "source_record_id": "src_d41cd157d204449ffaf9b805",
+        "title": "DNN in GPU/CPU Clusters",
+        "url": "https://blog.csdn.net/zj_18706809267/article/details/127652263"
+      },
+      {
+        "published_at": "2022-05-04T21:30:00",
+        "snippet": "GNN Mini-batch training 方法 DistDGL分布式训练框架 主要优化点 实验 评价 前言 工业界的图规模都非常大,少说也是上千万的顶点+上亿的边,单机训练不现实,必须借助多机分布式训练。然而目前主流的图训练框架PyG、DGL对图的多机分布式训练支持都不太好。工业界好像阿里的Euler、百度的PGL可以支持分布式训练。今天介绍一下亚马逊DGL针对分布式训练所做的优化。 摘要 GNN广泛应用在推荐、搜索、风控等领域,在这些领域,图的规模往往非常大,有数以亿计的顶点和万亿的边。为支持大规模图的分布式训练,本文提出了DistDGL,它能以mini-batch的方式在多机上进行分布式训练。DistDGL基于DGL框架,它将图数据分布在多台机器上,并基于 数据分布 ,将计算也分布在多台机器上(owner-compute rule)。DistDGL以同步更新的方式进行训练。为了减小分布式训练的通信开销,DistDGL使用一个高效、轻量的图分割算法对图进行分割,在分割时设计了多个负载均衡约束,使得每个分割的子图达到较好的 负载均衡 。此外,为了减小跨机器的通信,DistDGL在每个子图中保留了 halo nodes(正文会介绍到),并且使用了稀疏embedding更新策略。这些优化策略使得DistDGL在分布式训练时能达到较好的高并行效率和内存可扩展性。实验结果表明,在分布式训练时,随着计算资源的增大,DistDGL的训练速度可以线性增长。在16台机器组成的分布式环境中,DistDGL仅用13秒就可以完成1亿节点+30亿边的一个 epoch 的训练。DistDGL是DGL的一部分,已开源在:https://github.com/dmlc/dgl/tree/master/python/dgl/distributed。 简介 GNN很有用,但是现实世界中的网络都很大,比如Facebook的社交网络、Amazon的用户商品关系网络等。 GNN分布式训练的难点: GNN中每个训练样本(顶点)不是独立的,是相互依赖的,比如为了训练顶点A,必须采样A的邻居,随着GNN层数的增大,采样的邻居数目呈指数上升。而CV、NLP中每条样本是相互独立的。",
+        "source_name": "知乎",
+        "source_record_id": "src_1401034a946211d9e810c6bc",
+        "title": "《DistDGL: Distributed Graph Neural Network Training for Billion-Scale Graphs》论文阅读",
+        "url": "https://zhuanlan.zhihu.com/p/509265666"
+      }
+    ],
+    "succeeded": true,
+    "summary": "发现并保存 10 个 Web 候选来源",
+    "warnings": []
+  },
+  "raw_result": {
+    "arguments": {
+      "max_results": 10,
+      "query": "DSGNN distributed graph summarization GNN training"
+    },
+    "elapsed_ms": 957,
+    "error": null,
+    "payload": {
+      "search_result": {
+        "query": "DSGNN distributed graph summarization GNN training",
+        "results": [
+          {
+            "published_at": "2023-03-01T14:09:25",
+            "rank": 1,
+            "score": null,
+            "snippet": "图神经网络(GNNs)是一种在图上学习的深度学习模型,并已成功应用于许多领域。尽管 GNN 有效,但 GNN 有效地扩展到大型图仍然具有挑战性 。作为一种补救措施, 分布式计算 成为训练大规模 GNN 的一种有前途的解决方案,因为它能够提供丰富的计算资源。然而, 图结构的依赖性 增加了实现高效分布式 GNN 训练的难度,导致 大量通信和工作负载不平衡 。近年来,在分布式 GNN 训练方面做出了很多努力,并提出了一系列训练算法和系统。然而,缺乏 对从图处理到分布式执行的优化技术 的系统回顾。在本次调查中,我们分析了分布式 GNN 训练的 三大挑战 ,即 海量特征通信、模型精度损失 和 工作负载不平衡 。然后,我们为分布式 GNN 训练中的优化技术引入了一种 新的分类法 ,以应对上述挑战。新分类法将现有技术分为四类,即 GNN 数据分区、GNN 批处理生成、GNN 执行模型 和 GNN 通信协议 。我们仔细讨论了每个类别中的技术。最后,我们分别总结了用于 多GPU、GPU 集群和 CPU 集群 的现有分布式 GNN 系统,并讨论了可扩展 GNN 的 未来发展方向 。 简介 GNN 是处理图建模问题的强大工具,并已广泛应用于各种应用,包括社交网络(例如,社交垃圾邮件发送者检测 [87、112]、社交网络分析 [91])、生物信息学(例如,蛋白质界面预测 [35]、疾病-基因关联 [83])、药物发现 [11、66]、流量预测[61]、医疗保健 [2、21]、推荐 [32、49、 55、111]、自然语言处理 [134、145] 和其他 [26、85、133、141、144]。通过将图结构信息集成到深度学习模型中,GNN 可以获得比传统机器学习和数据挖掘方法明显更好的结果。 GNN 模型通常包含多图卷积层,其中每个顶点聚合其邻居的最新状态,更新顶点的状态,并将神经网络(即转换)应用于顶点的更新状态。以传统的图卷积网络(GCN)为例,在每一层中,一个顶点使用 求和函数 聚合邻居状态和自己的状态,然后应用 单层MLP 来转换新状态。如果层数为 𝐿,则此类过程重复 𝐿次。第𝐿层生成的顶点状态被下游任务使用,如节点分类、链路预测等。在过去的几年中,许多研究工作在图神经网络模型的设计方面取得了显着进展。突出的模型包括 GCN [108]、GraphSAGE [46]、GAT [95]、GIN [118] 和许多其他特定于应用程序的 GNN 模型 [128、130]。迄今为止,有数十项调查审查了 GNN 模型 [114、116、135、147]。",
+            "source_name": "Tencent腾讯（腾讯官方网）",
+            "source_record_id": "src_1eee03f7afd673e24551ee6f",
+            "title": "【阅读】Distributed Graph Neural Network Training: A Survey——翻译",
+            "url": "https://cloud.tencent.com/developer/article/2230138"
+          },
+          {
+            "published_at": "2023-02-26T11:31:45",
+            "rank": 2,
+            "score": null,
+            "snippet": "来自计算所发布的 研究分布式GNN训练中使用的各种优化技术,提供了分布式GNN训练的全面综述 。 图神经网络(GNNs)在图学习方面的有效性已被证明是广泛应用领域的一种强大的算法模型。为了扩大GNN训练以适应大规模和不断增长的图,最有前途的解决方案是分布式训练,它将训练工作量分布到多个计算节点。然而,对分布式GNN训练的工作流程、计算模式、通信模式和优化技术仍有初步了解。 在本文中,我们通过研究分布式GNN训练中使用的各种优化技术,提供了分布式GNN训练的全面综述 。首先,根据分布式GNN训练的工作流程将其分为几类;此外,还介绍了它们的计算模式和通信模式,以及最新工作提出的优化技术。其次,介绍了分布式GNN训练的软件框架和硬件平台,以加深对分布式GNN训练的了解。第三,将分布式GNN训练与深度神经网络的分布式训练进行了比较,强调了分布式GNN训练的唯一性。最后,讨论了该领域的研究热点和发展机遇。 https://www.zhuanzhi.ai/paper/e85caecb1c45f7412fc38a4f681097ab 1. 概述 图具有强大的数据表示能力,特别是在表示对象之间的关联[1],[2]等方面有着广泛的应用 。许多真实世界的数据可以自然地表示为由一组顶点和边组成的图。以社交网络为例[3],[4],图中的顶点表示人,边表示人在Facebook上的互动[5]。如图1 (a)所示,圆圈代表顶点,箭头代表边。另一个众所周知的例子是知识图[6]、[7],其中顶点表示实体,而边表示实体之间的关系[8]。图神经网络(GNNs)在图[9]-[11]的学习中表现出优于其他算法模型的性能。深度神经网络(DNNs)已广泛应用于分析图像[12]等欧几里德数据。然而,由于图[13]的任意大小和复杂的拓扑结构,非欧氏域的图数据对它们提出了挑战。此外,工业界识别的 深度学习 范式的一个主要弱点是不能有效地进行因果推理,这大大降低了智能系统[14]的认知能力。为此,GNN已成为图学习的主要范式,并赋予智能系统认知能力。如图1 (b)所示。GNN在获取图数据作为输入后,使用前向传播和后向传播来更新模型参数。然后将训练好的模型应用于图任务,包括顶点预测[15](预测特定顶点的属性),链接预测[16](预测两个顶点之间是否存在一条边),图预测[17](预测整个图的属性),如图1 (c)所示。 由于GNN的优越性,它们在许多关键领域的各种实际应用中得到了广泛的应用。这些实际应用包括知识推理[18]、 自然语言处理 [19]、[20]、 机器翻译 [21]、 推荐系统 [22]-[24]、视觉推理",
+            "source_name": "Tencent腾讯（腾讯官方网）",
+            "source_record_id": "src_1dc3274385ea01b5579cbd4d",
+            "title": "GNN如何分布式?中科院综述《图神经网络分布式训练》",
+            "url": "https://cloud.tencent.com/developer/article/2226265"
+          },
+          {
+            "published_at": "2020-10-20T00:00:00",
+            "rank": 3,
+            "score": null,
+            "snippet": "1. 概述 得益于大数据的兴起以及算力的快速提升,机器学习技术在近年取得了革命性的发展。在图像分类、语音识别、自然语言处理等机器学习任务中,数据为大小维度确定且排列有序的欧氏(Euclidean)数据。然而,越来越多的现实场景中,数据是以图(Graph)这种复杂的非欧氏数据来表示的。Graph不但包含数据,也包含数据之间的依赖关系,比如社交网络、蛋白质分子结构、电商平台客户数据等等。数据复杂度的提升,对传统的机器学习算法设计以及其实现技术带来了严峻的挑战。在此背景之下,诸多基于Graph的新型机器学习算法—GNN(图神经网络),在学术界和产业界不断的涌现出来。 GNN对算力和存储器的要求非常高,其算法的软件实现方式非常低效,所以业界对GNN的硬件加速有着非常迫切的需求。我们知道传统的CNN(卷积神经网络网络)硬件加速方案已经有非常多的解决方案;但是,GNN的硬件加速尚未得到充分的讨论和研究,在本文撰写之时,Google和百度皆无法搜索到关于GNN硬件加速的中文研究。本文的撰写动机,旨在将国外最新的GNN算法、加速技术研究、以及笔者对GNN的FPGA加速技术的探讨相结合起来,以全景图的形式展现给读者。 GNN的架构在宏观层面有着很多与传统CNN类似的地方,比如卷积层、Polling、激活函数、机器学习处理器(MLP)和FC层等等模块,都会在GNN中得以应用。下图展示了一个比较简单的GNN架构。 图1:典型的GNN架构(来源:https://arxiv.org/abs/1901.00596) 但是, GNN中的Graph数据卷积计算与传统CNN中的2D卷积计算是不同的。以图2为例,针对红色目标节点的卷积计算,其过程如下: l Graph卷积:以邻居函数采样周边节点特征并计算均值,其邻居节点数量不确定且无序(非欧氏数据)。 l 2D卷积:以卷积核采样周边节点特征并计算加权平均值,其邻居节点数量确定且有序(欧氏数据)。 图2: Graph卷积和2D卷积(来源:https://arxiv.org/abs/1901.00596) 3. GraphSAGE算法简介 学术界已对GNN算法进行了非常多的研究讨论,并提出了数目可观的创新实现方式。其中,斯坦福大学在2017年提出的GraphSAGE是一种用于预测大型图中动态新增未知节点类型的归纳式表征学习算法,特别针对节点数量巨大、且节点特征丰富的图做了优化。如下图所示,GraphSAGE计算过程可分为三个主要步骤: 图3:GraphSAGE算法的视觉表述(来源:http://snap.stanford.edu/graphsage) l 邻节点采样:用于降低复杂度,一般采样2层,每一层采样若干节点 l 聚合:用于生成目标节点的embedding,即graph的低维向量表征",
+            "source_name": "电子六所微型计算机与应用",
+            "source_record_id": "src_fa8a252d78ec30bb59f00ab2",
+            "title": "机器学习实战:GNN(图神经网络)加速器的FPGA解决方案",
+            "url": "https://www.pcachina.com/article/3000123638"
+          },
+          {
+            "published_at": "2025-03-28T23:40:10",
+            "rank": 4,
+            "score": null,
+            "snippet": "Stanford CS224W: Machine Learning with Graphs By Ajay Rao Goparajfor CS 224W course project Fall 2024. https://github.com/AjayRaoGoparaj/CS224W_CUES_Project That’s exactly what I set out to do with the Cognitive Urban Ecosystem Simulator (CUES) Project. Armed with Graph Neural Networks (GNNs), diverse datasets, and an insatiable curiosity, I embarked on a journey to uncover the unseen patterns shaping urban ecosystems. 假如我们能将我们城市的隐藏网络映射出来,以解决城市生活中一些最紧迫的挑战,这正是我着手进行认知城市生态系统模拟器(Cognitive Urban Ecosystem Simulator,CUES)项目的原因。我带着图神经网络(Graph Neural Networks,GNNs)、多样化的数据集和无法满足的好奇心,踏上了揭示塑造城市生态系统的未观察到的模式之旅。 This is more than a technical deep dive — this is a story of discovery, innovation, and the power of graph-based learning to make a difference. Let’s dive in. 这不仅仅是一次技术深度挖掘,这是一个发现、创新以及基于图学习改变世界的力量的故事。让我们深入探讨。 1.The Tools of Discovery: Building Blocks of CUES 1.发现的工具:CUES 的构建模块 Before the GNNs came into play, I needed data. My project leveraged three key datasets: 在GNN 出现之前,我需要数据。我的项目利用了三个关键数据集: ogbn-arxiv: A research paper citation network. Nodes are papers, and edges are citations, mapping the spread of ideas. 一篇研究论文的引用网络。节点是论文,边是引用,映射了思想的传播。 ogbl-ddi: A dataset capturing drug-drug interactions, demonstrating relationships within a sensitive ecosystem. 一个捕捉药物-药物相互作用的数据库,展示了敏感生态系统中关系。 facebook_combined: A social network graph that showcases connections between individuals. 一个展示个人之间连接的社会网络图。 Each dataset added a unique layer of complexity to my graph-based analyses, allowing me to explore a variety of tasks, including node classification, link prediction, and community detection.",
+            "source_name": "北京智源人工智能研究院",
+            "source_record_id": "src_8e8e84db9b220496ddbe43bb",
+            "title": "项目实战 | 绘制未来:GNN 如何解锁城市韧性(Urban Resilience)",
+            "url": "https://hub.baai.ac.cn/view/44486"
+          },
+          {
+            "published_at": "2023-12-28T10:46:00",
+            "rank": 5,
+            "score": null,
+            "snippet": "近年来,图神经网络(Graph Neural Network,GNN)在图数据学习上表现出了优越的性能。然而,当面临现实世界中百万乃至亿级节点数量的大图时,现有的GNN仍面临着诸多局限性,主要包括:(1)消息传递模式中,邻居节点数量随着传播距离指数式增长,这将带来可拓展性问题和过平滑问题;(2)嵌入向量表的参数数量随着节点数量线性增长,当节点数量较多时,巨大的嵌入向量表将难以优化;(3)GNN卷积层和嵌入向量表有着不同的性质,同时优化它们可能导致次优的结果。 为了克服这些问题,我们提出了xGCN——一种采用全新训练方式的GNN模型。xGCN将节点嵌入向量表视为“静态特征”,而不是需要梯度训练的参数,使用无监督的传播过程和一个DNN来更新嵌入向量,能够显著减少模型参数数量、加速模型训练,同时达到更好的预测准确率。文章在4个大规模社交网络数据集上进行了实验,结果表明xGCN在准确率和训练速度方面均超过了基线模型。目前,xGCN模型已被应用在Xbox游戏社交平台的社交推荐业务中。 同时,我们推出了一个轻量的GNN模型工具包:XGCN,旨在帮助用户快速地构建和训练大规模网络上的GNN图嵌入模型。XGCN包含了xGCN以及GraphSAGE、LightGCN等常见GNN模型的实现。我们提供了详细的说明文档,方便用户快速上手进行图数据集处理、模型构建和运行。 该成果“xGCN: An Extreme Graph Convolutional Network for Large-scale Social Link Prediction”发表于2023年国际万维网会议(WWW’23)。WWW是互联网技术领域的顶级会议,是中国计算机学会(CCF)推荐的A类会议。 XGCN项目地址:https://github.com/CGCL-codes/XGCN_library 大规模图数据广泛地存在于现代社会中,例如微信、推特等线上社交平台中的社交网络,和淘宝、亚马逊等购物平台中的商品交易网络。图嵌入(Graph Embedding)作为一种图数据挖掘方法,近年来备受学术界和工业界关注,其中的图神经网络(Graph Neural Network,GNN)方法引入了显式编码图结构的卷积层,表现出了优越的性能。然而,当面临现实世界中的大规模网络时,现有的GNN仍面临着诸多局限性,主要包括: (1)消息传递模式中,邻居节点数量随着传播距离指数式增长,这将带来可拓展性问题和过平滑问题。 (2)在经典的图嵌入任务中,每个节点拥有一个d维的可学习的嵌入向量e。设节点数量为N,则全体嵌入向量构成了一个N x d的矩阵E,即嵌入向量表。该嵌入向量表的参数数量随着节点数量线性增长,当节点数量较多时,嵌入向量表将变得十分庞大。",
+            "source_name": "腾讯网",
+            "source_record_id": "src_4bef717f75570921baa26cdc",
+            "title": "WWW'23:更少的内存,更快的速度,更高的准确度——GNN大图训练暨工具包发布",
+            "url": "https://mp.weixin.qq.com/s?__biz=MzA5OTQ5MDE0Mw==&mid=2651136483&idx=1&sn=4e78e2048235e9111aa301357e244dc9&chksm=8a0d61b63cd8fea329a9d7243a93a9cdb5931cd885c78ef62a91817772f0a9f3fc6cd319ed00&scene=27"
+          },
+          {
+            "published_at": "2025-02-19T00:00:00",
+            "rank": 6,
+            "score": null,
+            "snippet": "中国科大提出新型核外大规模图神经网络训练系统 2月11日,中国科大苏州高等研究院医学影像智能与机器人研究中心DDL实验室团队(Data Darkness Lab)在大规模图神经网络训练系统方面的研究论文“Capsule: an Out-of-Core Training Mechanism for Colossal GNNs”被国际知名学术会议ACM International Conference on Management of Data(SIGMOD)2025录用。 示意图:Capsule系统工作流框架 图神经网络(GNN)的主流训练框架,如DGL和PyG,利用GPU的并行处理能力从图数据中提取结构信息,在推荐系统、自然语言处理、计算化学和生物信息学等领域展现出卓越性能。尽管GPU在GNN训练中提供了强大的计算优势,但其有限的显存容量难以容纳庞大的图数据,因而现有GNN系统在大规模图数据上的扩展性方面仍面临挑战。对此,DDL实验室团队提出了一种新的核外(Out-of-Core)GNN训练框架——Capsule,为大规模图神经网络训练提供了高效的解决方案。与现有的核外GNN框架不同,该系统通过图划分和图裁剪策略将训练子图结构及其特征完全放入GPU显存之中从而消除了反向传播过程中CPU与GPU之间的I/O开销,进而显著提升了系统性能。此外,Capsule通过设计基于最短哈密顿回路的子图加载方式和流水线并行策略,进一步优化了性能。同时,Capsule具备即插即用的特性,能够无缝集成至主流开源GNN训练框架中。在大规模真实图数据集上,Capsule与现有最好的系统相比能够在仅使用22.24%的内存下带来最高12.02倍的性能提升,并提供了关于训练所得嵌入方差的理论上界。",
+            "source_name": "中国科学技术大学网站",
+            "source_record_id": "src_78f57c142213273a6d668688",
+            "title": "中国科大提出新型核外大规模图神经网络训练系统",
+            "url": "https://news.ustc.edu.cn/info/1055/90608.htm"
+          },
+          {
+            "published_at": "2026-09-03T00:00:00",
+            "rank": 7,
+            "score": null,
+            "snippet": "Hybrid Transformer-GNN Model for Multi-Document Summarizationdoi:10.1109/ICSIT65336.2025.11294438MeasurementDeep learningRedundancySemanticsText summarizationCoherenceReinforcement learningTransformersGraph neural networksContext modelingMulti-document summarization (MDS) remains a challenging task due to the complexity of extracting, synthesizing, and generating coherent and non-redundant summaries from multiple related documents. While Deep Learning (DL) techniques, particularly Transformer-based models, have shown significant advancements, they often struggle with redundancy elimination, coherence preservation, and contextual relevance. In this research, we propose a novel Hybrid Transformer-GNN Framework (HTGF) that integrates Transformer networks with Graph Neural Networks (GNNs) to capture document relationships, semantic dependencies, and content importance effectively. Additionally, we incorporate a Reinforcement Learning (RL)-based reward mechanism to optimize summary fluency, coherence, and informativeness. Our framework employs hierarchical attention mechanisms to prioritize key sentences and a novel redundancy-aware contrastive loss function to improve abstraction. We evaluate our model on benchmark datasets and compare its performance against state-of-the-art methods using widely accepted evaluation metrics. Experimental results demonstrate that our approach outperforms existing models in terms of ROUGE scores, coherence, and factual consistency. This research provides a robust and scalable solution to MDS, offering new insights into DL-driven text summarization.Krishna DheeravathCVR College of Engineering,Department of CSE (DS),Hyderabad,IndiaPallati NarsimhuluSymbiosis International (Deemed University),Symbiosis Institute of Technology, Hyderabad Campus,Pune,IndiaPremkumar ChithaluruMahatma Gandhi Institute of Technology,Department of Information Technology,Telangana,India,500075IEEE",
+            "source_name": "无",
+            "source_record_id": "src_7f7e57f8fdc3bce58e1a37ff",
+            "title": "Hybrid Transformer-GNN Model for Multi-Document Summarization",
+            "url": "http://ieeexplore.ieee.org/document/11294438/"
+          },
+          {
+            "published_at": "2024-11-14T13:06:17",
+            "rank": 8,
+            "score": null,
+            "snippet": "图神经网络由于其在处理非欧空间数据和复杂特征方面的优势,受到广泛关注并应用于推荐系统、知识图谱、交通道路分析等场景。 大规模图结构的不规则性、节点特征的复杂性以及训练样本的依赖性给图神经网络模型的计算效率、内存管理以及分布式系统中的通信开销带来巨大压力。本文首先简要介绍图神经网络模型中的消息传递机制,分类介绍常见的图神经网络模型,并分析其在大规模数据训练中面临的困难和挑战;然后对面向大规模数据的图神经网络算法模型进行分类总结和分析,包括基于节点、边和子图的采样算法;接着介绍图神经网络编程框架加速的相关进展,主要包括主流框架的介绍以及优化技术的分类总结和分析。 1 引言 图结构可描述复杂关系,如基因结构、通信网络、交通路线、社交网络等。图计算挖掘结构信息,但无法学习节点特征。神经网络在欧氏空间数据上表现优越,但无法直接应用于非欧氏空间的图数据。图神经网络结合图计算和神经网络优势,处理非欧氏空间数据及其复杂特征,应用于网络链接预测、推荐系统和交通道路分析等场景。实际应用中,图数据规模庞大,如百亿级节点、千亿级边,存储开销超过10TB。GNN在大规模数据中面临计算效率、内存管理和分布式通信开销的挑战。图神经网络模型在大规模数据应用中面临的挑战可分为图数据结构、图神经网络模型、数据规模、硬件平台。 (1) **图数据结构。**图数据结构的不规则性、稀疏性、动态性、节点邻居数量呈幂律分布及样本间相互依赖,对高效访存和分布式计算系统提出挑战。 (2) **图神经网络模型。**节点高维表示是图神经网络的显著特征,提高模型能力,但计算和内存开销增大,尤其在大规模数据中面临挑战。深层图神经网络模型因迭代更新机制,面临邻居节点爆炸问题。 (3) 数据规模。图神经网络整批训练受内存限制,分批训练增大数据划分和迭代更新难度。 (4) 硬件结构。图神经网络模型在图数据结构和复杂特征方面有建模需求,需要灵活的不规则数据读取和高效的密集计算。CPU和GPU各有优势,但无法同时满足这两点需求,增加了大规模图神经网络模型加速的难度。 为了提高[图神经网络(GNN)]模型的可拓展性、加速运行过程和减小内存开销,以应对和缓解相关困难和挑战。研究者在应用模型方面,针对自然语言处理、交通预测和推荐系统等应用场景,提出提高图神经网络处理效率的策略。在算法模型方面,针对内存不足问题,研究采用分批训练,如GraphSage、FastGCN等。在编程框架方面,为解决训练样本依赖性,提出DGL、PyG等编程框架。",
+            "source_name": "CSDN软件开发网",
+            "source_record_id": "src_45df3fcd1dffaf42bc2eb748",
+            "title": "图神经网络研究综述(GNN),非常详细收藏我这一篇就够了!",
+            "url": "https://blog.csdn.net/2401_84495872/article/details/143767861"
+          },
+          {
+            "published_at": "2024-04-08T16:36:06",
+            "rank": 9,
+            "score": null,
+            "snippet": "A Unified Architecture for Accelerating DistributedDNNTraining in Heterogeneous GPU/CPU Clusters 运行DNN训练任务的数据中心集群本质上是异构的。他们有用于计算的gpu和cpu,以及用于分布式训练的网络带宽。然而,现有的分布式DNN训练架构all-reduce和Parameter Server (PS)不能充分利用这些异构资源。本文提出一种新的分布式DNN训练架构BytePS。BytePS可以利用集群中空闲的CPU和带宽资源来加速在gpu上运行的分布式DNN训练任务。它提供了一个既被证明是最优的又被证明是统一的通信框架——现存的all-reduce和PS成为BytePS的两种特殊情况。为了达到实践证明的最优性,BytePS进一步拆分了参数优化器的功能。它引入了一个用于聚合梯度的Summation Service抽象,这对所有优化器都是通用的。求和服务可以通过AVX指令进行加速,可以在cpu上高效运行,而与DNN模型相关的优化算法可以在gpu上进行加速。字节码可以加速主要框架的DNN训练,包括TensorFlow, PyTorch和MXNet。对于多达256个gpu的代表性DNN训练作业,BytePS的性能比最先进的开源all-reduce和PS分别提高了84%和245%。 DNN的训练过程大致分为三个步骤:(1)前向传播(FP),批量地输入训练数据,计算最后结果的损失函数(loss function);(2)反向传播(BP),通过损失函数计算出每个参数的梯度;(3)参数更新,通过得到的梯度,使用求和的方法更新各个参数。并且,在该步骤中会用到一些优化器(如SGD,Adam等)。训练的过程是一个重复以上三个步骤的迭代过程。本文主要优化的是分布式的参数更新过程,提高了GPU节点和CPU节点上的CPU利用率以及网络利用率。 在分布式训练的环境下,数据并行是一种常用的并行方法,即每台机器上都有相同的模型(即相同的一组参数),并行地使用数据进行训练,最后需要收集各个参数的梯度,以更新每台机器上的模型。分布式的参数更新有以下两种方式:(假设模型总的大小为M,一个节点的网络带宽为B。) All-reduce。如下图所示,使用这种方法会将模型的参数n份在n个不同的GPU节点上(每个节点的参数大小为M/n),分布式地进行模型更新。一种常用的All-reduce算法是Ring All-Reduce:(a)每个节点会维护自己负责更新的一部分参数,把其他参数发给下一个节点,在下一个节点进行加和(reduce)后再发给下一个节点,到最后一个节点则能算出总和。(b)算出总和的节点将自己负责的参数发给其他节点。(c)每个节点会有更新后的参数。这样,每个GPU节点的通信量(包括收和发)为2(n-1)M/n。",
+            "source_name": "CSDN软件开发网",
+            "source_record_id": "src_d41cd157d204449ffaf9b805",
+            "title": "DNN in GPU/CPU Clusters",
+            "url": "https://blog.csdn.net/zj_18706809267/article/details/127652263"
+          },
+          {
+            "published_at": "2022-05-04T21:30:00",
+            "rank": 10,
+            "score": null,
+            "snippet": "GNN Mini-batch training 方法 DistDGL分布式训练框架 主要优化点 实验 评价 前言 工业界的图规模都非常大,少说也是上千万的顶点+上亿的边,单机训练不现实,必须借助多机分布式训练。然而目前主流的图训练框架PyG、DGL对图的多机分布式训练支持都不太好。工业界好像阿里的Euler、百度的PGL可以支持分布式训练。今天介绍一下亚马逊DGL针对分布式训练所做的优化。 摘要 GNN广泛应用在推荐、搜索、风控等领域,在这些领域,图的规模往往非常大,有数以亿计的顶点和万亿的边。为支持大规模图的分布式训练,本文提出了DistDGL,它能以mini-batch的方式在多机上进行分布式训练。DistDGL基于DGL框架,它将图数据分布在多台机器上,并基于 数据分布 ,将计算也分布在多台机器上(owner-compute rule)。DistDGL以同步更新的方式进行训练。为了减小分布式训练的通信开销,DistDGL使用一个高效、轻量的图分割算法对图进行分割,在分割时设计了多个负载均衡约束,使得每个分割的子图达到较好的 负载均衡 。此外,为了减小跨机器的通信,DistDGL在每个子图中保留了 halo nodes(正文会介绍到),并且使用了稀疏embedding更新策略。这些优化策略使得DistDGL在分布式训练时能达到较好的高并行效率和内存可扩展性。实验结果表明,在分布式训练时,随着计算资源的增大,DistDGL的训练速度可以线性增长。在16台机器组成的分布式环境中,DistDGL仅用13秒就可以完成1亿节点+30亿边的一个 epoch 的训练。DistDGL是DGL的一部分,已开源在:https://github.com/dmlc/dgl/tree/master/python/dgl/distributed。 简介 GNN很有用,但是现实世界中的网络都很大,比如Facebook的社交网络、Amazon的用户商品关系网络等。 GNN分布式训练的难点: GNN中每个训练样本(顶点)不是独立的,是相互依赖的,比如为了训练顶点A,必须采样A的邻居,随着GNN层数的增大,采样的邻居数目呈指数上升。而CV、NLP中每条样本是相互独立的。",
+            "source_name": "知乎",
+            "source_record_id": "src_1401034a946211d9e810c6bc",
+            "title": "《DistDGL: Distributed Graph Neural Network Training for Billion-Scale Graphs》论文阅读",
+            "url": "https://zhuanlan.zhihu.com/p/509265666"
+          }
+        ],
+        "warnings": []
+      },
+      "source_records": [
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "1",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://cloud.tencent.com/developer/article/2230138",
+          "observed_at": "2026-09-15T13:08:52.231952Z",
+          "provenance": {
+            "query": "DSGNN distributed graph summarization GNN training",
+            "rank": 1,
+            "run_id": "run-c44139b2ff1e462a9b84dea99a7e3a79",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": " 图神经网络(GNNs)是一种在图上学习的深度学习模型,并已成功应用于许多领域。尽管 GNN 有效,但 GNN 有效地扩展到大型图仍然具有挑战性 。作为一种补救措施, 分布式计算 成为训练大规模 GNN 的一种有前途的解决方案,因为它能够提供丰富的计算资源。然而, 图结构的依赖性 增加了实现高效分布式 GNN 训练的难度,导致 大量通信和工作负载不平衡 。近年来,在分布式 GNN 训练方面做出了很多努力,并提出了一系列训练算法和系统。然而,缺乏 对从图处理到分布式执行的优化技术 的系统回顾。在本次调查中,我们分析了分布式 GNN 训练的 三大挑战 ,即 海量特征通信、模型精度损失 和 工作负载不平衡 。然后,我们为分布式 GNN 训练中的优化技术引入了一种 新的分类法 ,以应对上述挑战。新分类法将现有技术分为四类,即 GNN 数据分区、GNN 批处理生成、GNN 执行模型 和 GNN 通信协议 。我们仔细讨论了每个类别中的技术。最后,我们分别总结了用于 多GPU、GPU 集群和 CPU 集群 的现有分布式 GNN 系统,并讨论了可扩展 GNN 的 未来发展方向 。 简介 GNN 是处理图建模问题的强大工具,并已广泛应用于各种应用,包括社交网络(例如,社交垃圾邮件发送者检测 [87、112]、社交网络分析 [91])、生物信息学(例如,蛋白质界面预测 [35]、疾病-基因关联 [83])、药物发现 [11、66]、流量预测[61]、医疗保健 [2、21]、推荐 [32、49、 55、111]、自然语言处理 [134、145] 和其他 [26、85、133、141、144]。通过将图结构信息集成到深度学习模型中,GNN 可以获得比传统机器学习和数据挖掘方法明显更好的结果。 GNN 模型通常包含多图卷积层,其中每个顶点聚合其邻居的最新状态,更新顶点的状态,并将神经网络(即转换)应用于顶点的更新状态。以传统的图卷积网络(GCN)为例,在每一层中,一个顶点使用 求和函数 聚合邻居状态和自己的状态,然后应用 单层MLP 来转换新状态。如果层数为 𝐿,则此类过程重复 𝐿次。第𝐿层生成的顶点状态被下游任务使用,如节点分类、链路预测等。在过去的几年中,许多研究工作在图神经网络模型的设计方面取得了显着进展。突出的模型包括 GCN [108]、GraphSAGE [46]、GAT [95]、GIN [118] 和许多其他特定于应用程序的 GNN 模型 [128、130]。迄今为止,有数十项调查审查了 GNN 模型 [114、116、135、147]。",
+            "published_at": "2023-03-01T14:09:25",
+            "request_id": "ad0611a6-9f23-4654-ab55-e6ca8003785c",
+            "search_score": null,
+            "search_snippet": "图神经网络(GNNs)是一种在图上学习的深度学习模型,并已成功应用于许多领域。尽管 GNN 有效,但 GNN 有效地扩展到大型图仍然具有挑战性 。作为一种补救措施, 分布式计算 成为训练大规模 GNN 的一种有前途的解决方案,因为它能够提供丰富的计算资源。然而, 图结构的依赖性 增加了实现高效分布式 GNN 训练的难度,导致 大量通信和工作负载不平衡 。近年来,在分布式 GNN 训练方面做出了很多努力,并提出了一系列训练算法和系统。然而,缺乏 对从图处理到分布式执行的优化技术 的系统回顾。在本次调查中,我们分析了分布式 GNN 训练的 三大挑战 ,即 海量特征通信、模型精度损失 和 工作负载不平衡 。然后,我们为分布式 GNN 训练中的优化技术引入了一种 新的分类法 ,以应对上述挑战。新分类法将现有技术分为四类,即 GNN 数据分区、GNN 批处理生成、GNN 执行模型 和 GNN 通信协议 。我们仔细讨论了每个类别中的技术。最后,我们分别总结了用于 多GPU、GPU 集群和 CPU 集群 的现有分布式 GNN 系统,并讨论了可扩展 GNN 的 未来发展方向 。 简介 GNN 是处理图建模问题的强大工具,并已广泛应用于各种应用,包括社交网络(例如,社交垃圾邮件发送者检测 [87、112]、社交网络分析 [91])、生物信息学(例如,蛋白质界面预测 [35]、疾病-基因关联 [83])、药物发现 [11、66]、流量预测[61]、医疗保健 [2、21]、推荐 [32、49、 55、111]、自然语言处理 [134、145] 和其他 [26、85、133、141、144]。通过将图结构信息集成到深度学习模型中,GNN 可以获得比传统机器学习和数据挖掘方法明显更好的结果。 GNN 模型通常包含多图卷积层,其中每个顶点聚合其邻居的最新状态,更新顶点的状态,并将神经网络(即转换)应用于顶点的更新状态。以传统的图卷积网络(GCN)为例,在每一层中,一个顶点使用 求和函数 聚合邻居状态和自己的状态,然后应用 单层MLP 来转换新状态。如果层数为 𝐿,则此类过程重复 𝐿次。第𝐿层生成的顶点状态被下游任务使用,如节点分类、链路预测等。在过去的几年中,许多研究工作在图神经网络模型的设计方面取得了显着进展。突出的模型包括 GCN [108]、GraphSAGE [46]、GAT [95]、GIN [118] 和许多其他特定于应用程序的 GNN 模型 [128、130]。迄今为止,有数十项调查审查了 GNN 模型 [114、116、135、147]。",
+            "source_name": "Tencent腾讯（腾讯官方网）",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web_supplement",
+          "source_record_id": "src_1eee03f7afd673e24551ee6f",
+          "title": "【阅读】Distributed Graph Neural Network Training: A Survey——翻译",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "2",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://cloud.tencent.com/developer/article/2226265",
+          "observed_at": "2026-09-15T13:08:52.231952Z",
+          "provenance": {
+            "query": "DSGNN distributed graph summarization GNN training",
+            "rank": 2,
+            "run_id": "run-c44139b2ff1e462a9b84dea99a7e3a79",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": " 来自计算所发布的 研究分布式GNN训练中使用的各种优化技术,提供了分布式GNN训练的全面综述 。 图神经网络(GNNs)在图学习方面的有效性已被证明是广泛应用领域的一种强大的算法模型。为了扩大GNN训练以适应大规模和不断增长的图,最有前途的解决方案是分布式训练,它将训练工作量分布到多个计算节点。然而,对分布式GNN训练的工作流程、计算模式、通信模式和优化技术仍有初步了解。 在本文中,我们通过研究分布式GNN训练中使用的各种优化技术,提供了分布式GNN训练的全面综述 。首先,根据分布式GNN训练的工作流程将其分为几类;此外,还介绍了它们的计算模式和通信模式,以及最新工作提出的优化技术。其次,介绍了分布式GNN训练的软件框架和硬件平台,以加深对分布式GNN训练的了解。第三,将分布式GNN训练与深度神经网络的分布式训练进行了比较,强调了分布式GNN训练的唯一性。最后,讨论了该领域的研究热点和发展机遇。 https://www.zhuanzhi.ai/paper/e85caecb1c45f7412fc38a4f681097ab 1. 概述 图具有强大的数据表示能力,特别是在表示对象之间的关联[1],[2]等方面有着广泛的应用 。许多真实世界的数据可以自然地表示为由一组顶点和边组成的图。以社交网络为例[3],[4],图中的顶点表示人,边表示人在Facebook上的互动[5]。如图1 (a)所示,圆圈代表顶点,箭头代表边。另一个众所周知的例子是知识图[6]、[7],其中顶点表示实体,而边表示实体之间的关系[8]。图神经网络(GNNs)在图[9]-[11]的学习中表现出优于其他算法模型的性能。深度神经网络(DNNs)已广泛应用于分析图像[12]等欧几里德数据。然而,由于图[13]的任意大小和复杂的拓扑结构,非欧氏域的图数据对它们提出了挑战。此外,工业界识别的 深度学习 范式的一个主要弱点是不能有效地进行因果推理,这大大降低了智能系统[14]的认知能力。为此,GNN已成为图学习的主要范式,并赋予智能系统认知能力。如图1 (b)所示。GNN在获取图数据作为输入后,使用前向传播和后向传播来更新模型参数。然后将训练好的模型应用于图任务,包括顶点预测[15](预测特定顶点的属性),链接预测[16](预测两个顶点之间是否存在一条边),图预测[17](预测整个图的属性),如图1 (c)所示。 由于GNN的优越性,它们在许多关键领域的各种实际应用中得到了广泛的应用。这些实际应用包括知识推理[18]、 自然语言处理 [19]、[20]、 机器翻译 [21]、 推荐系统 [22]-[24]、视觉推理",
+            "published_at": "2023-02-26T11:31:45",
+            "request_id": "ad0611a6-9f23-4654-ab55-e6ca8003785c",
+            "search_score": null,
+            "search_snippet": "来自计算所发布的 研究分布式GNN训练中使用的各种优化技术,提供了分布式GNN训练的全面综述 。 图神经网络(GNNs)在图学习方面的有效性已被证明是广泛应用领域的一种强大的算法模型。为了扩大GNN训练以适应大规模和不断增长的图,最有前途的解决方案是分布式训练,它将训练工作量分布到多个计算节点。然而,对分布式GNN训练的工作流程、计算模式、通信模式和优化技术仍有初步了解。 在本文中,我们通过研究分布式GNN训练中使用的各种优化技术,提供了分布式GNN训练的全面综述 。首先,根据分布式GNN训练的工作流程将其分为几类;此外,还介绍了它们的计算模式和通信模式,以及最新工作提出的优化技术。其次,介绍了分布式GNN训练的软件框架和硬件平台,以加深对分布式GNN训练的了解。第三,将分布式GNN训练与深度神经网络的分布式训练进行了比较,强调了分布式GNN训练的唯一性。最后,讨论了该领域的研究热点和发展机遇。 https://www.zhuanzhi.ai/paper/e85caecb1c45f7412fc38a4f681097ab 1. 概述 图具有强大的数据表示能力,特别是在表示对象之间的关联[1],[2]等方面有着广泛的应用 。许多真实世界的数据可以自然地表示为由一组顶点和边组成的图。以社交网络为例[3],[4],图中的顶点表示人,边表示人在Facebook上的互动[5]。如图1 (a)所示,圆圈代表顶点,箭头代表边。另一个众所周知的例子是知识图[6]、[7],其中顶点表示实体,而边表示实体之间的关系[8]。图神经网络(GNNs)在图[9]-[11]的学习中表现出优于其他算法模型的性能。深度神经网络(DNNs)已广泛应用于分析图像[12]等欧几里德数据。然而,由于图[13]的任意大小和复杂的拓扑结构,非欧氏域的图数据对它们提出了挑战。此外,工业界识别的 深度学习 范式的一个主要弱点是不能有效地进行因果推理,这大大降低了智能系统[14]的认知能力。为此,GNN已成为图学习的主要范式,并赋予智能系统认知能力。如图1 (b)所示。GNN在获取图数据作为输入后,使用前向传播和后向传播来更新模型参数。然后将训练好的模型应用于图任务,包括顶点预测[15](预测特定顶点的属性),链接预测[16](预测两个顶点之间是否存在一条边),图预测[17](预测整个图的属性),如图1 (c)所示。 由于GNN的优越性,它们在许多关键领域的各种实际应用中得到了广泛的应用。这些实际应用包括知识推理[18]、 自然语言处理 [19]、[20]、 机器翻译 [21]、 推荐系统 [22]-[24]、视觉推理",
+            "source_name": "Tencent腾讯（腾讯官方网）",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web_supplement",
+          "source_record_id": "src_1dc3274385ea01b5579cbd4d",
+          "title": "GNN如何分布式?中科院综述《图神经网络分布式训练》",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "3",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://www.pcachina.com/article/3000123638",
+          "observed_at": "2026-09-15T13:08:52.231952Z",
+          "provenance": {
+            "query": "DSGNN distributed graph summarization GNN training",
+            "rank": 3,
+            "run_id": "run-c44139b2ff1e462a9b84dea99a7e3a79",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": " 1. 概述 得益于大数据的兴起以及算力的快速提升,机器学习技术在近年取得了革命性的发展。在图像分类、语音识别、自然语言处理等机器学习任务中,数据为大小维度确定且排列有序的欧氏(Euclidean)数据。然而,越来越多的现实场景中,数据是以图(Graph)这种复杂的非欧氏数据来表示的。Graph不但包含数据,也包含数据之间的依赖关系,比如社交网络、蛋白质分子结构、电商平台客户数据等等。数据复杂度的提升,对传统的机器学习算法设计以及其实现技术带来了严峻的挑战。在此背景之下,诸多基于Graph的新型机器学习算法—GNN(图神经网络),在学术界和产业界不断的涌现出来。 GNN对算力和存储器的要求非常高,其算法的软件实现方式非常低效,所以业界对GNN的硬件加速有着非常迫切的需求。我们知道传统的CNN(卷积神经网络网络)硬件加速方案已经有非常多的解决方案;但是,GNN的硬件加速尚未得到充分的讨论和研究,在本文撰写之时,Google和百度皆无法搜索到关于GNN硬件加速的中文研究。本文的撰写动机,旨在将国外最新的GNN算法、加速技术研究、以及笔者对GNN的FPGA加速技术的探讨相结合起来,以全景图的形式展现给读者。 GNN的架构在宏观层面有着很多与传统CNN类似的地方,比如卷积层、Polling、激活函数、机器学习处理器(MLP)和FC层等等模块,都会在GNN中得以应用。下图展示了一个比较简单的GNN架构。 图1:典型的GNN架构(来源:https://arxiv.org/abs/1901.00596) 但是, GNN中的Graph数据卷积计算与传统CNN中的2D卷积计算是不同的。以图2为例,针对红色目标节点的卷积计算,其过程如下: l Graph卷积:以邻居函数采样周边节点特征并计算均值,其邻居节点数量不确定且无序(非欧氏数据)。 l 2D卷积:以卷积核采样周边节点特征并计算加权平均值,其邻居节点数量确定且有序(欧氏数据)。 图2: Graph卷积和2D卷积(来源:https://arxiv.org/abs/1901.00596) 3. GraphSAGE算法简介 学术界已对GNN算法进行了非常多的研究讨论,并提出了数目可观的创新实现方式。其中,斯坦福大学在2017年提出的GraphSAGE是一种用于预测大型图中动态新增未知节点类型的归纳式表征学习算法,特别针对节点数量巨大、且节点特征丰富的图做了优化。如下图所示,GraphSAGE计算过程可分为三个主要步骤: 图3:GraphSAGE算法的视觉表述(来源:http://snap.stanford.edu/graphsage) l 邻节点采样:用于降低复杂度,一般采样2层,每一层采样若干节点 l 聚合:用于生成目标节点的embedding,即graph的低维向量表征",
+            "published_at": "2020-10-20T00:00:00",
+            "request_id": "ad0611a6-9f23-4654-ab55-e6ca8003785c",
+            "search_score": null,
+            "search_snippet": "1. 概述 得益于大数据的兴起以及算力的快速提升,机器学习技术在近年取得了革命性的发展。在图像分类、语音识别、自然语言处理等机器学习任务中,数据为大小维度确定且排列有序的欧氏(Euclidean)数据。然而,越来越多的现实场景中,数据是以图(Graph)这种复杂的非欧氏数据来表示的。Graph不但包含数据,也包含数据之间的依赖关系,比如社交网络、蛋白质分子结构、电商平台客户数据等等。数据复杂度的提升,对传统的机器学习算法设计以及其实现技术带来了严峻的挑战。在此背景之下,诸多基于Graph的新型机器学习算法—GNN(图神经网络),在学术界和产业界不断的涌现出来。 GNN对算力和存储器的要求非常高,其算法的软件实现方式非常低效,所以业界对GNN的硬件加速有着非常迫切的需求。我们知道传统的CNN(卷积神经网络网络)硬件加速方案已经有非常多的解决方案;但是,GNN的硬件加速尚未得到充分的讨论和研究,在本文撰写之时,Google和百度皆无法搜索到关于GNN硬件加速的中文研究。本文的撰写动机,旨在将国外最新的GNN算法、加速技术研究、以及笔者对GNN的FPGA加速技术的探讨相结合起来,以全景图的形式展现给读者。 GNN的架构在宏观层面有着很多与传统CNN类似的地方,比如卷积层、Polling、激活函数、机器学习处理器(MLP)和FC层等等模块,都会在GNN中得以应用。下图展示了一个比较简单的GNN架构。 图1:典型的GNN架构(来源:https://arxiv.org/abs/1901.00596) 但是, GNN中的Graph数据卷积计算与传统CNN中的2D卷积计算是不同的。以图2为例,针对红色目标节点的卷积计算,其过程如下: l Graph卷积:以邻居函数采样周边节点特征并计算均值,其邻居节点数量不确定且无序(非欧氏数据)。 l 2D卷积:以卷积核采样周边节点特征并计算加权平均值,其邻居节点数量确定且有序(欧氏数据)。 图2: Graph卷积和2D卷积(来源:https://arxiv.org/abs/1901.00596) 3. GraphSAGE算法简介 学术界已对GNN算法进行了非常多的研究讨论,并提出了数目可观的创新实现方式。其中,斯坦福大学在2017年提出的GraphSAGE是一种用于预测大型图中动态新增未知节点类型的归纳式表征学习算法,特别针对节点数量巨大、且节点特征丰富的图做了优化。如下图所示,GraphSAGE计算过程可分为三个主要步骤: 图3:GraphSAGE算法的视觉表述(来源:http://snap.stanford.edu/graphsage) l 邻节点采样:用于降低复杂度,一般采样2层,每一层采样若干节点 l 聚合:用于生成目标节点的embedding,即graph的低维向量表征",
+            "source_name": "电子六所微型计算机与应用",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web_supplement",
+          "source_record_id": "src_fa8a252d78ec30bb59f00ab2",
+          "title": "机器学习实战:GNN(图神经网络)加速器的FPGA解决方案",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "4",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://hub.baai.ac.cn/view/44486",
+          "observed_at": "2026-09-15T13:08:52.231952Z",
+          "provenance": {
+            "query": "DSGNN distributed graph summarization GNN training",
+            "rank": 4,
+            "run_id": "run-c44139b2ff1e462a9b84dea99a7e3a79",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": " Stanford CS224W: Machine Learning with Graphs By Ajay Rao Goparajfor CS 224W course project Fall 2024. https://github.com/AjayRaoGoparaj/CS224W_CUES_Project That’s exactly what I set out to do with the Cognitive Urban Ecosystem Simulator (CUES) Project. Armed with Graph Neural Networks (GNNs), diverse datasets, and an insatiable curiosity, I embarked on a journey to uncover the unseen patterns shaping urban ecosystems. 假如我们能将我们城市的隐藏网络映射出来,以解决城市生活中一些最紧迫的挑战,这正是我着手进行认知城市生态系统模拟器(Cognitive Urban Ecosystem Simulator,CUES)项目的原因。我带着图神经网络(Graph Neural Networks,GNNs)、多样化的数据集和无法满足的好奇心,踏上了揭示塑造城市生态系统的未观察到的模式之旅。 This is more than a technical deep dive — this is a story of discovery, innovation, and the power of graph-based learning to make a difference. Let’s dive in. 这不仅仅是一次技术深度挖掘,这是一个发现、创新以及基于图学习改变世界的力量的故事。让我们深入探讨。 1.The Tools of Discovery: Building Blocks of CUES 1.发现的工具:CUES 的构建模块 Before the GNNs came into play, I needed data. My project leveraged three key datasets: 在GNN 出现之前,我需要数据。我的项目利用了三个关键数据集: ogbn-arxiv: A research paper citation network. Nodes are papers, and edges are citations, mapping the spread of ideas. 一篇研究论文的引用网络。节点是论文,边是引用,映射了思想的传播。 ogbl-ddi: A dataset capturing drug-drug interactions, demonstrating relationships within a sensitive ecosystem. 一个捕捉药物-药物相互作用的数据库,展示了敏感生态系统中关系。 facebook_combined: A social network graph that showcases connections between individuals. 一个展示个人之间连接的社会网络图。 Each dataset added a unique layer of complexity to my graph-based analyses, allowing me to explore a variety of tasks, including node classification, link prediction, and community detection.",
+            "published_at": "2025-03-28T23:40:10",
+            "request_id": "ad0611a6-9f23-4654-ab55-e6ca8003785c",
+            "search_score": null,
+            "search_snippet": "Stanford CS224W: Machine Learning with Graphs By Ajay Rao Goparajfor CS 224W course project Fall 2024. https://github.com/AjayRaoGoparaj/CS224W_CUES_Project That’s exactly what I set out to do with the Cognitive Urban Ecosystem Simulator (CUES) Project. Armed with Graph Neural Networks (GNNs), diverse datasets, and an insatiable curiosity, I embarked on a journey to uncover the unseen patterns shaping urban ecosystems. 假如我们能将我们城市的隐藏网络映射出来,以解决城市生活中一些最紧迫的挑战,这正是我着手进行认知城市生态系统模拟器(Cognitive Urban Ecosystem Simulator,CUES)项目的原因。我带着图神经网络(Graph Neural Networks,GNNs)、多样化的数据集和无法满足的好奇心,踏上了揭示塑造城市生态系统的未观察到的模式之旅。 This is more than a technical deep dive — this is a story of discovery, innovation, and the power of graph-based learning to make a difference. Let’s dive in. 这不仅仅是一次技术深度挖掘,这是一个发现、创新以及基于图学习改变世界的力量的故事。让我们深入探讨。 1.The Tools of Discovery: Building Blocks of CUES 1.发现的工具:CUES 的构建模块 Before the GNNs came into play, I needed data. My project leveraged three key datasets: 在GNN 出现之前,我需要数据。我的项目利用了三个关键数据集: ogbn-arxiv: A research paper citation network. Nodes are papers, and edges are citations, mapping the spread of ideas. 一篇研究论文的引用网络。节点是论文,边是引用,映射了思想的传播。 ogbl-ddi: A dataset capturing drug-drug interactions, demonstrating relationships within a sensitive ecosystem. 一个捕捉药物-药物相互作用的数据库,展示了敏感生态系统中关系。 facebook_combined: A social network graph that showcases connections between individuals. 一个展示个人之间连接的社会网络图。 Each dataset added a unique layer of complexity to my graph-based analyses, allowing me to explore a variety of tasks, including node classification, link prediction, and community detection.",
+            "source_name": "北京智源人工智能研究院",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web_supplement",
+          "source_record_id": "src_8e8e84db9b220496ddbe43bb",
+          "title": "项目实战 | 绘制未来:GNN 如何解锁城市韧性(Urban Resilience)",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "5",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://mp.weixin.qq.com/s?__biz=MzA5OTQ5MDE0Mw==&mid=2651136483&idx=1&sn=4e78e2048235e9111aa301357e244dc9&chksm=8a0d61b63cd8fea329a9d7243a93a9cdb5931cd885c78ef62a91817772f0a9f3fc6cd319ed00&scene=27",
+          "observed_at": "2026-09-15T13:08:52.231952Z",
+          "provenance": {
+            "query": "DSGNN distributed graph summarization GNN training",
+            "rank": 5,
+            "run_id": "run-c44139b2ff1e462a9b84dea99a7e3a79",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": " 近年来,图神经网络(Graph Neural Network,GNN)在图数据学习上表现出了优越的性能。然而,当面临现实世界中百万乃至亿级节点数量的大图时,现有的GNN仍面临着诸多局限性,主要包括:(1)消息传递模式中,邻居节点数量随着传播距离指数式增长,这将带来可拓展性问题和过平滑问题;(2)嵌入向量表的参数数量随着节点数量线性增长,当节点数量较多时,巨大的嵌入向量表将难以优化;(3)GNN卷积层和嵌入向量表有着不同的性质,同时优化它们可能导致次优的结果。 为了克服这些问题,我们提出了xGCN——一种采用全新训练方式的GNN模型。xGCN将节点嵌入向量表视为“静态特征”,而不是需要梯度训练的参数,使用无监督的传播过程和一个DNN来更新嵌入向量,能够显著减少模型参数数量、加速模型训练,同时达到更好的预测准确率。文章在4个大规模社交网络数据集上进行了实验,结果表明xGCN在准确率和训练速度方面均超过了基线模型。目前,xGCN模型已被应用在Xbox游戏社交平台的社交推荐业务中。 同时,我们推出了一个轻量的GNN模型工具包:XGCN,旨在帮助用户快速地构建和训练大规模网络上的GNN图嵌入模型。XGCN包含了xGCN以及GraphSAGE、LightGCN等常见GNN模型的实现。我们提供了详细的说明文档,方便用户快速上手进行图数据集处理、模型构建和运行。 该成果“xGCN: An Extreme Graph Convolutional Network for Large-scale Social Link Prediction”发表于2023年国际万维网会议(WWW’23)。WWW是互联网技术领域的顶级会议,是中国计算机学会(CCF)推荐的A类会议。 XGCN项目地址:https://github.com/CGCL-codes/XGCN_library 大规模图数据广泛地存在于现代社会中,例如微信、推特等线上社交平台中的社交网络,和淘宝、亚马逊等购物平台中的商品交易网络。图嵌入(Graph Embedding)作为一种图数据挖掘方法,近年来备受学术界和工业界关注,其中的图神经网络(Graph Neural Network,GNN)方法引入了显式编码图结构的卷积层,表现出了优越的性能。然而,当面临现实世界中的大规模网络时,现有的GNN仍面临着诸多局限性,主要包括: (1)消息传递模式中,邻居节点数量随着传播距离指数式增长,这将带来可拓展性问题和过平滑问题。 (2)在经典的图嵌入任务中,每个节点拥有一个d维的可学习的嵌入向量e。设节点数量为N,则全体嵌入向量构成了一个N x d的矩阵E,即嵌入向量表。该嵌入向量表的参数数量随着节点数量线性增长,当节点数量较多时,嵌入向量表将变得十分庞大。",
+            "published_at": "2023-12-28T10:46:00",
+            "request_id": "ad0611a6-9f23-4654-ab55-e6ca8003785c",
+            "search_score": null,
+            "search_snippet": "近年来,图神经网络(Graph Neural Network,GNN)在图数据学习上表现出了优越的性能。然而,当面临现实世界中百万乃至亿级节点数量的大图时,现有的GNN仍面临着诸多局限性,主要包括:(1)消息传递模式中,邻居节点数量随着传播距离指数式增长,这将带来可拓展性问题和过平滑问题;(2)嵌入向量表的参数数量随着节点数量线性增长,当节点数量较多时,巨大的嵌入向量表将难以优化;(3)GNN卷积层和嵌入向量表有着不同的性质,同时优化它们可能导致次优的结果。 为了克服这些问题,我们提出了xGCN——一种采用全新训练方式的GNN模型。xGCN将节点嵌入向量表视为“静态特征”,而不是需要梯度训练的参数,使用无监督的传播过程和一个DNN来更新嵌入向量,能够显著减少模型参数数量、加速模型训练,同时达到更好的预测准确率。文章在4个大规模社交网络数据集上进行了实验,结果表明xGCN在准确率和训练速度方面均超过了基线模型。目前,xGCN模型已被应用在Xbox游戏社交平台的社交推荐业务中。 同时,我们推出了一个轻量的GNN模型工具包:XGCN,旨在帮助用户快速地构建和训练大规模网络上的GNN图嵌入模型。XGCN包含了xGCN以及GraphSAGE、LightGCN等常见GNN模型的实现。我们提供了详细的说明文档,方便用户快速上手进行图数据集处理、模型构建和运行。 该成果“xGCN: An Extreme Graph Convolutional Network for Large-scale Social Link Prediction”发表于2023年国际万维网会议(WWW’23)。WWW是互联网技术领域的顶级会议,是中国计算机学会(CCF)推荐的A类会议。 XGCN项目地址:https://github.com/CGCL-codes/XGCN_library 大规模图数据广泛地存在于现代社会中,例如微信、推特等线上社交平台中的社交网络,和淘宝、亚马逊等购物平台中的商品交易网络。图嵌入(Graph Embedding)作为一种图数据挖掘方法,近年来备受学术界和工业界关注,其中的图神经网络(Graph Neural Network,GNN)方法引入了显式编码图结构的卷积层,表现出了优越的性能。然而,当面临现实世界中的大规模网络时,现有的GNN仍面临着诸多局限性,主要包括: (1)消息传递模式中,邻居节点数量随着传播距离指数式增长,这将带来可拓展性问题和过平滑问题。 (2)在经典的图嵌入任务中,每个节点拥有一个d维的可学习的嵌入向量e。设节点数量为N,则全体嵌入向量构成了一个N x d的矩阵E,即嵌入向量表。该嵌入向量表的参数数量随着节点数量线性增长,当节点数量较多时,嵌入向量表将变得十分庞大。",
+            "source_name": "腾讯网",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web_supplement",
+          "source_record_id": "src_4bef717f75570921baa26cdc",
+          "title": "WWW'23:更少的内存,更快的速度,更高的准确度——GNN大图训练暨工具包发布",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "6",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://news.ustc.edu.cn/info/1055/90608.htm",
+          "observed_at": "2026-09-15T13:08:52.231952Z",
+          "provenance": {
+            "query": "DSGNN distributed graph summarization GNN training",
+            "rank": 6,
+            "run_id": "run-c44139b2ff1e462a9b84dea99a7e3a79",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": "中国科大提出新型核外大规模图神经网络训练系统 2月11日,中国科大苏州高等研究院医学影像智能与机器人研究中心DDL实验室团队(Data Darkness Lab)在大规模图神经网络训练系统方面的研究论文“Capsule: an Out-of-Core Training Mechanism for Colossal GNNs”被国际知名学术会议ACM International Conference on Management of Data(SIGMOD)2025录用。 示意图:Capsule系统工作流框架 图神经网络(GNN)的主流训练框架,如DGL和PyG,利用GPU的并行处理能力从图数据中提取结构信息,在推荐系统、自然语言处理、计算化学和生物信息学等领域展现出卓越性能。尽管GPU在GNN训练中提供了强大的计算优势,但其有限的显存容量难以容纳庞大的图数据,因而现有GNN系统在大规模图数据上的扩展性方面仍面临挑战。对此,DDL实验室团队提出了一种新的核外(Out-of-Core)GNN训练框架——Capsule,为大规模图神经网络训练提供了高效的解决方案。与现有的核外GNN框架不同,该系统通过图划分和图裁剪策略将训练子图结构及其特征完全放入GPU显存之中从而消除了反向传播过程中CPU与GPU之间的I/O开销,进而显著提升了系统性能。此外,Capsule通过设计基于最短哈密顿回路的子图加载方式和流水线并行策略,进一步优化了性能。同时,Capsule具备即插即用的特性,能够无缝集成至主流开源GNN训练框架中。在大规模真实图数据集上,Capsule与现有最好的系统相比能够在仅使用22.24%的内存下带来最高12.02倍的性能提升,并提供了关于训练所得嵌入方差的理论上界。",
+            "published_at": "2025-02-19T00:00:00",
+            "request_id": "ad0611a6-9f23-4654-ab55-e6ca8003785c",
+            "search_score": null,
+            "search_snippet": "中国科大提出新型核外大规模图神经网络训练系统 2月11日,中国科大苏州高等研究院医学影像智能与机器人研究中心DDL实验室团队(Data Darkness Lab)在大规模图神经网络训练系统方面的研究论文“Capsule: an Out-of-Core Training Mechanism for Colossal GNNs”被国际知名学术会议ACM International Conference on Management of Data(SIGMOD)2025录用。 示意图:Capsule系统工作流框架 图神经网络(GNN)的主流训练框架,如DGL和PyG,利用GPU的并行处理能力从图数据中提取结构信息,在推荐系统、自然语言处理、计算化学和生物信息学等领域展现出卓越性能。尽管GPU在GNN训练中提供了强大的计算优势,但其有限的显存容量难以容纳庞大的图数据,因而现有GNN系统在大规模图数据上的扩展性方面仍面临挑战。对此,DDL实验室团队提出了一种新的核外(Out-of-Core)GNN训练框架——Capsule,为大规模图神经网络训练提供了高效的解决方案。与现有的核外GNN框架不同,该系统通过图划分和图裁剪策略将训练子图结构及其特征完全放入GPU显存之中从而消除了反向传播过程中CPU与GPU之间的I/O开销,进而显著提升了系统性能。此外,Capsule通过设计基于最短哈密顿回路的子图加载方式和流水线并行策略,进一步优化了性能。同时,Capsule具备即插即用的特性,能够无缝集成至主流开源GNN训练框架中。在大规模真实图数据集上,Capsule与现有最好的系统相比能够在仅使用22.24%的内存下带来最高12.02倍的性能提升,并提供了关于训练所得嵌入方差的理论上界。",
+            "source_name": "中国科学技术大学网站",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web_supplement",
+          "source_record_id": "src_78f57c142213273a6d668688",
+          "title": "中国科大提出新型核外大规模图神经网络训练系统",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "7",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "http://ieeexplore.ieee.org/document/11294438/",
+          "observed_at": "2026-09-15T13:08:52.231952Z",
+          "provenance": {
+            "query": "DSGNN distributed graph summarization GNN training",
+            "rank": 7,
+            "run_id": "run-c44139b2ff1e462a9b84dea99a7e3a79",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": "Hybrid Transformer-GNN Model for Multi-Document Summarizationdoi:10.1109/ICSIT65336.2025.11294438MeasurementDeep learningRedundancySemanticsText summarizationCoherenceReinforcement learningTransformersGraph neural networksContext modelingMulti-document summarization (MDS) remains a challenging task due to the complexity of extracting, synthesizing, and generating coherent and non-redundant summaries from multiple related documents. While Deep Learning (DL) techniques, particularly Transformer-based models, have shown significant advancements, they often struggle with redundancy elimination, coherence preservation, and contextual relevance. In this research, we propose a novel Hybrid Transformer-GNN Framework (HTGF) that integrates Transformer networks with Graph Neural Networks (GNNs) to capture document relationships, semantic dependencies, and content importance effectively. Additionally, we incorporate a Reinforcement Learning (RL)-based reward mechanism to optimize summary fluency, coherence, and informativeness. Our framework employs hierarchical attention mechanisms to prioritize key sentences and a novel redundancy-aware contrastive loss function to improve abstraction. We evaluate our model on benchmark datasets and compare its performance against state-of-the-art methods using widely accepted evaluation metrics. Experimental results demonstrate that our approach outperforms existing models in terms of ROUGE scores, coherence, and factual consistency. This research provides a robust and scalable solution to MDS, offering new insights into DL-driven text summarization.Krishna DheeravathCVR College of Engineering,Department of CSE (DS),Hyderabad,IndiaPallati NarsimhuluSymbiosis International (Deemed University),Symbiosis Institute of Technology, Hyderabad Campus,Pune,IndiaPremkumar ChithaluruMahatma Gandhi Institute of Technology,Department of Information Technology,Telangana,India,500075IEEE",
+            "published_at": "2026-09-03T00:00:00",
+            "request_id": "ad0611a6-9f23-4654-ab55-e6ca8003785c",
+            "search_score": null,
+            "search_snippet": "Hybrid Transformer-GNN Model for Multi-Document Summarizationdoi:10.1109/ICSIT65336.2025.11294438MeasurementDeep learningRedundancySemanticsText summarizationCoherenceReinforcement learningTransformersGraph neural networksContext modelingMulti-document summarization (MDS) remains a challenging task due to the complexity of extracting, synthesizing, and generating coherent and non-redundant summaries from multiple related documents. While Deep Learning (DL) techniques, particularly Transformer-based models, have shown significant advancements, they often struggle with redundancy elimination, coherence preservation, and contextual relevance. In this research, we propose a novel Hybrid Transformer-GNN Framework (HTGF) that integrates Transformer networks with Graph Neural Networks (GNNs) to capture document relationships, semantic dependencies, and content importance effectively. Additionally, we incorporate a Reinforcement Learning (RL)-based reward mechanism to optimize summary fluency, coherence, and informativeness. Our framework employs hierarchical attention mechanisms to prioritize key sentences and a novel redundancy-aware contrastive loss function to improve abstraction. We evaluate our model on benchmark datasets and compare its performance against state-of-the-art methods using widely accepted evaluation metrics. Experimental results demonstrate that our approach outperforms existing models in terms of ROUGE scores, coherence, and factual consistency. This research provides a robust and scalable solution to MDS, offering new insights into DL-driven text summarization.Krishna DheeravathCVR College of Engineering,Department of CSE (DS),Hyderabad,IndiaPallati NarsimhuluSymbiosis International (Deemed University),Symbiosis Institute of Technology, Hyderabad Campus,Pune,IndiaPremkumar ChithaluruMahatma Gandhi Institute of Technology,Department of Information Technology,Telangana,India,500075IEEE",
+            "source_name": "无",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web_supplement",
+          "source_record_id": "src_7f7e57f8fdc3bce58e1a37ff",
+          "title": "Hybrid Transformer-GNN Model for Multi-Document Summarization",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "8",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://blog.csdn.net/2401_84495872/article/details/143767861",
+          "observed_at": "2026-09-15T13:08:52.231952Z",
+          "provenance": {
+            "query": "DSGNN distributed graph summarization GNN training",
+            "rank": 8,
+            "run_id": "run-c44139b2ff1e462a9b84dea99a7e3a79",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": " 图神经网络由于其在处理非欧空间数据和复杂特征方面的优势,受到广泛关注并应用于推荐系统、知识图谱、交通道路分析等场景。 大规模图结构的不规则性、节点特征的复杂性以及训练样本的依赖性给图神经网络模型的计算效率、内存管理以及分布式系统中的通信开销带来巨大压力。本文首先简要介绍图神经网络模型中的消息传递机制,分类介绍常见的图神经网络模型,并分析其在大规模数据训练中面临的困难和挑战;然后对面向大规模数据的图神经网络算法模型进行分类总结和分析,包括基于节点、边和子图的采样算法;接着介绍图神经网络编程框架加速的相关进展,主要包括主流框架的介绍以及优化技术的分类总结和分析。 1 引言 图结构可描述复杂关系,如基因结构、通信网络、交通路线、社交网络等。图计算挖掘结构信息,但无法学习节点特征。神经网络在欧氏空间数据上表现优越,但无法直接应用于非欧氏空间的图数据。图神经网络结合图计算和神经网络优势,处理非欧氏空间数据及其复杂特征,应用于网络链接预测、推荐系统和交通道路分析等场景。实际应用中,图数据规模庞大,如百亿级节点、千亿级边,存储开销超过10TB。GNN在大规模数据中面临计算效率、内存管理和分布式通信开销的挑战。图神经网络模型在大规模数据应用中面临的挑战可分为图数据结构、图神经网络模型、数据规模、硬件平台。 (1) **图数据结构。**图数据结构的不规则性、稀疏性、动态性、节点邻居数量呈幂律分布及样本间相互依赖,对高效访存和分布式计算系统提出挑战。 (2) **图神经网络模型。**节点高维表示是图神经网络的显著特征,提高模型能力,但计算和内存开销增大,尤其在大规模数据中面临挑战。深层图神经网络模型因迭代更新机制,面临邻居节点爆炸问题。 (3) 数据规模。图神经网络整批训练受内存限制,分批训练增大数据划分和迭代更新难度。 (4) 硬件结构。图神经网络模型在图数据结构和复杂特征方面有建模需求,需要灵活的不规则数据读取和高效的密集计算。CPU和GPU各有优势,但无法同时满足这两点需求,增加了大规模图神经网络模型加速的难度。 为了提高[图神经网络(GNN)]模型的可拓展性、加速运行过程和减小内存开销,以应对和缓解相关困难和挑战。研究者在应用模型方面,针对自然语言处理、交通预测和推荐系统等应用场景,提出提高图神经网络处理效率的策略。在算法模型方面,针对内存不足问题,研究采用分批训练,如GraphSage、FastGCN等。在编程框架方面,为解决训练样本依赖性,提出DGL、PyG等编程框架。",
+            "published_at": "2024-11-14T13:06:17",
+            "request_id": "ad0611a6-9f23-4654-ab55-e6ca8003785c",
+            "search_score": null,
+            "search_snippet": "图神经网络由于其在处理非欧空间数据和复杂特征方面的优势,受到广泛关注并应用于推荐系统、知识图谱、交通道路分析等场景。 大规模图结构的不规则性、节点特征的复杂性以及训练样本的依赖性给图神经网络模型的计算效率、内存管理以及分布式系统中的通信开销带来巨大压力。本文首先简要介绍图神经网络模型中的消息传递机制,分类介绍常见的图神经网络模型,并分析其在大规模数据训练中面临的困难和挑战;然后对面向大规模数据的图神经网络算法模型进行分类总结和分析,包括基于节点、边和子图的采样算法;接着介绍图神经网络编程框架加速的相关进展,主要包括主流框架的介绍以及优化技术的分类总结和分析。 1 引言 图结构可描述复杂关系,如基因结构、通信网络、交通路线、社交网络等。图计算挖掘结构信息,但无法学习节点特征。神经网络在欧氏空间数据上表现优越,但无法直接应用于非欧氏空间的图数据。图神经网络结合图计算和神经网络优势,处理非欧氏空间数据及其复杂特征,应用于网络链接预测、推荐系统和交通道路分析等场景。实际应用中,图数据规模庞大,如百亿级节点、千亿级边,存储开销超过10TB。GNN在大规模数据中面临计算效率、内存管理和分布式通信开销的挑战。图神经网络模型在大规模数据应用中面临的挑战可分为图数据结构、图神经网络模型、数据规模、硬件平台。 (1) **图数据结构。**图数据结构的不规则性、稀疏性、动态性、节点邻居数量呈幂律分布及样本间相互依赖,对高效访存和分布式计算系统提出挑战。 (2) **图神经网络模型。**节点高维表示是图神经网络的显著特征,提高模型能力,但计算和内存开销增大,尤其在大规模数据中面临挑战。深层图神经网络模型因迭代更新机制,面临邻居节点爆炸问题。 (3) 数据规模。图神经网络整批训练受内存限制,分批训练增大数据划分和迭代更新难度。 (4) 硬件结构。图神经网络模型在图数据结构和复杂特征方面有建模需求,需要灵活的不规则数据读取和高效的密集计算。CPU和GPU各有优势,但无法同时满足这两点需求,增加了大规模图神经网络模型加速的难度。 为了提高[图神经网络(GNN)]模型的可拓展性、加速运行过程和减小内存开销,以应对和缓解相关困难和挑战。研究者在应用模型方面,针对自然语言处理、交通预测和推荐系统等应用场景,提出提高图神经网络处理效率的策略。在算法模型方面,针对内存不足问题,研究采用分批训练,如GraphSage、FastGCN等。在编程框架方面,为解决训练样本依赖性,提出DGL、PyG等编程框架。",
+            "source_name": "CSDN软件开发网",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web_supplement",
+          "source_record_id": "src_45df3fcd1dffaf42bc2eb748",
+          "title": "图神经网络研究综述(GNN),非常详细收藏我这一篇就够了!",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "9",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://blog.csdn.net/zj_18706809267/article/details/127652263",
+          "observed_at": "2026-09-15T13:08:52.231952Z",
+          "provenance": {
+            "query": "DSGNN distributed graph summarization GNN training",
+            "rank": 9,
+            "run_id": "run-c44139b2ff1e462a9b84dea99a7e3a79",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": " A Unified Architecture for Accelerating DistributedDNNTraining in Heterogeneous GPU/CPU Clusters 运行DNN训练任务的数据中心集群本质上是异构的。他们有用于计算的gpu和cpu,以及用于分布式训练的网络带宽。然而,现有的分布式DNN训练架构all-reduce和Parameter Server (PS)不能充分利用这些异构资源。本文提出一种新的分布式DNN训练架构BytePS。BytePS可以利用集群中空闲的CPU和带宽资源来加速在gpu上运行的分布式DNN训练任务。它提供了一个既被证明是最优的又被证明是统一的通信框架——现存的all-reduce和PS成为BytePS的两种特殊情况。为了达到实践证明的最优性,BytePS进一步拆分了参数优化器的功能。它引入了一个用于聚合梯度的Summation Service抽象,这对所有优化器都是通用的。求和服务可以通过AVX指令进行加速,可以在cpu上高效运行,而与DNN模型相关的优化算法可以在gpu上进行加速。字节码可以加速主要框架的DNN训练,包括TensorFlow, PyTorch和MXNet。对于多达256个gpu的代表性DNN训练作业,BytePS的性能比最先进的开源all-reduce和PS分别提高了84%和245%。 DNN的训练过程大致分为三个步骤:(1)前向传播(FP),批量地输入训练数据,计算最后结果的损失函数(loss function);(2)反向传播(BP),通过损失函数计算出每个参数的梯度;(3)参数更新,通过得到的梯度,使用求和的方法更新各个参数。并且,在该步骤中会用到一些优化器(如SGD,Adam等)。训练的过程是一个重复以上三个步骤的迭代过程。本文主要优化的是分布式的参数更新过程,提高了GPU节点和CPU节点上的CPU利用率以及网络利用率。 在分布式训练的环境下,数据并行是一种常用的并行方法,即每台机器上都有相同的模型(即相同的一组参数),并行地使用数据进行训练,最后需要收集各个参数的梯度,以更新每台机器上的模型。分布式的参数更新有以下两种方式:(假设模型总的大小为M,一个节点的网络带宽为B。) All-reduce。如下图所示,使用这种方法会将模型的参数n份在n个不同的GPU节点上(每个节点的参数大小为M/n),分布式地进行模型更新。一种常用的All-reduce算法是Ring All-Reduce:(a)每个节点会维护自己负责更新的一部分参数,把其他参数发给下一个节点,在下一个节点进行加和(reduce)后再发给下一个节点,到最后一个节点则能算出总和。(b)算出总和的节点将自己负责的参数发给其他节点。(c)每个节点会有更新后的参数。这样,每个GPU节点的通信量(包括收和发)为2(n-1)M/n。",
+            "published_at": "2024-04-08T16:36:06",
+            "request_id": "ad0611a6-9f23-4654-ab55-e6ca8003785c",
+            "search_score": null,
+            "search_snippet": "A Unified Architecture for Accelerating DistributedDNNTraining in Heterogeneous GPU/CPU Clusters 运行DNN训练任务的数据中心集群本质上是异构的。他们有用于计算的gpu和cpu,以及用于分布式训练的网络带宽。然而,现有的分布式DNN训练架构all-reduce和Parameter Server (PS)不能充分利用这些异构资源。本文提出一种新的分布式DNN训练架构BytePS。BytePS可以利用集群中空闲的CPU和带宽资源来加速在gpu上运行的分布式DNN训练任务。它提供了一个既被证明是最优的又被证明是统一的通信框架——现存的all-reduce和PS成为BytePS的两种特殊情况。为了达到实践证明的最优性,BytePS进一步拆分了参数优化器的功能。它引入了一个用于聚合梯度的Summation Service抽象,这对所有优化器都是通用的。求和服务可以通过AVX指令进行加速,可以在cpu上高效运行,而与DNN模型相关的优化算法可以在gpu上进行加速。字节码可以加速主要框架的DNN训练,包括TensorFlow, PyTorch和MXNet。对于多达256个gpu的代表性DNN训练作业,BytePS的性能比最先进的开源all-reduce和PS分别提高了84%和245%。 DNN的训练过程大致分为三个步骤:(1)前向传播(FP),批量地输入训练数据,计算最后结果的损失函数(loss function);(2)反向传播(BP),通过损失函数计算出每个参数的梯度;(3)参数更新,通过得到的梯度,使用求和的方法更新各个参数。并且,在该步骤中会用到一些优化器(如SGD,Adam等)。训练的过程是一个重复以上三个步骤的迭代过程。本文主要优化的是分布式的参数更新过程,提高了GPU节点和CPU节点上的CPU利用率以及网络利用率。 在分布式训练的环境下,数据并行是一种常用的并行方法,即每台机器上都有相同的模型(即相同的一组参数),并行地使用数据进行训练,最后需要收集各个参数的梯度,以更新每台机器上的模型。分布式的参数更新有以下两种方式:(假设模型总的大小为M,一个节点的网络带宽为B。) All-reduce。如下图所示,使用这种方法会将模型的参数n份在n个不同的GPU节点上(每个节点的参数大小为M/n),分布式地进行模型更新。一种常用的All-reduce算法是Ring All-Reduce:(a)每个节点会维护自己负责更新的一部分参数,把其他参数发给下一个节点,在下一个节点进行加和(reduce)后再发给下一个节点,到最后一个节点则能算出总和。(b)算出总和的节点将自己负责的参数发给其他节点。(c)每个节点会有更新后的参数。这样,每个GPU节点的通信量(包括收和发)为2(n-1)M/n。",
+            "source_name": "CSDN软件开发网",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web_supplement",
+          "source_record_id": "src_d41cd157d204449ffaf9b805",
+          "title": "DNN in GPU/CPU Clusters",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "10",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://zhuanlan.zhihu.com/p/509265666",
+          "observed_at": "2026-09-15T13:08:52.231952Z",
+          "provenance": {
+            "query": "DSGNN distributed graph summarization GNN training",
+            "rank": 10,
+            "run_id": "run-c44139b2ff1e462a9b84dea99a7e3a79",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": " GNN Mini-batch training 方法 DistDGL分布式训练框架 主要优化点 实验 评价 前言 工业界的图规模都非常大,少说也是上千万的顶点+上亿的边,单机训练不现实,必须借助多机分布式训练。然而目前主流的图训练框架PyG、DGL对图的多机分布式训练支持都不太好。工业界好像阿里的Euler、百度的PGL可以支持分布式训练。今天介绍一下亚马逊DGL针对分布式训练所做的优化。 摘要 GNN广泛应用在推荐、搜索、风控等领域,在这些领域,图的规模往往非常大,有数以亿计的顶点和万亿的边。为支持大规模图的分布式训练,本文提出了DistDGL,它能以mini-batch的方式在多机上进行分布式训练。DistDGL基于DGL框架,它将图数据分布在多台机器上,并基于 数据分布 ,将计算也分布在多台机器上(owner-compute rule)。DistDGL以同步更新的方式进行训练。为了减小分布式训练的通信开销,DistDGL使用一个高效、轻量的图分割算法对图进行分割,在分割时设计了多个负载均衡约束,使得每个分割的子图达到较好的 负载均衡 。此外,为了减小跨机器的通信,DistDGL在每个子图中保留了 halo nodes(正文会介绍到),并且使用了稀疏embedding更新策略。这些优化策略使得DistDGL在分布式训练时能达到较好的高并行效率和内存可扩展性。实验结果表明,在分布式训练时,随着计算资源的增大,DistDGL的训练速度可以线性增长。在16台机器组成的分布式环境中,DistDGL仅用13秒就可以完成1亿节点+30亿边的一个 epoch 的训练。DistDGL是DGL的一部分,已开源在:https://github.com/dmlc/dgl/tree/master/python/dgl/distributed。 简介 GNN很有用,但是现实世界中的网络都很大,比如Facebook的社交网络、Amazon的用户商品关系网络等。 GNN分布式训练的难点: GNN中每个训练样本(顶点)不是独立的,是相互依赖的,比如为了训练顶点A,必须采样A的邻居,随着GNN层数的增大,采样的邻居数目呈指数上升。而CV、NLP中每条样本是相互独立的。",
+            "published_at": "2022-05-04T21:30:00",
+            "request_id": "ad0611a6-9f23-4654-ab55-e6ca8003785c",
+            "search_score": null,
+            "search_snippet": "GNN Mini-batch training 方法 DistDGL分布式训练框架 主要优化点 实验 评价 前言 工业界的图规模都非常大,少说也是上千万的顶点+上亿的边,单机训练不现实,必须借助多机分布式训练。然而目前主流的图训练框架PyG、DGL对图的多机分布式训练支持都不太好。工业界好像阿里的Euler、百度的PGL可以支持分布式训练。今天介绍一下亚马逊DGL针对分布式训练所做的优化。 摘要 GNN广泛应用在推荐、搜索、风控等领域,在这些领域,图的规模往往非常大,有数以亿计的顶点和万亿的边。为支持大规模图的分布式训练,本文提出了DistDGL,它能以mini-batch的方式在多机上进行分布式训练。DistDGL基于DGL框架,它将图数据分布在多台机器上,并基于 数据分布 ,将计算也分布在多台机器上(owner-compute rule)。DistDGL以同步更新的方式进行训练。为了减小分布式训练的通信开销,DistDGL使用一个高效、轻量的图分割算法对图进行分割,在分割时设计了多个负载均衡约束,使得每个分割的子图达到较好的 负载均衡 。此外,为了减小跨机器的通信,DistDGL在每个子图中保留了 halo nodes(正文会介绍到),并且使用了稀疏embedding更新策略。这些优化策略使得DistDGL在分布式训练时能达到较好的高并行效率和内存可扩展性。实验结果表明,在分布式训练时,随着计算资源的增大,DistDGL的训练速度可以线性增长。在16台机器组成的分布式环境中,DistDGL仅用13秒就可以完成1亿节点+30亿边的一个 epoch 的训练。DistDGL是DGL的一部分,已开源在:https://github.com/dmlc/dgl/tree/master/python/dgl/distributed。 简介 GNN很有用,但是现实世界中的网络都很大,比如Facebook的社交网络、Amazon的用户商品关系网络等。 GNN分布式训练的难点: GNN中每个训练样本(顶点)不是独立的,是相互依赖的,比如为了训练顶点A,必须采样A的邻居,随着GNN层数的增大,采样的邻居数目呈指数上升。而CV、NLP中每条样本是相互独立的。",
+            "source_name": "知乎",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web_supplement",
+          "source_record_id": "src_1401034a946211d9e810c6bc",
+          "title": "《DistDGL: Distributed Graph Neural Network Training for Billion-Scale Graphs》论文阅读",
+          "work_id": null
+        }
+      ]
+    },
+    "succeeded": true,
+    "summary": "发现并保存 10 个 Web 候选来源",
+    "tool_name": "web_search"
+  },
+  "resolved_arguments": {
+    "max_results": 10,
+    "query": "DSGNN distributed graph summarization GNN training"
+  },
+  "result_count": 10,
+  "stage_name": "run_research_task",
+  "started_at": "2026-09-15T13:08:51.284140+00:00",
+  "tool_call_id": "tool_0039",
+  "tool_name": "web_search"
+}

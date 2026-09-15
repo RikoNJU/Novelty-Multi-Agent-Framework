@@ -1,0 +1,102 @@
+{
+  "report": {
+    "citation_issues": [],
+    "conclusions": [
+      {
+        "confidence": null,
+        "counter_card_ids": [],
+        "highly_relevant_works": [],
+        "novelty_point_id": "NP-1",
+        "review_status": "insufficient_evidence",
+        "summary": "现有两条证据（TGAT、TGN）均表明时序图表示学习领域已有相关工作，但均未采用“图摘要压缩+图自编码器+循环神经网络”的技术组合，故未构成直接冲突。然而Reviewer因证据覆盖和解析问题未能完成完整判定，需要补充检索以确认该组合是否已被公开披露，因此维持证据不足状态。",
+        "supporting_card_ids": [
+          "card_fa58976d87c718a7d5817694",
+          "card_d3ae4ea3ad208a4f19e5be7c"
+        ],
+        "verdict": null,
+        "verdict_reason": null
+      },
+      {
+        "confidence": 0.7,
+        "counter_card_ids": [
+          "card_1800ebe9811ad96dfd604571",
+          "card_396b3a2c53a363562c5987e7",
+          "card_ea7d9077219f8d5b4a3b1383"
+        ],
+        "highly_relevant_works": [
+          {
+            "card_ids": [
+              "card_1800ebe9811ad96dfd604571"
+            ],
+            "evidence_ids": [
+              "ev_693981aaaf18598c9976bc9a"
+            ],
+            "relevance_reason": "AGL可佐证分布式GNN训练为已有方向，但其用参数服务器架构与k-hop子图，而非本查新点的领导-工作者+注意力聚合+图摘要组合，故为基线而非冲突证据。",
+            "work_id": "wrk_ff5aa18cf0cfe7be1ba5e8bd"
+          },
+          {
+            "card_ids": [
+              "card_396b3a2c53a363562c5987e7"
+            ],
+            "evidence_ids": [
+              "ev_5679a77fe3c2a290a816a4e2"
+            ],
+            "relevance_reason": "AliGraph佐证大规模分布式GNN训练为已有研究领域，但依赖分布式存储与采样算子，不采用图摘要小批量训练或领导-工作者注意力聚合，为基线对比文献。",
+            "work_id": "wrk_e59b8b7248dcc080455b8690"
+          },
+          {
+            "card_ids": [
+              "card_ea7d9077219f8d5b4a3b1383"
+            ],
+            "evidence_ids": [
+              "ev_12383377eae7730f964722bf"
+            ],
+            "relevance_reason": "GraphSAINT用小批量图采样提升效率，与本查新点的小批量训练侧面相关，但为单机、用采样而非图摘要、无注意力聚合，仅覆盖孤立侧面而非完整组合。",
+            "work_id": "wrk_9567984f4fecd1cfc596ae3b"
+          }
+        ],
+        "novelty_point_id": "NP-2",
+        "review_status": "reviewed",
+        "summary": "现有证据（AGL、AliGraph、GraphSAINT）仅覆盖分布式GNN训练、图采样或小批量训练等孤立侧面，未披露DSGNN的完整组合（图摘要+领导-工作者注意力聚合+边分割图流划分），因此判定为新颖。",
+        "supporting_card_ids": [],
+        "verdict": "novel",
+        "verdict_reason": "查新点NP-2主张DSGNN将四要素组合：领导-工作者分布式架构、基于边分割的图流划分、基于图摘要的小批量训练、经注意力层的领导侧聚合与同步更新。已检索证据（AGL、AliGraph、GraphSAINT）虽覆盖分布式GNN训练与大图小批量训练等孤立侧面，但均未呈现该组合：AGL采用参数服务器架构与k-hop邻域子图而非领导-工作者+注意力聚合，且未用图摘要；AliGraph依赖分布式存储与采样算子而非图摘要小批量训练；GraphSAINT仅单机、用图采样而非图摘要、无注意力聚合。按原文对具体判断的支撑程度审查，三条证据均仅能佐证分布式训练与小批量图采样为已有方向，均未能构成对'图摘要+领导-工作者注意力聚合+边分割图流划分+同步更新'组合的完整公开，故判定该组合相对现有证据具备新颖性。"
+      },
+      {
+        "confidence": 0.62,
+        "counter_card_ids": [
+          "card_05fe604814671131d009b01e"
+        ],
+        "highly_relevant_works": [
+          {
+            "card_ids": [
+              "card_05fe604814671131d009b01e"
+            ],
+            "evidence_ids": [
+              "ev_cd56c09b2f248bb2407794ea",
+              "ev_459431a26cfa43ffb2519ecd",
+              "ev_a47a695e671ab3752b398968"
+            ],
+            "relevance_reason": "该文献对比评测了Random Edge与HDRF等基于边分割的划分策略，明确评估了其在分布式环境中针对动态幂律（不规则）图网络的性能、可扩展性与负载均衡。其四个技术特征（基于边分割策略、动态/流式边分配、适应图数据不规则性、分布式子图划分）与查新点NP-3的四个技术特征高度吻合，构成对查新点主要技术特征的现有技术实质覆盖。虽为对比基准评测而非提出特定新型算法，仍是判定查新点新颖性最相关、最关键的对比文献。",
+            "work_id": "wrk_df8c0752cb7bc7b40b51da06"
+          }
+        ],
+        "novelty_point_id": "NP-3",
+        "review_status": "reviewed",
+        "summary": "已有文献对比了Random Edge、HDRF等基于边分割的划分策略在分布式动态/不规则图上的性能，实质覆盖了本查新点的技术特征（边分割、动态图流、不规则性、分布式子图划分），因此该查新点不具备完全新颖性；但现有文献未披露与本查新点完全相同的特定新型算法，故为部分新颖。",
+        "supporting_card_ids": [],
+        "verdict": "partially_novel",
+        "verdict_reason": "查新点NP-3声称提出了一种基于边分割的图流划分算法，其四个技术特征为：基于边分割的划分策略、针对图流数据的动态划分、适应图数据的不规则性、用于分布式场景中的子图分配。当前唯一证据（wrk_df8c0752cb7bc7b40b51da06，《Scalability and performance in distributed graph databases》）是一篇对现有四种划分策略（Random Vertex、Metis、Random Edge、HDRF）在边切与顶点切范式下针对分布式图数据库的性能对比评测。经核对原文，该文献直接展示了基于边分割的划分策略（Random Edge、HDRF）、适应图数据的动态/不规则性（'dynamic, power-law networks'）以及分布式场景下的子图划分与负载均衡——四个技术特征在该文献中均以既有技术形式出现，尤其是HDRF作为流式边分配策略，已在分布式动态不规则图上被验证。因此查新点声称的四个技术特征并非全新，现有技术已对各项特征给出实质覆盖。但该文献为对比基准评测而非提出查新点所指的具体新型图流划分算法，未直接披露与应用方完全相同的特定算法实现，故判定为部分新颖。"
+      }
+    ],
+    "limitations": [
+      "NP-1：虽有2条有效证据卡，但Reviewer判定为证据不足（insufficient_evidence），原因是Reviewer状态解析失败（Invalid JSON），无法给出可靠判定；且中文文献覆盖情况未知，建议补充检索和图摘要+时序GNN的组合文献。现有证据仅能说明动态时序图表示学习为已有方向，但未形成对技术组合的确定性结论。",
+      "NP-2：已获有效证据3条，均支持“分布式GNN训练和小批量采样”为已有技术方向，但未披露DSGNN的组合方案，故裁定为新颖。但检索覆盖不完整：中文检索任务T-1未返回有效证据，中文语域的覆盖缺失，且缺少“图摘要+分布式GNN训练”交叉方向的一手文献，需补检以排除潜在破坏性披露。",
+      "NP-3：仅有一条有效证据，且该证据为对比基准评测（二手/综述性质），非一手算法文献。现有文献已覆盖边分割、动态图流、不规则性、分布式子图划分等技术特征，但未直接披露查新点所指的特定算法实现。为更严谨地支持部分新颖判定，需补检HDRF、Fennel等流式边划分算法的原始提出文献及中文相关文献。检索覆盖仍不完整。",
+      "所有查新点的被拒绝证据列表均为空，不存在因门控拒绝而被排除的有效证据；未发现技术性质疑或格式性拒绝。"
+    ],
+    "missing_baselines": [],
+    "missing_references": [],
+    "paper_id": "MF2033k6lC"
+  }
+}

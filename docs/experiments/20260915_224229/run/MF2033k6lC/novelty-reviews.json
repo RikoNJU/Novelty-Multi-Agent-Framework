@@ -1,0 +1,80 @@
+{
+  "paper_id": "MF2033k6lC",
+  "reviews": [
+    {
+      "novelty_point_id": "NP-1",
+      "status": "insufficient_evidence",
+      "verdict": null,
+      "verdict_reason": null,
+      "confidence": null,
+      "highly_relevant_works": [],
+      "supplement_request": {
+        "reason": "Reviewer 无法完成可靠判定：ToolCallBudgetExhausted: total tool-call budget exhausted",
+        "missing_aspects": [],
+        "suggested_focus": []
+      }
+    },
+    {
+      "novelty_point_id": "NP-2",
+      "status": "reviewed",
+      "verdict": "novel",
+      "verdict_reason": "本查新点的核心是 DSGNN 这一特定算法组合：领导-工作者模式 + 领导节点基于边分割的图流划分算法划分子图 + 工作节点基于图摘要的小批量训练 + 通过注意力层返回结果 + 领导节点汇总结果计算梯度并同步更新模型。已检索到的两篇最相近工作（AGL、AliGraph）均是大规模分布式 GNN 训练系统，仅在\"大规模图数据上的分布式 GNN 训练\"这一上位对象概念上有重合；二者均未披露任何一项辨别性技术特征：AGL 采用参数服务器（parameter server）架构，通过 k-hop 邻域子图生成而非图摘要，且无注意力层返回、无基于边分割的图流划分；AliGraph 采用分布式图存储+优化采样运行时，未采用图摘要小批量训练、领导-工作者模式或注意力层返回结果。因此，现有证据中不存在披露 DSGNN 特征组合的文献，该查新点针对所获证据具有新颖性。",
+      "confidence": 0.7,
+      "highly_relevant_works": [
+        {
+          "work_id": "wrk_ff5aa18cf0cfe7be1ba5e8bd",
+          "card_ids": [
+            "card_1800ebe9811ad96dfd604571"
+          ],
+          "evidence_ids": [
+            "ev_b7b4fad215d16317933950b2"
+          ],
+          "relevance_reason": "大规模分布式 GNN 训练系统，与 DSGNN 在上位对象概念（object concept C1）重合，但采用参数服务器与 k-hop 邻域子图生成，未披露领导-工作者模式、图摘要训练、基于边分割的图流划分或注意力层返回结果等辨别性特征，作为最相近对比基线。"
+        },
+        {
+          "work_id": "wrk_e59b8b7248dcc080455b8690",
+          "card_ids": [
+            "card_396b3a2c53a363562c5987e7"
+          ],
+          "evidence_ids": [
+            "ev_5679a77fe3c2a290a816a4e2"
+          ],
+          "relevance_reason": "全面的分布式 GNN 平台，与 DSGNN 在分布式大规模图 GNN 训练这一上位对象概念上重合，但未采用图摘要小批量训练、领导-工作者模式、注意力层返回结果或领导节点同步更新模型，作为最相近对比基线。"
+        }
+      ],
+      "supplement_request": null
+    },
+    {
+      "novelty_point_id": "NP-3",
+      "status": "reviewed",
+      "verdict": "partially_novel",
+      "verdict_reason": "查新点的核心技术特征'基于边分割的图划分算法'、'将原图划分为多个子图'、'适应图数据的不规则性'已被最相近文献 G-SPAC 公开（G-SPAC 即基于边划分的图分区算法，通过度数+空间局部性优先级适应图数据不规则性并划分子图）。因此这三项特征本身不具全新性。但查新点claim与题名均强调处理'大规模图流/流式图数据'（graph flow/streaming）的分布式划分，而现有证据（G-SPAC面向通用图计算、BGPA为顶点导向的分布式GNN平衡划分、LocalDGP为顶点导向的GNN子图采样）均未涉及'图流/流式图数据的边分割划分'这一关键限定。查新点的完整技术组合（边分割 + 图流/流式 + 分布式GNN训练）在现有证据中未被完整覆盖，故整体组合具有部分新颖性。",
+      "confidence": 0.7,
+      "highly_relevant_works": [
+        {
+          "work_id": "wrk_2f0322820b0fa4b832b65e47",
+          "card_ids": [
+            "card_7892a8e0f2320fcdeccef0c8"
+          ],
+          "evidence_ids": [
+            "ev_a5867f2a61f684ca28e37686",
+            "ev_112c38ec83fa17ec47436e75"
+          ],
+          "relevance_reason": "G-SPAC 是直接基于边划分（edge partitioning）的图分区算法，将图划分成多个子图，并通过度数+空间局部性优先级适应图数据的不规则性，与查新点'基于边分割''划分为多个子图''适应图数据不规则性'三项技术特征高度重叠，是最相近的现有技术；但其不针对图流/流式图数据，也不专用于分布式GNN训练。"
+        }
+      ],
+      "supplement_request": {
+        "reason": "查新点核心差异维度'图流/流式图数据的边分割分布式划分'在现有证据中未被覆盖，为确认该组合是否真正具备新颖性，建议补充针对图流/流式图分区（graph streaming / graph flow partitioning）结合边划分与分布式GNN训练方向的检索。",
+        "missing_aspects": [
+          "面向流式/图流图数据的边分割划分算法",
+          "流式图分布式划分用于GNN训练"
+        ],
+        "suggested_focus": [
+          "graph streaming edge partitioning",
+          "graph flow partitioning distributed GNN",
+          "streaming graph partition for subgraph training"
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+
+
+- **NP-1**
+  - `(ti:"大规模时序图" OR ti:"动态时序图" OR ti:"时序图表示学习") AND (abs:"图摘要" OR abs:"图压缩" OR abs:"图自编码器") AND (abs:"图表示学习" OR abs:"节点表示学习" OR abs:"图嵌入")`（arxiv；执行失败）
+  - `("大规模时序图" OR "动态时序图" OR "时序图表示学习") AND ("图摘要" OR "图压缩" OR "图自编码器") AND ("图表示学习" OR "节点表示学习" OR "图嵌入")`（springer；执行失败）
+  - `(ti:"大规模时序图" OR ti:"动态时序图" OR ti:"时序图表示学习") AND (abs:"图摘要" OR abs:"图压缩" OR abs:"图自编码器") AND (abs:"图表示学习" OR abs:"节点表示学习" OR abs:"图嵌入")`（arxiv；执行失败）
+  - `("大规模时序图" OR "动态时序图" OR "时序图表示学习") AND ("图摘要" OR "图压缩" OR "图自编码器") AND ("图表示学习" OR "节点表示学习" OR "图嵌入")`（springer；执行失败）
+  - `ti:sequential AND ti:graph AND ti:representation AND ti:learning AND abs:"graph summarization" AND abs:"graph autoencoder"`（arxiv；执行失败）
+  - `"sequential graph representation learning" AND "graph summarization" AND "graph autoencoder"`（springer；执行失败）
+  - `ti:sequential AND ti:graph AND ti:representation AND ti:learning AND abs:"graph summarization" AND abs:"graph autoencoder"`（arxiv；执行失败）
+  - `"sequential graph representation learning" AND "graph summarization" AND "graph autoencoder"`（springer；执行失败）
+  - `(ti:"时序图" OR ti:"动态图" OR ti:"时序图表示学习") AND (abs:"图摘要" OR abs:"图压缩")`（arxiv；执行失败）
+  - `("时序图" OR "动态图" OR "时序图表示学习") AND ("图摘要" OR "图压缩")`（springer；执行失败）
+  - `(ti:"时序图" OR ti:"动态图" OR ti:"时序图表示学习") AND (abs:"图摘要" OR abs:"图压缩")`（arxiv；执行失败）
+  - `("时序图" OR "动态图" OR "时序图表示学习") AND ("图摘要" OR "图压缩")`（springer；执行失败）
+  - `("sequential graph representation learning" OR "temporal graph representation learning" OR "dynamic graph embedding") AND ("graph summarization" OR "graph compression" OR "graph summarization technique") AND ("graph autoencoder" OR "graph auto-encoder" OR "graph reconstruction") AND ("recurrent neural network" OR "temporal dependency learning" OR "sequence modeling")`（springer；有命中）
+  - `("sequential graph representation learning" OR "temporal graph representation learning" OR "dynamic graph embedding" OR "dynamic graph representation learning" OR "time-evolving graph embedding") AND ("graph summarization" OR "graph compression" OR "graph summarization technique" OR "graph coarsening" OR "graph condensation") AND ("graph autoencoder" OR "graph auto-encoder" OR "graph reconstruction" OR "GAE" OR "graph reconstruction error")`（springer；有命中）
+  - `("sequential graph representation learning" OR "temporal graph representation learning" OR "dynamic graph embedding" OR "dynamic graph representation learning" OR "time-evolving graph embedding") OR ("graph summarization" OR "graph compression" OR "graph summarization technique" OR "graph coarsening" OR "graph condensation")`（springer；部分成功）
+  - `(ti:sequential AND ti:graph AND ti:representation AND ti:learning OR ti:temporal AND ti:graph AND ti:representation AND ti:learning OR ti:"dynamic graph embedding") AND (abs:"graph summarization" OR abs:"graph compression" OR abs:"graph summarization technique") AND (abs:"graph autoencoder" OR abs:"graph auto-encoder" OR abs:"graph reconstruction") AND (abs:"recurrent neural network" OR abs:"temporal dependency learning" OR abs:"sequence modeling")`（arxiv；执行失败）
+- **NP-2**
+  - `(abs:"分布式图神经网络训练" OR abs:"分布式GNN训练") AND (abs:"图摘要" OR abs:"图流划分")`（arxiv；执行失败）
+  - `(abs:"分布式图神经网络训练" OR abs:"分布式GNN训练") AND (abs:"图摘要" OR abs:"图流划分")`（arxiv；执行失败）
+  - `("分布式图神经网络训练" OR "分布式GNN训练") AND ("图摘要" OR "图流划分")`（springer；执行失败）
+  - `ti:distributed AND ti:graph AND ti:neural AND ti:network AND ti:training AND abs:"graph summarization" AND abs:"leader worker architecture"`（arxiv；执行失败）
+  - `"distributed graph neural network training" AND "graph summarization" AND "leader worker architecture"`（springer；执行失败）
+  - `ti:distributed AND ti:graph AND ti:neural AND ti:network AND ti:training AND abs:"graph summarization" AND abs:"leader worker architecture"`（arxiv；执行失败）
+  - `"distributed graph neural network training" AND "graph summarization" AND "leader worker architecture"`（springer；执行失败）
+- **NP-3**
+  - `ti:"图流划分算法" AND abs:"边分割" ANDNOT (all:"顶点分割" OR all:"点分割") AND abs:"分布式图神经网络训练"`（arxiv；执行失败）
+  - `"图流划分算法" AND "边分割" NOT ("顶点分割" OR "点分割") AND "分布式图神经网络训练"`（springer；执行失败）
+  - `("edge segmentation" OR "edge partitioning" OR "edge-cut partitioning") AND ("graph partitioning" OR "graph flow partitioning" OR "streaming graph partitioning") AND ("distributed graph neural network training" OR "distributed GNN training")`（springer；有命中）
+  - `("edge segmentation" OR "edge partitioning" OR "edge-cut partitioning" OR "edge-based partitioning" OR "edge splitting") AND ("graph partitioning" OR "graph flow partitioning" OR "streaming graph partitioning" OR "graph splitting" OR "graph division") AND ("large-scale graph streaming data" OR "graph streams" OR "streaming graphs" OR "dynamic graphs" OR "evolving graphs") AND ("subgraph partitioning" OR "subgraph extraction" OR "subgraph division" OR "subgraph splitting")`（springer；部分成功）
+  - `(abs:"edge segmentation" OR abs:"edge partitioning" OR abs:"edge-cut partitioning") AND (ti:"graph partitioning" OR ti:"graph flow partitioning" OR ti:"streaming graph partitioning") AND (abs:distributed AND abs:graph AND abs:neural AND abs:network AND abs:training OR abs:"distributed GNN training")`（arxiv；执行失败）

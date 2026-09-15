@@ -1,0 +1,345 @@
+{
+  "evidence_cards": [
+    {
+      "card_id": "card_296616b76867b0338c6d090f",
+      "cited_by_paper": null,
+      "confidence": 0.85,
+      "differences": [
+        "The survey is a review/taxonomy paper rather than a novel method proposal; it does not propose a unified framework combining graph summarization, graph autoencoder, and RNN in a single end-to-end architecture",
+        "The survey's DGS focuses on integrating historical snapshots into one weighted snapshot for link prediction, whereas the novelty point uses graph summarization to compress the original graph before feeding it into a graph autoencoder for representation learning",
+        "The survey does not specifically address training node representations of the original graph via reconstruction error with the original graph after graph summarization compression",
+        "The survey covers temporal link prediction as the primary task, while the novelty point targets general large-scale sequential graph representation learning"
+      ],
+      "document_title": "A Survey of Link Prediction in Temporal Networks",
+      "evidence_ids": [
+        "ev_36f69e6ec0c14eb039498aae",
+        "ev_9ced38aa6bb04e2d5d6e004f",
+        "ev_1bfc766b8e002cd7f52bdde4"
+      ],
+      "main_contribution": "This survey provides a comprehensive taxonomy of temporal link prediction methods, distinguishing representation units (snapshot-based, feature extraction, latent variables including Dynamic Graph Summarisation and autoencoders) from inference units (including RNN-based approaches). It systematically reviews how temporal networks are modeled as discrete-time dynamic graphs (snapshot sequences) and how graph summarisation, autoencoders, and recurrent neural networks are used for temporal graph representation learning.",
+      "novelty_point_id": "NP-1",
+      "overlaps": [
+        "Models dynamic temporal graphs as sequences of snapshots (Discrete-time Dynamic Graphs, DTDG), matching the novelty point's feature of modeling dynamic sequential graphs as snapshot sequences",
+        "Discusses Dynamic Graph Summarisation (DGS) which collapses successive historical snapshots into a comprehensive weighted snapshot, overlapping with the graph summarization compression approach",
+        "Reviews autoencoder-based representation units (Dyn-VGAE, DynGEM, SDNE) for dynamic graph embedding, overlapping with the graph autoencoder component",
+        "Reviews RNN-based inference units (EvolveGCN, DynGraph2Vec, DDNE) for learning temporal dependencies, overlapping with the recurrent neural network component"
+      ],
+      "possible_baseline": true,
+      "relevance": 0.75,
+      "sources": [
+        {
+          "doi": "10.1007/s42979-025-04639-1",
+          "location": "artifact art_6e0128f41ad58fd336741908 chars:12999-13692",
+          "quote": "Discrete-time dynamic graphs define a temporal network \\documentclass[12pt]{minimal} \\usepackage{amsmath} \\usepackage{wasysym} \\usepackage{amsfonts} \\usepackage{amssymb} \\usepackage{amsbsy} \\usepackage{mathrsfs} \\usepackage{upgreek} \\setlength{\\oddsidemargin}{-69pt} \\begin{document}$$\\mathcal {G = (V, E, T, X)}$$\\end{document} as a sequence of snapshots \\documentclass[12pt]{minimal} \\usepackage{amsmath} \\usepackage{wasysym} \\usepackage{amsfonts} \\usepackage{amssymb} \\usepackage{amsbsy} \\usepackage{mathrsfs} \\usepackage{upgreek} \\setlength{\\oddsidemargin}{-69pt} \\begin{document}$${\\mathcal {G}} = (G_1, G_2, \\dots , G_{|{\\mathcal {T}}|})$$\\end{document} over a discrete set of timestamps",
+          "title": "A Survey of Link Prediction in Temporal Networks",
+          "url": "http://link.springer.com/openurl/pdf?id=doi:10.1007/s42979-025-04639-1"
+        },
+        {
+          "doi": "10.1007/s42979-025-04639-1",
+          "location": "artifact art_6e0128f41ad58fd336741908 chars:76574-77178",
+          "quote": "DGS is primarily a task-independent representation unit used to integrate historical graph snapshots into one comprehensive weighted snapshot. In the context of TLP, DGS plays a critical role in synthesizing historical network dynamics. DGS collapses successive historical snapshots \\documentclass[12pt]{minimal} \\usepackage{amsmath} \\usepackage{wasysym} \\usepackage{amsfonts} \\usepackage{amssymb} \\usepackage{amsbsy} \\usepackage{mathrsfs} \\usepackage{upgreek} \\setlength{\\oddsidemargin}{-69pt} \\begin{document}$$G^{\\tau }_{\\tau - \\Delta ^{\\prime }}$$\\end{document} into a comprehensive weighted snapshot",
+          "title": "A Survey of Link Prediction in Temporal Networks",
+          "url": "http://link.springer.com/openurl/pdf?id=doi:10.1007/s42979-025-04639-1"
+        },
+        {
+          "doi": "10.1007/s42979-025-04639-1",
+          "location": "artifact art_6e0128f41ad58fd336741908 chars:4484-4630",
+          "quote": "EvolveGCN adopts a sequence of discrete snapshots with RNN-based updates of GCN parameters, which is more suitable for gradually evolving networks",
+          "title": "A Survey of Link Prediction in Temporal Networks",
+          "url": "http://link.springer.com/openurl/pdf?id=doi:10.1007/s42979-025-04639-1"
+        }
+      ],
+      "task_id": "T-R2-2"
+    },
+    {
+      "card_id": "card_74df9c8eb6a211f11fcbf195",
+      "cited_by_paper": null,
+      "confidence": 0.85,
+      "differences": [
+        "TGAT采用自注意力机制和Bochner定理的功能时间编码学习时间特征，而GSAERU采用循环神经网络学习时间依赖",
+        "TGAT基于事件序列建模动态图，而GSAERU将动态图建模为各时刻快照的序列",
+        "TGAT不涉及图摘要压缩或图自编码器重构误差训练，而GSAERU通过图摘要压缩原图并利用重构误差训练节点表征"
+      ],
+      "document_title": "Inductive Representation Learning on Temporal Graphs",
+      "evidence_ids": [
+        "ev_c81f20d85bdfed8769e80b2d",
+        "ev_bdf970acc578bdd78e62909a"
+      ],
+      "main_contribution": "提出TGAT（时序图注意力网络），通过自注意力机制聚合时序拓扑邻域特征并学习时间特征交互，实现时序图上的归纳式表示学习，可处理新节点和已观测节点的嵌入推断。",
+      "novelty_point_id": "NP-1",
+      "overlaps": [
+        "时序图表示学习：两者均关注动态时序图的节点表示学习",
+        "时间依赖建模：两者均旨在捕获图在时间维度上的特征与依赖关系",
+        "动态图建模：两者均处理随时间演化的图结构"
+      ],
+      "possible_baseline": true,
+      "relevance": 0.55,
+      "sources": [
+        {
+          "doi": null,
+          "location": "artifact art_b8b821043e4485fda0b8527c chars:516-687",
+          "quote": "We propose the temporal graph attention (TGAT) layer to efficiently aggregate temporal-topological neighborhood features as well as to learn the time-feature interactions.",
+          "title": "Inductive Representation Learning on Temporal Graphs",
+          "url": "https://arxiv.org/pdf/2002.07962"
+        },
+        {
+          "doi": null,
+          "location": "artifact art_b8b821043e4485fda0b8527c chars:138-252",
+          "quote": "The evolving nature of temporal dynamic graphs requires handling new nodes as well as capturing temporal patterns.",
+          "title": "Inductive Representation Learning on Temporal Graphs",
+          "url": "https://arxiv.org/pdf/2002.07962"
+        }
+      ],
+      "task_id": "T-R2-1"
+    },
+    {
+      "card_id": "card_2d5d8bebb7092fe9121c99c1",
+      "cited_by_paper": null,
+      "confidence": 0.85,
+      "differences": [
+        "TGN将动态图表示为带时间戳的事件序列，而GSAERU将动态图建模为各时刻快照的序列",
+        "TGN使用记忆模块和图算子学习时间依赖，而GSAERU使用循环神经网络",
+        "TGN不涉及图摘要压缩或图自编码器重构误差训练，而GSAERU通过图摘要压缩原图并利用重构误差训练节点表征"
+      ],
+      "document_title": "Temporal Graph Networks for Deep Learning on Dynamic Graphs",
+      "evidence_ids": [
+        "ev_169a215d64b7bfc913cbe317",
+        "ev_f715ca23038c6dc9cb353167"
+      ],
+      "main_contribution": "提出TGN（时序图网络），一种通用的动态图深度学习框架，将动态图表示为带时间戳的事件序列，结合记忆模块和图算子实现高效的时间依赖建模。",
+      "novelty_point_id": "NP-1",
+      "overlaps": [
+        "时序图表示学习：两者均关注动态图的表示学习",
+        "时间依赖建模：两者均旨在捕获图的时间演化特征",
+        "大规模动态图处理：两者均面向实际动态网络的高效学习"
+      ],
+      "possible_baseline": true,
+      "relevance": 0.5,
+      "sources": [
+        {
+          "doi": null,
+          "location": "artifact art_ea01d9c5f48ad68092a07bf7 chars:505-671",
+          "quote": "In this paper, we present Temporal Graph Networks (TGNs), a generic, efficient framework for deep learning on dynamic graphs represented as sequences of timed events.",
+          "title": "Temporal Graph Networks for Deep Learning on Dynamic Graphs",
+          "url": "https://arxiv.org/pdf/2006.10637"
+        },
+        {
+          "doi": null,
+          "location": "artifact art_ea01d9c5f48ad68092a07bf7 chars:672-863",
+          "quote": "Thanks to a novel combination of memory modules and graph-based operators, TGNs are able to significantly outperform previous approaches being at the same time more computationally efficient.",
+          "title": "Temporal Graph Networks for Deep Learning on Dynamic Graphs",
+          "url": "https://arxiv.org/pdf/2006.10637"
+        }
+      ],
+      "task_id": "T-R2-1"
+    },
+    {
+      "card_id": "card_1800ebe9811ad96dfd604571",
+      "cited_by_paper": null,
+      "confidence": 0.8,
+      "differences": [
+        "Uses parameter server architecture rather than leader-worker mode",
+        "Uses k-hop neighborhood subgraph generation rather than graph summarization",
+        "Does not use edge-based graph flow partition algorithm",
+        "Does not return results through an attention layer"
+      ],
+      "document_title": "AGL: a Scalable System for Industrial-purpose Graph Machine Learning",
+      "evidence_ids": [
+        "ev_b7b4fad215d16317933950b2"
+      ],
+      "main_contribution": "AGL is a scalable, fault-tolerant and integrated distributed system for GNN training and inference, generating k-hop neighborhood subgraphs and training on parameter servers.",
+      "novelty_point_id": "NP-2",
+      "overlaps": [
+        "Addresses distributed GNN training at scale (object concept C1)",
+        "Uses subgraph-based mini-batch training on distributed nodes"
+      ],
+      "possible_baseline": false,
+      "relevance": 0.4,
+      "sources": [
+        {
+          "doi": null,
+          "location": "artifact art_6f98816ebc9005d24844fdfd chars:1021-1326",
+          "quote": "we design AGL, a scalable, fault-tolerance and integrated system, with fully-functional training and inference for GNNs. Our system design follows the message passing scheme underlying the computations of GNNs. We design to generate the $k$-hop neighborhood, an information-complete subgraph for each node",
+          "title": "AGL: a Scalable System for Industrial-purpose Graph Machine Learning",
+          "url": "https://arxiv.org/pdf/2003.02454"
+        }
+      ],
+      "task_id": "T-2"
+    },
+    {
+      "card_id": "card_396b3a2c53a363562c5987e7",
+      "cited_by_paper": null,
+      "confidence": 0.8,
+      "differences": [
+        "Does not use graph summarization technology for mini-batch training",
+        "Does not adopt a leader-worker mode with edge-based graph flow partition",
+        "Does not return training results through an attention layer",
+        "Does not describe synchronous model updates aggregated by a leader node"
+      ],
+      "document_title": "AliGraph: A Comprehensive Graph Neural Network Platform",
+      "evidence_ids": [
+        "ev_5679a77fe3c2a290a816a4e2"
+      ],
+      "main_contribution": "AliGraph is a comprehensive distributed graph neural network platform with distributed graph storage, optimized sampling operators and runtime to support GNN training at scale (billions of edges).",
+      "novelty_point_id": "NP-2",
+      "overlaps": [
+        "Addresses distributed GNN training on large-scale graph data (object concept C1)",
+        "Uses distributed graph storage and optimized sampling for efficient GNN training"
+      ],
+      "possible_baseline": false,
+      "relevance": 0.4,
+      "sources": [
+        {
+          "doi": null,
+          "location": "artifact art_d88778158223021b818fdd97 chars:649-931",
+          "quote": "we present a comprehensive graph neural network system, namely AliGraph, which consists of distributed graph storage, optimized sampling operators and runtime to efficiently support not only existing popular GNNs but also a series of in-house developed ones for different scenarios.",
+          "title": "AliGraph: A Comprehensive Graph Neural Network Platform",
+          "url": "https://arxiv.org/pdf/1902.08730"
+        }
+      ],
+      "task_id": "T-2"
+    },
+    {
+      "card_id": "card_39178e2c52bbe5b9a438021d",
+      "cited_by_paper": null,
+      "confidence": 0.75,
+      "differences": [
+        "BGPA does not use edge-based partitioning; it is a balanced (vertex-oriented) partitioning approach",
+        "BGPA does not address streaming graph data or graph flow partitioning",
+        "BGPA focuses on balancing computational/communication costs rather than adapting to graph irregularity"
+      ],
+      "document_title": "A Graph Partitioning Optimization Method for Distributed GNN Training",
+      "evidence_ids": [
+        "ev_94697529a5a988f800fc3188",
+        "ev_1fa25594c22737da5e0cfd4b"
+      ],
+      "main_contribution": "BGPA proposes a balanced graph partitioning algorithm for distributed GNN training, aiming to balance computational and communication costs and equalize memory utilization among computing nodes.",
+      "novelty_point_id": "NP-3",
+      "overlaps": [
+        "Graph partitioning for distributed GNN training",
+        "Partitions the graph into subgraphs for distributed training"
+      ],
+      "possible_baseline": false,
+      "relevance": 0.6,
+      "sources": [
+        {
+          "doi": "10.1007/978-981-96-1904-7_11",
+          "location": "artifact art_616a5655c89a1873fabe0f48 chars:399-578",
+          "quote": "High-quality graph partitioning aims to minimize inter-subgraph connections while balancing computational and memory loads across partitions, thereby enhancing training efficiency",
+          "title": "A Graph Partitioning Optimization Method for Distributed GNN Training",
+          "url": "http://link.springer.com/openurl/fulltext?id=doi:10.1007/978-981-96-1904-7_11"
+        },
+        {
+          "doi": "10.1007/978-981-96-1904-7_11",
+          "location": "artifact art_616a5655c89a1873fabe0f48 chars:774-980",
+          "quote": "we propose a novel Balanced Graph Partitioning Algorithm (BGPA), designed to achieve an optimal balance between computational and communication costs and to equalize memory utilization among computing nodes",
+          "title": "A Graph Partitioning Optimization Method for Distributed GNN Training",
+          "url": "http://link.springer.com/openurl/fulltext?id=doi:10.1007/978-981-96-1904-7_11"
+        }
+      ],
+      "task_id": "T-2"
+    },
+    {
+      "card_id": "card_7892a8e0f2320fcdeccef0c8",
+      "cited_by_paper": null,
+      "confidence": 0.8,
+      "differences": [
+        "G-SPAC does not target streaming graph data or graph flow partitioning",
+        "G-SPAC is not specifically designed for distributed GNN training",
+        "G-SPAC focuses on general graph computation partitioning rather than GNN subgraph provisioning"
+      ],
+      "document_title": "G-SPAC: a more granular greedy graph partition algorithm with spatial locality and judgment-aware edge folding",
+      "evidence_ids": [
+        "ev_a5867f2a61f684ca28e37686",
+        "ev_112c38ec83fa17ec47436e75"
+      ],
+      "main_contribution": "G-SPAC proposes a graph edge partitioning algorithm that transforms the graph so vertex partitioning methods can be applied, using degree-and-spatial-locality priority and judgment-aware edge folding to balance partition quality and reduce vertex copies.",
+      "novelty_point_id": "NP-3",
+      "overlaps": [
+        "Edge-based graph partitioning method (edge segmentation/edge partitioning)",
+        "Partitions the graph into multiple subgraphs",
+        "Adapts to graph data irregularity via degree and spatial locality considerations"
+      ],
+      "possible_baseline": true,
+      "relevance": 0.75,
+      "sources": [
+        {
+          "doi": "10.1007/s11432-023-3916-0",
+          "location": "artifact art_f37fa6190432cba0cda07d68 chars:451-601",
+          "quote": "which is a graph edge partitioning algorithm that transforms the graph so that the vertex partitioning methods can be applied to the transformed graph",
+          "title": "G-SPAC: a more granular greedy graph partition algorithm with spatial locality and judgment-aware edge folding",
+          "url": "http://link.springer.com/openurl/fulltext?id=doi:10.1007/s11432-023-3916-0"
+        },
+        {
+          "doi": "10.1007/s11432-023-3916-0",
+          "location": "artifact art_f37fa6190432cba0cda07d68 chars:725-866",
+          "quote": "the method of degree-and-spatial-locality priority is designed so that adjacent vertices are more accessible to divide into the same subgraph",
+          "title": "G-SPAC: a more granular greedy graph partition algorithm with spatial locality and judgment-aware edge folding",
+          "url": "http://link.springer.com/openurl/fulltext?id=doi:10.1007/s11432-023-3916-0"
+        }
+      ],
+      "task_id": "T-2"
+    },
+    {
+      "card_id": "card_be804ac694daf99bf090babf",
+      "cited_by_paper": null,
+      "confidence": 0.7,
+      "differences": [
+        "LocalDGP is vertex-based (degree-balanced node partitioning), not edge-based partitioning",
+        "LocalDGP targets GNN subgraph sampling rather than distributed GNN training",
+        "LocalDGP does not address streaming graph data or graph flow partitioning explicitly"
+      ],
+      "document_title": "LocalDGP: local degree-balanced graph partitioning for lightweight GNNs",
+      "evidence_ids": [
+        "ev_5d0d99c478d3e3acea22c481",
+        "ev_9a8713875f470ee409554697"
+      ],
+      "main_contribution": "LocalDGP proposes a local degree-balanced graph partitioning algorithm that uses only local graph information to partition nodes into subgraphs for GNN training, reducing memory consumption while preserving subgraph structure consistency.",
+      "novelty_point_id": "NP-3",
+      "overlaps": [
+        "Partitions the graph into multiple subgraphs for GNN training",
+        "Uses local graph information (relevant to streaming/online partitioning)"
+      ],
+      "possible_baseline": false,
+      "relevance": 0.55,
+      "sources": [
+        {
+          "doi": "10.1007/s10489-024-05964-3",
+          "location": "artifact art_eeedbae60916c967cc43d98c chars:268-428",
+          "quote": "subgraph sampling methods divide the graph into multiple subgraphs and then train the GNN on each subgraph sequentially, which can reduce GPU memory consumption",
+          "title": "LocalDGP: local degree-balanced graph partitioning for lightweight GNNs",
+          "url": "http://link.springer.com/openurl/fulltext?id=doi:10.1007/s10489-024-05964-3"
+        },
+        {
+          "doi": "10.1007/s10489-024-05964-3",
+          "location": "artifact art_eeedbae60916c967cc43d98c chars:1111-1224",
+          "quote": "only the local graph information is acquired during the partitioning process, which can reduce memory consumption",
+          "title": "LocalDGP: local degree-balanced graph partitioning for lightweight GNNs",
+          "url": "http://link.springer.com/openurl/fulltext?id=doi:10.1007/s10489-024-05964-3"
+        }
+      ],
+      "task_id": "T-2"
+    }
+  ],
+  "integrity_rejected_card_ids": [],
+  "issues": [],
+  "rejected_evidence": [],
+  "synthesis_integrity": {
+    "accepted_card_count": 8,
+    "accepted_card_ids": [
+      "card_296616b76867b0338c6d090f",
+      "card_74df9c8eb6a211f11fcbf195",
+      "card_2d5d8bebb7092fe9121c99c1",
+      "card_1800ebe9811ad96dfd604571",
+      "card_396b3a2c53a363562c5987e7",
+      "card_39178e2c52bbe5b9a438021d",
+      "card_7892a8e0f2320fcdeccef0c8",
+      "card_be804ac694daf99bf090babf"
+    ],
+    "checked_card_count": 8,
+    "rejected_card_count": 0,
+    "rejected_card_ids": [],
+    "rejected_cards": [],
+    "validation_passed": true
+  }
+}

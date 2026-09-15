@@ -1,0 +1,24 @@
+- **NP-1**
+  - `("dynamic sequential graph" OR "temporal graph" OR "dynamic graph") AND ("graph summarization" OR "graph compression")`（springer；有命中）
+  - `("dynamic sequential graph" OR "temporal graph" OR "dynamic graph") AND ("graph summarization" OR "graph compression")`（springer；有命中）
+  - `(ti:"dynamic sequential graph" OR ti:"temporal graph" OR ti:"dynamic graph") AND (abs:"graph summarization" OR abs:"graph compression")`（arxiv；执行失败）
+  - `(ti:"dynamic sequential graph" OR ti:"temporal graph" OR ti:"dynamic graph") AND (abs:"graph summarization" OR abs:"graph compression")`（arxiv；执行失败）
+  - `("图摘要" OR "图自编码器" OR "循环神经网络") AND ("时序图" OR "动态图" OR "图快照") AND ("图表示学习" OR "节点表征" OR "低维表征")`（springer；执行失败）
+  - `(abs:"图摘要" OR abs:"图自编码器" OR abs:"循环神经网络") AND (ti:"时序图" OR ti:"动态图" OR ti:"图快照") AND (abs:"图表示学习" OR abs:"节点表征" OR abs:"低维表征")`（arxiv；执行失败）
+- **NP-2**
+  - `"distributed graph neural network training" AND "graph summarization" AND "graph partitioning" AND "leader worker mode"`（springer；执行失败）
+  - `ti:distributed AND ti:graph AND ti:neural AND ti:network AND ti:training AND abs:"graph summarization" AND abs:"graph partitioning" AND abs:"leader worker mode"`（arxiv；执行失败）
+  - `(abs:"分布式图神经网络训练" OR abs:"图神经网络优化训练") AND (abs:"图摘要" OR abs:"图摘要技术") AND (abs:"图流划分算法" OR abs:"边分割图流划分") AND (abs:"领导者工作者模式" OR abs:"领导节点工作节点")`（arxiv；执行失败）
+  - `("分布式图神经网络训练" OR "图神经网络优化训练") AND ("图摘要" OR "图摘要技术") AND ("图流划分算法" OR "边分割图流划分") AND ("领导者工作者模式" OR "领导节点工作节点")`（springer；执行失败）
+- **NP-3**
+  - `("edge-based graph partitioning" OR "edge-based graph stream partitioning" OR "edge-cut partitioning")`（springer；有命中）
+  - `(abs:"edge-based graph partitioning" OR abs:edge-based AND abs:graph AND abs:stream AND abs:partitioning OR abs:"edge-cut partitioning")`（arxiv；执行失败）
+  - `(abs:"edge-based graph partitioning" OR abs:edge-based AND abs:graph AND abs:stream AND abs:partitioning OR abs:"edge-cut partitioning")`（arxiv；执行失败）
+  - `(abs:"边分割" OR abs:"边划分" OR abs:"基于边的图分割") AND (ti:"图流" OR ti:"图数据流" OR ti:"流式图") AND (abs:"图划分算法" OR abs:"子图划分" OR abs:"分布式图划分")`（arxiv；执行失败）
+  - `("边分割" OR "边划分" OR "基于边的图分割") AND ("图流" OR "图数据流" OR "流式图") AND ("图划分算法" OR "子图划分" OR "分布式图划分")`（springer；执行失败）
+  - `abs:"edge-based graph partitioning" AND abs:"distributed graph partitioning"`（arxiv；执行失败）
+  - `"edge-based graph partitioning" AND "distributed graph partitioning"`（springer；执行失败）
+  - `abs:"edge-based graph partitioning" AND abs:"distributed graph partitioning"`（arxiv；执行失败）
+  - `"edge-based graph partitioning" AND "distributed graph partitioning"`（springer；执行失败）
+  - `("边分割" OR "边划分" OR "基于边的分割") AND ("图流" OR "图数据流" OR "流式图") AND ("图划分算法" OR "图分割算法" OR "子图划分")`（springer；执行失败）
+  - `(abs:"边分割" OR abs:"边划分" OR abs:"基于边的分割") AND (ti:"图流" OR ti:"图数据流" OR ti:"流式图") AND (abs:"图划分算法" OR abs:"图分割算法" OR abs:"子图划分")`（arxiv；执行失败）

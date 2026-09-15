@@ -1,0 +1,329 @@
+diff --git a/backend/src/novelty_agent_framework/agents/evidence_reviewer.py b/backend/src/novelty_agent_framework/agents/evidence_reviewer.py
+index 5026518..35771db 100644
+--- a/backend/src/novelty_agent_framework/agents/evidence_reviewer.py
++++ b/backend/src/novelty_agent_framework/agents/evidence_reviewer.py
+@@ -427,6 +427,9 @@ def _fallback_point_system_prompt() -> str:
+         "你是查新点级信息判定 Agent。只依据输入 EvidenceCard、Evidence 和 reader "
+         "回读结果综合多个 Work；不得搜索或使用模型记忆补充事实。证据充分时输出 "
+         "NoveltyPointReview；证据不足时输出 insufficient_evidence，不能猜测。"
++        "区分 database_evidence 与 web_supplement_evidence，保留 source_kind=web_supplement。"
++        "网页补充默认是数据库覆盖不足后的辅助证据；外部上下文任务可独立使用，但不能证明数据库覆盖充分。"
++        "类型未知时不得猜测，LLM summary 是派生信息，不能作为原始 Evidence。"
+     )
+ 
+ 
+diff --git a/backend/src/novelty_agent_framework/prompts/coordinator/supplement.md b/backend/src/novelty_agent_framework/prompts/coordinator/supplement.md
+index b28e051..484b8dd 100644
+--- a/backend/src/novelty_agent_framework/prompts/coordinator/supplement.md
++++ b/backend/src/novelty_agent_framework/prompts/coordinator/supplement.md
+@@ -1,9 +1,10 @@
+ ---
+ name: coordinator.plan_supplement
+-version: 2
++version: 3
+ system: |
+   你是论文查新 Multi-Agent 系统的 Coordinator，只负责根据最终有效 EvidenceCard 数量低于系统门槛的事实规划新的 ResearchTask。
+   你不能修改查新点，不能生成检索词、SearchPlan、数据库查询语法、候选文献、DOI、URL 或证据位置。
++  你只能生成系统启用语言的 ResearchTask；已被关闭的语言不得出现在输出中。
+   你的输出必须严格符合调用方要求的 JSON schema。
+ ---
+ 请只针对给定的最终有效 EvidenceCard 数量不足事实生成本轮 ResearchTask 列表。
+@@ -11,7 +12,7 @@ system: |
+ 要求：
+ 1. novelty_point_id 只能引用现有规划中的查新点；
+ 2. 根据数量不足事实选择 task_type，优先使用 literature_search、feature_supplement 或 language_supplement；
+-3. language 使用 zh 或 en；若需要两种语言，分别生成任务；
++3. language 只能从系统启用语言 ["zh", "en"] 中取值；同一查新点需要多种启用语言时分别生成任务；
+ 4. description 明确说明本轮为什么查、需要补足什么；
+ 5. 不得新增、删除或改写 NoveltyPoint；
+ 6. 不得生成检索词、同义词、布尔表达式、SearchPlan 或数据库专用语法；
+diff --git a/backend/src/novelty_agent_framework/prompts/coordinator/synthesize.md b/backend/src/novelty_agent_framework/prompts/coordinator/synthesize.md
+index d004e28..f8958b5 100644
+--- a/backend/src/novelty_agent_framework/prompts/coordinator/synthesize.md
++++ b/backend/src/novelty_agent_framework/prompts/coordinator/synthesize.md
+@@ -1,15 +1,21 @@
+ ---
+ name: coordinator.synthesize
+-version: 2
++version: 3
+ system: |
+   你是论文查新 Multi-Agent 系统的 Coordinator，负责组织最终报告表达。
+   Reviewer 是新颖性裁定的唯一权威来源。你不得修改 review_status、verdict、verdict_reason、confidence 或 highly_relevant_works，只能逐字段原样复制；你只负责 summary、证据卡分组、limitations 等报告表达。
+   每个结论必须基于可追溯的 EvidenceCard，不得编造文献、DOI、URL 或证据位置；证据不足时必须明确说明检索范围和局限。
++  仅在输入包含明确的检索执行事实时区分检索失败与成功零命中；缺少覆盖事实时必须说明检索覆盖未知，不得由卡片数推断来源执行成功。
+   你的输出必须严格符合调用方要求的 JSON schema。
+ ---
+ 请基于有效 EvidenceCard 生成最终 NoveltyReport JSON。每个结论必须绑定 supporting_card_ids 或明确标记证据不足，不得编造文献。
+ 
+-最终有效 Card 数量低于门槛时，只能表述为“最终证据不足”。0 Card 也是证据不足的一种，不得仅根据该检查推断“未检索到相关文献”。若存在被拒绝证据（rejected_evidence 非空），应把拒绝原因写入 limitations，并说明是技术性质疑或格式性拒绝。
++limitations 必须区分以下三种情形，不得混为一谈：
++1. 检索失败：检索覆盖事实显示必要来源执行失败或未执行，此时写明“检索未能形成有效结果”，并指出失败的来源，不得写成“未检索到相关文献”；
++2. 检索成功但零命中：必要来源全部成功执行且没有命中记录，可以表述为“在本次检索范围内未见相关文献报道”，但仍须说明检索范围；
++3. 有命中但未形成有效证据：命中了候选文献但未通过证据门控，应说明门控拒绝的原因，不得写成“未检索到”。
++
++若存在被拒绝证据（rejected_evidence 非空），应把拒绝原因写入 limitations，并说明是技术性质疑或格式性拒绝。
+ 
+ 输入数据：
+ {paper_json}
+diff --git a/backend/src/novelty_agent_framework/prompts/research/native_tool_loop.md b/backend/src/novelty_agent_framework/prompts/research/native_tool_loop.md
+index 5c7ebab..d1f0b31 100644
+--- a/backend/src/novelty_agent_framework/prompts/research/native_tool_loop.md
++++ b/backend/src/novelty_agent_framework/prompts/research/native_tool_loop.md
+@@ -1,24 +1,32 @@
+ ---
+ name: research/native_tool_loop
+-version: 2
++version: 4
+ system: |
+   You are the formal Researcher for one bounded research task.
+   Use only tools present in the registered tool definitions. Never guess an
+   unlisted database source_id; use only source_id values stated in the
+   database_search tool description.
+   Call at most one tool in each assistant response; wait for its result before the next call.
+-  Retrieval strategy:
+-  - When reference_search is available, inspect the paper author's own reference
+-    corpus first. This is a recall priority only and does not increase evidence weight.
+-  - Prefer database_search as the primary discovery tool when it is likely to
+-    provide relevant scholarly sources.
+-  - If database_search returns insufficient, weak, unavailable, or unusable
+-    candidates, use web_search to broaden recall.
+-  - For Chinese-language research tasks, increase the priority of web_search
+-    because the configured scholarly databases may have limited Chinese coverage.
+-    Web search may be the primary discovery path, while database_search remains
+-    available as a supplement.
++  Core responsibility:
++  - Gather traceable source evidence for the assigned novelty point and task,
++    compare technical overlap and differences, and expose coverage limitations.
++    The Reviewer owns novelty adjudication; do not make a global novelty conclusion.
++  - Apply database_research as the default skill for all task languages.
++    Main path: Database -> source artifact -> text -> Reader -> Evidence.
++  - When reference_search is available, inspect the author's reference corpus first
++    as a recall aid only; it neither replaces database coverage nor increases weight.
++  - Rely on database_search for scholarly discovery. Revise queries within the
++    supplied SearchPlan and remaining budget when appropriate; do not loop on an
++    unavailable provider or displace readable candidates with repeated discovery.
++  - Enter web_supplement only for an observed DATABASE_UNAVAILABLE, DATABASE_EMPTY,
++    FULLTEXT_UNAVAILABLE, DATABASE_EVIDENCE_INSUFFICIENT, or an explicit
++    TASK_REQUIRES_EXTERNAL_CONTEXT. Language alone is not a trigger.
++    Explain the trigger from tool observations or the assigned task before searching.
+   - Search results and snippets are discovery metadata, not evidence.
++  - Prefer source originals and extracted source text over summaries. LLM summaries
++    are derived information, never original Evidence, even when exposed by Reader.
++  - Web materials retain source_kind=web_supplement. The workflow binds provenance;
++    do not author evidence_type or source_kind in the finish draft.
+   Acquisition and evaluation policy:
+   - When browser is registered, after each successful web_search, select one returned SourceRecord and inspect
+     it with browser before issuing another web_search.
+diff --git a/backend/src/novelty_agent_framework/prompts/reviewer/review_evidence.md b/backend/src/novelty_agent_framework/prompts/reviewer/review_evidence.md
+index f38bedf..b421a07 100644
+--- a/backend/src/novelty_agent_framework/prompts/reviewer/review_evidence.md
++++ b/backend/src/novelty_agent_framework/prompts/reviewer/review_evidence.md
+@@ -1,7 +1,13 @@
+ ---
+ name: reviewer.review_evidence
+-version: 3
++version: 4
+ system: |
++  区分来源已绑定的 database_evidence 与 web_supplement_evidence；缺少类型时按来源未知处理，
++  不得自行推定为数据库证据。网页材料的 source_kind=web_supplement 必须保留。
++  网页补充默认是数据库证据覆盖不足后的辅助证据，不代表数据库检索已充分完成；
++  明确要求外部上下文的任务可以独立使用网页材料，但不能据此推断学术检索覆盖完整。
++  按原文对具体判断的支撑程度审查，不因 Web 类型自动拒绝，也不将其提升为数据库覆盖证明。
++  LLM summary 是派生信息，不是原始 Evidence；不得用其代替可追溯原文作事实裁定。
+   你是论文查新系统的查新点级信息判定 Agent，而不是 EvidenceCard 过滤器。
+ 
+   你会收到一个 NoveltyPoint、属于它的 ResearchTask、多个 EvidenceCard，以及这些
+diff --git a/backend/src/novelty_agent_framework/prompts/reviewer/review_evidence_candidate.md b/backend/src/novelty_agent_framework/prompts/reviewer/review_evidence_candidate.md
+index 2fb67be..902bc63 100644
+--- a/backend/src/novelty_agent_framework/prompts/reviewer/review_evidence_candidate.md
++++ b/backend/src/novelty_agent_framework/prompts/reviewer/review_evidence_candidate.md
+@@ -1,7 +1,13 @@
+ ---
+ name: reviewer.review_evidence_candidate
+-version: 1
++version: 2
+ system: |
++  区分来源已绑定的 database_evidence 与 web_supplement_evidence；缺少类型时按来源未知处理，
++  不得自行推定为数据库证据。网页材料的 source_kind=web_supplement 必须保留。
++  网页补充默认是数据库证据覆盖不足后的辅助证据，不代表数据库检索已充分完成；
++  明确要求外部上下文的任务可以独立使用网页材料，但不能据此推断学术检索覆盖完整。
++  按原文对具体判断的支撑程度审查，不因 Web 类型自动拒绝，也不将其提升为数据库覆盖证明。
++  LLM summary 是派生信息，不是原始 Evidence；不得用其代替可追溯原文作事实裁定。
+   你是论文查新系统的证据审查 Agent，只检查输入 EvidenceCard 的语义与证据一致性。
+   不得修改 EvidenceCard，不得创造 DOI、URL、引文、页码或论文事实，不使用模型记忆。
+   这是待 benchmark 验证的候选审查标准。
+diff --git a/backend/src/novelty_agent_framework/schemas/references.py b/backend/src/novelty_agent_framework/schemas/references.py
+index 99b4bac..07df5e6 100644
+--- a/backend/src/novelty_agent_framework/schemas/references.py
++++ b/backend/src/novelty_agent_framework/schemas/references.py
+@@ -43,7 +43,8 @@ class PublicationStage(StrEnum):
+ 
+ class SourceKind(StrEnum):
+     STRUCTURED_DATABASE = "structured_database"
+-    WEB = "web"
++    WEB = "web"  # Legacy manifests remain readable.
++    WEB_SUPPLEMENT = "web_supplement"
+     LOCAL = "local"
+     USER_UPLOAD = "user_upload"
+ 
+diff --git a/backend/src/novelty_agent_framework/tools/browser.py b/backend/src/novelty_agent_framework/tools/browser.py
+index 181b664..7e44087 100644
+--- a/backend/src/novelty_agent_framework/tools/browser.py
++++ b/backend/src/novelty_agent_framework/tools/browser.py
+@@ -8,6 +8,7 @@ from datetime import datetime, timezone
+ 
+ from ..persistence import ReferenceStore
+ from ..schemas import (
++    SourceKind,
+     AccessStatus,
+     Artifact,
+     ArtifactRole,
+@@ -95,6 +96,8 @@ class BrowserTool:
+             extraction_warnings=list(fetched.warnings),
+             provenance={
+                 "tool": self.name,
++                "source_kind": "web_supplement",
++                "content_origin": "source_text",
+                 "backend": self.backend.name,
+                 "run_id": scope.run_id,
+                 "requested_url": fetched.requested_url,
+@@ -114,6 +117,7 @@ class BrowserTool:
+             update={
+                 "work_id": work_id,
+                 "access_status": AccessStatus.FULL_TEXT_ACQUIRED,
++                "source_kind": SourceKind.WEB_SUPPLEMENT,
+             }
+         )
+         # 在锁内重新读取再合并：fetch 期间其它并发任务可能已经写入 manifest，
+diff --git a/backend/src/novelty_agent_framework/tools/evidence_card_builder.py b/backend/src/novelty_agent_framework/tools/evidence_card_builder.py
+index 8d0da17..d7b60dd 100644
+--- a/backend/src/novelty_agent_framework/tools/evidence_card_builder.py
++++ b/backend/src/novelty_agent_framework/tools/evidence_card_builder.py
+@@ -170,6 +170,8 @@ class EvidenceCardBuilder:
+             artifact = index.artifacts.get(read.artifact_id)
+             if artifact is None:
+                 raise ValueError(f"missing Artifact {read.artifact_id}")
++            if artifact.provenance.get("content_origin") == "llm_summary":
++                continue  # A generated summary cannot become original Evidence via Reader.
+             if artifact.work_id != read.work_id:
+                 raise ValueError(
+                     f"Artifact.work_id mismatch for {read.artifact_id}"
+@@ -251,6 +253,7 @@ class EvidenceCardBuilder:
+                 interpretation=quote.interpretation,
+                 confidence=quote.confidence,
+                 provenance={
++                    **_evidence_source_labels(persisted_artifact, record),
+                     "builder": "evidence_card_builder",
+                     "artifact_namespace": namespace.value,
+                     "read_id": read.read_id,
+@@ -285,6 +288,18 @@ class EvidenceCardBuilder:
+         return evidence, sources
+ 
+ 
++def _evidence_source_labels(artifact: Artifact, record: SourceRecord | None) -> dict[str, str]:
++    # Acquisition lineage takes precedence over a work's bibliographic identity.
++    kind = record.source_kind.value if record is not None else "unknown"
++    if (artifact.provenance.get("source_kind") == "web_supplement"
++            or artifact.provenance.get("tool") == "browser"
++            or kind in {"web", "web_supplement"}):
++        return {"source_kind": "web_supplement", "evidence_type": "web_supplement_evidence"}
++    if kind == "structured_database":
++        return {"source_kind": kind, "evidence_type": "database_evidence"}
++    return {"source_kind": kind, "evidence_type": "unknown"}
++
++
+ def _quote_matches(quote: str, text: str) -> bool:
+     return quote in text or _normalize_whitespace(quote) in _normalize_whitespace(text)
+ 
+diff --git a/backend/src/novelty_agent_framework/tools/web_search.py b/backend/src/novelty_agent_framework/tools/web_search.py
+index 1c9170c..ea47ecc 100644
+--- a/backend/src/novelty_agent_framework/tools/web_search.py
++++ b/backend/src/novelty_agent_framework/tools/web_search.py
+@@ -194,7 +194,7 @@ def _source_record(
+         "source_record_id": source_record_id,
+         "work_id": current.work_id if current is not None else None,
+         "source_id": backend_name,
+-        "source_kind": SourceKind.WEB,
++        "source_kind": SourceKind.WEB_SUPPLEMENT,
+         "external_id": (
+             hit.external_id
+             if hit.external_id is not None
+diff --git a/backend/src/novelty_agent_framework/workflows/research_task.py b/backend/src/novelty_agent_framework/workflows/research_task.py
+index ccef9a8..13acbef 100644
+--- a/backend/src/novelty_agent_framework/workflows/research_task.py
++++ b/backend/src/novelty_agent_framework/workflows/research_task.py
+@@ -4,6 +4,7 @@ from __future__ import annotations
+ 
+ import json
+ import re
++from pathlib import Path
+ from dataclasses import dataclass, field, replace
+ 
+ from backend.env import ChatMessage, ModelCallOptions, ModelClient, PromptLibrary
+@@ -240,13 +241,21 @@ class TaskResearcherWorkflow:
+         }
+         if self.prompts is not None:
+             rendered = self.prompts.render(self.config.prompt_name, **variables)
+-            return rendered.system, rendered.user + "\n\n" + self._capability_note()
++            return rendered.system + self._research_skills(), rendered.user + "\n\n" + self._capability_note()
+         return (
+             "Use only registered tools. Finish with strict ResearchFinishDraft JSON. "
+-            "Never invent provenance handles.",
++            "Never invent provenance handles." + self._research_skills(),
+             "\n".join(f"{key}: {value}" for key, value in variables.items()) + "\n" + self._capability_note(),
+         )
+ 
++    @staticmethod
++    def _research_skills() -> str:
++        root = Path(__file__).resolve().parents[1] / "skills"
++        return "\n\n" + "\n\n".join(
++            (root / name / "SKILL.md").read_text(encoding="utf-8").split("---", 2)[-1].strip()
++            for name in ("database_research", "web_supplement")
++        )
++
+     def _capability_note(self):
+         names = self.tools.names
+         note = "Available tools: " + ", ".join(names) + ". "
+diff --git a/tests/test_evidence_card_builder.py b/tests/test_evidence_card_builder.py
+index 72a0a9f..5d224a7 100644
+--- a/tests/test_evidence_card_builder.py
++++ b/tests/test_evidence_card_builder.py
+@@ -182,6 +182,8 @@ def test_single_quote_builds_trusted_card_and_evidence(tmp_path) -> None:
+     assert (evidence.work_id, evidence.artifact_id) == ("wrk_a", "art_a")
+     assert evidence.locator == EvidenceLocator(char_start=0, char_end=19)
+     assert evidence.provenance == {
++        "source_kind": "web_supplement",
++        "evidence_type": "web_supplement_evidence",
+         "builder": "evidence_card_builder",
+         "artifact_namespace": "research_reference",
+         "read_id": "read_wrk_a",
+diff --git a/tests/test_researcher_prompt_policy.py b/tests/test_researcher_prompt_policy.py
+index c15f987..7d2046d 100644
+--- a/tests/test_researcher_prompt_policy.py
++++ b/tests/test_researcher_prompt_policy.py
+@@ -22,9 +22,9 @@ def render_prompt():
+ def test_researcher_prompt_renders_attempt3_retrieval_policy() -> None:
+     rendered = render_prompt()
+ 
+-    assert rendered.version == "2"
+-    assert "Prefer database_search as the primary discovery tool" in rendered.system
+-    assert "For Chinese-language research tasks" in rendered.system
++    assert rendered.version == "4"
++    assert "Rely on database_search for scholarly discovery" in rendered.system
++    assert "Language alone is not a trigger" in rendered.system
+     assert "Search results and snippets are discovery metadata, not evidence" in rendered.system
+     assert "Never issue consecutive web_search calls" in rendered.system
+     assert "Never guess an\nunlisted database source_id" in rendered.system
+diff --git a/tests/test_web_search_core.py b/tests/test_web_search_core.py
+index 0f2da92..749b03c 100644
+--- a/tests/test_web_search_core.py
++++ b/tests/test_web_search_core.py
+@@ -127,7 +127,7 @@ def test_metadata_arguments_items_persistence_and_warnings(tmp_path) -> None:
+     manifest = store.load_manifest("paper-1")
+     record = manifest.source_records[0]
+     assert record.source_record_id == item["source_record_id"]
+-    assert record.source_kind is SourceKind.WEB
++    assert record.source_kind is SourceKind.WEB_SUPPLEMENT
+     assert record.source_id == backend.name
+     assert record.landing_url == "https://Example.test/paper#abstract"
+     assert record.access_status is AccessStatus.DISCOVERED
