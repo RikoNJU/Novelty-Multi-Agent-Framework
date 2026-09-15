@@ -109,9 +109,13 @@ class _Browser:
 class _Chromium:
     def __init__(self):
         self.browser = _Browser()
+        self.launch_kwargs = {}
 
-    async def launch(self, *, headless):
+    async def launch(self, *, headless, **launch_kwargs):
         assert headless is True
+        # Network/runtime option construction is covered by test_browser_runtime;
+        # this fetch test only needs a Playwright-compatible launch double.
+        self.launch_kwargs = launch_kwargs
         return self.browser
 
 
