@@ -15,14 +15,17 @@ from ..schemas import (
     TaskResearchRequest,
 )
 from .reference_reader import ReferenceArtifactReaderTool
+from ..schemas.research_tools import ReaderCallArguments
 
 
 class ReaderTool:
     """Expose bounded Artifact reads to a Researcher agent."""
 
     name = "reader"
-    description = "按 Artifact ID 读取可验证的文本字符片段。"
-    args_schema = ReaderArguments
+    description = ('按 Artifact ID 读取可验证文本。发现多个候选后优先一次批量读取必要片段：'
+                   'reads=[{"artifact_id":"...","max_chars":2000}, ...]，最多4段；'
+                   '每段保留独立 read_id、来源和字符范围。也支持单个 artifact_id。')
+    args_schema = ReaderCallArguments
 
     def __init__(
         self,
@@ -35,10 +38,16 @@ class ReaderTool:
         if not 1 <= resolved_default <= reader.max_chars_per_read:
             raise ValueError("default_chars_per_read exceeds reader limit")
         self.default_chars_per_read = resolved_default
-        self.args_schema = create_model(
+        item_schema = create_model(
             f"ConfiguredReaderArguments{resolved_default}_{reader.max_chars_per_read}",
             __base__=ReaderArguments,
             max_chars=(int, Field(default=resolved_default, ge=1, le=reader.max_chars_per_read)),
+        )
+        self.args_schema = create_model(
+            f"ConfiguredReaderCall{resolved_default}_{reader.max_chars_per_read}",
+            __base__=ReaderCallArguments,
+            max_chars=(int, Field(default=resolved_default, ge=1, le=reader.max_chars_per_read)),
+            reads=(list[item_schema] | None, Field(default=None, min_length=1, max_length=4)),
         )
 
     async def ainvoke(
@@ -47,6 +56,8 @@ class ReaderTool:
         *,
         scope: TaskResearchRequest,
     ) -> ResearcherToolObservation:
+        if getattr(arguments, "reads", None) is not None:
+            return await self._read_batch(arguments, scope=scope)
         started = time.monotonic()
         result = await self.reader.ainvoke(
             ReferenceReadRequest(
@@ -59,13 +70,33 @@ class ReaderTool:
         )
         return ResearcherToolObservation(
             tool_name=self.name,
-            arguments=arguments.model_dump(mode="json"),
+            arguments=arguments.model_dump(mode="json", exclude_none=True),
             succeeded=True,
             summary=(
                 f"读取 artifact {result.artifact_id} 字符 "
                 f"[{result.char_start}, {result.char_end})"
             ),
             payload={"read_result": result.model_dump(mode="json")},
+            elapsed_ms=int((time.monotonic() - started) * 1000),
+        )
+
+    async def _read_batch(self, arguments, *, scope) -> ResearcherToolObservation:
+        started = time.monotonic()
+        results, errors = [], []
+        # Local reads are bounded; batching removes model round trips, without
+        # weakening the single-tool policy or creating unbounded I/O concurrency.
+        for index, request in enumerate(arguments.reads):
+            try:
+                observation = await self.ainvoke(request, scope=scope)
+                results.append(observation.payload["read_result"])
+            except Exception as exc:
+                errors.append({"index": index, "artifact_id": request.artifact_id,
+                               "error_type": type(exc).__name__, "message": str(exc)[:500]})
+        return ResearcherToolObservation(
+            tool_name=self.name, arguments=arguments.model_dump(mode="json"),
+            succeeded=bool(results),
+            summary=f"批量读取：成功 {len(results)} 段，失败 {len(errors)} 段",
+            payload={"read_results": results, "read_errors": errors},
             elapsed_ms=int((time.monotonic() - started) * 1000),
         )
 
@@ -90,6 +121,10 @@ class ReaderTool:
     def project_model_context(
         self, observation: ResearcherToolObservation
     ) -> dict[str, object]:
+        if "read_results" in observation.payload:
+            return {"succeeded": observation.succeeded, "summary": observation.summary,
+                    "read_results": observation.payload["read_results"],
+                    "read_errors": observation.payload["read_errors"]}
         read = observation.payload["read_result"]
         return {
             "succeeded": observation.succeeded,
@@ -114,7 +149,7 @@ class ReaderTool:
 class ReviewerReaderTool(ReaderTool):
     """只允许 Reviewer 回读当前查新点 Evidence 可达的 Artifact。"""
 
-    description = "按 Artifact ID 回读当前查新点已获证据的文本字符片段。"
+    description = "仅回读当前查新点 Evidence 可达的 Artifact。" + ReaderTool.description
 
     async def ainvoke(
         self,
@@ -122,6 +157,8 @@ class ReviewerReaderTool(ReaderTool):
         *,
         scope: NoveltyPointReviewRequest,
     ) -> ResearcherToolObservation:
+        if getattr(arguments, "reads", None) is not None:
+            return await self._read_batch(arguments, scope=scope)
         referenced_evidence_ids = {
             evidence_id
             for card in scope.cards
@@ -159,7 +196,7 @@ class ReviewerReaderTool(ReaderTool):
             raise PermissionError("reader returned an artifact outside reviewer scope")
         return ResearcherToolObservation(
             tool_name=self.name,
-            arguments=arguments.model_dump(mode="json"),
+            arguments=arguments.model_dump(mode="json", exclude_none=True),
             succeeded=True,
             summary=(
                 f"读取 artifact {result.artifact_id} 字符 "

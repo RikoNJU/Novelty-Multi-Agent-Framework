@@ -107,6 +107,21 @@ class ReaderArguments(StrictModel):
     max_chars: int = Field(default=8_000, ge=1, le=16_000)
 
 
+class ReaderCallArguments(ReaderArguments):
+    """One legacy read or up to four independently addressed fragments."""
+
+    artifact_id: NonEmptyStr | None = None
+    reads: list[ReaderArguments] | None = Field(default=None, min_length=1, max_length=4)
+
+    @model_validator(mode="after")
+    def exclusive_read_mode(self):
+        if (self.artifact_id is None) == (self.reads is None):
+            raise ValueError("provide artifact_id or reads, exclusively")
+        if self.reads is not None and self.model_fields_set & {"char_start", "max_chars"}:
+            raise ValueError("batch offsets and limits belong inside each reads item")
+        return self
+
+
 class ReferenceReadRequest(StrictModel):
     """Internal deterministic-reader request derived from ReaderArguments."""
 

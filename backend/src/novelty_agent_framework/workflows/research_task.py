@@ -92,6 +92,7 @@ class TaskResearcherWorkflow:
             tool_registry,
             config=ToolCallHarnessConfig(
                 finalize_on_budget=True,
+                reuse_database_results=True,
                 max_turns=self.config.max_steps,
                 max_tool_calls=self.config.max_tool_calls,
                 per_tool_limits=dict(self.config.per_tool_limits),
@@ -299,12 +300,12 @@ def _trusted_reads(trace) -> tuple[list[ReferenceReadResult], list[str]]:
         if (event.kind != "tool_result" or observation is None
                 or observation.tool_name != "reader" or not observation.succeeded):
             continue
-        try:
-            reads.append(ReferenceReadResult.model_validate(
-                observation.payload.get("read_result")
-            ))
-        except (ValidationError, ValueError, TypeError) as exc:
-            warnings.append(f"ignored malformed reader observation: {_safe_error(exc)}")
+        rows = observation.payload.get("read_results", [observation.payload.get("read_result")])
+        for row in rows:
+            try:
+                reads.append(ReferenceReadResult.model_validate(row))
+            except (ValidationError, ValueError, TypeError) as exc:
+                warnings.append(f"ignored malformed reader observation: {_safe_error(exc)}")
     return reads, warnings
 
 

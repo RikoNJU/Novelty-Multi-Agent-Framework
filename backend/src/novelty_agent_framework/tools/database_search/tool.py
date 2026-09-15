@@ -73,6 +73,9 @@ class DatabaseSearchTool:
             f"source_id 只能使用以下值：{available}。"
             "候选来源本身不是证据；结果包含 artifact_ids 时，下一次工具调用"
             "必须优先使用 reader 读取其中一个 Artifact，不得继续搜索。"
+            "同一任务的检索计划固定；重复调用相同 source_id 仅复用完整成功结果（含零命中）。"
+            "失败或部分成功不缓存；临时错误按 provider 退避重试，其他错误优先换库。"
+            "成功后优先批量读取已有候选；新一轮任务可重新检索。"
         )
 
     async def ainvoke(

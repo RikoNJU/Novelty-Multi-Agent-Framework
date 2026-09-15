@@ -69,6 +69,7 @@ class ToolCallBudgetExhausted(ToolCallHarnessError):
 @dataclass(frozen=True)
 class ToolCallHarnessConfig:
     finalize_on_budget: bool = False
+    reuse_database_results: bool = False
     max_turns: int = 12
     max_tool_calls: int = 10
     per_tool_limits: dict[str, int] = field(default_factory=dict)
@@ -185,6 +186,7 @@ class ToolCallHarness:
         per_tool_counts: dict[str, int] = {}
         total_read_chars = 0
         required_reader_artifact_ids: set[str] = set()
+        database_results = {}  # Per invocation: never crosses task/plan/run scopes.
 
         for turn in range(1, self.config.max_turns + 1):
             context = _build_context(system_prompt, tuple(log))
@@ -301,10 +303,10 @@ class ToolCallHarness:
                 raise ToolCallBudgetExhausted(detail, trace=tuple(log))
 
             if required_reader_artifact_ids:
-                requested_artifact = tool_call.arguments.get("artifact_id")
+                requested_artifacts = _reader_artifact_ids(resolved_arguments)
                 if (
                     tool_call.name != "reader"
-                    or requested_artifact not in required_reader_artifact_ids
+                    or not requested_artifacts.intersection(required_reader_artifact_ids)
                 ):
                     # 软性拒绝：不杀死任务，向模型回传拒绝消息（含必须读取的
                     # artifact_id），让它下一轮自我纠正；审计日志保留完整记录。
@@ -368,7 +370,9 @@ class ToolCallHarness:
                 and validated_arguments is not None
                 and self.config.max_total_read_chars is not None
             ):
-                requested = getattr(validated_arguments, "max_chars")
+                batch = getattr(validated_arguments, "reads", None)
+                requested = (sum(item.max_chars for item in batch) if batch is not None
+                             else getattr(validated_arguments, "max_chars"))
                 remaining = self.config.max_total_read_chars - total_read_chars
                 if requested > remaining:
                     detail = "reader cumulative character budget exhausted"
@@ -386,8 +390,13 @@ class ToolCallHarness:
             log.append(
                 ToolCallHarnessEvent(kind="tool_call", tool_call=tool_call)
             )
+            cache_key = json.dumps(resolved_arguments, sort_keys=True, default=str)
+            reusable = self.config.reuse_database_results and tool_call.name == "database_search"
+            reused = reusable and cache_key in database_results
             try:
-                if validated_arguments is None:
+                if reused:
+                    observation = database_results[cache_key]
+                elif validated_arguments is None:
                     observation = await self.registry.execute(
                         tool_call.name,
                         dict(tool_call.arguments),
@@ -397,6 +406,8 @@ class ToolCallHarness:
                     observation = await self.registry.execute_validated(
                         tool_call.name, validated_arguments, scope=scope
                     )
+                if reusable and not reused and _database_result_complete(observation):
+                    database_results[cache_key] = observation
             except BaseException as exc:
                 if runtime is not None and runtime_call is not None:
                     runtime.fail_tool_call(runtime_call, exc)
@@ -405,6 +416,9 @@ class ToolCallHarness:
                 model_context = self.registry.project_model_context(
                     tool_call.name, observation
                 )
+                if reused:
+                    model_context = {**model_context, "reused_result": True,
+                        "instruction": "同一任务和检索计划已执行过该来源，复用原结果，未重新请求数据库。读取已有候选或更换来源；无证据则如实收尾。"}
             except BaseException as exc:
                 if runtime is not None and runtime_call is not None:
                     runtime.fail_tool_call(
@@ -430,20 +444,26 @@ class ToolCallHarness:
             if tool_call.name == "database_search" and observation.succeeded:
                 required_reader_artifact_ids = _database_artifact_ids(observation)
             elif tool_call.name == "reader" and required_reader_artifact_ids:
-                if observation.succeeded:
+                successful_artifacts = {
+                    read.get("artifact_id") for read in _reader_results(observation)
+                }
+                if observation.succeeded and (
+                    "read_results" not in observation.payload
+                    or successful_artifacts.intersection(required_reader_artifact_ids)
+                ):
                     required_reader_artifact_ids.clear()
                 else:
                     # 失败时释放「这一个」制品的约束。否则该 id 永远读不出来时，
                     # 模型既不能换一篇读、也不能重新检索（其它工具全被拒），只能
                     # 反复重试同一个坏 id 直到耗尽整轮预算。
-                    attempted = tool_call.arguments.get("artifact_id")
-                    if isinstance(attempted, str):
-                        required_reader_artifact_ids.discard(attempted)
+                    required_reader_artifact_ids.difference_update(
+                        _reader_artifact_ids(resolved_arguments)
+                    )
             if tool_call.name == "reader" and observation.succeeded:
-                read = observation.payload.get("read_result", {})
-                start, end = read.get("char_start"), read.get("char_end")
-                if isinstance(start, int) and isinstance(end, int):
-                    total_read_chars += max(0, end - start)
+                for read in _reader_results(observation):
+                    start, end = read.get("char_start"), read.get("char_end")
+                    if isinstance(start, int) and isinstance(end, int):
+                        total_read_chars += max(0, end - start)
                     if (
                         self.config.max_total_read_chars is not None
                         and total_read_chars > self.config.max_total_read_chars
@@ -467,6 +487,31 @@ class ToolCallHarness:
 
         _append_error(log, "turn budget exhausted")
         raise ToolCallBudgetExhausted("turn budget exhausted", trace=tuple(log))
+
+
+def _reader_artifact_ids(arguments):
+    reads = arguments.get("reads")
+    rows = reads if isinstance(reads, list) else [arguments]
+    return {row["artifact_id"] for row in rows
+            if isinstance(row, dict) and isinstance(row.get("artifact_id"), str)}
+
+
+def _reader_results(observation):
+    if "read_results" in observation.payload:
+        return observation.payload["read_results"]
+    return [observation.payload.get("read_result", {})]
+
+
+def _database_result_complete(observation):
+    if not observation.succeeded:
+        return False
+    summary = observation.payload.get("execution_summary", {})
+    if any(summary.get(key) for key in (
+        "partial", "failed", "requires_human", "degraded", "all_failed", "no_execution"
+    )):
+        return False
+    return all(row.get("status") == "succeeded"
+               for row in observation.payload.get("search_executions", []))
 
 
 def _build_tool_definitions(

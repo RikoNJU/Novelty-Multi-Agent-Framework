@@ -143,6 +143,24 @@ def _read(root, artifact_id: str):
     return observation, observation.payload["read_result"]
 
 
+def test_batch_reads_bind_two_cards_across_namespaces(tmp_path):
+    for store, suffix in [(ReferenceStore(tmp_path), "a"), (SubjectReferenceStore(tmp_path), "b")]:
+        _put(store, work_id=f"work_{suffix}", artifact_id=f"artifact_{suffix}",
+             title=f"Paper {suffix}", text=f"VERIFIED QUOTE {suffix}")
+    tool = ReaderTool(ReferenceArtifactReaderTool(ReferenceStore(tmp_path)))
+    observation = asyncio.run(tool.ainvoke(tool.args_schema.model_validate({"reads": [
+        {"artifact_id": "artifact_a"}, {"artifact_id": "artifact_b"},
+    ]}), scope=_scope()))
+    reads, warnings = _trusted_reads([SimpleNamespace(kind="tool_result", observation=observation)])
+    assert not warnings
+    draft = ResearchFinishDraft(cards=[_draft(f"VERIFIED QUOTE {suffix}").cards[0] for suffix in ("a", "b")])
+    built = EvidenceCardBuilder(ReferenceStore(tmp_path)).build(draft, scope=_scope(), read_results=reads)
+    assert len(built.evidence_cards) == len(built.evidence) == 2
+    assert {e.work_id for e in built.evidence} == {"work_a", "work_b"}
+    assert {e.provenance["artifact_namespace"] for e in built.evidence} == {
+        "research_reference", "subject_reference"}
+
+
 def _read_explicit(root, namespace: ArtifactNamespace, artifact_id: str):
     """绕过 agent 层直接指定命名空间——底层 reader 仍然要求显式指定。"""
 

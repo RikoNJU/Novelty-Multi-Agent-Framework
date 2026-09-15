@@ -76,8 +76,89 @@ class ExampleTool:
         )
 
 
+@pytest.mark.parametrize("succeeded,summary", [
+    (True, {}), (False, {}), (True, {"partial": 1}),
+    (True, {"failed": 1, "degraded": True}), (True, {"requires_human": 1}),
+])
+def test_database_reuse_is_limited_to_one_harness_invocation(succeeded, summary):
+    cacheable = succeeded and not summary
+    class Database(ExampleTool):
+        name = "database_search"
+
+        async def ainvoke(self, arguments, *, scope):
+            result = await super().ainvoke(arguments, scope=scope)
+            return result.model_copy(update={"succeeded": succeeded,
+                                             "payload": {"execution_summary": summary}})
+
+    async def run():
+        tool = Database()
+        client = ScriptedModelClient()
+        harness = ToolCallHarness(client, ResearcherToolRegistry([tool]),
+                                  config=ToolCallHarnessConfig(reuse_database_results=True))
+        for _ in range(2):
+            client.responses = [
+                ModelResponse(content=None, tool_calls=(ModelToolCall(
+                    id=f"call-{i}", name="database_search", arguments={"value": "query"},
+                ),)) for i in range(2)
+            ] + [ModelResponse(content="done")]
+            result = await harness.run(system_prompt="test", initial_user_message="test", scope=scope())
+            observations = [event for event in result.trace if event.observation is not None]
+            assert len(observations) == 2
+            assert ("reused_result" in observations[1].message.content) == cacheable
+            assert observations[0].observation == observations[1].observation
+        assert len(tool.received) == (2 if cacheable else 4)
+
+    asyncio.run(run())
+
+
 class ReaderBudgetArguments(StrictModel):
     max_chars: int = 8000
+
+
+def test_database_transient_failure_then_zero_hits_can_be_reused():
+    class Database(DatabaseStubTool):
+        async def ainvoke(self, arguments, *, scope):
+            observation = await super().ainvoke(arguments, scope=scope)
+            return observation.model_copy(update={"succeeded": len(self.received) > 1})
+
+    tool = Database(artifact_ids=[])
+    harness = ToolCallHarness(
+        ScriptedModelClient(database_call(), database_call(), database_call(), ModelResponse(content="done")),
+        ResearcherToolRegistry([tool]), config=ToolCallHarnessConfig(reuse_database_results=True))
+    result = run_harness(harness, system_prompt="test", initial_user_message="test")
+    observations = [e for e in result.trace if e.observation is not None]
+    assert len(tool.received) == 2
+    assert [e.observation.succeeded for e in observations] == [False, True, True]
+    assert "reused_result" in observations[-1].message.content
+
+
+@pytest.mark.parametrize("batch_ids,successful_ids,allowed", [
+    (["other"], ["other"], False),
+    (["required", "other"], ["required", "other"], True),
+    (["required", "other"], ["other"], False),
+    (["required", "remaining"], [], True),
+])
+def test_batch_reader_preserves_mandatory_read_gate(batch_ids, successful_ids, allowed):
+    from novelty_agent_framework.schemas.research_tools import ReaderCallArguments
+
+    class BatchReader:
+        name = "reader"
+        description = "batch stub"
+        args_schema = ReaderCallArguments
+
+        async def ainvoke(self, arguments, *, scope):
+            return ResearcherToolObservation(tool_name="reader", arguments=arguments.model_dump(),
+                succeeded=bool(successful_ids), payload={"read_results": [
+                    {"artifact_id": item, "char_start": 0, "char_end": 1} for item in successful_ids]})
+
+    example = ExampleTool()
+    harness = ToolCallHarness(ScriptedModelClient(
+        database_call(), ModelResponse(content=None, tool_calls=(ModelToolCall(
+            "batch", "reader", {"reads": [{"artifact_id": item} for item in batch_ids]}),)),
+        call(), ModelResponse(content="done")),
+        ResearcherToolRegistry([DatabaseStubTool(artifact_ids=["required", "remaining"]), BatchReader(), example]))
+    run_harness(harness, system_prompt="test", initial_user_message="test")
+    assert bool(example.received) == allowed
 
 
 class ReaderBudgetTool:
