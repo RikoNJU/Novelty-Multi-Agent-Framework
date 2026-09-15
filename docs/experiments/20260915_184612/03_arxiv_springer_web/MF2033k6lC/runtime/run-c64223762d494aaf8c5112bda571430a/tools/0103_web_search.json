@@ -1,0 +1,561 @@
+{
+  "agent_arguments": {
+    "query": "图流划分算法综述 边分割 负载均衡 知乎"
+  },
+  "agent_tool_call_id": "01a0a4a81ffd154c47dd3967f061de82",
+  "business_status": "NORMAL",
+  "duration": 0.916662,
+  "duration_ms": 916,
+  "error": null,
+  "execution_status": "SUCCESS",
+  "failure_phase": null,
+  "finished_at": "2026-09-15T10:41:18.047575+00:00",
+  "normalized_result": {
+    "query": "图流划分算法综述 边分割 负载均衡 知乎",
+    "results": [
+      {
+        "published_at": "2020-06-30T23:02:01",
+        "snippet": "图划分的优化目标包括两项:负载均衡和最小割 (cut)。二者都是为了提高在分布式系统中运算的性能。负载均衡是为了使分布式系统中的多台计算机有相近的任务负荷,避免少数计算机负载过高。最小割则是为了减少计算机之间的通信代价。同时优化两个目标目前已知是NP困难问题。",
+        "source_name": "知乎",
+        "source_record_id": "src_950f101bd0f30a986e9ded23",
+        "title": "图流划分算法综述",
+        "url": "https://zhuanlan.zhihu.com/p/152221150"
+      },
+      {
+        "published_at": "2022-08-20T10:07:00",
+        "snippet": "图1 点分割(左)和边分割(右)的示例 图分割的两个目标是负载均衡load balancing(减少存储代价)和最小化切边或点minimum cuts(减少通讯代价),同时优化这两个目标是 平衡图分割 (balanced graph partitioning)问题,这是一个NP难的问题[2]。通常情况下松弛为优化load balancing的同时尽可能保证minimum cuts。给定一个图  G = ( V , E ) 包含 | E | 条边和 | V | 个顶点,将它分割成  k 份, 点分割表示如下: m a x i ∈ [ 1 , k ] | V i | ≤ ( 1 +",
+        "source_name": "知乎",
+        "source_record_id": "src_1e87d52fca57eaa48d9f5c04",
+        "title": "图分割Graph Partitioning技术总结",
+        "url": "https://zhuanlan.zhihu.com/p/446152634"
+      },
+      {
+        "published_at": "2021-03-18T21:41:13",
+        "snippet": "图划分的目标有两个:负载均衡和 最小割 。负载均衡是为了使分布式系统中的多台机器有相近的任务负荷,负载不均会导致负载较小的处理器出现空等的情况而浪费资源。此外,要尽量减少分割,以便最小化由不同分区之间交换消息引起的通信成本。",
+        "source_name": "知乎",
+        "source_record_id": "src_2ece4d7c620c9fa11550cce0",
+        "title": "动态图划分复制算法:Leopard",
+        "url": "https://zhuanlan.zhihu.com/p/324383730"
+      },
+      {
+        "published_at": "2023-09-08T08:35:00",
+        "snippet": "知乎用户uvnrky 0. 介绍 2. overview 3. preliminaries - 准备 (k-way hypergraph partitioning problem) 4. 应用 - application 5. 顺序技术(sequential techniques) 5.1 经典(超)图分区技术 5.2 多级划分的最新进展 5.3 进化计算 (evolutionary computation) 5.4 流 - streaming 5.4.1 one-pass式顶点分割 (one-pass streaming vertex partitioning) 5.4.3 缓冲流顶点分区 5.4.4 hypergraph的流式顶点划分 5.4.5 流式边分区 5.4.6 实验研究 5.5 重分区(repartitioning) 5.6 目标函数和问题变体 (objective functions and problem variations) 5.6.1 目标函数 (objective functions) 5.6.2 多约束图划分 (multi-constraint graph partitioning) 5.6.3 有向无环(超)图划分 (directed acyclic (hyper)graph partitioning) 5.6.4 对称直角矩阵分区(symmetric rectilinear matrix partitioning) 5.6.5 过程映射(process mapping) 6 并行算法 6.1 共享内存 6.1.1 粗化 (coarsening) 6.1.2 initial partitioning",
+        "source_name": "知乎",
+        "source_record_id": "src_b7819f9e511468ea5188d07c",
+        "title": "【论文阅读(综述)】(超)图分区的更近期的发展 - More Recent Advances in (Hyper)Graph Partitioning",
+        "url": "https://zhuanlan.zhihu.com/p/654840232"
+      },
+      {
+        "published_at": "2025-10-10T15:10:00",
+        "snippet": "一、 负载均衡 的技术本质与核心价值 负载均衡(Load Balancing)作为分布式系统的基石技术,其本质是通过算法将 网络 请求或计算任务均匀分配到多个服务器节点,实现系统资源的高效利用。在知乎这类高并发、高可用的互联网平台中,负载均衡承担着三大核心职能: 流量分发 :将用户请求按预设策略(轮询、权重、最小连接数等)分配到后端服务器池 故障隔离 :当某个节点出现故障时,自动将流量切换到健康节点 弹性扩展 :配合自动扩缩容机制,动态调整服务节点数量 以知乎的架构为例,其前端采用LVS+Nginx的四级负载均衡体系: 客户端 → DNS 轮询 → LVS 集群(四层) → Nginx 集群(七层) → 应用服务器 这种分层设计既保证了全局流量分配的均匀性,又实现了业务逻辑的精细控制。但在实际运行中, 开发者 常遇到”负载均衡不均衡”的悖论现象。 二、负载不均衡的典型场景与根源分析 1. 算法缺陷导致的分配偏差 传统轮询算法在节点性能不一致时会出现明显倾斜。例如知乎早期采用简单轮询,导致配置较低的评论服务节点响应时间比其他节点长30%。通过引入加权轮询(Weighted Round Robin)算法,根据节点CPU、内存等指标动态调整权重,使请求分配偏差率从18%降至5%以内。 2. 会话保持引发的热点问题 对于需要保持会话状态的场景(如用户登录),采用IP Hash或Cookie-based的会话保持策略可能导致特定节点承载过多长连接。知乎在推荐系统改造中,通过改进的Least Connections算法结合短会话机制,将单节点连接数标准差从2.8降至0.9。 3. 动态内容处理的资源消耗差异 包含复杂计算的请求(如AI推荐)与静态资源请求对CPU的消耗存在数量级差异。知乎采用请求分类队列机制: class RequestClassifier : def __init__ ( self ): self . cpu_intensive_queue = [] self . io_intensive_queue = [] def classify ( self , request ): if request . path . startswith ( '/api/recommend' ): self . cpu_intensive_queue . append ( request ) else : self . io_intensive_queue . append ( request ) 配合差异化权重分配,使CPU利用率波动范围从±35%缩小到±12%。",
+        "source_name": "百度智能云",
+        "source_record_id": "src_d08838c023d1e4b940307d88",
+        "title": "从\"负载均衡\"到\"不均衡\"困境:再探负载均衡的知乎实践与优化策略",
+        "url": "https://cloud.baidu.com/article/3835248"
+      },
+      {
+        "published_at": "2025-10-10T15:10:00",
+        "snippet": "一, 负载均衡 的\"不均衡\"现象:从理想到现实的落差 1.1理想状态下的负载均衡 负载均衡的核心目标是通过算法将请求均匀分配到后端服务节点,实现资源利用率最大化.典型算法包括轮询(round robin),加权轮询(weighted rr),最小连接数(least connections)等.以nginx配置为例: upstream backend { server 10.0 . 0.1 : 8080 weight = 3 ; server 10.0 . 0.2 : 8080 ; server 10.0 . 0.3 : 8080 ; } 该配置通过权重参数实现流量倾斜,理论上可应对节点性能差异. 1.2现实中的\"不均衡\"困境 知乎架构曾遭遇典型不均衡场景:某核心服务集群采用l4负载均衡器,配置轮询算法后,出现部分节点cpu利用率达90%而其他节点仅30%的异常.进一步分析发现: 网络 延迟差异 :跨机房调用导致部分节点响应时间增加200ms 服务依赖不均 :部分节点承载了更多依赖 数据库 的写操作 缓存穿透效应 :热点key导致特定节点承受额外压力 这种\"形式均衡,实质不均\"的现象在微服务架构中尤为普遍.根据linkedin 2022年调研,68%的负载均衡失效案例源于未考虑业务特性. 二,不均衡的根源诊断:多维度的深度剖析 2.1基础设施层因素 网络拓扑差异 :跨可用区网络延迟可能相差3-5倍 硬件性能异构 :不同代次服务器cpu指令集差异导致计算效率不同 存储 i/o瓶颈 :ssd与hdd混用集群出现存储延迟不均 2.2应用层因素 服务粒度不均 :微服务拆分不合理导致某些服务调用量激增 缓存策略失效 :未实现本地缓存与分布式缓存的协同 异步任务堆积 : 消息队列 消费者处理能力不匹配 2.3算法选择误区 某电商平台曾因错误使用ip hash算法导致特定区域用户集中访问个别节点,造成区域性服务崩溃.正确做法应结合业务场景选择算法: //动态权重调整算法示例 public class dynamicweightbalancer { private map < string , integer > weights = new concurrenthashmap <>(); public server selectserver ( list < server > servers ) { //根据实时指标调整权重 servers . foreach ( server -> { int currentload = getserverload ( server ); weights . put (",
+        "source_name": "百度智能云",
+        "source_record_id": "src_d8aa5c27c9d024db7d09887e",
+        "title": "负载均衡的\"不均衡\"困境与再平衡实践:知乎架构的深度解析",
+        "url": "https://cloud.baidu.com/article/3835226"
+      },
+      {
+        "published_at": "2023-10-20T16:13:36",
+        "snippet": "在数学中,图分区是将图的 节点集 划分为互斥的组,从而将图简化为较小图。 正态分布 是我们最为熟悉的在自然界常见的一种数据分布形式,它具有中间多,两头少的特点,比如我们身高,大家的身高多集中在平均身高区域,极矮或极高的人属于少数。 其实 幂律分布 (Power-law distribution)也同样常见,它是一个不断下降的曲线,从最高的峰值开始极速下降,后面拖了一个长长的尾巴,比如微博大V拥有百万粉丝,而普通人的关注度则寥寥无几。 为什么要介绍幂律分布呢?因为在图计算中 数据倾斜 的情况非常常见,一个点与图中大多数的点有联系,我们应该如何将这些点分开储存在不同的节点上,是尽量减少跨分块的边,牺牲内存减少节点与 节点这间的通讯开销;还是减少内存消耗,转而增加通讯开销,都是一个值得权衡思考的问题。 图的切分方式有两种,边切分和点切分。 边切分每个顶点都存储一次,但有的边会被打断分到两台机器上。这样做的好处是节省存储空间;坏处是对图进行基于边的计算时,对于一条两个顶点被分到不同机器上的边来说,要跨机器通信传输数据,内网通信流量大。 点切分每条边只存储一次,都只会出现在一台机器上。邻居多的点会被复制到多台机器上,增加了存储开销,同时会引发数据同步问题。好处是可以大幅减少内网通信量。 : 图数据划分是指在 分布式计算 中,将数据分发到集群中不同节点上。尽量做到分发到各节点上的数据量大小均匀,避免大量数据倾斜在某些节点所导致的 负载不均衡 的现象出现。 负载不均衡会使得数据量少的节点CPU利用不饱和而数据量多的节点计算速度缓慢,如果我们使用整体同步并行计算模型(BSP),每一轮迭代都要等到上一轮超步全部执行完后才会进行,在负载不均衡的情况下,需要浪费大量时间等待数据倾斜节点完成本轮任务。 因此,图数据划分是分布式图计算系统中的一个核心内容。 这里我们介绍一种较为简单的普通哈希划分。 普通哈希划分是对每个点的hash结果取余数,即Hash(Key)%M,假设对机器编号从0到N-1,按照自定义的  hash()算法 ,对每个请求的hash()值按M取模,得到余数i,然后将点分发到编号为i的机器上。这样我们就可以把点均匀的分发到M个机器上了。 对于单机无法处理的超级大图,则需要将图数据划分成几个子图,采用分布式计算方式,因此,会涉及到图划分的问题,即如何将一整张图切割成子图,并分配给不同的机器进行分布式地计算。",
+        "source_name": "知乎",
+        "source_record_id": "src_78805bf9064542b5b8b95b83",
+        "title": "图划分(Graph Partition)",
+        "url": "https://zhuanlan.zhihu.com/p/586198196"
+      },
+      {
+        "published_at": "2023-08-15T21:25:21",
+        "snippet": "对于图G,n个节点,节点有权重,有向边,边有权重。任务是将图G的所有节点分成k个部分,各个部分的节点总权重可以预先定义容量,同时要使得不同部分之间的联… 苏格拉没有底​上海理工大学 计算机技术硕士​关注 原理 这是一个图的划分问题,可以用图划分算法来解决。下面是一种可能的解决方案: 1. 初始化k个部分,每个部分为空。 2. 计算每个节点的权重总和。 3. 将节点按权重从大到小排序。 4. 依次遍历每个节点,将节点放入当前总权重最小的部分中,直到该部分的总权重超过预先定义的容量。 5. 重复步骤4,直到所有节点都被分配到部分中。 6. 对于每个部分,计算部分内所有节点之间的边的权重总和。 7. 对于每个部分,与其他部分之间的边的权重总和进行排序,选择权重总和最小的k-1个边保留,其余边删除。 这样,就可以将图G的所有节点分成k个部分,使得各个部分的节点总权重不超过预先定义的容量,并且不同部分之间的联系相对稀疏。 算法 下面是一个用Java实现的示例代码 import java.util.ArrayList; import java.util.Collections; import java.util.Comparator; import java.util.List; class Node { int id; int weight; public Node(int id, int weight) { this.id = id; this.weight = weight; } } class Edge { int from; int to; int weight; public Edge(int from, int to, int weight) { this.from = from; this.to = to; this.weight = weight; } } class GraphPartition { List<Node> nodes; List<Edge> edges; int k; // 分成k个部分 int[] capacities; // 各个部分的容量 public GraphPartition(int k, int[] capacities) { this.k = k; this.capacities = capacities; nodes = new ArrayList<>(); edges = new ArrayList<>(); } public void addNode(int id, int weight) { nodes.add(new Node(id, weight)); } public void addEdge(int from, int to, int weight) { edges.add(new Edge(from, to, weight)); } public void partitionGraph() { // 计算每个节点的权重总和 int totalWeight = 0; for (Node node : nodes) { totalWeight += node.weight; } // 将节点按权重从大到小排序 Collections.sort(nodes, Comparator.comparingInt(node -> -node.weight)); // 初始化k个部分 List<List<Node>> partitions = new ArrayList<>(); for (int i = 0; i < k; i++) { partitions.add(new ArrayList<>()); } // 将节点分配到部分中 for (Node node",
+        "source_name": "知乎",
+        "source_record_id": "src_c27eba7f61a568753f99eb29",
+        "title": "想请教一下一种图划分(Graph partitioning)算法?",
+        "url": "https://www.zhihu.com/question/616882997/answer/3167006160"
+      },
+      {
+        "published_at": "2026-09-09T16:11:43",
+        "snippet": "1. 平衡图分割问题概述 平衡图分割是图论中一个经典的计算难题,在实际应用中有着广泛的需求。简单来说,就是把一个图分成若干个部分,要求各部分之间连接尽可能少,同时每个部分的\"大小\"尽可能接近。这里的\"大小\"可以是顶点数、边数或其他权重指标。 我在处理社交网络数据分析时,就遇到过这样的需求:需要将用户关系网络划分成多个社区,既要保证社区间互动最少,又要避免出现某些社区过大或过小的情况。这正是典型的平衡图分割问题。 2.1 形式化定义 给定一个无向图G=(V,E),其中V是顶点集,E是边集。平衡图分割问题要求将V划分为k个不相交的子集V1,V2,...,Vk,满足: 各部分大小平衡:|Vi| ≈ |V|/k,允许一定偏差 割边数最小:即连接不同子集的边数最少 2.2 常见变体与约束 实际应用中常见几种变体: 顶点加权平衡分割:每个顶点有权重,要求各部分权重和平衡 边加权平衡分割:边有权重,目标是使割边权重和最小 多约束平衡分割:同时考虑多种平衡约束 提示:在社交网络分析中,顶点权重可以表示用户活跃度,边权重可以表示互动频率。 3. 经典求解算法分析 3.1 Kernighan-Lin算法 KL算法是最早提出的启发式方法,基本思路是: 初始随机划分 迭代交换顶点对,选择能最大程度减少割边数的交换 当无法进一步优化时停止 虽然简单,但时间复杂度较高(O(n^3)),且容易陷入局部最优。 3.2 谱分割方法 基于图的拉普拉斯矩阵特征向量,将图映射到低维空间后进行聚类。数学基础扎实,但: 计算特征向量开销大 对平衡性控制较弱 不适合大规模图 3.3 多级方法 包括三个主要阶段: 粗化:逐步缩小图规模 初始分割:在小图上求解 细化:逐步还原图并优化分割 Metis是这类方法的代表,但实现复杂且参数调优困难。 4. 快速求解算法设计 4.1 算法总体框架 我们提出一种融合局部搜索和全局信息的混合算法: 1. 预处理阶段: - 计算顶点重要性指标 - 识别关键顶点和社区结构 2. 初始分割阶段: - 基于重要性采样生成初始解 3. 优化阶段: - 局部搜索与全局信息引导相结合 - 动态平衡约束处理 AI写代码 1 2 3 4 5 6 7 8 4.2 关键创新点 4.2.1 重要性采样初始化 传统随机初始化效果差。我们设计: 顶点重要性 = 度数中心性 + 介数中心性 按重要性分层采样,确保初始解质量 4.2.2 动态平衡约束 引入松弛变量处理平衡约束: 允许临时违反平衡条件但设置惩罚项引导回归平衡 AI写代码",
+        "source_name": "CSDN软件开发网",
+        "source_record_id": "src_7094eb4bb5f2b309ce9321ab",
+        "title": "平衡图分割算法:原理、优化与实践应用",
+        "url": "https://blog.csdn.net/weixin_29309475/article/details/164835587"
+      },
+      {
+        "published_at": "2023-03-15T16:13:36",
+        "snippet": "图数据库中的”分布式”和“切图”如果有理解不对的地方,欢迎留言讨论。 一般来说,分布式系统是一组计算机程序的集合,这些程序利用跨多个独立节点的资源来实现共同的目标;这里的独立节点,硬件上大多是指商用服务器(Commodity Servers)而不是大型主机(Mainframe);这里的跨节点协同,硬件上大多是基于以太网设备或者更高端的 RMDA 设备。 为什么我们需要分布式系统? 使用分布式技术的主要目的,本质上是用软件技术+廉价硬件来换取昂贵硬件设备(比如主机)的成本;特别是在大多数私有机房环境——而不是公有云端或者超算条件下,此时采购成本是商业决策的重要依据。 除了降低硬件成本外,分布式技术带来的另一个好处是其“扩展性”,通过在原有商用服务器的数量基础上,增加几台服务器,再结合分布式软件的调度和分发能力,使得新加入的这几台服务器也再额外提供更多的服务; 相比于每次扩容都要 1 比 1 采购更多的等数量服务器,或者购买更高配置的服务器;分布式技术这一方面使得采购计划可以按需扩容,降低了一次性的大额资本支出;另一方面也使得业务容量可以更加容易规划。 分布式系统的基础问题 在分布式技术中,由于数据的存储和计算需要跨多个独立节点来实现,因此不得不涉及到一系列基础技术。在本文中我们只讨论两个:一是提供数据(和服务)的拷贝或者副本的问题;二是对于那些庞大数据的存储和计算该如何分发到各个独立节点上完成? 一、数据的副本问题 由于是商用服务器,其硬件上的可靠性和可维护性远远低于主机,网线松动、硬盘损坏、电源故障在大型机房中几乎每小时都在发生,是常态;处理屏蔽这些硬件问题是分布式软件系统要解决的基本问题。一个常用的方式是为数据(和其服务)提供更多的拷贝或者副本,这些副本存在于多台商用服务器上。当一些副本发生故障时,由正常的副本继续提供服务;并且当访问压力增加时,还可以增加更多的副本来增强服务能力。此外,还需要通过一定的技术手段来保证这些副本的“一致性”,也就是每个服务器上各个副本的数据是一样的。 当然,在图数据库中,副本问题也存在;其处理方式和大多数大数据、RDBMS 会较为类似。 二、是数据的切分问题 单台服务器的硬盘、内存、CPU 都是有限的,TB、PB 级别的数据通过一定的办法分发到各个服务器上,这称为”切片”。当一些请求要访问多个切片时,分布式系统要能够将这些请求拆散分发到各个正确的分片上,并将各分片的返回重新“拼装”成完整的结果。",
+        "source_name": "知乎",
+        "source_record_id": "src_10e923442a3ca790793f10e8",
+        "title": "图数据库中的“分布式”和“数据切分”(切图)",
+        "url": "https://zhuanlan.zhihu.com/p/614175897"
+      }
+    ],
+    "succeeded": true,
+    "summary": "发现并保存 10 个 Web 候选来源",
+    "warnings": []
+  },
+  "raw_result": {
+    "arguments": {
+      "max_results": 10,
+      "query": "图流划分算法综述 边分割 负载均衡 知乎"
+    },
+    "elapsed_ms": 916,
+    "error": null,
+    "payload": {
+      "search_result": {
+        "query": "图流划分算法综述 边分割 负载均衡 知乎",
+        "results": [
+          {
+            "published_at": "2020-06-30T23:02:01",
+            "rank": 1,
+            "score": null,
+            "snippet": "图划分的优化目标包括两项:负载均衡和最小割 (cut)。二者都是为了提高在分布式系统中运算的性能。负载均衡是为了使分布式系统中的多台计算机有相近的任务负荷,避免少数计算机负载过高。最小割则是为了减少计算机之间的通信代价。同时优化两个目标目前已知是NP困难问题。",
+            "source_name": "知乎",
+            "source_record_id": "src_950f101bd0f30a986e9ded23",
+            "title": "图流划分算法综述",
+            "url": "https://zhuanlan.zhihu.com/p/152221150"
+          },
+          {
+            "published_at": "2022-08-20T10:07:00",
+            "rank": 2,
+            "score": null,
+            "snippet": "图1 点分割(左)和边分割(右)的示例 图分割的两个目标是负载均衡load balancing(减少存储代价)和最小化切边或点minimum cuts(减少通讯代价),同时优化这两个目标是 平衡图分割 (balanced graph partitioning)问题,这是一个NP难的问题[2]。通常情况下松弛为优化load balancing的同时尽可能保证minimum cuts。给定一个图  G = ( V , E ) 包含 | E | 条边和 | V | 个顶点,将它分割成  k 份, 点分割表示如下: m a x i ∈ [ 1 , k ] | V i | ≤ ( 1 +",
+            "source_name": "知乎",
+            "source_record_id": "src_1e87d52fca57eaa48d9f5c04",
+            "title": "图分割Graph Partitioning技术总结",
+            "url": "https://zhuanlan.zhihu.com/p/446152634"
+          },
+          {
+            "published_at": "2021-03-18T21:41:13",
+            "rank": 3,
+            "score": null,
+            "snippet": "图划分的目标有两个:负载均衡和 最小割 。负载均衡是为了使分布式系统中的多台机器有相近的任务负荷,负载不均会导致负载较小的处理器出现空等的情况而浪费资源。此外,要尽量减少分割,以便最小化由不同分区之间交换消息引起的通信成本。",
+            "source_name": "知乎",
+            "source_record_id": "src_2ece4d7c620c9fa11550cce0",
+            "title": "动态图划分复制算法:Leopard",
+            "url": "https://zhuanlan.zhihu.com/p/324383730"
+          },
+          {
+            "published_at": "2023-09-08T08:35:00",
+            "rank": 4,
+            "score": null,
+            "snippet": "知乎用户uvnrky 0. 介绍 2. overview 3. preliminaries - 准备 (k-way hypergraph partitioning problem) 4. 应用 - application 5. 顺序技术(sequential techniques) 5.1 经典(超)图分区技术 5.2 多级划分的最新进展 5.3 进化计算 (evolutionary computation) 5.4 流 - streaming 5.4.1 one-pass式顶点分割 (one-pass streaming vertex partitioning) 5.4.3 缓冲流顶点分区 5.4.4 hypergraph的流式顶点划分 5.4.5 流式边分区 5.4.6 实验研究 5.5 重分区(repartitioning) 5.6 目标函数和问题变体 (objective functions and problem variations) 5.6.1 目标函数 (objective functions) 5.6.2 多约束图划分 (multi-constraint graph partitioning) 5.6.3 有向无环(超)图划分 (directed acyclic (hyper)graph partitioning) 5.6.4 对称直角矩阵分区(symmetric rectilinear matrix partitioning) 5.6.5 过程映射(process mapping) 6 并行算法 6.1 共享内存 6.1.1 粗化 (coarsening) 6.1.2 initial partitioning",
+            "source_name": "知乎",
+            "source_record_id": "src_b7819f9e511468ea5188d07c",
+            "title": "【论文阅读(综述)】(超)图分区的更近期的发展 - More Recent Advances in (Hyper)Graph Partitioning",
+            "url": "https://zhuanlan.zhihu.com/p/654840232"
+          },
+          {
+            "published_at": "2025-10-10T15:10:00",
+            "rank": 5,
+            "score": null,
+            "snippet": "一、 负载均衡 的技术本质与核心价值 负载均衡(Load Balancing)作为分布式系统的基石技术,其本质是通过算法将 网络 请求或计算任务均匀分配到多个服务器节点,实现系统资源的高效利用。在知乎这类高并发、高可用的互联网平台中,负载均衡承担着三大核心职能: 流量分发 :将用户请求按预设策略(轮询、权重、最小连接数等)分配到后端服务器池 故障隔离 :当某个节点出现故障时,自动将流量切换到健康节点 弹性扩展 :配合自动扩缩容机制,动态调整服务节点数量 以知乎的架构为例,其前端采用LVS+Nginx的四级负载均衡体系: 客户端 → DNS 轮询 → LVS 集群(四层) → Nginx 集群(七层) → 应用服务器 这种分层设计既保证了全局流量分配的均匀性,又实现了业务逻辑的精细控制。但在实际运行中, 开发者 常遇到”负载均衡不均衡”的悖论现象。 二、负载不均衡的典型场景与根源分析 1. 算法缺陷导致的分配偏差 传统轮询算法在节点性能不一致时会出现明显倾斜。例如知乎早期采用简单轮询,导致配置较低的评论服务节点响应时间比其他节点长30%。通过引入加权轮询(Weighted Round Robin)算法,根据节点CPU、内存等指标动态调整权重,使请求分配偏差率从18%降至5%以内。 2. 会话保持引发的热点问题 对于需要保持会话状态的场景(如用户登录),采用IP Hash或Cookie-based的会话保持策略可能导致特定节点承载过多长连接。知乎在推荐系统改造中,通过改进的Least Connections算法结合短会话机制,将单节点连接数标准差从2.8降至0.9。 3. 动态内容处理的资源消耗差异 包含复杂计算的请求(如AI推荐)与静态资源请求对CPU的消耗存在数量级差异。知乎采用请求分类队列机制: class RequestClassifier : def __init__ ( self ): self . cpu_intensive_queue = [] self . io_intensive_queue = [] def classify ( self , request ): if request . path . startswith ( '/api/recommend' ): self . cpu_intensive_queue . append ( request ) else : self . io_intensive_queue . append ( request ) 配合差异化权重分配,使CPU利用率波动范围从±35%缩小到±12%。",
+            "source_name": "百度智能云",
+            "source_record_id": "src_d08838c023d1e4b940307d88",
+            "title": "从\"负载均衡\"到\"不均衡\"困境:再探负载均衡的知乎实践与优化策略",
+            "url": "https://cloud.baidu.com/article/3835248"
+          },
+          {
+            "published_at": "2025-10-10T15:10:00",
+            "rank": 6,
+            "score": null,
+            "snippet": "一, 负载均衡 的\"不均衡\"现象:从理想到现实的落差 1.1理想状态下的负载均衡 负载均衡的核心目标是通过算法将请求均匀分配到后端服务节点,实现资源利用率最大化.典型算法包括轮询(round robin),加权轮询(weighted rr),最小连接数(least connections)等.以nginx配置为例: upstream backend { server 10.0 . 0.1 : 8080 weight = 3 ; server 10.0 . 0.2 : 8080 ; server 10.0 . 0.3 : 8080 ; } 该配置通过权重参数实现流量倾斜,理论上可应对节点性能差异. 1.2现实中的\"不均衡\"困境 知乎架构曾遭遇典型不均衡场景:某核心服务集群采用l4负载均衡器,配置轮询算法后,出现部分节点cpu利用率达90%而其他节点仅30%的异常.进一步分析发现: 网络 延迟差异 :跨机房调用导致部分节点响应时间增加200ms 服务依赖不均 :部分节点承载了更多依赖 数据库 的写操作 缓存穿透效应 :热点key导致特定节点承受额外压力 这种\"形式均衡,实质不均\"的现象在微服务架构中尤为普遍.根据linkedin 2022年调研,68%的负载均衡失效案例源于未考虑业务特性. 二,不均衡的根源诊断:多维度的深度剖析 2.1基础设施层因素 网络拓扑差异 :跨可用区网络延迟可能相差3-5倍 硬件性能异构 :不同代次服务器cpu指令集差异导致计算效率不同 存储 i/o瓶颈 :ssd与hdd混用集群出现存储延迟不均 2.2应用层因素 服务粒度不均 :微服务拆分不合理导致某些服务调用量激增 缓存策略失效 :未实现本地缓存与分布式缓存的协同 异步任务堆积 : 消息队列 消费者处理能力不匹配 2.3算法选择误区 某电商平台曾因错误使用ip hash算法导致特定区域用户集中访问个别节点,造成区域性服务崩溃.正确做法应结合业务场景选择算法: //动态权重调整算法示例 public class dynamicweightbalancer { private map < string , integer > weights = new concurrenthashmap <>(); public server selectserver ( list < server > servers ) { //根据实时指标调整权重 servers . foreach ( server -> { int currentload = getserverload ( server ); weights . put (",
+            "source_name": "百度智能云",
+            "source_record_id": "src_d8aa5c27c9d024db7d09887e",
+            "title": "负载均衡的\"不均衡\"困境与再平衡实践:知乎架构的深度解析",
+            "url": "https://cloud.baidu.com/article/3835226"
+          },
+          {
+            "published_at": "2023-10-20T16:13:36",
+            "rank": 7,
+            "score": null,
+            "snippet": "在数学中,图分区是将图的 节点集 划分为互斥的组,从而将图简化为较小图。 正态分布 是我们最为熟悉的在自然界常见的一种数据分布形式,它具有中间多,两头少的特点,比如我们身高,大家的身高多集中在平均身高区域,极矮或极高的人属于少数。 其实 幂律分布 (Power-law distribution)也同样常见,它是一个不断下降的曲线,从最高的峰值开始极速下降,后面拖了一个长长的尾巴,比如微博大V拥有百万粉丝,而普通人的关注度则寥寥无几。 为什么要介绍幂律分布呢?因为在图计算中 数据倾斜 的情况非常常见,一个点与图中大多数的点有联系,我们应该如何将这些点分开储存在不同的节点上,是尽量减少跨分块的边,牺牲内存减少节点与 节点这间的通讯开销;还是减少内存消耗,转而增加通讯开销,都是一个值得权衡思考的问题。 图的切分方式有两种,边切分和点切分。 边切分每个顶点都存储一次,但有的边会被打断分到两台机器上。这样做的好处是节省存储空间;坏处是对图进行基于边的计算时,对于一条两个顶点被分到不同机器上的边来说,要跨机器通信传输数据,内网通信流量大。 点切分每条边只存储一次,都只会出现在一台机器上。邻居多的点会被复制到多台机器上,增加了存储开销,同时会引发数据同步问题。好处是可以大幅减少内网通信量。 : 图数据划分是指在 分布式计算 中,将数据分发到集群中不同节点上。尽量做到分发到各节点上的数据量大小均匀,避免大量数据倾斜在某些节点所导致的 负载不均衡 的现象出现。 负载不均衡会使得数据量少的节点CPU利用不饱和而数据量多的节点计算速度缓慢,如果我们使用整体同步并行计算模型(BSP),每一轮迭代都要等到上一轮超步全部执行完后才会进行,在负载不均衡的情况下,需要浪费大量时间等待数据倾斜节点完成本轮任务。 因此,图数据划分是分布式图计算系统中的一个核心内容。 这里我们介绍一种较为简单的普通哈希划分。 普通哈希划分是对每个点的hash结果取余数,即Hash(Key)%M,假设对机器编号从0到N-1,按照自定义的  hash()算法 ,对每个请求的hash()值按M取模,得到余数i,然后将点分发到编号为i的机器上。这样我们就可以把点均匀的分发到M个机器上了。 对于单机无法处理的超级大图,则需要将图数据划分成几个子图,采用分布式计算方式,因此,会涉及到图划分的问题,即如何将一整张图切割成子图,并分配给不同的机器进行分布式地计算。",
+            "source_name": "知乎",
+            "source_record_id": "src_78805bf9064542b5b8b95b83",
+            "title": "图划分(Graph Partition)",
+            "url": "https://zhuanlan.zhihu.com/p/586198196"
+          },
+          {
+            "published_at": "2023-08-15T21:25:21",
+            "rank": 8,
+            "score": null,
+            "snippet": "对于图G,n个节点,节点有权重,有向边,边有权重。任务是将图G的所有节点分成k个部分,各个部分的节点总权重可以预先定义容量,同时要使得不同部分之间的联… 苏格拉没有底​上海理工大学 计算机技术硕士​关注 原理 这是一个图的划分问题,可以用图划分算法来解决。下面是一种可能的解决方案: 1. 初始化k个部分,每个部分为空。 2. 计算每个节点的权重总和。 3. 将节点按权重从大到小排序。 4. 依次遍历每个节点,将节点放入当前总权重最小的部分中,直到该部分的总权重超过预先定义的容量。 5. 重复步骤4,直到所有节点都被分配到部分中。 6. 对于每个部分,计算部分内所有节点之间的边的权重总和。 7. 对于每个部分,与其他部分之间的边的权重总和进行排序,选择权重总和最小的k-1个边保留,其余边删除。 这样,就可以将图G的所有节点分成k个部分,使得各个部分的节点总权重不超过预先定义的容量,并且不同部分之间的联系相对稀疏。 算法 下面是一个用Java实现的示例代码 import java.util.ArrayList; import java.util.Collections; import java.util.Comparator; import java.util.List; class Node { int id; int weight; public Node(int id, int weight) { this.id = id; this.weight = weight; } } class Edge { int from; int to; int weight; public Edge(int from, int to, int weight) { this.from = from; this.to = to; this.weight = weight; } } class GraphPartition { List<Node> nodes; List<Edge> edges; int k; // 分成k个部分 int[] capacities; // 各个部分的容量 public GraphPartition(int k, int[] capacities) { this.k = k; this.capacities = capacities; nodes = new ArrayList<>(); edges = new ArrayList<>(); } public void addNode(int id, int weight) { nodes.add(new Node(id, weight)); } public void addEdge(int from, int to, int weight) { edges.add(new Edge(from, to, weight)); } public void partitionGraph() { // 计算每个节点的权重总和 int totalWeight = 0; for (Node node : nodes) { totalWeight += node.weight; } // 将节点按权重从大到小排序 Collections.sort(nodes, Comparator.comparingInt(node -> -node.weight)); // 初始化k个部分 List<List<Node>> partitions = new ArrayList<>(); for (int i = 0; i < k; i++) { partitions.add(new ArrayList<>()); } // 将节点分配到部分中 for (Node node",
+            "source_name": "知乎",
+            "source_record_id": "src_c27eba7f61a568753f99eb29",
+            "title": "想请教一下一种图划分(Graph partitioning)算法?",
+            "url": "https://www.zhihu.com/question/616882997/answer/3167006160"
+          },
+          {
+            "published_at": "2026-09-09T16:11:43",
+            "rank": 9,
+            "score": null,
+            "snippet": "1. 平衡图分割问题概述 平衡图分割是图论中一个经典的计算难题,在实际应用中有着广泛的需求。简单来说,就是把一个图分成若干个部分,要求各部分之间连接尽可能少,同时每个部分的\"大小\"尽可能接近。这里的\"大小\"可以是顶点数、边数或其他权重指标。 我在处理社交网络数据分析时,就遇到过这样的需求:需要将用户关系网络划分成多个社区,既要保证社区间互动最少,又要避免出现某些社区过大或过小的情况。这正是典型的平衡图分割问题。 2.1 形式化定义 给定一个无向图G=(V,E),其中V是顶点集,E是边集。平衡图分割问题要求将V划分为k个不相交的子集V1,V2,...,Vk,满足: 各部分大小平衡:|Vi| ≈ |V|/k,允许一定偏差 割边数最小:即连接不同子集的边数最少 2.2 常见变体与约束 实际应用中常见几种变体: 顶点加权平衡分割:每个顶点有权重,要求各部分权重和平衡 边加权平衡分割:边有权重,目标是使割边权重和最小 多约束平衡分割:同时考虑多种平衡约束 提示:在社交网络分析中,顶点权重可以表示用户活跃度,边权重可以表示互动频率。 3. 经典求解算法分析 3.1 Kernighan-Lin算法 KL算法是最早提出的启发式方法,基本思路是: 初始随机划分 迭代交换顶点对,选择能最大程度减少割边数的交换 当无法进一步优化时停止 虽然简单,但时间复杂度较高(O(n^3)),且容易陷入局部最优。 3.2 谱分割方法 基于图的拉普拉斯矩阵特征向量,将图映射到低维空间后进行聚类。数学基础扎实,但: 计算特征向量开销大 对平衡性控制较弱 不适合大规模图 3.3 多级方法 包括三个主要阶段: 粗化:逐步缩小图规模 初始分割:在小图上求解 细化:逐步还原图并优化分割 Metis是这类方法的代表,但实现复杂且参数调优困难。 4. 快速求解算法设计 4.1 算法总体框架 我们提出一种融合局部搜索和全局信息的混合算法: 1. 预处理阶段: - 计算顶点重要性指标 - 识别关键顶点和社区结构 2. 初始分割阶段: - 基于重要性采样生成初始解 3. 优化阶段: - 局部搜索与全局信息引导相结合 - 动态平衡约束处理 AI写代码 1 2 3 4 5 6 7 8 4.2 关键创新点 4.2.1 重要性采样初始化 传统随机初始化效果差。我们设计: 顶点重要性 = 度数中心性 + 介数中心性 按重要性分层采样,确保初始解质量 4.2.2 动态平衡约束 引入松弛变量处理平衡约束: 允许临时违反平衡条件但设置惩罚项引导回归平衡 AI写代码",
+            "source_name": "CSDN软件开发网",
+            "source_record_id": "src_7094eb4bb5f2b309ce9321ab",
+            "title": "平衡图分割算法:原理、优化与实践应用",
+            "url": "https://blog.csdn.net/weixin_29309475/article/details/164835587"
+          },
+          {
+            "published_at": "2023-03-15T16:13:36",
+            "rank": 10,
+            "score": null,
+            "snippet": "图数据库中的”分布式”和“切图”如果有理解不对的地方,欢迎留言讨论。 一般来说,分布式系统是一组计算机程序的集合,这些程序利用跨多个独立节点的资源来实现共同的目标;这里的独立节点,硬件上大多是指商用服务器(Commodity Servers)而不是大型主机(Mainframe);这里的跨节点协同,硬件上大多是基于以太网设备或者更高端的 RMDA 设备。 为什么我们需要分布式系统? 使用分布式技术的主要目的,本质上是用软件技术+廉价硬件来换取昂贵硬件设备(比如主机)的成本;特别是在大多数私有机房环境——而不是公有云端或者超算条件下,此时采购成本是商业决策的重要依据。 除了降低硬件成本外,分布式技术带来的另一个好处是其“扩展性”,通过在原有商用服务器的数量基础上,增加几台服务器,再结合分布式软件的调度和分发能力,使得新加入的这几台服务器也再额外提供更多的服务; 相比于每次扩容都要 1 比 1 采购更多的等数量服务器,或者购买更高配置的服务器;分布式技术这一方面使得采购计划可以按需扩容,降低了一次性的大额资本支出;另一方面也使得业务容量可以更加容易规划。 分布式系统的基础问题 在分布式技术中,由于数据的存储和计算需要跨多个独立节点来实现,因此不得不涉及到一系列基础技术。在本文中我们只讨论两个:一是提供数据(和服务)的拷贝或者副本的问题;二是对于那些庞大数据的存储和计算该如何分发到各个独立节点上完成? 一、数据的副本问题 由于是商用服务器,其硬件上的可靠性和可维护性远远低于主机,网线松动、硬盘损坏、电源故障在大型机房中几乎每小时都在发生,是常态;处理屏蔽这些硬件问题是分布式软件系统要解决的基本问题。一个常用的方式是为数据(和其服务)提供更多的拷贝或者副本,这些副本存在于多台商用服务器上。当一些副本发生故障时,由正常的副本继续提供服务;并且当访问压力增加时,还可以增加更多的副本来增强服务能力。此外,还需要通过一定的技术手段来保证这些副本的“一致性”,也就是每个服务器上各个副本的数据是一样的。 当然,在图数据库中,副本问题也存在;其处理方式和大多数大数据、RDBMS 会较为类似。 二、是数据的切分问题 单台服务器的硬盘、内存、CPU 都是有限的,TB、PB 级别的数据通过一定的办法分发到各个服务器上,这称为”切片”。当一些请求要访问多个切片时,分布式系统要能够将这些请求拆散分发到各个正确的分片上,并将各分片的返回重新“拼装”成完整的结果。",
+            "source_name": "知乎",
+            "source_record_id": "src_10e923442a3ca790793f10e8",
+            "title": "图数据库中的“分布式”和“数据切分”(切图)",
+            "url": "https://zhuanlan.zhihu.com/p/614175897"
+          }
+        ],
+        "warnings": []
+      },
+      "source_records": [
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "1",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://zhuanlan.zhihu.com/p/152221150",
+          "observed_at": "2026-09-15T10:41:18.027012Z",
+          "provenance": {
+            "query": "图流划分算法综述 边分割 负载均衡 知乎",
+            "rank": 1,
+            "run_id": "run-c64223762d494aaf8c5112bda571430a",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": "图划分的优化目标包括两项:负载均衡和最小割 (cut)。二者都是为了提高在分布式系统中运算的性能。负载均衡是为了使分布式系统中的多台计算机有相近的任务负荷,避免少数计算机负载过高。最小割则是为了减少计算机之间的通信代价。同时优化两个目标目前已知是NP困难问题。",
+            "published_at": "2020-06-30T23:02:01",
+            "request_id": "23caab76-9a19-49dd-b684-29352a35ad57",
+            "search_score": null,
+            "search_snippet": "图划分的优化目标包括两项:负载均衡和最小割 (cut)。二者都是为了提高在分布式系统中运算的性能。负载均衡是为了使分布式系统中的多台计算机有相近的任务负荷,避免少数计算机负载过高。最小割则是为了减少计算机之间的通信代价。同时优化两个目标目前已知是NP困难问题。",
+            "source_name": "知乎",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web",
+          "source_record_id": "src_950f101bd0f30a986e9ded23",
+          "title": "图流划分算法综述",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "2",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://zhuanlan.zhihu.com/p/446152634",
+          "observed_at": "2026-09-15T10:41:18.027012Z",
+          "provenance": {
+            "query": "图流划分算法综述 边分割 负载均衡 知乎",
+            "rank": 2,
+            "run_id": "run-c64223762d494aaf8c5112bda571430a",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": " 图1 点分割(左)和边分割(右)的示例 图分割的两个目标是负载均衡load balancing(减少存储代价)和最小化切边或点minimum cuts(减少通讯代价),同时优化这两个目标是 平衡图分割 (balanced graph partitioning)问题,这是一个NP难的问题[2]。通常情况下松弛为优化load balancing的同时尽可能保证minimum cuts。给定一个图  G = ( V , E ) 包含 | E | 条边和 | V | 个顶点,将它分割成  k 份, 点分割表示如下: m a x i ∈ [ 1 , k ] | V i | ≤ ( 1 +",
+            "published_at": "2022-08-20T10:07:00",
+            "request_id": "23caab76-9a19-49dd-b684-29352a35ad57",
+            "search_score": null,
+            "search_snippet": "图1 点分割(左)和边分割(右)的示例 图分割的两个目标是负载均衡load balancing(减少存储代价)和最小化切边或点minimum cuts(减少通讯代价),同时优化这两个目标是 平衡图分割 (balanced graph partitioning)问题,这是一个NP难的问题[2]。通常情况下松弛为优化load balancing的同时尽可能保证minimum cuts。给定一个图  G = ( V , E ) 包含 | E | 条边和 | V | 个顶点,将它分割成  k 份, 点分割表示如下: m a x i ∈ [ 1 , k ] | V i | ≤ ( 1 +",
+            "source_name": "知乎",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web",
+          "source_record_id": "src_1e87d52fca57eaa48d9f5c04",
+          "title": "图分割Graph Partitioning技术总结",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "3",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://zhuanlan.zhihu.com/p/324383730",
+          "observed_at": "2026-09-15T10:41:18.027012Z",
+          "provenance": {
+            "query": "图流划分算法综述 边分割 负载均衡 知乎",
+            "rank": 3,
+            "run_id": "run-c64223762d494aaf8c5112bda571430a",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": " 图划分的目标有两个:负载均衡和 最小割 。负载均衡是为了使分布式系统中的多台机器有相近的任务负荷,负载不均会导致负载较小的处理器出现空等的情况而浪费资源。此外,要尽量减少分割,以便最小化由不同分区之间交换消息引起的通信成本。",
+            "published_at": "2021-03-18T21:41:13",
+            "request_id": "23caab76-9a19-49dd-b684-29352a35ad57",
+            "search_score": null,
+            "search_snippet": "图划分的目标有两个:负载均衡和 最小割 。负载均衡是为了使分布式系统中的多台机器有相近的任务负荷,负载不均会导致负载较小的处理器出现空等的情况而浪费资源。此外,要尽量减少分割,以便最小化由不同分区之间交换消息引起的通信成本。",
+            "source_name": "知乎",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web",
+          "source_record_id": "src_2ece4d7c620c9fa11550cce0",
+          "title": "动态图划分复制算法:Leopard",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "4",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://zhuanlan.zhihu.com/p/654840232",
+          "observed_at": "2026-09-15T10:41:18.027012Z",
+          "provenance": {
+            "query": "图流划分算法综述 边分割 负载均衡 知乎",
+            "rank": 4,
+            "run_id": "run-c64223762d494aaf8c5112bda571430a",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": "知乎用户uvnrky 0. 介绍 2. overview 3. preliminaries - 准备 (k-way hypergraph partitioning problem) 4. 应用 - application 5. 顺序技术(sequential techniques) 5.1 经典(超)图分区技术 5.2 多级划分的最新进展 5.3 进化计算 (evolutionary computation) 5.4 流 - streaming 5.4.1 one-pass式顶点分割 (one-pass streaming vertex partitioning) 5.4.3 缓冲流顶点分区 5.4.4 hypergraph的流式顶点划分 5.4.5 流式边分区 5.4.6 实验研究 5.5 重分区(repartitioning) 5.6 目标函数和问题变体 (objective functions and problem variations) 5.6.1 目标函数 (objective functions) 5.6.2 多约束图划分 (multi-constraint graph partitioning) 5.6.3 有向无环(超)图划分 (directed acyclic (hyper)graph partitioning) 5.6.4 对称直角矩阵分区(symmetric rectilinear matrix partitioning) 5.6.5 过程映射(process mapping) 6 并行算法 6.1 共享内存 6.1.1 粗化 (coarsening) 6.1.2 initial partitioning ",
+            "published_at": "2023-09-08T08:35:00",
+            "request_id": "23caab76-9a19-49dd-b684-29352a35ad57",
+            "search_score": null,
+            "search_snippet": "知乎用户uvnrky 0. 介绍 2. overview 3. preliminaries - 准备 (k-way hypergraph partitioning problem) 4. 应用 - application 5. 顺序技术(sequential techniques) 5.1 经典(超)图分区技术 5.2 多级划分的最新进展 5.3 进化计算 (evolutionary computation) 5.4 流 - streaming 5.4.1 one-pass式顶点分割 (one-pass streaming vertex partitioning) 5.4.3 缓冲流顶点分区 5.4.4 hypergraph的流式顶点划分 5.4.5 流式边分区 5.4.6 实验研究 5.5 重分区(repartitioning) 5.6 目标函数和问题变体 (objective functions and problem variations) 5.6.1 目标函数 (objective functions) 5.6.2 多约束图划分 (multi-constraint graph partitioning) 5.6.3 有向无环(超)图划分 (directed acyclic (hyper)graph partitioning) 5.6.4 对称直角矩阵分区(symmetric rectilinear matrix partitioning) 5.6.5 过程映射(process mapping) 6 并行算法 6.1 共享内存 6.1.1 粗化 (coarsening) 6.1.2 initial partitioning",
+            "source_name": "知乎",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web",
+          "source_record_id": "src_b7819f9e511468ea5188d07c",
+          "title": "【论文阅读(综述)】(超)图分区的更近期的发展 - More Recent Advances in (Hyper)Graph Partitioning",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "5",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://cloud.baidu.com/article/3835248",
+          "observed_at": "2026-09-15T10:41:18.027012Z",
+          "provenance": {
+            "query": "图流划分算法综述 边分割 负载均衡 知乎",
+            "rank": 5,
+            "run_id": "run-c64223762d494aaf8c5112bda571430a",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": " 一、 负载均衡 的技术本质与核心价值 负载均衡(Load Balancing)作为分布式系统的基石技术,其本质是通过算法将 网络 请求或计算任务均匀分配到多个服务器节点,实现系统资源的高效利用。在知乎这类高并发、高可用的互联网平台中,负载均衡承担着三大核心职能: 流量分发 :将用户请求按预设策略(轮询、权重、最小连接数等)分配到后端服务器池 故障隔离 :当某个节点出现故障时,自动将流量切换到健康节点 弹性扩展 :配合自动扩缩容机制,动态调整服务节点数量 以知乎的架构为例,其前端采用LVS+Nginx的四级负载均衡体系: 客户端 → DNS 轮询 → LVS 集群(四层) → Nginx 集群(七层) → 应用服务器 这种分层设计既保证了全局流量分配的均匀性,又实现了业务逻辑的精细控制。但在实际运行中, 开发者 常遇到”负载均衡不均衡”的悖论现象。 二、负载不均衡的典型场景与根源分析 1. 算法缺陷导致的分配偏差 传统轮询算法在节点性能不一致时会出现明显倾斜。例如知乎早期采用简单轮询,导致配置较低的评论服务节点响应时间比其他节点长30%。通过引入加权轮询(Weighted Round Robin)算法,根据节点CPU、内存等指标动态调整权重,使请求分配偏差率从18%降至5%以内。 2. 会话保持引发的热点问题 对于需要保持会话状态的场景(如用户登录),采用IP Hash或Cookie-based的会话保持策略可能导致特定节点承载过多长连接。知乎在推荐系统改造中,通过改进的Least Connections算法结合短会话机制,将单节点连接数标准差从2.8降至0.9。 3. 动态内容处理的资源消耗差异 包含复杂计算的请求(如AI推荐)与静态资源请求对CPU的消耗存在数量级差异。知乎采用请求分类队列机制: class RequestClassifier : def __init__ ( self ): self . cpu_intensive_queue = [] self . io_intensive_queue = [] def classify ( self , request ): if request . path . startswith ( '/api/recommend' ): self . cpu_intensive_queue . append ( request ) else : self . io_intensive_queue . append ( request ) 配合差异化权重分配,使CPU利用率波动范围从±35%缩小到±12%。",
+            "published_at": "2025-10-10T15:10:00",
+            "request_id": "23caab76-9a19-49dd-b684-29352a35ad57",
+            "search_score": null,
+            "search_snippet": "一、 负载均衡 的技术本质与核心价值 负载均衡(Load Balancing)作为分布式系统的基石技术,其本质是通过算法将 网络 请求或计算任务均匀分配到多个服务器节点,实现系统资源的高效利用。在知乎这类高并发、高可用的互联网平台中,负载均衡承担着三大核心职能: 流量分发 :将用户请求按预设策略(轮询、权重、最小连接数等)分配到后端服务器池 故障隔离 :当某个节点出现故障时,自动将流量切换到健康节点 弹性扩展 :配合自动扩缩容机制,动态调整服务节点数量 以知乎的架构为例,其前端采用LVS+Nginx的四级负载均衡体系: 客户端 → DNS 轮询 → LVS 集群(四层) → Nginx 集群(七层) → 应用服务器 这种分层设计既保证了全局流量分配的均匀性,又实现了业务逻辑的精细控制。但在实际运行中, 开发者 常遇到”负载均衡不均衡”的悖论现象。 二、负载不均衡的典型场景与根源分析 1. 算法缺陷导致的分配偏差 传统轮询算法在节点性能不一致时会出现明显倾斜。例如知乎早期采用简单轮询,导致配置较低的评论服务节点响应时间比其他节点长30%。通过引入加权轮询(Weighted Round Robin)算法,根据节点CPU、内存等指标动态调整权重,使请求分配偏差率从18%降至5%以内。 2. 会话保持引发的热点问题 对于需要保持会话状态的场景(如用户登录),采用IP Hash或Cookie-based的会话保持策略可能导致特定节点承载过多长连接。知乎在推荐系统改造中,通过改进的Least Connections算法结合短会话机制,将单节点连接数标准差从2.8降至0.9。 3. 动态内容处理的资源消耗差异 包含复杂计算的请求(如AI推荐)与静态资源请求对CPU的消耗存在数量级差异。知乎采用请求分类队列机制: class RequestClassifier : def __init__ ( self ): self . cpu_intensive_queue = [] self . io_intensive_queue = [] def classify ( self , request ): if request . path . startswith ( '/api/recommend' ): self . cpu_intensive_queue . append ( request ) else : self . io_intensive_queue . append ( request ) 配合差异化权重分配,使CPU利用率波动范围从±35%缩小到±12%。",
+            "source_name": "百度智能云",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web",
+          "source_record_id": "src_d08838c023d1e4b940307d88",
+          "title": "从\"负载均衡\"到\"不均衡\"困境:再探负载均衡的知乎实践与优化策略",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "6",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://cloud.baidu.com/article/3835226",
+          "observed_at": "2026-09-15T10:41:18.027012Z",
+          "provenance": {
+            "query": "图流划分算法综述 边分割 负载均衡 知乎",
+            "rank": 6,
+            "run_id": "run-c64223762d494aaf8c5112bda571430a",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": "一, 负载均衡 的\"不均衡\"现象:从理想到现实的落差 1.1理想状态下的负载均衡 负载均衡的核心目标是通过算法将请求均匀分配到后端服务节点,实现资源利用率最大化.典型算法包括轮询(round robin),加权轮询(weighted rr),最小连接数(least connections)等.以nginx配置为例: upstream backend { server 10.0 . 0.1 : 8080 weight = 3 ; server 10.0 . 0.2 : 8080 ; server 10.0 . 0.3 : 8080 ; } 该配置通过权重参数实现流量倾斜,理论上可应对节点性能差异. 1.2现实中的\"不均衡\"困境 知乎架构曾遭遇典型不均衡场景:某核心服务集群采用l4负载均衡器,配置轮询算法后,出现部分节点cpu利用率达90%而其他节点仅30%的异常.进一步分析发现: 网络 延迟差异 :跨机房调用导致部分节点响应时间增加200ms 服务依赖不均 :部分节点承载了更多依赖 数据库 的写操作 缓存穿透效应 :热点key导致特定节点承受额外压力 这种\"形式均衡,实质不均\"的现象在微服务架构中尤为普遍.根据linkedin 2022年调研,68%的负载均衡失效案例源于未考虑业务特性. 二,不均衡的根源诊断:多维度的深度剖析 2.1基础设施层因素 网络拓扑差异 :跨可用区网络延迟可能相差3-5倍 硬件性能异构 :不同代次服务器cpu指令集差异导致计算效率不同 存储 i/o瓶颈 :ssd与hdd混用集群出现存储延迟不均 2.2应用层因素 服务粒度不均 :微服务拆分不合理导致某些服务调用量激增 缓存策略失效 :未实现本地缓存与分布式缓存的协同 异步任务堆积 : 消息队列 消费者处理能力不匹配 2.3算法选择误区 某电商平台曾因错误使用ip hash算法导致特定区域用户集中访问个别节点,造成区域性服务崩溃.正确做法应结合业务场景选择算法: //动态权重调整算法示例 public class dynamicweightbalancer { private map < string , integer > weights = new concurrenthashmap <>(); public server selectserver ( list < server > servers ) { //根据实时指标调整权重 servers . foreach ( server -> { int currentload = getserverload ( server ); weights . put ( ",
+            "published_at": "2025-10-10T15:10:00",
+            "request_id": "23caab76-9a19-49dd-b684-29352a35ad57",
+            "search_score": null,
+            "search_snippet": "一, 负载均衡 的\"不均衡\"现象:从理想到现实的落差 1.1理想状态下的负载均衡 负载均衡的核心目标是通过算法将请求均匀分配到后端服务节点,实现资源利用率最大化.典型算法包括轮询(round robin),加权轮询(weighted rr),最小连接数(least connections)等.以nginx配置为例: upstream backend { server 10.0 . 0.1 : 8080 weight = 3 ; server 10.0 . 0.2 : 8080 ; server 10.0 . 0.3 : 8080 ; } 该配置通过权重参数实现流量倾斜,理论上可应对节点性能差异. 1.2现实中的\"不均衡\"困境 知乎架构曾遭遇典型不均衡场景:某核心服务集群采用l4负载均衡器,配置轮询算法后,出现部分节点cpu利用率达90%而其他节点仅30%的异常.进一步分析发现: 网络 延迟差异 :跨机房调用导致部分节点响应时间增加200ms 服务依赖不均 :部分节点承载了更多依赖 数据库 的写操作 缓存穿透效应 :热点key导致特定节点承受额外压力 这种\"形式均衡,实质不均\"的现象在微服务架构中尤为普遍.根据linkedin 2022年调研,68%的负载均衡失效案例源于未考虑业务特性. 二,不均衡的根源诊断:多维度的深度剖析 2.1基础设施层因素 网络拓扑差异 :跨可用区网络延迟可能相差3-5倍 硬件性能异构 :不同代次服务器cpu指令集差异导致计算效率不同 存储 i/o瓶颈 :ssd与hdd混用集群出现存储延迟不均 2.2应用层因素 服务粒度不均 :微服务拆分不合理导致某些服务调用量激增 缓存策略失效 :未实现本地缓存与分布式缓存的协同 异步任务堆积 : 消息队列 消费者处理能力不匹配 2.3算法选择误区 某电商平台曾因错误使用ip hash算法导致特定区域用户集中访问个别节点,造成区域性服务崩溃.正确做法应结合业务场景选择算法: //动态权重调整算法示例 public class dynamicweightbalancer { private map < string , integer > weights = new concurrenthashmap <>(); public server selectserver ( list < server > servers ) { //根据实时指标调整权重 servers . foreach ( server -> { int currentload = getserverload ( server ); weights . put (",
+            "source_name": "百度智能云",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web",
+          "source_record_id": "src_d8aa5c27c9d024db7d09887e",
+          "title": "负载均衡的\"不均衡\"困境与再平衡实践:知乎架构的深度解析",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "7",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://zhuanlan.zhihu.com/p/586198196",
+          "observed_at": "2026-09-15T10:41:18.027012Z",
+          "provenance": {
+            "query": "图流划分算法综述 边分割 负载均衡 知乎",
+            "rank": 7,
+            "run_id": "run-c64223762d494aaf8c5112bda571430a",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": " 在数学中,图分区是将图的 节点集 划分为互斥的组,从而将图简化为较小图。 正态分布 是我们最为熟悉的在自然界常见的一种数据分布形式,它具有中间多,两头少的特点,比如我们身高,大家的身高多集中在平均身高区域,极矮或极高的人属于少数。 其实 幂律分布 (Power-law distribution)也同样常见,它是一个不断下降的曲线,从最高的峰值开始极速下降,后面拖了一个长长的尾巴,比如微博大V拥有百万粉丝,而普通人的关注度则寥寥无几。 为什么要介绍幂律分布呢?因为在图计算中 数据倾斜 的情况非常常见,一个点与图中大多数的点有联系,我们应该如何将这些点分开储存在不同的节点上,是尽量减少跨分块的边,牺牲内存减少节点与 节点这间的通讯开销;还是减少内存消耗,转而增加通讯开销,都是一个值得权衡思考的问题。 图的切分方式有两种,边切分和点切分。 边切分每个顶点都存储一次,但有的边会被打断分到两台机器上。这样做的好处是节省存储空间;坏处是对图进行基于边的计算时,对于一条两个顶点被分到不同机器上的边来说,要跨机器通信传输数据,内网通信流量大。 点切分每条边只存储一次,都只会出现在一台机器上。邻居多的点会被复制到多台机器上,增加了存储开销,同时会引发数据同步问题。好处是可以大幅减少内网通信量。 : 图数据划分是指在 分布式计算 中,将数据分发到集群中不同节点上。尽量做到分发到各节点上的数据量大小均匀,避免大量数据倾斜在某些节点所导致的 负载不均衡 的现象出现。 负载不均衡会使得数据量少的节点CPU利用不饱和而数据量多的节点计算速度缓慢,如果我们使用整体同步并行计算模型(BSP),每一轮迭代都要等到上一轮超步全部执行完后才会进行,在负载不均衡的情况下,需要浪费大量时间等待数据倾斜节点完成本轮任务。 因此,图数据划分是分布式图计算系统中的一个核心内容。 这里我们介绍一种较为简单的普通哈希划分。 普通哈希划分是对每个点的hash结果取余数,即Hash(Key)%M,假设对机器编号从0到N-1,按照自定义的  hash()算法 ,对每个请求的hash()值按M取模,得到余数i,然后将点分发到编号为i的机器上。这样我们就可以把点均匀的分发到M个机器上了。 对于单机无法处理的超级大图,则需要将图数据划分成几个子图,采用分布式计算方式,因此,会涉及到图划分的问题,即如何将一整张图切割成子图,并分配给不同的机器进行分布式地计算。",
+            "published_at": "2023-10-20T16:13:36",
+            "request_id": "23caab76-9a19-49dd-b684-29352a35ad57",
+            "search_score": null,
+            "search_snippet": "在数学中,图分区是将图的 节点集 划分为互斥的组,从而将图简化为较小图。 正态分布 是我们最为熟悉的在自然界常见的一种数据分布形式,它具有中间多,两头少的特点,比如我们身高,大家的身高多集中在平均身高区域,极矮或极高的人属于少数。 其实 幂律分布 (Power-law distribution)也同样常见,它是一个不断下降的曲线,从最高的峰值开始极速下降,后面拖了一个长长的尾巴,比如微博大V拥有百万粉丝,而普通人的关注度则寥寥无几。 为什么要介绍幂律分布呢?因为在图计算中 数据倾斜 的情况非常常见,一个点与图中大多数的点有联系,我们应该如何将这些点分开储存在不同的节点上,是尽量减少跨分块的边,牺牲内存减少节点与 节点这间的通讯开销;还是减少内存消耗,转而增加通讯开销,都是一个值得权衡思考的问题。 图的切分方式有两种,边切分和点切分。 边切分每个顶点都存储一次,但有的边会被打断分到两台机器上。这样做的好处是节省存储空间;坏处是对图进行基于边的计算时,对于一条两个顶点被分到不同机器上的边来说,要跨机器通信传输数据,内网通信流量大。 点切分每条边只存储一次,都只会出现在一台机器上。邻居多的点会被复制到多台机器上,增加了存储开销,同时会引发数据同步问题。好处是可以大幅减少内网通信量。 : 图数据划分是指在 分布式计算 中,将数据分发到集群中不同节点上。尽量做到分发到各节点上的数据量大小均匀,避免大量数据倾斜在某些节点所导致的 负载不均衡 的现象出现。 负载不均衡会使得数据量少的节点CPU利用不饱和而数据量多的节点计算速度缓慢,如果我们使用整体同步并行计算模型(BSP),每一轮迭代都要等到上一轮超步全部执行完后才会进行,在负载不均衡的情况下,需要浪费大量时间等待数据倾斜节点完成本轮任务。 因此,图数据划分是分布式图计算系统中的一个核心内容。 这里我们介绍一种较为简单的普通哈希划分。 普通哈希划分是对每个点的hash结果取余数,即Hash(Key)%M,假设对机器编号从0到N-1,按照自定义的  hash()算法 ,对每个请求的hash()值按M取模,得到余数i,然后将点分发到编号为i的机器上。这样我们就可以把点均匀的分发到M个机器上了。 对于单机无法处理的超级大图,则需要将图数据划分成几个子图,采用分布式计算方式,因此,会涉及到图划分的问题,即如何将一整张图切割成子图,并分配给不同的机器进行分布式地计算。",
+            "source_name": "知乎",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web",
+          "source_record_id": "src_78805bf9064542b5b8b95b83",
+          "title": "图划分(Graph Partition)",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "8",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://www.zhihu.com/question/616882997/answer/3167006160",
+          "observed_at": "2026-09-15T10:41:18.027012Z",
+          "provenance": {
+            "query": "图流划分算法综述 边分割 负载均衡 知乎",
+            "rank": 8,
+            "run_id": "run-c64223762d494aaf8c5112bda571430a",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": " 对于图G,n个节点,节点有权重,有向边,边有权重。任务是将图G的所有节点分成k个部分,各个部分的节点总权重可以预先定义容量,同时要使得不同部分之间的联… 苏格拉没有底​上海理工大学 计算机技术硕士​关注 原理 这是一个图的划分问题,可以用图划分算法来解决。下面是一种可能的解决方案: 1. 初始化k个部分,每个部分为空。 2. 计算每个节点的权重总和。 3. 将节点按权重从大到小排序。 4. 依次遍历每个节点,将节点放入当前总权重最小的部分中,直到该部分的总权重超过预先定义的容量。 5. 重复步骤4,直到所有节点都被分配到部分中。 6. 对于每个部分,计算部分内所有节点之间的边的权重总和。 7. 对于每个部分,与其他部分之间的边的权重总和进行排序,选择权重总和最小的k-1个边保留,其余边删除。 这样,就可以将图G的所有节点分成k个部分,使得各个部分的节点总权重不超过预先定义的容量,并且不同部分之间的联系相对稀疏。 算法 下面是一个用Java实现的示例代码 import java.util.ArrayList; import java.util.Collections; import java.util.Comparator; import java.util.List; class Node { int id; int weight; public Node(int id, int weight) { this.id = id; this.weight = weight; } } class Edge { int from; int to; int weight; public Edge(int from, int to, int weight) { this.from = from; this.to = to; this.weight = weight; } } class GraphPartition { List<Node> nodes; List<Edge> edges; int k; // 分成k个部分 int[] capacities; // 各个部分的容量 public GraphPartition(int k, int[] capacities) { this.k = k; this.capacities = capacities; nodes = new ArrayList<>(); edges = new ArrayList<>(); } public void addNode(int id, int weight) { nodes.add(new Node(id, weight)); } public void addEdge(int from, int to, int weight) { edges.add(new Edge(from, to, weight)); } public void partitionGraph() { // 计算每个节点的权重总和 int totalWeight = 0; for (Node node : nodes) { totalWeight += node.weight; } // 将节点按权重从大到小排序 Collections.sort(nodes, Comparator.comparingInt(node -> -node.weight)); // 初始化k个部分 List<List<Node>> partitions = new ArrayList<>(); for (int i = 0; i < k; i++) { partitions.add(new ArrayList<>()); } // 将节点分配到部分中 for (Node node",
+            "published_at": "2023-08-15T21:25:21",
+            "request_id": "23caab76-9a19-49dd-b684-29352a35ad57",
+            "search_score": null,
+            "search_snippet": "对于图G,n个节点,节点有权重,有向边,边有权重。任务是将图G的所有节点分成k个部分,各个部分的节点总权重可以预先定义容量,同时要使得不同部分之间的联… 苏格拉没有底​上海理工大学 计算机技术硕士​关注 原理 这是一个图的划分问题,可以用图划分算法来解决。下面是一种可能的解决方案: 1. 初始化k个部分,每个部分为空。 2. 计算每个节点的权重总和。 3. 将节点按权重从大到小排序。 4. 依次遍历每个节点,将节点放入当前总权重最小的部分中,直到该部分的总权重超过预先定义的容量。 5. 重复步骤4,直到所有节点都被分配到部分中。 6. 对于每个部分,计算部分内所有节点之间的边的权重总和。 7. 对于每个部分,与其他部分之间的边的权重总和进行排序,选择权重总和最小的k-1个边保留,其余边删除。 这样,就可以将图G的所有节点分成k个部分,使得各个部分的节点总权重不超过预先定义的容量,并且不同部分之间的联系相对稀疏。 算法 下面是一个用Java实现的示例代码 import java.util.ArrayList; import java.util.Collections; import java.util.Comparator; import java.util.List; class Node { int id; int weight; public Node(int id, int weight) { this.id = id; this.weight = weight; } } class Edge { int from; int to; int weight; public Edge(int from, int to, int weight) { this.from = from; this.to = to; this.weight = weight; } } class GraphPartition { List<Node> nodes; List<Edge> edges; int k; // 分成k个部分 int[] capacities; // 各个部分的容量 public GraphPartition(int k, int[] capacities) { this.k = k; this.capacities = capacities; nodes = new ArrayList<>(); edges = new ArrayList<>(); } public void addNode(int id, int weight) { nodes.add(new Node(id, weight)); } public void addEdge(int from, int to, int weight) { edges.add(new Edge(from, to, weight)); } public void partitionGraph() { // 计算每个节点的权重总和 int totalWeight = 0; for (Node node : nodes) { totalWeight += node.weight; } // 将节点按权重从大到小排序 Collections.sort(nodes, Comparator.comparingInt(node -> -node.weight)); // 初始化k个部分 List<List<Node>> partitions = new ArrayList<>(); for (int i = 0; i < k; i++) { partitions.add(new ArrayList<>()); } // 将节点分配到部分中 for (Node node",
+            "source_name": "知乎",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web",
+          "source_record_id": "src_c27eba7f61a568753f99eb29",
+          "title": "想请教一下一种图划分(Graph partitioning)算法?",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "9",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://blog.csdn.net/weixin_29309475/article/details/164835587",
+          "observed_at": "2026-09-15T10:41:18.027012Z",
+          "provenance": {
+            "query": "图流划分算法综述 边分割 负载均衡 知乎",
+            "rank": 9,
+            "run_id": "run-c64223762d494aaf8c5112bda571430a",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": " 1. 平衡图分割问题概述 平衡图分割是图论中一个经典的计算难题,在实际应用中有着广泛的需求。简单来说,就是把一个图分成若干个部分,要求各部分之间连接尽可能少,同时每个部分的\"大小\"尽可能接近。这里的\"大小\"可以是顶点数、边数或其他权重指标。 我在处理社交网络数据分析时,就遇到过这样的需求:需要将用户关系网络划分成多个社区,既要保证社区间互动最少,又要避免出现某些社区过大或过小的情况。这正是典型的平衡图分割问题。 2.1 形式化定义 给定一个无向图G=(V,E),其中V是顶点集,E是边集。平衡图分割问题要求将V划分为k个不相交的子集V1,V2,...,Vk,满足: 各部分大小平衡:|Vi| ≈ |V|/k,允许一定偏差 割边数最小:即连接不同子集的边数最少 2.2 常见变体与约束 实际应用中常见几种变体: 顶点加权平衡分割:每个顶点有权重,要求各部分权重和平衡 边加权平衡分割:边有权重,目标是使割边权重和最小 多约束平衡分割:同时考虑多种平衡约束 提示:在社交网络分析中,顶点权重可以表示用户活跃度,边权重可以表示互动频率。 3. 经典求解算法分析 3.1 Kernighan-Lin算法 KL算法是最早提出的启发式方法,基本思路是: 初始随机划分 迭代交换顶点对,选择能最大程度减少割边数的交换 当无法进一步优化时停止 虽然简单,但时间复杂度较高(O(n^3)),且容易陷入局部最优。 3.2 谱分割方法 基于图的拉普拉斯矩阵特征向量,将图映射到低维空间后进行聚类。数学基础扎实,但: 计算特征向量开销大 对平衡性控制较弱 不适合大规模图 3.3 多级方法 包括三个主要阶段: 粗化:逐步缩小图规模 初始分割:在小图上求解 细化:逐步还原图并优化分割 Metis是这类方法的代表,但实现复杂且参数调优困难。 4. 快速求解算法设计 4.1 算法总体框架 我们提出一种融合局部搜索和全局信息的混合算法: 1. 预处理阶段: - 计算顶点重要性指标 - 识别关键顶点和社区结构 2. 初始分割阶段: - 基于重要性采样生成初始解 3. 优化阶段: - 局部搜索与全局信息引导相结合 - 动态平衡约束处理 AI写代码 1 2 3 4 5 6 7 8 4.2 关键创新点 4.2.1 重要性采样初始化 传统随机初始化效果差。我们设计: 顶点重要性 = 度数中心性 + 介数中心性 按重要性分层采样,确保初始解质量 4.2.2 动态平衡约束 引入松弛变量处理平衡约束: 允许临时违反平衡条件但设置惩罚项引导回归平衡 AI写代码",
+            "published_at": "2026-09-09T16:11:43",
+            "request_id": "23caab76-9a19-49dd-b684-29352a35ad57",
+            "search_score": null,
+            "search_snippet": "1. 平衡图分割问题概述 平衡图分割是图论中一个经典的计算难题,在实际应用中有着广泛的需求。简单来说,就是把一个图分成若干个部分,要求各部分之间连接尽可能少,同时每个部分的\"大小\"尽可能接近。这里的\"大小\"可以是顶点数、边数或其他权重指标。 我在处理社交网络数据分析时,就遇到过这样的需求:需要将用户关系网络划分成多个社区,既要保证社区间互动最少,又要避免出现某些社区过大或过小的情况。这正是典型的平衡图分割问题。 2.1 形式化定义 给定一个无向图G=(V,E),其中V是顶点集,E是边集。平衡图分割问题要求将V划分为k个不相交的子集V1,V2,...,Vk,满足: 各部分大小平衡:|Vi| ≈ |V|/k,允许一定偏差 割边数最小:即连接不同子集的边数最少 2.2 常见变体与约束 实际应用中常见几种变体: 顶点加权平衡分割:每个顶点有权重,要求各部分权重和平衡 边加权平衡分割:边有权重,目标是使割边权重和最小 多约束平衡分割:同时考虑多种平衡约束 提示:在社交网络分析中,顶点权重可以表示用户活跃度,边权重可以表示互动频率。 3. 经典求解算法分析 3.1 Kernighan-Lin算法 KL算法是最早提出的启发式方法,基本思路是: 初始随机划分 迭代交换顶点对,选择能最大程度减少割边数的交换 当无法进一步优化时停止 虽然简单,但时间复杂度较高(O(n^3)),且容易陷入局部最优。 3.2 谱分割方法 基于图的拉普拉斯矩阵特征向量,将图映射到低维空间后进行聚类。数学基础扎实,但: 计算特征向量开销大 对平衡性控制较弱 不适合大规模图 3.3 多级方法 包括三个主要阶段: 粗化:逐步缩小图规模 初始分割:在小图上求解 细化:逐步还原图并优化分割 Metis是这类方法的代表,但实现复杂且参数调优困难。 4. 快速求解算法设计 4.1 算法总体框架 我们提出一种融合局部搜索和全局信息的混合算法: 1. 预处理阶段: - 计算顶点重要性指标 - 识别关键顶点和社区结构 2. 初始分割阶段: - 基于重要性采样生成初始解 3. 优化阶段: - 局部搜索与全局信息引导相结合 - 动态平衡约束处理 AI写代码 1 2 3 4 5 6 7 8 4.2 关键创新点 4.2.1 重要性采样初始化 传统随机初始化效果差。我们设计: 顶点重要性 = 度数中心性 + 介数中心性 按重要性分层采样,确保初始解质量 4.2.2 动态平衡约束 引入松弛变量处理平衡约束: 允许临时违反平衡条件但设置惩罚项引导回归平衡 AI写代码",
+            "source_name": "CSDN软件开发网",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web",
+          "source_record_id": "src_7094eb4bb5f2b309ce9321ab",
+          "title": "平衡图分割算法:原理、优化与实践应用",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "10",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://zhuanlan.zhihu.com/p/614175897",
+          "observed_at": "2026-09-15T10:41:18.027012Z",
+          "provenance": {
+            "query": "图流划分算法综述 边分割 负载均衡 知乎",
+            "rank": 10,
+            "run_id": "run-c64223762d494aaf8c5112bda571430a",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": " 图数据库中的”分布式”和“切图”如果有理解不对的地方,欢迎留言讨论。 一般来说,分布式系统是一组计算机程序的集合,这些程序利用跨多个独立节点的资源来实现共同的目标;这里的独立节点,硬件上大多是指商用服务器(Commodity Servers)而不是大型主机(Mainframe);这里的跨节点协同,硬件上大多是基于以太网设备或者更高端的 RMDA 设备。 为什么我们需要分布式系统? 使用分布式技术的主要目的,本质上是用软件技术+廉价硬件来换取昂贵硬件设备(比如主机)的成本;特别是在大多数私有机房环境——而不是公有云端或者超算条件下,此时采购成本是商业决策的重要依据。 除了降低硬件成本外,分布式技术带来的另一个好处是其“扩展性”,通过在原有商用服务器的数量基础上,增加几台服务器,再结合分布式软件的调度和分发能力,使得新加入的这几台服务器也再额外提供更多的服务; 相比于每次扩容都要 1 比 1 采购更多的等数量服务器,或者购买更高配置的服务器;分布式技术这一方面使得采购计划可以按需扩容,降低了一次性的大额资本支出;另一方面也使得业务容量可以更加容易规划。 分布式系统的基础问题 在分布式技术中,由于数据的存储和计算需要跨多个独立节点来实现,因此不得不涉及到一系列基础技术。在本文中我们只讨论两个:一是提供数据(和服务)的拷贝或者副本的问题;二是对于那些庞大数据的存储和计算该如何分发到各个独立节点上完成? 一、数据的副本问题 由于是商用服务器,其硬件上的可靠性和可维护性远远低于主机,网线松动、硬盘损坏、电源故障在大型机房中几乎每小时都在发生,是常态;处理屏蔽这些硬件问题是分布式软件系统要解决的基本问题。一个常用的方式是为数据(和其服务)提供更多的拷贝或者副本,这些副本存在于多台商用服务器上。当一些副本发生故障时,由正常的副本继续提供服务;并且当访问压力增加时,还可以增加更多的副本来增强服务能力。此外,还需要通过一定的技术手段来保证这些副本的“一致性”,也就是每个服务器上各个副本的数据是一样的。 当然,在图数据库中,副本问题也存在;其处理方式和大多数大数据、RDBMS 会较为类似。 二、是数据的切分问题 单台服务器的硬盘、内存、CPU 都是有限的,TB、PB 级别的数据通过一定的办法分发到各个服务器上,这称为”切片”。当一些请求要访问多个切片时,分布式系统要能够将这些请求拆散分发到各个正确的分片上,并将各分片的返回重新“拼装”成完整的结果。",
+            "published_at": "2023-03-15T16:13:36",
+            "request_id": "23caab76-9a19-49dd-b684-29352a35ad57",
+            "search_score": null,
+            "search_snippet": "图数据库中的”分布式”和“切图”如果有理解不对的地方,欢迎留言讨论。 一般来说,分布式系统是一组计算机程序的集合,这些程序利用跨多个独立节点的资源来实现共同的目标;这里的独立节点,硬件上大多是指商用服务器(Commodity Servers)而不是大型主机(Mainframe);这里的跨节点协同,硬件上大多是基于以太网设备或者更高端的 RMDA 设备。 为什么我们需要分布式系统? 使用分布式技术的主要目的,本质上是用软件技术+廉价硬件来换取昂贵硬件设备(比如主机)的成本;特别是在大多数私有机房环境——而不是公有云端或者超算条件下,此时采购成本是商业决策的重要依据。 除了降低硬件成本外,分布式技术带来的另一个好处是其“扩展性”,通过在原有商用服务器的数量基础上,增加几台服务器,再结合分布式软件的调度和分发能力,使得新加入的这几台服务器也再额外提供更多的服务; 相比于每次扩容都要 1 比 1 采购更多的等数量服务器,或者购买更高配置的服务器;分布式技术这一方面使得采购计划可以按需扩容,降低了一次性的大额资本支出;另一方面也使得业务容量可以更加容易规划。 分布式系统的基础问题 在分布式技术中,由于数据的存储和计算需要跨多个独立节点来实现,因此不得不涉及到一系列基础技术。在本文中我们只讨论两个:一是提供数据(和服务)的拷贝或者副本的问题;二是对于那些庞大数据的存储和计算该如何分发到各个独立节点上完成? 一、数据的副本问题 由于是商用服务器,其硬件上的可靠性和可维护性远远低于主机,网线松动、硬盘损坏、电源故障在大型机房中几乎每小时都在发生,是常态;处理屏蔽这些硬件问题是分布式软件系统要解决的基本问题。一个常用的方式是为数据(和其服务)提供更多的拷贝或者副本,这些副本存在于多台商用服务器上。当一些副本发生故障时,由正常的副本继续提供服务;并且当访问压力增加时,还可以增加更多的副本来增强服务能力。此外,还需要通过一定的技术手段来保证这些副本的“一致性”,也就是每个服务器上各个副本的数据是一样的。 当然,在图数据库中,副本问题也存在;其处理方式和大多数大数据、RDBMS 会较为类似。 二、是数据的切分问题 单台服务器的硬盘、内存、CPU 都是有限的,TB、PB 级别的数据通过一定的办法分发到各个服务器上,这称为”切片”。当一些请求要访问多个切片时,分布式系统要能够将这些请求拆散分发到各个正确的分片上,并将各分片的返回重新“拼装”成完整的结果。",
+            "source_name": "知乎",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web",
+          "source_record_id": "src_10e923442a3ca790793f10e8",
+          "title": "图数据库中的“分布式”和“数据切分”(切图)",
+          "work_id": null
+        }
+      ]
+    },
+    "succeeded": true,
+    "summary": "发现并保存 10 个 Web 候选来源",
+    "tool_name": "web_search"
+  },
+  "resolved_arguments": {
+    "max_results": 10,
+    "query": "图流划分算法综述 边分割 负载均衡 知乎"
+  },
+  "result_count": 10,
+  "stage_name": "run_research_task",
+  "started_at": "2026-09-15T10:41:17.129801+00:00",
+  "tool_call_id": "tool_0103",
+  "tool_name": "web_search"
+}

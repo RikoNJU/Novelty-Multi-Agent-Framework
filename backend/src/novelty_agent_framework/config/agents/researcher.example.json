@@ -31,6 +31,10 @@
         "arxiv": {
           "enabled": true,
           "min_interval_seconds": 6,
+          "scheduler_enabled": true,
+          "metadata_batch_enabled": true,
+          "metadata_batch_window_ms": 200,
+          "metadata_batch_max_size": 32,
           "timeout_seconds": 20,
           "max_retries": 2,
           "max_retry_delay_seconds": 15,
@@ -39,6 +43,46 @@
           "circuit_failure_threshold": 4,
           "circuit_cooldown_seconds": 180,
           "full_text_max_chars": 100000
+        },
+        "sciencedirect": {
+          "enabled": false,
+          "api_key_env": "ELSEVIER_API_KEY",
+          "institution_token_env": "ELSEVIER_INST_TOKEN",
+          "base_url": "https://api.elsevier.com",
+          "timeout_seconds": 30,
+          "max_retries": 2,
+          "retry_backoff_seconds": 0.5,
+          "search_min_interval_seconds": 0.5,
+          "article_min_interval_seconds": 0.1,
+          "abstract_enrichment_limit": 4,
+          "full_text_max_chars": 100000,
+          "max_query_chars": 250
+        },
+        "springer": {
+          "enabled": false,
+          "meta_api_key_env": "SPRINGER_NATURE_META_API_KEY",
+          "open_access_api_key_env": "SPRINGER_NATURE_OPEN_ACCESS_API_KEY",
+          "base_url": "https://api.springernature.com",
+          "timeout_seconds": 30,
+          "max_retries": 2,
+          "retry_backoff_seconds": 0.5,
+          "min_interval_seconds": 0.6,
+          "full_text_mode": "openaccess",
+          "tdm_api_metric_env": "SPRINGER_NATURE_TDM_API_METRIC",
+          "full_text_max_chars": 100000,
+          "max_query_chars": 1000
+        },
+        "ieee_xplore": {
+          "enabled": false,
+          "api_key_env": "IEEE_XPLORE_API_KEY",
+          "base_url": "https://ieeexploreapi.ieee.org/api/v1",
+          "timeout_seconds": 30,
+          "max_retries": 2,
+          "retry_backoff_seconds": 0.5,
+          "min_interval_seconds": 0.2,
+          "full_text_mode": "openaccess",
+          "full_text_max_chars": 100000,
+          "max_query_chars": 2000
         },
         "null_catalog": {
           "enabled": true,

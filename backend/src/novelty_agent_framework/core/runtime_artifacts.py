@@ -149,10 +149,12 @@ class RuntimeArtifactManager:
         self._tool_counter = 0
         self._llm_call_counter = 0
         self._error_counter = 0
+        self._provider_request_counter = 0
         self._stage_records: list[dict[str, Any]] = []
         self._tool_records: list[dict[str, Any]] = []
         self._llm_call_records: list[dict[str, Any]] = []
         self._error_records: list[dict[str, Any]] = []
+        self._provider_request_records: list[dict[str, Any]] = []
         self._diagnostic_results: list[dict[str, Any]] = []
         self._outcome: dict[str, Any] | None = None
         self._activation_token: (
@@ -169,7 +171,7 @@ class RuntimeArtifactManager:
                 / "runtime"
                 / _safe_segment(self.run_id)
             )
-            for child in ("stages", "tools", "llm_calls", "errors"):
+            for child in ("stages", "tools", "llm_calls", "errors", "provider_requests"):
                 (self.run_dir / child).mkdir(parents=True, exist_ok=False)
             try:
                 self._pricing_catalog = LlmPricingCatalog.load(
@@ -205,6 +207,27 @@ class RuntimeArtifactManager:
         """Attach a compact, structured business outcome to the run summary."""
 
         self._outcome = dict(outcome)
+
+    def record_provider_request(self, event: Mapping[str, Any]) -> None:
+        """Persist a provider scheduler event without affecting business flow."""
+
+        if not self.config.enabled or self.run_dir is None:
+            return
+        with self._lock:
+            self._provider_request_counter += 1
+            record = {
+                "provider_event_id": f"provider_{self._provider_request_counter:04d}",
+                "stage_name": _current_stage.get(),
+                "recorded_at": _iso(_now()),
+                **dict(event),
+            }
+            self._provider_request_records.append(record)
+            self._write_json(
+                self.run_dir
+                / "provider_requests"
+                / f"{self._provider_request_counter:04d}_{_safe_segment(str(event.get('operation', 'request')))}.json",
+                record,
+            )
 
     def record_model_call(self, event: ModelCallEvent) -> None:
         """Persist one model call and its normalized token/cost accounting."""
@@ -707,6 +730,9 @@ class RuntimeArtifactManager:
             },
             "stages": stages,
             "tool_calls": list(tool_stats.values()),
+            "provider_requests": _summarize_provider_requests(
+                self._provider_request_records
+            ),
             "llm_usage": _summarize_llm_usage(self._llm_call_records),
             "errors": list(self._error_records),
             "diagnostics": [
@@ -937,6 +963,54 @@ def _infer_result_count(value: Any) -> int | None:
             if inferred is not None:
                 return inferred
     return None
+
+
+def _summarize_provider_requests(records: list[dict[str, Any]]) -> dict[str, Any]:
+    logical = [item for item in records if item.get("event_type") == "logical_request"]
+    physical = [item for item in records if item.get("event_type") == "physical_request"]
+    metadata_logical = [item for item in logical if item.get("operation") == "metadata"]
+    metadata_physical = [item for item in physical if item.get("operation") == "metadata_batch"]
+    batch_sizes = [int(item.get("unique_id_count") or 0) for item in metadata_physical]
+    status_counts: dict[str, int] = {}
+    for item in physical:
+        key = str(item.get("status_code") or "transport_error")
+        status_counts[key] = status_counts.get(key, 0) + 1
+    recorded_times = [
+        datetime.fromisoformat(str(item["recorded_at"]))
+        for item in records
+        if item.get("recorded_at")
+    ]
+    return {
+        "logical_api_requests": len(logical),
+        "physical_api_requests": len(physical),
+        "metadata_logical_requests": len(metadata_logical),
+        "metadata_physical_requests": len(metadata_physical),
+        "unique_metadata_ids": sum(batch_sizes),
+        "batch_count": len(metadata_physical),
+        "average_batch_size": sum(batch_sizes) / len(batch_sizes) if batch_sizes else 0.0,
+        "max_batch_size": max(batch_sizes, default=0),
+        "dedup_count": sum(
+            int(item.get("logical_request_count") or 0)
+            - int(item.get("unique_id_count") or 0)
+            for item in metadata_physical
+        ),
+        "status_counts": status_counts,
+        "http_200_count": status_counts.get("200", 0),
+        "http_429_count": status_counts.get("429", 0),
+        "read_timeout_count": sum(
+            item.get("error_type") == "ReadTimeout" for item in physical
+        ),
+        "retry_count": sum(int(item.get("attempt") or 1) > 1 for item in physical),
+        "queue_wait_ms": sum(float(item.get("queue_wait_ms") or 0) for item in physical),
+        "api_elapsed_ms": sum(float(item.get("elapsed_ms") or 0) for item in physical),
+        "request_compression_ratio": len(logical) / len(physical) if physical else 0.0,
+        "metadata_batch_ratio": len(metadata_logical) / len(metadata_physical) if metadata_physical else 0.0,
+        "total_arxiv_elapsed_ms": (
+            (max(recorded_times) - min(recorded_times)).total_seconds() * 1000
+            if recorded_times
+            else 0.0
+        ),
+    }
 
 
 def _summarize_llm_usage(records: list[dict[str, Any]]) -> dict[str, Any]:

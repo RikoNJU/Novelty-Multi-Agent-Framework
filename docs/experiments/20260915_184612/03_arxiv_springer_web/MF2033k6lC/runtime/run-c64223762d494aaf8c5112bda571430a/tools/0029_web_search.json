@@ -1,0 +1,561 @@
+{
+  "agent_arguments": {
+    "query": "DSGNN graph summarization distributed GNN link prediction F1"
+  },
+  "agent_tool_call_id": "01a0a4a63836a3b03c93c49d7a7af031",
+  "business_status": "NORMAL",
+  "duration": 0.889668,
+  "duration_ms": 889,
+  "error": null,
+  "execution_status": "SUCCESS",
+  "failure_phase": null,
+  "finished_at": "2026-09-15T10:39:13.124828+00:00",
+  "normalized_result": {
+    "query": "DSGNN graph summarization distributed GNN link prediction F1",
+    "results": [
+      {
+        "published_at": "2026-06-19T10:20:00",
+        "snippet": "ByLaszlo Szilagyi as part of the Stanford CS 224W Final Project 代码下载:https://t.zsxq.com/hJFjI 01 介绍 大型语言模型(LLM)已迅速成为许多现代人工智能应用的核心引擎,但它们的语言能力与处理结构化、事实性或符号性信息的能力之间仍然存在显著差距。它们编码了海量的世界知识,但由于这些知识隐藏在密集的参数之中,检索特定事实或执行多步骤逻辑推理往往变得不可靠。这一缺陷促使研究人员探索利用外部知识源增强LLM的方法。其中,检索增强生成(RAG)已成为应用最广泛的方法。 然而,大多数RAG系统检索的是非结构化文本,无法捕捉实体间的潜在关系。正因如此,知识图谱(KG)作为一种极具吸引力的替代方案重新出现。与自由文本段落不同,图谱提供了明确的结构——实体之间通过有意义的关系连接。这种结构自然而然地支持多跳推理,增强了可解释性,并避免了长篇文本中常见的冗余。当与擅长学习关系数据模式的图神经网络(GNN)结合使用时,知识图谱便成为增强LLM的强大基础。 知识图谱。 在这个项目中,我们着手重建GNN-RAG,它是 PyTorch Geometric (PyG)生态系统中最先进的方法之一。GNN-RAG 提出了一种检索机制,它并非简单地获取文本,而是对大型知识图谱进行学习推理。它使用名为ReaRev 的 查询条件 GNN 模型,识别给定问题的最相关实体和关系,构建一个紧凑的子图,并将该结构化表示传递给 LLM。我们的工作重点在于用 PyG 重新实现这一推理栈,将其集成到一个模块化的流水线中,并在基于Freebase构建的基准数据集WebQSP上评估该系统。 在深入研究该方法之前,有必要退后一步,看看更广泛的 LLM 推理领域——LLM 天生擅长什么,它们在哪些方面存在困难,以及为什么结构化检索变得至关重要。 大型语言模型蕴含着海量的隐性知识。这些知识存储在模型参数中,并通过文本模式进行访问。由于这种隐性特性,大型语言模型通常擅长概括、释义和生成连贯的回答。但它们也存在一些众所周知的弱点:难以获取精确的事实细节,容易产生幻觉,并且在需要处理多步骤的组合链时,其推理能力常常失效。这些问题源于一个简单的事实:模型内部没有任何内容明确地表示实体或关系——一切都是分布式的统计关联。 经典RAG 信息检索系统的架构。 检索增强技术应运而生,旨在弥补这一不足。",
+        "source_name": "北京智源人工智能研究院",
+        "source_record_id": "src_d4cb7617c778ab9e79d9c817",
+        "title": "AI+知识图谱项目实战 | 图驱动的智能体人工智能:图神经网络如何解锁结构化推理",
+        "url": "https://hub.baai.ac.cn/view/55640"
+      },
+      {
+        "published_at": "2026-07-03T21:40:07",
+        "snippet": "人工智能研究近期拓展至神经算法推理(Neural Algorithmic Reasoning,NAR)领域,其任务是训练深度学习模型来复现经典算法的中间步骤。其目标是利用神经网络的灵活性,将算法逻辑应用于复杂多变的现实世界输入,而传统的算法在这些情况下可能失效。 我们的项目基于双重算法推理(Dual Algorithmic Reasoning,DAR)框架,该框架能够联合学习原始算法(例如最大流算法)及其对偶算法(例如最小割算法)以提升性能。以往的研究主要集中在Ford-Fulkerson算法上,而我们则着重研究Push-Relabel算法。据我们所知,我们是第一个尝试通过神经算法推理框架来学习Push-Relabel算法步骤的研究团队。 我们假设,通过局部更新和并行执行的推送重标记算法比全局顺序的Ford-Fulkerson算法更符合图神经网络(Graph Neural Networks,GNN)的消息传递范式。我们在合成图上验证了这一假设,并通过生成嵌入来辅助对脑血管进行分类,从而展示了该算法在实际应用中的可行性,所用数据集为血管图(VesselGraph,BVG)(https://github.com/jocpae/VesselGraph?tab=readme-ov-file#table-of-contents)。 2. 理论分析:全球化运营与本地化运营 这项工作的一个主要动机是具有全局操作的算法与 GNN 架构之间的理论不匹配。 2.1 福特-福克森模型的局限性 Ford-Fulkerson算法分两个交替阶段寻找最大流。第一阶段是路径查找阶段,旨在找到残差图中所有增广路径。这一步骤可以使用任何路径查找算法来实现。通常情况下,最短路径是理想的,因此广度优先搜索(BFS)在这里易于实现和使用。 第二阶段是更新增广路径中各边的流量值,使得沿该路径发送的最大流量得以实现。关键在于,在这一步中,算法会找到增广路径上的最小剩余容量,并基于该值更新所有流量。这一步是对整个图进行的“全局”操作。总的来说,与 Push-Relabel 算法相比,Ford-Fulkerson 算法在解决最大流问题时采用了一种更全局的方法。 我们通过反例论证,具有 L 层的标准消息传递 GNN 无法模拟 Ford-Fulkerson 的第二阶段,除非将流更新步骤拆分为多个单独的子步骤,或者通过全局虚拟节点进行额外的图增强。 考虑以下情况:增广路径的长度为 2L,形式如下:",
+        "source_name": "北京智源人工智能研究院",
+        "source_record_id": "src_8d1ecc8ac8c99c2c480535bb",
+        "title": "AI+医学项目实战 | 基于推送重标记(Push-Relabel)的神经算法推理(Neural Algorithmic Reasoning) - 智源社区",
+        "url": "https://hub.baai.ac.cn/view/56060"
+      },
+      {
+        "published_at": "2022-12-13T16:23:11",
+        "snippet": "GNN应用分为节点分类、图分类、网络嵌入、节点聚类、链接预测、图生成、时空图预测和图分割。不同学科领域的图形态表示如下: GNN应用的更详细列表如下: 1. 物理——粒子物理学 在FermiLab 中,研究人员实施 GNN 来分析大型强子对撞机上 CMS 探测器产生的图像,以识别用于粒子物理实验的有趣粒子。 1. 物理——水的状态变化模拟 使用基于图形网络的模拟器模拟现实世界的物理变化 2. 化学——分子结构 在化学中,研究人员应用图神经网络研究分子的图结构。在分子图中,原子为图中的节点,化学键为图中的边。节点分类、图形分类和图形生成是分子图的三个主要任务,它们可以用来学习分子指纹、预测分子性质、推断蛋白质结构、合成化合物。 Open Catalyst Project是另一个使用 AI 发现用于可再生能源存储的新催化剂的例子。 下图是从现有的分子结构数据库(包括现有的 FDA 批准的药物)中应用 AI 开发新药和疫苗的另一个视图。例如,癌症的治愈可能取决于对特定癌细胞特异性抗原的设计。从已经批准的药物开始,它可能会缩短发现过程,因为毒理学筛选可能已经进行了研究。在对分子结构进行建模时,下面展示的许多 AI 组件可以用 GNN 技术代替。 3. 生物——AlphaFold 2蛋白质合成 AlphaFold是由DeepMind开发的 AI 系统,可根据氨基酸序列预测蛋白质的 3D 结构。它经常达到与实验竞争的准确性。 3. 生物——药物发现和合成化合物 开发一种药物的成本超过 10 亿美元,并且跨越 12 年或更长时间。因此,如果它可以缩短药物发现以获得更好的候选药物和生物标志物发现阶段,那么它在应用 AI 方面具有商业可行性,该阶段总共可以超过 8 年。 DNN 可以在数十万种化学结构上进行训练,以对分子进行编码和解码,以及构建从潜在表示中估计化学性质的预测器。例如,我们可以学习自动编码器来编码分子的图形表示,然后用解码器重建分子。训练目标是学习最小化重建损失的潜在表示。这些潜在表示允许研究人员通过扰乱已知化学结构或在分子之间插值在潜在空间中执行简单操作来自动生成新的化学结构。",
+        "source_name": "北京智源人工智能研究院",
+        "source_record_id": "src_b0ddbf44293cc7dca1cd20c9",
+        "title": "资讯| GNN广泛的应用场景,让图+Science的未来充满无限想象",
+        "url": "https://hub.baai.ac.cn/view/22487"
+      },
+      {
+        "published_at": "2026-03-10T16:08:55",
+        "snippet": "ICLR 2025共有19,000多篇投稿,录用5,359篇,录取率28.18%。 本文总结了2026 ICLR上有关LLMGraph的相关论文。总计29篇,如有疏漏,欢迎补充。 最大均分 均值 最小均分 6 5.21 4 其中均分≥6的有4篇,其中。 笔者将LLM和Graph结合的工作分为两大类,一类是LLM4Graph,即LLM做图任务。其中细分了:文本属性图(Text-Attributed Graph, TAG),知识图谱(KG),图基础模型(GFM),AI4Science,图上的推理和理解任务。另外一类是利用Graph4LLM,即利用图结构来增强LLM的能力。 LLM4Graph & TAG1. Global-Recent Semantic Reasoning on Dynamic Text-Attributed Graphs with Large Language Models2. GDGB: A Benchmark for Generative Dynamic Text-Attributed Graph Learning3. Robustness in Text-Attributed Graph Learning: Insights, Trade-offs, and New DefensesLLM4Graph & KG4. DAMR: Efficient and Adaptive Context-Aware Knowledge Graph Question Answering with LLM-Guided MCTS5. Explore-on-Graph: Incentivizing Autonomous Exploration of Large Language Models on Knowledge Graphs with Path-refined Reward Modeling6. Plan-Answer-Refine-on-Graph: Structured Planning and Self-Refinement for Large Language Model Reasoning on Knowledge Graphs7. Knowledge Reasoning Language Model: Unifying Knowledge and Language for Inductive Knowledge Graph Reasoning8. HGNet: Scalable Foundation Model for Automated Knowledge Graph Generation from Scientific Literature9. Flock: A Knowledge Graph Foundation Model via Learning on Random WalksLLM4Graph & GFM10. [Oral]Multi-Domain Transferable Graph Gluing for Building Graph",
+        "source_name": "Tencent腾讯（腾讯官方网）",
+        "source_record_id": "src_ac9e348129dc70a9c9f9029e",
+        "title": "ICLR 2026 | LLM×Graph论文总结【LLM4Graph与Graph4LLM】",
+        "url": "https://cloud.tencent.com/developer/article/2636248"
+      },
+      {
+        "published_at": "2024-08-19T11:50:00",
+        "snippet": "DRUGAI 今天为大家介绍的是来自剑桥大学Jose团队的一篇论文。近年来,各种机器学习方法在反应结果预测中的应用迅速增长。深度学习模型因其能够直接从分子结构中学习表示而受到欢迎。另一方面,高斯过程(GPs)能够提供可靠的不确定性估计,但无法从数据中学习表示。作者将神经网络(NNs)的特征学习能力与GPs的不确定性量化相结合,在深度核学习(DKL)框架中预测反应结果。观察发现,DKL模型在不同输入表示下都能取得非常好的预测性能。它显著优于标准的GPs,并提供与图神经网络相当的性能,同时还能进行不确定性估计。此外,DKL模型提供的预测不确定性估计使其能够作为贝叶斯优化(BO)的代理模型。因此,所提出的方法通过结合提供可靠不确定性估计的准确预测模型与BO,在加速反应发现方面具有巨大潜力。 化学反应优化在有机合成中占据核心地位,主要依赖于化学直觉。在优化过程中,目标是通过确定合适的实验条件来最大化反应结果(例如产率和/或对映体过量)。这涉及评估一个包含催化剂、溶剂、底物、添加剂、时间、温度、浓度等反应变量的多维化学空间。由于这个问题的复杂性,已经采用了多种数据驱动的方法来高效探索化学空间。 反应结果的估计在反应开发中非常重要。它可以使化学家在进行湿法实验前识别出低产率的反应,从而节省时间和资源。机器学习(ML)在化学的许多领域显示出了令人印象深刻的成功。早期对反应结果预测的努力使用了手工制作的特征,如物理有机描述符和分子指纹。传统的机器学习方法,特别是随机森林,在这些非学习的表示下表现极佳。最近,深度学习(DL)的进步推动了新的分子表示方法的发展,这些方法直接从分子结构中学习,如简化分子输入线条条目规范(SMILES)和分子图。使用这些基于字符串或图的表示训练的化学语言模型(LMs)和图神经网络(GNNs)在反应结果预测中展示了巨大潜力。 尽管使用上述机器学习方法进行不确定性量化可能并不简单,但高斯过程(GPs)的不确定性感知是众所周知的。GPs通常在数据量少的情况下更适合量化不确定性,并且经常用作BO中的代理模型。GP模型的核通常是固定的,这意味着GPs无法从数据中学习表示。因此,在常用的分子输入如SMILES和图上训练GPs具有挑战性。另一方面,神经网络(NNs)可以直接从上述输入中学习特征表示,并将其转换为连续向量。可以将NNs的这种表示学习能力与GPs的不确定性量化相结合,使用深度核学习(DKL)。因此,DKL由于NNs能够学习更好且更灵活的表示,而比标准的GPs更具优势。",
+        "source_name": "北京智源人工智能研究院",
+        "source_record_id": "src_bffe9df1dbc6c1c087211609",
+        "title": "Commun. Chem. | 深度核学习用于反应结果预测和优化",
+        "url": "https://hub.baai.ac.cn/view/39199"
+      },
+      {
+        "published_at": "2026-09-03T00:00:00",
+        "snippet": "Hybrid Transformer-GNN Model for Multi-Document Summarizationdoi:10.1109/ICSIT65336.2025.11294438MeasurementDeep learningRedundancySemanticsText summarizationCoherenceReinforcement learningTransformersGraph neural networksContext modelingMulti-document summarization (MDS) remains a challenging task due to the complexity of extracting, synthesizing, and generating coherent and non-redundant summaries from multiple related documents. While Deep Learning (DL) techniques, particularly Transformer-based models, have shown significant advancements, they often struggle with redundancy elimination, coherence preservation, and contextual relevance. In this research, we propose a novel Hybrid Transformer-GNN Framework (HTGF) that integrates Transformer networks with Graph Neural Networks (GNNs) to capture document relationships, semantic dependencies, and content importance effectively. Additionally, we incorporate a Reinforcement Learning (RL)-based reward mechanism to optimize summary fluency, coherence, and informativeness. Our framework employs hierarchical attention mechanisms to prioritize key sentences and a novel redundancy-aware contrastive loss function to improve abstraction. We evaluate our model on benchmark datasets and compare its performance against state-of-the-art methods using widely accepted evaluation metrics. Experimental results demonstrate that our approach outperforms existing models in terms of ROUGE scores, coherence, and factual consistency. This research provides a robust and scalable solution to MDS, offering new insights into DL-driven text summarization.Krishna DheeravathCVR College of Engineering,Department of CSE (DS),Hyderabad,IndiaPallati NarsimhuluSymbiosis International (Deemed University),Symbiosis Institute of Technology, Hyderabad Campus,Pune,IndiaPremkumar ChithaluruMahatma Gandhi Institute of Technology,Department of Information Technology,Telangana,India,500075IEEE",
+        "source_name": "无",
+        "source_record_id": "src_7f7e57f8fdc3bce58e1a37ff",
+        "title": "Hybrid Transformer-GNN Model for Multi-Document Summarization",
+        "url": "http://ieeexplore.ieee.org/document/11294438/"
+      },
+      {
+        "published_at": "2023-12-28T10:46:00",
+        "snippet": "近年来,图神经网络(Graph Neural Network,GNN)在图数据学习上表现出了优越的性能。然而,当面临现实世界中百万乃至亿级节点数量的大图时,现有的GNN仍面临着诸多局限性,主要包括:(1)消息传递模式中,邻居节点数量随着传播距离指数式增长,这将带来可拓展性问题和过平滑问题;(2)嵌入向量表的参数数量随着节点数量线性增长,当节点数量较多时,巨大的嵌入向量表将难以优化;(3)GNN卷积层和嵌入向量表有着不同的性质,同时优化它们可能导致次优的结果。 为了克服这些问题,我们提出了xGCN——一种采用全新训练方式的GNN模型。xGCN将节点嵌入向量表视为“静态特征”,而不是需要梯度训练的参数,使用无监督的传播过程和一个DNN来更新嵌入向量,能够显著减少模型参数数量、加速模型训练,同时达到更好的预测准确率。文章在4个大规模社交网络数据集上进行了实验,结果表明xGCN在准确率和训练速度方面均超过了基线模型。目前,xGCN模型已被应用在Xbox游戏社交平台的社交推荐业务中。 同时,我们推出了一个轻量的GNN模型工具包:XGCN,旨在帮助用户快速地构建和训练大规模网络上的GNN图嵌入模型。XGCN包含了xGCN以及GraphSAGE、LightGCN等常见GNN模型的实现。我们提供了详细的说明文档,方便用户快速上手进行图数据集处理、模型构建和运行。 该成果“xGCN: An Extreme Graph Convolutional Network for Large-scale Social Link Prediction”发表于2023年国际万维网会议(WWW’23)。WWW是互联网技术领域的顶级会议,是中国计算机学会(CCF)推荐的A类会议。 大规模图数据广泛地存在于现代社会中,例如微信、推特等线上社交平台中的社交网络,和淘宝、亚马逊等购物平台中的商品交易网络。图嵌入(Graph Embedding)作为一种图数据挖掘方法,近年来备受学术界和工业界关注,其中的图神经网络(Graph Neural Network,GNN)方法引入了显式编码图结构的卷积层,表现出了优越的性能。然而,当面临现实世界中的大规模网络时,现有的GNN仍面临着诸多局限性,主要包括: (1)消息传递模式中,邻居节点数量随着传播距离指数式增长,这将带来可拓展性问题和过平滑问题。 (2)在经典的图嵌入任务中,每个节点拥有一个d维的可学习的嵌入向量e。设节点数量为N,则全体嵌入向量构成了一个N x d的矩阵E,即嵌入向量表。该嵌入向量表的参数数量随着节点数量线性增长,当节点数量较多时,嵌入向量表将变得十分庞大。",
+        "source_name": "腾讯网",
+        "source_record_id": "src_4bef717f75570921baa26cdc",
+        "title": "WWW'23:更少的内存,更快的速度,更高的准确度——GNN大图训练暨工具包发布",
+        "url": "https://mp.weixin.qq.com/s?__biz=MzA5OTQ5MDE0Mw==&mid=2651136483&idx=1&sn=4e78e2048235e9111aa301357e244dc9&chksm=8a0d61b63cd8fea329a9d7243a93a9cdb5931cd885c78ef62a91817772f0a9f3fc6cd319ed00&scene=27"
+      },
+      {
+        "published_at": "2020-08-08T22:22:25",
+        "snippet": "摘要: 简介: 2.1 为什么要用图表示数据: 2.2 gnn与network embedding: 2.3 gnn与graph kernel: 2.4 一些符号表示: 3. gnn的分类和基本框架: 3.1 gnn的结构分类: 3.1.1 recgnns: 3.1.2 convgnns: 3.1.3 gaes: 3.1.4 stgnns: 3.2 gnn的框架分类: 3.2.1 gnn的输出分类: 3.2.2 gnn的训练分类: 3.2.3 统计结果: 4. 递归图神经网络(recgnn): 4.1 gnn∗^*∗: 4.2 graphesn: 4.3 ggnn: 5. 卷积图神经网络(convgnn): 5.1 基于频谱的convgnn: 5.1.1 基本原理: 5.1.2 chebnet: 5.1.3 cayleynet: 5.1.4 gcn: 5.1.5 其他工作: 5.2 基于空间域的convgnn: 5.2.1 基本原理:",
+        "source_name": "飞桨星河社区",
+        "source_record_id": "src_e6da43bcde0a86adb9263b0d",
+        "title": "【图神经网络综述】一文道尽GNN原理、框架和应用",
+        "url": "https://aistudio.baidu.com/aistudio/projectdetail/699935"
+      },
+      {
+        "published_at": "2025-05-17T08:10:13",
+        "snippet": "A learned solution to node-level classification on irregular graphs via graph neural networks. 基于图神经网络的不规则图节点级分类的解决方案 Deep learning has shown tremendous success on 2D visual recognition tasks. Tasks such as image classification and segmentation, deemed extremely difficult a decade ago, are now solved by neural networks with human-like performance. This success is attributed to convolutional neural networks (CNNs), which have replaced handcrafted descriptors. Driven by the success of CNNs on 2D images, researchers have extended CNNs to irregular graph data, such as 3D meshes. The extension of the convolutional operation to unstructured graph data is nontrivial as the notion of relative position is lost. Therefore, we have dedicated this blog post and a Colab to answering how CNNs can be generalized to irregular graphs. In particular, we discuss how to modify CNNs to predict segmentation masks on 3D meshes. 深度学习在 2D 视觉识别任务中取得了巨大的成功。图像分类和分割等被认为十年前极其困难的任务,现在已被具有类人性能的神经网络所解决。这种成功归因于卷积神经网络(CNN),它取代了手工制作的描述符。在 CNN 在 2D 图像上取得成功后,研究人员将 CNN 扩展到了非规则图数据,例如 3D 网格。将卷积操作扩展到非结构化图数据是非平凡的,因为相对位置的概念丢失了。因此,我们专门撰写了这篇博客文章和一个 Colab,以回答如何将 CNN 推广到非规则图。特别是,我们讨论了如何修改 CNN 以在 3D 网格上预测分割掩码。 Why are CNNs not applicable? 为什么卷积神经网络不适用? Regular graphs defined on the euclidean have a fixed node ordering and neighborhood size. Generic graphs have no node ordering for neighbors, and their number of neighbors is variable. 定义在欧几里得空间上的规则图具有固定的节点顺序和邻域大小。通用图没有邻居的节点顺序,并且它们的邻居数量是可变的。",
+        "source_name": "北京智源人工智能研究院",
+        "source_record_id": "src_59875efd04c47d63fab98cb0",
+        "title": "项目实战 | 三维网格(3D Meshes)上的深度学习",
+        "url": "https://hub.baai.ac.cn/view/45703"
+      },
+      {
+        "published_at": "2021-12-07T13:27:00",
+        "snippet": "【1】 Distance and Hop-wise Structures Encoding Enhanced Graph Attention Networks 标题:增强型图注意网络的距离和跳数结构编码 链接:https://arxiv.org/abs/2112.02868 作者:Zhiguo Huang,Xiaowei Chen,Bojuan Wang 机构:Sci-Tech Academy of ZheJiang University;Research Center of Hundsun LTD., Hangzhou, China, School of Finance, NanKai University, Tianjin, China 备注:11 pages; 1 figures; 【2】 CDGNet: A Cross-Time Dynamic Graph-based Deep Learning Model for Traffic Forecasting 标题:CDGNet:一种基于跨时间动态图的 交通预测 深度学习模型 链接:https://arxiv.org/abs/2112.02736 作者:Yuchen Fang,Yanjun Qin,Haiyong Luo,Fang Zhao,Liang Zeng,Bo Hui,Chenxing Wang 机构:Beijing University of Posts and, Telecommunications, Institute of Computing Technology, Chinese Academy of Sciences, Tsinghua University, Auburn University 备注:10 pages 【3】 Trivial bundle embeddings for learning graph representations 标题:用于学习图表示的平凡束嵌入 链接:https://arxiv.org/abs/2112.02531 作者:Zheng Xie,Xiaojing Zuo,Yiping Song 机构:Received: date Accepted: date 备注:17 pages,4 figures 【4】 Augmentation-Free Self-Supervised Learning on Graphs 标题:图上的无增广自监督学习 链接:https://arxiv.org/abs/2112.02472 作者:Namkyeong Lee,Junseok Lee,Chanyoung Park 机构: Dept. of Industrial and Systems Engineering, KAIST, Daejeon, Republic of Korea, Graduate School of Artificial Intelligence, KAIST, Daejeon, Republic of Korea 【5】 Fast Graph Neural Tangent Kernel via Kronecker Sketching 标题:基于Kronecker草图的快速图",
+        "source_name": "知乎",
+        "source_record_id": "src_0b7a79cd0c0f037e5057ea68",
+        "title": "机器学习学术速递[2021.12.7]",
+        "url": "https://zhuanlan.zhihu.com/p/442225258"
+      }
+    ],
+    "succeeded": true,
+    "summary": "发现并保存 10 个 Web 候选来源",
+    "warnings": []
+  },
+  "raw_result": {
+    "arguments": {
+      "max_results": 10,
+      "query": "DSGNN graph summarization distributed GNN link prediction F1"
+    },
+    "elapsed_ms": 889,
+    "error": null,
+    "payload": {
+      "search_result": {
+        "query": "DSGNN graph summarization distributed GNN link prediction F1",
+        "results": [
+          {
+            "published_at": "2026-06-19T10:20:00",
+            "rank": 1,
+            "score": null,
+            "snippet": "ByLaszlo Szilagyi as part of the Stanford CS 224W Final Project 代码下载:https://t.zsxq.com/hJFjI 01 介绍 大型语言模型(LLM)已迅速成为许多现代人工智能应用的核心引擎,但它们的语言能力与处理结构化、事实性或符号性信息的能力之间仍然存在显著差距。它们编码了海量的世界知识,但由于这些知识隐藏在密集的参数之中,检索特定事实或执行多步骤逻辑推理往往变得不可靠。这一缺陷促使研究人员探索利用外部知识源增强LLM的方法。其中,检索增强生成(RAG)已成为应用最广泛的方法。 然而,大多数RAG系统检索的是非结构化文本,无法捕捉实体间的潜在关系。正因如此,知识图谱(KG)作为一种极具吸引力的替代方案重新出现。与自由文本段落不同,图谱提供了明确的结构——实体之间通过有意义的关系连接。这种结构自然而然地支持多跳推理,增强了可解释性,并避免了长篇文本中常见的冗余。当与擅长学习关系数据模式的图神经网络(GNN)结合使用时,知识图谱便成为增强LLM的强大基础。 知识图谱。 在这个项目中,我们着手重建GNN-RAG,它是 PyTorch Geometric (PyG)生态系统中最先进的方法之一。GNN-RAG 提出了一种检索机制,它并非简单地获取文本,而是对大型知识图谱进行学习推理。它使用名为ReaRev 的 查询条件 GNN 模型,识别给定问题的最相关实体和关系,构建一个紧凑的子图,并将该结构化表示传递给 LLM。我们的工作重点在于用 PyG 重新实现这一推理栈,将其集成到一个模块化的流水线中,并在基于Freebase构建的基准数据集WebQSP上评估该系统。 在深入研究该方法之前,有必要退后一步,看看更广泛的 LLM 推理领域——LLM 天生擅长什么,它们在哪些方面存在困难,以及为什么结构化检索变得至关重要。 大型语言模型蕴含着海量的隐性知识。这些知识存储在模型参数中,并通过文本模式进行访问。由于这种隐性特性,大型语言模型通常擅长概括、释义和生成连贯的回答。但它们也存在一些众所周知的弱点:难以获取精确的事实细节,容易产生幻觉,并且在需要处理多步骤的组合链时,其推理能力常常失效。这些问题源于一个简单的事实:模型内部没有任何内容明确地表示实体或关系——一切都是分布式的统计关联。 经典RAG 信息检索系统的架构。 检索增强技术应运而生,旨在弥补这一不足。",
+            "source_name": "北京智源人工智能研究院",
+            "source_record_id": "src_d4cb7617c778ab9e79d9c817",
+            "title": "AI+知识图谱项目实战 | 图驱动的智能体人工智能:图神经网络如何解锁结构化推理",
+            "url": "https://hub.baai.ac.cn/view/55640"
+          },
+          {
+            "published_at": "2026-07-03T21:40:07",
+            "rank": 2,
+            "score": null,
+            "snippet": "人工智能研究近期拓展至神经算法推理(Neural Algorithmic Reasoning,NAR)领域,其任务是训练深度学习模型来复现经典算法的中间步骤。其目标是利用神经网络的灵活性,将算法逻辑应用于复杂多变的现实世界输入,而传统的算法在这些情况下可能失效。 我们的项目基于双重算法推理(Dual Algorithmic Reasoning,DAR)框架,该框架能够联合学习原始算法(例如最大流算法)及其对偶算法(例如最小割算法)以提升性能。以往的研究主要集中在Ford-Fulkerson算法上,而我们则着重研究Push-Relabel算法。据我们所知,我们是第一个尝试通过神经算法推理框架来学习Push-Relabel算法步骤的研究团队。 我们假设,通过局部更新和并行执行的推送重标记算法比全局顺序的Ford-Fulkerson算法更符合图神经网络(Graph Neural Networks,GNN)的消息传递范式。我们在合成图上验证了这一假设,并通过生成嵌入来辅助对脑血管进行分类,从而展示了该算法在实际应用中的可行性,所用数据集为血管图(VesselGraph,BVG)(https://github.com/jocpae/VesselGraph?tab=readme-ov-file#table-of-contents)。 2. 理论分析:全球化运营与本地化运营 这项工作的一个主要动机是具有全局操作的算法与 GNN 架构之间的理论不匹配。 2.1 福特-福克森模型的局限性 Ford-Fulkerson算法分两个交替阶段寻找最大流。第一阶段是路径查找阶段,旨在找到残差图中所有增广路径。这一步骤可以使用任何路径查找算法来实现。通常情况下,最短路径是理想的,因此广度优先搜索(BFS)在这里易于实现和使用。 第二阶段是更新增广路径中各边的流量值,使得沿该路径发送的最大流量得以实现。关键在于,在这一步中,算法会找到增广路径上的最小剩余容量,并基于该值更新所有流量。这一步是对整个图进行的“全局”操作。总的来说,与 Push-Relabel 算法相比,Ford-Fulkerson 算法在解决最大流问题时采用了一种更全局的方法。 我们通过反例论证,具有 L 层的标准消息传递 GNN 无法模拟 Ford-Fulkerson 的第二阶段,除非将流更新步骤拆分为多个单独的子步骤,或者通过全局虚拟节点进行额外的图增强。 考虑以下情况:增广路径的长度为 2L,形式如下:",
+            "source_name": "北京智源人工智能研究院",
+            "source_record_id": "src_8d1ecc8ac8c99c2c480535bb",
+            "title": "AI+医学项目实战 | 基于推送重标记(Push-Relabel)的神经算法推理(Neural Algorithmic Reasoning) - 智源社区",
+            "url": "https://hub.baai.ac.cn/view/56060"
+          },
+          {
+            "published_at": "2022-12-13T16:23:11",
+            "rank": 3,
+            "score": null,
+            "snippet": "GNN应用分为节点分类、图分类、网络嵌入、节点聚类、链接预测、图生成、时空图预测和图分割。不同学科领域的图形态表示如下: GNN应用的更详细列表如下: 1. 物理——粒子物理学 在FermiLab 中,研究人员实施 GNN 来分析大型强子对撞机上 CMS 探测器产生的图像,以识别用于粒子物理实验的有趣粒子。 1. 物理——水的状态变化模拟 使用基于图形网络的模拟器模拟现实世界的物理变化 2. 化学——分子结构 在化学中,研究人员应用图神经网络研究分子的图结构。在分子图中,原子为图中的节点,化学键为图中的边。节点分类、图形分类和图形生成是分子图的三个主要任务,它们可以用来学习分子指纹、预测分子性质、推断蛋白质结构、合成化合物。 Open Catalyst Project是另一个使用 AI 发现用于可再生能源存储的新催化剂的例子。 下图是从现有的分子结构数据库(包括现有的 FDA 批准的药物)中应用 AI 开发新药和疫苗的另一个视图。例如,癌症的治愈可能取决于对特定癌细胞特异性抗原的设计。从已经批准的药物开始,它可能会缩短发现过程,因为毒理学筛选可能已经进行了研究。在对分子结构进行建模时,下面展示的许多 AI 组件可以用 GNN 技术代替。 3. 生物——AlphaFold 2蛋白质合成 AlphaFold是由DeepMind开发的 AI 系统,可根据氨基酸序列预测蛋白质的 3D 结构。它经常达到与实验竞争的准确性。 3. 生物——药物发现和合成化合物 开发一种药物的成本超过 10 亿美元,并且跨越 12 年或更长时间。因此,如果它可以缩短药物发现以获得更好的候选药物和生物标志物发现阶段,那么它在应用 AI 方面具有商业可行性,该阶段总共可以超过 8 年。 DNN 可以在数十万种化学结构上进行训练,以对分子进行编码和解码,以及构建从潜在表示中估计化学性质的预测器。例如,我们可以学习自动编码器来编码分子的图形表示,然后用解码器重建分子。训练目标是学习最小化重建损失的潜在表示。这些潜在表示允许研究人员通过扰乱已知化学结构或在分子之间插值在潜在空间中执行简单操作来自动生成新的化学结构。",
+            "source_name": "北京智源人工智能研究院",
+            "source_record_id": "src_b0ddbf44293cc7dca1cd20c9",
+            "title": "资讯| GNN广泛的应用场景,让图+Science的未来充满无限想象",
+            "url": "https://hub.baai.ac.cn/view/22487"
+          },
+          {
+            "published_at": "2026-03-10T16:08:55",
+            "rank": 4,
+            "score": null,
+            "snippet": "ICLR 2025共有19,000多篇投稿,录用5,359篇,录取率28.18%。 本文总结了2026 ICLR上有关LLMGraph的相关论文。总计29篇,如有疏漏,欢迎补充。 最大均分 均值 最小均分 6 5.21 4 其中均分≥6的有4篇,其中。 笔者将LLM和Graph结合的工作分为两大类,一类是LLM4Graph,即LLM做图任务。其中细分了:文本属性图(Text-Attributed Graph, TAG),知识图谱(KG),图基础模型(GFM),AI4Science,图上的推理和理解任务。另外一类是利用Graph4LLM,即利用图结构来增强LLM的能力。 LLM4Graph & TAG1. Global-Recent Semantic Reasoning on Dynamic Text-Attributed Graphs with Large Language Models2. GDGB: A Benchmark for Generative Dynamic Text-Attributed Graph Learning3. Robustness in Text-Attributed Graph Learning: Insights, Trade-offs, and New DefensesLLM4Graph & KG4. DAMR: Efficient and Adaptive Context-Aware Knowledge Graph Question Answering with LLM-Guided MCTS5. Explore-on-Graph: Incentivizing Autonomous Exploration of Large Language Models on Knowledge Graphs with Path-refined Reward Modeling6. Plan-Answer-Refine-on-Graph: Structured Planning and Self-Refinement for Large Language Model Reasoning on Knowledge Graphs7. Knowledge Reasoning Language Model: Unifying Knowledge and Language for Inductive Knowledge Graph Reasoning8. HGNet: Scalable Foundation Model for Automated Knowledge Graph Generation from Scientific Literature9. Flock: A Knowledge Graph Foundation Model via Learning on Random WalksLLM4Graph & GFM10. [Oral]Multi-Domain Transferable Graph Gluing for Building Graph",
+            "source_name": "Tencent腾讯（腾讯官方网）",
+            "source_record_id": "src_ac9e348129dc70a9c9f9029e",
+            "title": "ICLR 2026 | LLM×Graph论文总结【LLM4Graph与Graph4LLM】",
+            "url": "https://cloud.tencent.com/developer/article/2636248"
+          },
+          {
+            "published_at": "2024-08-19T11:50:00",
+            "rank": 5,
+            "score": null,
+            "snippet": "DRUGAI 今天为大家介绍的是来自剑桥大学Jose团队的一篇论文。近年来,各种机器学习方法在反应结果预测中的应用迅速增长。深度学习模型因其能够直接从分子结构中学习表示而受到欢迎。另一方面,高斯过程(GPs)能够提供可靠的不确定性估计,但无法从数据中学习表示。作者将神经网络(NNs)的特征学习能力与GPs的不确定性量化相结合,在深度核学习(DKL)框架中预测反应结果。观察发现,DKL模型在不同输入表示下都能取得非常好的预测性能。它显著优于标准的GPs,并提供与图神经网络相当的性能,同时还能进行不确定性估计。此外,DKL模型提供的预测不确定性估计使其能够作为贝叶斯优化(BO)的代理模型。因此,所提出的方法通过结合提供可靠不确定性估计的准确预测模型与BO,在加速反应发现方面具有巨大潜力。 化学反应优化在有机合成中占据核心地位,主要依赖于化学直觉。在优化过程中,目标是通过确定合适的实验条件来最大化反应结果(例如产率和/或对映体过量)。这涉及评估一个包含催化剂、溶剂、底物、添加剂、时间、温度、浓度等反应变量的多维化学空间。由于这个问题的复杂性,已经采用了多种数据驱动的方法来高效探索化学空间。 反应结果的估计在反应开发中非常重要。它可以使化学家在进行湿法实验前识别出低产率的反应,从而节省时间和资源。机器学习(ML)在化学的许多领域显示出了令人印象深刻的成功。早期对反应结果预测的努力使用了手工制作的特征,如物理有机描述符和分子指纹。传统的机器学习方法,特别是随机森林,在这些非学习的表示下表现极佳。最近,深度学习(DL)的进步推动了新的分子表示方法的发展,这些方法直接从分子结构中学习,如简化分子输入线条条目规范(SMILES)和分子图。使用这些基于字符串或图的表示训练的化学语言模型(LMs)和图神经网络(GNNs)在反应结果预测中展示了巨大潜力。 尽管使用上述机器学习方法进行不确定性量化可能并不简单,但高斯过程(GPs)的不确定性感知是众所周知的。GPs通常在数据量少的情况下更适合量化不确定性,并且经常用作BO中的代理模型。GP模型的核通常是固定的,这意味着GPs无法从数据中学习表示。因此,在常用的分子输入如SMILES和图上训练GPs具有挑战性。另一方面,神经网络(NNs)可以直接从上述输入中学习特征表示,并将其转换为连续向量。可以将NNs的这种表示学习能力与GPs的不确定性量化相结合,使用深度核学习(DKL)。因此,DKL由于NNs能够学习更好且更灵活的表示,而比标准的GPs更具优势。",
+            "source_name": "北京智源人工智能研究院",
+            "source_record_id": "src_bffe9df1dbc6c1c087211609",
+            "title": "Commun. Chem. | 深度核学习用于反应结果预测和优化",
+            "url": "https://hub.baai.ac.cn/view/39199"
+          },
+          {
+            "published_at": "2026-09-03T00:00:00",
+            "rank": 6,
+            "score": null,
+            "snippet": "Hybrid Transformer-GNN Model for Multi-Document Summarizationdoi:10.1109/ICSIT65336.2025.11294438MeasurementDeep learningRedundancySemanticsText summarizationCoherenceReinforcement learningTransformersGraph neural networksContext modelingMulti-document summarization (MDS) remains a challenging task due to the complexity of extracting, synthesizing, and generating coherent and non-redundant summaries from multiple related documents. While Deep Learning (DL) techniques, particularly Transformer-based models, have shown significant advancements, they often struggle with redundancy elimination, coherence preservation, and contextual relevance. In this research, we propose a novel Hybrid Transformer-GNN Framework (HTGF) that integrates Transformer networks with Graph Neural Networks (GNNs) to capture document relationships, semantic dependencies, and content importance effectively. Additionally, we incorporate a Reinforcement Learning (RL)-based reward mechanism to optimize summary fluency, coherence, and informativeness. Our framework employs hierarchical attention mechanisms to prioritize key sentences and a novel redundancy-aware contrastive loss function to improve abstraction. We evaluate our model on benchmark datasets and compare its performance against state-of-the-art methods using widely accepted evaluation metrics. Experimental results demonstrate that our approach outperforms existing models in terms of ROUGE scores, coherence, and factual consistency. This research provides a robust and scalable solution to MDS, offering new insights into DL-driven text summarization.Krishna DheeravathCVR College of Engineering,Department of CSE (DS),Hyderabad,IndiaPallati NarsimhuluSymbiosis International (Deemed University),Symbiosis Institute of Technology, Hyderabad Campus,Pune,IndiaPremkumar ChithaluruMahatma Gandhi Institute of Technology,Department of Information Technology,Telangana,India,500075IEEE",
+            "source_name": "无",
+            "source_record_id": "src_7f7e57f8fdc3bce58e1a37ff",
+            "title": "Hybrid Transformer-GNN Model for Multi-Document Summarization",
+            "url": "http://ieeexplore.ieee.org/document/11294438/"
+          },
+          {
+            "published_at": "2023-12-28T10:46:00",
+            "rank": 7,
+            "score": null,
+            "snippet": "近年来,图神经网络(Graph Neural Network,GNN)在图数据学习上表现出了优越的性能。然而,当面临现实世界中百万乃至亿级节点数量的大图时,现有的GNN仍面临着诸多局限性,主要包括:(1)消息传递模式中,邻居节点数量随着传播距离指数式增长,这将带来可拓展性问题和过平滑问题;(2)嵌入向量表的参数数量随着节点数量线性增长,当节点数量较多时,巨大的嵌入向量表将难以优化;(3)GNN卷积层和嵌入向量表有着不同的性质,同时优化它们可能导致次优的结果。 为了克服这些问题,我们提出了xGCN——一种采用全新训练方式的GNN模型。xGCN将节点嵌入向量表视为“静态特征”,而不是需要梯度训练的参数,使用无监督的传播过程和一个DNN来更新嵌入向量,能够显著减少模型参数数量、加速模型训练,同时达到更好的预测准确率。文章在4个大规模社交网络数据集上进行了实验,结果表明xGCN在准确率和训练速度方面均超过了基线模型。目前,xGCN模型已被应用在Xbox游戏社交平台的社交推荐业务中。 同时,我们推出了一个轻量的GNN模型工具包:XGCN,旨在帮助用户快速地构建和训练大规模网络上的GNN图嵌入模型。XGCN包含了xGCN以及GraphSAGE、LightGCN等常见GNN模型的实现。我们提供了详细的说明文档,方便用户快速上手进行图数据集处理、模型构建和运行。 该成果“xGCN: An Extreme Graph Convolutional Network for Large-scale Social Link Prediction”发表于2023年国际万维网会议(WWW’23)。WWW是互联网技术领域的顶级会议,是中国计算机学会(CCF)推荐的A类会议。 大规模图数据广泛地存在于现代社会中,例如微信、推特等线上社交平台中的社交网络,和淘宝、亚马逊等购物平台中的商品交易网络。图嵌入(Graph Embedding)作为一种图数据挖掘方法,近年来备受学术界和工业界关注,其中的图神经网络(Graph Neural Network,GNN)方法引入了显式编码图结构的卷积层,表现出了优越的性能。然而,当面临现实世界中的大规模网络时,现有的GNN仍面临着诸多局限性,主要包括: (1)消息传递模式中,邻居节点数量随着传播距离指数式增长,这将带来可拓展性问题和过平滑问题。 (2)在经典的图嵌入任务中,每个节点拥有一个d维的可学习的嵌入向量e。设节点数量为N,则全体嵌入向量构成了一个N x d的矩阵E,即嵌入向量表。该嵌入向量表的参数数量随着节点数量线性增长,当节点数量较多时,嵌入向量表将变得十分庞大。",
+            "source_name": "腾讯网",
+            "source_record_id": "src_4bef717f75570921baa26cdc",
+            "title": "WWW'23:更少的内存,更快的速度,更高的准确度——GNN大图训练暨工具包发布",
+            "url": "https://mp.weixin.qq.com/s?__biz=MzA5OTQ5MDE0Mw==&mid=2651136483&idx=1&sn=4e78e2048235e9111aa301357e244dc9&chksm=8a0d61b63cd8fea329a9d7243a93a9cdb5931cd885c78ef62a91817772f0a9f3fc6cd319ed00&scene=27"
+          },
+          {
+            "published_at": "2020-08-08T22:22:25",
+            "rank": 8,
+            "score": null,
+            "snippet": "摘要: 简介: 2.1 为什么要用图表示数据: 2.2 gnn与network embedding: 2.3 gnn与graph kernel: 2.4 一些符号表示: 3. gnn的分类和基本框架: 3.1 gnn的结构分类: 3.1.1 recgnns: 3.1.2 convgnns: 3.1.3 gaes: 3.1.4 stgnns: 3.2 gnn的框架分类: 3.2.1 gnn的输出分类: 3.2.2 gnn的训练分类: 3.2.3 统计结果: 4. 递归图神经网络(recgnn): 4.1 gnn∗^*∗: 4.2 graphesn: 4.3 ggnn: 5. 卷积图神经网络(convgnn): 5.1 基于频谱的convgnn: 5.1.1 基本原理: 5.1.2 chebnet: 5.1.3 cayleynet: 5.1.4 gcn: 5.1.5 其他工作: 5.2 基于空间域的convgnn: 5.2.1 基本原理:",
+            "source_name": "飞桨星河社区",
+            "source_record_id": "src_e6da43bcde0a86adb9263b0d",
+            "title": "【图神经网络综述】一文道尽GNN原理、框架和应用",
+            "url": "https://aistudio.baidu.com/aistudio/projectdetail/699935"
+          },
+          {
+            "published_at": "2025-05-17T08:10:13",
+            "rank": 9,
+            "score": null,
+            "snippet": "A learned solution to node-level classification on irregular graphs via graph neural networks. 基于图神经网络的不规则图节点级分类的解决方案 Deep learning has shown tremendous success on 2D visual recognition tasks. Tasks such as image classification and segmentation, deemed extremely difficult a decade ago, are now solved by neural networks with human-like performance. This success is attributed to convolutional neural networks (CNNs), which have replaced handcrafted descriptors. Driven by the success of CNNs on 2D images, researchers have extended CNNs to irregular graph data, such as 3D meshes. The extension of the convolutional operation to unstructured graph data is nontrivial as the notion of relative position is lost. Therefore, we have dedicated this blog post and a Colab to answering how CNNs can be generalized to irregular graphs. In particular, we discuss how to modify CNNs to predict segmentation masks on 3D meshes. 深度学习在 2D 视觉识别任务中取得了巨大的成功。图像分类和分割等被认为十年前极其困难的任务,现在已被具有类人性能的神经网络所解决。这种成功归因于卷积神经网络(CNN),它取代了手工制作的描述符。在 CNN 在 2D 图像上取得成功后,研究人员将 CNN 扩展到了非规则图数据,例如 3D 网格。将卷积操作扩展到非结构化图数据是非平凡的,因为相对位置的概念丢失了。因此,我们专门撰写了这篇博客文章和一个 Colab,以回答如何将 CNN 推广到非规则图。特别是,我们讨论了如何修改 CNN 以在 3D 网格上预测分割掩码。 Why are CNNs not applicable? 为什么卷积神经网络不适用? Regular graphs defined on the euclidean have a fixed node ordering and neighborhood size. Generic graphs have no node ordering for neighbors, and their number of neighbors is variable. 定义在欧几里得空间上的规则图具有固定的节点顺序和邻域大小。通用图没有邻居的节点顺序,并且它们的邻居数量是可变的。",
+            "source_name": "北京智源人工智能研究院",
+            "source_record_id": "src_59875efd04c47d63fab98cb0",
+            "title": "项目实战 | 三维网格(3D Meshes)上的深度学习",
+            "url": "https://hub.baai.ac.cn/view/45703"
+          },
+          {
+            "published_at": "2021-12-07T13:27:00",
+            "rank": 10,
+            "score": null,
+            "snippet": "【1】 Distance and Hop-wise Structures Encoding Enhanced Graph Attention Networks 标题:增强型图注意网络的距离和跳数结构编码 链接:https://arxiv.org/abs/2112.02868 作者:Zhiguo Huang,Xiaowei Chen,Bojuan Wang 机构:Sci-Tech Academy of ZheJiang University;Research Center of Hundsun LTD., Hangzhou, China, School of Finance, NanKai University, Tianjin, China 备注:11 pages; 1 figures; 【2】 CDGNet: A Cross-Time Dynamic Graph-based Deep Learning Model for Traffic Forecasting 标题:CDGNet:一种基于跨时间动态图的 交通预测 深度学习模型 链接:https://arxiv.org/abs/2112.02736 作者:Yuchen Fang,Yanjun Qin,Haiyong Luo,Fang Zhao,Liang Zeng,Bo Hui,Chenxing Wang 机构:Beijing University of Posts and, Telecommunications, Institute of Computing Technology, Chinese Academy of Sciences, Tsinghua University, Auburn University 备注:10 pages 【3】 Trivial bundle embeddings for learning graph representations 标题:用于学习图表示的平凡束嵌入 链接:https://arxiv.org/abs/2112.02531 作者:Zheng Xie,Xiaojing Zuo,Yiping Song 机构:Received: date Accepted: date 备注:17 pages,4 figures 【4】 Augmentation-Free Self-Supervised Learning on Graphs 标题:图上的无增广自监督学习 链接:https://arxiv.org/abs/2112.02472 作者:Namkyeong Lee,Junseok Lee,Chanyoung Park 机构: Dept. of Industrial and Systems Engineering, KAIST, Daejeon, Republic of Korea, Graduate School of Artificial Intelligence, KAIST, Daejeon, Republic of Korea 【5】 Fast Graph Neural Tangent Kernel via Kronecker Sketching 标题:基于Kronecker草图的快速图",
+            "source_name": "知乎",
+            "source_record_id": "src_0b7a79cd0c0f037e5057ea68",
+            "title": "机器学习学术速递[2021.12.7]",
+            "url": "https://zhuanlan.zhihu.com/p/442225258"
+          }
+        ],
+        "warnings": []
+      },
+      "source_records": [
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "1",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://hub.baai.ac.cn/view/55640",
+          "observed_at": "2026-09-15T10:39:13.113640Z",
+          "provenance": {
+            "query": "DSGNN graph summarization distributed GNN link prediction F1",
+            "rank": 1,
+            "run_id": "run-c64223762d494aaf8c5112bda571430a",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": " ByLaszlo Szilagyi as part of the Stanford CS 224W Final Project 代码下载:https://t.zsxq.com/hJFjI 01 介绍 大型语言模型(LLM)已迅速成为许多现代人工智能应用的核心引擎,但它们的语言能力与处理结构化、事实性或符号性信息的能力之间仍然存在显著差距。它们编码了海量的世界知识,但由于这些知识隐藏在密集的参数之中,检索特定事实或执行多步骤逻辑推理往往变得不可靠。这一缺陷促使研究人员探索利用外部知识源增强LLM的方法。其中,检索增强生成(RAG)已成为应用最广泛的方法。 然而,大多数RAG系统检索的是非结构化文本,无法捕捉实体间的潜在关系。正因如此,知识图谱(KG)作为一种极具吸引力的替代方案重新出现。与自由文本段落不同,图谱提供了明确的结构——实体之间通过有意义的关系连接。这种结构自然而然地支持多跳推理,增强了可解释性,并避免了长篇文本中常见的冗余。当与擅长学习关系数据模式的图神经网络(GNN)结合使用时,知识图谱便成为增强LLM的强大基础。 知识图谱。 在这个项目中,我们着手重建GNN-RAG,它是 PyTorch Geometric (PyG)生态系统中最先进的方法之一。GNN-RAG 提出了一种检索机制,它并非简单地获取文本,而是对大型知识图谱进行学习推理。它使用名为ReaRev 的 查询条件 GNN 模型,识别给定问题的最相关实体和关系,构建一个紧凑的子图,并将该结构化表示传递给 LLM。我们的工作重点在于用 PyG 重新实现这一推理栈,将其集成到一个模块化的流水线中,并在基于Freebase构建的基准数据集WebQSP上评估该系统。 在深入研究该方法之前,有必要退后一步,看看更广泛的 LLM 推理领域——LLM 天生擅长什么,它们在哪些方面存在困难,以及为什么结构化检索变得至关重要。 大型语言模型蕴含着海量的隐性知识。这些知识存储在模型参数中,并通过文本模式进行访问。由于这种隐性特性,大型语言模型通常擅长概括、释义和生成连贯的回答。但它们也存在一些众所周知的弱点:难以获取精确的事实细节,容易产生幻觉,并且在需要处理多步骤的组合链时,其推理能力常常失效。这些问题源于一个简单的事实:模型内部没有任何内容明确地表示实体或关系——一切都是分布式的统计关联。 经典RAG 信息检索系统的架构。 检索增强技术应运而生,旨在弥补这一不足。",
+            "published_at": "2026-06-19T10:20:00",
+            "request_id": "966fb1c9-f244-4e05-9c9e-d38af1dd0f1b",
+            "search_score": null,
+            "search_snippet": "ByLaszlo Szilagyi as part of the Stanford CS 224W Final Project 代码下载:https://t.zsxq.com/hJFjI 01 介绍 大型语言模型(LLM)已迅速成为许多现代人工智能应用的核心引擎,但它们的语言能力与处理结构化、事实性或符号性信息的能力之间仍然存在显著差距。它们编码了海量的世界知识,但由于这些知识隐藏在密集的参数之中,检索特定事实或执行多步骤逻辑推理往往变得不可靠。这一缺陷促使研究人员探索利用外部知识源增强LLM的方法。其中,检索增强生成(RAG)已成为应用最广泛的方法。 然而,大多数RAG系统检索的是非结构化文本,无法捕捉实体间的潜在关系。正因如此,知识图谱(KG)作为一种极具吸引力的替代方案重新出现。与自由文本段落不同,图谱提供了明确的结构——实体之间通过有意义的关系连接。这种结构自然而然地支持多跳推理,增强了可解释性,并避免了长篇文本中常见的冗余。当与擅长学习关系数据模式的图神经网络(GNN)结合使用时,知识图谱便成为增强LLM的强大基础。 知识图谱。 在这个项目中,我们着手重建GNN-RAG,它是 PyTorch Geometric (PyG)生态系统中最先进的方法之一。GNN-RAG 提出了一种检索机制,它并非简单地获取文本,而是对大型知识图谱进行学习推理。它使用名为ReaRev 的 查询条件 GNN 模型,识别给定问题的最相关实体和关系,构建一个紧凑的子图,并将该结构化表示传递给 LLM。我们的工作重点在于用 PyG 重新实现这一推理栈,将其集成到一个模块化的流水线中,并在基于Freebase构建的基准数据集WebQSP上评估该系统。 在深入研究该方法之前,有必要退后一步,看看更广泛的 LLM 推理领域——LLM 天生擅长什么,它们在哪些方面存在困难,以及为什么结构化检索变得至关重要。 大型语言模型蕴含着海量的隐性知识。这些知识存储在模型参数中,并通过文本模式进行访问。由于这种隐性特性,大型语言模型通常擅长概括、释义和生成连贯的回答。但它们也存在一些众所周知的弱点:难以获取精确的事实细节,容易产生幻觉,并且在需要处理多步骤的组合链时,其推理能力常常失效。这些问题源于一个简单的事实:模型内部没有任何内容明确地表示实体或关系——一切都是分布式的统计关联。 经典RAG 信息检索系统的架构。 检索增强技术应运而生,旨在弥补这一不足。",
+            "source_name": "北京智源人工智能研究院",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web",
+          "source_record_id": "src_d4cb7617c778ab9e79d9c817",
+          "title": "AI+知识图谱项目实战 | 图驱动的智能体人工智能:图神经网络如何解锁结构化推理",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "2",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://hub.baai.ac.cn/view/56060",
+          "observed_at": "2026-09-15T10:39:13.113640Z",
+          "provenance": {
+            "query": "DSGNN graph summarization distributed GNN link prediction F1",
+            "rank": 2,
+            "run_id": "run-c64223762d494aaf8c5112bda571430a",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": " 人工智能研究近期拓展至神经算法推理(Neural Algorithmic Reasoning,NAR)领域,其任务是训练深度学习模型来复现经典算法的中间步骤。其目标是利用神经网络的灵活性,将算法逻辑应用于复杂多变的现实世界输入,而传统的算法在这些情况下可能失效。 我们的项目基于双重算法推理(Dual Algorithmic Reasoning,DAR)框架,该框架能够联合学习原始算法(例如最大流算法)及其对偶算法(例如最小割算法)以提升性能。以往的研究主要集中在Ford-Fulkerson算法上,而我们则着重研究Push-Relabel算法。据我们所知,我们是第一个尝试通过神经算法推理框架来学习Push-Relabel算法步骤的研究团队。 我们假设,通过局部更新和并行执行的推送重标记算法比全局顺序的Ford-Fulkerson算法更符合图神经网络(Graph Neural Networks,GNN)的消息传递范式。我们在合成图上验证了这一假设,并通过生成嵌入来辅助对脑血管进行分类,从而展示了该算法在实际应用中的可行性,所用数据集为血管图(VesselGraph,BVG)(https://github.com/jocpae/VesselGraph?tab=readme-ov-file#table-of-contents)。 2. 理论分析:全球化运营与本地化运营 这项工作的一个主要动机是具有全局操作的算法与 GNN 架构之间的理论不匹配。 2.1 福特-福克森模型的局限性 Ford-Fulkerson算法分两个交替阶段寻找最大流。第一阶段是路径查找阶段,旨在找到残差图中所有增广路径。这一步骤可以使用任何路径查找算法来实现。通常情况下,最短路径是理想的,因此广度优先搜索(BFS)在这里易于实现和使用。 第二阶段是更新增广路径中各边的流量值,使得沿该路径发送的最大流量得以实现。关键在于,在这一步中,算法会找到增广路径上的最小剩余容量,并基于该值更新所有流量。这一步是对整个图进行的“全局”操作。总的来说,与 Push-Relabel 算法相比,Ford-Fulkerson 算法在解决最大流问题时采用了一种更全局的方法。 我们通过反例论证,具有 L 层的标准消息传递 GNN 无法模拟 Ford-Fulkerson 的第二阶段,除非将流更新步骤拆分为多个单独的子步骤,或者通过全局虚拟节点进行额外的图增强。 考虑以下情况:增广路径的长度为 2L,形式如下:",
+            "published_at": "2026-07-03T21:40:07",
+            "request_id": "966fb1c9-f244-4e05-9c9e-d38af1dd0f1b",
+            "search_score": null,
+            "search_snippet": "人工智能研究近期拓展至神经算法推理(Neural Algorithmic Reasoning,NAR)领域,其任务是训练深度学习模型来复现经典算法的中间步骤。其目标是利用神经网络的灵活性,将算法逻辑应用于复杂多变的现实世界输入,而传统的算法在这些情况下可能失效。 我们的项目基于双重算法推理(Dual Algorithmic Reasoning,DAR)框架,该框架能够联合学习原始算法(例如最大流算法)及其对偶算法(例如最小割算法)以提升性能。以往的研究主要集中在Ford-Fulkerson算法上,而我们则着重研究Push-Relabel算法。据我们所知,我们是第一个尝试通过神经算法推理框架来学习Push-Relabel算法步骤的研究团队。 我们假设,通过局部更新和并行执行的推送重标记算法比全局顺序的Ford-Fulkerson算法更符合图神经网络(Graph Neural Networks,GNN)的消息传递范式。我们在合成图上验证了这一假设,并通过生成嵌入来辅助对脑血管进行分类,从而展示了该算法在实际应用中的可行性,所用数据集为血管图(VesselGraph,BVG)(https://github.com/jocpae/VesselGraph?tab=readme-ov-file#table-of-contents)。 2. 理论分析:全球化运营与本地化运营 这项工作的一个主要动机是具有全局操作的算法与 GNN 架构之间的理论不匹配。 2.1 福特-福克森模型的局限性 Ford-Fulkerson算法分两个交替阶段寻找最大流。第一阶段是路径查找阶段,旨在找到残差图中所有增广路径。这一步骤可以使用任何路径查找算法来实现。通常情况下,最短路径是理想的,因此广度优先搜索(BFS)在这里易于实现和使用。 第二阶段是更新增广路径中各边的流量值,使得沿该路径发送的最大流量得以实现。关键在于,在这一步中,算法会找到增广路径上的最小剩余容量,并基于该值更新所有流量。这一步是对整个图进行的“全局”操作。总的来说,与 Push-Relabel 算法相比,Ford-Fulkerson 算法在解决最大流问题时采用了一种更全局的方法。 我们通过反例论证,具有 L 层的标准消息传递 GNN 无法模拟 Ford-Fulkerson 的第二阶段,除非将流更新步骤拆分为多个单独的子步骤,或者通过全局虚拟节点进行额外的图增强。 考虑以下情况:增广路径的长度为 2L,形式如下:",
+            "source_name": "北京智源人工智能研究院",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web",
+          "source_record_id": "src_8d1ecc8ac8c99c2c480535bb",
+          "title": "AI+医学项目实战 | 基于推送重标记(Push-Relabel)的神经算法推理(Neural Algorithmic Reasoning) - 智源社区",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "3",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://hub.baai.ac.cn/view/22487",
+          "observed_at": "2026-09-15T10:39:13.113640Z",
+          "provenance": {
+            "query": "DSGNN graph summarization distributed GNN link prediction F1",
+            "rank": 3,
+            "run_id": "run-c64223762d494aaf8c5112bda571430a",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": " GNN应用分为节点分类、图分类、网络嵌入、节点聚类、链接预测、图生成、时空图预测和图分割。不同学科领域的图形态表示如下: GNN应用的更详细列表如下: 1. 物理——粒子物理学 在FermiLab 中,研究人员实施 GNN 来分析大型强子对撞机上 CMS 探测器产生的图像,以识别用于粒子物理实验的有趣粒子。 1. 物理——水的状态变化模拟 使用基于图形网络的模拟器模拟现实世界的物理变化 2. 化学——分子结构 在化学中,研究人员应用图神经网络研究分子的图结构。在分子图中,原子为图中的节点,化学键为图中的边。节点分类、图形分类和图形生成是分子图的三个主要任务,它们可以用来学习分子指纹、预测分子性质、推断蛋白质结构、合成化合物。 Open Catalyst Project是另一个使用 AI 发现用于可再生能源存储的新催化剂的例子。 下图是从现有的分子结构数据库(包括现有的 FDA 批准的药物)中应用 AI 开发新药和疫苗的另一个视图。例如,癌症的治愈可能取决于对特定癌细胞特异性抗原的设计。从已经批准的药物开始,它可能会缩短发现过程,因为毒理学筛选可能已经进行了研究。在对分子结构进行建模时,下面展示的许多 AI 组件可以用 GNN 技术代替。 3. 生物——AlphaFold 2蛋白质合成 AlphaFold是由DeepMind开发的 AI 系统,可根据氨基酸序列预测蛋白质的 3D 结构。它经常达到与实验竞争的准确性。 3. 生物——药物发现和合成化合物 开发一种药物的成本超过 10 亿美元,并且跨越 12 年或更长时间。因此,如果它可以缩短药物发现以获得更好的候选药物和生物标志物发现阶段,那么它在应用 AI 方面具有商业可行性,该阶段总共可以超过 8 年。 DNN 可以在数十万种化学结构上进行训练,以对分子进行编码和解码,以及构建从潜在表示中估计化学性质的预测器。例如,我们可以学习自动编码器来编码分子的图形表示,然后用解码器重建分子。训练目标是学习最小化重建损失的潜在表示。这些潜在表示允许研究人员通过扰乱已知化学结构或在分子之间插值在潜在空间中执行简单操作来自动生成新的化学结构。",
+            "published_at": "2022-12-13T16:23:11",
+            "request_id": "966fb1c9-f244-4e05-9c9e-d38af1dd0f1b",
+            "search_score": null,
+            "search_snippet": "GNN应用分为节点分类、图分类、网络嵌入、节点聚类、链接预测、图生成、时空图预测和图分割。不同学科领域的图形态表示如下: GNN应用的更详细列表如下: 1. 物理——粒子物理学 在FermiLab 中,研究人员实施 GNN 来分析大型强子对撞机上 CMS 探测器产生的图像,以识别用于粒子物理实验的有趣粒子。 1. 物理——水的状态变化模拟 使用基于图形网络的模拟器模拟现实世界的物理变化 2. 化学——分子结构 在化学中,研究人员应用图神经网络研究分子的图结构。在分子图中,原子为图中的节点,化学键为图中的边。节点分类、图形分类和图形生成是分子图的三个主要任务,它们可以用来学习分子指纹、预测分子性质、推断蛋白质结构、合成化合物。 Open Catalyst Project是另一个使用 AI 发现用于可再生能源存储的新催化剂的例子。 下图是从现有的分子结构数据库(包括现有的 FDA 批准的药物)中应用 AI 开发新药和疫苗的另一个视图。例如,癌症的治愈可能取决于对特定癌细胞特异性抗原的设计。从已经批准的药物开始,它可能会缩短发现过程,因为毒理学筛选可能已经进行了研究。在对分子结构进行建模时,下面展示的许多 AI 组件可以用 GNN 技术代替。 3. 生物——AlphaFold 2蛋白质合成 AlphaFold是由DeepMind开发的 AI 系统,可根据氨基酸序列预测蛋白质的 3D 结构。它经常达到与实验竞争的准确性。 3. 生物——药物发现和合成化合物 开发一种药物的成本超过 10 亿美元,并且跨越 12 年或更长时间。因此,如果它可以缩短药物发现以获得更好的候选药物和生物标志物发现阶段,那么它在应用 AI 方面具有商业可行性,该阶段总共可以超过 8 年。 DNN 可以在数十万种化学结构上进行训练,以对分子进行编码和解码,以及构建从潜在表示中估计化学性质的预测器。例如,我们可以学习自动编码器来编码分子的图形表示,然后用解码器重建分子。训练目标是学习最小化重建损失的潜在表示。这些潜在表示允许研究人员通过扰乱已知化学结构或在分子之间插值在潜在空间中执行简单操作来自动生成新的化学结构。",
+            "source_name": "北京智源人工智能研究院",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web",
+          "source_record_id": "src_b0ddbf44293cc7dca1cd20c9",
+          "title": "资讯| GNN广泛的应用场景,让图+Science的未来充满无限想象",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "4",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://cloud.tencent.com/developer/article/2636248",
+          "observed_at": "2026-09-15T10:39:13.113640Z",
+          "provenance": {
+            "query": "DSGNN graph summarization distributed GNN link prediction F1",
+            "rank": 4,
+            "run_id": "run-c64223762d494aaf8c5112bda571430a",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": "ICLR 2025共有19,000多篇投稿,录用5,359篇,录取率28.18%。 本文总结了2026 ICLR上有关LLMGraph的相关论文。总计29篇,如有疏漏,欢迎补充。 最大均分 均值 最小均分 6 5.21 4 其中均分≥6的有4篇,其中。 笔者将LLM和Graph结合的工作分为两大类,一类是LLM4Graph,即LLM做图任务。其中细分了:文本属性图(Text-Attributed Graph, TAG),知识图谱(KG),图基础模型(GFM),AI4Science,图上的推理和理解任务。另外一类是利用Graph4LLM,即利用图结构来增强LLM的能力。 LLM4Graph & TAG1. Global-Recent Semantic Reasoning on Dynamic Text-Attributed Graphs with Large Language Models2. GDGB: A Benchmark for Generative Dynamic Text-Attributed Graph Learning3. Robustness in Text-Attributed Graph Learning: Insights, Trade-offs, and New DefensesLLM4Graph & KG4. DAMR: Efficient and Adaptive Context-Aware Knowledge Graph Question Answering with LLM-Guided MCTS5. Explore-on-Graph: Incentivizing Autonomous Exploration of Large Language Models on Knowledge Graphs with Path-refined Reward Modeling6. Plan-Answer-Refine-on-Graph: Structured Planning and Self-Refinement for Large Language Model Reasoning on Knowledge Graphs7. Knowledge Reasoning Language Model: Unifying Knowledge and Language for Inductive Knowledge Graph Reasoning8. HGNet: Scalable Foundation Model for Automated Knowledge Graph Generation from Scientific Literature9. Flock: A Knowledge Graph Foundation Model via Learning on Random WalksLLM4Graph & GFM10. [Oral]Multi-Domain Transferable Graph Gluing for Building Graph ",
+            "published_at": "2026-03-10T16:08:55",
+            "request_id": "966fb1c9-f244-4e05-9c9e-d38af1dd0f1b",
+            "search_score": null,
+            "search_snippet": "ICLR 2025共有19,000多篇投稿,录用5,359篇,录取率28.18%。 本文总结了2026 ICLR上有关LLMGraph的相关论文。总计29篇,如有疏漏,欢迎补充。 最大均分 均值 最小均分 6 5.21 4 其中均分≥6的有4篇,其中。 笔者将LLM和Graph结合的工作分为两大类,一类是LLM4Graph,即LLM做图任务。其中细分了:文本属性图(Text-Attributed Graph, TAG),知识图谱(KG),图基础模型(GFM),AI4Science,图上的推理和理解任务。另外一类是利用Graph4LLM,即利用图结构来增强LLM的能力。 LLM4Graph & TAG1. Global-Recent Semantic Reasoning on Dynamic Text-Attributed Graphs with Large Language Models2. GDGB: A Benchmark for Generative Dynamic Text-Attributed Graph Learning3. Robustness in Text-Attributed Graph Learning: Insights, Trade-offs, and New DefensesLLM4Graph & KG4. DAMR: Efficient and Adaptive Context-Aware Knowledge Graph Question Answering with LLM-Guided MCTS5. Explore-on-Graph: Incentivizing Autonomous Exploration of Large Language Models on Knowledge Graphs with Path-refined Reward Modeling6. Plan-Answer-Refine-on-Graph: Structured Planning and Self-Refinement for Large Language Model Reasoning on Knowledge Graphs7. Knowledge Reasoning Language Model: Unifying Knowledge and Language for Inductive Knowledge Graph Reasoning8. HGNet: Scalable Foundation Model for Automated Knowledge Graph Generation from Scientific Literature9. Flock: A Knowledge Graph Foundation Model via Learning on Random WalksLLM4Graph & GFM10. [Oral]Multi-Domain Transferable Graph Gluing for Building Graph",
+            "source_name": "Tencent腾讯（腾讯官方网）",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web",
+          "source_record_id": "src_ac9e348129dc70a9c9f9029e",
+          "title": "ICLR 2026 | LLM×Graph论文总结【LLM4Graph与Graph4LLM】",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "5",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://hub.baai.ac.cn/view/39199",
+          "observed_at": "2026-09-15T10:39:13.113640Z",
+          "provenance": {
+            "query": "DSGNN graph summarization distributed GNN link prediction F1",
+            "rank": 5,
+            "run_id": "run-c64223762d494aaf8c5112bda571430a",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": " DRUGAI 今天为大家介绍的是来自剑桥大学Jose团队的一篇论文。近年来,各种机器学习方法在反应结果预测中的应用迅速增长。深度学习模型因其能够直接从分子结构中学习表示而受到欢迎。另一方面,高斯过程(GPs)能够提供可靠的不确定性估计,但无法从数据中学习表示。作者将神经网络(NNs)的特征学习能力与GPs的不确定性量化相结合,在深度核学习(DKL)框架中预测反应结果。观察发现,DKL模型在不同输入表示下都能取得非常好的预测性能。它显著优于标准的GPs,并提供与图神经网络相当的性能,同时还能进行不确定性估计。此外,DKL模型提供的预测不确定性估计使其能够作为贝叶斯优化(BO)的代理模型。因此,所提出的方法通过结合提供可靠不确定性估计的准确预测模型与BO,在加速反应发现方面具有巨大潜力。 化学反应优化在有机合成中占据核心地位,主要依赖于化学直觉。在优化过程中,目标是通过确定合适的实验条件来最大化反应结果(例如产率和/或对映体过量)。这涉及评估一个包含催化剂、溶剂、底物、添加剂、时间、温度、浓度等反应变量的多维化学空间。由于这个问题的复杂性,已经采用了多种数据驱动的方法来高效探索化学空间。 反应结果的估计在反应开发中非常重要。它可以使化学家在进行湿法实验前识别出低产率的反应,从而节省时间和资源。机器学习(ML)在化学的许多领域显示出了令人印象深刻的成功。早期对反应结果预测的努力使用了手工制作的特征,如物理有机描述符和分子指纹。传统的机器学习方法,特别是随机森林,在这些非学习的表示下表现极佳。最近,深度学习(DL)的进步推动了新的分子表示方法的发展,这些方法直接从分子结构中学习,如简化分子输入线条条目规范(SMILES)和分子图。使用这些基于字符串或图的表示训练的化学语言模型(LMs)和图神经网络(GNNs)在反应结果预测中展示了巨大潜力。 尽管使用上述机器学习方法进行不确定性量化可能并不简单,但高斯过程(GPs)的不确定性感知是众所周知的。GPs通常在数据量少的情况下更适合量化不确定性,并且经常用作BO中的代理模型。GP模型的核通常是固定的,这意味着GPs无法从数据中学习表示。因此,在常用的分子输入如SMILES和图上训练GPs具有挑战性。另一方面,神经网络(NNs)可以直接从上述输入中学习特征表示,并将其转换为连续向量。可以将NNs的这种表示学习能力与GPs的不确定性量化相结合,使用深度核学习(DKL)。因此,DKL由于NNs能够学习更好且更灵活的表示,而比标准的GPs更具优势。",
+            "published_at": "2024-08-19T11:50:00",
+            "request_id": "966fb1c9-f244-4e05-9c9e-d38af1dd0f1b",
+            "search_score": null,
+            "search_snippet": "DRUGAI 今天为大家介绍的是来自剑桥大学Jose团队的一篇论文。近年来,各种机器学习方法在反应结果预测中的应用迅速增长。深度学习模型因其能够直接从分子结构中学习表示而受到欢迎。另一方面,高斯过程(GPs)能够提供可靠的不确定性估计,但无法从数据中学习表示。作者将神经网络(NNs)的特征学习能力与GPs的不确定性量化相结合,在深度核学习(DKL)框架中预测反应结果。观察发现,DKL模型在不同输入表示下都能取得非常好的预测性能。它显著优于标准的GPs,并提供与图神经网络相当的性能,同时还能进行不确定性估计。此外,DKL模型提供的预测不确定性估计使其能够作为贝叶斯优化(BO)的代理模型。因此,所提出的方法通过结合提供可靠不确定性估计的准确预测模型与BO,在加速反应发现方面具有巨大潜力。 化学反应优化在有机合成中占据核心地位,主要依赖于化学直觉。在优化过程中,目标是通过确定合适的实验条件来最大化反应结果(例如产率和/或对映体过量)。这涉及评估一个包含催化剂、溶剂、底物、添加剂、时间、温度、浓度等反应变量的多维化学空间。由于这个问题的复杂性,已经采用了多种数据驱动的方法来高效探索化学空间。 反应结果的估计在反应开发中非常重要。它可以使化学家在进行湿法实验前识别出低产率的反应,从而节省时间和资源。机器学习(ML)在化学的许多领域显示出了令人印象深刻的成功。早期对反应结果预测的努力使用了手工制作的特征,如物理有机描述符和分子指纹。传统的机器学习方法,特别是随机森林,在这些非学习的表示下表现极佳。最近,深度学习(DL)的进步推动了新的分子表示方法的发展,这些方法直接从分子结构中学习,如简化分子输入线条条目规范(SMILES)和分子图。使用这些基于字符串或图的表示训练的化学语言模型(LMs)和图神经网络(GNNs)在反应结果预测中展示了巨大潜力。 尽管使用上述机器学习方法进行不确定性量化可能并不简单,但高斯过程(GPs)的不确定性感知是众所周知的。GPs通常在数据量少的情况下更适合量化不确定性,并且经常用作BO中的代理模型。GP模型的核通常是固定的,这意味着GPs无法从数据中学习表示。因此,在常用的分子输入如SMILES和图上训练GPs具有挑战性。另一方面,神经网络(NNs)可以直接从上述输入中学习特征表示,并将其转换为连续向量。可以将NNs的这种表示学习能力与GPs的不确定性量化相结合,使用深度核学习(DKL)。因此,DKL由于NNs能够学习更好且更灵活的表示,而比标准的GPs更具优势。",
+            "source_name": "北京智源人工智能研究院",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web",
+          "source_record_id": "src_bffe9df1dbc6c1c087211609",
+          "title": "Commun. Chem. | 深度核学习用于反应结果预测和优化",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "6",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "http://ieeexplore.ieee.org/document/11294438/",
+          "observed_at": "2026-09-15T10:39:13.113640Z",
+          "provenance": {
+            "query": "DSGNN graph summarization distributed GNN link prediction F1",
+            "rank": 6,
+            "run_id": "run-c64223762d494aaf8c5112bda571430a",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": "Hybrid Transformer-GNN Model for Multi-Document Summarizationdoi:10.1109/ICSIT65336.2025.11294438MeasurementDeep learningRedundancySemanticsText summarizationCoherenceReinforcement learningTransformersGraph neural networksContext modelingMulti-document summarization (MDS) remains a challenging task due to the complexity of extracting, synthesizing, and generating coherent and non-redundant summaries from multiple related documents. While Deep Learning (DL) techniques, particularly Transformer-based models, have shown significant advancements, they often struggle with redundancy elimination, coherence preservation, and contextual relevance. In this research, we propose a novel Hybrid Transformer-GNN Framework (HTGF) that integrates Transformer networks with Graph Neural Networks (GNNs) to capture document relationships, semantic dependencies, and content importance effectively. Additionally, we incorporate a Reinforcement Learning (RL)-based reward mechanism to optimize summary fluency, coherence, and informativeness. Our framework employs hierarchical attention mechanisms to prioritize key sentences and a novel redundancy-aware contrastive loss function to improve abstraction. We evaluate our model on benchmark datasets and compare its performance against state-of-the-art methods using widely accepted evaluation metrics. Experimental results demonstrate that our approach outperforms existing models in terms of ROUGE scores, coherence, and factual consistency. This research provides a robust and scalable solution to MDS, offering new insights into DL-driven text summarization.Krishna DheeravathCVR College of Engineering,Department of CSE (DS),Hyderabad,IndiaPallati NarsimhuluSymbiosis International (Deemed University),Symbiosis Institute of Technology, Hyderabad Campus,Pune,IndiaPremkumar ChithaluruMahatma Gandhi Institute of Technology,Department of Information Technology,Telangana,India,500075IEEE",
+            "published_at": "2026-09-03T00:00:00",
+            "request_id": "966fb1c9-f244-4e05-9c9e-d38af1dd0f1b",
+            "search_score": null,
+            "search_snippet": "Hybrid Transformer-GNN Model for Multi-Document Summarizationdoi:10.1109/ICSIT65336.2025.11294438MeasurementDeep learningRedundancySemanticsText summarizationCoherenceReinforcement learningTransformersGraph neural networksContext modelingMulti-document summarization (MDS) remains a challenging task due to the complexity of extracting, synthesizing, and generating coherent and non-redundant summaries from multiple related documents. While Deep Learning (DL) techniques, particularly Transformer-based models, have shown significant advancements, they often struggle with redundancy elimination, coherence preservation, and contextual relevance. In this research, we propose a novel Hybrid Transformer-GNN Framework (HTGF) that integrates Transformer networks with Graph Neural Networks (GNNs) to capture document relationships, semantic dependencies, and content importance effectively. Additionally, we incorporate a Reinforcement Learning (RL)-based reward mechanism to optimize summary fluency, coherence, and informativeness. Our framework employs hierarchical attention mechanisms to prioritize key sentences and a novel redundancy-aware contrastive loss function to improve abstraction. We evaluate our model on benchmark datasets and compare its performance against state-of-the-art methods using widely accepted evaluation metrics. Experimental results demonstrate that our approach outperforms existing models in terms of ROUGE scores, coherence, and factual consistency. This research provides a robust and scalable solution to MDS, offering new insights into DL-driven text summarization.Krishna DheeravathCVR College of Engineering,Department of CSE (DS),Hyderabad,IndiaPallati NarsimhuluSymbiosis International (Deemed University),Symbiosis Institute of Technology, Hyderabad Campus,Pune,IndiaPremkumar ChithaluruMahatma Gandhi Institute of Technology,Department of Information Technology,Telangana,India,500075IEEE",
+            "source_name": "无",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web",
+          "source_record_id": "src_7f7e57f8fdc3bce58e1a37ff",
+          "title": "Hybrid Transformer-GNN Model for Multi-Document Summarization",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "7",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://mp.weixin.qq.com/s?__biz=MzA5OTQ5MDE0Mw==&mid=2651136483&idx=1&sn=4e78e2048235e9111aa301357e244dc9&chksm=8a0d61b63cd8fea329a9d7243a93a9cdb5931cd885c78ef62a91817772f0a9f3fc6cd319ed00&scene=27",
+          "observed_at": "2026-09-15T10:39:13.113640Z",
+          "provenance": {
+            "query": "DSGNN graph summarization distributed GNN link prediction F1",
+            "rank": 7,
+            "run_id": "run-c64223762d494aaf8c5112bda571430a",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": " 近年来,图神经网络(Graph Neural Network,GNN)在图数据学习上表现出了优越的性能。然而,当面临现实世界中百万乃至亿级节点数量的大图时,现有的GNN仍面临着诸多局限性,主要包括:(1)消息传递模式中,邻居节点数量随着传播距离指数式增长,这将带来可拓展性问题和过平滑问题;(2)嵌入向量表的参数数量随着节点数量线性增长,当节点数量较多时,巨大的嵌入向量表将难以优化;(3)GNN卷积层和嵌入向量表有着不同的性质,同时优化它们可能导致次优的结果。 为了克服这些问题,我们提出了xGCN——一种采用全新训练方式的GNN模型。xGCN将节点嵌入向量表视为“静态特征”,而不是需要梯度训练的参数,使用无监督的传播过程和一个DNN来更新嵌入向量,能够显著减少模型参数数量、加速模型训练,同时达到更好的预测准确率。文章在4个大规模社交网络数据集上进行了实验,结果表明xGCN在准确率和训练速度方面均超过了基线模型。目前,xGCN模型已被应用在Xbox游戏社交平台的社交推荐业务中。 同时,我们推出了一个轻量的GNN模型工具包:XGCN,旨在帮助用户快速地构建和训练大规模网络上的GNN图嵌入模型。XGCN包含了xGCN以及GraphSAGE、LightGCN等常见GNN模型的实现。我们提供了详细的说明文档,方便用户快速上手进行图数据集处理、模型构建和运行。 该成果“xGCN: An Extreme Graph Convolutional Network for Large-scale Social Link Prediction”发表于2023年国际万维网会议(WWW’23)。WWW是互联网技术领域的顶级会议,是中国计算机学会(CCF)推荐的A类会议。 大规模图数据广泛地存在于现代社会中,例如微信、推特等线上社交平台中的社交网络,和淘宝、亚马逊等购物平台中的商品交易网络。图嵌入(Graph Embedding)作为一种图数据挖掘方法,近年来备受学术界和工业界关注,其中的图神经网络(Graph Neural Network,GNN)方法引入了显式编码图结构的卷积层,表现出了优越的性能。然而,当面临现实世界中的大规模网络时,现有的GNN仍面临着诸多局限性,主要包括: (1)消息传递模式中,邻居节点数量随着传播距离指数式增长,这将带来可拓展性问题和过平滑问题。 (2)在经典的图嵌入任务中,每个节点拥有一个d维的可学习的嵌入向量e。设节点数量为N,则全体嵌入向量构成了一个N x d的矩阵E,即嵌入向量表。该嵌入向量表的参数数量随着节点数量线性增长,当节点数量较多时,嵌入向量表将变得十分庞大。",
+            "published_at": "2023-12-28T10:46:00",
+            "request_id": "966fb1c9-f244-4e05-9c9e-d38af1dd0f1b",
+            "search_score": null,
+            "search_snippet": "近年来,图神经网络(Graph Neural Network,GNN)在图数据学习上表现出了优越的性能。然而,当面临现实世界中百万乃至亿级节点数量的大图时,现有的GNN仍面临着诸多局限性,主要包括:(1)消息传递模式中,邻居节点数量随着传播距离指数式增长,这将带来可拓展性问题和过平滑问题;(2)嵌入向量表的参数数量随着节点数量线性增长,当节点数量较多时,巨大的嵌入向量表将难以优化;(3)GNN卷积层和嵌入向量表有着不同的性质,同时优化它们可能导致次优的结果。 为了克服这些问题,我们提出了xGCN——一种采用全新训练方式的GNN模型。xGCN将节点嵌入向量表视为“静态特征”,而不是需要梯度训练的参数,使用无监督的传播过程和一个DNN来更新嵌入向量,能够显著减少模型参数数量、加速模型训练,同时达到更好的预测准确率。文章在4个大规模社交网络数据集上进行了实验,结果表明xGCN在准确率和训练速度方面均超过了基线模型。目前,xGCN模型已被应用在Xbox游戏社交平台的社交推荐业务中。 同时,我们推出了一个轻量的GNN模型工具包:XGCN,旨在帮助用户快速地构建和训练大规模网络上的GNN图嵌入模型。XGCN包含了xGCN以及GraphSAGE、LightGCN等常见GNN模型的实现。我们提供了详细的说明文档,方便用户快速上手进行图数据集处理、模型构建和运行。 该成果“xGCN: An Extreme Graph Convolutional Network for Large-scale Social Link Prediction”发表于2023年国际万维网会议(WWW’23)。WWW是互联网技术领域的顶级会议,是中国计算机学会(CCF)推荐的A类会议。 大规模图数据广泛地存在于现代社会中,例如微信、推特等线上社交平台中的社交网络,和淘宝、亚马逊等购物平台中的商品交易网络。图嵌入(Graph Embedding)作为一种图数据挖掘方法,近年来备受学术界和工业界关注,其中的图神经网络(Graph Neural Network,GNN)方法引入了显式编码图结构的卷积层,表现出了优越的性能。然而,当面临现实世界中的大规模网络时,现有的GNN仍面临着诸多局限性,主要包括: (1)消息传递模式中,邻居节点数量随着传播距离指数式增长,这将带来可拓展性问题和过平滑问题。 (2)在经典的图嵌入任务中,每个节点拥有一个d维的可学习的嵌入向量e。设节点数量为N,则全体嵌入向量构成了一个N x d的矩阵E,即嵌入向量表。该嵌入向量表的参数数量随着节点数量线性增长,当节点数量较多时,嵌入向量表将变得十分庞大。",
+            "source_name": "腾讯网",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web",
+          "source_record_id": "src_4bef717f75570921baa26cdc",
+          "title": "WWW'23:更少的内存,更快的速度,更高的准确度——GNN大图训练暨工具包发布",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "8",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://aistudio.baidu.com/aistudio/projectdetail/699935",
+          "observed_at": "2026-09-15T10:39:13.113640Z",
+          "provenance": {
+            "query": "DSGNN graph summarization distributed GNN link prediction F1",
+            "rank": 8,
+            "run_id": "run-c64223762d494aaf8c5112bda571430a",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": "摘要: 简介: 2.1 为什么要用图表示数据: 2.2 gnn与network embedding: 2.3 gnn与graph kernel: 2.4 一些符号表示: 3. gnn的分类和基本框架: 3.1 gnn的结构分类: 3.1.1 recgnns: 3.1.2 convgnns: 3.1.3 gaes: 3.1.4 stgnns: 3.2 gnn的框架分类: 3.2.1 gnn的输出分类: 3.2.2 gnn的训练分类: 3.2.3 统计结果: 4. 递归图神经网络(recgnn): 4.1 gnn∗^*∗: 4.2 graphesn: 4.3 ggnn: 5. 卷积图神经网络(convgnn): 5.1 基于频谱的convgnn: 5.1.1 基本原理: 5.1.2 chebnet: 5.1.3 cayleynet: 5.1.4 gcn: 5.1.5 其他工作: 5.2 基于空间域的convgnn: 5.2.1 基本原理: ",
+            "published_at": "2020-08-08T22:22:25",
+            "request_id": "966fb1c9-f244-4e05-9c9e-d38af1dd0f1b",
+            "search_score": null,
+            "search_snippet": "摘要: 简介: 2.1 为什么要用图表示数据: 2.2 gnn与network embedding: 2.3 gnn与graph kernel: 2.4 一些符号表示: 3. gnn的分类和基本框架: 3.1 gnn的结构分类: 3.1.1 recgnns: 3.1.2 convgnns: 3.1.3 gaes: 3.1.4 stgnns: 3.2 gnn的框架分类: 3.2.1 gnn的输出分类: 3.2.2 gnn的训练分类: 3.2.3 统计结果: 4. 递归图神经网络(recgnn): 4.1 gnn∗^*∗: 4.2 graphesn: 4.3 ggnn: 5. 卷积图神经网络(convgnn): 5.1 基于频谱的convgnn: 5.1.1 基本原理: 5.1.2 chebnet: 5.1.3 cayleynet: 5.1.4 gcn: 5.1.5 其他工作: 5.2 基于空间域的convgnn: 5.2.1 基本原理:",
+            "source_name": "飞桨星河社区",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web",
+          "source_record_id": "src_e6da43bcde0a86adb9263b0d",
+          "title": "【图神经网络综述】一文道尽GNN原理、框架和应用",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "9",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://hub.baai.ac.cn/view/45703",
+          "observed_at": "2026-09-15T10:39:13.113640Z",
+          "provenance": {
+            "query": "DSGNN graph summarization distributed GNN link prediction F1",
+            "rank": 9,
+            "run_id": "run-c64223762d494aaf8c5112bda571430a",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": " A learned solution to node-level classification on irregular graphs via graph neural networks. 基于图神经网络的不规则图节点级分类的解决方案 Deep learning has shown tremendous success on 2D visual recognition tasks. Tasks such as image classification and segmentation, deemed extremely difficult a decade ago, are now solved by neural networks with human-like performance. This success is attributed to convolutional neural networks (CNNs), which have replaced handcrafted descriptors. Driven by the success of CNNs on 2D images, researchers have extended CNNs to irregular graph data, such as 3D meshes. The extension of the convolutional operation to unstructured graph data is nontrivial as the notion of relative position is lost. Therefore, we have dedicated this blog post and a Colab to answering how CNNs can be generalized to irregular graphs. In particular, we discuss how to modify CNNs to predict segmentation masks on 3D meshes. 深度学习在 2D 视觉识别任务中取得了巨大的成功。图像分类和分割等被认为十年前极其困难的任务,现在已被具有类人性能的神经网络所解决。这种成功归因于卷积神经网络(CNN),它取代了手工制作的描述符。在 CNN 在 2D 图像上取得成功后,研究人员将 CNN 扩展到了非规则图数据,例如 3D 网格。将卷积操作扩展到非结构化图数据是非平凡的,因为相对位置的概念丢失了。因此,我们专门撰写了这篇博客文章和一个 Colab,以回答如何将 CNN 推广到非规则图。特别是,我们讨论了如何修改 CNN 以在 3D 网格上预测分割掩码。 Why are CNNs not applicable? 为什么卷积神经网络不适用? Regular graphs defined on the euclidean have a fixed node ordering and neighborhood size. Generic graphs have no node ordering for neighbors, and their number of neighbors is variable. 定义在欧几里得空间上的规则图具有固定的节点顺序和邻域大小。通用图没有邻居的节点顺序,并且它们的邻居数量是可变的。",
+            "published_at": "2025-05-17T08:10:13",
+            "request_id": "966fb1c9-f244-4e05-9c9e-d38af1dd0f1b",
+            "search_score": null,
+            "search_snippet": "A learned solution to node-level classification on irregular graphs via graph neural networks. 基于图神经网络的不规则图节点级分类的解决方案 Deep learning has shown tremendous success on 2D visual recognition tasks. Tasks such as image classification and segmentation, deemed extremely difficult a decade ago, are now solved by neural networks with human-like performance. This success is attributed to convolutional neural networks (CNNs), which have replaced handcrafted descriptors. Driven by the success of CNNs on 2D images, researchers have extended CNNs to irregular graph data, such as 3D meshes. The extension of the convolutional operation to unstructured graph data is nontrivial as the notion of relative position is lost. Therefore, we have dedicated this blog post and a Colab to answering how CNNs can be generalized to irregular graphs. In particular, we discuss how to modify CNNs to predict segmentation masks on 3D meshes. 深度学习在 2D 视觉识别任务中取得了巨大的成功。图像分类和分割等被认为十年前极其困难的任务,现在已被具有类人性能的神经网络所解决。这种成功归因于卷积神经网络(CNN),它取代了手工制作的描述符。在 CNN 在 2D 图像上取得成功后,研究人员将 CNN 扩展到了非规则图数据,例如 3D 网格。将卷积操作扩展到非结构化图数据是非平凡的,因为相对位置的概念丢失了。因此,我们专门撰写了这篇博客文章和一个 Colab,以回答如何将 CNN 推广到非规则图。特别是,我们讨论了如何修改 CNN 以在 3D 网格上预测分割掩码。 Why are CNNs not applicable? 为什么卷积神经网络不适用? Regular graphs defined on the euclidean have a fixed node ordering and neighborhood size. Generic graphs have no node ordering for neighbors, and their number of neighbors is variable. 定义在欧几里得空间上的规则图具有固定的节点顺序和邻域大小。通用图没有邻居的节点顺序,并且它们的邻居数量是可变的。",
+            "source_name": "北京智源人工智能研究院",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web",
+          "source_record_id": "src_59875efd04c47d63fab98cb0",
+          "title": "项目实战 | 三维网格(3D Meshes)上的深度学习",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "10",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://zhuanlan.zhihu.com/p/442225258",
+          "observed_at": "2026-09-15T10:39:13.113640Z",
+          "provenance": {
+            "query": "DSGNN graph summarization distributed GNN link prediction F1",
+            "rank": 10,
+            "run_id": "run-c64223762d494aaf8c5112bda571430a",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": " 【1】 Distance and Hop-wise Structures Encoding Enhanced Graph Attention Networks 标题:增强型图注意网络的距离和跳数结构编码 链接:https://arxiv.org/abs/2112.02868 作者:Zhiguo Huang,Xiaowei Chen,Bojuan Wang 机构:Sci-Tech Academy of ZheJiang University;Research Center of Hundsun LTD., Hangzhou, China, School of Finance, NanKai University, Tianjin, China 备注:11 pages; 1 figures; 【2】 CDGNet: A Cross-Time Dynamic Graph-based Deep Learning Model for Traffic Forecasting 标题:CDGNet:一种基于跨时间动态图的 交通预测 深度学习模型 链接:https://arxiv.org/abs/2112.02736 作者:Yuchen Fang,Yanjun Qin,Haiyong Luo,Fang Zhao,Liang Zeng,Bo Hui,Chenxing Wang 机构:Beijing University of Posts and, Telecommunications, Institute of Computing Technology, Chinese Academy of Sciences, Tsinghua University, Auburn University 备注:10 pages 【3】 Trivial bundle embeddings for learning graph representations 标题:用于学习图表示的平凡束嵌入 链接:https://arxiv.org/abs/2112.02531 作者:Zheng Xie,Xiaojing Zuo,Yiping Song 机构:Received: date Accepted: date 备注:17 pages,4 figures 【4】 Augmentation-Free Self-Supervised Learning on Graphs 标题:图上的无增广自监督学习 链接:https://arxiv.org/abs/2112.02472 作者:Namkyeong Lee,Junseok Lee,Chanyoung Park 机构: Dept. of Industrial and Systems Engineering, KAIST, Daejeon, Republic of Korea, Graduate School of Artificial Intelligence, KAIST, Daejeon, Republic of Korea 【5】 Fast Graph Neural Tangent Kernel via Kronecker Sketching 标题:基于Kronecker草图的快速图",
+            "published_at": "2021-12-07T13:27:00",
+            "request_id": "966fb1c9-f244-4e05-9c9e-d38af1dd0f1b",
+            "search_score": null,
+            "search_snippet": "【1】 Distance and Hop-wise Structures Encoding Enhanced Graph Attention Networks 标题:增强型图注意网络的距离和跳数结构编码 链接:https://arxiv.org/abs/2112.02868 作者:Zhiguo Huang,Xiaowei Chen,Bojuan Wang 机构:Sci-Tech Academy of ZheJiang University;Research Center of Hundsun LTD., Hangzhou, China, School of Finance, NanKai University, Tianjin, China 备注:11 pages; 1 figures; 【2】 CDGNet: A Cross-Time Dynamic Graph-based Deep Learning Model for Traffic Forecasting 标题:CDGNet:一种基于跨时间动态图的 交通预测 深度学习模型 链接:https://arxiv.org/abs/2112.02736 作者:Yuchen Fang,Yanjun Qin,Haiyong Luo,Fang Zhao,Liang Zeng,Bo Hui,Chenxing Wang 机构:Beijing University of Posts and, Telecommunications, Institute of Computing Technology, Chinese Academy of Sciences, Tsinghua University, Auburn University 备注:10 pages 【3】 Trivial bundle embeddings for learning graph representations 标题:用于学习图表示的平凡束嵌入 链接:https://arxiv.org/abs/2112.02531 作者:Zheng Xie,Xiaojing Zuo,Yiping Song 机构:Received: date Accepted: date 备注:17 pages,4 figures 【4】 Augmentation-Free Self-Supervised Learning on Graphs 标题:图上的无增广自监督学习 链接:https://arxiv.org/abs/2112.02472 作者:Namkyeong Lee,Junseok Lee,Chanyoung Park 机构: Dept. of Industrial and Systems Engineering, KAIST, Daejeon, Republic of Korea, Graduate School of Artificial Intelligence, KAIST, Daejeon, Republic of Korea 【5】 Fast Graph Neural Tangent Kernel via Kronecker Sketching 标题:基于Kronecker草图的快速图",
+            "source_name": "知乎",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web",
+          "source_record_id": "src_0b7a79cd0c0f037e5057ea68",
+          "title": "机器学习学术速递[2021.12.7]",
+          "work_id": null
+        }
+      ]
+    },
+    "succeeded": true,
+    "summary": "发现并保存 10 个 Web 候选来源",
+    "tool_name": "web_search"
+  },
+  "resolved_arguments": {
+    "max_results": 10,
+    "query": "DSGNN graph summarization distributed GNN link prediction F1"
+  },
+  "result_count": 10,
+  "stage_name": "run_research_task",
+  "started_at": "2026-09-15T10:39:12.233607+00:00",
+  "tool_call_id": "tool_0029",
+  "tool_name": "web_search"
+}

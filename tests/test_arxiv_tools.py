@@ -16,14 +16,17 @@ from novelty_agent_framework.tools.database_search.providers.arxiv import (
     ArxivFullTextTool,
     ArxivMetadataTool,
     ArxivSearchTool,
+    reset_shared_arxiv_scheduler,
 )
 
 
 @pytest.fixture(autouse=True)
-def _reset_arxiv_throttle(monkeypatch):
-    """节流时间戳是模块级共享的，测试之间必须重置，否则会相互影响。"""
+def _reset_arxiv_throttle():
+    """进程级 scheduler 在测试之间必须重置，避免 client/state 串扰。"""
 
-    monkeypatch.setattr(arxiv_module, "_LAST_REQUEST_AT", 0.0)
+    reset_shared_arxiv_scheduler()
+    yield
+    reset_shared_arxiv_scheduler()
 
 ATOM_ENTRY = """<?xml version="1.0" encoding="UTF-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom" xmlns:arxiv="http://arxiv.org/schemas/atom">
@@ -168,7 +171,7 @@ def test_search_retries_on_429_and_honours_retry_after(monkeypatch):
 
     assert calls["n"] == 2
     assert len(hits) == 1
-    assert 7.0 in sleeps, "应当遵守 Retry-After"
+    assert sleeps == pytest.approx([7.0]), "应当遵守 Retry-After"
 
 
 def test_rate_limit_wait_floor_applies_without_retry_after(monkeypatch):
@@ -198,8 +201,7 @@ def test_rate_limit_wait_floor_applies_without_retry_after(monkeypatch):
     assert 1.0 not in sleeps, "429 不应被 max_retry_delay 截断"
 
 
-
-def test_rate_limit_wait_is_not_capped_by_max_retry_delay(monkeypatch):
+def test_search_honours_retry_after_without_local_cap(monkeypatch):
     """429 的等待由 rate_limit_wait 决定；max_retry_delay 只约束其他重试。"""
 
     sleeps: list[float] = []
@@ -221,7 +223,7 @@ def test_rate_limit_wait_is_not_capped_by_max_retry_delay(monkeypatch):
     )
 
     assert len(tool.search("q")) == 1
-    assert sleeps == [30.0]
+    assert sleeps == pytest.approx([30.0])
 
 
 @pytest.mark.parametrize(
@@ -506,7 +508,7 @@ def test_single_flight_gate_covers_retry_wait_and_retry(monkeypatch):
     assert first_attempts == 2
 
 
-def test_request_gate_is_shared_by_search_metadata_and_fulltext():
+def test_api_gate_is_shared_by_search_metadata_but_not_fulltext():
     search_started = threading.Event()
     release_search = threading.Event()
     metadata_started = threading.Event()
@@ -547,13 +549,13 @@ def test_request_gate_is_shared_by_search_metadata_and_fulltext():
         metadata_future = executor.submit(metadata.resolve, "2305.12345")
         fulltext_future = executor.submit(fulltext.fetch, "2305.12345")
         assert not metadata_started.wait(timeout=0.05)
-        assert not fulltext_started.wait(timeout=0.05)
+        assert fulltext_started.wait(timeout=0.5)
         release_search.set()
         assert len(search_future.result(timeout=1.0)) == 1
         assert metadata_future.result(timeout=1.0) is not None
         assert fulltext_future.result(timeout=1.0) is not None
 
-    assert max_in_flight == 1
+    assert max_in_flight == 2
 
 
 def test_search_raises_on_4xx_without_retry():

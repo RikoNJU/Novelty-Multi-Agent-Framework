@@ -151,11 +151,30 @@ def compile_search_plan(
 ) -> list[CompiledQuery]:
     """通过已注册 Adapter 编译 SearchPlan，不执行查询。"""
 
+    normalized = database.strip().lower()
     # 兼容旧的默认 arXiv API；延迟加载保证通用模块导入不依赖具体实现。
-    if database.strip().lower() == "arxiv" and "arxiv" not in AdapterFactory._adapters:
+    if normalized == "arxiv" and "arxiv" not in AdapterFactory._adapters:
         from .providers.arxiv import ArxivQueryAdapter
 
         AdapterFactory.register("arxiv", ArxivQueryAdapter)
+    if (
+        normalized == "sciencedirect"
+        and "sciencedirect" not in AdapterFactory._adapters
+    ):
+        from .providers.sciencedirect import ScienceDirectQueryAdapter
+
+        AdapterFactory.register("sciencedirect", ScienceDirectQueryAdapter)
+    if normalized == "springer" and "springer" not in AdapterFactory._adapters:
+        from .providers.springer import SpringerNatureQueryAdapter
+
+        AdapterFactory.register("springer", SpringerNatureQueryAdapter)
+    if (
+        normalized == "ieee_xplore"
+        and "ieee_xplore" not in AdapterFactory._adapters
+    ):
+        from .providers.ieee_xplore import IEEEXploreQueryAdapter
+
+        AdapterFactory.register("ieee_xplore", IEEEXploreQueryAdapter)
     return list(AdapterFactory.create(database).compile(plan))
 
 

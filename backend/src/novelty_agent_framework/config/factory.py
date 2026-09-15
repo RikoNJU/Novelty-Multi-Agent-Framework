@@ -322,6 +322,7 @@ def build_workflow(
                 temperature=float(reviewer_cfg.get("temperature", 0.0)),
                 max_cards_per_call=int(reviewer_cfg.get("max_cards_per_call", 8)),
                 fail_closed=bool(reviewer_cfg.get("fail_closed", True)),
+                prompt_name=str(reviewer_cfg.get("prompt", "reviewer/review_evidence")),
             ),
             model_options=reviewer_model_options,
             tool_registry=ResearcherToolRegistry(
@@ -578,6 +579,7 @@ def _build_workflow_from_application_config(
                 temperature=config.reviewer.model.temperature,
                 max_cards_per_call=config.reviewer.max_cards_per_call,
                 fail_closed=config.reviewer.fail_closed,
+                prompt_name=config.reviewer.prompt,
             ),
             model_options=_typed_model_options(config.reviewer.model),
             tool_registry=ResearcherToolRegistry(
@@ -742,7 +744,8 @@ def _adapt_legacy_arxiv_provider(retrieval: dict[str, Any]) -> None:
     arxiv = retrieval.get("sources", {}).get("arxiv")
     if not isinstance(arxiv, dict):
         return
-    arxiv.setdefault("min_interval_seconds", arxiv.pop("min_interval", 3.0))
+    arxiv.setdefault("min_interval_seconds", arxiv.pop("min_interval", 4.0))
+    arxiv.setdefault("api_min_interval_seconds", arxiv["min_interval_seconds"])
     arxiv.setdefault("timeout_seconds", arxiv.pop("timeout", 20.0))
     arxiv.setdefault("max_retries", 1)
     arxiv.setdefault("max_retry_delay_seconds", 5.0)
@@ -750,6 +753,10 @@ def _adapt_legacy_arxiv_provider(retrieval: dict[str, Any]) -> None:
     arxiv.setdefault("circuit_failure_threshold", 2)
     arxiv.setdefault("circuit_cooldown_seconds", 60.0)
     arxiv.setdefault("full_text_max_chars", 100_000)
+    arxiv.setdefault("scheduler_enabled", True)
+    arxiv.setdefault("metadata_batch_enabled", True)
+    arxiv.setdefault("metadata_batch_window_ms", 200)
+    arxiv.setdefault("metadata_batch_max_size", 32)
 
 
 def _apply_env_overrides(config: dict[str, Any]) -> None:

@@ -1,0 +1,19 @@
+{
+  "experiment": "ARXIV-BATCH-01",
+  "status": "NOT_RUN_UPSTREAM_GATE_FAILED",
+  "fixed_input": {
+    "path": "backups/MF2033k6lC/v2/paper-input/others/paper.json",
+    "sha256": "89fcc578efcc840daa9c4e0698943314f794e096e176c067dbbd6e603d42ea66"
+  },
+  "required_gate": "A/B/D live smoke must pass before C and full workflow",
+  "blocking_observation": {
+    "case": "A/B provider access gate",
+    "first_attempt": "A=200; B=HTTP 429 after retry",
+    "cooled_attempt": "A=200; B=HTTP 429 followed by ReadTimeout",
+    "evidence_attempt": "A=HTTP 429 on both attempts; response body was 'Rate exceeded.'",
+    "interval_violation_count": 0
+  },
+  "runs": [],
+  "consecutive_runs_without_429": 0,
+  "decision": "Do not run the expensive Paper Input workflow while provider access gate B fails."
+}
