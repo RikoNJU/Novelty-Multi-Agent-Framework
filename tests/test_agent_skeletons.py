@@ -44,8 +44,7 @@ def test_coordinator_agent_parses_model_brief():
 
     assert brief.novelty_points[0].point_id == "NP-1"
     assert [(task.task_id, task.language) for task in brief.research_tasks] == [
-        ("T-1", "zh"),
-        ("T-2", "en"),
+        ("T-1", "en"),
     ]
 
 
@@ -68,7 +67,7 @@ def test_coordinator_plan_does_not_need_model_client():
 
     brief = agent.plan(paper, points=points, attempt=1)
 
-    assert len(brief.research_tasks) == 2
+    assert len(brief.research_tasks) == 1
 
 
 def test_demo_coordinator_creates_zh_and_en_tasks():

@@ -102,8 +102,7 @@ def test_coordinator_plan_is_deterministic_without_model_call():
 
     assert brief.novelty_points[0].point_id == "NP-1"
     assert [(task.task_id, task.language) for task in brief.research_tasks] == [
-        ("T-1", "zh"),
-        ("T-2", "en"),
+        ("T-1", "en"),
     ]
     assert all(task.task_type == "literature_search" for task in brief.research_tasks)
     assert all(task.attempt == 1 for task in brief.research_tasks)
@@ -111,7 +110,7 @@ def test_coordinator_plan_is_deterministic_without_model_call():
     assert client.calls == []
 
 
-def test_coordinator_plan_creates_two_tasks_per_point_without_client():
+def test_coordinator_plan_creates_one_english_task_per_point_without_client():
     points = [
         *POINTS,
         NoveltyPoint(point_id="NP-2", claim="第二个查新点"),
@@ -123,10 +122,8 @@ def test_coordinator_plan_creates_two_tasks_per_point_without_client():
         (task.novelty_point_id, task.task_id, task.language)
         for task in brief.research_tasks
     ] == [
-        ("NP-1", "T-1", "zh"),
-        ("NP-1", "T-2", "en"),
-        ("NP-2", "T-1", "zh"),
-        ("NP-2", "T-2", "en"),
+        ("NP-1", "T-1", "en"),
+        ("NP-2", "T-1", "en"),
     ]
     assert all(task.attempt == 3 for task in brief.research_tasks)
 
@@ -264,7 +261,7 @@ def test_research_rejects_malformed_card():
 def test_agent_without_client_or_registry_raises():
     agent = NoveltyCoordinatorAgent()
     brief = agent.plan(make_paper(), points=POINTS, attempt=1)
-    assert len(brief.research_tasks) == 2
+    assert len(brief.research_tasks) == 1
 
 
 def test_plan_supplement_rejects_task_for_unknown_point():

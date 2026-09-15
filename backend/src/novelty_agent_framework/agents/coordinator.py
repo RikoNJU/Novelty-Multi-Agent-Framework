@@ -56,6 +56,7 @@ class NoveltyCoordinatorAgent(NoveltyCoordinator):
         model_alias: str | None = None,
         temperature: float = 0.2,
         model_options: ModelCallOptions | None = None,
+        research_languages: Sequence[str] = ("en",),
     ) -> None:
         self.model_client = model_client
         self._prompts = prompts
@@ -63,6 +64,10 @@ class NoveltyCoordinatorAgent(NoveltyCoordinator):
         self._model_alias = model_alias
         self.temperature = temperature
         self.model_options = model_options
+        languages = tuple(dict.fromkeys(research_languages))
+        if not languages or any(item not in {"en", "zh"} for item in languages):
+            raise ValueError("research_languages must contain en and/or zh")
+        self.research_languages = languages
 
     def plan(
         self,
@@ -71,7 +76,7 @@ class NoveltyCoordinatorAgent(NoveltyCoordinator):
         points: Sequence[NoveltyPoint],
         attempt: int,
     ) -> NoveltyBrief:
-        """按固定中英文双路规则分配首轮任务并组装查新规划。
+        """按配置的检索语言分配首轮任务并组装查新规划。
 
         首轮分工是确定性的，不调用模型，也不生成检索词或 SearchPlan。
         """
@@ -79,7 +84,9 @@ class NoveltyCoordinatorAgent(NoveltyCoordinator):
         tasks = [
             task
             for point in points
-            for task in _initial_tasks_for_point(point, attempt=attempt)
+            for task in _initial_tasks_for_point(
+                point, attempt=attempt, languages=self.research_languages
+            )
         ]
         return NoveltyBrief(
             paper_summary=paper.abstract or paper.title,
@@ -130,6 +137,9 @@ class NoveltyCoordinatorAgent(NoveltyCoordinator):
                     payload["insufficient_final_evidence_points"], ensure_ascii=False
                 ),
                 "attempt": attempt,
+                "research_languages_json": json.dumps(
+                    self.research_languages, ensure_ascii=False
+                ),
                 "task_schema": json.dumps(
                     ResearchTask.model_json_schema(), ensure_ascii=False
                 ),
@@ -163,6 +173,8 @@ class NoveltyCoordinatorAgent(NoveltyCoordinator):
                     "plan_supplement 任务引用了未知查新点 "
                     f"{task.novelty_point_id}"
                 )
+            if task.language not in self.research_languages:
+                continue
             task_counts[task.novelty_point_id] = (
                 task_counts.get(task.novelty_point_id, 0) + 1
             )
@@ -362,24 +374,22 @@ def _initial_tasks_for_point(
     point: NoveltyPoint,
     *,
     attempt: int,
-) -> tuple[ResearchTask, ResearchTask]:
-    """为单个查新点固定创建中文和英文两条首轮任务。"""
+    languages: Sequence[str],
+) -> tuple[ResearchTask, ...]:
+    """为单个查新点按启用语言创建首轮任务。"""
 
-    return (
+    descriptions = {
+        "en": "针对该查新点执行英文文献检索。",
+        "zh": "针对该查新点执行中文文献检索。",
+    }
+    return tuple(
         ResearchTask(
-            task_id="T-1",
+            task_id=f"T-{index}",
             novelty_point_id=point.point_id,
             task_type="literature_search",
-            language="zh",
-            description="针对该查新点执行中文文献检索。",
+            language=language,
+            description=descriptions[language],
             attempt=attempt,
-        ),
-        ResearchTask(
-            task_id="T-2",
-            novelty_point_id=point.point_id,
-            task_type="literature_search",
-            language="en",
-            description="针对该查新点执行英文文献检索。",
-            attempt=attempt,
-        ),
+        )
+        for index, language in enumerate(languages, 1)
     )

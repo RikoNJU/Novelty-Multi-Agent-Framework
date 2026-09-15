@@ -12,7 +12,7 @@ system: |
 要求：
 1. novelty_point_id 只能引用现有规划中的查新点；
 2. 根据数量不足事实选择 task_type，优先使用 literature_search、feature_supplement 或 language_supplement；
-3. language 只能从系统启用语言 ["zh", "en"] 中取值；同一查新点需要多种启用语言时分别生成任务；
+3. language 只能从系统启用语言 {research_languages_json} 中取值；不得生成其他语言的任务；
 4. description 明确说明本轮为什么查、需要补足什么；
 5. 不得新增、删除或改写 NoveltyPoint；
 6. 不得生成检索词、同义词、布尔表达式、SearchPlan 或数据库专用语法；

@@ -133,6 +133,9 @@ def build_agents(
         models=registry,
         model_alias=coordinator_cfg.get("model", "coordinator"),
         temperature=float(coordinator_cfg.get("temperature", 0.2)),
+        research_languages=config.get("workflow", {}).get(
+            "research_languages", ("en",)
+        ),
     )
     research = NoveltyResearchAgent(
         prompts=prompts,
@@ -272,6 +275,9 @@ def build_workflow(
         models=registry,
         model_alias=coordinator_cfg.get("model", "coordinator"),
         temperature=float(coordinator_cfg.get("temperature", 0.2)),
+        research_languages=raw.get("workflow", {}).get(
+            "research_languages", ("en",)
+        ),
     )
     point_extractor = NoveltyPointExtractorAgent(
         prompts=prompts,
@@ -509,6 +515,7 @@ def _build_workflow_from_application_config(
             config.coordinator.model,
             response_format={"type": "json_object"},
         ),
+        research_languages=config.project.workflow.research_languages,
     )
     point_extractor = NoveltyPointExtractorAgent(
         prompts=prompts,

@@ -165,6 +165,9 @@ class WorkflowConfig(ConfigModel):
     max_rounds: int = Field(gt=0)
     max_concurrency: int = Field(gt=0)
     min_final_evidence_cards_per_point: int = Field(ge=1)
+    research_languages: list[Literal["en", "zh"]] = Field(
+        default_factory=lambda: ["en"], min_length=1
+    )
 
 
 class RuntimeDebugSettingsConfig(ConfigModel):
