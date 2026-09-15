@@ -6,6 +6,7 @@ import pytest
 from novelty_agent_framework.tools.database_search.providers.common import (
     HttpRequestPolicy,
     MissingProviderCredentialError,
+    ProviderRequestError,
     ResilientHttpClient,
     resolve_env_credential,
 )
@@ -53,3 +54,22 @@ def test_resilient_client_retries_429() -> None:
 
     assert response.json() == {"ok": True}
     assert calls["count"] == 2
+
+
+def test_transport_error_does_not_expose_credential_bearing_url() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        raise httpx.ConnectError("cannot connect", request=request)
+
+    transport = ResilientHttpClient(
+        httpx.Client(transport=httpx.MockTransport(handler)),
+        policy=HttpRequestPolicy(min_interval_seconds=0, max_retries=0),
+    )
+
+    with pytest.raises(ProviderRequestError) as exc_info:
+        transport.get(
+            "https://catalog.test/items",
+            params={"api_key": "secret-key"},
+        )
+
+    assert "secret-key" not in str(exc_info.value)
+    assert "catalog.test" not in str(exc_info.value)

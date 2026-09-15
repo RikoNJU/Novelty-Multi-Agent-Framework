@@ -135,6 +135,23 @@ def test_browser_network_mode_rejects_invalid_value(tmp_path: Path):
         load_application_config(researcher_path=path)
 
 
+def test_springer_provider_can_be_enabled_by_environment() -> None:
+    config = load_application_config(
+        environ={"NOVELTY_SPRINGER_ENABLED": "true"}
+    )
+
+    providers = config.researcher.tools.database_search.providers
+    assert providers["arxiv"]["enabled"] is True
+    assert providers["springer"]["enabled"] is True
+
+
+def test_springer_provider_rejects_invalid_environment_switch() -> None:
+    with pytest.raises(ValueError, match="NOVELTY_SPRINGER_ENABLED"):
+        load_application_config(
+            environ={"NOVELTY_SPRINGER_ENABLED": "sometimes"}
+        )
+
+
 @pytest.mark.parametrize(
     "mutate",
     [

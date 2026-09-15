@@ -76,7 +76,7 @@ def test_search_maps_meta_v2_record_and_does_not_leak_key() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         assert request.url.path == "/meta/v2/json"
         assert request.url.params["q"] == '"graph neural network"'
-        assert request.url.params["api_key"] == "secret-key"
+        assert request.url.params["api_key"] == "meta-key"
         assert request.url.params["p"] == "8"
         return httpx.Response(
             200,
@@ -111,14 +111,15 @@ def test_search_maps_meta_v2_record_and_does_not_leak_key() -> None:
     article_client = SpringerNatureArticleClient(
         transport,
         base_url=BASE_URL,
-        api_key="secret-key",
+        meta_api_key="meta-key",
+        open_access_api_key="open-access-key",
         full_text_mode="openaccess",
     )
     tool = SpringerNatureSearchTool(
         transport,
         article_client,
         base_url=BASE_URL,
-        api_key="secret-key",
+        meta_api_key="meta-key",
     )
 
     hits = tool.search('"graph neural network"', limit=8)
@@ -137,7 +138,7 @@ def test_open_access_full_text_parses_jats_and_truncates() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         assert request.url.path == "/openaccess/jats"
         assert request.url.params["q"] == "doi:10.1007/example"
-        assert request.url.params["api_key"] == "secret-key"
+        assert request.url.params["api_key"] == "open-access-key"
         return httpx.Response(
             200,
             text="""<response><records><article>
@@ -152,7 +153,8 @@ def test_open_access_full_text_parses_jats_and_truncates() -> None:
     article_client = SpringerNatureArticleClient(
         transport,
         base_url=BASE_URL,
-        api_key="secret-key",
+        meta_api_key="meta-key",
+        open_access_api_key="open-access-key",
         full_text_mode="openaccess",
     )
     article_client.remember(
@@ -192,7 +194,8 @@ def test_open_access_full_text_skips_known_closed_record() -> None:
     article_client = SpringerNatureArticleClient(
         _transport(handler),
         base_url=BASE_URL,
-        api_key="secret-key",
+        meta_api_key="meta-key",
+        open_access_api_key="open-access-key",
         full_text_mode="openaccess",
     )
     article_client.remember(
@@ -206,13 +209,14 @@ def test_open_access_full_text_skips_known_closed_record() -> None:
 def test_tdm_mode_uses_metric_and_new_xmldata_endpoint() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         assert request.url.path == "/xmldata/jats"
-        assert request.url.params["api_key"] == "secret-key/metric"
+        assert request.url.params["api_key"] == "meta-key/metric"
         return httpx.Response(404)
 
     article_client = SpringerNatureArticleClient(
         _transport(handler),
         base_url=BASE_URL,
-        api_key="secret-key",
+        meta_api_key="meta-key",
+        open_access_api_key=None,
         full_text_mode="tdm",
         tdm_api_metric="metric",
     )
@@ -228,28 +232,54 @@ def test_springer_http_error_does_not_expose_query_key() -> None:
     article_client = SpringerNatureArticleClient(
         transport,
         base_url=BASE_URL,
-        api_key="secret-key",
+        meta_api_key="meta-key",
+        open_access_api_key=None,
         full_text_mode="disabled",
     )
     tool = SpringerNatureSearchTool(
         transport,
         article_client,
         base_url=BASE_URL,
-        api_key="secret-key",
+        meta_api_key="meta-key",
     )
 
     with pytest.raises(ProviderRequestError) as exc_info:
         tool.search("graph")
 
-    assert "secret-key" not in str(exc_info.value)
+    assert "meta-key" not in str(exc_info.value)
+
+
+def test_open_access_http_error_does_not_expose_either_key() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(401)
+
+    article_client = SpringerNatureArticleClient(
+        _transport(handler),
+        base_url=BASE_URL,
+        meta_api_key="meta-key",
+        open_access_api_key="open-access-key",
+        full_text_mode="openaccess",
+    )
+    article_client.remember(
+        "10.1007/example", {"doi": "10.1007/example", "openaccess": "true"}
+    )
+
+    with pytest.raises(ProviderRequestError) as exc_info:
+        article_client.fetch_full_text("10.1007/example")
+
+    message = str(exc_info.value)
+    assert "meta-key" not in message
+    assert "open-access-key" not in message
 
 
 def test_builder_uses_environment_credentials(monkeypatch) -> None:
-    monkeypatch.setenv("SPRINGER_TEST_KEY", "test-key")
+    monkeypatch.setenv("SPRINGER_META_TEST_KEY", "meta-key")
+    monkeypatch.setenv("SPRINGER_OA_TEST_KEY", "open-access-key")
     source = build_springer_source(
         {
             "enabled": True,
-            "api_key_env": "SPRINGER_TEST_KEY",
+            "meta_api_key_env": "SPRINGER_META_TEST_KEY",
+            "open_access_api_key_env": "SPRINGER_OA_TEST_KEY",
             "timeout_seconds": 1,
             "min_interval_seconds": 0,
             "full_text_mode": "openaccess",
@@ -259,18 +289,39 @@ def test_builder_uses_environment_credentials(monkeypatch) -> None:
     assert source.source_id == "springer"
     assert source.search_tool is not None
     assert source.full_text_tool is not None
+    assert source.search_tool.meta_api_key == "meta-key"
+    assert source.full_text_tool.article_client.open_access_api_key == (
+        "open-access-key"
+    )
     source.search_tool.transport.client.close()
 
 
+def test_open_access_builder_requires_its_own_key(monkeypatch) -> None:
+    monkeypatch.setenv("SPRINGER_META_TEST_KEY", "meta-key")
+    monkeypatch.delenv("SPRINGER_MISSING_OA_KEY", raising=False)
+
+    with pytest.raises(
+        MissingProviderCredentialError, match="SPRINGER_MISSING_OA_KEY"
+    ):
+        build_springer_source(
+            {
+                "enabled": True,
+                "meta_api_key_env": "SPRINGER_META_TEST_KEY",
+                "open_access_api_key_env": "SPRINGER_MISSING_OA_KEY",
+                "full_text_mode": "openaccess",
+            }
+        )
+
+
 def test_tdm_builder_requires_metric(monkeypatch) -> None:
-    monkeypatch.setenv("SPRINGER_TEST_KEY", "test-key")
+    monkeypatch.setenv("SPRINGER_META_TEST_KEY", "meta-key")
     monkeypatch.delenv("SPRINGER_MISSING_METRIC", raising=False)
 
     with pytest.raises(MissingProviderCredentialError, match="SPRINGER_MISSING_METRIC"):
         build_springer_source(
             {
                 "enabled": True,
-                "api_key_env": "SPRINGER_TEST_KEY",
+                "meta_api_key_env": "SPRINGER_META_TEST_KEY",
                 "full_text_mode": "tdm",
                 "tdm_api_metric_env": "SPRINGER_MISSING_METRIC",
             }

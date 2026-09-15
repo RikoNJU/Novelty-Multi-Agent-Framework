@@ -51,7 +51,8 @@ ScienceDirect 等数据库可共享 HTTP、重试、限流、缓存和持久化�
    `RetrievalSourceRegistry`，并支持公共查询编译入口。
 6. 增加默认关闭的 Provider 配置，以及 `ELSEVIER_API_KEY`、
    `ELSEVIER_INST_TOKEN` 环境变量模板。
-7. 增加 `SPRINGER_NATURE_API_KEY`、`SPRINGER_NATURE_TDM_API_METRIC` 和
+7. 增加独立的 `SPRINGER_NATURE_META_API_KEY`、
+   `SPRINGER_NATURE_OPEN_ACCESS_API_KEY`、`SPRINGER_NATURE_TDM_API_METRIC` 和
    `IEEE_XPLORE_API_KEY` 环境变量模板。
 8. 增加 Provider 接入文档和离线契约测试：
    - 数据库、配置及检索相关测试 95 项通过；

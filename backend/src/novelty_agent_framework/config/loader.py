@@ -48,7 +48,9 @@ def load_application_config(
         "point_extractor": read_json(point_extractor_path),
         "reviewer": read_json(reviewer_path),
     }
-    _apply_model_overrides(raw, environ or os.environ)
+    values = os.environ if environ is None else environ
+    _apply_model_overrides(raw, values)
+    _apply_database_overrides(raw, values)
     return ApplicationConfig.model_validate(raw)
 
 
@@ -64,6 +66,20 @@ def _apply_model_overrides(raw: dict[str, Any], environ: Mapping[str, str]) -> N
         value = next((environ[name] for name in names if environ.get(name)), None)
         if value:
             raw[role]["model"]["alias"] = value
+
+
+def _apply_database_overrides(
+    raw: dict[str, Any], environ: Mapping[str, str]
+) -> None:
+    value = environ.get("NOVELTY_SPRINGER_ENABLED")
+    if value is None:
+        return
+    normalized = value.strip().lower()
+    if normalized not in {"true", "false", "1", "0", "yes", "no"}:
+        raise ValueError("NOVELTY_SPRINGER_ENABLED must be a boolean")
+    raw["researcher"]["tools"]["database_search"]["providers"]["springer"][
+        "enabled"
+    ] = normalized in {"true", "1", "yes"}
 
 
 def legacy_shape(config: ApplicationConfig) -> dict[str, Any]:

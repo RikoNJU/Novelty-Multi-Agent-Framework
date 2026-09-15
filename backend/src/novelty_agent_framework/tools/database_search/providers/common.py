@@ -108,7 +108,14 @@ class ResilientHttpClient:
         response: httpx.Response | None = None
         for attempt in range(self.policy.max_retries + 1):
             self._throttle()
-            response = self.client.request(method, url, **kwargs)
+            try:
+                response = self.client.request(method, url, **kwargs)
+            except httpx.RequestError as exc:
+                # httpx exception messages can include the complete request URL,
+                # including provider credentials supplied as query parameters.
+                raise ProviderRequestError(
+                    f"provider HTTP request failed: {type(exc).__name__}"
+                ) from None
             if (
                 response.status_code not in self._RETRYABLE_STATUS_CODES
                 or attempt >= self.policy.max_retries

@@ -77,17 +77,23 @@ class SpringerNatureArticleClient:
         transport: ResilientHttpClient,
         *,
         base_url: str,
-        api_key: str,
+        meta_api_key: str,
+        open_access_api_key: str | None,
         full_text_mode: str,
         tdm_api_metric: str | None = None,
     ) -> None:
         if full_text_mode not in _VALID_FULL_TEXT_MODES:
             raise ProviderConfigurationError("invalid Springer full-text mode")
+        if full_text_mode == "openaccess" and not open_access_api_key:
+            raise ProviderConfigurationError(
+                "Springer Open Access mode requires its own API key"
+            )
         if full_text_mode == "tdm" and not tdm_api_metric:
             raise ProviderConfigurationError("Springer TDM mode requires an API metric")
         self.transport = transport
         self.base_url = base_url.rstrip("/")
-        self.api_key = api_key
+        self.meta_api_key = meta_api_key
+        self.open_access_api_key = open_access_api_key
         self.full_text_mode = full_text_mode
         self.tdm_api_metric = tdm_api_metric
         self._records: dict[str, dict[str, Any]] = {}
@@ -105,10 +111,11 @@ class SpringerNatureArticleClient:
         if not doi:
             return None
         path = OPEN_ACCESS_PATH
-        credential = self.api_key
+        credential = self.open_access_api_key
         if self.full_text_mode == "tdm":
             path = TDM_PATH
-            credential = f"{self.api_key}/{self.tdm_api_metric}"
+            credential = f"{self.meta_api_key}/{self.tdm_api_metric}"
+        assert credential is not None
         response = self.transport.get(
             f"{self.base_url}{path}",
             params={
@@ -141,19 +148,24 @@ class SpringerNatureSearchTool(SearchTool):
         article_client: SpringerNatureArticleClient,
         *,
         base_url: str,
-        api_key: str,
+        meta_api_key: str,
     ) -> None:
         self.transport = transport
         self.article_client = article_client
         self.base_url = base_url.rstrip("/")
-        self.api_key = api_key
+        self.meta_api_key = meta_api_key
 
     def search(self, query: str, *, limit: int = 10) -> Sequence[SearchHit]:
         if limit < 1:
             return ()
         response = self.transport.get(
             f"{self.base_url}{META_PATH}",
-            params={"q": query, "s": 1, "p": min(limit, 100), "api_key": self.api_key},
+            params={
+                "q": query,
+                "s": 1,
+                "p": min(limit, 100),
+                "api_key": self.meta_api_key,
+            },
             headers={"Accept": "application/json"},
         )
         raise_for_provider_status(response, provider="Springer Nature")
@@ -233,15 +245,23 @@ def build_springer_source(config: Mapping[str, Any]) -> RetrievalSource:
     if not config.get("enabled", False) or config.get("adapter_only", False):
         return RetrievalSource(source_id="springer", query_adapter=adapter)
 
-    api_key = resolve_env_credential(
-        config, setting="api_key_env", default_env="SPRINGER_NATURE_API_KEY"
+    meta_api_key = resolve_env_credential(
+        config,
+        setting="meta_api_key_env",
+        default_env="SPRINGER_NATURE_META_API_KEY",
     )
-    assert api_key is not None
+    assert meta_api_key is not None
     full_text_mode = str(config.get("full_text_mode", "openaccess")).strip().lower()
     if full_text_mode not in _VALID_FULL_TEXT_MODES:
         raise ProviderConfigurationError(
             "Springer full_text_mode must be disabled, openaccess, or tdm"
         )
+    open_access_api_key = resolve_env_credential(
+        config,
+        setting="open_access_api_key_env",
+        default_env="SPRINGER_NATURE_OPEN_ACCESS_API_KEY",
+        required=full_text_mode == "openaccess",
+    )
     tdm_api_metric = None
     if full_text_mode == "tdm":
         tdm_api_metric = resolve_env_credential(
@@ -267,7 +287,8 @@ def build_springer_source(config: Mapping[str, Any]) -> RetrievalSource:
     article_client = SpringerNatureArticleClient(
         transport,
         base_url=base_url,
-        api_key=api_key,
+        meta_api_key=meta_api_key,
+        open_access_api_key=open_access_api_key,
         full_text_mode=full_text_mode,
         tdm_api_metric=tdm_api_metric,
     )
@@ -275,7 +296,10 @@ def build_springer_source(config: Mapping[str, Any]) -> RetrievalSource:
         source_id="springer",
         query_adapter=adapter,
         search_tool=SpringerNatureSearchTool(
-            transport, article_client, base_url=base_url, api_key=api_key
+            transport,
+            article_client,
+            base_url=base_url,
+            meta_api_key=meta_api_key,
         ),
         full_text_tool=(
             None

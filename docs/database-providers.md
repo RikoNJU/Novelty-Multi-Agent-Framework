@@ -43,8 +43,11 @@ Artifact 持久化和 EvidenceCard 构建不包含数据库分支。
 - `tdm`：调用 `xmldata/jats`，必须配置 `SPRINGER_NATURE_TDM_API_METRIC`，且必须
   已取得 Springer Nature 的专项 TDM 授权。
 
-API Key 从 `SPRINGER_NATURE_API_KEY` 读取。JATS 会被解析为纯文本和章节映射；
+元数据检索 Key 从 `SPRINGER_NATURE_META_API_KEY` 读取，Open Access JATS Key
+从 `SPRINGER_NATURE_OPEN_ACCESS_API_KEY` 读取，两者不混用。JATS 会被解析为纯文本和章节映射；
 响应 URL 中的 Key 不会写入 Artifact provenance 或错误信息。
+生产或本地部署通过 `NOVELTY_SPRINGER_ENABLED=true` 启用；没有本地凭据的
+开发/CI 环境保持默认关闭。
 
 ## IEEE Xplore
 
