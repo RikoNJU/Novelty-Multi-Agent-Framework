@@ -1,0 +1,1222 @@
+{
+  "paper_id": "MF2033k6lC",
+  "rounds": 2,
+  "novelty_point_plans": [
+    {
+      "sequence": 1,
+      "novelty_point_id": "NP-1",
+      "research_tasks": [
+        {
+          "task_id": "T-1",
+          "novelty_point_id": "NP-1",
+          "task_type": "literature_search",
+          "language": "zh",
+          "description": "针对该查新点执行中文文献检索。",
+          "attempt": 1
+        },
+        {
+          "task_id": "T-2",
+          "novelty_point_id": "NP-1",
+          "task_type": "literature_search",
+          "language": "en",
+          "description": "针对该查新点执行英文文献检索。",
+          "attempt": 1
+        },
+        {
+          "task_id": "T-R2-1",
+          "novelty_point_id": "NP-1",
+          "task_type": "literature_search",
+          "language": "zh",
+          "description": "针对NP-1查新点，由于有效EvidenceCard数量不足，再次执行中文文献检索，重点寻找与基于图摘要的大规模时序图表示学习方法相关的文献，以补充证据。",
+          "attempt": 2
+        },
+        {
+          "task_id": "T-R2-2",
+          "novelty_point_id": "NP-1",
+          "task_type": "literature_search",
+          "language": "en",
+          "description": "针对NP-1查新点，由于有效EvidenceCard数量不足，再次执行英文文献检索，重点寻找与基于图摘要的大规模时序图表示学习方法相关的文献，以补充证据。",
+          "attempt": 2
+        }
+      ],
+      "search_plans": [
+        {
+          "task_id": "T-1",
+          "novelty_point_id": "NP-1",
+          "concepts": [
+            {
+              "concept_id": "C1",
+              "name": "图摘要",
+              "terms": [
+                "图摘要",
+                "图压缩",
+                "图快照压缩"
+              ],
+              "role": "method",
+              "alias": [
+                "graph summarization",
+                "graph compression"
+              ],
+              "exclude": [],
+              "importance": 3
+            },
+            {
+              "concept_id": "C2",
+              "name": "图自编码器",
+              "terms": [
+                "图自编码器",
+                "图自动编码器",
+                "重构误差"
+              ],
+              "role": "method",
+              "alias": [
+                "graph autoencoder",
+                "GAE",
+                "reconstruction error"
+              ],
+              "exclude": [],
+              "importance": 3
+            },
+            {
+              "concept_id": "C3",
+              "name": "循环神经网络",
+              "terms": [
+                "循环神经网络",
+                "时间依赖建模",
+                "时序图学习"
+              ],
+              "role": "method",
+              "alias": [
+                "recurrent neural network",
+                "RNN",
+                "temporal dependency"
+              ],
+              "exclude": [],
+              "importance": 3
+            },
+            {
+              "concept_id": "C4",
+              "name": "动态图",
+              "terms": [
+                "动态图",
+                "时序图",
+                "图快照序列"
+              ],
+              "role": "object",
+              "alias": [
+                "dynamic graph",
+                "temporal graph",
+                "graph snapshots"
+              ],
+              "exclude": [],
+              "importance": 2
+            },
+            {
+              "concept_id": "C5",
+              "name": "节点表征",
+              "terms": [
+                "节点表征",
+                "图表示学习",
+                "低维嵌入"
+              ],
+              "role": "object",
+              "alias": [
+                "node representation",
+                "graph embedding",
+                "low-dimensional"
+              ],
+              "exclude": [],
+              "importance": 2
+            },
+            {
+              "concept_id": "C6",
+              "name": "大规模图",
+              "terms": [
+                "大规模图",
+                "大规模网络"
+              ],
+              "role": "setting",
+              "alias": [
+                "large-scale graph",
+                "large-scale network"
+              ],
+              "exclude": [],
+              "importance": 1
+            }
+          ],
+          "strategies": [
+            {
+              "strategy_id": "S1",
+              "level": "strict",
+              "expression": "C1 AND C2 AND C3 AND C4",
+              "description": "图摘要 AND 图自编码器 AND 循环神经网络 AND 动态图",
+              "use_alias": false,
+              "use_exclude": true
+            },
+            {
+              "strategy_id": "S2",
+              "level": "medium",
+              "expression": "C1 AND C2 AND C3 AND C4 AND C5",
+              "description": "图摘要 AND 图自编码器 AND 循环神经网络 AND 动态图 AND 节点表征",
+              "use_alias": true,
+              "use_exclude": true
+            },
+            {
+              "strategy_id": "S3",
+              "level": "broad",
+              "expression": "C1 OR C2 OR C3 OR C4 OR C5 OR C6",
+              "description": "图摘要 OR 图自编码器 OR 循环神经网络 OR 动态图 OR 节点表征 OR 大规模图",
+              "use_alias": true,
+              "use_exclude": true
+            }
+          ]
+        },
+        {
+          "task_id": "T-2",
+          "novelty_point_id": "NP-1",
+          "concepts": [
+            {
+              "concept_id": "C1",
+              "name": "dynamic graph",
+              "terms": [
+                "dynamic graph",
+                "temporal graph",
+                "sequential graph"
+              ],
+              "role": "object",
+              "alias": [
+                "time-evolving graph",
+                "dynamic network"
+              ],
+              "exclude": [],
+              "importance": 3
+            },
+            {
+              "concept_id": "C2",
+              "name": "graph representation learning",
+              "terms": [
+                "graph representation learning",
+                "graph embedding",
+                "node embedding"
+              ],
+              "role": "method",
+              "alias": [
+                "network embedding",
+                "graph neural network"
+              ],
+              "exclude": [],
+              "importance": 3
+            },
+            {
+              "concept_id": "C3",
+              "name": "graph summarization",
+              "terms": [
+                "graph summarization",
+                "graph compression"
+              ],
+              "role": "method",
+              "alias": [
+                "graph summarization technique",
+                "graph coarsening"
+              ],
+              "exclude": [],
+              "importance": 3
+            },
+            {
+              "concept_id": "C4",
+              "name": "graph autoencoder",
+              "terms": [
+                "graph autoencoder",
+                "reconstruction error"
+              ],
+              "role": "method",
+              "alias": [
+                "graph auto-encoder",
+                "reconstruction loss"
+              ],
+              "exclude": [],
+              "importance": 3
+            },
+            {
+              "concept_id": "C5",
+              "name": "recurrent neural network",
+              "terms": [
+                "recurrent neural network",
+                "temporal dependency"
+              ],
+              "role": "method",
+              "alias": [
+                "RNN",
+                "temporal modeling"
+              ],
+              "exclude": [],
+              "importance": 2
+            },
+            {
+              "concept_id": "C6",
+              "name": "large-scale graph",
+              "terms": [
+                "large-scale graph",
+                "scalable graph"
+              ],
+              "role": "setting",
+              "alias": [
+                "large graph",
+                "big graph"
+              ],
+              "exclude": [],
+              "importance": 1
+            }
+          ],
+          "strategies": [
+            {
+              "strategy_id": "S1",
+              "level": "strict",
+              "expression": "C1 AND C2 AND C3 AND C4 AND C5",
+              "description": "dynamic graph AND graph representation learning AND graph summarization AND graph autoencoder AND recurrent neural network",
+              "use_alias": false,
+              "use_exclude": true
+            },
+            {
+              "strategy_id": "S2",
+              "level": "medium",
+              "expression": "C1 AND C2 AND C3 AND C4",
+              "description": "dynamic graph AND graph representation learning AND graph summarization AND graph autoencoder",
+              "use_alias": true,
+              "use_exclude": true
+            },
+            {
+              "strategy_id": "S3",
+              "level": "broad",
+              "expression": "C1 OR C2",
+              "description": "dynamic graph OR graph representation learning",
+              "use_alias": true,
+              "use_exclude": true
+            }
+          ]
+        },
+        {
+          "task_id": "T-R2-1",
+          "novelty_point_id": "NP-1",
+          "concepts": [
+            {
+              "concept_id": "C1",
+              "name": "图摘要",
+              "terms": [
+                "图摘要",
+                "图压缩",
+                "图概括"
+              ],
+              "role": "method",
+              "alias": [
+                "graph summarization",
+                "graph compression",
+                "graph sketching"
+              ],
+              "exclude": [],
+              "importance": 3
+            },
+            {
+              "concept_id": "C2",
+              "name": "图自编码器",
+              "terms": [
+                "图自编码器",
+                "图自动编码器",
+                "图重构"
+              ],
+              "role": "method",
+              "alias": [
+                "graph autoencoder",
+                "graph auto-encoder",
+                "graph reconstruction"
+              ],
+              "exclude": [],
+              "importance": 3
+            },
+            {
+              "concept_id": "C3",
+              "name": "循环神经网络",
+              "terms": [
+                "循环神经网络",
+                "递归神经网络"
+              ],
+              "role": "method",
+              "alias": [
+                "recurrent neural network",
+                "RNN",
+                "sequence modeling"
+              ],
+              "exclude": [],
+              "importance": 2
+            },
+            {
+              "concept_id": "C4",
+              "name": "时序图",
+              "terms": [
+                "时序图",
+                "动态图",
+                "时间演化图"
+              ],
+              "role": "object",
+              "alias": [
+                "temporal graph",
+                "dynamic graph",
+                "time-evolving graph",
+                "sequential graph"
+              ],
+              "exclude": [],
+              "importance": 3
+            },
+            {
+              "concept_id": "C5",
+              "name": "图表示学习",
+              "terms": [
+                "图表示学习",
+                "节点表征",
+                "网络嵌入"
+              ],
+              "role": "object",
+              "alias": [
+                "graph representation learning",
+                "node embedding",
+                "network embedding"
+              ],
+              "exclude": [],
+              "importance": 3
+            },
+            {
+              "concept_id": "C6",
+              "name": "大规模图",
+              "terms": [
+                "大规模图",
+                "大规模网络"
+              ],
+              "role": "setting",
+              "alias": [
+                "large-scale graph",
+                "large-scale network"
+              ],
+              "exclude": [],
+              "importance": 1
+            }
+          ],
+          "strategies": [
+            {
+              "strategy_id": "S1",
+              "level": "strict",
+              "expression": "C1 AND C2 AND C3 AND C4 AND C5",
+              "description": "图摘要 AND 图自编码器 AND 循环神经网络 AND 时序图 AND 图表示学习",
+              "use_alias": false,
+              "use_exclude": true
+            },
+            {
+              "strategy_id": "S2",
+              "level": "medium",
+              "expression": "C1 AND C4 AND C5",
+              "description": "图摘要 AND 时序图 AND 图表示学习",
+              "use_alias": true,
+              "use_exclude": true
+            },
+            {
+              "strategy_id": "S3",
+              "level": "broad",
+              "expression": "C4 OR C5",
+              "description": "时序图 OR 图表示学习",
+              "use_alias": true,
+              "use_exclude": true
+            }
+          ]
+        },
+        {
+          "task_id": "T-R2-2",
+          "novelty_point_id": "NP-1",
+          "concepts": [
+            {
+              "concept_id": "C1",
+              "name": "sequential graph representation learning",
+              "terms": [
+                "sequential graph representation learning"
+              ],
+              "role": "object",
+              "alias": [
+                "dynamic graph embedding",
+                "temporal graph representation learning"
+              ],
+              "exclude": [],
+              "importance": 3
+            },
+            {
+              "concept_id": "C2",
+              "name": "graph summarization",
+              "terms": [
+                "graph summarization"
+              ],
+              "role": "method",
+              "alias": [
+                "graph compression",
+                "graph summarization technique"
+              ],
+              "exclude": [],
+              "importance": 3
+            },
+            {
+              "concept_id": "C3",
+              "name": "graph autoencoder",
+              "terms": [
+                "graph autoencoder"
+              ],
+              "role": "method",
+              "alias": [
+                "graph auto-encoder",
+                "GAE"
+              ],
+              "exclude": [],
+              "importance": 3
+            },
+            {
+              "concept_id": "C4",
+              "name": "recurrent neural network",
+              "terms": [
+                "recurrent neural network"
+              ],
+              "role": "method",
+              "alias": [
+                "RNN",
+                "temporal recurrent network"
+              ],
+              "exclude": [],
+              "importance": 2
+            },
+            {
+              "concept_id": "C5",
+              "name": "node representation",
+              "terms": [
+                "node representation"
+              ],
+              "role": "feature",
+              "alias": [
+                "node embedding",
+                "vertex embedding"
+              ],
+              "exclude": [],
+              "importance": 2
+            },
+            {
+              "concept_id": "C6",
+              "name": "large-scale dynamic graph",
+              "terms": [
+                "large-scale dynamic graph"
+              ],
+              "role": "setting",
+              "alias": [
+                "large-scale temporal graph",
+                "big dynamic graph"
+              ],
+              "exclude": [],
+              "importance": 1
+            }
+          ],
+          "strategies": [
+            {
+              "strategy_id": "S1",
+              "level": "strict",
+              "expression": "C1 AND C2 AND C3",
+              "description": "sequential graph representation learning AND graph summarization AND graph autoencoder",
+              "use_alias": false,
+              "use_exclude": true
+            },
+            {
+              "strategy_id": "S2",
+              "level": "medium",
+              "expression": "C1 AND C2 AND C3 AND C4",
+              "description": "sequential graph representation learning AND graph summarization AND graph autoencoder AND recurrent neural network",
+              "use_alias": true,
+              "use_exclude": true
+            },
+            {
+              "strategy_id": "S3",
+              "level": "broad",
+              "expression": "C1 OR C2 OR C3 OR C4 OR C5 OR C6",
+              "description": "sequential graph representation learning OR graph summarization OR graph autoencoder OR recurrent neural network OR node representation OR large-scale dynamic graph",
+              "use_alias": true,
+              "use_exclude": true
+            }
+          ]
+        }
+      ],
+      "executed_queries": [
+        {
+          "database": "springer",
+          "task_id": "T-2",
+          "novelty_point_id": "NP-1",
+          "strategy_id": "S1",
+          "level": "strict",
+          "query": "(\"dynamic graph\" OR \"temporal graph\" OR \"sequential graph\") AND (\"graph representation learning\" OR \"graph embedding\" OR \"node embedding\") AND (\"graph summarization\" OR \"graph compression\") AND (\"graph autoencoder\" OR \"reconstruction error\") AND (\"recurrent neural network\" OR \"temporal dependency\")",
+          "status": "succeeded",
+          "results": [
+            {
+              "source_record_id": "src_8aeb5f917d32c7d2df63038b",
+              "rank": 1,
+              "score": null,
+              "snippet": null
+            },
+            {
+              "source_record_id": "src_0d30d91f02e2ff457ea3a280",
+              "rank": 2,
+              "score": null,
+              "snippet": null
+            },
+            {
+              "source_record_id": "src_c665eb240c709cdaccf784f4",
+              "rank": 3,
+              "score": null,
+              "snippet": null
+            },
+            {
+              "source_record_id": "src_b2571f729ecaf5a803b0744e",
+              "rank": 4,
+              "score": null,
+              "snippet": null
+            },
+            {
+              "source_record_id": "src_758fdc3a6123b1d3c4f7a893",
+              "rank": 5,
+              "score": null,
+              "snippet": null
+            },
+            {
+              "source_record_id": "src_f501033f4dedbee328ea1167",
+              "rank": 6,
+              "score": null,
+              "snippet": null
+            },
+            {
+              "source_record_id": "src_8265a03a4d105dddb64f6834",
+              "rank": 7,
+              "score": null,
+              "snippet": null
+            },
+            {
+              "source_record_id": "src_5c3497387cfc79e7895044ef",
+              "rank": 8,
+              "score": null,
+              "snippet": null
+            }
+          ]
+        },
+        {
+          "database": "springer",
+          "task_id": "T-2",
+          "novelty_point_id": "NP-1",
+          "strategy_id": "S1",
+          "level": "strict",
+          "query": "(\"dynamic graph\" OR \"temporal graph\" OR \"sequential graph\") AND (\"graph representation learning\" OR \"graph embedding\" OR \"node embedding\") AND (\"graph summarization\" OR \"graph compression\") AND (\"graph autoencoder\" OR \"reconstruction error\") AND (\"recurrent neural network\" OR \"temporal dependency\")",
+          "status": "succeeded",
+          "results": [
+            {
+              "source_record_id": "src_8aeb5f917d32c7d2df63038b",
+              "rank": 1,
+              "score": null,
+              "snippet": null
+            },
+            {
+              "source_record_id": "src_0d30d91f02e2ff457ea3a280",
+              "rank": 2,
+              "score": null,
+              "snippet": null
+            },
+            {
+              "source_record_id": "src_c665eb240c709cdaccf784f4",
+              "rank": 3,
+              "score": null,
+              "snippet": null
+            },
+            {
+              "source_record_id": "src_b2571f729ecaf5a803b0744e",
+              "rank": 4,
+              "score": null,
+              "snippet": null
+            },
+            {
+              "source_record_id": "src_758fdc3a6123b1d3c4f7a893",
+              "rank": 5,
+              "score": null,
+              "snippet": null
+            },
+            {
+              "source_record_id": "src_f501033f4dedbee328ea1167",
+              "rank": 6,
+              "score": null,
+              "snippet": null
+            },
+            {
+              "source_record_id": "src_8265a03a4d105dddb64f6834",
+              "rank": 7,
+              "score": null,
+              "snippet": null
+            },
+            {
+              "source_record_id": "src_5c3497387cfc79e7895044ef",
+              "rank": 8,
+              "score": null,
+              "snippet": null
+            }
+          ]
+        }
+      ],
+      "query_plan": {
+        "queries": [
+          "(\"dynamic graph\" OR \"temporal graph\" OR \"sequential graph\") AND (\"graph representation learning\" OR \"graph embedding\" OR \"node embedding\") AND (\"graph summarization\" OR \"graph compression\") AND (\"graph autoencoder\" OR \"reconstruction error\") AND (\"recurrent neural network\" OR \"temporal dependency\")"
+        ],
+        "attempts": [
+          1,
+          2
+        ]
+      }
+    },
+    {
+      "sequence": 2,
+      "novelty_point_id": "NP-2",
+      "research_tasks": [
+        {
+          "task_id": "T-1",
+          "novelty_point_id": "NP-2",
+          "task_type": "literature_search",
+          "language": "zh",
+          "description": "针对该查新点执行中文文献检索。",
+          "attempt": 1
+        },
+        {
+          "task_id": "T-2",
+          "novelty_point_id": "NP-2",
+          "task_type": "literature_search",
+          "language": "en",
+          "description": "针对该查新点执行英文文献检索。",
+          "attempt": 1
+        }
+      ],
+      "search_plans": [
+        {
+          "task_id": "T-1",
+          "novelty_point_id": "NP-2",
+          "concepts": [
+            {
+              "concept_id": "C1",
+              "name": "分布式图神经网络训练",
+              "terms": [
+                "分布式图神经网络训练",
+                "分布式GNN训练"
+              ],
+              "role": "object",
+              "alias": [
+                "分布式图神经网络",
+                "分布式GNN"
+              ],
+              "exclude": [],
+              "importance": 3
+            },
+            {
+              "concept_id": "C2",
+              "name": "图摘要",
+              "terms": [
+                "图摘要",
+                "图流划分"
+              ],
+              "role": "method",
+              "alias": [
+                "图概括",
+                "图流分割"
+              ],
+              "exclude": [],
+              "importance": 3
+            },
+            {
+              "concept_id": "C3",
+              "name": "领导者-工作者模式",
+              "terms": [
+                "领导者-工作者模式",
+                "注意力层"
+              ],
+              "role": "feature",
+              "alias": [
+                "主从模式",
+                "注意力机制"
+              ],
+              "exclude": [],
+              "importance": 2
+            },
+            {
+              "concept_id": "C4",
+              "name": "大规模图",
+              "terms": [
+                "大规模图",
+                "链路预测"
+              ],
+              "role": "setting",
+              "alias": [
+                "大图",
+                "链接预测"
+              ],
+              "exclude": [],
+              "importance": 1
+            },
+            {
+              "concept_id": "C5",
+              "name": "图神经网络",
+              "terms": [
+                "图神经网络"
+              ],
+              "role": "escape",
+              "alias": [
+                "GNN",
+                "图深度学习"
+              ],
+              "exclude": [
+                "分布式"
+              ],
+              "importance": 1
+            }
+          ],
+          "strategies": [
+            {
+              "strategy_id": "S1",
+              "level": "strict",
+              "expression": "C1 AND C2",
+              "description": "分布式图神经网络训练 AND 图摘要",
+              "use_alias": false,
+              "use_exclude": true
+            },
+            {
+              "strategy_id": "S2",
+              "level": "medium",
+              "expression": "C1 AND C2",
+              "description": "分布式图神经网络训练 AND 图摘要",
+              "use_alias": true,
+              "use_exclude": true
+            },
+            {
+              "strategy_id": "S3",
+              "level": "broad",
+              "expression": "C1 OR C2 OR C3 OR C4",
+              "description": "分布式图神经网络训练 OR 图摘要 OR 领导者-工作者模式 OR 大规模图",
+              "use_alias": true,
+              "use_exclude": true
+            }
+          ]
+        },
+        {
+          "task_id": "T-2",
+          "novelty_point_id": "NP-2",
+          "concepts": [
+            {
+              "concept_id": "C1",
+              "name": "distributed graph neural network training",
+              "terms": [
+                "distributed graph neural network training"
+              ],
+              "role": "object",
+              "alias": [
+                "distributed GNN training",
+                "parallel GNN training"
+              ],
+              "exclude": [],
+              "importance": 3
+            },
+            {
+              "concept_id": "C2",
+              "name": "graph summarization",
+              "terms": [
+                "graph summarization"
+              ],
+              "role": "method",
+              "alias": [
+                "graph summary",
+                "graph condensation"
+              ],
+              "exclude": [],
+              "importance": 3
+            },
+            {
+              "concept_id": "C3",
+              "name": "leader-worker mode",
+              "terms": [
+                "leader-worker mode"
+              ],
+              "role": "feature",
+              "alias": [
+                "leader-follower",
+                "master-worker"
+              ],
+              "exclude": [],
+              "importance": 2
+            },
+            {
+              "concept_id": "C4",
+              "name": "edge-based graph partitioning",
+              "terms": [
+                "edge-based graph partitioning"
+              ],
+              "role": "feature",
+              "alias": [
+                "edge partitioning",
+                "edge-cut partitioning"
+              ],
+              "exclude": [],
+              "importance": 2
+            },
+            {
+              "concept_id": "C5",
+              "name": "attention layer",
+              "terms": [
+                "attention layer"
+              ],
+              "role": "feature",
+              "alias": [
+                "attention mechanism"
+              ],
+              "exclude": [],
+              "importance": 2
+            },
+            {
+              "concept_id": "C6",
+              "name": "link prediction",
+              "terms": [
+                "link prediction"
+              ],
+              "role": "setting",
+              "alias": [
+                "link prediction performance"
+              ],
+              "exclude": [],
+              "importance": 1
+            }
+          ],
+          "strategies": [
+            {
+              "strategy_id": "S1",
+              "level": "strict",
+              "expression": "C1 AND C2",
+              "description": "distributed graph neural network training AND graph summarization",
+              "use_alias": false,
+              "use_exclude": true
+            },
+            {
+              "strategy_id": "S2",
+              "level": "medium",
+              "expression": "C1 AND C2",
+              "description": "distributed graph neural network training AND graph summarization",
+              "use_alias": true,
+              "use_exclude": true
+            },
+            {
+              "strategy_id": "S3",
+              "level": "broad",
+              "expression": "C1 OR C2 OR C3 OR C4",
+              "description": "distributed graph neural network training OR graph summarization OR leader-worker mode OR edge-based graph partitioning",
+              "use_alias": true,
+              "use_exclude": true
+            }
+          ]
+        }
+      ],
+      "executed_queries": [],
+      "query_plan": {
+        "queries": [],
+        "attempts": [
+          1
+        ]
+      }
+    },
+    {
+      "sequence": 3,
+      "novelty_point_id": "NP-3",
+      "research_tasks": [
+        {
+          "task_id": "T-1",
+          "novelty_point_id": "NP-3",
+          "task_type": "literature_search",
+          "language": "zh",
+          "description": "针对该查新点执行中文文献检索。",
+          "attempt": 1
+        },
+        {
+          "task_id": "T-2",
+          "novelty_point_id": "NP-3",
+          "task_type": "literature_search",
+          "language": "en",
+          "description": "针对该查新点执行英文文献检索。",
+          "attempt": 1
+        }
+      ],
+      "search_plans": [
+        {
+          "task_id": "T-1",
+          "novelty_point_id": "NP-3",
+          "concepts": [
+            {
+              "concept_id": "C1",
+              "name": "边分割图流划分算法",
+              "terms": [
+                "边分割图流划分算法"
+              ],
+              "role": "method",
+              "alias": [
+                "基于边的图划分",
+                "边切分图流划分"
+              ],
+              "exclude": [],
+              "importance": 3
+            },
+            {
+              "concept_id": "C2",
+              "name": "图流数据",
+              "terms": [
+                "图流数据"
+              ],
+              "role": "object",
+              "alias": [
+                "图数据流",
+                "流式图"
+              ],
+              "exclude": [],
+              "importance": 2
+            },
+            {
+              "concept_id": "C3",
+              "name": "分布式图神经网络训练",
+              "terms": [
+                "分布式图神经网络训练"
+              ],
+              "role": "method",
+              "alias": [
+                "分布式GNN训练",
+                "分布式图神经网络"
+              ],
+              "exclude": [],
+              "importance": 3
+            },
+            {
+              "concept_id": "C4",
+              "name": "子图划分",
+              "terms": [
+                "子图划分"
+              ],
+              "role": "feature",
+              "alias": [
+                "图分割",
+                "子图分配"
+              ],
+              "exclude": [],
+              "importance": 2
+            },
+            {
+              "concept_id": "C5",
+              "name": "大规模图数据",
+              "terms": [
+                "大规模图数据"
+              ],
+              "role": "setting",
+              "alias": [
+                "大规模图",
+                "海量图数据"
+              ],
+              "exclude": [],
+              "importance": 1
+            },
+            {
+              "concept_id": "C6",
+              "name": "顶点分割",
+              "terms": [
+                "顶点分割"
+              ],
+              "role": "escape",
+              "alias": [
+                "点分割",
+                "基于顶点的图划分"
+              ],
+              "exclude": [
+                "边分割"
+              ],
+              "importance": 1
+            }
+          ],
+          "strategies": [
+            {
+              "strategy_id": "S1",
+              "level": "strict",
+              "expression": "C1 AND C2 AND C3",
+              "description": "边分割图流划分算法 AND 图流数据 AND 分布式图神经网络训练",
+              "use_alias": false,
+              "use_exclude": true
+            },
+            {
+              "strategy_id": "S2",
+              "level": "medium",
+              "expression": "C1 AND C3 AND C4",
+              "description": "边分割图流划分算法 AND 分布式图神经网络训练 AND 子图划分",
+              "use_alias": true,
+              "use_exclude": true
+            },
+            {
+              "strategy_id": "S3",
+              "level": "broad",
+              "expression": "C1 OR C2 OR C3 OR C4 OR C5",
+              "description": "边分割图流划分算法 OR 图流数据 OR 分布式图神经网络训练 OR 子图划分 OR 大规模图数据",
+              "use_alias": true,
+              "use_exclude": true
+            }
+          ]
+        },
+        {
+          "task_id": "T-2",
+          "novelty_point_id": "NP-3",
+          "concepts": [
+            {
+              "concept_id": "C1",
+              "name": "edge-based graph partitioning",
+              "terms": [
+                "edge-based graph partitioning",
+                "edge partitioning algorithm",
+                "graph stream partitioning"
+              ],
+              "role": "method",
+              "alias": [
+                "edge-cut partitioning",
+                "streaming edge partitioning"
+              ],
+              "exclude": [],
+              "importance": 3
+            },
+            {
+              "concept_id": "C2",
+              "name": "graph neural network",
+              "terms": [
+                "graph neural network",
+                "distributed training",
+                "graph streaming"
+              ],
+              "role": "object",
+              "alias": [
+                "GNN",
+                "distributed GNN training"
+              ],
+              "exclude": [],
+              "importance": 2
+            },
+            {
+              "concept_id": "C3",
+              "name": "large-scale graphs",
+              "terms": [
+                "large-scale graphs",
+                "distributed systems",
+                "worker nodes"
+              ],
+              "role": "setting",
+              "alias": [
+                "scalable graph processing",
+                "multi-worker"
+              ],
+              "exclude": [],
+              "importance": 1
+            }
+          ],
+          "strategies": [
+            {
+              "strategy_id": "S1",
+              "level": "strict",
+              "expression": "C1 AND C2",
+              "description": "edge-based graph partitioning AND graph neural network",
+              "use_alias": false,
+              "use_exclude": true
+            },
+            {
+              "strategy_id": "S2",
+              "level": "medium",
+              "expression": "C1 AND C2 AND C3",
+              "description": "edge-based graph partitioning AND graph neural network AND large-scale graphs",
+              "use_alias": true,
+              "use_exclude": true
+            },
+            {
+              "strategy_id": "S3",
+              "level": "broad",
+              "expression": "C1",
+              "description": "edge-based graph partitioning",
+              "use_alias": true,
+              "use_exclude": true
+            }
+          ]
+        }
+      ],
+      "executed_queries": [
+        {
+          "database": "springer",
+          "task_id": "T-2",
+          "novelty_point_id": "NP-3",
+          "strategy_id": "S1",
+          "level": "strict",
+          "query": "(\"edge-based graph partitioning\" OR \"edge partitioning algorithm\" OR \"graph stream partitioning\") AND (\"graph neural network\" OR \"distributed training\" OR \"graph streaming\")",
+          "status": "succeeded",
+          "results": [
+            {
+              "source_record_id": "src_27c5183a9b41c3c8c3ab980f",
+              "rank": 1,
+              "score": null,
+              "snippet": null
+            },
+            {
+              "source_record_id": "src_eb09f36e385f47239ffb9e93",
+              "rank": 2,
+              "score": null,
+              "snippet": null
+            },
+            {
+              "source_record_id": "src_20748ef49e4ec98d9e7ba149",
+              "rank": 3,
+              "score": null,
+              "snippet": null
+            },
+            {
+              "source_record_id": "src_bdeb2d916df30c3fae2ded37",
+              "rank": 4,
+              "score": null,
+              "snippet": null
+            },
+            {
+              "source_record_id": "src_eebafeb5f6a8b7ab94ada5ee",
+              "rank": 5,
+              "score": null,
+              "snippet": null
+            },
+            {
+              "source_record_id": "src_6b1b2d32e86ac17424978d45",
+              "rank": 6,
+              "score": null,
+              "snippet": null
+            },
+            {
+              "source_record_id": "src_2b2b4c981acbda006bf8e44f",
+              "rank": 7,
+              "score": null,
+              "snippet": null
+            },
+            {
+              "source_record_id": "src_0a70bcfd5c071ca7ae87ee28",
+              "rank": 8,
+              "score": null,
+              "snippet": null
+            }
+          ]
+        }
+      ],
+      "query_plan": {
+        "queries": [
+          "(\"edge-based graph partitioning\" OR \"edge partitioning algorithm\" OR \"graph stream partitioning\") AND (\"graph neural network\" OR \"distributed training\" OR \"graph streaming\")"
+        ],
+        "attempts": [
+          1
+        ]
+      }
+    }
+  ]
+}

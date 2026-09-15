@@ -1,0 +1,132 @@
+{
+  "agent_arguments": {
+    "source_id": "arxiv"
+  },
+  "agent_tool_call_id": "01a0a4a5d9e15a7f44c5cd3995fc1866",
+  "business_status": "NORMAL",
+  "duration": 13.107636,
+  "duration_ms": 13107,
+  "error": {
+    "message": "all 1 search executions failed",
+    "stage": "run_research_task",
+    "timestamp": "2026-09-15T10:39:01.230455+00:00",
+    "tool_call_id": "tool_0017",
+    "traceback": "  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/docs/experiments/20260915_172846/run_trial.py\", line 70, in <module>\n    result=workflow.run(paper,run_identity=file_run_identity('paper_input',paper_path,project_root=ROOT))\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py\", line 1003, in run\n    return asyncio.run(self.arun(paper, run_identity=run_identity))\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/runners.py\", line 190, in run\n    return runner.run(main)\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/runners.py\", line 118, in run\n    return self._loop.run_until_complete(task)\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/base_events.py\", line 641, in run_until_complete\n    self.run_forever()\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/base_events.py\", line 608, in run_forever\n    self._run_once()\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/base_events.py\", line 1936, in _run_once\n    handle._run()\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/events.py\", line 84, in _run\n    self._context.run(self._callback, *self._args)\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/site-packages/langgraph/_internal/_runnable.py\", line 501, in ainvoke\n    ret = await self.afunc(*args, **kwargs)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py\", line 290, in recorded\n    output = await function(state)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py\", line 485, in _run_research_task\n    await self.services.task_researcher.ainvoke(request)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/scripts/run_full_pipeline_experiment.py\", line 193, in measured_ainvoke\n    return await recorder.atimed(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/scripts/run_full_pipeline_experiment.py\", line 101, in atimed\n    return await function()\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/research_task.py\", line 101, in ainvoke\n    harness_result = await self.harness.run(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/scripts/run_full_pipeline_experiment.py\", line 202, in measured_harness_run\n    result = await original_harness_run(*args, **kwargs)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/tool_call_harness.py\", line 345, in run\n    runtime.finish_tool_call(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/runtime_artifacts.py\", line 448, in finish_tool_call\n    error_payload = self._coerce_error(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/runtime_artifacts.py\", line 778, in _coerce_error\n    \"traceback\": \"\".join(traceback_module.format_stack()),\n",
+    "type": "ToolExecutionError"
+  },
+  "execution_status": "FAILED",
+  "failure_phase": "TOOL_EXECUTION",
+  "finished_at": "2026-09-15T10:39:01.230464+00:00",
+  "normalized_result": {
+    "error": "all 1 search executions failed",
+    "execution_summary": {
+      "all_failed": true,
+      "degraded": false,
+      "failed": 1,
+      "no_execution": false,
+      "partial": 0,
+      "requires_human": 0,
+      "succeeded": 0,
+      "total": 1
+    },
+    "results": [],
+    "source_id": "arxiv",
+    "succeeded": false,
+    "summary": "数据库检索执行失败：1/1 search executions failed",
+    "warnings": []
+  },
+  "raw_result": {
+    "arguments": {
+      "source_id": "arxiv"
+    },
+    "elapsed_ms": 13107,
+    "error": "all 1 search executions failed",
+    "payload": {
+      "artifacts": [],
+      "database_search_result": {
+        "results": [],
+        "source_id": "arxiv",
+        "warnings": []
+      },
+      "execution_summary": {
+        "all_failed": true,
+        "degraded": false,
+        "failed": 1,
+        "no_execution": false,
+        "partial": 0,
+        "requires_human": 0,
+        "succeeded": 0,
+        "total": 1
+      },
+      "research_bundle": {
+        "artifacts": [],
+        "bundle_id": "bnd_94452531da0c6e75e4064ed1",
+        "evidence": [],
+        "producer": "structured_source_retrieval:arxiv",
+        "search_executions": [
+          {
+            "completed_at": "2026-09-15T10:39:01.224690Z",
+            "error": "ArxivCircuitOpenError: arxiv circuit is open after consecutive provider failures",
+            "execution_id": "sex_6501f926896f3c61394b45db",
+            "parameters": {
+              "base_strategy": "S1",
+              "fallback_reason": null,
+              "level": "strict",
+              "limit": 8,
+              "novelty_point_id": "NP-1",
+              "strategy_id": "S1",
+              "task_id": "T-1",
+              "variant_id": "S1"
+            },
+            "query": "(abs:\"图摘要\" OR abs:\"图压缩\" OR abs:\"图自编码器\") AND (abs:\"时序图表示学习\" OR abs:\"动态图表示学习\" OR abs:\"图神经网络\") AND (abs:\"循环神经网络\" OR abs:\"时间依赖建模\" OR abs:\"时间特征提取\")",
+            "results": [],
+            "run_id": "run-c64223762d494aaf8c5112bda571430a",
+            "source_id": "arxiv",
+            "started_at": "2026-09-15T10:38:48.123102Z",
+            "status": "failed",
+            "tool_name": "structured_source_retrieval"
+          }
+        ],
+        "source_records": [],
+        "warnings": [],
+        "works": []
+      },
+      "search_executions": [
+        {
+          "completed_at": "2026-09-15T10:39:01.224690Z",
+          "error": "ArxivCircuitOpenError: arxiv circuit is open after consecutive provider failures",
+          "execution_id": "sex_6501f926896f3c61394b45db",
+          "parameters": {
+            "base_strategy": "S1",
+            "fallback_reason": null,
+            "level": "strict",
+            "limit": 8,
+            "novelty_point_id": "NP-1",
+            "strategy_id": "S1",
+            "task_id": "T-1",
+            "variant_id": "S1"
+          },
+          "query": "(abs:\"图摘要\" OR abs:\"图压缩\" OR abs:\"图自编码器\") AND (abs:\"时序图表示学习\" OR abs:\"动态图表示学习\" OR abs:\"图神经网络\") AND (abs:\"循环神经网络\" OR abs:\"时间依赖建模\" OR abs:\"时间特征提取\")",
+          "results": [],
+          "run_id": "run-c64223762d494aaf8c5112bda571430a",
+          "source_id": "arxiv",
+          "started_at": "2026-09-15T10:38:48.123102Z",
+          "status": "failed",
+          "tool_name": "structured_source_retrieval"
+        }
+      ],
+      "source_records": []
+    },
+    "succeeded": false,
+    "summary": "数据库检索执行失败：1/1 search executions failed",
+    "tool_name": "database_search"
+  },
+  "resolved_arguments": {
+    "source_id": "arxiv"
+  },
+  "result_count": 0,
+  "stage_name": "run_research_task",
+  "started_at": "2026-09-15T10:38:48.120654+00:00",
+  "tool_call_id": "tool_0017",
+  "tool_name": "database_search"
+}

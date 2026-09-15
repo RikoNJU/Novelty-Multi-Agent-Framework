@@ -1,0 +1,173 @@
+{
+  "evidence_cards": [
+    {
+      "card_id": "card_ec28518f39562e1ae1ff5275",
+      "cited_by_paper": null,
+      "confidence": 0.8,
+      "differences": [
+        "Uses k-hop neighborhood generation rather than graph summarization for compression",
+        "Does not use a graph autoencoder for node representation learning",
+        "Does not model dynamic/temporal graphs",
+        "Does not use a recurrent neural network for temporal dependencies"
+      ],
+      "document_title": "AGL: a Scalable System for Industrial-purpose Graph Machine Learning",
+      "evidence_ids": [
+        "ev_ee32c7c28be69bfc6da407a8"
+      ],
+      "main_contribution": "AGL is a scalable, fault-tolerant, and integrated system for GNN training and inference on large-scale graphs, using k-hop neighborhood generation and MapReduce-based message passing.",
+      "novelty_point_id": "NP-1",
+      "overlaps": [
+        "Targets large-scale graph machine learning",
+        "Addresses scalability challenges in GNN training"
+      ],
+      "possible_baseline": false,
+      "relevance": 0.5,
+      "sources": [
+        {
+          "doi": null,
+          "location": "artifact art_6f98816ebc9005d24844fdfd chars:1021-1141",
+          "quote": "we design AGL, a scalable, fault-tolerance and integrated system, with fully-functional training and inference for GNNs.",
+          "title": "AGL: a Scalable System for Industrial-purpose Graph Machine Learning",
+          "url": "https://arxiv.org/pdf/2003.02454"
+        }
+      ],
+      "task_id": "T-2"
+    },
+    {
+      "card_id": "card_da4eec814d7a76c6cac45f56",
+      "cited_by_paper": null,
+      "confidence": 0.8,
+      "differences": [
+        "Uses self-attention mechanism rather than graph summarization for compression",
+        "Does not use a graph autoencoder for node representation learning",
+        "Does not use a recurrent neural network for temporal dependency modeling",
+        "Does not explicitly compress large-scale graphs"
+      ],
+      "document_title": "Inductive Representation Learning on Temporal Graphs",
+      "evidence_ids": [
+        "ev_019615c83ee0259c172e5e12"
+      ],
+      "main_contribution": "Temporal Graph Attention (TGAT) layer for inductive representation learning on temporal graphs, using self-attention to aggregate temporal-topological neighborhood features and functional time encoding.",
+      "novelty_point_id": "NP-1",
+      "overlaps": [
+        "Focuses on temporal graph representation learning",
+        "Captures time-feature interactions and temporal patterns in dynamic graphs"
+      ],
+      "possible_baseline": false,
+      "relevance": 0.6,
+      "sources": [
+        {
+          "doi": null,
+          "location": "artifact art_b8b821043e4485fda0b8527c chars:516-687",
+          "quote": "We propose the temporal graph attention (TGAT) layer to efficiently aggregate temporal-topological neighborhood features as well as to learn the time-feature interactions.",
+          "title": "Inductive Representation Learning on Temporal Graphs",
+          "url": "https://arxiv.org/pdf/2002.07962"
+        }
+      ],
+      "task_id": "T-2"
+    },
+    {
+      "card_id": "card_f3114ca5ef189c024aff2fda",
+      "cited_by_paper": null,
+      "confidence": 0.85,
+      "differences": [
+        "Uses memory modules and graph-based operators rather than graph summarization to compress the graph",
+        "Does not use a graph autoencoder for node representation learning",
+        "Does not explicitly use a recurrent neural network for temporal dependency modeling",
+        "Does not target large-scale graph compression via summarization"
+      ],
+      "document_title": "Temporal Graph Networks for Deep Learning on Dynamic Graphs",
+      "evidence_ids": [
+        "ev_8697882a92afb066cec1689f"
+      ],
+      "main_contribution": "Temporal Graph Networks (TGNs) is a generic, efficient framework for deep learning on dynamic graphs represented as sequences of timed events, combining memory modules and graph-based operators to capture temporal dependencies.",
+      "novelty_point_id": "NP-1",
+      "overlaps": [
+        "Models dynamic graphs as sequences (of timed events), similar to GSAERU's modeling of dynamic graphs as sequences of snapshots",
+        "Focuses on dynamic/temporal graph representation learning",
+        "Aims to be computationally efficient for dynamic graph learning"
+      ],
+      "possible_baseline": true,
+      "relevance": 0.7,
+      "sources": [
+        {
+          "doi": null,
+          "location": "artifact art_ea01d9c5f48ad68092a07bf7 chars:520-671",
+          "quote": "we present Temporal Graph Networks (TGNs), a generic, efficient framework for deep learning on dynamic graphs represented as sequences of timed events.",
+          "title": "Temporal Graph Networks for Deep Learning on Dynamic Graphs",
+          "url": "https://arxiv.org/pdf/2006.10637"
+        }
+      ],
+      "task_id": "T-2"
+    }
+  ],
+  "issues": [],
+  "novelty_reviews": [
+    {
+      "confidence": 0.75,
+      "highly_relevant_works": [
+        {
+          "card_ids": [
+            "card_f3114ca5ef189c024aff2fda"
+          ],
+          "evidence_ids": [
+            "ev_8697882a92afb066cec1689f"
+          ],
+          "relevance_reason": "TGN 将动态图建模为事件序列，与查新点'将动态时序图建模为快照序列'的建模方式最接近，是破坏新颖性风险最高的对比基线；但未采用图摘要压缩、图自编码器与 RNN。",
+          "work_id": "wrk_712252459ef2697739d75d40"
+        },
+        {
+          "card_ids": [
+            "card_da4eec814d7a76c6cac45f56"
+          ],
+          "evidence_ids": [
+            "ev_019615c83ee0259c172e5e12"
+          ],
+          "relevance_reason": "TGAT 面向时序图表示学习并捕捉时间特征交互，与查新点的时序依赖学习目标对齐；但用自注意力机制而非图摘要+自编码器+RNN 组合。",
+          "work_id": "wrk_b6b76b1dae1837f54a226290"
+        }
+      ],
+      "novelty_point_id": "NP-1",
+      "status": "reviewed",
+      "supplement_request": {
+        "missing_aspects": [
+          "中文文献中对'图摘要+图自编码器+RNN'组合式时序图表示学习方案的检索证据"
+        ],
+        "reason": "中文检索 T-1 未返回任何证据卡，且当前仅有三条英文证据，难以完全排除中文文献中可能披露相似组合式方案的情况。",
+        "suggested_focus": [
+          "补检中文文献，聚焦 graph summarization + graph autoencoder + recurrent neural network 用于动态/时序图表示学习的组合方案"
+        ]
+      },
+      "verdict": "novel",
+      "verdict_reason": "查新点主张的是「图摘要压缩 → 图自编码器(以与原图重构误差训练节点表征) → RNN 时间依赖」这一四要素组合。现有证据(AGL/TGAT/TGN)均只分别命中某一侧面：AGL 仅回应大规模图降耗动机（用 k-hop 而非图摘要、无自编码器、无时序建模、无 RNN）；TGAT 仅回应时序图表示学习目标（用自注意力而非图摘要+自编码器+RNN）；TGN 虽有'动态图建模为序列'的近似建模，但用记忆模块+图算子而非图摘要压缩，未用图自编码器，未显式用 RNN。没有任何一篇披露该组合式方案，故查新点具备新颖性。"
+    },
+    {
+      "confidence": null,
+      "highly_relevant_works": [],
+      "novelty_point_id": "NP-2",
+      "status": "insufficient_evidence",
+      "supplement_request": {
+        "missing_aspects": [],
+        "reason": "当前查新点没有可供可靠判定的已绑定证据。",
+        "suggested_focus": []
+      },
+      "verdict": null,
+      "verdict_reason": null
+    },
+    {
+      "confidence": null,
+      "highly_relevant_works": [],
+      "novelty_point_id": "NP-3",
+      "status": "insufficient_evidence",
+      "supplement_request": {
+        "missing_aspects": [],
+        "reason": "当前查新点没有可供可靠判定的已绑定证据。",
+        "suggested_focus": []
+      },
+      "verdict": null,
+      "verdict_reason": null
+    }
+  ],
+  "rejected_evidence": [],
+  "review_decisions": []
+}

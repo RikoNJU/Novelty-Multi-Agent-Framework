@@ -1,0 +1,142 @@
+{
+  "current_point": {
+    "claim": "提出基于图摘要的分布式图神经网络优化训练算法 DSGNN，采用“领导者-工作者”模式，通过基于边分割的图流划分算法划分大规模图数据，工作节点执行基于图摘要的小批量训练，并通过注意力层将训练结果返回领导节点，最终由领导节点汇总计算梯度并同步更新所有计算节点模型，从而加速大规模图上的 GNN 训练并提升链路预测性能。",
+    "claim_en": "Propose DSGNN, a distributed graph neural network optimization training algorithm based on graph summarization, which adopts leader-worker mode, partitions large-scale graph data using an edge-based graph stream partitioning algorithm, workers perform mini-batch training based on graph summarization and return results through an attention layer, and the leader aggregates results, computes gradients, and synchronously updates models on all computing nodes, thereby accelerating GNN training on large-scale graphs and improving link prediction performance.",
+    "point_id": "NP-2",
+    "source_locations": [
+      "论文摘要及正文中关于DSGNN模型描述部分"
+    ],
+    "technical_features": [
+      "采用“领导者-工作者”分布式训练模式",
+      "领导节点使用基于边分割的图流划分算法对原图进行划分并分配给工作节点",
+      "工作节点执行基于图摘要技术的小批量训练",
+      "训练结果通过注意力层返回给领导节点",
+      "领导节点汇总结果并计算梯度，同步更新所有计算节点的模型"
+    ],
+    "technical_features_en": [
+      "Adopt leader-worker distributed training mode",
+      "Leader partitions the original graph using an edge-based graph stream partitioning algorithm and assigns subgraphs to workers",
+      "Workers perform mini-batch training based on graph summarization technology",
+      "Training results are returned to the leader through an attention layer",
+      "Leader aggregates results, computes gradients, and synchronously updates models on all computing nodes"
+    ]
+  },
+  "current_search_plan": {
+    "concepts": [
+      {
+        "alias": [
+          "分布式图神经网络",
+          "分布式GNN"
+        ],
+        "concept_id": "C1",
+        "exclude": [],
+        "importance": 3,
+        "name": "分布式图神经网络训练",
+        "role": "object",
+        "terms": [
+          "分布式图神经网络训练",
+          "分布式GNN训练"
+        ]
+      },
+      {
+        "alias": [
+          "图概括",
+          "图流分割"
+        ],
+        "concept_id": "C2",
+        "exclude": [],
+        "importance": 3,
+        "name": "图摘要",
+        "role": "method",
+        "terms": [
+          "图摘要",
+          "图流划分"
+        ]
+      },
+      {
+        "alias": [
+          "主从模式",
+          "注意力机制"
+        ],
+        "concept_id": "C3",
+        "exclude": [],
+        "importance": 2,
+        "name": "领导者-工作者模式",
+        "role": "feature",
+        "terms": [
+          "领导者-工作者模式",
+          "注意力层"
+        ]
+      },
+      {
+        "alias": [
+          "大图",
+          "链接预测"
+        ],
+        "concept_id": "C4",
+        "exclude": [],
+        "importance": 1,
+        "name": "大规模图",
+        "role": "setting",
+        "terms": [
+          "大规模图",
+          "链路预测"
+        ]
+      },
+      {
+        "alias": [
+          "GNN",
+          "图深度学习"
+        ],
+        "concept_id": "C5",
+        "exclude": [
+          "分布式"
+        ],
+        "importance": 1,
+        "name": "图神经网络",
+        "role": "escape",
+        "terms": [
+          "图神经网络"
+        ]
+      }
+    ],
+    "novelty_point_id": "NP-2",
+    "strategies": [
+      {
+        "description": "分布式图神经网络训练 AND 图摘要",
+        "expression": "C1 AND C2",
+        "level": "strict",
+        "strategy_id": "S1",
+        "use_alias": false,
+        "use_exclude": true
+      },
+      {
+        "description": "分布式图神经网络训练 AND 图摘要",
+        "expression": "C1 AND C2",
+        "level": "medium",
+        "strategy_id": "S2",
+        "use_alias": true,
+        "use_exclude": true
+      },
+      {
+        "description": "分布式图神经网络训练 OR 图摘要 OR 领导者-工作者模式 OR 大规模图",
+        "expression": "C1 OR C2 OR C3 OR C4",
+        "level": "broad",
+        "strategy_id": "S3",
+        "use_alias": true,
+        "use_exclude": true
+      }
+    ],
+    "task_id": "T-1"
+  },
+  "current_task": {
+    "attempt": 1,
+    "description": "针对该查新点执行中文文献检索。",
+    "language": "zh",
+    "novelty_point_id": "NP-2",
+    "task_id": "T-1",
+    "task_type": "literature_search"
+  },
+  "run_id": "run-cb9a3ecc9c4a4a57896cf12fa7b62706",
+  "subject_paper_id": "MF2033k6lC"
+}
