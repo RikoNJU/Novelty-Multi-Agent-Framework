@@ -7,13 +7,11 @@
 from __future__ import annotations
 
 import re
-import threading
-import time
+import time  # compatibility: tests patch the shared stdlib clock through this module
 import xml.etree.ElementTree as ET
 from collections.abc import Mapping, Sequence
 from typing import Any
 from html.parser import HTMLParser
-from urllib.parse import urlencode
 
 import httpx
 import pymupdf
@@ -27,8 +25,17 @@ from ....schemas import (
 )
 from ..adapter import QueryAdapter, QueryAdapterError
 from ..retrieval_sources import RetrievalSource
+from .arxiv_scheduler import (
+    ARXIV_QUERY_URL,
+    ArxivCircuitOpenError,
+    ArxivRequestScheduler,
+    ArxivResponseParseError,
+    ArxivRetryBudgetExceeded,
+    get_shared_arxiv_scheduler,
+    reset_shared_arxiv_scheduler,
+    retry_delay as _retry_delay,
+)
 
-ARXIV_QUERY_URL = "https://export.arxiv.org/api/query"
 ARXIV_ABS_URL = "https://arxiv.org/abs/"
 ARXIV_HTML_URL = "https://arxiv.org/html/"
 ARXIV_PDF_URL = "https://arxiv.org/pdf/"
@@ -37,54 +44,8 @@ ATOM_NS = "{http://www.w3.org/2005/Atom}"
 ARXIV_NS = "{http://arxiv.org/schemas/atom}"
 
 _VERSION_RE = re.compile(r"v\d+$")
-
-# arXiv 按来源 IP 限流（约每 3 秒一次请求）。工作流、bootstrap CLI 以及多来源
-# 会各自构建 ArxivSearchTool 实例；若各自计时，叠加速率就会超限并触发 429，
-# 因此节流状态放到模块级共享。
-_THROTTLE_LOCK = threading.Lock()
+# Deprecated compatibility sentinel; scheduling state now lives in the scheduler.
 _LAST_REQUEST_AT = 0.0
-
-# arXiv HTTP single-flight gate。锁的持有范围不是单次 ``client.get``，而是
-# 一次 provider execution 的完整生命周期：检查 circuit、等待限速、HTTP、
-# retry/backoff，直到返回或最终失败。这样 ResearchTask 仍可并行执行，但任意
-# 时刻全进程最多只有一个 arXiv search request 在途，且另一条 execution 不会
-# 插入前一条 execution 的 retry 链。
-_REQUEST_GATE = threading.Lock()
-
-# 429 是限流（重试即可），5xx 是服务端瞬时故障；其余 4xx 是请求本身有问题。
-_RETRYABLE_STATUS = frozenset({429, 500, 502, 503, 504})
-_RETRYABLE_TRANSPORT_ERRORS = (
-    httpx.ReadTimeout,
-    httpx.ConnectTimeout,
-    httpx.ConnectError,
-)
-
-
-class ArxivCircuitOpenError(RuntimeError):
-    """Raised without I/O while the arXiv source circuit is open."""
-
-
-class ArxivRetryBudgetExceeded(httpx.TimeoutException):
-    """Raised when retry/throttle waits consume the per-execution budget."""
-
-
-def _is_retryable(status_code: int) -> bool:
-    return status_code in _RETRYABLE_STATUS
-
-
-def _retry_delay(
-    response: httpx.Response,
-    attempt: int,
-    *,
-    max_delay: float,
-) -> float:
-    """优先遵守 Retry-After，否则指数退避（2s、4s、8s…），并设上限。"""
-
-    header = (response.headers.get("Retry-After") or "").strip()
-    if header.isdigit():
-        return min(float(header), max_delay)
-    return min(2.0 * (2**attempt), max_delay)
-
 
 class ArxivQueryAdapter(QueryAdapter):
     """把通用检索 Concept 编译为 arXiv ``all:`` 查询。"""
@@ -232,7 +193,7 @@ def parse_entry(entry: ET.Element) -> SearchHit:
 
 
 class ArxivSearchTool(SearchTool):
-    """arXiv 检索：限流、有界重试，以及最小线程安全熔断器。"""
+    """arXiv 检索；所有 export API I/O 委托给进程级 scheduler。"""
 
     source_id = "arxiv"
 
@@ -241,13 +202,18 @@ class ArxivSearchTool(SearchTool):
         *,
         client: httpx.Client | None = None,
         base_url: str = ARXIV_QUERY_URL,
-        min_interval: float = 3.0,
+        min_interval: float = 4.0,
         timeout: float = 20.0,
         max_retries: int = 2,
         max_retry_delay: float = 5.0,
         retry_budget_seconds: float = 45.0,
         circuit_failure_threshold: int = 2,
         circuit_cooldown_seconds: float = 60.0,
+        scheduler: ArxivRequestScheduler | None = None,
+        scheduler_enabled: bool = True,
+        metadata_batch_enabled: bool = True,
+        metadata_batch_window_ms: int = 200,
+        metadata_batch_max_size: int = 32,
     ) -> None:
         if timeout <= 0:
             raise ValueError("timeout must be positive")
@@ -257,7 +223,6 @@ class ArxivSearchTool(SearchTool):
             raise ValueError("retry_budget_seconds must be positive")
         if circuit_failure_threshold < 1 or circuit_cooldown_seconds < 0:
             raise ValueError("circuit breaker values are invalid")
-        self._client = client or httpx.Client(timeout=timeout, follow_redirects=True)
         self._base_url = base_url
         self._min_interval = min_interval
         self._timeout = timeout
@@ -266,15 +231,28 @@ class ArxivSearchTool(SearchTool):
         self._retry_budget_seconds = retry_budget_seconds
         self._circuit_failure_threshold = circuit_failure_threshold
         self._circuit_cooldown_seconds = circuit_cooldown_seconds
-        self._circuit_lock = threading.Lock()
-        self._consecutive_failures = 0
-        self._circuit_open_until = 0.0
-        self._probe_in_flight = False
+        self._scheduler = scheduler or get_shared_arxiv_scheduler(
+            client=client,
+            base_url=base_url,
+            min_interval=min_interval,
+            timeout=timeout,
+            max_retries=max_retries,
+            max_retry_delay=max_retry_delay,
+            retry_budget_seconds=retry_budget_seconds,
+            circuit_failure_threshold=circuit_failure_threshold,
+            circuit_cooldown_seconds=circuit_cooldown_seconds,
+            scheduler_enabled=scheduler_enabled,
+            metadata_batch_enabled=metadata_batch_enabled,
+            metadata_batch_window_ms=metadata_batch_window_ms,
+            metadata_batch_max_size=metadata_batch_max_size,
+        )
 
     def search(self, query: str, *, limit: int = 10) -> Sequence[SearchHit]:
-        params = urlencode({"search_query": query, "start": 0, "max_results": limit})
-        response = self._get(f"{self._base_url}?{params}")
-        root = ET.fromstring(response.text)
+        response = self._scheduler.search(query, limit=limit)
+        try:
+            root = ET.fromstring(response.text)
+        except ET.ParseError as exc:
+            raise ArxivResponseParseError("invalid arXiv Atom response") from exc
         return [parse_entry(entry) for entry in root.findall(f"{ATOM_NS}entry")]
 
     def resolve_identifier(self, identifier: ExternalIdentifier) -> SearchHit | None:
@@ -304,122 +282,8 @@ class ArxivSearchTool(SearchTool):
         escaped = _escape_query_term(citation.title)
         return self.search(f'ti:"{escaped}"', limit=limit)
 
-    def _throttle(self, *, deadline: float) -> bool:
-        """全进程共享的节流：多个 ArxivSearchTool 实例（工作流、bootstrap、
-        多来源）不再各自计时，否则叠加起来的请求速率会超过 arXiv 的单实例限制。
-
-        返回 ``False`` 表示等待到 deadline 也无法取得请求时隙。
-        """
-
-        global _LAST_REQUEST_AT
-        with _THROTTLE_LOCK:
-            elapsed = time.monotonic() - _LAST_REQUEST_AT
-            if elapsed < self._min_interval:
-                delay = self._min_interval - elapsed
-                remaining = deadline - time.monotonic()
-                if remaining <= 0:
-                    return False
-                if delay >= remaining:
-                    time.sleep(remaining)
-                    return False
-                time.sleep(delay)
-            _LAST_REQUEST_AT = time.monotonic()
-            return True
-
-    def _acquire_circuit_permission(self) -> bool:
-        """Return whether this call is the single half-open probe."""
-
-        now = time.monotonic()
-        with self._circuit_lock:
-            if self._circuit_open_until <= 0:
-                return False
-            if now < self._circuit_open_until or self._probe_in_flight:
-                raise ArxivCircuitOpenError(
-                    "arxiv circuit is open after consecutive provider failures"
-                )
-            self._probe_in_flight = True
-            return True
-
-    def _record_success(self) -> None:
-        with self._circuit_lock:
-            self._consecutive_failures = 0
-            self._circuit_open_until = 0.0
-            self._probe_in_flight = False
-
-    def _record_retryable_failure(self, *, was_probe: bool) -> None:
-        now = time.monotonic()
-        with self._circuit_lock:
-            self._probe_in_flight = False
-            self._consecutive_failures += 1
-            if (
-                was_probe
-                or self._consecutive_failures >= self._circuit_failure_threshold
-            ):
-                self._circuit_open_until = now + self._circuit_cooldown_seconds
-
-    def _raise_retryable(self, error: Exception, *, was_probe: bool) -> None:
-        self._record_retryable_failure(was_probe=was_probe)
-        raise error
-
-    @staticmethod
-    def _budget_error(url: str) -> ArxivRetryBudgetExceeded:
-        return ArxivRetryBudgetExceeded(
-            "arxiv retry budget exhausted",
-            request=httpx.Request("GET", url),
-        )
-
     def _get(self, url: str) -> httpx.Response:
-        with _REQUEST_GATE:
-            was_probe = self._acquire_circuit_permission()
-            deadline = time.monotonic() + self._retry_budget_seconds
-            last_retryable: Exception | None = None
-            # 每次尝试都重新节流：重试不能绕过速率限制，否则退避反而加剧限流。
-            for attempt in range(self._max_retries + 1):
-                if not self._throttle(deadline=deadline):
-                    self._raise_retryable(
-                        last_retryable or self._budget_error(url),
-                        was_probe=was_probe,
-                    )
-                remaining = deadline - time.monotonic()
-                if remaining <= 0:
-                    self._raise_retryable(
-                        last_retryable or self._budget_error(url),
-                        was_probe=was_probe,
-                    )
-                try:
-                    response = self._client.get(
-                        url,
-                        timeout=min(self._timeout, remaining),
-                    )
-                    response.raise_for_status()
-                    self._record_success()
-                    return response
-                except httpx.HTTPStatusError as exc:
-                    if not _is_retryable(response.status_code):
-                        self._record_success()
-                        raise
-                    last_retryable = exc
-                except _RETRYABLE_TRANSPORT_ERRORS as exc:
-                    last_retryable = exc
-
-                if attempt >= self._max_retries:
-                    self._raise_retryable(last_retryable, was_probe=was_probe)
-                remaining = deadline - time.monotonic()
-                delay = (
-                    _retry_delay(
-                        response,
-                        attempt,
-                        max_delay=self._max_retry_delay,
-                    )
-                    if isinstance(last_retryable, httpx.HTTPStatusError)
-                    else min(2.0 * (2**attempt), self._max_retry_delay)
-                )
-                if remaining <= 0 or delay >= remaining:
-                    if remaining > 0:
-                        time.sleep(remaining)
-                    self._raise_retryable(last_retryable, was_probe=was_probe)
-                time.sleep(delay)
-        raise AssertionError("unreachable")
+        return self._scheduler.request_url(url)
 
 
 class _HTMLTextExtractor(HTMLParser):
@@ -526,10 +390,9 @@ class ArxivFullTextTool(FullTextTool):
 
     def _try_get(self, url: str) -> httpx.Response | None:
         try:
-            with _REQUEST_GATE:
-                response = self._client.get(url)
-                response.raise_for_status()
-                return response
+            response = self._client.get(url)
+            response.raise_for_status()
+            return response
         except httpx.HTTPError:
             return None
 
@@ -553,9 +416,12 @@ class ArxivMetadataTool(MetadataTool):
         client: httpx.Client | None = None,
         base_url: str = ARXIV_QUERY_URL,
         timeout: float = 20.0,
+        scheduler: ArxivRequestScheduler | None = None,
+        **scheduler_options: Any,
     ) -> None:
-        self._client = client or httpx.Client(timeout=timeout, follow_redirects=True)
-        self._base_url = base_url
+        self._scheduler = scheduler or get_shared_arxiv_scheduler(
+            client=client, base_url=base_url, timeout=timeout, **scheduler_options
+        )
         self._cache: dict[str, EvidenceSource | None] = {}
 
     def resolve(self, document_id: str) -> EvidenceSource | None:
@@ -567,22 +433,14 @@ class ArxivMetadataTool(MetadataTool):
         return result
 
     def _resolve_live(self, doc_id: str) -> EvidenceSource | None:
-        try:
-            with _REQUEST_GATE:
-                response = self._client.get(
-                    f"{self._base_url}?id_list={doc_id}&max_results=1"
-                )
-                response.raise_for_status()
-        except httpx.HTTPError:
+        entry_xml = self._scheduler.resolve_metadata(doc_id)
+        if entry_xml is None:
             return None
         try:
-            root = ET.fromstring(response.text)
-            entries = root.findall(f"{ATOM_NS}entry")
-        except ET.ParseError:
-            return None
-        if not entries:
-            return None
-        hit = parse_entry(entries[0])
+            entry = ET.fromstring(entry_xml)
+        except ET.ParseError as exc:
+            raise ArxivResponseParseError("invalid arXiv Atom entry") from exc
+        hit = parse_entry(entry)
         return EvidenceSource(title=hit.title, doi=hit.doi, url=hit.url)
 
 
@@ -597,12 +455,25 @@ def build_arxiv_source(config: Mapping[str, Any]) -> RetrievalSource:
             query_adapter=ArxivQueryAdapter(render_v2=render_v2),
         )
     timeout_seconds = float(config["timeout_seconds"])
-    client = httpx.Client(timeout=timeout_seconds, follow_redirects=True)
+    scheduler = get_shared_arxiv_scheduler(
+        min_interval=float(config.get("api_min_interval_seconds", config["min_interval_seconds"])),
+        max_retries=int(config["max_retries"]),
+        timeout=timeout_seconds,
+        max_retry_delay=float(config.get("max_retry_delay_seconds", 5.0)),
+        retry_budget_seconds=float(config.get("retry_budget_seconds", 45.0)),
+        circuit_failure_threshold=int(config.get("circuit_failure_threshold", 2)),
+        circuit_cooldown_seconds=float(config.get("circuit_cooldown_seconds", 60.0)),
+        scheduler_enabled=bool(config.get("scheduler_enabled", True)),
+        metadata_batch_enabled=bool(config.get("metadata_batch_enabled", True)),
+        metadata_batch_window_ms=int(config.get("metadata_batch_window_ms", 200)),
+        metadata_batch_max_size=int(config.get("metadata_batch_max_size", 32)),
+    )
+    full_text_client = httpx.Client(timeout=timeout_seconds, follow_redirects=True)
     return RetrievalSource(
         source_id="arxiv",
         query_adapter=ArxivQueryAdapter(render_v2=render_v2),
         search_tool=ArxivSearchTool(
-            client=client,
+            scheduler=scheduler,
             min_interval=float(config["min_interval_seconds"]),
             max_retries=int(config["max_retries"]),
             timeout=timeout_seconds,
@@ -616,7 +487,7 @@ def build_arxiv_source(config: Mapping[str, Any]) -> RetrievalSource:
             ),
         ),
         full_text_tool=ArxivFullTextTool(
-            client=client, max_chars=int(config["full_text_max_chars"])
+            client=full_text_client, max_chars=int(config["full_text_max_chars"])
         ),
-        metadata_tool=ArxivMetadataTool(client=client),
+        metadata_tool=ArxivMetadataTool(scheduler=scheduler),
     )

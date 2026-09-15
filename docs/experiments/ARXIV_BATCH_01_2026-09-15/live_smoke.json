@@ -1,0 +1,181 @@
+{
+  "check": "ARXIV-BATCH-01",
+  "provider_access": "FAIL",
+  "execution_order": [
+    "A",
+    "B",
+    "D",
+    "C"
+  ],
+  "cases": [
+    {
+      "case": "A",
+      "purpose": "known_arxiv_id",
+      "query": "1706.03762",
+      "request_parameter": "id_list",
+      "http_status": 429,
+      "http_200": false,
+      "atom_parsed": false,
+      "entry_count": null,
+      "expected_match": null,
+      "classification": "HTTP_NON_200",
+      "error_type": "HTTPStatusError",
+      "error": "Client error '429 Unknown Error' for url 'https://export.arxiv.org/api/query?id_list=1706.03762&max_results=1'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429"
+    },
+    {
+      "case": "B",
+      "purpose": "exact_english_title",
+      "classification": "SKIPPED_UPSTREAM_GATE"
+    },
+    {
+      "case": "D",
+      "purpose": "metadata_batch",
+      "classification": "SKIPPED_UPSTREAM_GATE"
+    },
+    {
+      "case": "C",
+      "purpose": "run_d_structured_query",
+      "classification": "SKIPPED_UPSTREAM_GATE"
+    }
+  ],
+  "scheduler_metrics": {
+    "logical_api_requests": 1,
+    "physical_api_requests": 2,
+    "metadata_logical_requests": 0,
+    "metadata_physical_requests": 2,
+    "unique_metadata_ids": 2,
+    "batch_count": 2,
+    "dedup_count": 0,
+    "http_200_count": 0,
+    "http_429_count": 2,
+    "read_timeout_count": 0,
+    "retry_count": 1,
+    "queue_wait_ms": 18390.060013001857,
+    "api_elapsed_ms": 16675.28303399922,
+    "interval_violation_count": 0,
+    "average_batch_size": 1.0,
+    "max_batch_size": 1,
+    "request_compression_ratio": 0.5,
+    "metadata_batch_ratio": 0.0,
+    "total_arxiv_elapsed_ms": 18676.087576999635,
+    "events": [
+      {
+        "event_type": "logical_request",
+        "provider": "arxiv",
+        "operation": "metadata_batch",
+        "logical_request_id": "ebd095ba48794fa2b86b14ecabe67ed3",
+        "task_id": null
+      },
+      {
+        "event_type": "physical_request",
+        "provider": "arxiv",
+        "physical_request_id": "a5a9fbef36474424bc19d6befdf37288",
+        "operation": "metadata_batch",
+        "batch_id": "a5a9fbef36474424bc19d6befdf37288",
+        "logical_request_ids": [
+          "ebd095ba48794fa2b86b14ecabe67ed3"
+        ],
+        "logical_request_count": 1,
+        "unique_id_count": 1,
+        "queue_wait_ms": 0.019,
+        "batch_wait_ms": 0.0,
+        "dispatch_at": "2026-09-15T08:22:37.906168+00:00",
+        "previous_request_interval_ms": null,
+        "attempt": 1,
+        "status_code": 429,
+        "retry_after": 2.0,
+        "backoff_ms": 2000.0,
+        "elapsed_ms": 16389.837,
+        "error_type": null,
+        "response_headers": {
+          "connection": "keep-alive",
+          "content-length": "14",
+          "server": "Google Frontend",
+          "via": "1.1 google, 1.1 varnish, 1.1 varnish, 1.1 varnish",
+          "accept-ranges": "bytes",
+          "x-cloud-trace-context": "ffbbaab67a7a99899ed3400ee7293019",
+          "content-type": "text/html",
+          "date": "Tue, 15 Sep 2026 08:22:54 GMT",
+          "x-served-by": "cache-lga21966-LGA, cache-lga21966-LGA, cache-lga21929-LGA, cache-bur-kbur8200039-BUR",
+          "x-cache": "MISS, MISS, MISS",
+          "x-cache-hits": "0, 0, 0",
+          "x-timer": "S1789460558.297971,VS0,VE15779",
+          "strict-transport-security": "max-age=300"
+        },
+        "response_body": "Rate exceeded."
+      },
+      {
+        "event_type": "physical_request",
+        "provider": "arxiv",
+        "physical_request_id": "902e2d7e8ac14ff1946a9e0df910cf4d",
+        "operation": "metadata_batch",
+        "batch_id": "902e2d7e8ac14ff1946a9e0df910cf4d",
+        "logical_request_ids": [
+          "ebd095ba48794fa2b86b14ecabe67ed3"
+        ],
+        "logical_request_count": 1,
+        "unique_id_count": 1,
+        "queue_wait_ms": 18390.041,
+        "batch_wait_ms": 0.0,
+        "dispatch_at": "2026-09-15T08:22:56.296241+00:00",
+        "previous_request_interval_ms": 18390.02131900088,
+        "attempt": 2,
+        "status_code": 429,
+        "retry_after": 4.0,
+        "backoff_ms": 4000.0,
+        "elapsed_ms": 285.446,
+        "error_type": null,
+        "response_headers": {
+          "connection": "keep-alive",
+          "content-length": "14",
+          "server": "Google Frontend",
+          "via": "1.1 google, 1.1 varnish, 1.1 varnish, 1.1 varnish",
+          "accept-ranges": "bytes",
+          "x-cloud-trace-context": "4421f29274120173af43ecc92f3bd68f",
+          "content-type": "text/html",
+          "date": "Tue, 15 Sep 2026 08:22:56 GMT",
+          "x-served-by": "cache-lga21985-LGA, cache-lga21985-LGA, cache-lga21929-LGA, cache-bur-kbur8200039-BUR",
+          "x-cache": "MISS, MISS, MISS",
+          "x-cache-hits": "0, 0, 0",
+          "x-timer": "S1789460576.221770,VS0,VE141",
+          "strict-transport-security": "max-age=300"
+        },
+        "response_body": "Rate exceeded."
+      }
+    ]
+  },
+  "attempt_history": [
+    {
+      "provider_access": "FAIL",
+      "cases": [
+        {
+          "case": "A",
+          "classification": "VALID_HIT",
+          "http_status": 200,
+          "error_type": null
+        },
+        {
+          "case": "B",
+          "classification": "PROVIDER_ACCESS_FAILURE",
+          "http_status": null,
+          "error_type": "ReadTimeout"
+        },
+        {
+          "case": "D",
+          "classification": "SKIPPED_UPSTREAM_GATE"
+        },
+        {
+          "case": "C",
+          "classification": "SKIPPED_UPSTREAM_GATE"
+        }
+      ],
+      "scheduler_metrics": {
+        "physical_api_requests": 3,
+        "http_200_count": 1,
+        "http_429_count": 1,
+        "read_timeout_count": 1,
+        "interval_violation_count": 0
+      }
+    }
+  ]
+}

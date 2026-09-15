@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import httpx
+import pytest
 
 from novelty_agent_framework.experiments.arxiv_rate_smoke import (
     DEFAULT_CASES,
@@ -8,6 +9,13 @@ from novelty_agent_framework.experiments.arxiv_rate_smoke import (
 )
 from novelty_agent_framework.tools.database_search.providers import arxiv as arxiv_module
 from novelty_agent_framework.tools.database_search.providers.arxiv import ArxivSearchTool
+
+
+@pytest.fixture(autouse=True)
+def _reset_scheduler():
+    arxiv_module.reset_shared_arxiv_scheduler()
+    yield
+    arxiv_module.reset_shared_arxiv_scheduler()
 
 
 def _feed(*, with_entry: bool = True) -> str:
