@@ -706,6 +706,21 @@ def persist_task_retrieval_audit(
 ) -> Path:
     """从任务结果聚合真实 SearchExecution，保留旧 retrieval-plans 文件。"""
 
+    _write_json(
+        paper_workspace(paper, output_root=output_root) / "candidate-audit.json",
+        {
+            "paper_id": paper.paper_id,
+            "tasks": [
+                {
+                    "novelty_point_id": result.novelty_point_id,
+                    "task_id": result.task_id,
+                    "status": result.status.value,
+                    "candidates": [item.model_dump(mode="json") for item in result.candidate_audit],
+                }
+                for result in results
+            ],
+        },
+    )
     executed_queries: list[dict[str, Any]] = []
     for result in results:
         for bundle in result.research_bundles:

@@ -58,6 +58,7 @@ class EvidenceCardBuilder:
         all_evidence: list[Evidence] = []
         cards: list[EvidenceCard] = []
         warnings: list[str] = []
+        rejections = []
         resolved_works: set[tuple[ArtifactNamespace, str]] = set()
 
         for position, card_draft in enumerate(draft.cards, start=1):
@@ -122,6 +123,7 @@ class EvidenceCardBuilder:
                 warnings.append(
                     f"dropped evidence card #{position}: {type(exc).__name__}: {exc}"
                 )
+                rejections.append({"card_index": position - 1, "reason": str(exc)})
                 continue
             resolved_works.add(work_address)
             all_evidence.extend(evidence)
@@ -131,6 +133,7 @@ class EvidenceCardBuilder:
             evidence=all_evidence,
             evidence_cards=cards,
             warnings=list(dict.fromkeys(warnings)),
+            rejections=rejections,
         )
 
     def _manifest_indexes(

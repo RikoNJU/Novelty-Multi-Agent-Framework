@@ -105,6 +105,23 @@ class ResearcherToolObservation(StrictModel):
     elapsed_ms: int = Field(default=0, ge=0)
 
 
+class CandidateAuditRecord(StrictModel):
+    """Observed candidate disposition, separate from trusted evidence."""
+
+    namespace: Literal["research_reference", "subject_reference"]
+    source_record_id: str | None = None
+    work_id: str | None = None
+    title: str | None = None
+    artifact_ids: list[str] = Field(default_factory=list)
+    read_ids: list[str] = Field(default_factory=list)
+    card_ids: list[str] = Field(default_factory=list)
+    status: Literal[
+        "not_read", "acquisition_unavailable", "read_without_card",
+        "read_task_interrupted", "card_produced",
+    ]
+    reason: NonEmptyStr
+
+
 class TaskResearchResult(StrictModel):
     task_id: NonEmptyStr
     novelty_point_id: NonEmptyStr
@@ -113,6 +130,7 @@ class TaskResearchResult(StrictModel):
     read_results: list[ReferenceReadResult] = Field(default_factory=list)
     evidence: list[Evidence] = Field(default_factory=list)
     evidence_cards: list[EvidenceCard] = Field(default_factory=list)
+    candidate_audit: list[CandidateAuditRecord] = Field(default_factory=list)
     warnings: list[str] = Field(default_factory=list)
     steps_used: int = Field(ge=0)
 

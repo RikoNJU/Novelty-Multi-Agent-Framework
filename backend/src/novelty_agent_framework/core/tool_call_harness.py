@@ -62,8 +62,13 @@ class ToolCallHarnessError(RuntimeError):
         self.trace = trace
 
 
+class ToolCallBudgetExhausted(ToolCallHarnessError):
+    """A budget boundary eligible for one tool-free finalization."""
+
+
 @dataclass(frozen=True)
 class ToolCallHarnessConfig:
+    finalize_on_budget: bool = False
     max_turns: int = 12
     max_tool_calls: int = 10
     per_tool_limits: dict[str, int] = field(default_factory=dict)
@@ -86,6 +91,7 @@ class ToolCallHarnessResult:
     trace: tuple[ToolCallHarnessEvent, ...]
     tool_calls_used: int
     turns_used: int
+    stop_reason: str | None = None
 
 
 class ToolCallHarness:
@@ -103,12 +109,69 @@ class ToolCallHarness:
         self.config = config or ToolCallHarnessConfig()
 
     async def run(
-        self,
-        *,
-        system_prompt: str,
-        initial_user_message: str,
-        scope: Any,
-        options: ModelCallOptions | None = None,
+        self, *, system_prompt: str, initial_user_message: str,
+        scope: Any, options: ModelCallOptions | None = None,
+    ) -> ToolCallHarnessResult:
+        try:
+            return await self._run(
+                system_prompt=system_prompt, initial_user_message=initial_user_message,
+                scope=scope, options=options,
+            )
+        except ToolCallBudgetExhausted as exc:
+            if not self.config.finalize_on_budget:
+                raise
+            return await self._finalize(system_prompt, exc, options)
+
+    async def _finalize(self, system_prompt, error, options):
+        # Complete any outstanding assistant/tool pair before appending a user turn.
+        log = list(error.trace)
+        pending = {}
+        for event in log:
+            message = event.message
+            if message is None:
+                continue
+            for call in message.tool_calls or ():
+                pending[call.id] = call
+            if message.role == "tool":
+                pending.pop(message.tool_call_id, None)
+        for call in pending.values():
+            log.append(ToolCallHarnessEvent(kind="tool_result", message=ChatMessage(
+                role="tool", tool_call_id=call.id,
+                content=json.dumps({"succeeded": False, "error": str(error)}),
+            )))
+        log.append(ToolCallHarnessEvent(kind="initial_user_message", message=ChatMessage(
+            role="user", content=(
+                f"Research stopped: {error}. No further tool calls are allowed. "
+                "This is the single reserved finalization turn. Return the required "
+                "final JSON using only observations already received. Preserve exact "
+                "Reader quotes, including mathematical markup. If no text supports "
+                "evidence, return cards=[] with a concrete no_evidence_reason."
+            ),
+        )))
+        try:
+            response = await self.model_client.acomplete(
+                _build_context(system_prompt, tuple(log)),
+                options=replace(options or ModelCallOptions(), tools=(), tool_choice="none"),
+            )
+            if response.tool_calls:
+                raise ValueError("finalization attempted a tool call")
+        except Exception as exc:
+            _append_error(log, f"budget finalization failed: {type(exc).__name__}: {exc}")
+            raise ToolCallHarnessError("budget finalization failed", trace=tuple(log)) from exc
+        log.append(ToolCallHarnessEvent(kind="assistant_response", message=ChatMessage(
+            role="assistant", content=response.content,
+        )))
+        log.append(ToolCallHarnessEvent(kind="finish", detail="budget finalization"))
+        return ToolCallHarnessResult(
+            final_content=response.content, trace=tuple(log),
+            tool_calls_used=sum(e.kind == "tool_call" for e in log),
+            turns_used=sum(e.kind == "assistant_response" for e in log),
+            stop_reason=str(error),
+        )
+
+    async def _run(
+        self, *, system_prompt: str, initial_user_message: str,
+        scope: Any, options: ModelCallOptions | None = None,
     ) -> ToolCallHarnessResult:
         log: list[ToolCallHarnessEvent] = [
             ToolCallHarnessEvent(
@@ -125,6 +188,16 @@ class ToolCallHarness:
 
         for turn in range(1, self.config.max_turns + 1):
             context = _build_context(system_prompt, tuple(log))
+            if self.config.finalize_on_budget:
+                context[0] = replace(context[0], content=context[0].content + "\nBudget context: " + json.dumps({
+                    "remaining_research_turns": self.config.max_turns - turn + 1,
+                    "remaining_tool_calls": self.config.max_tool_calls - tool_calls_used,
+                    "remaining_per_tool": {
+                        name: max(0, limit - per_tool_counts.get(name, 0))
+                        for name, limit in self.config.per_tool_limits.items()
+                    },
+                    "instruction": "Prioritize already discovered readable candidates; finish before budgets expire.",
+                }))
             try:
                 response = await self.model_client.acomplete(
                     context, options=call_options
@@ -225,7 +298,7 @@ class ToolCallHarness:
                         error={"type": "HarnessPolicyError", "message": detail},
                         failure_phase="PRE_TOOL",
                     )
-                raise ToolCallHarnessError(detail, trace=tuple(log))
+                raise ToolCallBudgetExhausted(detail, trace=tuple(log))
 
             if required_reader_artifact_ids:
                 requested_artifact = tool_call.arguments.get("artifact_id")
@@ -289,7 +362,7 @@ class ToolCallHarness:
                         error={"type": "HarnessPolicyError", "message": detail},
                         failure_phase="PRE_TOOL",
                     )
-                raise ToolCallHarnessError(detail, trace=tuple(log))
+                raise ToolCallBudgetExhausted(detail, trace=tuple(log))
             if (
                 tool_call.name == "reader"
                 and validated_arguments is not None
@@ -309,7 +382,7 @@ class ToolCallHarness:
                             error={"type": "HarnessPolicyError", "message": detail},
                             failure_phase="PRE_TOOL",
                         )
-                    raise ToolCallHarnessError(detail, trace=tuple(log))
+                    raise ToolCallBudgetExhausted(detail, trace=tuple(log))
             log.append(
                 ToolCallHarnessEvent(kind="tool_call", tool_call=tool_call)
             )
@@ -377,7 +450,7 @@ class ToolCallHarness:
                     ):
                         detail = "reader cumulative character budget exhausted"
                         _append_error(log, detail)
-                        raise ToolCallHarnessError(detail, trace=tuple(log))
+                        raise ToolCallBudgetExhausted(detail, trace=tuple(log))
             tool_message = ChatMessage(
                 role="tool",
                 tool_call_id=tool_call.id,
@@ -393,7 +466,7 @@ class ToolCallHarness:
             )
 
         _append_error(log, "turn budget exhausted")
-        raise ToolCallHarnessError("turn budget exhausted", trace=tuple(log))
+        raise ToolCallBudgetExhausted("turn budget exhausted", trace=tuple(log))
 
 
 def _build_tool_definitions(

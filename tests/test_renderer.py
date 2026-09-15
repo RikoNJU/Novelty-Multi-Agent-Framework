@@ -157,6 +157,29 @@ def test_markdown_renderer_reads_workspace_and_uses_default_paths(
     assert "{{" not in content
 
 
+def test_attachments_list_retrieved_candidates_and_card_sources(tmp_path: Path) -> None:
+    seed_workspace(tmp_path)
+    workspace = tmp_path / "renderer-paper"
+    references = workspace / "references" / "list.json"
+    references.parent.mkdir(parents=True, exist_ok=True)
+    references.write_text(json.dumps({"source_records": [
+        {"title": "AliGraph: A Comprehensive Graph Neural Network Platform",
+         "landing_url": "https://arxiv.org/abs/1902.08730",
+         "full_text_url": "https://arxiv.org/pdf/1902.08730"},
+        {"title": "AliGraph duplicate", "landing_url": "http://arxiv.org/abs/1902.08730"},
+        {"title": "Candidate without an evidence card", "landing_url": "https://doi.org/10.1/example"},
+        {"title": "Local artifact", "landing_url": "file:///tmp/private.txt"},
+    ]}), encoding="utf-8")
+    content = render_report(paper_name="renderer-paper", output_root=tmp_path).read_text()
+    attachments = content.split("### 检索到的文献", 1)[1]
+    expected = "AliGraph: A Comprehensive Graph Neural Network Platform：[https://arxiv.org/pdf/1902.08730](https://arxiv.org/pdf/1902.08730)"
+    assert expected in attachments
+    assert "AliGraph duplicate" not in attachments
+    assert "Candidate without an evidence card：[https://doi.org/10.1/example](https://doi.org/10.1/example)" in attachments
+    assert "Related Paper：[https://arxiv.org/pdf/1234.5678](https://arxiv.org/pdf/1234.5678)" in attachments
+    assert "file:///" not in attachments
+
+
 @pytest.mark.parametrize(
     ("status", "verdict", "expected"),
     [

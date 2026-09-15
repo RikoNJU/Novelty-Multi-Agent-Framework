@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import json
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 
-from backend.env import ModelCallOptions, ModelClient, PromptLibrary
+from backend.env import ChatMessage, ModelCallOptions, ModelClient, PromptLibrary
 from pydantic import ValidationError
 
 from ..core import ToolCallHarness, ToolCallHarnessConfig, ToolCallHarnessError
@@ -19,6 +19,7 @@ from ..schemas import (
 )
 from ..schemas import TaskResearchResult, TaskResearchStatus
 from ..tools import EvidenceCardBuilder, ResearcherToolRegistry
+from .candidate_audit import build_candidate_audit
 
 
 def _extract_finish_json(content: str | None) -> str:
@@ -87,6 +88,7 @@ class TaskResearcherWorkflow:
             model_client,
             tool_registry,
             config=ToolCallHarnessConfig(
+                finalize_on_budget=True,
                 max_turns=self.config.max_steps,
                 max_tool_calls=self.config.max_tool_calls,
                 per_tool_limits=dict(self.config.per_tool_limits),
@@ -95,6 +97,13 @@ class TaskResearcherWorkflow:
         )
 
     async def ainvoke(self, request: TaskResearchRequest) -> TaskResearchResult:
+        result, trace = await self._research(request)
+        return result.model_copy(update={"candidate_audit": build_candidate_audit(
+            trace, result.read_results, result.evidence, result.evidence_cards,
+            interrupted=result.status == TaskResearchStatus.PARTIAL,
+        )})
+
+    async def _research(self, request: TaskResearchRequest):
         request = TaskResearchRequest.model_validate(request)
         system_prompt, user_message = self._render_prompt(request)
         try:
@@ -117,12 +126,12 @@ class TaskResearcherWorkflow:
                     *bundle_warnings,
                 ],
                 steps=_turns_in_trace(exc.trace),
-            )
+            ), exc.trace
         except Exception as exc:
             return _partial(
                 request,
                 warnings=[f"native tool harness failed: {_safe_error(exc)}"],
-            )
+            ), ()
 
         reads, read_warnings = _trusted_reads(harness_result.trace)
         bundles, bundle_warnings = _trusted_bundles(harness_result.trace)
@@ -138,7 +147,7 @@ class TaskResearcherWorkflow:
                 warnings=[*read_warnings, *bundle_warnings,
                           f"invalid ResearchFinishDraft: {_safe_error(exc)}"],
                 steps=harness_result.turns_used,
-            )
+            ), harness_result.trace
 
         try:
             built = self.evidence_builder.build(
@@ -152,19 +161,67 @@ class TaskResearcherWorkflow:
                 warnings=[*read_warnings, *bundle_warnings,
                           f"evidence builder failed: {_safe_error(exc)}"],
                 steps=harness_result.turns_used,
-            )
+            ), harness_result.trace
 
+        correction_turns = 0
+        if built.rejections:
+            correction_turns = 1
+            built = await self._correct_rejected_cards(draft, built, reads, request)
+        stop_warnings = ([f"research stopped; finalization completed: {harness_result.stop_reason}"]
+                         if harness_result.stop_reason else [])
         return TaskResearchResult(
             task_id=request.research_task.task_id,
             novelty_point_id=request.novelty_point.point_id,
-            status=TaskResearchStatus.COMPLETED,
+            status=(TaskResearchStatus.PARTIAL if harness_result.stop_reason else TaskResearchStatus.COMPLETED),
             read_results=reads,
             research_bundles=bundles,
             evidence=built.evidence,
             evidence_cards=built.evidence_cards,
-            warnings=[*read_warnings, *bundle_warnings, *built.warnings],
-            steps_used=harness_result.turns_used,
-        )
+            warnings=[*stop_warnings, *read_warnings, *bundle_warnings, *built.warnings],
+            steps_used=harness_result.turns_used + correction_turns,
+        ), harness_result.trace
+
+    async def _correct_rejected_cards(self, draft, built, reads, request):
+        payload = {
+            "novelty_point": _project_novelty_point(request.novelty_point),
+            "rejected_cards": [
+                {"card": draft.cards[item.card_index].model_dump(mode="json"), "error": item.reason}
+                for item in built.rejections
+            ],
+            "reader_texts": [read.text for read in reads],
+            "finish_schema": ResearchFinishDraft.model_json_schema(),
+        }
+        try:
+            response = await self.model_client.acomplete([
+                ChatMessage(role="system", content=(
+                    "Correct only the rejected evidence drafts. No tools are available. "
+                    "Copy quotes verbatim from reader_texts, preserving LaTeX and punctuation. "
+                    "Do not invent provenance IDs. Return ResearchFinishDraft JSON, or "
+                    "cards=[] and a no_evidence_reason if the drafts cannot be grounded."
+                )),
+                ChatMessage(role="user", content=json.dumps(payload, ensure_ascii=False)),
+            ], options=replace(self.config.model_options, tools=(), tool_choice="none"))
+            if response.tool_calls:
+                raise ValueError("quote correction attempted a tool call")
+            corrected = ResearchFinishDraft.model_validate_json(_extract_finish_json(response.content))
+            if len(corrected.cards) > len(built.rejections):
+                raise ValueError("correction returned more cards than rejected drafts")
+            repaired = self.evidence_builder.build(corrected, scope=request, read_results=reads)
+            existing = {card.card_id for card in built.evidence_cards}
+            new_cards = [card for card in repaired.evidence_cards if card.card_id not in existing]
+            needed_ids = {eid for card in new_cards for eid in card.evidence_ids}
+            evidence_by_id = {item.evidence_id: item for item in built.evidence}
+            evidence_by_id.update({item.evidence_id: item for item in repaired.evidence if item.evidence_id in needed_ids})
+            return built.model_copy(update={
+                "evidence": list(evidence_by_id.values()),
+                "evidence_cards": [*built.evidence_cards, *new_cards],
+                "warnings": [*built.warnings, *repaired.warnings,
+                             f"single quote correction recovered {len(new_cards)} card(s)"],
+            })
+        except Exception as exc:
+            return built.model_copy(update={"warnings": [
+                *built.warnings, f"single quote correction failed: {_safe_error(exc)}",
+            ]})
 
     def _render_prompt(self, request: TaskResearchRequest) -> tuple[str, str]:
         variables = {
@@ -183,12 +240,25 @@ class TaskResearcherWorkflow:
         }
         if self.prompts is not None:
             rendered = self.prompts.render(self.config.prompt_name, **variables)
-            return rendered.system, rendered.user
+            return rendered.system, rendered.user + "\n\n" + self._capability_note()
         return (
             "Use only registered tools. Finish with strict ResearchFinishDraft JSON. "
             "Never invent provenance handles.",
-            "\n".join(f"{key}: {value}" for key, value in variables.items()),
+            "\n".join(f"{key}: {value}" for key, value in variables.items()) + "\n" + self._capability_note(),
         )
+
+    def _capability_note(self):
+        names = self.tools.names
+        note = "Available tools: " + ", ".join(names) + ". "
+        if "browser" not in names:
+            note += (
+                "browser is unavailable. Web search is discovery only: do not attempt "
+                "browser or pass a source_record_id to reader. Read only actual artifact IDs "
+                "from available tools; prefer database/reference artifacts. Do not repeat "
+                "web searches when there is no acquisition path. Finish with available evidence "
+                "or explain the acquisition limitation."
+            )
+        return note
 
 
 def _trusted_reads(trace) -> tuple[list[ReferenceReadResult], list[str]]:

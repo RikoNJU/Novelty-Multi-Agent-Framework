@@ -196,6 +196,10 @@ def test_task_retrieval_audit_preserves_plans_and_adds_executions(tmp_path) -> N
     point = persisted["novelty_point_plans"][0]
     assert point["search_plans"][0]["task_id"] == "T1"
     assert point["executed_queries"][0]["query"] == "query one"
+    audit = json.loads((path.parent / "candidate-audit.json").read_text(encoding="utf-8"))
+    assert audit["tasks"] == [{
+        "novelty_point_id": "NP-1", "task_id": "T1", "status": "completed", "candidates": [],
+    }]
 
 
 def test_evidence_cards_keep_raw_accepted_and_rejected_results(tmp_path) -> None:

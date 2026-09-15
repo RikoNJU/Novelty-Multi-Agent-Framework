@@ -206,10 +206,16 @@ class EvidenceCardBuilderRequest(StrictModel):
     draft: ResearchFinishDraft
 
 
+class EvidenceCardBuildRejection(StrictModel):
+    card_index: int = Field(ge=0)
+    reason: NonEmptyStr
+
+
 class EvidenceCardBuilderResult(StrictModel):
     evidence: list[Evidence] = Field(default_factory=list)
     evidence_cards: list[EvidenceCard] = Field(default_factory=list)
     warnings: list[str] = Field(default_factory=list)
+    rejections: list[EvidenceCardBuildRejection] = Field(default_factory=list)
 
 
 # Deprecated name retained for import compatibility during schema migration.

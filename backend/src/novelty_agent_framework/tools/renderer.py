@@ -143,10 +143,16 @@ def _load_workspace_data(workspace: Path) -> dict[str, Any]:
     if missing:
         raise ReportRenderError("缺少报告输入产物：" + "；".join(missing))
     try:
-        return {
+        data = {
             name: json.loads(path.read_text(encoding="utf-8"))
             for name, path in required.items()
         }
+        references = workspace / "references" / "list.json"
+        data["references"] = (
+            json.loads(references.read_text(encoding="utf-8"))
+            if references.is_file() else {}
+        )
+        return data
     except (OSError, json.JSONDecodeError) as exc:
         raise ReportRenderError(f"读取报告输入产物失败：{exc}") from exc
 
@@ -206,7 +212,11 @@ def _build_markdown_context(
             report.get("conclusions", []), point_by_id
         ),
         "limitations": _format_list(report.get("limitations", [])),
-        "attachments": _format_attachments(report, rejected),
+        "attachments": _format_attachments(report, rejected)
+        + "\n\n### 检索到的文献\n\n"
+        + _format_retrieved_references(
+            data.get("references", {}), evidence.get("raw_evidence_cards", accepted)
+        ),
     }
 
 
@@ -350,6 +360,43 @@ def _format_attachments(report: Mapping[str, Any], rejected: list[Mapping[str, A
 
 def _format_list(items: list[Any]) -> str:
     return "\n".join(f"- {item}" for item in items) if items else "无。"
+
+
+def _format_retrieved_references(
+    manifest: Mapping[str, Any], cards: list[Mapping[str, Any]]
+) -> str:
+    """List discovered sources, including candidates without accepted evidence."""
+    candidates = [
+        (record.get("title"), record.get("full_text_url") or record.get("landing_url"))
+        for record in manifest.get("source_records", [])
+    ]
+    candidates.extend(
+        (card.get("document_title"), source.get("url") or (
+            "https://doi.org/" + source["doi"] if source.get("doi") else None
+        ))
+        for card in cards for source in card.get("sources", [])
+    )
+    rows = []
+    seen = set()
+    for title, url in candidates:
+        if not title or not url:
+            continue
+        parsed = urlparse(url)
+        if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+            continue
+        if parsed.hostname in {"arxiv.org", "www.arxiv.org", "export.arxiv.org"}:
+            match = re.fullmatch(r"/(?:abs|pdf)/(.+?)(?:\.pdf)?", parsed.path)
+            if match:
+                url = "https://arxiv.org/pdf/" + match.group(1)
+        if url in seen:
+            continue
+        seen.add(url)
+        # Keep titles and URLs on one line and preserve valid Markdown links.
+        title = re.sub(r"([\\`*_\[\]])", r"\\\1", " ".join(str(title).split()))
+        url = url.replace(" ", "%20").replace("(", "%28").replace(")", "%29")
+        url = url.replace("[", "%5B").replace("]", "%5D").replace("\n", "%0A").replace("\r", "%0D")
+        rows.append(f"- {title}：[{url}]({url})")
+    return "\n".join(rows) or "未记录带可用链接的检索文献。"
 
 
 def _evidence_sources(cards: list[Mapping[str, Any]]) -> list[str]:

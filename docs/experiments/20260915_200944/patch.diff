@@ -1,0 +1,609 @@
+diff --git a/backend/src/novelty_agent_framework/core/tool_call_harness.py b/backend/src/novelty_agent_framework/core/tool_call_harness.py
+index c2f9c15..2538c8d 100644
+--- a/backend/src/novelty_agent_framework/core/tool_call_harness.py
++++ b/backend/src/novelty_agent_framework/core/tool_call_harness.py
+@@ -62,8 +62,13 @@ class ToolCallHarnessError(RuntimeError):
+         self.trace = trace
+ 
+ 
++class ToolCallBudgetExhausted(ToolCallHarnessError):
++    """A budget boundary eligible for one tool-free finalization."""
++
++
+ @dataclass(frozen=True)
+ class ToolCallHarnessConfig:
++    finalize_on_budget: bool = False
+     max_turns: int = 12
+     max_tool_calls: int = 10
+     per_tool_limits: dict[str, int] = field(default_factory=dict)
+@@ -86,6 +91,7 @@ class ToolCallHarnessResult:
+     trace: tuple[ToolCallHarnessEvent, ...]
+     tool_calls_used: int
+     turns_used: int
++    stop_reason: str | None = None
+ 
+ 
+ class ToolCallHarness:
+@@ -103,12 +109,69 @@ class ToolCallHarness:
+         self.config = config or ToolCallHarnessConfig()
+ 
+     async def run(
+-        self,
+-        *,
+-        system_prompt: str,
+-        initial_user_message: str,
+-        scope: Any,
+-        options: ModelCallOptions | None = None,
++        self, *, system_prompt: str, initial_user_message: str,
++        scope: Any, options: ModelCallOptions | None = None,
++    ) -> ToolCallHarnessResult:
++        try:
++            return await self._run(
++                system_prompt=system_prompt, initial_user_message=initial_user_message,
++                scope=scope, options=options,
++            )
++        except ToolCallBudgetExhausted as exc:
++            if not self.config.finalize_on_budget:
++                raise
++            return await self._finalize(system_prompt, exc, options)
++
++    async def _finalize(self, system_prompt, error, options):
++        # Complete any outstanding assistant/tool pair before appending a user turn.
++        log = list(error.trace)
++        pending = {}
++        for event in log:
++            message = event.message
++            if message is None:
++                continue
++            for call in message.tool_calls or ():
++                pending[call.id] = call
++            if message.role == "tool":
++                pending.pop(message.tool_call_id, None)
++        for call in pending.values():
++            log.append(ToolCallHarnessEvent(kind="tool_result", message=ChatMessage(
++                role="tool", tool_call_id=call.id,
++                content=json.dumps({"succeeded": False, "error": str(error)}),
++            )))
++        log.append(ToolCallHarnessEvent(kind="initial_user_message", message=ChatMessage(
++            role="user", content=(
++                f"Research stopped: {error}. No further tool calls are allowed. "
++                "This is the single reserved finalization turn. Return the required "
++                "final JSON using only observations already received. Preserve exact "
++                "Reader quotes, including mathematical markup. If no text supports "
++                "evidence, return cards=[] with a concrete no_evidence_reason."
++            ),
++        )))
++        try:
++            response = await self.model_client.acomplete(
++                _build_context(system_prompt, tuple(log)),
++                options=replace(options or ModelCallOptions(), tools=(), tool_choice="none"),
++            )
++            if response.tool_calls:
++                raise ValueError("finalization attempted a tool call")
++        except Exception as exc:
++            _append_error(log, f"budget finalization failed: {type(exc).__name__}: {exc}")
++            raise ToolCallHarnessError("budget finalization failed", trace=tuple(log)) from exc
++        log.append(ToolCallHarnessEvent(kind="assistant_response", message=ChatMessage(
++            role="assistant", content=response.content,
++        )))
++        log.append(ToolCallHarnessEvent(kind="finish", detail="budget finalization"))
++        return ToolCallHarnessResult(
++            final_content=response.content, trace=tuple(log),
++            tool_calls_used=sum(e.kind == "tool_call" for e in log),
++            turns_used=sum(e.kind == "assistant_response" for e in log),
++            stop_reason=str(error),
++        )
++
++    async def _run(
++        self, *, system_prompt: str, initial_user_message: str,
++        scope: Any, options: ModelCallOptions | None = None,
+     ) -> ToolCallHarnessResult:
+         log: list[ToolCallHarnessEvent] = [
+             ToolCallHarnessEvent(
+@@ -125,6 +188,16 @@ class ToolCallHarness:
+ 
+         for turn in range(1, self.config.max_turns + 1):
+             context = _build_context(system_prompt, tuple(log))
++            if self.config.finalize_on_budget:
++                context[0] = replace(context[0], content=context[0].content + "\nBudget context: " + json.dumps({
++                    "remaining_research_turns": self.config.max_turns - turn + 1,
++                    "remaining_tool_calls": self.config.max_tool_calls - tool_calls_used,
++                    "remaining_per_tool": {
++                        name: max(0, limit - per_tool_counts.get(name, 0))
++                        for name, limit in self.config.per_tool_limits.items()
++                    },
++                    "instruction": "Prioritize already discovered readable candidates; finish before budgets expire.",
++                }))
+             try:
+                 response = await self.model_client.acomplete(
+                     context, options=call_options
+@@ -225,7 +298,7 @@ class ToolCallHarness:
+                         error={"type": "HarnessPolicyError", "message": detail},
+                         failure_phase="PRE_TOOL",
+                     )
+-                raise ToolCallHarnessError(detail, trace=tuple(log))
++                raise ToolCallBudgetExhausted(detail, trace=tuple(log))
+ 
+             if required_reader_artifact_ids:
+                 requested_artifact = tool_call.arguments.get("artifact_id")
+@@ -289,7 +362,7 @@ class ToolCallHarness:
+                         error={"type": "HarnessPolicyError", "message": detail},
+                         failure_phase="PRE_TOOL",
+                     )
+-                raise ToolCallHarnessError(detail, trace=tuple(log))
++                raise ToolCallBudgetExhausted(detail, trace=tuple(log))
+             if (
+                 tool_call.name == "reader"
+                 and validated_arguments is not None
+@@ -309,7 +382,7 @@ class ToolCallHarness:
+                             error={"type": "HarnessPolicyError", "message": detail},
+                             failure_phase="PRE_TOOL",
+                         )
+-                    raise ToolCallHarnessError(detail, trace=tuple(log))
++                    raise ToolCallBudgetExhausted(detail, trace=tuple(log))
+             log.append(
+                 ToolCallHarnessEvent(kind="tool_call", tool_call=tool_call)
+             )
+@@ -377,7 +450,7 @@ class ToolCallHarness:
+                     ):
+                         detail = "reader cumulative character budget exhausted"
+                         _append_error(log, detail)
+-                        raise ToolCallHarnessError(detail, trace=tuple(log))
++                        raise ToolCallBudgetExhausted(detail, trace=tuple(log))
+             tool_message = ChatMessage(
+                 role="tool",
+                 tool_call_id=tool_call.id,
+@@ -393,7 +466,7 @@ class ToolCallHarness:
+             )
+ 
+         _append_error(log, "turn budget exhausted")
+-        raise ToolCallHarnessError("turn budget exhausted", trace=tuple(log))
++        raise ToolCallBudgetExhausted("turn budget exhausted", trace=tuple(log))
+ 
+ 
+ def _build_tool_definitions(
+diff --git a/backend/src/novelty_agent_framework/persistence.py b/backend/src/novelty_agent_framework/persistence.py
+index 046e9c7..f63c594 100644
+--- a/backend/src/novelty_agent_framework/persistence.py
++++ b/backend/src/novelty_agent_framework/persistence.py
+@@ -706,6 +706,21 @@ def persist_task_retrieval_audit(
+ ) -> Path:
+     """从任务结果聚合真实 SearchExecution，保留旧 retrieval-plans 文件。"""
+ 
++    _write_json(
++        paper_workspace(paper, output_root=output_root) / "candidate-audit.json",
++        {
++            "paper_id": paper.paper_id,
++            "tasks": [
++                {
++                    "novelty_point_id": result.novelty_point_id,
++                    "task_id": result.task_id,
++                    "status": result.status.value,
++                    "candidates": [item.model_dump(mode="json") for item in result.candidate_audit],
++                }
++                for result in results
++            ],
++        },
++    )
+     executed_queries: list[dict[str, Any]] = []
+     for result in results:
+         for bundle in result.research_bundles:
+diff --git a/backend/src/novelty_agent_framework/prompts/research/native_tool_loop.md b/backend/src/novelty_agent_framework/prompts/research/native_tool_loop.md
+index bf228a5..5c7ebab 100644
+--- a/backend/src/novelty_agent_framework/prompts/research/native_tool_loop.md
++++ b/backend/src/novelty_agent_framework/prompts/research/native_tool_loop.md
+@@ -20,13 +20,17 @@ system: |
+     available as a supplement.
+   - Search results and snippets are discovery metadata, not evidence.
+   Acquisition and evaluation policy:
+-  - After each successful web_search, select one returned SourceRecord and inspect
++  - When browser is registered, after each successful web_search, select one returned SourceRecord and inspect
+     it with browser before issuing another web_search.
+   - If browser produces an Artifact, read that Artifact with reader. Evaluate its
+     evidentiary value only after examining Reader text. Only after that evaluation
+     may you decide whether another web_search round is necessary.
+   - Never issue consecutive web_search calls without completing the applicable
+-    browser and reader acquisition cycle between them.
++    browser and reader acquisition cycle between them when browser is registered.
++  - When browser is not registered, Web search is discovery only. Never call an
++    unavailable browser or pass a source_record_id to reader as an artifact_id.
++    Prefer readable database/reference artifacts; do not repeatedly search Web
++    without an acquisition path. Finish with available evidence or explain the limitation.
+   - If database_search already returns a readable Artifact or artifact_id,
+     the next tool call MUST be reader for one returned artifact_id. Do not call
+     database_search, web_search, or browser again until that Artifact has been
+@@ -34,6 +38,8 @@ system: |
+   - If database_search returns only discovery metadata, acquire readable content
+     through an appropriate tool before treating the source as evidence.
+   - Do not decide whether a source is evidentiary based only on search snippets.
++  - Prioritize unread candidates already returned before expanding discovery.
++    Use the remaining budget information to reserve time for the final JSON.
+   EvidenceCard quoting rules:
+   - Every quote in a card must be copied verbatim from a successful Reader observation.
+   - Do not paraphrase, summarize, translate, normalize, rewrite, or reconstruct
+diff --git a/backend/src/novelty_agent_framework/schemas/research.py b/backend/src/novelty_agent_framework/schemas/research.py
+index 5e80b6c..13364a4 100644
+--- a/backend/src/novelty_agent_framework/schemas/research.py
++++ b/backend/src/novelty_agent_framework/schemas/research.py
+@@ -105,6 +105,23 @@ class ResearcherToolObservation(StrictModel):
+     elapsed_ms: int = Field(default=0, ge=0)
+ 
+ 
++class CandidateAuditRecord(StrictModel):
++    """Observed candidate disposition, separate from trusted evidence."""
++
++    namespace: Literal["research_reference", "subject_reference"]
++    source_record_id: str | None = None
++    work_id: str | None = None
++    title: str | None = None
++    artifact_ids: list[str] = Field(default_factory=list)
++    read_ids: list[str] = Field(default_factory=list)
++    card_ids: list[str] = Field(default_factory=list)
++    status: Literal[
++        "not_read", "acquisition_unavailable", "read_without_card",
++        "read_task_interrupted", "card_produced",
++    ]
++    reason: NonEmptyStr
++
++
+ class TaskResearchResult(StrictModel):
+     task_id: NonEmptyStr
+     novelty_point_id: NonEmptyStr
+@@ -113,6 +130,7 @@ class TaskResearchResult(StrictModel):
+     read_results: list[ReferenceReadResult] = Field(default_factory=list)
+     evidence: list[Evidence] = Field(default_factory=list)
+     evidence_cards: list[EvidenceCard] = Field(default_factory=list)
++    candidate_audit: list[CandidateAuditRecord] = Field(default_factory=list)
+     warnings: list[str] = Field(default_factory=list)
+     steps_used: int = Field(ge=0)
+ 
+diff --git a/backend/src/novelty_agent_framework/schemas/research_tools.py b/backend/src/novelty_agent_framework/schemas/research_tools.py
+index 738a90a..037978d 100644
+--- a/backend/src/novelty_agent_framework/schemas/research_tools.py
++++ b/backend/src/novelty_agent_framework/schemas/research_tools.py
+@@ -206,10 +206,16 @@ class EvidenceCardBuilderRequest(StrictModel):
+     draft: ResearchFinishDraft
+ 
+ 
++class EvidenceCardBuildRejection(StrictModel):
++    card_index: int = Field(ge=0)
++    reason: NonEmptyStr
++
++
+ class EvidenceCardBuilderResult(StrictModel):
+     evidence: list[Evidence] = Field(default_factory=list)
+     evidence_cards: list[EvidenceCard] = Field(default_factory=list)
+     warnings: list[str] = Field(default_factory=list)
++    rejections: list[EvidenceCardBuildRejection] = Field(default_factory=list)
+ 
+ 
+ # Deprecated name retained for import compatibility during schema migration.
+diff --git a/backend/src/novelty_agent_framework/tools/evidence_card_builder.py b/backend/src/novelty_agent_framework/tools/evidence_card_builder.py
+index 3be7dca..8d0da17 100644
+--- a/backend/src/novelty_agent_framework/tools/evidence_card_builder.py
++++ b/backend/src/novelty_agent_framework/tools/evidence_card_builder.py
+@@ -58,6 +58,7 @@ class EvidenceCardBuilder:
+         all_evidence: list[Evidence] = []
+         cards: list[EvidenceCard] = []
+         warnings: list[str] = []
++        rejections = []
+         resolved_works: set[tuple[ArtifactNamespace, str]] = set()
+ 
+         for position, card_draft in enumerate(draft.cards, start=1):
+@@ -122,6 +123,7 @@ class EvidenceCardBuilder:
+                 warnings.append(
+                     f"dropped evidence card #{position}: {type(exc).__name__}: {exc}"
+                 )
++                rejections.append({"card_index": position - 1, "reason": str(exc)})
+                 continue
+             resolved_works.add(work_address)
+             all_evidence.extend(evidence)
+@@ -131,6 +133,7 @@ class EvidenceCardBuilder:
+             evidence=all_evidence,
+             evidence_cards=cards,
+             warnings=list(dict.fromkeys(warnings)),
++            rejections=rejections,
+         )
+ 
+     def _manifest_indexes(
+diff --git a/backend/src/novelty_agent_framework/tools/renderer.py b/backend/src/novelty_agent_framework/tools/renderer.py
+index ab71e06..15d8bc4 100644
+--- a/backend/src/novelty_agent_framework/tools/renderer.py
++++ b/backend/src/novelty_agent_framework/tools/renderer.py
+@@ -143,10 +143,16 @@ def _load_workspace_data(workspace: Path) -> dict[str, Any]:
+     if missing:
+         raise ReportRenderError("缺少报告输入产物：" + "；".join(missing))
+     try:
+-        return {
++        data = {
+             name: json.loads(path.read_text(encoding="utf-8"))
+             for name, path in required.items()
+         }
++        references = workspace / "references" / "list.json"
++        data["references"] = (
++            json.loads(references.read_text(encoding="utf-8"))
++            if references.is_file() else {}
++        )
++        return data
+     except (OSError, json.JSONDecodeError) as exc:
+         raise ReportRenderError(f"读取报告输入产物失败：{exc}") from exc
+ 
+@@ -206,7 +212,11 @@ def _build_markdown_context(
+             report.get("conclusions", []), point_by_id
+         ),
+         "limitations": _format_list(report.get("limitations", [])),
+-        "attachments": _format_attachments(report, rejected),
++        "attachments": _format_attachments(report, rejected)
++        + "\n\n### 检索到的文献\n\n"
++        + _format_retrieved_references(
++            data.get("references", {}), evidence.get("raw_evidence_cards", accepted)
++        ),
+     }
+ 
+ 
+@@ -352,6 +362,43 @@ def _format_list(items: list[Any]) -> str:
+     return "\n".join(f"- {item}" for item in items) if items else "无。"
+ 
+ 
++def _format_retrieved_references(
++    manifest: Mapping[str, Any], cards: list[Mapping[str, Any]]
++) -> str:
++    """List discovered sources, including candidates without accepted evidence."""
++    candidates = [
++        (record.get("title"), record.get("full_text_url") or record.get("landing_url"))
++        for record in manifest.get("source_records", [])
++    ]
++    candidates.extend(
++        (card.get("document_title"), source.get("url") or (
++            "https://doi.org/" + source["doi"] if source.get("doi") else None
++        ))
++        for card in cards for source in card.get("sources", [])
++    )
++    rows = []
++    seen = set()
++    for title, url in candidates:
++        if not title or not url:
++            continue
++        parsed = urlparse(url)
++        if parsed.scheme not in {"http", "https"} or not parsed.netloc:
++            continue
++        if parsed.hostname in {"arxiv.org", "www.arxiv.org", "export.arxiv.org"}:
++            match = re.fullmatch(r"/(?:abs|pdf)/(.+?)(?:\.pdf)?", parsed.path)
++            if match:
++                url = "https://arxiv.org/pdf/" + match.group(1)
++        if url in seen:
++            continue
++        seen.add(url)
++        # Keep titles and URLs on one line and preserve valid Markdown links.
++        title = re.sub(r"([\\`*_\[\]])", r"\\\1", " ".join(str(title).split()))
++        url = url.replace(" ", "%20").replace("(", "%28").replace(")", "%29")
++        url = url.replace("[", "%5B").replace("]", "%5D").replace("\n", "%0A").replace("\r", "%0D")
++        rows.append(f"- {title}：[{url}]({url})")
++    return "\n".join(rows) or "未记录带可用链接的检索文献。"
++
++
+ def _evidence_sources(cards: list[Mapping[str, Any]]) -> list[str]:
+     sources = []
+     for card in cards:
+diff --git a/backend/src/novelty_agent_framework/workflows/research_task.py b/backend/src/novelty_agent_framework/workflows/research_task.py
+index bea21df..ccef9a8 100644
+--- a/backend/src/novelty_agent_framework/workflows/research_task.py
++++ b/backend/src/novelty_agent_framework/workflows/research_task.py
+@@ -4,9 +4,9 @@ from __future__ import annotations
+ 
+ import json
+ import re
+-from dataclasses import dataclass, field
++from dataclasses import dataclass, field, replace
+ 
+-from backend.env import ModelCallOptions, ModelClient, PromptLibrary
++from backend.env import ChatMessage, ModelCallOptions, ModelClient, PromptLibrary
+ from pydantic import ValidationError
+ 
+ from ..core import ToolCallHarness, ToolCallHarnessConfig, ToolCallHarnessError
+@@ -19,6 +19,7 @@ from ..schemas import (
+ )
+ from ..schemas import TaskResearchResult, TaskResearchStatus
+ from ..tools import EvidenceCardBuilder, ResearcherToolRegistry
++from .candidate_audit import build_candidate_audit
+ 
+ 
+ def _extract_finish_json(content: str | None) -> str:
+@@ -87,6 +88,7 @@ class TaskResearcherWorkflow:
+             model_client,
+             tool_registry,
+             config=ToolCallHarnessConfig(
++                finalize_on_budget=True,
+                 max_turns=self.config.max_steps,
+                 max_tool_calls=self.config.max_tool_calls,
+                 per_tool_limits=dict(self.config.per_tool_limits),
+@@ -95,6 +97,13 @@ class TaskResearcherWorkflow:
+         )
+ 
+     async def ainvoke(self, request: TaskResearchRequest) -> TaskResearchResult:
++        result, trace = await self._research(request)
++        return result.model_copy(update={"candidate_audit": build_candidate_audit(
++            trace, result.read_results, result.evidence, result.evidence_cards,
++            interrupted=result.status == TaskResearchStatus.PARTIAL,
++        )})
++
++    async def _research(self, request: TaskResearchRequest):
+         request = TaskResearchRequest.model_validate(request)
+         system_prompt, user_message = self._render_prompt(request)
+         try:
+@@ -117,12 +126,12 @@ class TaskResearcherWorkflow:
+                     *bundle_warnings,
+                 ],
+                 steps=_turns_in_trace(exc.trace),
+-            )
++            ), exc.trace
+         except Exception as exc:
+             return _partial(
+                 request,
+                 warnings=[f"native tool harness failed: {_safe_error(exc)}"],
+-            )
++            ), ()
+ 
+         reads, read_warnings = _trusted_reads(harness_result.trace)
+         bundles, bundle_warnings = _trusted_bundles(harness_result.trace)
+@@ -138,7 +147,7 @@ class TaskResearcherWorkflow:
+                 warnings=[*read_warnings, *bundle_warnings,
+                           f"invalid ResearchFinishDraft: {_safe_error(exc)}"],
+                 steps=harness_result.turns_used,
+-            )
++            ), harness_result.trace
+ 
+         try:
+             built = self.evidence_builder.build(
+@@ -152,19 +161,67 @@ class TaskResearcherWorkflow:
+                 warnings=[*read_warnings, *bundle_warnings,
+                           f"evidence builder failed: {_safe_error(exc)}"],
+                 steps=harness_result.turns_used,
+-            )
+-
++            ), harness_result.trace
++
++        correction_turns = 0
++        if built.rejections:
++            correction_turns = 1
++            built = await self._correct_rejected_cards(draft, built, reads, request)
++        stop_warnings = ([f"research stopped; finalization completed: {harness_result.stop_reason}"]
++                         if harness_result.stop_reason else [])
+         return TaskResearchResult(
+             task_id=request.research_task.task_id,
+             novelty_point_id=request.novelty_point.point_id,
+-            status=TaskResearchStatus.COMPLETED,
++            status=(TaskResearchStatus.PARTIAL if harness_result.stop_reason else TaskResearchStatus.COMPLETED),
+             read_results=reads,
+             research_bundles=bundles,
+             evidence=built.evidence,
+             evidence_cards=built.evidence_cards,
+-            warnings=[*read_warnings, *bundle_warnings, *built.warnings],
+-            steps_used=harness_result.turns_used,
+-        )
++            warnings=[*stop_warnings, *read_warnings, *bundle_warnings, *built.warnings],
++            steps_used=harness_result.turns_used + correction_turns,
++        ), harness_result.trace
++
++    async def _correct_rejected_cards(self, draft, built, reads, request):
++        payload = {
++            "novelty_point": _project_novelty_point(request.novelty_point),
++            "rejected_cards": [
++                {"card": draft.cards[item.card_index].model_dump(mode="json"), "error": item.reason}
++                for item in built.rejections
++            ],
++            "reader_texts": [read.text for read in reads],
++            "finish_schema": ResearchFinishDraft.model_json_schema(),
++        }
++        try:
++            response = await self.model_client.acomplete([
++                ChatMessage(role="system", content=(
++                    "Correct only the rejected evidence drafts. No tools are available. "
++                    "Copy quotes verbatim from reader_texts, preserving LaTeX and punctuation. "
++                    "Do not invent provenance IDs. Return ResearchFinishDraft JSON, or "
++                    "cards=[] and a no_evidence_reason if the drafts cannot be grounded."
++                )),
++                ChatMessage(role="user", content=json.dumps(payload, ensure_ascii=False)),
++            ], options=replace(self.config.model_options, tools=(), tool_choice="none"))
++            if response.tool_calls:
++                raise ValueError("quote correction attempted a tool call")
++            corrected = ResearchFinishDraft.model_validate_json(_extract_finish_json(response.content))
++            if len(corrected.cards) > len(built.rejections):
++                raise ValueError("correction returned more cards than rejected drafts")
++            repaired = self.evidence_builder.build(corrected, scope=request, read_results=reads)
++            existing = {card.card_id for card in built.evidence_cards}
++            new_cards = [card for card in repaired.evidence_cards if card.card_id not in existing]
++            needed_ids = {eid for card in new_cards for eid in card.evidence_ids}
++            evidence_by_id = {item.evidence_id: item for item in built.evidence}
++            evidence_by_id.update({item.evidence_id: item for item in repaired.evidence if item.evidence_id in needed_ids})
++            return built.model_copy(update={
++                "evidence": list(evidence_by_id.values()),
++                "evidence_cards": [*built.evidence_cards, *new_cards],
++                "warnings": [*built.warnings, *repaired.warnings,
++                             f"single quote correction recovered {len(new_cards)} card(s)"],
++            })
++        except Exception as exc:
++            return built.model_copy(update={"warnings": [
++                *built.warnings, f"single quote correction failed: {_safe_error(exc)}",
++            ]})
+ 
+     def _render_prompt(self, request: TaskResearchRequest) -> tuple[str, str]:
+         variables = {
+@@ -183,13 +240,26 @@ class TaskResearcherWorkflow:
+         }
+         if self.prompts is not None:
+             rendered = self.prompts.render(self.config.prompt_name, **variables)
+-            return rendered.system, rendered.user
++            return rendered.system, rendered.user + "\n\n" + self._capability_note()
+         return (
+             "Use only registered tools. Finish with strict ResearchFinishDraft JSON. "
+             "Never invent provenance handles.",
+-            "\n".join(f"{key}: {value}" for key, value in variables.items()),
++            "\n".join(f"{key}: {value}" for key, value in variables.items()) + "\n" + self._capability_note(),
+         )
+ 
++    def _capability_note(self):
++        names = self.tools.names
++        note = "Available tools: " + ", ".join(names) + ". "
++        if "browser" not in names:
++            note += (
++                "browser is unavailable. Web search is discovery only: do not attempt "
++                "browser or pass a source_record_id to reader. Read only actual artifact IDs "
++                "from available tools; prefer database/reference artifacts. Do not repeat "
++                "web searches when there is no acquisition path. Finish with available evidence "
++                "or explain the acquisition limitation."
++            )
++        return note
++
+ 
+ def _trusted_reads(trace) -> tuple[list[ReferenceReadResult], list[str]]:
+     reads: list[ReferenceReadResult] = []
+diff --git a/tests/test_persistence.py b/tests/test_persistence.py
+index 1b33026..85e0fa0 100644
+--- a/tests/test_persistence.py
++++ b/tests/test_persistence.py
+@@ -196,6 +196,10 @@ def test_task_retrieval_audit_preserves_plans_and_adds_executions(tmp_path) -> N
+     point = persisted["novelty_point_plans"][0]
+     assert point["search_plans"][0]["task_id"] == "T1"
+     assert point["executed_queries"][0]["query"] == "query one"
++    audit = json.loads((path.parent / "candidate-audit.json").read_text(encoding="utf-8"))
++    assert audit["tasks"] == [{
++        "novelty_point_id": "NP-1", "task_id": "T1", "status": "completed", "candidates": [],
++    }]
+ 
+ 
+ def test_evidence_cards_keep_raw_accepted_and_rejected_results(tmp_path) -> None:
+diff --git a/tests/test_renderer.py b/tests/test_renderer.py
+index 2854855..0c98a88 100644
+--- a/tests/test_renderer.py
++++ b/tests/test_renderer.py
+@@ -157,6 +157,29 @@ def test_markdown_renderer_reads_workspace_and_uses_default_paths(
+     assert "{{" not in content
+ 
+ 
++def test_attachments_list_retrieved_candidates_and_card_sources(tmp_path: Path) -> None:
++    seed_workspace(tmp_path)
++    workspace = tmp_path / "renderer-paper"
++    references = workspace / "references" / "list.json"
++    references.parent.mkdir(parents=True, exist_ok=True)
++    references.write_text(json.dumps({"source_records": [
++        {"title": "AliGraph: A Comprehensive Graph Neural Network Platform",
++         "landing_url": "https://arxiv.org/abs/1902.08730",
++         "full_text_url": "https://arxiv.org/pdf/1902.08730"},
++        {"title": "AliGraph duplicate", "landing_url": "http://arxiv.org/abs/1902.08730"},
++        {"title": "Candidate without an evidence card", "landing_url": "https://doi.org/10.1/example"},
++        {"title": "Local artifact", "landing_url": "file:///tmp/private.txt"},
++    ]}), encoding="utf-8")
++    content = render_report(paper_name="renderer-paper", output_root=tmp_path).read_text()
++    attachments = content.split("### 检索到的文献", 1)[1]
++    expected = "AliGraph: A Comprehensive Graph Neural Network Platform：[https://arxiv.org/pdf/1902.08730](https://arxiv.org/pdf/1902.08730)"
++    assert expected in attachments
++    assert "AliGraph duplicate" not in attachments
++    assert "Candidate without an evidence card：[https://doi.org/10.1/example](https://doi.org/10.1/example)" in attachments
++    assert "Related Paper：[https://arxiv.org/pdf/1234.5678](https://arxiv.org/pdf/1234.5678)" in attachments
++    assert "file:///" not in attachments
++
++
+ @pytest.mark.parametrize(
+     ("status", "verdict", "expected"),
+     [
