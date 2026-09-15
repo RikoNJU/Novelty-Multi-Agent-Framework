@@ -37,3 +37,11 @@ def test_offline_mode_does_not_claim_quality_measurements(tmp_path):
     assert result["metrics"]["valid_decisions"] == 0
     assert result["validator_rejected"] == 2
     assert result["human_gold_metrics"] is False
+
+
+def test_offline_mode_supports_default_point_reviewer_prompt(tmp_path):
+    result = run(tmp_path / "offline-default")
+    assert result["mode"] == "fixtures_only"
+    assert result["metrics"]["runtime_errors"] == 0
+    assert (tmp_path / "offline-default" / "summary.json").is_file()
+    assert (tmp_path / "offline-default" / "report.md").is_file()
