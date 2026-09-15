@@ -152,6 +152,8 @@ def _load_workspace_data(workspace: Path) -> dict[str, Any]:
             json.loads(references.read_text(encoding="utf-8"))
             if references.is_file() else {}
         )
+        audit = workspace / "candidate-audit.json"
+        data["candidate_audit"] = json.loads(audit.read_text(encoding="utf-8")) if audit.is_file() else {}
         return data
     except (OSError, json.JSONDecodeError) as exc:
         raise ReportRenderError(f"读取报告输入产物失败：{exc}") from exc
@@ -166,7 +168,9 @@ def _build_markdown_context(
     plans = data["plans"].get("novelty_point_plans", [])
     evidence = data["evidence"]
     report = data["report"]
-    accepted = evidence.get("accepted_evidence_cards", [])
+    references = data.get("references", {})
+    accepted = [card for card in evidence.get("accepted_evidence_cards", [])
+                if not _is_web_card(card, references)]
     rejected = evidence.get("rejected_evidence", [])
 
     point_by_id = {point.get("point_id", ""): point for point in points}
@@ -211,7 +215,9 @@ def _build_markdown_context(
         "novelty_conclusions": _format_conclusions(
             report.get("conclusions", []), point_by_id
         ),
-        "limitations": _format_list(report.get("limitations", [])),
+        "limitations": _format_list(report.get("limitations", []))
+        + _web_advice(references, evidence.get("raw_evidence_cards", []),
+                      data.get("candidate_audit", {}).get("tasks", [])),
         "attachments": _format_attachments(report, rejected)
         + "\n\n### 检索到的文献\n\n"
         + _format_retrieved_references(
@@ -362,6 +368,45 @@ def _format_list(items: list[Any]) -> str:
     return "\n".join(f"- {item}" for item in items) if items else "无。"
 
 
+def _is_web_record(record: Mapping[str, Any]) -> bool:
+    return (record.get("source_kind") in {"web", "web_supplement"}
+            or record.get("provenance", {}).get("tool") == "web_search")
+
+
+def _is_web_card(card: Mapping[str, Any], manifest: Mapping[str, Any]) -> bool:
+    if card.get("provenance", {}).get("source_kind") in {"web", "web_supplement"}:
+        return True
+    web_urls = {url for record in manifest.get("source_records", []) if _is_web_record(record)
+                for url in (record.get("landing_url"), record.get("full_text_url")) if url}
+    urls = [source.get("url") for source in card.get("sources", []) if source.get("url")]
+    return bool(urls) and all(url in web_urls for url in urls)
+
+
+def _web_advice(manifest: Mapping[str, Any], cards: list[Mapping[str, Any]],
+                tasks: list[Mapping[str, Any]] = ()) -> str:
+    records = manifest.get("source_records", [])
+    if any(candidate.get("namespace") == "subject_reference"
+           for task in tasks for candidate in task.get("candidates", [])):
+        return ""
+    if any(work.get("work_type") != "webpage" for work in manifest.get("works", [])):
+        return ""
+    # No card is not equivalent to no paper: discovered database candidates count.
+    if any(not _is_web_record(record) for record in records):
+        return ""
+    if any(not _is_web_card(card, manifest) for card in cards):
+        return ""
+    web = [record for record in records if _is_web_record(record)]
+    if not web:
+        return ""
+    queries = _unique(record.get("provenance", {}).get("query") for record in web)[:3]
+    topics = "；".join(_cell(" ".join(str(query).split())) for query in queries)
+    advice = (f"可围绕这些网页检索方向调整论文检索词：{topics}。" if topics else
+              "建议利用网页补充资料中的术语线索调整论文检索词，再到学术数据库核验。")
+    return ("\n\n### 无论文可用时的补充信息建议\n\n"
+            "本次未取得论文检索结果；这不证明相关论文不存在。" + advice +
+            "网页内容仅作后续检索建议，不作为相关文献、原始证据或查新结论依据。")
+
+
 def _format_retrieved_references(
     manifest: Mapping[str, Any], cards: list[Mapping[str, Any]]
 ) -> str:
@@ -369,12 +414,14 @@ def _format_retrieved_references(
     candidates = [
         (record.get("title"), record.get("full_text_url") or record.get("landing_url"))
         for record in manifest.get("source_records", [])
+        if not _is_web_record(record)
     ]
     candidates.extend(
         (card.get("document_title"), source.get("url") or (
             "https://doi.org/" + source["doi"] if source.get("doi") else None
         ))
-        for card in cards for source in card.get("sources", [])
+        for card in cards if not _is_web_card(card, manifest)
+        for source in card.get("sources", [])
     )
     rows = []
     seen = set()

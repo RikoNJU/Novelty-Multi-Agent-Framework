@@ -255,3 +255,43 @@ def test_renderer_reads_only_the_requested_output_root(tmp_path: Path) -> None:
     assert path == run_root / "renderer-paper/report/renderer-paper-report.md"
     assert path.is_file()
     assert not (tmp_path / "outputs" / "renderer-paper").exists()
+
+
+def test_web_material_is_never_listed_and_advice_requires_no_papers(tmp_path):
+    seed_workspace(tmp_path)
+    workspace = tmp_path / 'renderer-paper'
+    path = workspace / 'references/list.json'
+    path.parent.mkdir(exist_ok=True)
+    web = {'source_kind': 'web_supplement', 'title': 'WEB TITLE MUST NOT APPEAR',
+           'landing_url': 'https://web.example/advice',
+           'provenance': {'query': 'graph partitioning'}}
+    path.write_text(json.dumps({'source_records': [web]}))
+    # A paper card already exists: no supplementary advice or Web bibliography.
+    content = render_report(paper_name='renderer-paper', output_root=tmp_path).read_text()
+    assert web['title'] not in content and web['landing_url'] not in content
+    assert '无论文可用时的补充信息建议' not in content
+    evidence_path = workspace / 'evidence-cards.json'
+    evidence = json.loads(evidence_path.read_text())
+    evidence['raw_evidence_cards'] = evidence['accepted_evidence_cards'] = []
+    evidence_path.write_text(json.dumps(evidence))
+    content = render_report(paper_name='renderer-paper', output_root=tmp_path).read_text()
+    assert '无论文可用时的补充信息建议' in content
+    assert 'graph partitioning' in content
+    assert web['title'] not in content and web['landing_url'] not in content
+    # Retrieved paper without a card still prevents a false no-paper recommendation.
+    path.write_text(json.dumps({'source_records': [web, {
+        'source_kind': 'structured_database', 'title': 'Unread paper',
+        'landing_url': 'https://doi.org/10.1/unread'}]}))
+    content = render_report(paper_name='renderer-paper', output_root=tmp_path).read_text()
+    assert '无论文可用时的补充信息建议' not in content
+    assert 'Unread paper' in content
+
+
+def test_legacy_web_card_is_not_rendered_as_related_literature():
+    from novelty_agent_framework.tools.renderer import _format_retrieved_references, _is_web_card
+    manifest = {'source_records': [{'source_kind': 'web', 'title': 'Web source',
+                                    'landing_url': 'https://web.example/a'}]}
+    card = {'document_title': 'Old Web card', 'sources': [{'url': 'https://web.example/a'}]}
+    assert _is_web_card(card, manifest)
+    assert 'Old Web card' not in _format_retrieved_references(manifest, [card])
+    assert 'Web source' not in _format_retrieved_references(manifest, [card])

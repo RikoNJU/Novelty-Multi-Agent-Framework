@@ -163,6 +163,7 @@ class EvidenceCardBuilder:
         indexes: dict[ArtifactNamespace, _ManifestIndex],
     ) -> list[tuple[ReferenceReadResult, Artifact]]:
         matches: list[tuple[ReferenceReadResult, Artifact]] = []
+        supplementary_match = False
         for read in reads:
             if not _quote_matches(quote.quote, read.text):
                 continue
@@ -170,6 +171,13 @@ class EvidenceCardBuilder:
             artifact = index.artifacts.get(read.artifact_id)
             if artifact is None:
                 raise ValueError(f"missing Artifact {read.artifact_id}")
+            if artifact.provenance.get("content_origin") == "llm_summary":
+                continue  # A generated summary cannot become original Evidence via Reader.
+            work = index.works.get(read.work_id)
+            record = _resolve_source_record(artifact, work, index.records) if work else None
+            if _evidence_source_labels(artifact, record)["source_kind"] == "web_supplement":
+                supplementary_match = True
+                continue  # Web material is advice-only, never a paper Evidence/Card.
             if artifact.work_id != read.work_id:
                 raise ValueError(
                     f"Artifact.work_id mismatch for {read.artifact_id}"
@@ -182,6 +190,8 @@ class EvidenceCardBuilder:
                     f"Artifact {artifact.artifact_id} references missing SourceRecord"
                 )
             matches.append((read, artifact))
+        if not matches and supplementary_match:
+            raise ValueError("web supplementary material cannot be used as evidence")
         if not matches:
             raise ValueError(f"ungrounded quote: {quote.quote!r}")
         return matches
@@ -251,6 +261,7 @@ class EvidenceCardBuilder:
                 interpretation=quote.interpretation,
                 confidence=quote.confidence,
                 provenance={
+                    **_evidence_source_labels(persisted_artifact, record),
                     "builder": "evidence_card_builder",
                     "artifact_namespace": namespace.value,
                     "read_id": read.read_id,
@@ -283,6 +294,18 @@ class EvidenceCardBuilder:
                 )
             )
         return evidence, sources
+
+
+def _evidence_source_labels(artifact: Artifact, record: SourceRecord | None) -> dict[str, str]:
+    # Acquisition lineage takes precedence over a work's bibliographic identity.
+    kind = record.source_kind.value if record is not None else "unknown"
+    if (artifact.provenance.get("source_kind") == "web_supplement"
+            or artifact.provenance.get("tool") == "browser"
+            or kind in {"web", "web_supplement"}):
+        return {"source_kind": "web_supplement", "evidence_type": "web_supplement_evidence"}
+    if kind == "structured_database":
+        return {"source_kind": kind, "evidence_type": "database_evidence"}
+    return {"source_kind": kind, "evidence_type": "unknown"}
 
 
 def _quote_matches(quote: str, text: str) -> bool:

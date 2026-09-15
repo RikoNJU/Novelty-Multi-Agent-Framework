@@ -43,7 +43,8 @@ class PublicationStage(StrEnum):
 
 class SourceKind(StrEnum):
     STRUCTURED_DATABASE = "structured_database"
-    WEB = "web"
+    WEB = "web"  # Legacy manifests remain readable.
+    WEB_SUPPLEMENT = "web_supplement"
     LOCAL = "local"
     USER_UPLOAD = "user_upload"
 

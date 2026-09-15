@@ -127,7 +127,7 @@ def test_metadata_arguments_items_persistence_and_warnings(tmp_path) -> None:
     manifest = store.load_manifest("paper-1")
     record = manifest.source_records[0]
     assert record.source_record_id == item["source_record_id"]
-    assert record.source_kind is SourceKind.WEB
+    assert record.source_kind is SourceKind.WEB_SUPPLEMENT
     assert record.source_id == backend.name
     assert record.landing_url == "https://Example.test/paper#abstract"
     assert record.access_status is AccessStatus.DISCOVERED

@@ -295,7 +295,10 @@ def test_scripted_four_tool_chain_shares_handles_and_builds_evidence(tmp_path):
     assert {tool.name for tool in model.options[0].tools} == set(registry.names)
     assert "structured_source_retrieval" not in {tool.name for tool in model.options[0].tools}
     assert len(result.read_results) == 2
-    assert len(result.evidence) == len(result.evidence_cards) == 2
+    assert len(result.evidence) == len(result.evidence_cards) == 1
+    assert result.evidence[0].quote == DB_TEXT
+    assert any("web supplementary material" in warning for warning in result.warnings)
+    assert result.steps_used == 6  # Web policy rejection does not trigger quote repair.
     assert len(result.research_bundles) == 1
     assert len(manifest.works) == 2
     assert len(manifest.source_records) == 2

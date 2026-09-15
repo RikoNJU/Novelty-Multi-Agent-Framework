@@ -73,7 +73,7 @@ def prepare_store(tmp_path) -> ReferenceStore:
             source_record_id="src_a",
             work_id="wrk_a",
             source_id="test",
-            source_kind=SourceKind.WEB,
+            source_kind=SourceKind.STRUCTURED_DATABASE,
             title="Source A",
             landing_url="https://landing.example/a",
             full_text_url="https://full.example/a",
@@ -84,7 +84,7 @@ def prepare_store(tmp_path) -> ReferenceStore:
             source_record_id="src_b",
             work_id="wrk_b",
             source_id="test",
-            source_kind=SourceKind.WEB,
+            source_kind=SourceKind.STRUCTURED_DATABASE,
             title="Source B",
             landing_url="https://landing.example/b",
             identifiers=[ExternalIdentifier(namespace="doi", value="10.1/source-b")],
@@ -182,6 +182,8 @@ def test_single_quote_builds_trusted_card_and_evidence(tmp_path) -> None:
     assert (evidence.work_id, evidence.artifact_id) == ("wrk_a", "art_a")
     assert evidence.locator == EvidenceLocator(char_start=0, char_end=19)
     assert evidence.provenance == {
+        "source_kind": "structured_database",
+        "evidence_type": "database_evidence",
         "builder": "evidence_card_builder",
         "artifact_namespace": "research_reference",
         "read_id": "read_wrk_a",

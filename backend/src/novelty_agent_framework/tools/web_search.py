@@ -194,7 +194,7 @@ def _source_record(
         "source_record_id": source_record_id,
         "work_id": current.work_id if current is not None else None,
         "source_id": backend_name,
-        "source_kind": SourceKind.WEB,
+        "source_kind": SourceKind.WEB_SUPPLEMENT,
         "external_id": (
             hit.external_id
             if hit.external_id is not None

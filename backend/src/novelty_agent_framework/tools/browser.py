@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 
 from ..persistence import ReferenceStore
 from ..schemas import (
+    SourceKind,
     AccessStatus,
     Artifact,
     ArtifactRole,
@@ -95,6 +96,8 @@ class BrowserTool:
             extraction_warnings=list(fetched.warnings),
             provenance={
                 "tool": self.name,
+                "source_kind": "web_supplement",
+                "content_origin": "source_text",
                 "backend": self.backend.name,
                 "run_id": scope.run_id,
                 "requested_url": fetched.requested_url,
@@ -114,6 +117,7 @@ class BrowserTool:
             update={
                 "work_id": work_id,
                 "access_status": AccessStatus.FULL_TEXT_ACQUIRED,
+                "source_kind": SourceKind.WEB_SUPPLEMENT,
             }
         )
         # 在锁内重新读取再合并：fetch 期间其它并发任务可能已经写入 manifest，

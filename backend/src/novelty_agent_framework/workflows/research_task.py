@@ -165,9 +165,13 @@ class TaskResearcherWorkflow:
             ), harness_result.trace
 
         correction_turns = 0
-        if built.rejections:
+        repairable = [item for item in built.rejections
+                      if item.reason != "web supplementary material cannot be used as evidence"]
+        if repairable:
             correction_turns = 1
-            built = await self._correct_rejected_cards(draft, built, reads, request)
+            built = await self._correct_rejected_cards(
+                draft, built.model_copy(update={"rejections": repairable}), reads, request,
+            )
         stop_warnings = ([f"research stopped; finalization completed: {harness_result.stop_reason}"]
                          if harness_result.stop_reason else [])
         return TaskResearchResult(
