@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import re
+from pathlib import Path
 from dataclasses import dataclass, field, replace
 
 from backend.env import ChatMessage, ModelCallOptions, ModelClient, PromptLibrary
@@ -240,11 +241,19 @@ class TaskResearcherWorkflow:
         }
         if self.prompts is not None:
             rendered = self.prompts.render(self.config.prompt_name, **variables)
-            return rendered.system, rendered.user + "\n\n" + self._capability_note()
+            return rendered.system + self._research_skills(), rendered.user + "\n\n" + self._capability_note()
         return (
             "Use only registered tools. Finish with strict ResearchFinishDraft JSON. "
-            "Never invent provenance handles.",
+            "Never invent provenance handles." + self._research_skills(),
             "\n".join(f"{key}: {value}" for key, value in variables.items()) + "\n" + self._capability_note(),
+        )
+
+    @staticmethod
+    def _research_skills() -> str:
+        root = Path(__file__).resolve().parents[1] / "skills"
+        return "\n\n" + "\n\n".join(
+            (root / name / "SKILL.md").read_text(encoding="utf-8").split("---", 2)[-1].strip()
+            for name in ("database_research", "web_supplement")
         )
 
     def _capability_note(self):

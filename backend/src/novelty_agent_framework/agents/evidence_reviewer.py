@@ -427,6 +427,8 @@ def _fallback_point_system_prompt() -> str:
         "你是查新点级信息判定 Agent。只依据输入 EvidenceCard、Evidence 和 reader "
         "回读结果综合多个 Work；不得搜索或使用模型记忆补充事实。证据充分时输出 "
         "NoveltyPointReview；证据不足时输出 insufficient_evidence，不能猜测。"
+        "仅使用论文 Evidence；source_kind=web_supplement 或旧 web_supplement_evidence "
+        "仅为补充资料，不得用于裁定。LLM summary 不能作为原始 Evidence。"
     )
 
 

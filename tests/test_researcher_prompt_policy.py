@@ -22,9 +22,9 @@ def render_prompt():
 def test_researcher_prompt_renders_attempt3_retrieval_policy() -> None:
     rendered = render_prompt()
 
-    assert rendered.version == "2"
-    assert "Prefer database_search as the primary discovery tool" in rendered.system
-    assert "For Chinese-language research tasks" in rendered.system
+    assert rendered.version == "5"
+    assert "Rely on database_search for scholarly discovery" in rendered.system
+    assert "language alone is not a trigger" in rendered.system
     assert "Search results and snippets are discovery metadata, not evidence" in rendered.system
     assert "Never issue consecutive web_search calls" in rendered.system
     assert "Never guess an\nunlisted database source_id" in rendered.system
