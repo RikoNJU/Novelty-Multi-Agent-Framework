@@ -133,6 +133,15 @@ def legacy_shape(config: ApplicationConfig) -> dict[str, Any]:
                 "fail_closed": (
                     config.reviewer.fail_closed if config.reviewer else True
                 ),
+                "max_steps": config.reviewer.max_steps if config.reviewer else 14,
+                "max_tool_calls": (
+                    config.reviewer.max_tool_calls if config.reviewer else 12
+                ),
+                "max_total_read_chars": (
+                    config.reviewer.max_total_read_chars
+                    if config.reviewer
+                    else 96_000
+                ),
             },
         },
         "task_researcher": {

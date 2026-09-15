@@ -144,6 +144,9 @@ class ReviewerConfig(ConfigModel):
     prompt: str = Field(min_length=1)
     max_cards_per_call: int = Field(gt=0)
     fail_closed: bool = True
+    max_steps: int = Field(default=14, gt=0)
+    max_tool_calls: int = Field(default=12, gt=0)
+    max_total_read_chars: int = Field(default=96_000, gt=0)
 
 
 class RoleAgentConfig(ConfigModel):

@@ -318,6 +318,11 @@ def build_workflow(
                 temperature=float(reviewer_cfg.get("temperature", 0.0)),
                 max_cards_per_call=int(reviewer_cfg.get("max_cards_per_call", 8)),
                 fail_closed=bool(reviewer_cfg.get("fail_closed", True)),
+                max_steps=int(reviewer_cfg.get("max_steps", 14)),
+                max_tool_calls=int(reviewer_cfg.get("max_tool_calls", 12)),
+                max_total_read_chars=int(
+                    reviewer_cfg.get("max_total_read_chars", 96_000)
+                ),
                 prompt_name=str(reviewer_cfg.get("prompt", "reviewer/review_evidence")),
             ),
             model_options=reviewer_model_options,
@@ -570,6 +575,9 @@ def _build_workflow_from_application_config(
                 temperature=config.reviewer.model.temperature,
                 max_cards_per_call=config.reviewer.max_cards_per_call,
                 fail_closed=config.reviewer.fail_closed,
+                max_steps=config.reviewer.max_steps,
+                max_tool_calls=config.reviewer.max_tool_calls,
+                max_total_read_chars=config.reviewer.max_total_read_chars,
                 prompt_name=config.reviewer.prompt,
             ),
             model_options=_typed_model_options(config.reviewer.model),

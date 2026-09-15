@@ -96,3 +96,22 @@ def test_perturbed_config_reaches_runtime_objects(tmp_path):
     )
     serialized = json.dumps(safe)
     assert "api_key\"" not in serialized and "secret" not in serialized.lower()
+
+
+def test_default_runtime_is_english_only_with_expanded_tool_budgets():
+    config = load_application_config()
+    workflow = build_workflow(config)
+
+    assert workflow.services.coordinator.research_languages == ("en",)
+    assert workflow.services.task_researcher.config.max_steps == 28
+    assert workflow.services.task_researcher.config.max_tool_calls == 24
+    assert workflow.services.task_researcher.config.per_tool_limits == {
+        "reference_search": 8,
+        "database_search": 8,
+        "web_search": 5,
+        "browser": 3,
+        "reader": 16,
+    }
+    assert workflow.services.reviewer.config.max_steps == 14
+    assert workflow.services.reviewer.config.max_tool_calls == 12
+    assert workflow.services.reviewer.config.max_total_read_chars == 96_000
