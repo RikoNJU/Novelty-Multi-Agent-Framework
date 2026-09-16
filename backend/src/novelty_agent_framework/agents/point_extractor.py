@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import re
+import hashlib
 from collections.abc import Sequence
 from dataclasses import replace
 from typing import Any
@@ -24,7 +25,9 @@ from ..schemas import NoveltyBrief, NoveltyPoint, PaperDigest, PaperInput
 MIN_POINTS = 3
 MAX_POINTS = 8
 MAX_ATTEMPTS = 3
+MAX_MODEL_CALLS = 5  # generation, review and at most one coverage follow-up share this budget
 EXCERPT_CHAR_LIMIT = 2000
+CONTRIBUTION_EXCERPT_LIMIT = 1200
 TRUNCATION_MARK = "…[截断]"
 
 DELETE_SCHEMA = {
@@ -36,6 +39,14 @@ DELETE_SCHEMA = {
         }
     },
     "required": ["delete_indices"],
+}
+_POINT_OUTPUT_SCHEMA = {
+    "type": "object",
+    "properties": {"novelty_points": {
+        "type": "array", "maxItems": MAX_POINTS,
+        "items": NoveltyPoint.model_json_schema(),
+    }},
+    "required": ["novelty_points"],
 }
 
 
@@ -55,7 +66,7 @@ def build_paper_digest(paper: PaperInput) -> PaperDigest:
         keywords_zh=list(paper.keywords_zh),
         keywords_en=list(paper.keywords_en),
         references=[],  # 暂不向提取模型提供参考文献，避免引入噪声
-        full_text_excerpt=_truncate(_body_excerpt(paper.full_text), EXCERPT_CHAR_LIMIT),
+        full_text_excerpt=_bounded_body_excerpt(paper.full_text),
     )
 
 
@@ -66,13 +77,27 @@ def _body_excerpt(full_text: str) -> str:
     return full_text[match.end():] if match else full_text
 
 
+def _bounded_body_excerpt(full_text: str) -> str:
+    """Add bounded author-contribution passages that may be beyond the opening."""
+    opening = _truncate(_body_excerpt(full_text), EXCERPT_CHAR_LIMIT)
+    passages = []
+    for match in re.finditer(r"(?:主要|核心)贡献(?:可以)?总结", full_text):
+        if match.start() < EXCERPT_CHAR_LIMIT:
+            continue
+        passage = full_text[match.start():match.start() + CONTRIBUTION_EXCERPT_LIMIT]
+        if passage not in passages:
+            passages.append(passage)
+        if len(passages) == 3:
+            break
+    return opening + "".join(f"\n\n[作者贡献段 {index}]\n{part}"
+                             for index, part in enumerate(passages, 1))
+
+
 class NoveltyPointExtractorAgent(NoveltyPointExtractor):
     """两步查新点 Agent：先生成候选查新点，再审查去重。
 
-    生成步：单次生成 ≥ MIN_POINTS 条直接使用（不合并）；否则重试至多
-    MAX_ATTEMPTS 次，最后合并所有查新点。审查步只调用一次模型做去重。
-    数量按需求固定为 MIN_POINTS（3）条，编号统一重排为 NP-1..NP-n
-    （不信任模型编号）。
+    生成、去重和一次有界补核查共享调用预算。目标数量只用于诊断，
+    不足时保留已证实的点并报告范围局限；编号由代码重排。
     """
 
     def __init__(
@@ -91,6 +116,8 @@ class NoveltyPointExtractorAgent(NoveltyPointExtractor):
         self._model_alias = model_alias
         self.temperature = temperature
         self.model_options = model_options
+        self.last_trace: dict[str, Any] = {}
+        self._model_calls_used = 0
 
     def extract(
         self,
@@ -101,8 +128,27 @@ class NoveltyPointExtractorAgent(NoveltyPointExtractor):
     ) -> Sequence[NoveltyPoint]:
         """两步编排：生成候选查新点，再由审查步去重。"""
 
+        self._model_calls_used = 0
+        digest_data = digest.model_dump(mode="json")
+        self.last_trace = {
+            "paper_id": digest.paper_id,
+            "digest": digest_data,
+            "digest_sha256": hashlib.sha256(json.dumps(digest_data, ensure_ascii=False,
+                sort_keys=True).encode()).hexdigest(),
+            "target_count": MIN_POINTS,
+            "max_candidates": MAX_POINTS,
+            "model_call_budget": MAX_MODEL_CALLS,
+            "calls": [],
+        }
         candidates = self._generate_candidates(digest, previous_brief, attempt)
-        return self._review_candidates(digest, candidates, previous_brief, attempt)
+        result = self._review_candidates(digest, candidates, previous_brief, attempt)
+        self.last_trace["final_points"] = [p.model_dump(mode="json") for p in result]
+        self.last_trace["final_count"] = len(result)
+        self.last_trace["exit_reason"] = (
+            "target_reached" if len(result) >= MIN_POINTS else "below_target_review_scope"
+        )
+        self.last_trace["model_calls_used"] = self._model_calls_used
+        return result
 
     def _generate_candidates(
         self,
@@ -115,6 +161,8 @@ class NoveltyPointExtractorAgent(NoveltyPointExtractor):
         last_error: ValueError | None = None
         aggregated: dict[str, NoveltyPoint] = {}
         for _ in range(MAX_ATTEMPTS):
+            if self._model_calls_used >= MAX_MODEL_CALLS - 1:
+                break  # reserve one call for deduplication
             existing = list(aggregated.values())
             existing_dicts = [point.model_dump(mode="json") for point in existing]
             try:
@@ -134,9 +182,7 @@ class NoveltyPointExtractorAgent(NoveltyPointExtractor):
                             ensure_ascii=False,
                         ),
                         "attempt": attempt,
-                        "point_schema": json.dumps(
-                            NoveltyPoint.model_json_schema(), ensure_ascii=False
-                        ),
+                        "point_schema": json.dumps(_POINT_OUTPUT_SCHEMA, ensure_ascii=False),
                     },
                     payload={
                         "digest": digest.model_dump(mode="json"),
@@ -149,22 +195,31 @@ class NoveltyPointExtractorAgent(NoveltyPointExtractor):
                         "attempt": attempt,
                     },
                     fallback_user_prompt=(
-                        "请从论文摘要视图中提取查新点。若输入数据中的 existing_points 非空，"
-                        "请只输出新增的、与之不同的查新点，使总数达到 3 条；否则直接输出 3 条。"
-                        "所有内容使用中文。"
+                        "提取有原文依据的独立技术机制；框架中的独立子算法单列，"
+                        "性能指标不单独凑点。已有候选非空时只返回遗漏机制。"
+                        "输出 JSON 对象 {\"novelty_points\": [...]}，没有新增则返回空数组。"
                     ),
                 )
+                self.last_trace.setdefault("parse_branches", []).append(_point_parse_branch(data))
                 candidates = validate_point_items(_extract_points_list(data))
             except ValueError as exc:
                 last_error = exc
                 candidates = []
+                self.last_trace.setdefault("generation_errors", []).append(str(exc))
+            self.last_trace.setdefault("generation", []).append({
+                "existing_count": len(existing),
+                "candidate_count": len(candidates),
+                "candidates": [p.model_dump(mode="json") for p in candidates],
+            })
             if not aggregated and len(candidates) >= MIN_POINTS:
-                return candidates[:MIN_POINTS]  # 单次合格，不合并，按需求固定 3 条
+                self.last_trace["merged_candidates"] = [p.model_dump(mode="json") for p in candidates]
+                return candidates
             for point in candidates:
                 aggregated.setdefault(point.claim.strip(), point)
             if len(aggregated) >= MIN_POINTS:
                 break
-        selected = list(aggregated.values())[:MIN_POINTS]
+        selected = list(aggregated.values())
+        self.last_trace["merged_candidates"] = [p.model_dump(mode="json") for p in selected]
         if not selected and last_error is not None:
             raise last_error
         return selected
@@ -179,7 +234,9 @@ class NoveltyPointExtractorAgent(NoveltyPointExtractor):
         """审查步：模型只判定重复条目编号，代码删除后原样保留其余。"""
 
         numbered = [
-            {"index": index, "claim": point.claim}
+            {"index": index, "claim": point.claim,
+             "technical_features": point.technical_features,
+             "source_locations": point.source_locations}
             for index, point in enumerate(candidates, start=1)
         ]
         data = self._complete_json(
@@ -193,10 +250,16 @@ class NoveltyPointExtractorAgent(NoveltyPointExtractor):
             payload={"points": numbered},
             fallback_user_prompt=(
                 "请判断候选查新点中哪些是重复条目，输出 {\"delete_indices\": [编号列表]}；"
-                "只有 claim 语义完全相同时才算重复，无重复输出空数组。"
+                "只有技术目标、核心机制和适用范围等价且仅为复述时才删除；"
+                "框架与独立子算法不能仅因包含关系被删除。无重复输出空数组。"
             ),
         )
         delete_indices = _parse_delete_indices(data)
+        raw_indices = data.get("delete_indices", data.get("delete", data.get("indices"))) if isinstance(data, dict) else data
+        invalid_entries = [entry for entry in raw_indices if type(entry) is not int] if isinstance(raw_indices, list) else []
+        invalid_indices = sorted(index for index in delete_indices
+                                 if index < 1 or index > len(candidates))
+        delete_indices -= set(invalid_indices)
         kept = [
             point
             for index, point in enumerate(candidates, start=1)
@@ -204,7 +267,44 @@ class NoveltyPointExtractorAgent(NoveltyPointExtractor):
         ]
         if not kept and candidates:
             kept = list(candidates)  # 安全兜底：不允许删空
-        return renumber_points(kept[:MIN_POINTS])
+            delete_indices.clear()
+        self.last_trace["deduplication"] = {
+            "input": numbered,
+            "raw_delete_indices": data,
+            "invalid_entries": invalid_entries,
+            "invalid_indices": invalid_indices,
+            "deleted_indices": sorted(delete_indices),
+            "retained_indices": [i for i in range(1, len(candidates) + 1)
+                                 if i not in delete_indices],
+            "deletion_reason": "not provided by model",
+        }
+        if len(kept) < MIN_POINTS and len(candidates) >= MIN_POINTS \
+                and self._model_calls_used < MAX_MODEL_CALLS:
+            # One bounded coverage check after deletion; do not regenerate all points.
+            try:
+                self.last_trace["coverage_followup_attempted"] = True
+                data = self._complete_json(
+                    prompt_name="extractor/extract_points",
+                    variables={
+                        "digest_json": json.dumps(digest.model_dump(mode="json"), ensure_ascii=False),
+                        "existing_points_json": json.dumps([p.model_dump(mode="json") for p in kept], ensure_ascii=False),
+                        "previous_brief_json": json.dumps(previous_brief.model_dump(mode="json") if previous_brief else None, ensure_ascii=False),
+                        "attempt": attempt,
+                        "point_schema": json.dumps(_POINT_OUTPUT_SCHEMA, ensure_ascii=False),
+                    },
+                    payload={"digest": digest.model_dump(mode="json"),
+                             "existing_points": [p.model_dump(mode="json") for p in kept]},
+                    fallback_user_prompt="只核查已有候选和删除结果是否遗漏原文支持的独立技术机制；没有则返回空 novelty_points 数组。",
+                )
+                self.last_trace["coverage_followup_parse_branch"] = _point_parse_branch(data)
+                additions = validate_point_items(_extract_points_list(data))
+                for point in additions:
+                    if point.claim.strip() not in {p.claim.strip() for p in kept}:
+                        kept.append(point)
+                self.last_trace["coverage_followup_candidates"] = [p.model_dump(mode="json") for p in additions]
+            except ValueError as exc:
+                self.last_trace["coverage_followup_error"] = str(exc)
+        return renumber_points(kept)
 
     def _complete_json(
         self,
@@ -214,10 +314,15 @@ class NoveltyPointExtractorAgent(NoveltyPointExtractor):
         payload: dict[str, Any],
         fallback_user_prompt: str,
     ) -> Any:
+        if self._model_calls_used >= MAX_MODEL_CALLS:
+            raise ValueError("查新点提取共享模型调用预算耗尽")
+        self._model_calls_used += 1
         client = self._client()
+        prompt_version = None
         if self._prompts is not None:
             rendered = self._prompts.render(prompt_name, **variables)
             system, user = rendered.system, rendered.user
+            prompt_version = rendered.version
         else:
             system = self._system_prompt()
             user = (
@@ -234,6 +339,14 @@ class NoveltyPointExtractorAgent(NoveltyPointExtractor):
                 response_format={"type": "json_object"},
             ),
         )
+        if self.last_trace:
+            self.last_trace["calls"].append({
+                "prompt_name": prompt_name,
+                "prompt_version": prompt_version,
+                "system_sha256": hashlib.sha256(system.encode()).hexdigest(),
+                "user_sha256": hashlib.sha256(user.encode()).hexdigest(),
+                "visible_output": response.content,
+            })
         try:
             return json.loads(response.content)
         except json.JSONDecodeError as exc:
@@ -252,9 +365,9 @@ class NoveltyPointExtractorAgent(NoveltyPointExtractor):
     def _system_prompt() -> str:
         return (
             "你是论文查新系统的查新点提取 Agent。你从论文摘要、作者声明贡献和正文片段中"
-            "提取可检索、可比较的查新点。必须输出至少 3 个、最多 8 个查新点；数量不足 3 个视为不合格，"
-            "必须基于论文信息补充到至少 3 个。所有 claim 与 technical_features 使用中文。"
-            "你不能编造论文中不存在的内容。"
+            "提取有原文依据、可独立检索的技术贡献；框架内有独立机制的子算法单列。"
+            "性能数字通常是效果验证，不单独凑点。只输出 JSON 对象 novelty_points；"
+            "证据不足时可以少于三个，不得编造。中文与英文声明应对应。"
         )
 
 
@@ -318,6 +431,18 @@ def _extract_points_list(data: Any) -> list[Any] | None:
     return None
 
 
+def _point_parse_branch(data: Any) -> str:
+    if isinstance(data, dict) and "novelty_points" in data:
+        return "canonical_object"
+    if isinstance(data, list):
+        return "legacy_array"
+    if isinstance(data, dict) and "claim" in data:
+        return "legacy_single_point"
+    if _extract_points_list(data) is not None:
+        return "legacy_nested_object"
+    return "invalid"
+
+
 def _is_points_list(value: Any) -> bool:
     """判定列表是否可视为查新点列表：空列表合法，非空时每项都必须是含 claim 的字典。"""
 
@@ -334,7 +459,9 @@ def validate_point_items(data: Any) -> list[NoveltyPoint]:
     if data is None:
         raise ValueError("查新点输出顶层必须是列表")
     points: list[NoveltyPoint] = []
-    for index, item in enumerate(data[:MAX_POINTS]):
+    if len(data) > MAX_POINTS:
+        raise ValueError(f"查新点候选数 {len(data)} 超过上限 {MAX_POINTS}；不得静默截断")
+    for index, item in enumerate(data):
         try:
             points.append(NoveltyPoint.model_validate(item))
         except ValidationError as exc:
@@ -362,10 +489,6 @@ def _parse_delete_indices(data: Any) -> set[int]:
         return set()
     indices: set[int] = set()
     for item in value:
-        if isinstance(item, bool):
-            continue
-        if isinstance(item, (int, float)):
-            indices.add(int(item))
-        elif isinstance(item, str) and item.strip().isdigit():
-            indices.add(int(item.strip()))
+        if type(item) is int:
+            indices.add(item)
     return indices

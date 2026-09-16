@@ -203,6 +203,15 @@ class RuntimeArtifactManager:
 
         self._outcome = dict(outcome)
 
+    def record_diagnostic_artifact(self, name: str, payload: Mapping[str, Any]) -> None:
+        """Store a small, redacted sidecar beside the existing runtime diagnostics."""
+        if not self.config.enabled or self.run_dir is None:
+            return
+        if not re.fullmatch(r"[a-z][a-z0-9_]*\.json", name):
+            raise ValueError("invalid diagnostic artifact name")
+        with self._lock:
+            self._write_json(self.run_dir / "diagnostics" / name, dict(payload))
+
     def record_provider_request(self, event: Mapping[str, Any]) -> None:
         """Persist a provider scheduler event without affecting business flow."""
 
@@ -536,7 +545,7 @@ class RuntimeArtifactManager:
         if not self.diagnostics:
             return
         diagnostics_dir = self.run_dir / "diagnostics"
-        diagnostics_dir.mkdir(parents=False, exist_ok=False)
+        diagnostics_dir.mkdir(parents=False, exist_ok=True)
         context = RuntimeDiagnosticContext(
             paper_id=self.paper_id,
             run_id=self.run_id,

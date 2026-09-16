@@ -64,7 +64,8 @@ def make_agent(client) -> NoveltyPointExtractorAgent:
 def test_extractor_generates_then_reviews():
     client = SequencedClient([json.dumps(three_items()), json.dumps(three_items())])
 
-    points = make_agent(client).extract(
+    agent = make_agent(client)
+    points = agent.extract(
         build_paper_digest(make_paper()),
         previous_brief=None,
         attempt=1,
@@ -210,21 +211,23 @@ def test_extractor_rejects_non_list():
         )
 
 
-def test_extractor_caps_at_three():
+def test_extractor_does_not_silently_cap_at_three():
     ten = [
         dict(POINT_ITEM, point_id=f"X-{index}", claim=f"查新点{index}")
         for index in range(1, 11)
     ]
     client = SequencedClient([json.dumps(ten), json.dumps(ten[:8])])
 
-    points = make_agent(client).extract(
+    agent = make_agent(client)
+    points = agent.extract(
         build_paper_digest(make_paper()),
         previous_brief=None,
         attempt=1,
     )
 
-    assert len(points) == 3  # 需求固定 3 条，模型多输出也截断到 3
-    assert points[-1].point_id == "NP-3"
+    assert len(points) == 8  # 10 超预算已记录；8 个有依据的候选不再截断成 3 个
+    assert points[-1].point_id == "NP-8"
+    assert "超过上限" in agent.last_trace["generation_errors"][0]
 
 
 def test_extractor_accepts_object_wrapper():
@@ -237,6 +240,57 @@ def test_extractor_accepts_object_wrapper():
         attempt=1,
     )
     assert len(points) == 3
+    assert client.calls[0][1].response_format == {"type": "json_object"}
+    assert '"novelty_points"' in client.calls[0][0][1].content
+
+
+def test_extractor_records_below_target_without_fabricating_third():
+    two = three_items()[:2]
+    client = SequencedClient([json.dumps({"novelty_points": two})] * 3
+                             + [json.dumps({"delete_indices": []})])
+    agent = make_agent(client)
+    result = agent.extract(build_paper_digest(make_paper()), previous_brief=None, attempt=1)
+    assert len(result) == 2
+    assert agent.last_trace["exit_reason"] == "below_target_review_scope"
+    assert agent.last_trace["model_calls_used"] == 4
+
+
+def test_extractor_dedup_receives_features_and_ignores_noninteger_indices():
+    client = SequencedClient([
+        json.dumps({"novelty_points": three_items()}),
+        json.dumps({"delete_indices": [True, 2.0, "3", 99]}),
+    ])
+    agent = make_agent(client)
+    result = agent.extract(build_paper_digest(make_paper()), previous_brief=None, attempt=1)
+    assert len(result) == 3
+    assert "technical_features" in client.calls[1][0][1].content
+    assert agent.last_trace["deduplication"]["invalid_indices"] == [99]
+    assert agent.last_trace["deduplication"]["invalid_entries"] == [True, 2.0, "3"]
+
+
+def test_extractor_coverage_followup_shares_budget_and_records_numbering():
+    items = three_items()
+    client = SequencedClient([
+        json.dumps({"novelty_points": items}),
+        json.dumps({"delete_indices": [3]}),
+        json.dumps({"novelty_points": [dict(items[2], claim="独立补核查机制")]}),
+    ])
+    agent = make_agent(client)
+    points = agent.extract(build_paper_digest(make_paper()), previous_brief=None, attempt=1)
+    assert [p.point_id for p in points] == ["NP-1", "NP-2", "NP-3"]
+    assert points[2].claim == "独立补核查机制"
+    assert agent.last_trace["coverage_followup_attempted"] is True
+    assert agent.last_trace["model_calls_used"] == 3
+    assert agent.last_trace["deduplication"]["deleted_indices"] == [3]
+    assert agent.last_trace["parse_branches"] == ["canonical_object"]
+
+
+def test_real_paper_digest_includes_bounded_independent_contribution():
+    path = Path("outputs/MF2033k6lC/paper-input/others/paper.json")
+    digest = build_paper_digest(PaperInput.model_validate_json(path.read_text()))
+    assert "Sketch-DBH" in digest.full_text_excerpt
+    assert "Count-Min Sketch" in digest.full_text_excerpt
+    assert len(digest.full_text_excerpt) <= 2000 + 3 * 1200 + 150
 
 
 def test_extractor_accepts_nested_wrapper():

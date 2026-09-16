@@ -30,6 +30,15 @@ def _config(tmp_path: Path, *, enabled: bool = True, max_inline_bytes: int = 256
     )
 
 
+def test_diagnostic_sidecar_is_archived_and_rejects_unsafe_name(tmp_path: Path) -> None:
+    manager = RuntimeArtifactManager("paper-1", config=_config(tmp_path), run_id="trace-1")
+    manager.record_diagnostic_artifact("point_extraction_trace.json", {"stage": "dedup"})
+    assert json.loads((manager.run_dir / "diagnostics" / "point_extraction_trace.json").read_text()) == {"stage": "dedup"}
+    _, archive = manager.finish_run("SUCCESS")
+    assert archive is not None
+    assert (archive / "diagnostics" / "point_extraction_trace.json").is_file()
+
+
 def test_incremental_run_stage_tool_and_archived_summary(tmp_path: Path) -> None:
     manager = RuntimeArtifactManager(
         "paper/unsafe",

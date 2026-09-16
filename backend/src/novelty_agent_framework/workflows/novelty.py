@@ -301,11 +301,17 @@ class NoveltyWorkflow:
         persist_workflow_input(state["paper"], output_root=self.output_root)
         try:
             digest = build_paper_digest(state["paper"])
-            points_value = self.point_extractor.extract(
-                digest,
-                previous_brief=None,
-                attempt=1,
-            )
+            try:
+                points_value = self.point_extractor.extract(
+                    digest,
+                    previous_brief=None,
+                    attempt=1,
+                )
+            finally:
+                runtime = current_runtime_artifacts()
+                trace = getattr(self.point_extractor, "last_trace", None)
+                if runtime is not None and trace:
+                    runtime.record_diagnostic_artifact("point_extraction_trace.json", trace)
             points = list(await _resolve(points_value))
             validated = [
                 point
@@ -327,6 +333,14 @@ class NoveltyWorkflow:
             if not point.claim_en or not point.technical_features_en
         ]
         issues: list[WorkflowIssue] = []
+        trace = getattr(self.point_extractor, "last_trace", None)
+        if trace and trace.get("exit_reason") == "below_target_review_scope":
+            issues.append(WorkflowIssue(
+                node="extract_points", code="point_scope_below_target",
+                message=(f"提取器只确认 {len(validated)} 个查新点；"
+                         "目标数量未达到，后续检索范围可能不完整。"),
+                severity=IssueSeverity.WARNING,
+            ))
         if missing_english:
             issues.append(
                 WorkflowIssue(
