@@ -1,0 +1,406 @@
+{
+  "brief": {
+    "paper_summary": "由于现实世界中的大多数数据都可以用图表示，因此近年来针对图表示学\n习的研究越来越受到关注。通过将高维图数据转化成低维的表征向量，图表示\n学习可以有效地对图的信息进行存储并快捷地访问图中实体的关键知识。利用\n学习到的图表征数据可以为社交网络行为分析、节点分类、链路预测和聚类等\n下游任务提供帮助。随着深度学习的快速发展，研究人员提出了基于图神经网\n络的图表示学习方法，其使图中的节点能够同时学习图的结构信息以及邻域节\n点的特征信息，从而得到高质量的低维表征。针对图神经网络上的图表示学\n习，本文主要关注两个问题：大规模时序图场景下的图表示学习方法和分布式\n场景下的大规模图的图神经网络优化训练方法。\n真实世界中的图数据规模往往十分庞大且处于动态变化的状态，而现有的\n图神经网络要么无法处理动态时序图上的图表征学习，要么面对大规模图数据\n集时训练效率低下。为了解决大规模动态图上的图表征学习问题，本文提出了\n一种基于图摘要的大规模时序图表示学习方法——GSAERU 模型。GSAERU 模\n型由“图表征学习模块”和“时序学习模块”两部分构成。首先将动态时序图\n建模为各时刻上原图快照的序列，接着在单时间步上将图快照输入图表征学习\n模块。该模块通过图摘要技术对原图进行压缩，并将压缩后的新图输入图自编\n码器，利用和原图的重构误差训练原图节点的表征。在获得单时间步上的图表\n征后将其输入时序学习模块，并通过一个循环神经网络学习原图在时间维度上\n的特征信息与依赖关系，从而得到大规模时序图的高质量表征。基于在四个真\n实世界的大规模图数据集上的大量实验表明，GSAERU 模型能够高效生成时序\n图的表征。与传统的图神经网络算法相比，其平均内存消耗和平均训练时长只\n有其9.86% 与13.27%，且与性能最好的算法在大部分指标下的差距都不超过\n3.5%。\n\nii\n使用分布式技术加速神经网络训练也是如今热门的研究课题，因为在处理\n大规模数据时，单个设备（如CPU，GPU）有限的内存和计算资源往往会成为\n训练瓶颈。而分布式技术可以提供更多的计算资源来提高训练效率。然而由于\n图数据的不规则性，传统分布式机器学习方法中的子任务划分和模型训练方法\n难以直接应用于图神经网络。针对大规模图流数据场景下的分布式图神经网络\n训练优化问题，本文提出了基于图摘要的分布式图神经网络优化训练算法——\nDSGNN 模型。DSGNN 模型采用“领导——工作者”工作模式，首先由领导节\n点利用一个基于边分割的图流划分算法对原图进行划分并将划分子图分配给各\n个工作节点。工作节点随后执行一个基于图摘要技术的小批量训练并将训练结\n果通过一个注意力层返回给领导节点，最后由领导节点汇总结果并计算梯度，\n并根据梯度同步更新所有计算节点上的模型。基于四个真实世界的大规模图数\n据集上的大量实验，结果表明DSGNN 模型可以大大加速GNN 模型的训练，\n并且在链路预测任务上的F1 分数显著高于其它分布式图神经网络模型。",
+    "research_problem": "面向大规模动态图的图神经网络优化机制研究",
+    "novelty_points": [
+      {
+        "point_id": "NP-1",
+        "claim": "提出了一种基于图摘要的大规模时序图表示学习方法GSAERU，该方法通过图摘要技术压缩原图，利用图自编码器学习节点表征，并结合循环神经网络学习时间维度的特征和依赖关系，能够高效生成大规模时序图的低维表征。",
+        "claim_en": "Proposes a large-scale sequential graph representation learning method based on graph summarization, named GSAERU, which compresses the original graph via graph summarization, uses a graph autoencoder to learn node representations, and incorporates a recurrent neural network to learn temporal features and dependencies, efficiently generating high-quality low-dimensional representations for large-scale dynamic graphs.",
+        "technical_features": [
+          "将动态时序图建模为各时刻的快照序列",
+          "使用图摘要技术压缩原始图",
+          "将压缩后的图输入图自编码器，利用与原图的重构误差训练节点表征",
+          "通过循环神经网络学习原图在时间维度上的特征与依赖关系",
+          "在四个真实大规模图数据集上平均内存消耗和训练时长仅为传统GNN的9.86%和13.27%，且与最好性能算法差距不超过3.5%"
+        ],
+        "technical_features_en": [
+          "Model dynamic sequential graph as a sequence of snapshots",
+          "Use graph summarization technology to compress the original graph",
+          "Feed the compressed graph into a graph autoencoder and train node representations using reconstruction error with the original graph",
+          "Learn temporal features and dependencies via a recurrent neural network",
+          "On four real-world large-scale graph datasets, average memory consumption and training time are only 9.86% and 13.27% of traditional GNNs, with accuracy gap within 3.5% for most metrics"
+        ],
+        "source_locations": [
+          "摘要"
+        ]
+      },
+      {
+        "point_id": "NP-2",
+        "claim": "提出了一种基于图摘要的分布式图神经网络优化训练算法DSGNN，采用领导-工作者工作模式，领导节点利用基于边分割的图流划分算法划分图并将子图分配给工作者，工作者执行基于图摘要的小批量训练，通过注意力层返回结果，领导节点汇总计算梯度并同步更新所有模型，显著加速大规模图流的GNN训练。",
+        "claim_en": "Proposes a distributed graph neural network optimization training algorithm based on graph summarization, named DSGNN, which adopts a leader-worker mode: the leader partitions the graph using an edge-segmentation-based graph streaming algorithm, workers perform graph-summarization-based mini-batch training, results are returned to the leader through an attention layer, the leader aggregates results, computes gradients, and synchronously updates all models, greatly accelerating GNN training on large-scale graph streams.",
+        "technical_features": [
+          "采用领导-工作者工作模式",
+          "基于边分割的图流划分算法对原图进行划分",
+          "工作节点执行基于图摘要技术的小批量训练",
+          "训练结果通过注意力层返回给领导节点",
+          "领导节点汇总结果并计算梯度，同步更新所有计算节点上的模型"
+        ],
+        "technical_features_en": [
+          "Adopt leader-worker mode",
+          "Partition original graph using edge-segmentation-based graph streaming algorithm",
+          "Workers perform mini-batch training based on graph summarization",
+          "Training results returned to leader through an attention layer",
+          "Leader aggregates results, computes gradient, and synchronously updates models on all computing nodes"
+        ],
+        "source_locations": [
+          "摘要"
+        ]
+      },
+      {
+        "point_id": "NP-3",
+        "claim": "提出了一种基于图摘要的图神经网络优化机制，通过图摘要技术对原始图数据进行压缩，在保留图主要结构和特征信息的同时大幅减少数据规模，从而降低图神经网络训练的内存消耗和计算成本，并可同时应用于大规模动态时序图的表示学习和分布式训练场景，有效提升了图神经网络的可扩展性和训练效率。",
+        "claim_en": "Proposes a graph neural network optimization mechanism based on graph summarization, which compresses the original graph data using graph summarization, substantially reducing data size while preserving key structure and feature information, thereby lowering memory consumption and computational cost for GNN training. This mechanism is applicable to both representation learning on large-scale dynamic graphs and distributed training scenarios, enhancing scalability and training efficiency of GNNs.",
+        "technical_features": [
+          "利用图摘要技术对原始图进行结构压缩",
+          "压缩后的图保持主要拓扑和节点特征信息",
+          "在时序图表示学习中使用压缩图输入图自编码器",
+          "在分布式训练中使用压缩图生成小批量数据",
+          "通过设计重构机制（如重构误差）保证压缩质量"
+        ],
+        "technical_features_en": [
+          "Compress original graph structure using graph summarization technology",
+          "Compressed graph retains key topology and node feature information",
+          "Use compressed graph as input to graph autoencoder for temporal graph representation learning",
+          "Generate mini-batches from compressed graph for distributed training",
+          "Ensure compression quality via reconstruction mechanism (e.g., reconstruction error)"
+        ],
+        "source_locations": [
+          "摘要"
+        ]
+      }
+    ],
+    "keywords_zh": [
+      "图表示学习",
+      "深度学习",
+      "图神经网络",
+      "分布式技术"
+    ],
+    "keywords_en": [
+      "graph representation learning",
+      "deep learning",
+      "graph neural network",
+      "distributed"
+    ],
+    "research_tasks": [
+      {
+        "task_id": "T-R2-1",
+        "novelty_point_id": "NP-1",
+        "task_type": "feature_supplement",
+        "language": "en",
+        "description": "Current evidence for NP-1 (GSAERU model for large-scale temporal graph representation learning using graph summarization, autoencoders, and RNNs) is insufficient with 0 valid cards. This task aims to supplement by searching for works that specifically combine graph summarization/sketching with graph autoencoders and recurrent networks for dynamic graph representation learning, focusing on the technical features of snapshot modeling, reconstruction-error-based training, and fixed-size representation generation.",
+        "attempt": 2
+      },
+      {
+        "task_id": "T-R2-1",
+        "novelty_point_id": "NP-2",
+        "task_type": "feature_supplement",
+        "language": "en",
+        "description": "Current evidence for NP-2 (DSGNN distributed GNN training framework using graph summarization, leader-worker architecture, edge-segmentation partitioning, and attention-based loss aggregation) is insufficient with 0 valid cards. This task aims to supplement by searching for works that focus on distributed GNN training with graph partitioning, mini-batch generation via graph summarization, and attention-based aggregation mechanisms, emphasizing the technical features of the leader-worker setup and synchronous model updates.",
+        "attempt": 2
+      }
+    ]
+  },
+  "evidence_cards": [
+    {
+      "card_id": "card_369a02f1d029252af70a4638",
+      "task_id": "T-1",
+      "novelty_point_id": "NP-3",
+      "document_title": "A Comprehensive Survey on Graph Summarization with Graph Neural Networks",
+      "main_contribution": "A comprehensive survey of graph summarization with graph neural networks, covering GNN-based summarization approaches including graph autoencoders, and discussing dynamic graphs as a future direction.",
+      "overlaps": [
+        "Covers graph summarization with GNNs including graph autoencoder-based approaches",
+        "Discusses graph summarization as a way to compress large graphs while preserving key properties",
+        "Identifies dynamic graphs as an open research direction in graph summarization"
+      ],
+      "differences": [
+        "The survey is a review of existing methods, not a proposed mechanism for GNN training optimization",
+        "Does not specifically address using compressed graphs for distributed training or mini-batch generation",
+        "Does not propose a reconstruction error mechanism for compression quality assurance"
+      ],
+      "sources": [
+        {
+          "title": "A Comprehensive Survey on Graph Summarization with Graph Neural Networks",
+          "quote": "Graph summarization is the process of finding a condensed representation of a graph while preserving its key properties",
+          "location": "artifact art_2c3d8467f4da8a33213a0887 chars:5175-5294",
+          "doi": null,
+          "url": "https://arxiv.org/pdf/2302.06114"
+        },
+        {
+          "title": "A Comprehensive Survey on Graph Summarization with Graph Neural Networks",
+          "quote": "Our investigation includes a review of the current state-of-the-art approaches, including recurrent GNNs, convolutional GNNs, graph autoencoders, and graph attention networks.",
+          "location": "artifact art_2c3d8467f4da8a33213a0887 chars:2818-2993",
+          "doi": null,
+          "url": "https://arxiv.org/pdf/2302.06114"
+        }
+      ],
+      "cited_by_paper": null,
+      "possible_baseline": false,
+      "relevance": 0.7,
+      "confidence": 0.85,
+      "evidence_ids": [
+        "ev_cc36844bfa713fcbbd27d568",
+        "ev_12f3a63dbd13ff9215dc2222"
+      ]
+    },
+    {
+      "card_id": "card_7eefef982fccf42f4844ad44",
+      "task_id": "T-1",
+      "novelty_point_id": "NP-3",
+      "document_title": "Graph Coarsening via Convolution Matching for Scalable Graph Neural Network Training",
+      "main_contribution": "CONVMATCH proposes graph coarsening via convolution matching as a preprocessing technique for scalable GNN training, creating summarized graphs that preserve graph convolution output while significantly reducing graph size.",
+      "overlaps": [
+        "Uses graph summarization/coarsening to compress original graph data for GNN training",
+        "Preserves key structure and prediction performance while reducing data size",
+        "Aims to reduce computational cost and improve scalability of GNN training"
+      ],
+      "differences": [
+        "CONVMATCH focuses on static graph coarsening for node classification and link prediction, not on dynamic/temporal graphs",
+        "Does not address distributed training scenarios or mini-batch generation from compressed graphs",
+        "Does not use graph autoencoders or reconstruction error mechanisms for compression quality assurance",
+        "Preserves graph convolution output specifically rather than general topology and feature information"
+      ],
+      "sources": [
+        {
+          "title": "Graph Coarsening via Convolution Matching for Scalable Graph Neural Network Training",
+          "quote": "Graph summarization as a preprocessing step is an effective and complementary technique for scalable graph neural network (GNN) training. In this work, we propose the Coarsening Via Convolution Matching (CONVMATCH) algorithm and a highly scalable variant, A-CONVMATCH, for creating summarized graphs that preserve the output of graph convolution.",
+          "location": "artifact art_bf81f0222bfdcc7d34201822 chars:0-346",
+          "doi": null,
+          "url": "https://arxiv.org/pdf/2312.15520"
+        },
+        {
+          "title": "Graph Coarsening via Convolution Matching for Scalable Graph Neural Network Training",
+          "quote": "Notably, CONVMATCH achieves up to 95% of the prediction performance of GNNs on node classification while trained on graphs summarized down to 1% the size of the original graph.",
+          "location": "artifact art_bf81f0222bfdcc7d34201822 chars:550-726",
+          "doi": null,
+          "url": "https://arxiv.org/pdf/2312.15520"
+        }
+      ],
+      "cited_by_paper": null,
+      "possible_baseline": true,
+      "relevance": 0.85,
+      "confidence": 0.9,
+      "evidence_ids": [
+        "ev_1559145e13181578514e5b11",
+        "ev_449339e0ad9339049004ee58"
+      ]
+    },
+    {
+      "card_id": "card_02d8fa6f524c989795c96dc9",
+      "task_id": "T-1",
+      "novelty_point_id": "NP-3",
+      "document_title": "Inference-friendly Graph Compression for Graph Neural Networks",
+      "main_contribution": "Inference-friendly graph compression (IFGC) proposes a graph compression scheme to accelerate GNN inference by computing a small compressed graph that preserves inference results.",
+      "overlaps": [
+        "Uses graph compression to reduce graph size for GNN processing",
+        "Preserves inference results while compressing the graph"
+      ],
+      "differences": [
+        "Focuses on accelerating inference, not training",
+        "Does not address dynamic/temporal graphs or distributed training",
+        "Does not use graph autoencoders or reconstruction error mechanisms",
+        "Targets inference equivalence rather than training efficiency"
+      ],
+      "sources": [
+        {
+          "title": "Inference-friendly Graph Compression for Graph Neural Networks",
+          "quote": "This paper proposes inference-friendly graph compression (IFGC), a graph compression scheme to accelerate GNNs inference. Given a graph $G$ and a GNN $M$, an IFGC computes a small compressed graph $G_c$, to best preserve the inference results of $M$ over $G$",
+          "location": "artifact art_07ec080e57558783022d62b8 chars:195-453",
+          "doi": null,
+          "url": "https://arxiv.org/pdf/2504.13034"
+        }
+      ],
+      "cited_by_paper": null,
+      "possible_baseline": false,
+      "relevance": 0.6,
+      "confidence": 0.85,
+      "evidence_ids": [
+        "ev_d09472eae811298774b88f86"
+      ]
+    }
+  ],
+  "rejected_evidence": [],
+  "novelty_reviews": [
+    {
+      "novelty_point_id": "NP-1",
+      "status": "insufficient_evidence",
+      "verdict": null,
+      "verdict_reason": null,
+      "confidence": null,
+      "highly_relevant_works": [],
+      "supplement_request": {
+        "reason": "当前查新点没有可供可靠判定的已绑定证据。",
+        "missing_aspects": [],
+        "suggested_focus": []
+      }
+    },
+    {
+      "novelty_point_id": "NP-2",
+      "status": "insufficient_evidence",
+      "verdict": null,
+      "verdict_reason": null,
+      "confidence": null,
+      "highly_relevant_works": [],
+      "supplement_request": {
+        "reason": "当前查新点没有可供可靠判定的已绑定证据。",
+        "missing_aspects": [],
+        "suggested_focus": []
+      }
+    },
+    {
+      "novelty_point_id": "NP-3",
+      "status": "reviewed",
+      "verdict": "partially_novel",
+      "verdict_reason": "综合三篇单卡证据：综述（card_369a02f1d029252af70a4638）系统梳理了图摘要与GNN类方法（含图自编码器），但未涉及动态/时序图表示学习、分布式训练小批量生成及重构误差质量控制；CONVMATCH（card_7eefef982fccf42f4844ad44）证实图摘要/粗化压缩原始图可大幅降规模并保持预测性能，但仅针对静态图节点分类/链接预测，未覆盖时序图表示学习和分布式训练；IFGC（card_02d8fa6f524c989795c96dc9）使用图压缩加速推理，但未涉及训练效率、时序图、分布式训练及重构误差机制。单篇公开内容均未覆盖完整组合（压缩+时序表示学习+分布式训练+重构质量控制），仅分别覆盖部分特征（特征1、2、5的部分内涵），不构成完整组合的公开。因此判定为部分新颖，完整组合仍有差异化空间。",
+      "confidence": 0.72,
+      "highly_relevant_works": [
+        {
+          "work_id": "wrk_3341f9be3e3f75887b9da472",
+          "card_ids": [
+            "card_369a02f1d029252af70a4638"
+          ],
+          "evidence_ids": [
+            "ev_cc36844bfa713fcbbd27d568",
+            "ev_12f3a63dbd13ff9215dc2222"
+          ],
+          "relevance_reason": "综述系统梳理图摘要（压缩并保持关键性质）及GNN类方法（含图自编码器），与特征1-3部分对应，但未涉及分布式训练小批量生成和重构误差质量控制，属部分相关基线。"
+        },
+        {
+          "work_id": "wrk_f7b8adb9585db0dfc3de41af",
+          "card_ids": [
+            "card_7eefef982fccf42f4844ad44"
+          ],
+          "evidence_ids": [
+            "ev_1559145e13181578514e5b11",
+            "ev_449339e0ad9339049004ee58"
+          ],
+          "relevance_reason": "CONVMATCH直接证实用图摘要/粗化压缩原始图训练GNN可显著降规模且保持预测性能，覆盖特征1、2、5的部分内涵，但仅限静态图节点分类/链接预测，未覆盖动态时序图表示学习（特征3）和分布式训练小批量（特征4），属部分相关基线。"
+        },
+        {
+          "work_id": "wrk_2e51677d82499024e21cfee7",
+          "card_ids": [
+            "card_02d8fa6f524c989795c96dc9"
+          ],
+          "evidence_ids": [
+            "ev_d09472eae811298774b88f86"
+          ],
+          "relevance_reason": "IFGC采用图压缩生成小型压缩图供GNN处理，与特征1重叠，但聚焦推理加速而非训练内存/计算降低，未涉及时序图、分布式训练和重构误差机制，属部分相关基线。"
+        }
+      ],
+      "supplement_request": {
+        "reason": "现有单卡证据仅覆盖压缩用于GNN的孤立要素，未测试完整组合（时序图表示学习、分布式训练小批量、重构误差质量控制），需补充针对性文献以明确组合边界。",
+        "missing_aspects": [
+          "以压缩图输入图自编码器进行动态/时序图表示学习的具体方法",
+          "由压缩图生成小批量用于分布式GNN训练的实现",
+          "采用重构误差机制保证图摘要压缩质量的文献",
+          "面向GNN训练（内存/计算降低）而非推理的图压缩/摘要工作"
+        ],
+        "suggested_focus": [
+          "graph summarization for temporal/dynamic graph representation learning",
+          "graph summarization/coarsening for distributed GNN training and mini-batch",
+          "graph autoencoder with reconstruction error for graph compression quality",
+          "graph condensation"
+        ]
+      }
+    }
+  ],
+  "insufficient_final_evidence_points": [
+    {
+      "novelty_point_id": "NP-1",
+      "valid_card_count": 0,
+      "required_card_count": 1,
+      "reason": "insufficient_final_evidence"
+    },
+    {
+      "novelty_point_id": "NP-2",
+      "valid_card_count": 0,
+      "required_card_count": 1,
+      "reason": "insufficient_final_evidence"
+    }
+  ],
+  "issues": [],
+  "rounds": 2,
+  "report": {
+    "paper_id": "MF2033k6lC",
+    "conclusions": [
+      {
+        "novelty_point_id": "NP-1",
+        "review_status": "insufficient_evidence",
+        "verdict": null,
+        "verdict_reason": null,
+        "confidence": null,
+        "summary": "该查新点（基于图摘要的大规模时序图表示学习方法GSAERU）未获得任何有效证据卡支持，当前证据不足，无法进行新颖性裁定。由于检索覆盖事实未知，不能确认必要来源是否成功执行或是否零命中，亦不能排除相关文献存在的可能；结论应理解为证据不足，而非确证无相关文献。",
+        "supporting_card_ids": [],
+        "counter_card_ids": [],
+        "highly_relevant_works": []
+      },
+      {
+        "novelty_point_id": "NP-2",
+        "review_status": "insufficient_evidence",
+        "verdict": null,
+        "verdict_reason": null,
+        "confidence": null,
+        "summary": "该查新点（基于图摘要的分布式图神经网络优化训练算法DSGNN）未获得任何有效证据卡支持，当前证据不足，无法进行新颖性裁定。由于检索覆盖事实未知，不能确认必要来源是否成功执行或是否零命中，亦不能排除相关文献存在的可能；结论应理解为证据不足，而非确证无相关文献。",
+        "supporting_card_ids": [],
+        "counter_card_ids": [],
+        "highly_relevant_works": []
+      },
+      {
+        "novelty_point_id": "NP-3",
+        "review_status": "reviewed",
+        "verdict": "partially_novel",
+        "verdict_reason": "综合三篇单卡证据：综述（card_369a02f1d029252af70a4638）系统梳理了图摘要与GNN类方法（含图自编码器），但未涉及动态/时序图表示学习、分布式训练小批量生成及重构误差质量控制；CONVMATCH（card_7eefef982fccf42f4844ad44）证实图摘要/粗化压缩原始图可大幅降规模并保持预测性能，但仅针对静态图节点分类/链接预测，未覆盖时序图表示学习和分布式训练；IFGC（card_02d8fa6f524c989795c96dc9）使用图压缩加速推理，但未涉及训练效率、时序图、分布式训练及重构误差机制。单篇公开内容均未覆盖完整组合（压缩+时序表示学习+分布式训练+重构质量控制），仅分别覆盖部分特征（特征1、2、5的部分内涵），不构成完整组合的公开。因此判定为部分新颖，完整组合仍有差异化空间。",
+        "confidence": 0.72,
+        "summary": "基于三篇有效证据卡，判定查新点NP-3（基于图摘要的图神经网络优化机制）为部分新颖。已有工作分别覆盖图摘要压缩保持关键性质（综述）、静态图训练用图摘要/粗化压缩（CONVMATCH）、推理用图压缩（IFGC），但均未覆盖动态时序图表示学习、分布式训练小批量生成及重构误差质量控制等完整组合。单卡证据仅覆盖部分技术特征，不构成完整组合的公开，故完整组合仍具新颖性空间。",
+        "supporting_card_ids": [
+          "card_369a02f1d029252af70a4638",
+          "card_7eefef982fccf42f4844ad44",
+          "card_02d8fa6f524c989795c96dc9"
+        ],
+        "counter_card_ids": [],
+        "highly_relevant_works": [
+          {
+            "work_id": "wrk_3341f9be3e3f75887b9da472",
+            "card_ids": [
+              "card_369a02f1d029252af70a4638"
+            ],
+            "evidence_ids": [
+              "ev_cc36844bfa713fcbbd27d568",
+              "ev_12f3a63dbd13ff9215dc2222"
+            ],
+            "relevance_reason": "综述系统梳理图摘要（压缩并保持关键性质）及GNN类方法（含图自编码器），与特征1-3部分对应，但未涉及分布式训练小批量生成和重构误差质量控制，属部分相关基线。"
+          },
+          {
+            "work_id": "wrk_f7b8adb9585db0dfc3de41af",
+            "card_ids": [
+              "card_7eefef982fccf42f4844ad44"
+            ],
+            "evidence_ids": [
+              "ev_1559145e13181578514e5b11",
+              "ev_449339e0ad9339049004ee58"
+            ],
+            "relevance_reason": "CONVMATCH直接证实用图摘要/粗化压缩原始图训练GNN可显著降规模且保持预测性能，覆盖特征1、2、5的部分内涵，但仅限静态图节点分类/链接预测，未覆盖动态时序图表示学习（特征3）和分布式训练小批量（特征4），属部分相关基线。"
+          },
+          {
+            "work_id": "wrk_2e51677d82499024e21cfee7",
+            "card_ids": [
+              "card_02d8fa6f524c989795c96dc9"
+            ],
+            "evidence_ids": [
+              "ev_d09472eae811298774b88f86"
+            ],
+            "relevance_reason": "IFGC采用图压缩生成小型压缩图供GNN处理，与特征1重叠，但聚焦推理加速而非训练内存/计算降低，未涉及时序图、分布式训练和重构误差机制，属部分相关基线。"
+          }
+        ]
+      }
+    ],
+    "missing_references": [],
+    "missing_baselines": [],
+    "citation_issues": [],
+    "limitations": [
+      "本次检索的有效证据仅3条，全部绑定NP-3；NP-1和NP-2无有效证据且检索覆盖事实未知。由于未提供各检索源的执行状态与覆盖范围，无法区分检索失败、检索成功零命中或有命中但未形成有效证据三种情形，因此对NP-1和NP-2的结论应理解为证据不足，而非确证相关文献不存在。",
+      "全部有效证据卡均通过证据门控，无被拒绝证据，因此不涉及门控拒绝原因说明。",
+      "本次检索范围未明确披露具体数据库、年份或检索式，无法断言检索覆盖的完整性；对NP-3而言，证据虽支持部分新颖的裁定，但完整组合的边界仍需更广泛的检索进一步确认。"
+    ]
+  }
+}
