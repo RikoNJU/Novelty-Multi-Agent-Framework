@@ -1,0 +1,96 @@
+{
+  "report": {
+    "citation_issues": [],
+    "conclusions": [
+      {
+        "confidence": 0.7,
+        "counter_card_ids": [],
+        "highly_relevant_works": [
+          {
+            "card_ids": [
+              "card_62cce85b10e07492d6d66e87"
+            ],
+            "evidence_ids": [
+              "ev_21813e0cd5b97ef1b6274e5d"
+            ],
+            "relevance_reason": "部分相关：TGAE使用时序图自编码器并建模快照序列，与GSAERU的图表征模块部分重叠；但目标为图仿真而非节点表征学习，且未采用图摘要压缩、RNN时序依赖学习及原图重构误差训练，未覆盖查新点核心组合。",
+            "work_id": "wrk_bd8b204d16e97238a8fc4373"
+          },
+          {
+            "card_ids": [
+              "card_1952fdeff8470d8ef6c188bd"
+            ],
+            "evidence_ids": [
+              "ev_f813e3c56af37734ac0498e9"
+            ],
+            "relevance_reason": "该文使用图自编码器学习动态图表示并基于重构误差训练节点表征，与GSAERU的GAE+动态图组件重叠；但未采用图摘要压缩、未用RNN学习时序依赖，也未以降低内存/训练时间为目标，仅部分相关。",
+            "work_id": "wrk_ebf843af1567659f61669ea5"
+          },
+          {
+            "card_ids": [
+              "card_59213b74260b971e4ef67509"
+            ],
+            "evidence_ids": [
+              "ev_3afb214e69f7d5235a2d7010"
+            ],
+            "relevance_reason": "ReInc与GSAERU共享GNN+RNN动态图时序学习方向及大规模图高效训练目标，但未采用图摘要压缩、图自编码器或重构误差训练，属部分相关基线，不覆盖核心组合。",
+            "work_id": "wrk_61b66721dbe1b05f29512abd"
+          }
+        ],
+        "novelty_point_id": "NP-1",
+        "review_status": "reviewed",
+        "summary": "针对NP-1（基于图摘要的大规模时序图表示学习方法GSAERU），本次检索找到三篇相关文献：TGAE（图自编码器与快照序列建模，目标为图仿真）、Enhancing Distance-Based GAEs（动态图GAE与重构误差训练）和ReInc（GNN+RNN时序学习与大规模高效训练）。三篇文献分别覆盖了GSAERU的部分技术特征，但均未同时采用图摘要压缩原图、图自编码器重构误差训练和RNN时序依赖学习这一完整组合，因此现有证据不构成对核心组合的预先公开。结合Reviewer裁定，NP-1为部分新颖。",
+        "supporting_card_ids": [
+          "card_62cce85b10e07492d6d66e87",
+          "card_1952fdeff8470d8ef6c188bd",
+          "card_59213b74260b971e4ef67509"
+        ],
+        "verdict": "partially_novel",
+        "verdict_reason": "三篇单卡核验均未发现同时公开图摘要压缩、图自编码器、RNN时序依赖和原图重构误差训练这一完整组合的文献。TGAE仅覆盖快照序列建模与图自编码器，目标为图仿真而非节点表征学习；Enhancing Distance-Based GAEs仅覆盖动态图GAE与重构误差训练，未采用图摘要压缩和RNN；ReInc仅覆盖GNN+RNN时序学习与大规模高效训练目标，未采用图摘要压缩、图自编码器或重构误差训练。因此，现有证据仅显示各文献分别公开部分特征，未构成对NP-1核心组合的预先公开，判定为部分新颖。"
+      },
+      {
+        "confidence": 0.7,
+        "counter_card_ids": [],
+        "highly_relevant_works": [
+          {
+            "card_ids": [
+              "card_0bbbbd9ffac0fc04893533cb"
+            ],
+            "evidence_ids": [
+              "ev_9108dab2f6d6d43e0b9b9c8d"
+            ],
+            "relevance_reason": "AGL 是分布式 GNN 训练系统，采用参数服务器协调（类似领导-工作者模式），与 DSGNN 在分布式训练领域重叠；但使用 k-hop 邻域而非图摘要小批量训练，无边分割图流划分、注意力层汇总及同步梯度更新，仅部分相关。",
+            "work_id": "wrk_ff5aa18cf0cfe7be1ba5e8bd"
+          },
+          {
+            "card_ids": [
+              "card_b3631b654e6dc98339a9f88e"
+            ],
+            "evidence_ids": [
+              "ev_b97fa696770150c9d0862060"
+            ],
+            "relevance_reason": "AliGraph 是分布式 GNN 训练平台，与 DSGNN 的分布式训练与加速目标部分重叠，但未采用领导-工作者模式、边分割图流划分、图摘要小批量训练、注意力层聚合与同步更新等核心特征，属部分相关文献，予以保留。",
+            "work_id": "wrk_e59b8b7248dcc080455b8690"
+          }
+        ],
+        "novelty_point_id": "NP-2",
+        "review_status": "reviewed",
+        "summary": "针对NP-2（基于图摘要的分布式图神经网络优化训练算法DSGNN），本次检索找到两篇分布式GNN系统文献：AGL（参数服务器协调的k-hop邻域生成）和AliGraph（分布式图存储与采样优化）。两篇文献与DSGNN在分布式训练和加速目标上部分重叠，但均未采用“领导-工作者”模式下的边分割图流划分算法、基于图摘要的小批量训练、注意力层结果聚合及跨节点同步梯度更新这一完整特征组合，因此不构成对DSGNN核心组合的公开。结合Reviewer裁定，NP-2为部分新颖。",
+        "supporting_card_ids": [
+          "card_0bbbbd9ffac0fc04893533cb",
+          "card_b3631b654e6dc98339a9f88e"
+        ],
+        "verdict": "partially_novel",
+        "verdict_reason": "综合两张单卡核验结果：AGL 和 AliGraph 均属于分布式 GNN 训练系统，与 DSGNN 在分布式训练和加速目标上存在领域重叠，但均未公开 DSGNN 的核心特征组合，即“领导-工作者”模式、基于边分割的图流划分算法、基于图摘要的小批量训练、注意力层结果聚合以及跨节点同步梯度更新。单篇文献均未完整公开该组合，因此不能认定为完全公开。但两篇文献分别公开了分布式训练和加速的宽泛特征，部分覆盖了查新点的共性目标，故判定为部分新颖。"
+      }
+    ],
+    "limitations": [
+      "本次检索的覆盖执行状况未在输入数据中明确给出，无法确认所有检索源是否均已成功执行；因此无法区分是检索失败、检索成功零命中或命中后未通过证据门控的情况。",
+      "当前报告基于有效EvidenceCard生成，未包含被拒绝证据（rejected_evidence为空），故无需说明门控拒绝原因。",
+      "检索结论仅基于本报告中列出的有效证据卡，若后续补充检索源执行信息或额外证据，可能需要重新评估结论。"
+    ],
+    "missing_baselines": [],
+    "missing_references": [],
+    "paper_id": "MF2033k6lC"
+  }
+}

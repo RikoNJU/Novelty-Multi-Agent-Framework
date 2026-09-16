@@ -1,0 +1,502 @@
+{
+  "paper_id": "MF2033k6lC",
+  "raw_evidence_cards": [
+    {
+      "card_id": "card_1952fdeff8470d8ef6c188bd",
+      "task_id": "T-1",
+      "novelty_point_id": "NP-1",
+      "document_title": "Enhancing Distance-Based Graph Autoencoders with Structural Penalties for Dynamic Graph Embedding",
+      "main_contribution": "Proposes three distance-based graph autoencoder (GAE) variants with structural penalties (hub penalty and NC-LID-based regularization) for learning representations of dynamic graphs.",
+      "overlaps": [
+        "Uses graph autoencoders (GAEs) to learn representations of dynamic graphs, matching the GAE + temporal/dynamic graph aspect of GSAERU",
+        "Focuses on reconstruction-based objectives for dynamic graph embedding, similar to GSAERU's reconstruction-error-based node representation training"
+      ],
+      "differences": [
+        "Does not use graph summarization to compress the original graph before encoding",
+        "Does not employ a recurrent neural network to learn temporal dependencies across snapshots",
+        "Focuses on structural penalties in the reconstruction loss rather than on reducing memory consumption and training time via graph compression"
+      ],
+      "sources": [
+        {
+          "title": "Enhancing Distance-Based Graph Autoencoders with Structural Penalties for Dynamic Graph Embedding",
+          "quote": "Graph autoencoders (GAEs) are widely used for learning representations of dynamic graphs. However, their optimisation objectives typically do not take structural heterogeneity across nodes into account.",
+          "location": "artifact art_af706d0f964352d23dd6c6fb chars:0-202",
+          "doi": null,
+          "url": "https://arxiv.org/pdf/2608.18762"
+        }
+      ],
+      "cited_by_paper": null,
+      "possible_baseline": true,
+      "relevance": 0.5,
+      "confidence": 0.7,
+      "evidence_ids": [
+        "ev_f813e3c56af37734ac0498e9"
+      ]
+    },
+    {
+      "card_id": "card_59213b74260b971e4ef67509",
+      "task_id": "T-1",
+      "novelty_point_id": "NP-1",
+      "document_title": "ReInc: Scaling Training of Dynamic Graph Neural Networks",
+      "main_contribution": "Presents ReInc, a system enabling efficient and scalable training of Dynamic Graph Neural Networks (DGNNs) on large-scale graphs by combining GNN and RNN components with incremental aggregation and caching.",
+      "overlaps": [
+        "Combines Graph Neural Networks and Recurrent Neural Networks for dynamic graphs, matching GSAERU's RNN-based temporal dependency learning",
+        "Targets efficient and scalable training on large-scale graphs, aligning with GSAERU's goal of reducing memory consumption and training time"
+      ],
+      "differences": [
+        "Does not use graph summarization to compress the original graph",
+        "Does not use a graph autoencoder or reconstruction-error-based node representation training",
+        "Approach is a system-level training optimization (incremental computation, caching, distributed strategy) rather than a representation learning method based on graph compression"
+      ],
+      "sources": [
+        {
+          "title": "ReInc: Scaling Training of Dynamic Graph Neural Networks",
+          "quote": "ReInc introduces key innovations that capitalize on the unique combination of Graph Neural Networks (GNNs) and Recurrent Neural Networks (RNNs) inherent in DGNNs.",
+          "location": "artifact art_6624d129a77360ef6e6e0a55 chars:336-498",
+          "doi": null,
+          "url": "https://arxiv.org/pdf/2501.15348"
+        }
+      ],
+      "cited_by_paper": null,
+      "possible_baseline": true,
+      "relevance": 0.5,
+      "confidence": 0.7,
+      "evidence_ids": [
+        "ev_3afb214e69f7d5235a2d7010"
+      ]
+    },
+    {
+      "card_id": "card_62cce85b10e07492d6d66e87",
+      "task_id": "T-1",
+      "novelty_point_id": "NP-1",
+      "document_title": "Efficient Learning-based Graph Simulation for Temporal Graphs",
+      "main_contribution": "Proposes TGAE, an efficient learning-based temporal graph autoencoder for generating graph snapshots that reproduce structural and temporal properties of real-life temporal graphs.",
+      "overlaps": [
+        "Uses a temporal graph autoencoder and models temporal graphs as a series of evolving graph snapshots, matching GSAERU's snapshot-sequence modeling and graph autoencoder use"
+      ],
+      "differences": [
+        "Targets graph generation/simulation rather than node representation learning for downstream tasks",
+        "Does not use graph summarization to compress the original graph",
+        "Does not use a recurrent neural network to learn temporal dependencies across snapshots",
+        "Does not train original-graph node representations using reconstruction error against the original graph"
+      ],
+      "sources": [
+        {
+          "title": "Efficient Learning-based Graph Simulation for Temporal Graphs",
+          "quote": "we propose an efficient learning-based approach to generate graph snapshots, namely temporal graph autoencoder (TGAE).",
+          "location": "artifact art_532328167974ec703a74ac56 chars:847-965",
+          "doi": "10.1109/ICDE65448.2025.00026",
+          "url": "https://arxiv.org/pdf/2510.05569"
+        }
+      ],
+      "cited_by_paper": null,
+      "possible_baseline": false,
+      "relevance": 0.4,
+      "confidence": 0.6,
+      "evidence_ids": [
+        "ev_21813e0cd5b97ef1b6274e5d"
+      ]
+    },
+    {
+      "card_id": "card_b3631b654e6dc98339a9f88e",
+      "task_id": "T-1",
+      "novelty_point_id": "NP-2",
+      "document_title": "AliGraph: A Comprehensive Graph Neural Network Platform",
+      "main_contribution": "AliGraph is a comprehensive distributed graph neural network platform with distributed graph storage, optimized sampling operators and runtime to efficiently support GNN training at scale (billions of vertices/edges).",
+      "overlaps": [
+        "Distributed GNN training at scale",
+        "Graph partitioning/storage for scalability",
+        "Acceleration of GNN training"
+      ],
+      "differences": [
+        "Does not use graph summarization-based mini-batch training",
+        "Does not adopt a leader-worker mode with edge-segmentation-based graph stream partitioning",
+        "No attention layer for aggregating worker results and computing gradients",
+        "No synchronous model update across all computing nodes as described in DSGNN"
+      ],
+      "sources": [
+        {
+          "title": "AliGraph: A Comprehensive Graph Neural Network Platform",
+          "quote": "we present a comprehensive graph neural network system, namely AliGraph, which consists of distributed graph storage, optimized sampling operators and runtime to efficiently support not only existing popular GNNs but also a series of in-house developed ones for different scenarios.",
+          "location": "artifact art_d88778158223021b818fdd97 chars:649-931",
+          "doi": null,
+          "url": "https://arxiv.org/pdf/1902.08730"
+        }
+      ],
+      "cited_by_paper": null,
+      "possible_baseline": false,
+      "relevance": 0.5,
+      "confidence": 0.7,
+      "evidence_ids": [
+        "ev_b97fa696770150c9d0862060"
+      ]
+    },
+    {
+      "card_id": "card_0bbbbd9ffac0fc04893533cb",
+      "task_id": "T-1",
+      "novelty_point_id": "NP-2",
+      "document_title": "AGL: a Scalable System for Industrial-purpose Graph Machine Learning",
+      "main_contribution": "AGL is a scalable, fault-tolerant, integrated distributed GNN system that generates k-hop neighborhoods as information-complete subgraphs and performs training on parameter servers.",
+      "overlaps": [
+        "Distributed GNN training",
+        "Parameter server / leader-worker-like coordination",
+        "Scalable GNN for large graphs"
+      ],
+      "differences": [
+        "Uses k-hop neighborhood generation rather than graph summarization-based mini-batch training",
+        "Does not use edge-segmentation-based graph stream partitioning by a leader node",
+        "No attention layer for aggregating worker results and computing gradients",
+        "Focuses on message-passing/MapReduce scheme rather than DSGNN's synchronous gradient update across all nodes"
+      ],
+      "sources": [
+        {
+          "title": "AGL: a Scalable System for Industrial-purpose Graph Machine Learning",
+          "quote": "the $k$-hop neighborhood contains information-complete subgraphs for each node, thus we simply do the training on parameter servers due to data independency.",
+          "location": "artifact art_6f98816ebc9005d24844fdfd chars:1477-1634",
+          "doi": null,
+          "url": "https://arxiv.org/pdf/2003.02454"
+        }
+      ],
+      "cited_by_paper": null,
+      "possible_baseline": false,
+      "relevance": 0.45,
+      "confidence": 0.7,
+      "evidence_ids": [
+        "ev_9108dab2f6d6d43e0b9b9c8d"
+      ]
+    }
+  ],
+  "accepted_evidence_cards": [
+    {
+      "card_id": "card_62cce85b10e07492d6d66e87",
+      "task_id": "T-1",
+      "novelty_point_id": "NP-1",
+      "document_title": "Efficient Learning-based Graph Simulation for Temporal Graphs",
+      "main_contribution": "Proposes TGAE, an efficient learning-based temporal graph autoencoder for generating graph snapshots that reproduce structural and temporal properties of real-life temporal graphs.",
+      "overlaps": [
+        "Uses a temporal graph autoencoder and models temporal graphs as a series of evolving graph snapshots, matching GSAERU's snapshot-sequence modeling and graph autoencoder use"
+      ],
+      "differences": [
+        "Targets graph generation/simulation rather than node representation learning for downstream tasks",
+        "Does not use graph summarization to compress the original graph",
+        "Does not use a recurrent neural network to learn temporal dependencies across snapshots",
+        "Does not train original-graph node representations using reconstruction error against the original graph"
+      ],
+      "sources": [
+        {
+          "title": "Efficient Learning-based Graph Simulation for Temporal Graphs",
+          "quote": "we propose an efficient learning-based approach to generate graph snapshots, namely temporal graph autoencoder (TGAE).",
+          "location": "artifact art_532328167974ec703a74ac56 chars:847-965",
+          "doi": "10.1109/ICDE65448.2025.00026",
+          "url": "https://arxiv.org/pdf/2510.05569"
+        }
+      ],
+      "cited_by_paper": null,
+      "possible_baseline": false,
+      "relevance": 0.4,
+      "confidence": 0.6,
+      "evidence_ids": [
+        "ev_21813e0cd5b97ef1b6274e5d"
+      ]
+    },
+    {
+      "card_id": "card_1952fdeff8470d8ef6c188bd",
+      "task_id": "T-1",
+      "novelty_point_id": "NP-1",
+      "document_title": "Enhancing Distance-Based Graph Autoencoders with Structural Penalties for Dynamic Graph Embedding",
+      "main_contribution": "Proposes three distance-based graph autoencoder (GAE) variants with structural penalties (hub penalty and NC-LID-based regularization) for learning representations of dynamic graphs.",
+      "overlaps": [
+        "Uses graph autoencoders (GAEs) to learn representations of dynamic graphs, matching the GAE + temporal/dynamic graph aspect of GSAERU",
+        "Focuses on reconstruction-based objectives for dynamic graph embedding, similar to GSAERU's reconstruction-error-based node representation training"
+      ],
+      "differences": [
+        "Does not use graph summarization to compress the original graph before encoding",
+        "Does not employ a recurrent neural network to learn temporal dependencies across snapshots",
+        "Focuses on structural penalties in the reconstruction loss rather than on reducing memory consumption and training time via graph compression"
+      ],
+      "sources": [
+        {
+          "title": "Enhancing Distance-Based Graph Autoencoders with Structural Penalties for Dynamic Graph Embedding",
+          "quote": "Graph autoencoders (GAEs) are widely used for learning representations of dynamic graphs. However, their optimisation objectives typically do not take structural heterogeneity across nodes into account.",
+          "location": "artifact art_af706d0f964352d23dd6c6fb chars:0-202",
+          "doi": null,
+          "url": "https://arxiv.org/pdf/2608.18762"
+        }
+      ],
+      "cited_by_paper": null,
+      "possible_baseline": true,
+      "relevance": 0.5,
+      "confidence": 0.7,
+      "evidence_ids": [
+        "ev_f813e3c56af37734ac0498e9"
+      ]
+    },
+    {
+      "card_id": "card_59213b74260b971e4ef67509",
+      "task_id": "T-1",
+      "novelty_point_id": "NP-1",
+      "document_title": "ReInc: Scaling Training of Dynamic Graph Neural Networks",
+      "main_contribution": "Presents ReInc, a system enabling efficient and scalable training of Dynamic Graph Neural Networks (DGNNs) on large-scale graphs by combining GNN and RNN components with incremental aggregation and caching.",
+      "overlaps": [
+        "Combines Graph Neural Networks and Recurrent Neural Networks for dynamic graphs, matching GSAERU's RNN-based temporal dependency learning",
+        "Targets efficient and scalable training on large-scale graphs, aligning with GSAERU's goal of reducing memory consumption and training time"
+      ],
+      "differences": [
+        "Does not use graph summarization to compress the original graph",
+        "Does not use a graph autoencoder or reconstruction-error-based node representation training",
+        "Approach is a system-level training optimization (incremental computation, caching, distributed strategy) rather than a representation learning method based on graph compression"
+      ],
+      "sources": [
+        {
+          "title": "ReInc: Scaling Training of Dynamic Graph Neural Networks",
+          "quote": "ReInc introduces key innovations that capitalize on the unique combination of Graph Neural Networks (GNNs) and Recurrent Neural Networks (RNNs) inherent in DGNNs.",
+          "location": "artifact art_6624d129a77360ef6e6e0a55 chars:336-498",
+          "doi": null,
+          "url": "https://arxiv.org/pdf/2501.15348"
+        }
+      ],
+      "cited_by_paper": null,
+      "possible_baseline": true,
+      "relevance": 0.5,
+      "confidence": 0.7,
+      "evidence_ids": [
+        "ev_3afb214e69f7d5235a2d7010"
+      ]
+    },
+    {
+      "card_id": "card_0bbbbd9ffac0fc04893533cb",
+      "task_id": "T-1",
+      "novelty_point_id": "NP-2",
+      "document_title": "AGL: a Scalable System for Industrial-purpose Graph Machine Learning",
+      "main_contribution": "AGL is a scalable, fault-tolerant, integrated distributed GNN system that generates k-hop neighborhoods as information-complete subgraphs and performs training on parameter servers.",
+      "overlaps": [
+        "Distributed GNN training",
+        "Parameter server / leader-worker-like coordination",
+        "Scalable GNN for large graphs"
+      ],
+      "differences": [
+        "Uses k-hop neighborhood generation rather than graph summarization-based mini-batch training",
+        "Does not use edge-segmentation-based graph stream partitioning by a leader node",
+        "No attention layer for aggregating worker results and computing gradients",
+        "Focuses on message-passing/MapReduce scheme rather than DSGNN's synchronous gradient update across all nodes"
+      ],
+      "sources": [
+        {
+          "title": "AGL: a Scalable System for Industrial-purpose Graph Machine Learning",
+          "quote": "the $k$-hop neighborhood contains information-complete subgraphs for each node, thus we simply do the training on parameter servers due to data independency.",
+          "location": "artifact art_6f98816ebc9005d24844fdfd chars:1477-1634",
+          "doi": null,
+          "url": "https://arxiv.org/pdf/2003.02454"
+        }
+      ],
+      "cited_by_paper": null,
+      "possible_baseline": false,
+      "relevance": 0.45,
+      "confidence": 0.7,
+      "evidence_ids": [
+        "ev_9108dab2f6d6d43e0b9b9c8d"
+      ]
+    },
+    {
+      "card_id": "card_b3631b654e6dc98339a9f88e",
+      "task_id": "T-1",
+      "novelty_point_id": "NP-2",
+      "document_title": "AliGraph: A Comprehensive Graph Neural Network Platform",
+      "main_contribution": "AliGraph is a comprehensive distributed graph neural network platform with distributed graph storage, optimized sampling operators and runtime to efficiently support GNN training at scale (billions of vertices/edges).",
+      "overlaps": [
+        "Distributed GNN training at scale",
+        "Graph partitioning/storage for scalability",
+        "Acceleration of GNN training"
+      ],
+      "differences": [
+        "Does not use graph summarization-based mini-batch training",
+        "Does not adopt a leader-worker mode with edge-segmentation-based graph stream partitioning",
+        "No attention layer for aggregating worker results and computing gradients",
+        "No synchronous model update across all computing nodes as described in DSGNN"
+      ],
+      "sources": [
+        {
+          "title": "AliGraph: A Comprehensive Graph Neural Network Platform",
+          "quote": "we present a comprehensive graph neural network system, namely AliGraph, which consists of distributed graph storage, optimized sampling operators and runtime to efficiently support not only existing popular GNNs but also a series of in-house developed ones for different scenarios.",
+          "location": "artifact art_d88778158223021b818fdd97 chars:649-931",
+          "doi": null,
+          "url": "https://arxiv.org/pdf/1902.08730"
+        }
+      ],
+      "cited_by_paper": null,
+      "possible_baseline": false,
+      "relevance": 0.5,
+      "confidence": 0.7,
+      "evidence_ids": [
+        "ev_b97fa696770150c9d0862060"
+      ]
+    }
+  ],
+  "rejected_evidence": [],
+  "validator_accepted_cards": [
+    {
+      "card_id": "card_62cce85b10e07492d6d66e87",
+      "task_id": "T-1",
+      "novelty_point_id": "NP-1",
+      "document_title": "Efficient Learning-based Graph Simulation for Temporal Graphs",
+      "main_contribution": "Proposes TGAE, an efficient learning-based temporal graph autoencoder for generating graph snapshots that reproduce structural and temporal properties of real-life temporal graphs.",
+      "overlaps": [
+        "Uses a temporal graph autoencoder and models temporal graphs as a series of evolving graph snapshots, matching GSAERU's snapshot-sequence modeling and graph autoencoder use"
+      ],
+      "differences": [
+        "Targets graph generation/simulation rather than node representation learning for downstream tasks",
+        "Does not use graph summarization to compress the original graph",
+        "Does not use a recurrent neural network to learn temporal dependencies across snapshots",
+        "Does not train original-graph node representations using reconstruction error against the original graph"
+      ],
+      "sources": [
+        {
+          "title": "Efficient Learning-based Graph Simulation for Temporal Graphs",
+          "quote": "we propose an efficient learning-based approach to generate graph snapshots, namely temporal graph autoencoder (TGAE).",
+          "location": "artifact art_532328167974ec703a74ac56 chars:847-965",
+          "doi": "10.1109/ICDE65448.2025.00026",
+          "url": "https://arxiv.org/pdf/2510.05569"
+        }
+      ],
+      "cited_by_paper": null,
+      "possible_baseline": false,
+      "relevance": 0.4,
+      "confidence": 0.6,
+      "evidence_ids": [
+        "ev_21813e0cd5b97ef1b6274e5d"
+      ]
+    },
+    {
+      "card_id": "card_1952fdeff8470d8ef6c188bd",
+      "task_id": "T-1",
+      "novelty_point_id": "NP-1",
+      "document_title": "Enhancing Distance-Based Graph Autoencoders with Structural Penalties for Dynamic Graph Embedding",
+      "main_contribution": "Proposes three distance-based graph autoencoder (GAE) variants with structural penalties (hub penalty and NC-LID-based regularization) for learning representations of dynamic graphs.",
+      "overlaps": [
+        "Uses graph autoencoders (GAEs) to learn representations of dynamic graphs, matching the GAE + temporal/dynamic graph aspect of GSAERU",
+        "Focuses on reconstruction-based objectives for dynamic graph embedding, similar to GSAERU's reconstruction-error-based node representation training"
+      ],
+      "differences": [
+        "Does not use graph summarization to compress the original graph before encoding",
+        "Does not employ a recurrent neural network to learn temporal dependencies across snapshots",
+        "Focuses on structural penalties in the reconstruction loss rather than on reducing memory consumption and training time via graph compression"
+      ],
+      "sources": [
+        {
+          "title": "Enhancing Distance-Based Graph Autoencoders with Structural Penalties for Dynamic Graph Embedding",
+          "quote": "Graph autoencoders (GAEs) are widely used for learning representations of dynamic graphs. However, their optimisation objectives typically do not take structural heterogeneity across nodes into account.",
+          "location": "artifact art_af706d0f964352d23dd6c6fb chars:0-202",
+          "doi": null,
+          "url": "https://arxiv.org/pdf/2608.18762"
+        }
+      ],
+      "cited_by_paper": null,
+      "possible_baseline": true,
+      "relevance": 0.5,
+      "confidence": 0.7,
+      "evidence_ids": [
+        "ev_f813e3c56af37734ac0498e9"
+      ]
+    },
+    {
+      "card_id": "card_59213b74260b971e4ef67509",
+      "task_id": "T-1",
+      "novelty_point_id": "NP-1",
+      "document_title": "ReInc: Scaling Training of Dynamic Graph Neural Networks",
+      "main_contribution": "Presents ReInc, a system enabling efficient and scalable training of Dynamic Graph Neural Networks (DGNNs) on large-scale graphs by combining GNN and RNN components with incremental aggregation and caching.",
+      "overlaps": [
+        "Combines Graph Neural Networks and Recurrent Neural Networks for dynamic graphs, matching GSAERU's RNN-based temporal dependency learning",
+        "Targets efficient and scalable training on large-scale graphs, aligning with GSAERU's goal of reducing memory consumption and training time"
+      ],
+      "differences": [
+        "Does not use graph summarization to compress the original graph",
+        "Does not use a graph autoencoder or reconstruction-error-based node representation training",
+        "Approach is a system-level training optimization (incremental computation, caching, distributed strategy) rather than a representation learning method based on graph compression"
+      ],
+      "sources": [
+        {
+          "title": "ReInc: Scaling Training of Dynamic Graph Neural Networks",
+          "quote": "ReInc introduces key innovations that capitalize on the unique combination of Graph Neural Networks (GNNs) and Recurrent Neural Networks (RNNs) inherent in DGNNs.",
+          "location": "artifact art_6624d129a77360ef6e6e0a55 chars:336-498",
+          "doi": null,
+          "url": "https://arxiv.org/pdf/2501.15348"
+        }
+      ],
+      "cited_by_paper": null,
+      "possible_baseline": true,
+      "relevance": 0.5,
+      "confidence": 0.7,
+      "evidence_ids": [
+        "ev_3afb214e69f7d5235a2d7010"
+      ]
+    },
+    {
+      "card_id": "card_0bbbbd9ffac0fc04893533cb",
+      "task_id": "T-1",
+      "novelty_point_id": "NP-2",
+      "document_title": "AGL: a Scalable System for Industrial-purpose Graph Machine Learning",
+      "main_contribution": "AGL is a scalable, fault-tolerant, integrated distributed GNN system that generates k-hop neighborhoods as information-complete subgraphs and performs training on parameter servers.",
+      "overlaps": [
+        "Distributed GNN training",
+        "Parameter server / leader-worker-like coordination",
+        "Scalable GNN for large graphs"
+      ],
+      "differences": [
+        "Uses k-hop neighborhood generation rather than graph summarization-based mini-batch training",
+        "Does not use edge-segmentation-based graph stream partitioning by a leader node",
+        "No attention layer for aggregating worker results and computing gradients",
+        "Focuses on message-passing/MapReduce scheme rather than DSGNN's synchronous gradient update across all nodes"
+      ],
+      "sources": [
+        {
+          "title": "AGL: a Scalable System for Industrial-purpose Graph Machine Learning",
+          "quote": "the $k$-hop neighborhood contains information-complete subgraphs for each node, thus we simply do the training on parameter servers due to data independency.",
+          "location": "artifact art_6f98816ebc9005d24844fdfd chars:1477-1634",
+          "doi": null,
+          "url": "https://arxiv.org/pdf/2003.02454"
+        }
+      ],
+      "cited_by_paper": null,
+      "possible_baseline": false,
+      "relevance": 0.45,
+      "confidence": 0.7,
+      "evidence_ids": [
+        "ev_9108dab2f6d6d43e0b9b9c8d"
+      ]
+    },
+    {
+      "card_id": "card_b3631b654e6dc98339a9f88e",
+      "task_id": "T-1",
+      "novelty_point_id": "NP-2",
+      "document_title": "AliGraph: A Comprehensive Graph Neural Network Platform",
+      "main_contribution": "AliGraph is a comprehensive distributed graph neural network platform with distributed graph storage, optimized sampling operators and runtime to efficiently support GNN training at scale (billions of vertices/edges).",
+      "overlaps": [
+        "Distributed GNN training at scale",
+        "Graph partitioning/storage for scalability",
+        "Acceleration of GNN training"
+      ],
+      "differences": [
+        "Does not use graph summarization-based mini-batch training",
+        "Does not adopt a leader-worker mode with edge-segmentation-based graph stream partitioning",
+        "No attention layer for aggregating worker results and computing gradients",
+        "No synchronous model update across all computing nodes as described in DSGNN"
+      ],
+      "sources": [
+        {
+          "title": "AliGraph: A Comprehensive Graph Neural Network Platform",
+          "quote": "we present a comprehensive graph neural network system, namely AliGraph, which consists of distributed graph storage, optimized sampling operators and runtime to efficiently support not only existing popular GNNs but also a series of in-house developed ones for different scenarios.",
+          "location": "artifact art_d88778158223021b818fdd97 chars:649-931",
+          "doi": null,
+          "url": "https://arxiv.org/pdf/1902.08730"
+        }
+      ],
+      "cited_by_paper": null,
+      "possible_baseline": false,
+      "relevance": 0.5,
+      "confidence": 0.7,
+      "evidence_ids": [
+        "ev_b97fa696770150c9d0862060"
+      ]
+    }
+  ]
+}

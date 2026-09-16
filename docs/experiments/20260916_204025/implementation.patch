@@ -1,0 +1,351 @@
+diff --git a/backend/src/novelty_agent_framework/agents/evidence_reviewer.py b/backend/src/novelty_agent_framework/agents/evidence_reviewer.py
+index 42f002e..797f749 100644
+--- a/backend/src/novelty_agent_framework/agents/evidence_reviewer.py
++++ b/backend/src/novelty_agent_framework/agents/evidence_reviewer.py
+@@ -5,6 +5,7 @@ from __future__ import annotations
+ import json
+ import asyncio
+ import re
++import time
+ from datetime import datetime, timezone
+ from collections.abc import Sequence
+ from dataclasses import dataclass, replace
+@@ -32,6 +33,22 @@ from ..schemas import (
+ )
+ from ..tools.researcher_registry import ResearcherToolRegistry
+ 
++
++class _BudgetedClient:
++    """Apply the remaining card budget to both async waiting and HTTP I/O."""
++
++    def __init__(self, client, seconds):
++        self.client = client
++        self.deadline = time.monotonic() + seconds
++
++    async def acomplete(self, messages, *, options=None):
++        remaining = self.deadline - time.monotonic()
++        if remaining <= 0:
++            raise TimeoutError("review budget exhausted")
++        options = options or ModelCallOptions()
++        options = replace(options, timeout_seconds=min(options.timeout_seconds or 90, remaining))
++        return await asyncio.wait_for(self.client.acomplete(messages, options=options), remaining)
++
+ _ALLOWED_ISSUE_CODES = frozenset(
+     {
+         "unsupported_main_contribution",
+@@ -159,8 +176,10 @@ class NoveltyEvidenceReviewer(EvidenceReviewer):
+             )
+         try:
+             harness = self.harness
++            client = self._client()
+             if card_only:
+-                harness = ToolCallHarness(self._client(), self.tools, config=replace(
++                client = _BudgetedClient(client, self.config.card_timeout_seconds)
++                harness = ToolCallHarness(client, self.tools, config=replace(
+                     self.harness.config, max_turns=min(self.config.max_steps, 6),
+                     max_tool_calls=min(self.config.max_tool_calls, 4),
+                     per_tool_limits={"reader": min(self.config.max_tool_calls, 4)},
+@@ -178,7 +197,7 @@ class NoveltyEvidenceReviewer(EvidenceReviewer):
+             try:
+                 review = NoveltyPointReview.model_validate_json(_extract_json(result.final_content))
+             except (ValidationError, ValueError):
+-                repaired = await repair_json(self._client(), result.final_content,
++                repaired = await repair_json(client, result.final_content,
+                                              NoveltyPointReview.model_json_schema(), self.model_options)
+                 review = NoveltyPointReview.model_validate_json(_extract_json(repaired))
+             return _validate_review_references(review, request)
+diff --git a/backend/src/novelty_agent_framework/config/agents/point_extractor.example.json b/backend/src/novelty_agent_framework/config/agents/point_extractor.example.json
+index 9a17145..2d1978b 100644
+--- a/backend/src/novelty_agent_framework/config/agents/point_extractor.example.json
++++ b/backend/src/novelty_agent_framework/config/agents/point_extractor.example.json
+@@ -4,7 +4,8 @@
+     "alias": "deepseek-flash",
+     "temperature": 0.2,
+     "max_tokens": 8192,
+-    "timeout_seconds": 600
++    "timeout_seconds": 120,
++    "enable_thinking": false
+   },
+   "prompts": [
+     "extractor/extract_points"
+diff --git a/backend/src/novelty_agent_framework/config/agents/researcher.example.json b/backend/src/novelty_agent_framework/config/agents/researcher.example.json
+index e5bf78a..2bdd0ec 100644
+--- a/backend/src/novelty_agent_framework/config/agents/researcher.example.json
++++ b/backend/src/novelty_agent_framework/config/agents/researcher.example.json
+@@ -25,7 +25,7 @@
+       "active_source": "arxiv",
+       "candidate_limit_per_task": 8,
+       "candidate_excerpt_chars": 2000,
+-      "full_text_limit_per_task": 8,
++      "full_text_limit_per_task": 0,
+       "max_concurrency": 4,
+       "providers": {
+         "arxiv": {
+diff --git a/backend/src/novelty_agent_framework/config/agents/reviewer.example.json b/backend/src/novelty_agent_framework/config/agents/reviewer.example.json
+index b9c6c58..73a9851 100644
+--- a/backend/src/novelty_agent_framework/config/agents/reviewer.example.json
++++ b/backend/src/novelty_agent_framework/config/agents/reviewer.example.json
+@@ -5,7 +5,8 @@
+     "alias": "deepseek-flash",
+     "temperature": 0.0,
+     "max_tokens": 8192,
+-    "timeout_seconds": 600
++    "timeout_seconds": 90,
++    "enable_thinking": false
+   },
+   "prompt": "reviewer/review_evidence",
+   "max_cards_per_call": 8,
+diff --git a/backend/src/novelty_agent_framework/core/format_repair.py b/backend/src/novelty_agent_framework/core/format_repair.py
+index 8b3bd3b..9a9f059 100644
+--- a/backend/src/novelty_agent_framework/core/format_repair.py
++++ b/backend/src/novelty_agent_framework/core/format_repair.py
+@@ -16,7 +16,9 @@ async def repair_json(client, content, schema, options=None):
+         ChatMessage(role="user", content=json.dumps({
+             "previous_output": content, "schema": schema,
+         }, ensure_ascii=False)),
+-    ], options=replace(options or ModelCallOptions(), tools=(), tool_choice="none"))
++    ], options=replace(options or ModelCallOptions(), tools=(), tool_choice="none",
++        timeout_seconds=min((options.timeout_seconds if options else None) or 60, 60),
++        extra_body={**((options.extra_body if options else None) or {}), "enable_thinking": False}))
+     if response.tool_calls:
+         raise ValueError("format repair attempted a tool call")
+     return response.content
+diff --git a/backend/src/novelty_agent_framework/prompts/research/native_tool_loop.md b/backend/src/novelty_agent_framework/prompts/research/native_tool_loop.md
+index 1f99439..01e1049 100644
+--- a/backend/src/novelty_agent_framework/prompts/research/native_tool_loop.md
++++ b/backend/src/novelty_agent_framework/prompts/research/native_tool_loop.md
+@@ -30,6 +30,13 @@ system: |
+   - Web materials retain source_kind=web_supplement. It is not paper evidence. The workflow binds provenance;
+     do not author evidence_type or source_kind in the finish draft.
+   Acquisition and evaluation policy:
++  - Database discovery returns abstracts first; full text is acquired on demand.
++    Batch-read up to four relevant abstracts with reader.reads. If an abstract
++    cannot establish a specific technical feature, call database_search with the
++    same source_id and full_text_source_record_ids containing the relevant returned
++    source_record_id values (at most four). This acquires originals without a new
++    search. Then read the extracted-text artifact before quoting it. Never treat
++    an abstract's missing details as proof that the paper lacks those details.
+   - Web search is advice-only. Do not call browser or reader to turn Web materials
+     into evidence. Never issue consecutive web_search calls merely to expand recall.
+     Retain internal source records, but do not enumerate them in the report.
+diff --git a/backend/src/novelty_agent_framework/prompts/reviewer/review_evidence.md b/backend/src/novelty_agent_framework/prompts/reviewer/review_evidence.md
+index 1eb4242..7e6ed5a 100644
+--- a/backend/src/novelty_agent_framework/prompts/reviewer/review_evidence.md
++++ b/backend/src/novelty_agent_framework/prompts/reviewer/review_evidence.md
+@@ -20,6 +20,11 @@ system: |
+   - 证据不足时输出 status="insufficient_evidence"，不得强行给出 verdict；必要时可填写
+     supplement_request，且该字段只是语义建议，不控制工作流。
+   - 输出必须是严格 NoveltyPointReview JSON，不得输出 Markdown、开场白或自由文本。
++  - 不输出思考过程。status="reviewed" 必须同时填写 verdict、verdict_reason、confidence；
++    status="insufficient_evidence" 时 verdict 必须为 null，不能同时声明已判定。
++    字段组合示例（仅示意，真实 ID 和其他必填字段以输入 schema 为准）：
++    已判定：status="reviewed", verdict="partially_novel", verdict_reason="原文只覆盖部分特征", confidence=0.7。
++    不足：status="insufficient_evidence", verdict=null, verdict_reason=null, confidence=null。
+ ---
+ 请对以下单个查新点进行信息综合与新颖性判定。
+ 
+diff --git a/backend/src/novelty_agent_framework/schemas/research_tools.py b/backend/src/novelty_agent_framework/schemas/research_tools.py
+index e3db85d..26714ad 100644
+--- a/backend/src/novelty_agent_framework/schemas/research_tools.py
++++ b/backend/src/novelty_agent_framework/schemas/research_tools.py
+@@ -24,6 +24,7 @@ class DatabaseSearchArguments(StrictModel):
+     """Select one configured database; task and query scope stay runtime-owned."""
+ 
+     source_id: NonEmptyStr
++    full_text_source_record_ids: list[NonEmptyStr] = Field(default_factory=list, max_length=4)
+ 
+     @field_validator("source_id")
+     @classmethod
+@@ -40,6 +41,7 @@ class DatabaseSearchItem(StrictModel):
+     source_id: NonEmptyStr
+     access_status: AccessStatus
+     artifact_ids: list[NonEmptyStr] = Field(default_factory=list)
++    full_text_artifact_ids: list[NonEmptyStr] = Field(default_factory=list)
+     abstract_preview: str | None = None
+ 
+ 
+diff --git a/backend/src/novelty_agent_framework/tools/database_search/structured_retrieval.py b/backend/src/novelty_agent_framework/tools/database_search/structured_retrieval.py
+index 82120e7..9ce6521 100644
+--- a/backend/src/novelty_agent_framework/tools/database_search/structured_retrieval.py
++++ b/backend/src/novelty_agent_framework/tools/database_search/structured_retrieval.py
+@@ -6,6 +6,7 @@ import asyncio
+ import hashlib
+ import inspect
+ import re
++import weakref
+ from collections.abc import Awaitable, Callable, Mapping, Sequence
+ from dataclasses import dataclass, replace
+ from datetime import datetime, timezone
+@@ -140,6 +141,7 @@ class StructuredRetrievalAdapter:
+             observed_at=observed_at,
+             provenance={
+                 "adapter": "structured_retrieval",
++                "document_id": hit.document_id,
+                 "identity_basis": work_key.split(":", 1)[0],
+             },
+         )
+@@ -178,6 +180,63 @@ class StructuredSourceRetrievalTool:
+         self.max_concurrency = max_concurrency
+         self.source_id = source.source_id
+         self.adapter = StructuredRetrievalAdapter()
++        self._full_text_states = weakref.WeakKeyDictionary()
++
++    async def acquire_full_texts(self, request, record_ids: list[str]) -> ResearchBundle:
++        """Acquire only previously discovered database records; never execute a search."""
++        manifest = self.reference_store.load_manifest(request.subject_paper_id)
++        records = {r.source_record_id: r for r in manifest.source_records}
++        works = {w.work_id: w for w in manifest.works}
++        selected = []
++        for record_id in dict.fromkeys(record_ids):
++            record = records.get(record_id)
++            if (record is None or record.source_id != self.source_id
++                    or record.source_kind != SourceKind.STRUCTURED_DATABASE
++                    or not record.external_id or record.work_id not in works):
++                raise ValueError(f"unknown or invalid database source record: {record_id}")
++            selected.append(record)
++        artifacts = [a for a in manifest.artifacts if a.source_record_id in record_ids]
++        ready = {a.source_record_id for a in artifacts if a.role == ArtifactRole.EXTRACTED_TEXT}
++        hits = [(r.source_record_id, SearchHit(document_id=r.provenance.get("document_id") or r.external_id,
++                 source_id=self.source_id, title=r.title)) for r in selected
++                if r.source_record_id not in ready]
++        from .providers.arxiv_scheduler import provider_task_id
++        token = provider_task_id.set(request.research_task.task_id)
++        try:
++            full_texts, warnings = await self._fetch_full_texts(hits)
++        finally:
++            provider_task_id.reset(token)
++        for record in selected:
++            full_text = full_texts.get(record.source_record_id)
++            if full_text is None or not full_text.text.strip():
++                continue
++            try:
++                extent = ContentExtent(full_text.content_extent)
++            except ValueError:
++                extent = ContentExtent.UNKNOWN
++                warnings.append(f"full text {full_text.document_id}: unknown content extent")
++            artifact = self._try_save_artifact(
++                request.subject_paper_id, work=works[record.work_id], record=record,
++                role=ArtifactRole.EXTRACTED_TEXT, content=full_text.text,
++                extent=extent,
++                version_label=full_text.version_label,
++                provenance={"source": "full_text_tool", "source_url": full_text.source_url,
++                            "media_type_received": full_text.media_type}, warnings=warnings)
++            if artifact is not None:
++                artifacts.append(artifact)
++                ready.add(record.source_record_id)
++        selected = [r.model_copy(update={"access_status": AccessStatus.FULL_TEXT_ACQUIRED})
++                    if r.source_record_id in ready else r for r in selected]
++        if self.source.full_text_tool is None:
++            warnings.append("full_text_tool unavailable; existing abstracts retained")
++        self.reference_store.merge_manifest(request.subject_paper_id,
++            source_records=selected, artifacts=artifacts)
++        return ResearchBundle(
++            bundle_id=self.adapter.stable_id("bnd", request.subject_paper_id,
++                                            "full_text", *record_ids),
++            producer=f"{self.name}:{self.source_id}",
++            works=[works[r.work_id] for r in selected], source_records=selected,
++            artifacts=artifacts, warnings=warnings)
+ 
+     async def ainvoke(
+         self, request: StructuredSourceRetrievalRequest
+@@ -532,18 +591,30 @@ class StructuredSourceRetrievalTool:
+     ) -> tuple[dict[str, FullText], list[str]]:
+         if self.source.full_text_tool is None:
+             return {}, []
+-        semaphore = asyncio.Semaphore(self.max_concurrency)
++        loop = asyncio.get_running_loop()
++        if loop not in self._full_text_states:
++            self._full_text_states[loop] = (asyncio.Semaphore(self.max_concurrency), {})
++        semaphore, pending = self._full_text_states[loop]
+ 
+-        async def fetch(key: str, hit: SearchHit) -> tuple[str, FullText | None, str | None]:
++        async def acquire(document_id):
+             async with semaphore:
+-                try:
+-                    value = await _invoke_provider(
+-                        self.source.full_text_tool.fetch,
+-                        hit.document_id,
+-                    )
+-                    return key, value, None
+-                except Exception as exc:
+-                    return key, None, f"full text {hit.document_id}: {_safe_error(exc)}"
++                return await _invoke_provider(self.source.full_text_tool.fetch, document_id)
++
++        async def fetch(key: str, hit: SearchHit) -> tuple[str, FullText | None, str | None]:
++            document_id = hit.document_id
++            if document_id not in pending:
++                task = asyncio.create_task(acquire(document_id))
++                pending[document_id] = task
++                def done(completed, document_id=document_id):
++                    pending.pop(document_id, None)
++                    if not completed.cancelled():
++                        completed.exception()
++                task.add_done_callback(done)
++            try:
++                value = await asyncio.shield(pending[document_id])
++                return key, value, None
++            except Exception as exc:
++                return key, None, f"full text {document_id}: {_safe_error(exc)}"
+ 
+         results = await asyncio.gather(*(fetch(key, hit) for key, hit in hits))
+         return (
+diff --git a/backend/src/novelty_agent_framework/tools/database_search/tool.py b/backend/src/novelty_agent_framework/tools/database_search/tool.py
+index dfca4d7..ac54fd5 100644
+--- a/backend/src/novelty_agent_framework/tools/database_search/tool.py
++++ b/backend/src/novelty_agent_framework/tools/database_search/tool.py
+@@ -77,6 +77,9 @@ class DatabaseSearchTool:
+             "同一任务的检索计划固定；重复调用相同 source_id 仅复用完整成功结果（含零命中）。"
+             "失败或部分成功不缓存；临时错误按 provider 退避重试，其他错误优先换库。"
+             "成功后优先批量读取已有候选；新一轮任务可重新检索。"
++            "默认先返回候选摘要。如摘要不足以核验具体特征，可传入"
++            "full_text_source_record_ids（至多4个已返回的同库文献句柄）按需获取全文；"
++            "此模式不重新检索。获取后必须通过 reader 读取原文，才能作为证据。"
+         )
+ 
+     async def ainvoke(
+@@ -95,8 +98,7 @@ class DatabaseSearchTool:
+             ) from exc
+ 
+         started = time.monotonic()
+-        bundle = await retrieval.ainvoke(
+-            StructuredSourceRetrievalRequest(
++        request = StructuredSourceRetrievalRequest(
+                 subject_paper_id=scope.subject_paper_id,
+                 run_id=scope.run_id,
+                 source_id=source_id,
+@@ -104,7 +106,9 @@ class DatabaseSearchTool:
+                 research_task=scope.research_task,
+                 search_plan=scope.search_plan,
+             )
+-        )
++        acquisition = bool(arguments.full_text_source_record_ids)
++        bundle = (await retrieval.acquire_full_texts(request, arguments.full_text_source_record_ids)
++                  if acquisition else await retrieval.ainvoke(request))
+         artifacts_by_record: dict[str, list[str]] = {}
+         for artifact in bundle.artifacts:
+             if artifact.source_record_id is not None:
+@@ -128,10 +132,15 @@ class DatabaseSearchTool:
+                     source_id=record.source_id,
+                     access_status=record.access_status,
+                     artifact_ids=sorted(artifacts_by_record.get(record.source_record_id, [])),
++                    full_text_artifact_ids=[a.artifact_id for a in bundle.artifacts
++                        if a.source_record_id == record.source_record_id and a.role.value == "extracted_text"],
+                     abstract_preview=preview,
+                 )
+             )
+         execution_summary = _summarize_search_executions(bundle.search_executions)
++        if acquisition:
++            # No search was attempted: retain real execution history without inventing queries.
++            execution_summary["no_execution"] = False
+         warnings = list(bundle.warnings)
+         if execution_summary["degraded"]:
+             warnings.append(
+@@ -158,6 +167,8 @@ class DatabaseSearchTool:
+             error = f"all {total} search executions failed"
+         else:
+             summary = f"数据库检索召回 {len(items)} 个候选作品"
++            if acquisition:
++                summary = f"按需全文获取完成，返回 {len(items)} 篇文献的可用制品；全文不可用时保留摘要"
+             error = None
+             if execution_summary["degraded"]:
+                 summary += (
