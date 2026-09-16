@@ -239,15 +239,18 @@ class NoveltyPointExtractorAgent(NoveltyPointExtractor):
              "source_locations": point.source_locations}
             for index, point in enumerate(candidates, start=1)
         ]
+        contribution_context = [part[:CONTRIBUTION_EXCERPT_LIMIT]
+                                for part in digest.full_text_excerpt.split("[作者贡献段 ")[1:4]]
         data = self._complete_json(
             prompt_name="reviewer/review_points",
             variables={
                 "points_json": json.dumps(numbered, ensure_ascii=False),
+                "contribution_context_json": json.dumps(contribution_context, ensure_ascii=False),
                 "delete_schema": json.dumps(
                     DELETE_SCHEMA, ensure_ascii=False
                 ),
             },
-            payload={"points": numbered},
+            payload={"points": numbered, "contribution_context": contribution_context},
             fallback_user_prompt=(
                 "请判断候选查新点中哪些是重复条目，输出 {\"delete_indices\": [编号列表]}；"
                 "只有技术目标、核心机制和适用范围等价且仅为复述时才删除；"
@@ -270,6 +273,7 @@ class NoveltyPointExtractorAgent(NoveltyPointExtractor):
             delete_indices.clear()
         self.last_trace["deduplication"] = {
             "input": numbered,
+            "contribution_context": contribution_context,
             "raw_delete_indices": data,
             "invalid_entries": invalid_entries,
             "invalid_indices": invalid_indices,

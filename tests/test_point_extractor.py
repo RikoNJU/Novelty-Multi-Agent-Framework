@@ -268,6 +268,22 @@ def test_extractor_dedup_receives_features_and_ignores_noninteger_indices():
     assert agent.last_trace["deduplication"]["invalid_entries"] == [True, 2.0, "3"]
 
 
+def test_extractor_dedup_receives_only_bounded_author_contributions():
+    paper = make_paper().model_copy(update={"full_text": (
+        "论文开头" + "正文" * 1200 + "主要贡献总结" + "独立算法" * 400
+    )})
+    client = SequencedClient([
+        json.dumps({"novelty_points": three_items()}),
+        json.dumps({"delete_indices": []}),
+    ])
+    agent = make_agent(client)
+    agent.extract(build_paper_digest(paper), previous_brief=None, attempt=1)
+    review_user = client.calls[1][0][1].content
+    assert "独立算法" in review_user
+    assert "论文开头" not in review_user
+    assert len(agent.last_trace["deduplication"]["contribution_context"][0]) <= 1200
+
+
 def test_extractor_coverage_followup_shares_budget_and_records_numbering():
     items = three_items()
     client = SequencedClient([

@@ -258,6 +258,49 @@ def test_review_card_and_summary_receive_evidence_boundary_templates():
     assert client.calls[1][1].tool_choice == "none"
 
 
+@pytest.mark.parametrize("card_only", [True, False])
+def test_reviewer_rejects_absence_claim_unsupported_by_positive_quote(card_only):
+    output = json.loads(_review_json())
+    output["verdict_reason"] = "该摘要未使用目标算法，因此查新点部分新颖。"
+    output["highly_relevant_works"][0]["relevance_reason"] = "文献未采用目标算法。"
+    client = ScriptedClient(ModelResponse(content=json.dumps(output, ensure_ascii=False)))
+    reviewer = _reviewer(client, RecordingReader())
+    request = _request()
+    review = asyncio.run(reviewer.review_card(request) if card_only
+                         else reviewer.summarize_reviews(request, [_indexed_review()]))
+    assert review.status.value == "insufficient_evidence"
+    assert review.verdict is None
+    assert review.highly_relevant_works[0].evidence_ids == ["E-1"]
+    assert "未采用" not in review.highly_relevant_works[0].relevance_reason
+    assert "输入引文没有直接支持" in review.supplement_request.reason
+
+
+def test_reviewer_rejects_novel_verdict_based_on_abstract_nondisclosure():
+    output = json.loads(_review_json())
+    output["verdict"] = "novel"
+    output["verdict_reason"] = "摘要未披露目标机制，未覆盖完整组合，因此具有新颖性。"
+    output["highly_relevant_works"][0]["relevance_reason"] = "文献未披露目标机制。"
+    review = asyncio.run(_reviewer(
+        ScriptedClient(ModelResponse(content=json.dumps(output, ensure_ascii=False))),
+        RecordingReader(),
+    ).summarize_reviews(_request(), [_indexed_review()]))
+    assert review.status.value == "insufficient_evidence"
+    assert review.verdict is None
+    assert "未披露" not in review.highly_relevant_works[0].relevance_reason
+
+
+def test_reviewer_keeps_limited_judgment_when_quote_explicitly_denies_feature():
+    request = _request()
+    request.evidence[0].quote = "We do not use the target algorithm."
+    output = json.loads(_review_json())
+    output["verdict_reason"] = "文献未使用目标算法，且原文明确说明这一点。"
+    review = asyncio.run(_reviewer(
+        ScriptedClient(ModelResponse(content=json.dumps(output, ensure_ascii=False))),
+        RecordingReader(),
+    ).review_card(request))
+    assert review.status.value == "reviewed"
+
+
 class PointReviewer:
     def __init__(self):
         self.requests = []

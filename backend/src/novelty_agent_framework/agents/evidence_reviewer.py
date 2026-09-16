@@ -222,7 +222,7 @@ class NoveltyEvidenceReviewer(EvidenceReviewer):
                 repaired = await repair_json(client, result.final_content,
                                              NoveltyPointReview.model_json_schema(), self.model_options)
                 review = NoveltyPointReview.model_validate_json(_extract_json(repaired))
-            return _validate_review_references(review, request)
+            return _guard_unsupported_absence(_validate_review_references(review, request), request)
         except Exception as exc:
             if not self.config.fail_closed:
                 raise
@@ -265,7 +265,7 @@ class NoveltyEvidenceReviewer(EvidenceReviewer):
             if any(evidence_id not in validated_ids for work in review.highly_relevant_works
                    for evidence_id in work.evidence_ids):
                 raise ValueError("summary cites evidence not verified by a card review")
-            return _validate_review_references(review, request)
+            return _guard_unsupported_absence(_validate_review_references(review, request), request)
         except Exception as exc:
             if not self.config.fail_closed:
                 raise
@@ -559,6 +559,51 @@ def _insufficient_review(point_id: str, reason: str) -> NoveltyPointReview:
         novelty_point_id=point_id,
         status=ReviewStatus.INSUFFICIENT_EVIDENCE,
         supplement_request=SupplementRequest(reason=reason),
+    )
+
+
+_STRONG_ABSENCE = re.compile(
+    r"未(?:使用|采用|涉及|包含|公开|披露|用)|不涉及|没有(?:使用|采用|包含)|"
+    r"\b(?:does not use|doesn't use|does not include|does not involve|without)\b",
+    re.IGNORECASE,
+)
+_NOVEL_ABSENCE = re.compile(r"未(?:覆盖|见|报告|呈现)|不包含|\b(?:not disclosed|not reported)\b", re.IGNORECASE)
+_EXPLICIT_NEGATION = re.compile(
+    r"未(?:使用|采用|包含|涉及)|不(?:使用|采用|包含|涉及)|"
+    r"\b(?:not|without|no)\b", re.IGNORECASE,
+)
+
+
+def _guard_unsupported_absence(
+    review: NoveltyPointReview, request: NoveltyPointReviewRequest
+) -> NoveltyPointReview:
+    """Fail closed on absence claims when no supplied quotation states an absence.
+
+    This is a narrow syntactic guard, not a substitute for semantic review. It
+    deliberately preserves the relevant works so partial overlap remains visible.
+    """
+    if review.status is not ReviewStatus.REVIEWED:
+        return review
+    assertions = "\n".join([
+        review.verdict_reason or "",
+        *(work.relevance_reason for work in review.highly_relevant_works),
+    ])
+    if not (_STRONG_ABSENCE.search(assertions) or
+            (review.verdict is not None and review.verdict.value == "novel" and
+             _NOVEL_ABSENCE.search(assertions))):
+        return review
+    if any(_EXPLICIT_NEGATION.search(item.quote) for item in request.evidence):
+        return review
+    return NoveltyPointReview(
+        novelty_point_id=review.novelty_point_id,
+        status=ReviewStatus.INSUFFICIENT_EVIDENCE,
+        highly_relevant_works=[work.model_copy(update={
+            "relevance_reason": "该文献与查新点存在局部相关性；具体技术差异尚待原文核验。",
+        }) for work in review.highly_relevant_works],
+        supplement_request=SupplementRequest(
+            reason="裁定依赖文献未采用特征的断言，但输入引文没有直接支持该否定；需核验原文。",
+            missing_aspects=["核验被声称未采用的关键特征"],
+        ),
     )
 
 
