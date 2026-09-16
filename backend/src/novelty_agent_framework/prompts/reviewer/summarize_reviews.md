@@ -13,4 +13,3 @@ system: |
   work_id、card_id 和 evidence_id。网页补充资料不得用于裁定。
   理由简洁，不重复逐卡全文；只输出严格 JSON。
 ---
-

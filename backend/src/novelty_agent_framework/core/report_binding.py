@@ -52,6 +52,8 @@ def bind_reviews_to_report(
             confidence=review.confidence,
             highly_relevant_works=list(review.highly_relevant_works),
         )
+        if review.status.value == "insufficient_evidence":
+            values["summary"] = "该查新点的关键比较证据不足，尚不能作出新颖性裁定。"
         conclusions.append(NoveltyConclusion.model_validate(values))
     values = draft.model_dump(mode="python")
     values["conclusions"] = conclusions
