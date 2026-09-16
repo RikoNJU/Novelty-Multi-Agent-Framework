@@ -155,6 +155,58 @@ def test_bootstrap_with_targets_only_resolves_selected_references(tmp_path) -> N
     assert [entry.ordinal for entry in again.entries] == [1, 2, 3, 4]
 
 
+def test_bootstrap_include_direct_identifiers_also_resolves_id_bearing_entries(
+    tmp_path,
+) -> None:
+    """开启直选后，带显式 ID 的条目即使词面落榜也要解析。
+
+    回归背景（2026-09-16，MF2033k6lC）：预筛选只按词面打分时，19 条带 arXiv ID 的
+    条目里只选中 1 条，选中的 10 条里 6 条注定 ``not_found``，导致 reference_search
+    的本地语料被压到 4 篇。带 ID 的条目才是唯一解析得动的那部分，必须直选。
+    """
+
+    class CountingProvider:
+        source_id = "arxiv"
+
+        def __init__(self) -> None:
+            self.calls = 0
+
+        def resolve_identifier(self, identifier):
+            self.calls += 1
+            return None
+
+        def search_known_item(self, citation, *, limit=5):
+            self.calls += 1
+            return []
+
+    provider = CountingProvider()
+    service = ReferenceBootstrapService(
+        ReferenceProviderRegistry([provider]), SubjectReferenceStore(tmp_path)
+    )
+    target = ReferenceTarget(
+        target_id="NP-1",
+        text="inductive representation learning on large graphs",
+    )
+
+    result = asyncio.run(
+        service.bootstrap(
+            "paper-direct-ids",
+            GB_T_REFERENCES,
+            targets=[target],
+            per_target_limit=1,
+            include_direct_identifiers=True,
+        )
+    )
+
+    # #2 词面命中；#3 带 arxiv_id=1907.04931，被直选；#1/#4 仍然 SKIPPED。
+    attempted = {entry.ordinal for entry in result.entries if entry.attempts}
+    assert attempted == {2, 3}
+    assert provider.calls >= 2
+    statuses = {entry.ordinal: entry.resolution_status for entry in result.entries}
+    assert statuses[1] == ResolutionStatus.SKIPPED
+    assert statuses[4] == ResolutionStatus.SKIPPED
+
+
 def test_defer_resolution_writes_parsed_only_manifest(tmp_path) -> None:
     """defer 模式只做本地解析，不触网，台账依然 ready。"""
 
@@ -566,3 +618,45 @@ def test_non_ready_bootstrap_fails_paper_input_pipeline(tmp_path):
             run_output_root=tmp_path / "runs" / "0001",
             service=IncompleteService(),
         )
+
+
+def test_workflow_reference_node_honours_disabled_arxiv_provider(tmp_path) -> None:
+    """arXiv 关闭时按点预筛必须短路：旧实现无条件联网，绕过 provider 开关。"""
+
+    from novelty_agent_framework.schemas import NoveltyPoint
+    from novelty_agent_framework.workflows import NoveltyWorkflow
+
+    run_root = tmp_path / "outputs"
+    paper = PaperInput(
+        paper_id="paper-arxiv-off",
+        title="Paper",
+        full_text="body",
+        references=GB_T_REFERENCES,
+    )
+    # defer 模式台账：所有条目 attempts 为空，旧实现必然触发 arXiv 联网解析。
+    prepare_paper_input_references(
+        paper,
+        stable_output_root=tmp_path / "stable",
+        run_output_root=run_root,
+        defer_resolution=True,
+    )
+    workflow = NoveltyWorkflow.default()
+    workflow.output_root = run_root
+    workflow.runtime_config = {
+        "researcher": {
+            "tools": {
+                "database_search": {"providers": {"arxiv": {"enabled": False}}}
+            }
+        }
+    }
+    state = {
+        "paper": paper,
+        "novelty_points": [NoveltyPoint(point_id="NP-1", claim="claim")],
+    }
+
+    assert workflow._arxiv_provider_enabled() is False
+    assert asyncio.run(workflow._resolve_subject_references(state)) == {}
+
+    # 历史配置缺少该字段时仍视为启用，避免误伤默认链路。
+    workflow.runtime_config = {}
+    assert workflow._arxiv_provider_enabled() is True

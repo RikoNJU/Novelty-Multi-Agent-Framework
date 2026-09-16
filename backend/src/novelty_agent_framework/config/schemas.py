@@ -165,6 +165,9 @@ class WorkflowConfig(ConfigModel):
     max_rounds: int = Field(gt=0)
     max_concurrency: int = Field(gt=0)
     min_final_evidence_cards_per_point: int = Field(ge=1)
+    # 覆盖门：检索覆盖不完整时，把基于“未检索到”的裁定降级为证据不足。
+    # 默认开启；设为 false 会保留 Reviewer 的 novel / partially_novel 裁定。
+    enforce_retrieval_coverage: bool = True
     # 启用的调研任务语言。关闭的语言不进入 SearchPlanner 与 Researcher；
     # 任务生成、Prompt 与工具代码保留，随时可通过配置恢复。
     enabled_task_languages: list[str] = Field(

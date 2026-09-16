@@ -711,3 +711,95 @@ def test_failed_reader_keeps_other_required_artifacts_locked() -> None:
     assert result.final_content == "finished"
     # a-1 仍未读取，因此普通工具调用依然被拒绝
     assert example.received == []
+
+
+def _context_text(messages) -> str:
+    return "\n".join(
+        message.content if isinstance(message.content, str) else ""
+        for message in messages
+    )
+
+
+def test_finish_reserve_warning_is_injected_before_total_budget_exhaustion() -> None:
+    """预算剩 2 时注入收尾提示，让模型在硬中断前主动交 finish。
+
+    回归背景（2026-09-16，run 0010/0011）：所有预算耗尽都是 raise 硬中断，中断后
+    `_partial()` 不构建证据卡 —— 两轮读了 25 万字符却 0 卡。提示只占一轮，代价为零。
+    """
+
+    tool = ExampleTool()
+    model = ScriptedModelClient(
+        call(), call(call_id="call_2"), ModelResponse(content="done")
+    )
+    harness = ToolCallHarness(
+        model,
+        ResearcherToolRegistry([tool]),
+        config=ToolCallHarnessConfig(
+            max_turns=5, max_tool_calls=4, finish_reserve_tool_calls=2
+        ),
+    )
+
+    result = run_harness(harness, system_prompt="system", initial_user_message="task")
+
+    assert result.final_content == "done"
+    warning = "Tool budget is almost exhausted"
+    contexts = [_context_text(messages) for messages, _options in model.calls]
+    assert warning not in contexts[0]  # used=0 → 剩 4
+    assert warning not in contexts[1]  # used=1 → 剩 3
+    assert warning in contexts[2]      # used=2 → 剩 2，注入
+    assert len(tool.received) == 2
+    # 提示只发一次
+    assert sum(context.count(warning) for context in contexts) == 1
+
+
+def test_finish_reserve_warning_tracks_per_tool_limit_too() -> None:
+    """单项限额外可能先于总预算触顶，收尾提示要按最紧的那一项提前触发。"""
+
+    tool = ExampleTool()
+    model = ScriptedModelClient(
+        call(), call(call_id="call_2"), ModelResponse(content="done")
+    )
+    harness = ToolCallHarness(
+        model,
+        ResearcherToolRegistry([tool]),
+        config=ToolCallHarnessConfig(
+            max_turns=6,
+            max_tool_calls=10,
+            per_tool_limits={"example": 3},
+            finish_reserve_tool_calls=2,
+        ),
+    )
+
+    run_harness(harness, system_prompt="system", initial_user_message="task")
+
+    warning = "Tool budget is almost exhausted"
+    contexts = [_context_text(messages) for messages, _options in model.calls]
+    # 总预算还剩 9，但 example 只剩 2 → 第 2 轮就提示。
+    assert warning not in contexts[0]
+    assert warning in contexts[1]
+
+
+def test_finish_reserve_warning_can_be_disabled() -> None:
+    tool = ExampleTool()
+    model = ScriptedModelClient(
+        call(), call(call_id="call_2"), ModelResponse(content="done")
+    )
+    harness = ToolCallHarness(
+        model,
+        ResearcherToolRegistry([tool]),
+        config=ToolCallHarnessConfig(
+            max_turns=5, max_tool_calls=4, finish_reserve_tool_calls=0
+        ),
+    )
+
+    run_harness(harness, system_prompt="system", initial_user_message="task")
+
+    assert all(
+        "Tool budget is almost exhausted" not in _context_text(messages)
+        for messages, _options in model.calls
+    )
+
+
+def test_finish_reserve_config_rejects_negative_value() -> None:
+    with pytest.raises(ValueError, match="finish_reserve_tool_calls"):
+        ToolCallHarnessConfig(finish_reserve_tool_calls=-1)

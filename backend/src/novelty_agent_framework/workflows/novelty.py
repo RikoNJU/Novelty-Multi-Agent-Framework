@@ -328,6 +328,10 @@ class NoveltyWorkflow:
         paper = state["paper"]
         points = list(state.get("novelty_points", []))
         limit = self.config.reference_prefilter_limit
+        if not self._arxiv_provider_enabled():
+            # 该节点历史上无条件构造 arXiv 工具，绕过了 provider 的 enabled
+            # 开关；arXiv 关闭时必须在这里短路，否则配置形同虚设。
+            return {}
         if not paper.references or not points or limit <= 0:
             return {}
 
@@ -379,6 +383,11 @@ class NoveltyWorkflow:
                 list(paper.references),
                 targets=targets,
                 per_target_limit=limit,
+                # 带显式 arXiv ID / DOI / URL 的条目一律解析：实测这类条目才是唯一
+                # 解析得动的部分（19 条带 ID 成功 18 条，72 条无 ID 成功 0 条）。
+                # 不开这个开关时，预筛选中的 10 条里 6 条注定 not_found，
+                # 最终 reference_search 的本地语料只剩个位数。
+                include_direct_identifiers=True,
             )
         except Exception as exc:
             # 参考文献解析失败不应击穿查新主流程。
@@ -426,6 +435,11 @@ class NoveltyWorkflow:
             providers.get("arxiv") if isinstance(providers, Mapping) else None
         )
         return dict(options) if isinstance(options, Mapping) else {}
+
+    def _arxiv_provider_enabled(self) -> bool:
+        """arXiv 提供方是否启用；历史配置缺少 enabled 字段时视为启用。"""
+
+        return self._arxiv_options().get("enabled", True) is not False
 
     async def _extract_points(self, state: NoveltyState) -> dict[str, Any]:
         persist_workflow_input(state["paper"], output_root=self.output_root)
@@ -879,8 +893,13 @@ class NoveltyWorkflow:
                 ]
 
         # 覆盖不完整时，基于“未检索到”的裁定不成立，降级为证据不足。
+        # 覆盖门可通过 workflow.enforce_retrieval_coverage=false 暂时关闭：关闭后
+        # Reviewer 的裁定原样保留，报告局限改用“未经完整覆盖校验”的措辞。
         coverage = self._assess_retrieval_coverage(state)
-        reviews, downgrades = apply_coverage_policy(reviews, coverage)
+        if self.config.enforce_retrieval_coverage:
+            reviews, downgrades = apply_coverage_policy(reviews, coverage)
+        else:
+            downgrades = []
 
         # 0 卡时 Reviewer 根本不会运行（代码短路），所以“为什么没有证据”必须由
         # 覆盖事实自己回答；否则检索失败与检索成功但零命中会写成同一句话。
@@ -1119,6 +1138,7 @@ class NoveltyWorkflow:
                 for point in state.get("novelty_points", [])
                 if not card_counts.get(point.point_id, 0)
             ],
+            coverage_gate=self.config.enforce_retrieval_coverage,
         )
         if coverage_lines:
             report = report.model_copy(

@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+from dataclasses import replace
 from datetime import datetime, timezone
 
 import pytest
@@ -511,3 +512,85 @@ def test_retrieval_executions_deduplicate_repeated_ids() -> None:
 
     assert len(collected) == 1
     assert collected[0].execution_id == execution.execution_id
+
+
+def test_zero_hit_source_requires_every_execution_to_be_empty() -> None:
+    """回归（2026-09-16，run 0013 NP-2）：放宽链有一次为空就把整源标"零命中"是错的。
+
+    真实形态：arxiv ``succeeded=2 / empty=1``（其中一次返回 8 条），却进了
+    ``zero_hit_sources``，报告局限跟着写成"零命中…未见相关文献报道"，
+    把"查到了但没出卡"误报成"查不到"。
+    """
+
+    with_hits = _coverage(
+        [
+            _execution("arxiv", SearchExecutionStatus.SUCCEEDED, suffix="-s1"),
+            _execution("arxiv", SearchExecutionStatus.SUCCEEDED, hits=8, suffix="-s2"),
+        ]
+    )
+
+    assert with_hits.state is CoverageState.COMPLETE
+    assert with_hits.sources[0].succeeded == 2
+    assert with_hits.sources[0].empty == 1
+    assert with_hits.zero_hit_sources == []
+
+    all_empty = _coverage(
+        [
+            _execution("arxiv", SearchExecutionStatus.SUCCEEDED, suffix="-s3"),
+            _execution("arxiv", SearchExecutionStatus.SUCCEEDED, suffix="-s4"),
+        ]
+    )
+
+    assert all_empty.zero_hit_sources == ["arxiv"]
+
+
+def test_zero_card_reason_separates_zero_hit_from_hits_without_cards() -> None:
+    """0 卡原因要区分"真零命中"与"有命中但没转成卡片"。"""
+
+    hits_no_cards = _coverage(
+        [_execution("arxiv", SearchExecutionStatus.SUCCEEDED, hits=8)]
+    )
+    zero_hit = _coverage(
+        [_execution("arxiv", SearchExecutionStatus.SUCCEEDED, suffix="-empty")]
+    )
+
+    hits_reason = zero_card_reason(hits_no_cards)
+    # 定性句必须以"返回了候选"开头；「零命中来源：无」只出现在后面的覆盖事实里。
+    assert hits_reason.startswith("检索完整执行且返回了候选，但未形成可引用的证据卡")
+
+    zero_hit_reason = zero_card_reason(zero_hit)
+    assert zero_hit_reason.startswith("检索完整执行但零命中")
+    assert hits_reason != zero_hit_reason
+
+
+def test_coverage_limitations_uses_caveat_wording_when_gate_disabled() -> None:
+    """覆盖门关闭时不能再写"无法判定"，否则与保留下来的裁定自相矛盾。"""
+
+    failed = _coverage([_execution("arxiv", SearchExecutionStatus.FAILED)])
+
+    gated = coverage_limitations([failed], zero_card_points=[])
+    ungated = coverage_limitations(
+        [failed], zero_card_points=[], coverage_gate=False
+    )
+
+    assert "无法判定是否存在相关文献" in gated[0]
+    assert "未经完整覆盖校验" in ungated[0]
+    assert "无法判定" not in ungated[0]
+
+
+def test_coverage_gate_can_be_disabled_temporarily(tmp_path) -> None:
+    """``enforce_retrieval_coverage=false``：Reviewer 裁定原样保留，不再降级。"""
+
+    workflow = _workflow(
+        tmp_path, _StaticReviewer(_review(NoveltyVerdict.PARTIALLY_NOVEL))
+    )
+    workflow.config = replace(workflow.config, enforce_retrieval_coverage=False)
+    state = _review_state([_execution("arxiv", SearchExecutionStatus.FAILED)])
+
+    output = asyncio.run(workflow._review_evidence(state))
+
+    review = output["novelty_reviews"][0]
+    assert review.status is ReviewStatus.REVIEWED
+    assert review.verdict is NoveltyVerdict.PARTIALLY_NOVEL
+    assert output["retrieval_coverage"][0].state is CoverageState.FAILED
+    assert [issue.code for issue in output["issues"]] == []

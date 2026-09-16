@@ -264,7 +264,15 @@ def assess_point_coverage(
     zero_hit_sources = sorted(
         item.source_id
         for item in sources
-        if item.required and item.empty and not item.failed and not item.degraded
+        # 「零命中来源」＝该来源的**全部成功执行**都没拿回结果。
+        # 旧实现用 `item.empty` 真值判断，只要有一次放宽检索为空就把整源标成零命中
+        # ——实测 NP-2 的 arxiv `succeeded=2 / empty=1`（其中一次返回 8 条）被标零命中，
+        # 报告局限跟着写成"零命中…未见相关文献报道"，把"查到了但没出卡"误报成"查不到"。
+        if item.required
+        and item.succeeded > 0
+        and item.empty == item.succeeded
+        and not item.failed
+        and not item.degraded
     )
 
     if not required:
@@ -354,8 +362,18 @@ def zero_card_reason(coverage: RetrievalCoverage) -> str:
 
     “为什么这个点没有证据”必须与覆盖状态一致，因此这句话由代码生成，不交给
     模型措辞：否则检索失败与检索成功但零命中会在产物里写成同一句话。
+
+    ``complete`` 还要再分两种：真·零命中，与「有命中但没转成卡片」。
+    后者是下游出卡环节的问题（读取到了候选、模型未出卡），写成"零命中"会把
+    "查到了但没用上"误报成"查不到"，掩盖真正该修的地方。
     """
 
+    if coverage.state is CoverageState.COMPLETE and not coverage.zero_hit_sources:
+        return (
+            "检索完整执行且返回了候选，但未形成可引用的证据卡；"
+            f"{coverage.reason}"
+            "候选是否构成在先技术需人工确认。"
+        )
     cause = _ZERO_CARD_CAUSE[coverage.state]
     if coverage.state is CoverageState.COMPLETE:
         return (
@@ -365,15 +383,33 @@ def zero_card_reason(coverage: RetrievalCoverage) -> str:
     return f"{cause}；{coverage.reason}该情形无法判定是否存在相关文献。"
 
 
+def incomplete_coverage_caveat(coverage: RetrievalCoverage) -> str:
+    """覆盖门关闭时的措辞：只标出"未经完整覆盖校验"，不断言"无法判定"。
+
+    覆盖门开启时，覆盖不完整的点位会被降级，所以"无法判定"是对的；门关闭后
+    裁定会保留下来，再说"无法判定"就与报告结论自相矛盾了。
+    """
+
+    return (
+        "检索覆盖不完整，该点的裁定**未经完整覆盖校验**，可能漏检相关文献；"
+        f"覆盖事实：{coverage.reason}需人工确认。"
+    )
+
+
 def coverage_limitations(
     coverages: Sequence[RetrievalCoverage],
     *,
     zero_card_points: Sequence[str] = (),
+    coverage_gate: bool = True,
 ) -> list[str]:
     """生成报告 limitations 的确定性条目。
 
     覆盖不完整的点无论有无卡片都要写入；完整覆盖但 0 卡的点只写“零命中”事实。
     完整覆盖且有卡片的点不写，避免报告被无意义的行淹没。
+
+    ``coverage_gate=False``（覆盖门关闭）时，覆盖不完整的点改用
+    :func:`incomplete_coverage_caveat` 措辞 —— 此时裁定不会被降级，
+    再说"无法判定"会与报告结论矛盾。
     """
 
     zero_cards = {str(item) for item in zero_card_points}
@@ -382,6 +418,11 @@ def coverage_limitations(
         if coverage.permits_absence_conclusion and (
             coverage.novelty_point_id not in zero_cards
         ):
+            continue
+        if not coverage_gate and not coverage.permits_absence_conclusion:
+            lines.append(
+                f"{coverage.novelty_point_id}：{incomplete_coverage_caveat(coverage)}"
+            )
             continue
         lines.append(
             f"{coverage.novelty_point_id}：{zero_card_reason(coverage)}"

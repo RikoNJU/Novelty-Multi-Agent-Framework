@@ -12,6 +12,9 @@ from novelty_agent_framework.persistence import ReferenceStore
 from novelty_agent_framework.ports import FullText, SearchHit
 from novelty_agent_framework.schemas import (
     AccessStatus,
+    Artifact,
+    ArtifactRole,
+    ContentExtent,
     DatabaseSearchArguments,
     NoveltyPoint,
     ResearchBundle,
@@ -371,3 +374,77 @@ def test_constructor_requires_one_shared_store(tmp_path):
     internal = tool.tools_by_source["demo"]
     with pytest.raises(ValueError, match="share reference_store"):
         DatabaseSearchTool({"demo": internal}, ReferenceStore(tmp_path / "other"))
+
+
+def _artifact(artifact_id: str, role: ArtifactRole, work_id: str = "work-1") -> Artifact:
+    return Artifact(
+        artifact_id=artifact_id,
+        work_id=work_id,
+        source_record_id="record-1",
+        role=role,
+        media_type="text/plain",
+        relative_path=f"documents/{work_id}/{artifact_id}.txt",
+        sha256="a" * 64,
+        content_extent=ContentExtent.FULL,
+        acquired_at=datetime.now(timezone.utc),
+    )
+
+
+def test_projection_separates_abstract_artifacts_from_full_text(tmp_path) -> None:
+    """摘要制品必须单独暴露给模型，否则模型只能在扁平 artifact_ids 里盲选。
+
+    回归背景（2026-09-16，MF2033k6lC run 0010/0011）：模型盲选到 107K 字符的全文，
+    连续翻页耗尽 reader 预算后被 harness 硬中断，三轮 0 证据卡；摘要制品一次即可读完。
+    """
+
+    value = bundle(SearchExecutionStatus.SUCCEEDED, with_result=True)
+    value.artifacts = [
+        _artifact("art_abstract", ArtifactRole.ABSTRACT),
+        _artifact("art_fulltext", ArtifactRole.EXTRACTED_TEXT),
+    ]
+    tool, observation = observe_bundle(tmp_path, value)
+    item = observation.payload["database_search_result"]["results"][0]
+
+    assert item["artifact_ids"] == ["art_abstract", "art_fulltext"]
+    assert item["abstract_artifact_ids"] == ["art_abstract"]
+
+    # 工具描述要给出「先摘要」的可执行指引。
+    assert "abstract_artifact_ids" in tool.description
+    assert "reader" in tool.description
+
+
+def _artifact(artifact_id: str, role: ArtifactRole, work_id: str = "work-1") -> Artifact:
+    return Artifact(
+        artifact_id=artifact_id,
+        work_id=work_id,
+        source_record_id="record-1",
+        role=role,
+        media_type="text/plain",
+        relative_path=f"documents/{work_id}/{artifact_id}.txt",
+        sha256="a" * 64,
+        content_extent=ContentExtent.FULL,
+        acquired_at=datetime.now(timezone.utc),
+    )
+
+
+def test_projection_separates_abstract_artifacts_from_full_text(tmp_path) -> None:
+    """摘要制品必须单独暴露给模型，否则模型只能在扁平 artifact_ids 里盲选。
+
+    回归背景（2026-09-16，MF2033k6lC run 0010/0011）：模型盲选到 107K 字符的全文，
+    连续翻页耗尽 reader 预算后被 harness 硬中断，三轮 0 证据卡；摘要制品一次即可读完。
+    """
+
+    value = bundle(SearchExecutionStatus.SUCCEEDED, with_result=True)
+    value.artifacts = [
+        _artifact("art_abstract", ArtifactRole.ABSTRACT),
+        _artifact("art_fulltext", ArtifactRole.EXTRACTED_TEXT),
+    ]
+    tool, observation = observe_bundle(tmp_path, value)
+    item = observation.payload["database_search_result"]["results"][0]
+
+    assert item["artifact_ids"] == ["art_abstract", "art_fulltext"]
+    assert item["abstract_artifact_ids"] == ["art_abstract"]
+
+    # 工具描述要给出「先摘要」的可执行指引。
+    assert "abstract_artifact_ids" in tool.description
+    assert "reader" in tool.description

@@ -300,11 +300,19 @@ class ReferenceBootstrapService:
         dry_run: bool = False,
         targets: Sequence[ReferenceTarget] | None = None,
         per_target_limit: int = 0,
+        include_direct_identifiers: bool = False,
     ) -> ReferenceBootstrapManifest:
         """解析参考文献；给定 ``targets`` 时只联网解析被选中的少数条目。
 
         未选中的条目记录为 ``SKIPPED``：它表示“本轮没有为它发起检索”，不是
         “查不到”。这样 90 条参考文献不会变成 90 次 arXiv 请求。
+
+        ``include_direct_identifiers=True`` 时，**带显式 ``arxiv_id`` / ``doi`` /
+        ``url`` 的条目一律纳入解析**，不受词面 top-K 限制。实测（MF2033k6lC，91 条
+        参考文献）：能解析成功的条目与“带显式 ID”高度重合 —— 19 条带 ID 里 18 条
+        成功，72 条无 ID 里 0 条成功。只走词面打分时那 19 条里通常只选中 1 条，
+        于是选中的 10 条里 6 条注定 ``not_found``，reference_search 的本地语料被压到
+        个位数。默认 False 以保持既有调用方行为不变。
         """
         ledger = self.store.load_bootstrap(paper_id)
         existing = {entry.reference_id: entry for entry in ledger.entries}
@@ -317,6 +325,7 @@ class ReferenceBootstrapService:
                 targets or (),
                 per_target_limit=per_target_limit,
                 parser=self.parser,
+                include_direct_identifiers=include_direct_identifiers,
             )
         )
 

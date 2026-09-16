@@ -22,7 +22,7 @@ def render_prompt():
 def test_researcher_prompt_renders_database_only_retrieval_policy() -> None:
     rendered = render_prompt()
 
-    assert rendered.version == "3"
+    assert rendered.version == "4"
     assert "Rely on database_search as the discovery tool" in rendered.system
     assert "revise the query terms taken from the SearchPlan" in rendered.system
     assert "Search results and snippets are discovery metadata, not evidence" in rendered.system
@@ -37,6 +37,22 @@ def test_researcher_prompt_renders_database_only_retrieval_policy() -> None:
     )
     assert "When reference_search is available" in rendered.system
     assert "Do not decide whether a source is evidentiary based only on search snippets" in rendered.system
+
+
+def test_researcher_prompt_prefers_abstract_artifact_and_reserves_finish_budget() -> None:
+    """回归守卫（v4）：优先读摘要制品，且必须留预算交 finish。
+
+    实测背景（MF2033k6lC run 0010/0011）：模型在扁平 artifact_ids 里盲选到
+    107K 字符的全文，连续翻页耗尽 reader 预算后被 harness 硬中断，三轮 0 证据卡。
+    """
+
+    system = render_prompt().system
+
+    assert "Prefer an id listed in abstract_artifact_ids" in system
+    assert "the reading budget before you can finish" in system
+    assert "keep the number of pages per artifact small" in system
+    assert "If a budget warning appears" in system
+    assert "emit the finish JSON for the evidence you already have" in system
 
 
 def test_researcher_prompt_excludes_web_search_and_browser_policy() -> None:

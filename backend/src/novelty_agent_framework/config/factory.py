@@ -416,6 +416,15 @@ def build_workflow(
                     },
                 )
             ),
+            # 预算将尽时的收尾预留，以及 harness 硬中断后的抢救式出卡。
+            # 两者都只影响「读到了东西但没能收尾」的情形，默认开启。
+            finish_reserve_tool_calls=int(
+                budget_cfg.get("finish_reserve_tool_calls", 2)
+            ),
+            salvage_enabled=bool(budget_cfg.get("salvage_enabled", True)),
+            salvage_max_read_chars=int(
+                budget_cfg.get("salvage_max_read_chars", 24_000)
+            ),
             model_options=(
                 _model_options(researcher_runtime.get("model", {}))
                 if researcher_runtime
@@ -439,6 +448,9 @@ def build_workflow(
             max_concurrency=int(workflow_cfg.get("max_concurrency", 4)),
             min_final_evidence_cards_per_point=int(
                 workflow_cfg.get("min_final_evidence_cards_per_point", 1)
+            ),
+            enforce_retrieval_coverage=bool(
+                workflow_cfg.get("enforce_retrieval_coverage", True)
             ),
             candidate_limit_per_task=int(
                 retrieval_cfg.get("candidate_limit_per_task", 8)
@@ -669,6 +681,7 @@ def _build_workflow_from_application_config(
             min_final_evidence_cards_per_point=(
                 workflow.min_final_evidence_cards_per_point
             ),
+            enforce_retrieval_coverage=workflow.enforce_retrieval_coverage,
             candidate_limit_per_task=database.candidate_limit_per_task,
             enabled_task_languages=tuple(workflow.enabled_task_languages),
             runtime_debug=RuntimeDebugConfig(

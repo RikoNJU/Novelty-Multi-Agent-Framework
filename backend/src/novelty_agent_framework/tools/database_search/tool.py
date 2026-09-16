@@ -9,6 +9,7 @@ from typing import Any
 
 from ...persistence import ReferenceStore
 from ...schemas import (
+    ArtifactRole,
     DatabaseSearchArguments,
     DatabaseSearchItem,
     DatabaseSearchResult,
@@ -73,6 +74,9 @@ class DatabaseSearchTool:
             f"source_id 只能使用以下值：{available}。"
             "候选来源本身不是证据；结果包含 artifact_ids 时，下一次工具调用"
             "必须优先使用 reader 读取其中一个 Artifact，不得继续搜索。"
+            "读取时**优先选 abstract_artifact_ids**（摘要制品，通常一次读完）；"
+            "只有当摘要不足以判断重叠时，才读 artifact_ids 里的全文制品 —— "
+            "全文可能上万字符，按 char_start 连续翻页会迅速耗尽读取预算。"
         )
 
     async def ainvoke(
@@ -102,9 +106,16 @@ class DatabaseSearchTool:
             )
         )
         artifacts_by_record: dict[str, list[str]] = {}
+        abstract_by_record: dict[str, list[str]] = {}
         for artifact in bundle.artifacts:
-            if artifact.source_record_id is not None:
-                artifacts_by_record.setdefault(artifact.source_record_id, []).append(
+            if artifact.source_record_id is None:
+                continue
+            artifacts_by_record.setdefault(artifact.source_record_id, []).append(
+                artifact.artifact_id
+            )
+            # 摘要制品一次读完；全文制品可能上万字符。分开暴露，避免模型盲选。
+            if artifact.role == ArtifactRole.ABSTRACT:
+                abstract_by_record.setdefault(artifact.source_record_id, []).append(
                     artifact.artifact_id
                 )
         works = {work.work_id: work for work in bundle.works}
@@ -124,6 +135,9 @@ class DatabaseSearchTool:
                     source_id=record.source_id,
                     access_status=record.access_status,
                     artifact_ids=sorted(artifacts_by_record.get(record.source_record_id, [])),
+                    abstract_artifact_ids=sorted(
+                        abstract_by_record.get(record.source_record_id, [])
+                    ),
                     abstract_preview=preview,
                 )
             )

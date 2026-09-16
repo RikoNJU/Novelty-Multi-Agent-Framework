@@ -7,7 +7,7 @@ import re
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 
-from backend.env import ModelCallOptions, ModelClient, PromptLibrary
+from backend.env import ChatMessage, ModelCallOptions, ModelClient, PromptLibrary
 from pydantic import ValidationError
 
 from ..core import ToolCallHarness, ToolCallHarnessConfig, ToolCallHarnessError
@@ -21,6 +21,26 @@ from ..schemas import (
 )
 from ..schemas import TaskResearchResult, TaskResearchStatus
 from ..tools import EvidenceCardBuilder, ResearcherToolRegistry
+
+#: 「抢救式出卡」提示词：读都读完了，只差把证据整理成卡片。
+#:
+#: 实测背景（2026-09-16，MF2033k6lC run 0010/0011）：harness 因预算耗尽抛
+#: ``ToolCallHarnessError``，而 ``_partial()`` 不构建证据卡 —— 两轮共读了 25 万字符
+#: 却产出 0 卡。这里用已恢复的读取结果再发一次**无工具**模型调用，把证据落成卡片。
+#: 引文必须逐字来自给出的读取片段，绑定仍由证据构建器校验。
+SALVAGE_SYSTEM_PROMPT = """\
+Tool budget ran out before you could finish. The reading is already done.
+Your only job now: turn the excerpts below into a ResearchFinishDraft JSON.
+
+Rules:
+- Use only the excerpts provided. Never invent, paraphrase, or translate quotes.
+- Every quote must be copied verbatim from one excerpt; binding is verified.
+- At most one card per source work_id.
+- If no excerpt supports a card, finish with cards=[] and a concrete
+  no_evidence_reason instead of forcing one.
+- Output exactly one JSON object conforming to the supplied schema.
+  No prose, no Markdown fences.
+"""
 
 
 def _extract_finish_json(content: str | None) -> str:
@@ -61,11 +81,21 @@ class TaskResearcherConfig:
         default_factory=lambda: ModelCallOptions(temperature=0.0, tool_choice="auto")
     )
     prompt_name: str = "research/native_tool_loop"
+    #: 剩余工具调用降到该值及以下时注入收尾提示，逼模型在硬中断前交出 finish JSON。
+    finish_reserve_tool_calls: int = 2
+    #: harness 失败后用已读内容补一次「抢救式出卡」；关闭则直接记 partial。
+    salvage_enabled: bool = True
+    #: 抢救式出卡时喂给模型的最大已读字符数。
+    salvage_max_read_chars: int = 24_000
 
     def __post_init__(self) -> None:
         if min(self.max_steps, self.max_tool_calls, self.max_chars_per_read,
                self.max_total_read_chars) < 1:
             raise ValueError("researcher budgets must be positive")
+        if self.finish_reserve_tool_calls < 0:
+            raise ValueError("finish_reserve_tool_calls must not be negative")
+        if self.salvage_max_read_chars < 1:
+            raise ValueError("salvage_max_read_chars must be positive")
 
 
 class TaskResearcherWorkflow:
@@ -93,6 +123,7 @@ class TaskResearcherWorkflow:
                 max_tool_calls=self.config.max_tool_calls,
                 per_tool_limits=dict(self.config.per_tool_limits),
                 max_total_read_chars=self.config.max_total_read_chars,
+                finish_reserve_tool_calls=self.config.finish_reserve_tool_calls,
             ),
         )
 
@@ -110,16 +141,27 @@ class TaskResearcherWorkflow:
             reads, read_warnings = _trusted_reads(exc.trace)
             bundles, bundle_warnings = _trusted_bundles(exc.trace)
             executions = _retrieval_executions(exc.trace)
+            warnings = [
+                f"native tool harness failed: {exc}",
+                *read_warnings,
+                *bundle_warnings,
+            ]
+            salvaged = await self._salvage(
+                request,
+                reads=reads,
+                bundles=bundles,
+                executions=executions,
+                warnings=warnings,
+                steps=_turns_in_trace(exc.trace),
+            )
+            if salvaged is not None:
+                return salvaged
             return _partial(
                 request,
                 reads=reads,
                 bundles=bundles,
                 executions=executions,
-                warnings=[
-                    f"native tool harness failed: {exc}",
-                    *read_warnings,
-                    *bundle_warnings,
-                ],
+                warnings=warnings,
                 steps=_turns_in_trace(exc.trace),
             )
         except Exception as exc:
@@ -136,12 +178,27 @@ class TaskResearcherWorkflow:
                 _extract_finish_json(harness_result.final_content)
             )
         except (ValidationError, ValueError) as exc:
+            warnings = [
+                *read_warnings,
+                *bundle_warnings,
+                f"invalid ResearchFinishDraft: {_safe_error(exc)}",
+            ]
+            # 模型交的 JSON 不合法，但读取成果是好的：抢救一次再退 partial。
+            salvaged = await self._salvage(
+                request,
+                reads=reads,
+                bundles=bundles,
+                executions=executions,
+                warnings=warnings,
+                steps=harness_result.turns_used,
+            )
+            if salvaged is not None:
+                return salvaged
             return _partial(
                 request,
                 reads=reads,
                 bundles=bundles,
-                warnings=[*read_warnings, *bundle_warnings,
-                          f"invalid ResearchFinishDraft: {_safe_error(exc)}"],
+                warnings=warnings,
                 executions=executions,
                 steps=harness_result.turns_used,
             )
@@ -172,6 +229,100 @@ class TaskResearcherWorkflow:
             evidence_cards=built.evidence_cards,
             warnings=[*read_warnings, *bundle_warnings, *built.warnings],
             steps_used=harness_result.turns_used,
+        )
+
+    async def _salvage(
+        self,
+        request: TaskResearchRequest,
+        *,
+        reads: list[ReferenceReadResult],
+        bundles: list[ResearchBundle],
+        executions: list[SearchExecution],
+        warnings: list[str],
+        steps: int,
+    ) -> TaskResearchResult | None:
+        """用已恢复的读取结果补一次出卡；不适用或失败时返回 None。
+
+        只在「读到了东西但没能收尾」时才有意义：读取为空直接放弃，不白花一次调用。
+        """
+
+        if not self.config.salvage_enabled or not reads:
+            return None
+        payload = self._salvage_payload(request, reads)
+        if payload is None:
+            return None
+        try:
+            response = await self.model_client.acomplete(
+                [
+                    ChatMessage(role="system", content=SALVAGE_SYSTEM_PROMPT),
+                    ChatMessage(role="user", content=payload),
+                ],
+                options=ModelCallOptions(
+                    temperature=0.0,
+                    max_tokens=self.config.model_options.max_tokens,
+                    timeout_seconds=self.config.model_options.timeout_seconds,
+                    tools=(),
+                    tool_choice="none",
+                ),
+            )
+            draft = ResearchFinishDraft.model_validate_json(
+                _extract_finish_json(response.content)
+            )
+            built = self.evidence_builder.build(
+                draft, scope=request, read_results=reads
+            )
+        except Exception as exc:
+            warnings.append(f"salvage attempt failed: {_safe_error(exc)}")
+            return None
+        return TaskResearchResult(
+            task_id=request.research_task.task_id,
+            novelty_point_id=request.novelty_point.point_id,
+            status=TaskResearchStatus.COMPLETED,
+            read_results=reads,
+            research_bundles=bundles,
+            retrieval_executions=executions,
+            evidence=built.evidence,
+            evidence_cards=built.evidence_cards,
+            warnings=[
+                *warnings,
+                "salvaged finish draft from recovered reads after harness failure",
+                *built.warnings,
+            ],
+            steps_used=steps,
+        )
+
+    def _salvage_payload(
+        self, request: TaskResearchRequest, reads: list[ReferenceReadResult]
+    ) -> str | None:
+        """把已读片段裁到预算内，拼成抢救调用的输入。"""
+
+        budget = self.config.salvage_max_read_chars
+        excerpts: list[dict[str, object]] = []
+        for read in reads:
+            if budget <= 0:
+                break
+            text = read.text[:budget]
+            budget -= len(text)
+            excerpts.append(
+                {
+                    "artifact_id": read.artifact_id,
+                    "work_id": read.work_id,
+                    "role": str(read.role),
+                    "char_start": read.char_start,
+                    "char_end": read.char_start + len(text),
+                    "text": text,
+                }
+            )
+        if not excerpts:
+            return None
+        return json.dumps(
+            {
+                "novelty_point": _project_novelty_point(request.novelty_point),
+                "research_task": request.research_task.model_dump(mode="json"),
+                "finish_schema": ResearchFinishDraft.model_json_schema(),
+                "read_excerpts": excerpts,
+            },
+            ensure_ascii=False,
         )
 
     def _render_prompt(self, request: TaskResearchRequest) -> tuple[str, str]:

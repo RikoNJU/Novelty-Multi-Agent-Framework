@@ -36,9 +36,20 @@ HarnessEventKind = Literal[
     "assistant_response",
     "tool_call",
     "tool_result",
+    "budget_warning",
     "error",
     "finish",
 ]
+
+#: 预算将尽时注入的收尾提示。所有预算耗尽路径都是硬中断（``raise``），
+#: 中断后不构建证据卡 —— 实测 0010/0011 两轮读了 25 万字符却 0 卡。
+#: 这条提示把「外部硬中断」提前变成「模型主动收尾」，代价为零（只占一轮）。
+FINISH_RESERVE_WARNING = (
+    "Tool budget is almost exhausted ({used}/{total} tool calls used). "
+    "Do not call any more tools. On your next response, emit the final "
+    "ResearchFinishDraft JSON for the evidence you have already read. "
+    "If nothing supports a card, finish with cards=[] and a no_evidence_reason."
+)
 
 
 @dataclass(frozen=True)
@@ -68,6 +79,10 @@ class ToolCallHarnessConfig:
     max_tool_calls: int = 10
     per_tool_limits: dict[str, int] = field(default_factory=dict)
     max_total_read_chars: int | None = None
+    #: 剩余工具调用数降到该值及以下时，注入一次性收尾提示，逼模型主动交 finish。
+    #: **默认 0（关闭）**：harness 是共用组件（Reviewer 也用它），默认开启会让
+    #: 既有调用方的消息序列多出一条非预期消息；由需要它的调用方显式 opt-in。
+    finish_reserve_tool_calls: int = 0
 
     def __post_init__(self) -> None:
         if self.max_turns < 1:
@@ -78,6 +93,8 @@ class ToolCallHarnessConfig:
             raise ValueError("per_tool_limits must be positive")
         if self.max_total_read_chars is not None and self.max_total_read_chars < 1:
             raise ValueError("max_total_read_chars must be positive")
+        if self.finish_reserve_tool_calls < 0:
+            raise ValueError("finish_reserve_tool_calls must not be negative")
 
 
 @dataclass(frozen=True)
@@ -122,8 +139,34 @@ class ToolCallHarness:
         per_tool_counts: dict[str, int] = {}
         total_read_chars = 0
         required_reader_artifact_ids: set[str] = set()
+        finish_warning_sent = False
 
         for turn in range(1, self.config.max_turns + 1):
+            if not finish_warning_sent and self.config.finish_reserve_tool_calls > 0:
+                # 取「总预算」与「各工具单项限额外」中最紧的那个剩余值：单项限额外
+                # 可能先于总预算触顶（实测 reader 10 次先于总 16 次用尽）。
+                remaining = min(
+                    [self.config.max_tool_calls - tool_calls_used]
+                    + [
+                        limit - per_tool_counts.get(name, 0)
+                        for name, limit in self.config.per_tool_limits.items()
+                    ]
+                )
+                if remaining <= self.config.finish_reserve_tool_calls:
+                    finish_warning_sent = True
+                    log.append(
+                        ToolCallHarnessEvent(
+                            kind="budget_warning",
+                            message=ChatMessage(
+                                role="user",
+                                content=FINISH_RESERVE_WARNING.format(
+                                    used=tool_calls_used,
+                                    total=self.config.max_tool_calls,
+                                ),
+                            ),
+                            detail="finish reserve warning",
+                        )
+                    )
             context = _build_context(system_prompt, tuple(log))
             try:
                 response = await self.model_client.acomplete(
@@ -419,7 +462,7 @@ def _build_context(
         for event in trace
         if event.message is not None
         and event.kind
-        in {"initial_user_message", "assistant_response", "tool_result"}
+        in {"initial_user_message", "assistant_response", "tool_result", "budget_warning"}
     )
     return messages
 

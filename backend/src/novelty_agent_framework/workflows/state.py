@@ -78,6 +78,12 @@ class NoveltyWorkflowConfig:
     candidate_limit_per_task: int = 8
     #: 每个查新点最多联网解析多少篇候选参考文献（0 表示不预筛、解析全部）。
     reference_prefilter_limit: int = 4
+    #: 是否强制覆盖门：检索覆盖不完整时，把基于“未检索到”的裁定降级为证据不足。
+    #:
+    #: 关闭后 Reviewer 给出的 novel / partially_novel 会原样保留，报告局限改用
+    #: “未经完整覆盖校验”的措辞。**默认开启**；这里允许暂时关闭，是为了在覆盖
+    #: 问题本身还没修好时不被它一刀切挡住结论（关闭属于临时措施，非推荐状态）。
+    enforce_retrieval_coverage: bool = True
     # 启用的调研任务语言。关闭的语言不再进入 SearchPlanner 与 Researcher；
     # 任务生成、Prompt 与工具代码全部保留，随时可通过配置恢复。
     enabled_task_languages: tuple[str, ...] = ("zh", "en")

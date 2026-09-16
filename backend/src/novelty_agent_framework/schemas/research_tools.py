@@ -40,6 +40,14 @@ class DatabaseSearchItem(StrictModel):
     source_id: NonEmptyStr
     access_status: AccessStatus
     artifact_ids: list[NonEmptyStr] = Field(default_factory=list)
+    #: ``artifact_ids`` 的子集，只含 ``role=abstract`` 的制品。
+    #:
+    #: 这些制品通常 1–2K 字符，**一次 reader 调用就能读完**；而全文制品实测可达
+    #: 107K 字符，需要 13 次 8K 翻页才能读完 —— 每任务 reader 上限只有 10 次，
+    #: 盲选一篇全文就会把整份预算烧光（实测 0 证据卡）。模型此前只拿到扁平的
+    #: ``artifact_ids``（不带 role），无法判断该读哪个，因此这里单独暴露摘要 id，
+    #: 让「先摘要、不够再读全文」成为可执行的选择。
+    abstract_artifact_ids: list[NonEmptyStr] = Field(default_factory=list)
     abstract_preview: str | None = None
 
 
