@@ -1,8 +1,12 @@
 # 论文查新 Multi-Agent 框架
 
-这是一个基于 LangGraph 的论文查新后端原型。系统将论文解析、查新点提取、检索规划、数据库查询编译、候选文献召回、证据分析、质量门控、补检和报告生成拆成职责独立的组件，并保留每一阶段的可审计产物。
+这是一个基于 LangGraph 的论文查新辅助工具。系统将论文解析、查新点提取、检索规划、候选文献召回、证据分析、审查和报告生成拆成可审计的阶段。
 
-当前版本已经使用真实 PDF、SiliconFlow 模型和 arXiv 完成两轮端到端实验。它是可运行的研究原型，不是可以直接替代人工科技查新的生产系统。
+## v0.1 Demo
+
+后端已用两篇不同主题的真实 PaperInput 完成完整回归并标记 `v0.1.0-demo`；[实验记录与 Known Issues](docs/experiments/20260917_005448/solution.md)包含两份报告和 Runtime Debug。Demo 前端支持单篇 PDF 上传、阶段进度、Markdown 报告预览与下载；PDF 入口依赖现有 MinerU 配置，[前端运行说明](frontend/README.md)和[部署说明](docs/frontend/deployment.md)列出启动步骤。已有 PaperInput 可使用 `scripts/run_full_workflow_live.py` 直接运行，无需重新解析 PDF。
+
+这是研究原型和辅助工具，不能替代正式科技查新机构。以下工作流与早期实验章节保留了项目演进记录；当前封版结果以 v0.1 实验记录为准。
 
 ## 当前工作流
 
