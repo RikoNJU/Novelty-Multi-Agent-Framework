@@ -277,6 +277,8 @@ def test_workflow_persists_point_reviews_without_filtering_or_routing(tmp_path, 
             {**state, **reviewed, "insufficient_final_evidence_points": []}
         )
     ) == "synthesize"
+
+
 def test_point_review_retries_once_when_model_returns_non_object_json():
     """run 0007 实测：模型返回「自然语言 + JSON 数组」时不得直接降级为证据不足。"""
 

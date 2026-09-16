@@ -258,6 +258,8 @@ def test_assess_coverage_groups_executions_by_point() -> None:
 @pytest.mark.parametrize(
     "verdict", [NoveltyVerdict.NOVEL, NoveltyVerdict.PARTIALLY_NOVEL]
 )
+
+
 def test_policy_downgrades_absence_verdicts_without_complete_coverage(
     verdict: NoveltyVerdict,
 ) -> None:
@@ -442,6 +444,8 @@ def test_coverage_limitations_scope() -> None:
         ([], "没有检索执行记录"),
     ],
 )
+
+
 def test_workflow_replaces_generic_zero_card_reason(
     tmp_path, executions, expected
 ) -> None:
