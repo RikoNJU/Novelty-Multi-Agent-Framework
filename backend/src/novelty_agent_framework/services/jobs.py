@@ -1,11 +1,12 @@
-"""Web V0 使用的进程内任务状态存储。"""
+"""Web V1 使用的任务状态存储和公开响应契约。"""
 
 from __future__ import annotations
 
 from datetime import UTC, datetime
 from enum import StrEnum
+from pathlib import Path
 from threading import RLock
-from typing import Any
+from typing import Any, Literal
 from uuid import uuid4
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -18,6 +19,41 @@ class RunStatus(StrEnum):
     FAILED = "failed"
 
 
+class RunStage(StrEnum):
+    PARSE_PAPER = "parse_paper"
+    EXTRACT_POINTS = "extract_points"
+    PLAN_RESEARCH = "plan_research"
+    RESEARCH = "research"
+    VALIDATE_EVIDENCE = "validate_evidence"
+    RENDER_REPORT = "render_report"
+
+
+_STAGE_ORDER = {stage: index for index, stage in enumerate(RunStage)}
+
+
+class RunProgress(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    stage: RunStage
+    round: int | None = Field(default=None, ge=1)
+
+
+class RunError(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    code: str = Field(min_length=1)
+    message: str = Field(min_length=1)
+    retryable: bool = False
+
+
+class RunReport(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    available_formats: list[Literal["md", "pdf"]]
+    preview_url: str
+    downloads: dict[Literal["md", "pdf"], str]
+
+
 class RunSnapshot(BaseModel):
     """前端轮询任务状态时使用的统一响应。"""
 
@@ -28,14 +64,17 @@ class RunSnapshot(BaseModel):
     created_at: datetime
     updated_at: datetime
     result: dict[str, Any] | None = None
-    error: str | None = None
+    error: str | RunError | None = None
+    progress: RunProgress | None = None
+    report: RunReport | None = None
 
 
 class InMemoryRunStore:
-    """开发阶段任务存储；生产部署应替换为 Redis 或数据库。"""
+    """单机首版任务存储；生产多实例部署应替换为共享持久化存储。"""
 
     def __init__(self) -> None:
         self._runs: dict[str, RunSnapshot] = {}
+        self._report_paths: dict[str, Path] = {}
         self._lock = RLock()
 
     def create(self) -> RunSnapshot:
@@ -50,22 +89,65 @@ class InMemoryRunStore:
             self._runs[snapshot.task_id] = snapshot
         return snapshot.model_copy(deep=True)
 
-    def mark_running(self, task_id: str) -> RunSnapshot:
-        return self._update(task_id, status=RunStatus.RUNNING, result=None, error=None)
-
-    def mark_succeeded(self, task_id: str, result: dict[str, Any]) -> RunSnapshot:
+    def mark_running(self, task_id: str, *, stage: RunStage | None = None) -> RunSnapshot:
+        progress = RunProgress(stage=stage) if stage is not None else None
         return self._update(
             task_id,
-            status=RunStatus.SUCCEEDED,
-            result=result,
+            status=RunStatus.RUNNING,
+            progress=progress,
+            result=None,
             error=None,
         )
 
-    def mark_failed(self, task_id: str, error: str) -> RunSnapshot:
+    def mark_progress(
+        self,
+        task_id: str,
+        stage: RunStage,
+        *,
+        round: int | None = None,
+    ) -> RunSnapshot:
+        with self._lock:
+            current = self._runs.get(task_id)
+            if current is None:
+                raise KeyError(task_id)
+            previous = current.progress
+            effective_stage = stage
+            if previous and _STAGE_ORDER[stage] < _STAGE_ORDER[previous.stage]:
+                effective_stage = previous.stage
+            effective_round = max(
+                (value for value in (previous.round if previous else None, round) if value),
+                default=None,
+            )
+            return self._update_locked(
+                task_id,
+                progress=RunProgress(stage=effective_stage, round=effective_round),
+            )
+
+    def mark_succeeded(
+        self,
+        task_id: str,
+        result: dict[str, Any],
+        *,
+        report: RunReport | None = None,
+        report_path: Path | None = None,
+    ) -> RunSnapshot:
+        with self._lock:
+            if report_path is not None:
+                self._report_paths[task_id] = report_path
+            return self._update_locked(
+                task_id,
+                status=RunStatus.SUCCEEDED,
+                result=result,
+                report=report,
+                error=None,
+            )
+
+    def mark_failed(self, task_id: str, error: RunError) -> RunSnapshot:
         return self._update(
             task_id,
             status=RunStatus.FAILED,
             result=None,
+            report=None,
             error=error,
         )
 
@@ -74,14 +156,21 @@ class InMemoryRunStore:
             snapshot = self._runs.get(task_id)
             return snapshot.model_copy(deep=True) if snapshot else None
 
+    def get_report_path(self, task_id: str) -> Path | None:
+        with self._lock:
+            return self._report_paths.get(task_id)
+
     def _update(self, task_id: str, **changes: Any) -> RunSnapshot:
         with self._lock:
-            current = self._runs.get(task_id)
-            if current is None:
-                raise KeyError(task_id)
-            updated = current.model_copy(
-                update={**changes, "updated_at": datetime.now(UTC)},
-                deep=True,
-            )
-            self._runs[task_id] = updated
-            return updated.model_copy(deep=True)
+            return self._update_locked(task_id, **changes)
+
+    def _update_locked(self, task_id: str, **changes: Any) -> RunSnapshot:
+        current = self._runs.get(task_id)
+        if current is None:
+            raise KeyError(task_id)
+        updated = current.model_copy(
+            update={**changes, "updated_at": datetime.now(UTC)},
+            deep=True,
+        )
+        self._runs[task_id] = updated
+        return updated.model_copy(deep=True)

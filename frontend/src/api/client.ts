@@ -29,9 +29,9 @@ async function snapshot(response: Response) {
 }
 export const api = {
   getRun: async (id: string, signal: AbortSignal) => snapshot(await request(`/api/novelty/runs/${encodeURIComponent(id)}`, { signal })),
-  createRun: async (paper: File, references: File[], signal: AbortSignal) => {
-    if (import.meta.env.VITE_FILE_API_ENABLED !== 'true') throw new ApiError('unavailable', '当前服务尚未开放文件查新，请待服务升级后重试。');
-    const body = new FormData(); body.append('paper', paper); references.forEach(file => body.append('references', file));
+  createRun: async (paper: File, signal: AbortSignal) => {
+    if (import.meta.env.VITE_FILE_API_ENABLED === 'false') throw new ApiError('unavailable', '当前服务尚未开放文件查新，请待服务升级后重试。');
+    const body = new FormData(); body.append('paper', paper);
     return snapshot(await request('/api/novelty/runs/files', { method: 'POST', body, signal }));
   },
 };

@@ -26,22 +26,16 @@ pnpm test:e2e      # 自动启动专用测试服务器，使用测试内的接�
 
 生产部署需要将 `dist/` 作为静态目录，并将同源 `/api/novelty/` 反向代理至后端；不得将未知路径或 API 错误回退为 `index.html`。鉴权应由同源代理统一处理。报告跨域地址被拒绝，不保存令牌或论文内容到浏览器存储。
 
-## 当前后端边界（务必保留）
+## 当前后端边界
 
-本次仅实现前端，没有修改后端工作流，也没有将测试数据接入正式入口。
+- `POST /api/novelty/runs/files` 接收 multipart `paper` 单个 PDF，校验扩展名、MIME、空文件、30 MB 限额和 PDF 签名；参考文献字段尚未开放。
+- 参考文献窗口保留但禁用，后端收到 `references` 会返回 `references_not_supported`，不会静默忽略。
+- `/?run=<任务编号>` 轮询真实 `queued/running/succeeded/failed` 和六阶段进度。断线指数退避至 30 秒，页面隐藏时至少间隔 15 秒，终态停止轮询。
+- 成功任务优先读取后端 Renderer 生成的 Markdown 报告，并提供同源下载；旧任务仍可回退展示结构化报告。
+- 服务端默认装配真实工作流。缺少模型凭据时健康检查为 `degraded`，提交返回 503，不会回退 Demo。
+- 任务状态仍存于内存，服务重启后任务编号失效；这是单机首版边界。
 
-- 当前后端 `POST /api/novelty/runs` 仅接收 `PaperInput` JSON；前端不会把文件名转换成 JSON 冒充上传。默认关闭文件提交，同时允许本地选择、删除、预览文件。
-- `/?run=<任务编号>` 可以查询现有后端任务。轮询使用真实 `queued/running/succeeded/failed` 状态；没有 progress 时只显示排队或正在查新。断线指数退避至 30 秒，页面隐藏时至少间隔 15 秒。终态停止轮询，卸载取消请求。
-- 当前成功任务可以预览服务返回的结构化报告，包括结论、研究局限、缺失参考文献、缺失基线和引用问题；它不是后端 Renderer 生成的 Markdown 文件，不提供伪造下载。
-- 上传、真实六阶段进度、Markdown/PDF 文件下载需要下述新增契约。尚未完成真实文件链路端到端联调。
-- 服务端任务存于内存；404 会提示服务重启导致任务失效，并由用户主动重新开始。
-
-## 后续服务端接入契约
-
-实现并验证以下契约后，复制 `.env.example` 到 `.env.local`，设置 `VITE_FILE_API_ENABLED=true` 并重启/重新构建前端。这个开关不是自动能力探测；未实现接口时不能启用。
-
-1. `POST /api/novelty/runs/files` 接收 multipart：`paper` 单个 PDF、`references` 重复字段；返回 202 和任务快照。服务端负责内容嗅探、签名、解析、限额、文件名和安全校验。
-2. `GET /api/novelty/runs/{task_id}` 保留当前字段，可新增以下字段（详见 `src/api/contracts.ts`）：
+任务查询响应字段如下（详见 `src/api/contracts.ts`）：
 
 ```ts
 progress?: {
@@ -56,14 +50,13 @@ report?: {
 } | null;
 ```
 
-3. 报告资源必须为同源 `/api/novelty/` 下的 URL，携带 `Content-Type: text/markdown`、`text/plain` 或 `application/pdf`，以及含真实文件名的 `Content-Disposition`，推荐 `filename*=UTF-8''...`。下载仅在完整读取并验证报告资源后出现，保留服务端 MIME 和中文文件名。前端不会从后端文件系统路径读取报告。
-4. `error` 兼容原有字符串和 `{code,message,retryable}` 对象；原始服务端错误不直接显示，避免泄漏路径、密钥或模型内部信息。
+报告资源只接受同源 `/api/novelty/` URL及白名单 MIME；下载文件名经过清理。`error` 兼容原有字符串和 `{code,message,retryable}`，原始服务端异常不直接显示。
 
 实时进度目前使用轮询，没有依赖尚不存在的 SSE 接口。六个阶段按服务端 progress 显示，不用计时器模拟。阶段节点分组：解析服务→parse_paper；extract_points→extract_points；plan/dispatch_planning_tasks/plan_research_task→plan_research；dispatch_research_tasks/run_research_task→research；validate_evidence/review_evidence/validate_synthesis_input/check_final_evidence_sufficiency/plan_supplement→validate_evidence；synthesize_report/validate_report_integrity/persist_report/render_report→render_report。补检由服务端保持 validate_evidence 并提供 round。
 
 ## 文件、隐私与预览
 
-暂定客户端限额统一位于 `src/features/upload/validation.ts`，支持环境变量覆盖：单文件 30 MB、合计 100 MB、参考文献 20 个。**这些是客户端保护值，不是现有服务端承诺**，接通上传前必须与服务端统一。
+客户端与服务端主论文限额均默认为 30 MB，可分别通过构建变量和 `NOVELTY_MAX_UPLOAD_MB` 调整；部署时必须保持一致。
 
 PDF 用独立 PDF.js worker 渲染为 Canvas，关闭动态求值与注解层，不执行文档脚本；支持翻页和缩放。Markdown 支持 GFM，禁用原始 HTML、危险链接和远程图片请求；外部链接有安全属性。文本按纯文本显示。Blob 下载 URL 用后释放。本地选中文件仅在用户提交后发送，成功提交会清理本地文件引用。
 
@@ -75,4 +68,4 @@ PDF 用独立 PDF.js worker 渲染为 Canvas，关闭动态求值与注解层，
 - 浏览器测试通过测试专用 API 拦截验证创建→轮询→报告→下载、刷新恢复、404/422/500、断网重连和报告加载失败。拦截只存在于 `tests/`，生产页面没有 mock 开关或示例结果。
 - 390 / 768 / 1440 像素布局、背景图失败、Reduced Motion 和 axe 基础扫描。
 
-测试使用的模拟响应仅验证前端契约，不代表后端文件接口已经实现。原前端开发指南按任务要求在交付时删除，其接口边界和运行说明保留于本文件。
+浏览器测试仍使用接口拦截，不调用收费模型。后端文件接口另有离线 API 测试；真实网络与模型验收需要显式凭据、授权和预算。

@@ -10,7 +10,7 @@ import { ReportView } from '../features/report/ReportView';
 export default function App() {
   const [params, setParams] = useSearchParams(); const id = params.get('run');
   const [localPhase, setPhase] = useState<Phase>('landing');
-  const [paper, setPaper] = useState<File | null>(null); const [references, setReferences] = useState<File[]>([]);
+  const [paper, setPaper] = useState<File | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null); const submitting = useRef(false);
   const controller = useRef<AbortController | null>(null);
   const { snapshot, error, reconnecting, retry } = useRun(id);
@@ -26,9 +26,9 @@ export default function App() {
     if (!paper || submitting.current) return;
     submitting.current = true; setPhase('submitting'); setSubmitError(null); controller.current = new AbortController();
     try {
-      const next = await api.createRun(paper, references, controller.current.signal);
+      const next = await api.createRun(paper, controller.current.signal);
       if (controller.current.signal.aborted) return;
-      setParams({ run: next.task_id }); setPhase('editing'); setPaper(null); setReferences([]);
+      setParams({ run: next.task_id }); setPhase('editing'); setPaper(null);
     } catch (cause) {
       if (!controller.current.signal.aborted) {
         const failure = normalizeError(cause);
@@ -39,8 +39,8 @@ export default function App() {
   return <div className="app-shell" onDragOver={e => e.preventDefault()} onDrop={e => e.preventDefault()}>
     {phase !== 'landing' && <header className="brand">睿文查新</header>}
     <main ref={main} tabIndex={-1} className={phase === 'landing' ? 'landing-main' : 'workspace'}>
-      {phase === 'landing' && <section className="landing"><h1>睿文查新</h1><p>上传论文与参考文献，自动完成查新点提取、文献检索和证据核验，<br className="desktop-break"/>生成可追溯的查新报告。</p><button className="primary start" onClick={() => setPhase('editing')}>开始<ArrowRight size={21}/></button></section>}
-      {(phase === 'editing' || phase === 'submitting') && <UploadView paper={paper} references={references} onFiles={(p, r) => { setPaper(p); setReferences(r); setSubmitError(null); }} onSubmit={() => void submit()} busy={phase === 'submitting'} error={submitError}/>}
+      {phase === 'landing' && <section className="landing"><h1>睿文查新</h1><p>上传论文原文，自动完成查新点提取、文献检索和证据核验，<br className="desktop-break"/>生成可追溯的查新报告。</p><button className="primary start" onClick={() => setPhase('editing')}>开始<ArrowRight size={21}/></button></section>}
+      {(phase === 'editing' || phase === 'submitting') && <UploadView paper={paper} references={[]} onFiles={(p) => { setPaper(p); setSubmitError(null); }} onSubmit={() => void submit()} busy={phase === 'submitting'} error={submitError}/>}
       {(phase === 'queued' || phase === 'running') && <ProgressView snapshot={snapshot} reconnecting={reconnecting}/>}
       {phase === 'succeeded' && <section className="panel completion"><div className={`success-mark ${animateSuccess ? 'animate-success' : ''}`}><Check size={40}/></div><p className="eyebrow">本次查新已结束</p><h1>查新完成</h1><button className="primary" onClick={() => setParams({ run: id!, view: 'report' })}>查看查新报告<ArrowRight size={18}/></button><button className="text-button" onClick={restart}>开始新的查新</button></section>}
       {phase === 'previewing' && snapshot && <ReportView run={snapshot} onClose={() => setParams({ run: id! })}/>}

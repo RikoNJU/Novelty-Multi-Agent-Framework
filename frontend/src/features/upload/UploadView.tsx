@@ -21,21 +21,22 @@ export function UploadView({ paper, references, onFiles, onSubmit, busy, error }
   if (preview) return <FilePreview file={preview} onClose={() => setPreview(null)}/>;
   return <section className="panel upload-view" aria-labelledby="upload-title" aria-busy={busy}>
     <p className="eyebrow">从一篇论文开始</p><h1 id="upload-title">让创新，有据可循。</h1>
-    <p className="intro">添加论文与参考文献，开启本次查新。</p>
+    <p className="intro">添加论文原文，开启本次查新。</p>
     <div className="upload-grid">
       {(['paper', 'references'] as const).map(kind => <div className="upload-column" key={kind}>
-        <div className="field-label"><h2>{kind === 'paper' ? '上传论文原文' : '上传参考文献'}</h2><span>{kind === 'paper' ? '必填 · 1 篇' : '选填'}</span></div>
-        <Dropzone kind={kind} disabled={busy} onSelect={files => select(files, kind)} buttonRef={kind === 'paper' ? paperButton : undefined} invalid={validation?.kind === kind} replacing={kind === 'paper' && !!paper}/>
+        <div className="field-label"><h2>{kind === 'paper' ? '上传论文原文' : '上传参考文献'}</h2><span>{kind === 'paper' ? '必填 · 1 篇' : '尚未开放'}</span></div>
+        <Dropzone kind={kind} disabled={busy || kind === 'references'} onSelect={files => select(files, kind)} buttonRef={kind === 'paper' ? paperButton : undefined} invalid={validation?.kind === kind} replacing={kind === 'paper' && !!paper}/>
         <ul className="file-list">{(kind === 'paper' ? paper ? [paper] : [] : references).map((file, index) => <li key={`${file.name}-${index}`}>
           <FileText size={20}/><div className="file-meta"><span className="file-name" title={file.name}>{file.name}</span><small>{file.name.split('.').pop()?.toUpperCase()} · {size(file.size)} · {busy ? '上传中' : '待上传'}</small></div>
           <button className="icon-button" disabled={busy} onClick={() => setPreview(file)} aria-label={`预览 ${file.name}`}><Eye size={18}/></button>
           <button className="icon-button" disabled={busy} aria-label={`删除 ${file.name}`} onClick={() => { setValidation(null); onFiles(kind === 'paper' ? null : paper, kind === 'references' ? references.filter((_, i) => i !== index) : references); }}><X size={18}/></button>
         </li>)}</ul>
         <p className="field-error" id={`${kind}-error`} role="alert">{validation?.kind === kind ? validation.text : ''}</p>
+        {kind === 'references' && <p className="notice">参考文献上传入口暂时保留，当前版本尚不可用。</p>}
       </div>)}
     </div>
-    <p className="limits">单个文件 ≤ {size(limits.fileBytes)} · 总大小 ≤ {size(limits.totalBytes)} · 参考文献最多 {limits.references} 个</p>
-    {import.meta.env.VITE_FILE_API_ENABLED !== 'true' && <p className="notice">当前服务尚未开放文件查新。可选择并预览文件，暂不能提交。</p>}
+    <p className="limits">论文文件 ≤ {size(limits.fileBytes)} · 仅支持 PDF</p>
+    {import.meta.env.VITE_FILE_API_ENABLED === 'false' && <p className="notice">当前服务尚未开放文件查新。可选择并预览文件，暂不能提交。</p>}
     {error && <p className="error" role="alert">{error}</p>}
     <div className="upload-footer"><p>文件仅在点击“开始查新”后发送至服务端。</p><button className="primary" onClick={submit} disabled={busy}>{busy ? '正在提交…' : '开始查新'}<ArrowRight size={18}/></button></div>
   </section>;
@@ -45,6 +46,6 @@ function Dropzone({ kind, disabled, onSelect, buttonRef, invalid, replacing }: {
   return <><input ref={input} type="file" hidden accept={accepts[kind]} multiple={kind === 'references'} disabled={disabled} aria-label={kind === 'paper' ? '论文文件' : '参考文献文件'} onChange={e => { if (e.target.files?.length) onSelect([...e.target.files]); e.target.value = ''; }}/>
     <button type="button" ref={buttonRef} className={`dropzone ${drag ? 'dragging' : ''}`} disabled={disabled} aria-invalid={invalid} aria-describedby={`${kind}-error`} aria-label={kind === 'paper' ? '选择论文 PDF' : '选择参考文献'}
       onClick={() => input.current?.click()} onDragOver={e => { e.preventDefault(); if (!disabled) setDrag(true); }} onDragLeave={() => setDrag(false)} onDrop={e => { e.preventDefault(); setDrag(false); if (!disabled && e.dataTransfer.files.length) onSelect([...e.dataTransfer.files]); }}>
-      <span className="upload-symbol"><Upload size={25} strokeWidth={1.5}/></span><strong>{replacing ? '选择新文件，替换当前论文' : '点击选择，或拖拽文件至此'}</strong><span>{kind === 'paper' ? 'PDF 格式' : 'PDF、Markdown 或纯文本'}</span>
+      <span className="upload-symbol"><Upload size={25} strokeWidth={1.5}/></span><strong>{kind === 'references' ? '参考文献功能尚未开放' : replacing ? '选择新文件，替换当前论文' : '点击选择，或拖拽文件至此'}</strong><span>{kind === 'paper' ? 'PDF 格式' : '后续版本支持'}</span>
     </button></>;
 }

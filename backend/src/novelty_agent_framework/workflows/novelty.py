@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextvars
 import inspect
 import json
 import re
@@ -23,6 +24,7 @@ from novelty_agent_framework.core.integrity_gates import (
 )
 from novelty_agent_framework.core.report_binding import bind_reviews_to_report
 from novelty_agent_framework.core.runtime_artifacts import (
+    RuntimeDebugConfig,
     RuntimeArtifactManager,
     current_runtime_artifacts,
 )
@@ -71,6 +73,11 @@ from ..schemas import (
 from .state import NoveltyState, NoveltyWorkflowConfig, NoveltyWorkflowServices
 
 T = TypeVar("T")
+ProgressCallback = Callable[[str, int | None], None | Awaitable[None]]
+
+_progress_callback: contextvars.ContextVar[ProgressCallback | None] = (
+    contextvars.ContextVar("novelty_progress_callback", default=None)
+)
 
 _STAGE_NAMES = (
     "extract_points",
@@ -123,19 +130,31 @@ class NoveltyWorkflow:
     """把规划、并行调研、证据门控和汇总组织成可运行闭环。"""
 
     @classmethod
-    def default(cls) -> "NoveltyWorkflow":
+    def default(
+        cls, *, output_root: str | Path | None = None
+    ) -> "NoveltyWorkflow":
         """构造默认查新工作流。
 
         当前项目采用固定 Agent 组合，因此默认装配逻辑直接放在工作流类中。
         """
 
+        config = None
+        if output_root is not None:
+            config = NoveltyWorkflowConfig(
+                runtime_debug=RuntimeDebugConfig(
+                    output_root=Path(output_root),
+                    archive_root=Path(output_root) / "runtime-archive",
+                )
+            )
         return cls(
             NoveltyWorkflowServices(
                 coordinator=DemoCoordinator(),
                 task_researcher=DemoTaskResearcher(),
                 search_planner=DemoSearchPlanner(),
                 point_extractor=DemoPointExtractor(),
-            )
+            ),
+            config=config,
+            output_root=output_root,
         )
 
     def __init__(
@@ -282,6 +301,9 @@ class NoveltyWorkflow:
         """Instrument a graph node without giving business agents artifact duties."""
 
         async def recorded(state: NoveltyState) -> dict[str, Any]:
+            callback = _progress_callback.get()
+            if callback is not None:
+                await _resolve(callback(stage_name, state.get("rounds") or None))
             runtime = current_runtime_artifacts()
             if runtime is None:
                 return await function(state)
@@ -992,6 +1014,7 @@ class NoveltyWorkflow:
         paper: PaperInput | dict[str, Any],
         *,
         run_identity: Mapping[str, Any] | None = None,
+        progress_callback: ProgressCallback | None = None,
     ) -> NoveltyRunResult:
         """异步执行一次完整查新工作流。"""
 
@@ -1042,6 +1065,7 @@ class NoveltyWorkflow:
             stage_names=_STAGE_NAMES,
         )
         manager.activate()
+        progress_token = _progress_callback.set(progress_callback)
         try:
             final = await self.graph.ainvoke(
                 initial, config={"max_concurrency": self.config.max_concurrency}
@@ -1071,6 +1095,7 @@ class NoveltyWorkflow:
             manager.finish_run("SUCCESS")
             return result
         finally:
+            _progress_callback.reset(progress_token)
             manager.deactivate()
 
     def run(
