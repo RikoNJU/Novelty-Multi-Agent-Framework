@@ -22,6 +22,7 @@ from novelty_agent_framework.core.integrity_gates import (
     validate_synthesis_input,
 )
 from novelty_agent_framework.core.report_binding import bind_reviews_to_report
+from novelty_agent_framework.core.target_paper_identity import identity_from_paper
 from novelty_agent_framework.core.runtime_artifacts import (
     RuntimeArtifactManager,
     current_runtime_artifacts,
@@ -479,6 +480,7 @@ class NoveltyWorkflow:
                         "current_point": point,
                         "current_task": task,
                         "current_search_plan": plan,
+                        "target_identity": identity_from_paper(state["paper"]),
                     },
                 )
             )
@@ -493,6 +495,7 @@ class NoveltyWorkflow:
             novelty_point=point,
             research_task=task,
             search_plan=state["current_search_plan"],
+            target_identity=state.get("target_identity"),
         )
         try:
             result = TaskResearchResult.model_validate(

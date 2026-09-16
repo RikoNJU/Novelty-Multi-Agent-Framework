@@ -11,6 +11,11 @@ from ..schemas import (
     ResearcherToolObservation,
     StrictModel,
 )
+from ..core.target_paper_identity import (
+    artifact_is_target,
+    filter_target_observation,
+    source_record_is_target,
+)
 
 
 class ResearcherTool(Protocol):
@@ -26,6 +31,8 @@ class ResearcherTool(Protocol):
 class ResearcherToolRegistry:
     def __init__(self, tools: list[ResearcherTool] | None = None) -> None:
         self._tools: dict[str, ResearcherTool] = {}
+        self._blocked_target_artifacts: dict[tuple[str, str], set[str]] = {}
+        self._blocked_target_records: dict[tuple[str, str], set[str]] = {}
         for tool in tools or []:
             self.register(tool)
 
@@ -104,7 +111,32 @@ class ResearcherToolRegistry:
                 raise TypeError(
                     f"validated arguments for {tool_name!r} use the wrong schema"
                 )
-            return await tool.ainvoke(arguments, scope=scope)
+            identity = getattr(scope, "target_identity", None)
+            paper_id = getattr(scope, "subject_paper_id", None)
+            run_id = getattr(scope, "run_id", None)
+            gate_key = (run_id, paper_id) if identity and run_id and paper_id else None
+            if gate_key and tool_name == "reader":
+                reads = getattr(arguments, "reads", None)
+                requests = reads if reads is not None else [arguments]
+                for request in requests:
+                    artifact_id = request.artifact_id
+                    if (artifact_id in self._blocked_target_artifacts.get(gate_key, set()) or
+                            artifact_is_target(tool, paper_id, artifact_id, identity)):
+                        raise PermissionError("target paper artifact is excluded from Reader")
+            if gate_key and tool_name == "database_search":
+                for record_id in getattr(arguments, "full_text_source_record_ids", []):
+                    if (record_id in self._blocked_target_records.get(gate_key, set()) or
+                            source_record_is_target(tool.reference_store, paper_id, record_id, identity)):
+                        raise PermissionError("target paper source record is excluded from full-text acquisition")
+            observation = await tool.ainvoke(arguments, scope=scope)
+            if gate_key and tool_name in {"database_search", "reference_search"}:
+                observation, blocked = filter_target_observation(observation, identity)
+                self._blocked_target_artifacts.setdefault(gate_key, set()).update(blocked)
+                self._blocked_target_records.setdefault(gate_key, set()).update(
+                    row["source_record_id"] for row in observation.payload.get("target_exclusions", [])
+                    if row.get("source_record_id")
+                )
+            return observation
         except Exception as exc:
             return ResearcherToolObservation(
                 tool_name=tool_name,

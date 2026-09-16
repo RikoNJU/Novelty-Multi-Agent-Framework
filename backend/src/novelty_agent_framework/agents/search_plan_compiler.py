@@ -5,8 +5,8 @@
   strategies.level/focus_concepts）；
 - 概念编号、策略编号、任务绑定、布尔表达式、level 语义、name/description
   全部由本模块代码生成——LLM 不输出任何布尔表达式；
-- 表达式按模板组装：strict = AND(高重要概念, 仅 terms)；
-  medium = AND(前 2 高重要概念, terms+alias)；broad = OR(前 4 概念, terms+alias)；
+- 表达式按模板组装：strict = anchor AND 特征（仅 terms）；
+  medium = anchor AND 较少特征（terms+alias）；broad = anchor（terms+alias）；
 - 语义校验失败返回结构化 DraftIssue 列表（code/detail/fix），供重试 prompt 使用。
 - 本模块不调用 LLM、不访问网络，是可单测的纯函数。
 """
@@ -14,6 +14,7 @@
 from __future__ import annotations
 
 import re
+import unicodedata
 from dataclasses import dataclass
 
 from ..core.search_plan_expression import (
@@ -160,6 +161,28 @@ def validate_draft_semantics(
                 )
             )
 
+    positives = [
+        (f"C{index + 1}", value, _concept_tokens(value))
+        for index, concept in enumerate(draft.concepts)
+        for value in [*concept.terms, *concept.alias]
+        if _concept_tokens(value)
+    ]
+    seen_excludes: set[str] = set()
+    for concept in draft.concepts:
+        for exclude in concept.exclude:
+            tokens = _concept_tokens(exclude)
+            if not tokens or " ".join(tokens) in seen_excludes:
+                continue
+            seen_excludes.add(" ".join(tokens))
+            for concept_id, positive, positive_tokens in positives:
+                if _exclude_conflicts(tokens, positive_tokens):
+                    issues.append(DraftIssue(
+                        "exclude_conflicts_positive_concept",
+                        f"exclude {exclude!r} conflicts with positive concept {concept_id} {positive!r}",
+                        "remove the conflicting exclude or replace it with a true noise term",
+                    ))
+                    break
+
     language = (task.language or "").strip().lower()
     if language == "en" and not has_ascii:
         issues.append(
@@ -214,6 +237,21 @@ def validate_draft_semantics(
     return issues
 
 
+def _concept_tokens(value: str) -> tuple[str, ...]:
+    return tuple(_WORD_RE.findall(unicodedata.normalize("NFKC", value).casefold()))
+
+
+def _exclude_conflicts(exclude: tuple[str, ...], positive: tuple[str, ...]) -> bool:
+    if exclude == positive:
+        return True
+    # A single meaningful word in a positive phrase must not be negated. For a
+    # longer phrase, require a contiguous match to avoid accidental overlap.
+    if len(exclude) == 1:
+        return len(exclude[0]) >= 3 and exclude[0] in positive
+    return any(positive[index:index + len(exclude)] == exclude
+               for index in range(len(positive) - len(exclude) + 1))
+
+
 def build_runtime_plan(
     draft: SearchPlanDraft,
     *,
@@ -245,11 +283,12 @@ def build_runtime_plan(
         )
 
     by_id = {concept.concept_id: concept for concept in concepts}
+    anchor_id = _anchor_id(concepts)
+    level_ids = _level_pools(draft, concepts, anchor_id)
     strategies: list[SearchStrategy] = []
     for index, strategy in enumerate(draft.strategies):
-        ids = _pool_for(strategy, concepts)
-        joiner = " OR " if strategy.level == "broad" else " AND "
-        expression = joiner.join(ids)
+        ids = level_ids[strategy.level]
+        expression = " AND ".join(ids)
         strategies.append(
             SearchStrategy(
                 strategy_id=f"S{index + 1}",
@@ -260,10 +299,8 @@ def build_runtime_plan(
             )
         )
 
-    # focus_concepts 是显式覆盖，可能突破默认池的单调梯度——
-    # 此时跳过默认池断言（单调性仅对纯模板策略保证）。
-    if not any(bool(getattr(s, "focus_concepts", None)) for s in draft.strategies):
-        _assert_default_pool_monotonicity(strategies, concepts)
+    if task.task_type == "literature_search":
+        _assert_anchor_preserved(strategies, anchor_id)
 
     _validate_compiled_expressions(strategies, concepts)
 
@@ -325,33 +362,47 @@ def _pool_for(
     return [f"C{index + 1}" for index, _ in pool[:cap]]
 
 
-def _assert_default_pool_monotonicity(
-    strategies: list[SearchStrategy],
-    concepts: list[SearchConcept],
-) -> None:
-    """默认模板池必须满足 strict 词集 ⊆ medium 词集 ⊆ broad 词集。
+def _anchor_id(concepts: list[SearchConcept]) -> str:
+    eligible = [concept for concept in concepts if concept.role in {"object", "method"}]
+    if not eligible:
+        eligible = [concept for concept in concepts if concept.role != "escape"] or concepts
+    ranked = sorted(enumerate(eligible), key=lambda item: (
+        -int(len(_concept_tokens(item[1].terms[0])) >= 2),
+        -item[1].importance,
+        -int(item[1].role == "object"),
+        item[0],
+    ))
+    return ranked[0][1].concept_id
 
-    模板构造已保证该性质；此处作为防御性断言，防止未来改动破坏梯度。
-    """
 
-    by_id = {concept.concept_id: concept for concept in concepts}
-    pools: dict[str, set[str]] = {}
-    for strategy in strategies:
-        ids = CONCEPT_ID_PATTERN.findall(strategy.expression)
-        term_set: set[str] = set()
-        for cid in ids:
-            concept = by_id[cid]
-            term_set.update(term.casefold() for term in concept.terms)
-            if strategy.use_alias:
-                term_set.update(alias.casefold() for alias in concept.alias)
-        pools[strategy.level] = term_set
+def _level_pools(draft: SearchPlanDraft, concepts: list[SearchConcept],
+                 anchor_id: str) -> dict[str, list[str]]:
+    by_level = {strategy.level: strategy for strategy in draft.strategies}
+    if len(by_level) == 1:
+        # A single supplemental strategy is not a relaxation chain.
+        return {level: _pool_for(strategy, concepts) for level, strategy in by_level.items()}
 
-    if not pools.get("strict") or not pools.get("medium") or not pools.get("broad"):
-        return
-    if not (pools["strict"] <= pools["medium"] <= pools["broad"]):
-        raise SearchPlanCompilationError(
-            "模板生成的策略词集不满足 strict ⊆ medium ⊆ broad 的单调梯度",
-        )
+    strict_source = by_level.get("strict") or by_level.get("medium")
+    strict_ids = list(dict.fromkeys([anchor_id, *_pool_for(strict_source, concepts)]))
+    medium_source = by_level.get("medium")
+    medium_focus = _pool_for(medium_source, concepts) if medium_source else strict_ids
+    strict_features = [concept_id for concept_id in strict_ids if concept_id != anchor_id]
+    medium_features = [concept_id for concept_id in medium_focus if concept_id in strict_features]
+    if not medium_features:
+        medium_features = strict_features[:1]
+    pools = {"strict": strict_ids, "medium": [anchor_id, *medium_features[:1]],
+             "broad": [anchor_id]}
+    return {level: pools[level] for level in by_level}
+
+
+def _assert_anchor_preserved(strategies: list[SearchStrategy], anchor_id: str) -> None:
+    by_level = {strategy.level: strategy for strategy in strategies}
+    pools = {level: set(CONCEPT_ID_PATTERN.findall(strategy.expression))
+             for level, strategy in by_level.items()}
+    if any(anchor_id not in ids for ids in pools.values()):
+        raise SearchPlanCompilationError("检索策略丢失核心主题 anchor")
+    if not (pools["broad"] <= pools["medium"] <= pools["strict"]):
+        raise SearchPlanCompilationError("strict/medium/broad 的主题限制未逐级放宽")
 
 
 def _describe(expression: str, by_id: dict[str, SearchConcept]) -> str:

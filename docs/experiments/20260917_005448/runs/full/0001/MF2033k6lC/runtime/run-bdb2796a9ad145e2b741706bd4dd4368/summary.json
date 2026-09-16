@@ -1,0 +1,1381 @@
+{
+  "diagnostics": [
+    {
+      "artifact": "diagnostics/reader.json",
+      "classification_counts": {
+        "INCOMPLETE_RECORD": 20
+      },
+      "counts": {
+        "failed": 0,
+        "incomplete": 20,
+        "reader_calls": 43,
+        "succeeded": 23
+      },
+      "diagnostic_name": "reader",
+      "primary_code": "INCOMPLETE_RECORD",
+      "schema_version": "1.0",
+      "status": "WARNING"
+    },
+    {
+      "artifact": "diagnostics/reference_namespace.json",
+      "classification_counts": {},
+      "counts": {
+        "errors": 61,
+        "evidence_bindings": 2,
+        "namespace_integrity_failures": 0,
+        "reader_calls": 43,
+        "warnings": 0
+      },
+      "diagnostic_name": "reference_namespace",
+      "primary_code": null,
+      "schema_version": "1.0",
+      "status": "ERROR"
+    },
+    {
+      "artifact": "diagnostics/reviewer.json",
+      "classification_counts": {},
+      "counts": {
+        "evidence": 2,
+        "novelty_points": 3,
+        "reviewer_reader_calls": 9,
+        "reviews": 3,
+        "runtime_review_stages": 2,
+        "validator_accepted_cards": 2
+      },
+      "diagnostic_name": "reviewer",
+      "primary_code": null,
+      "schema_version": "1.0",
+      "status": "WARNING"
+    }
+  ],
+  "environment": {
+    "git_branch": "lya",
+    "git_commit": "00205761c864d1242a6a5685102d291648798a75",
+    "model_name": "deepseek-ai/DeepSeek-V4-Flash",
+    "model_provider": "openai_compatible",
+    "python_version": "3.11.15"
+  },
+  "errors": [
+    {
+      "error_id": "error_0001",
+      "message": "reader required after database_search returned artifact_ids",
+      "stage": "run_research_task",
+      "timestamp": "2026-09-16T16:44:16.390738+00:00",
+      "tool_call_id": "tool_0011",
+      "traceback": "",
+      "type": "HarnessPolicyError"
+    },
+    {
+      "error_id": "error_0002",
+      "message": "reader required after database_search returned artifact_ids",
+      "stage": "run_research_task",
+      "timestamp": "2026-09-16T16:44:21.099865+00:00",
+      "tool_call_id": "tool_0013",
+      "traceback": "",
+      "type": "HarnessPolicyError"
+    },
+    {
+      "error_id": "error_0003",
+      "message": "reader required after database_search returned artifact_ids",
+      "stage": "run_research_task",
+      "timestamp": "2026-09-16T16:44:24.079828+00:00",
+      "tool_call_id": "tool_0016",
+      "traceback": "",
+      "type": "HarnessPolicyError"
+    },
+    {
+      "error_id": "error_0004",
+      "message": "all 1 search executions failed",
+      "stage": "run_research_task",
+      "timestamp": "2026-09-16T16:44:27.393232+00:00",
+      "tool_call_id": "tool_0019",
+      "traceback": "  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/scripts/run_full_workflow_live.py\", line 214, in <module>\n    main()\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/scripts/run_full_workflow_live.py\", line 116, in main\n    result = workflow.run(paper, run_identity=identity)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py\", line 1104, in run\n    return asyncio.run(self.arun(paper, run_identity=run_identity))\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/runners.py\", line 190, in run\n    return runner.run(main)\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/runners.py\", line 118, in run\n    return self._loop.run_until_complete(task)\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/base_events.py\", line 641, in run_until_complete\n    self.run_forever()\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/base_events.py\", line 608, in run_forever\n    self._run_once()\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/base_events.py\", line 1936, in _run_once\n    handle._run()\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/events.py\", line 84, in _run\n    self._context.run(self._callback, *self._args)\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/site-packages/langgraph/_internal/_runnable.py\", line 501, in ainvoke\n    ret = await self.afunc(*args, **kwargs)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py\", line 291, in recorded\n    output = await function(state)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py\", line 502, in _run_research_task\n    await self.services.task_researcher.ainvoke(request)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/research_task.py\", line 104, in ainvoke\n    result, trace = await self._research(request)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/research_task.py\", line 114, in _research\n    harness_result = await self.harness.run(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/tool_call_harness.py\", line 117, in run\n    return await self._run(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/tool_call_harness.py\", line 432, in _run\n    runtime.finish_tool_call(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/runtime_artifacts.py\", line 457, in finish_tool_call\n    error_payload = self._coerce_error(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/runtime_artifacts.py\", line 788, in _coerce_error\n    \"traceback\": \"\".join(traceback_module.format_stack()),\n",
+      "type": "ToolExecutionError"
+    },
+    {
+      "error_id": "error_0005",
+      "message": "all 1 search executions failed",
+      "stage": "run_research_task",
+      "timestamp": "2026-09-16T16:44:30.491906+00:00",
+      "tool_call_id": "tool_0021",
+      "traceback": "  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/scripts/run_full_workflow_live.py\", line 214, in <module>\n    main()\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/scripts/run_full_workflow_live.py\", line 116, in main\n    result = workflow.run(paper, run_identity=identity)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py\", line 1104, in run\n    return asyncio.run(self.arun(paper, run_identity=run_identity))\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/runners.py\", line 190, in run\n    return runner.run(main)\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/runners.py\", line 118, in run\n    return self._loop.run_until_complete(task)\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/base_events.py\", line 641, in run_until_complete\n    self.run_forever()\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/base_events.py\", line 608, in run_forever\n    self._run_once()\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/base_events.py\", line 1936, in _run_once\n    handle._run()\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/events.py\", line 84, in _run\n    self._context.run(self._callback, *self._args)\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/site-packages/langgraph/_internal/_runnable.py\", line 501, in ainvoke\n    ret = await self.afunc(*args, **kwargs)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py\", line 291, in recorded\n    output = await function(state)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py\", line 502, in _run_research_task\n    await self.services.task_researcher.ainvoke(request)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/research_task.py\", line 104, in ainvoke\n    result, trace = await self._research(request)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/research_task.py\", line 114, in _research\n    harness_result = await self.harness.run(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/tool_call_harness.py\", line 117, in run\n    return await self._run(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/tool_call_harness.py\", line 432, in _run\n    runtime.finish_tool_call(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/runtime_artifacts.py\", line 457, in finish_tool_call\n    error_payload = self._coerce_error(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/runtime_artifacts.py\", line 788, in _coerce_error\n    \"traceback\": \"\".join(traceback_module.format_stack()),\n",
+      "type": "ToolExecutionError"
+    },
+    {
+      "error_id": "error_0006",
+      "message": "all 1 search executions failed",
+      "stage": "run_research_task",
+      "timestamp": "2026-09-16T16:44:33.888376+00:00",
+      "tool_call_id": "tool_0022",
+      "traceback": "  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/scripts/run_full_workflow_live.py\", line 214, in <module>\n    main()\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/scripts/run_full_workflow_live.py\", line 116, in main\n    result = workflow.run(paper, run_identity=identity)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py\", line 1104, in run\n    return asyncio.run(self.arun(paper, run_identity=run_identity))\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/runners.py\", line 190, in run\n    return runner.run(main)\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/runners.py\", line 118, in run\n    return self._loop.run_until_complete(task)\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/base_events.py\", line 641, in run_until_complete\n    self.run_forever()\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/base_events.py\", line 608, in run_forever\n    self._run_once()\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/base_events.py\", line 1936, in _run_once\n    handle._run()\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/events.py\", line 84, in _run\n    self._context.run(self._callback, *self._args)\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/site-packages/langgraph/_internal/_runnable.py\", line 501, in ainvoke\n    ret = await self.afunc(*args, **kwargs)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py\", line 291, in recorded\n    output = await function(state)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py\", line 502, in _run_research_task\n    await self.services.task_researcher.ainvoke(request)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/research_task.py\", line 104, in ainvoke\n    result, trace = await self._research(request)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/research_task.py\", line 114, in _research\n    harness_result = await self.harness.run(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/tool_call_harness.py\", line 117, in run\n    return await self._run(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/tool_call_harness.py\", line 432, in _run\n    runtime.finish_tool_call(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/runtime_artifacts.py\", line 457, in finish_tool_call\n    error_payload = self._coerce_error(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/runtime_artifacts.py\", line 788, in _coerce_error\n    \"traceback\": \"\".join(traceback_module.format_stack()),\n",
+      "type": "ToolExecutionError"
+    },
+    {
+      "error_id": "error_0007",
+      "message": "all 1 search executions failed",
+      "stage": "run_research_task",
+      "timestamp": "2026-09-16T16:44:36.752685+00:00",
+      "tool_call_id": "tool_0024",
+      "traceback": "  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/scripts/run_full_workflow_live.py\", line 214, in <module>\n    main()\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/scripts/run_full_workflow_live.py\", line 116, in main\n    result = workflow.run(paper, run_identity=identity)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py\", line 1104, in run\n    return asyncio.run(self.arun(paper, run_identity=run_identity))\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/runners.py\", line 190, in run\n    return runner.run(main)\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/runners.py\", line 118, in run\n    return self._loop.run_until_complete(task)\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/base_events.py\", line 641, in run_until_complete\n    self.run_forever()\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/base_events.py\", line 608, in run_forever\n    self._run_once()\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/base_events.py\", line 1936, in _run_once\n    handle._run()\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/events.py\", line 84, in _run\n    self._context.run(self._callback, *self._args)\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/site-packages/langgraph/_internal/_runnable.py\", line 501, in ainvoke\n    ret = await self.afunc(*args, **kwargs)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py\", line 291, in recorded\n    output = await function(state)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py\", line 502, in _run_research_task\n    await self.services.task_researcher.ainvoke(request)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/research_task.py\", line 104, in ainvoke\n    result, trace = await self._research(request)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/research_task.py\", line 114, in _research\n    harness_result = await self.harness.run(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/tool_call_harness.py\", line 117, in run\n    return await self._run(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/tool_call_harness.py\", line 432, in _run\n    runtime.finish_tool_call(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/runtime_artifacts.py\", line 457, in finish_tool_call\n    error_payload = self._coerce_error(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/runtime_artifacts.py\", line 788, in _coerce_error\n    \"traceback\": \"\".join(traceback_module.format_stack()),\n",
+      "type": "ToolExecutionError"
+    },
+    {
+      "error_id": "error_0008",
+      "message": "reader required after database_search returned artifact_ids",
+      "stage": "run_research_task",
+      "timestamp": "2026-09-16T16:44:37.269941+00:00",
+      "tool_call_id": "tool_0025",
+      "traceback": "",
+      "type": "HarnessPolicyError"
+    },
+    {
+      "error_id": "error_0009",
+      "message": "all 1 search executions failed",
+      "stage": "run_research_task",
+      "timestamp": "2026-09-16T16:44:40.247394+00:00",
+      "tool_call_id": "tool_0028",
+      "traceback": "  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/scripts/run_full_workflow_live.py\", line 214, in <module>\n    main()\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/scripts/run_full_workflow_live.py\", line 116, in main\n    result = workflow.run(paper, run_identity=identity)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py\", line 1104, in run\n    return asyncio.run(self.arun(paper, run_identity=run_identity))\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/runners.py\", line 190, in run\n    return runner.run(main)\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/runners.py\", line 118, in run\n    return self._loop.run_until_complete(task)\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/base_events.py\", line 641, in run_until_complete\n    self.run_forever()\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/base_events.py\", line 608, in run_forever\n    self._run_once()\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/base_events.py\", line 1936, in _run_once\n    handle._run()\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/events.py\", line 84, in _run\n    self._context.run(self._callback, *self._args)\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/site-packages/langgraph/_internal/_runnable.py\", line 501, in ainvoke\n    ret = await self.afunc(*args, **kwargs)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py\", line 291, in recorded\n    output = await function(state)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py\", line 502, in _run_research_task\n    await self.services.task_researcher.ainvoke(request)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/research_task.py\", line 104, in ainvoke\n    result, trace = await self._research(request)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/research_task.py\", line 114, in _research\n    harness_result = await self.harness.run(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/tool_call_harness.py\", line 117, in run\n    return await self._run(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/tool_call_harness.py\", line 432, in _run\n    runtime.finish_tool_call(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/runtime_artifacts.py\", line 457, in finish_tool_call\n    error_payload = self._coerce_error(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/runtime_artifacts.py\", line 788, in _coerce_error\n    \"traceback\": \"\".join(traceback_module.format_stack()),\n",
+      "type": "ToolExecutionError"
+    },
+    {
+      "error_id": "error_0010",
+      "message": "all 1 search executions failed",
+      "stage": "run_research_task",
+      "timestamp": "2026-09-16T16:44:45.108912+00:00",
+      "tool_call_id": "tool_0031",
+      "traceback": "  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/scripts/run_full_workflow_live.py\", line 214, in <module>\n    main()\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/scripts/run_full_workflow_live.py\", line 116, in main\n    result = workflow.run(paper, run_identity=identity)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py\", line 1104, in run\n    return asyncio.run(self.arun(paper, run_identity=run_identity))\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/runners.py\", line 190, in run\n    return runner.run(main)\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/runners.py\", line 118, in run\n    return self._loop.run_until_complete(task)\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/base_events.py\", line 641, in run_until_complete\n    self.run_forever()\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/base_events.py\", line 608, in run_forever\n    self._run_once()\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/base_events.py\", line 1936, in _run_once\n    handle._run()\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/events.py\", line 84, in _run\n    self._context.run(self._callback, *self._args)\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/site-packages/langgraph/_internal/_runnable.py\", line 501, in ainvoke\n    ret = await self.afunc(*args, **kwargs)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py\", line 291, in recorded\n    output = await function(state)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py\", line 502, in _run_research_task\n    await self.services.task_researcher.ainvoke(request)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/research_task.py\", line 104, in ainvoke\n    result, trace = await self._research(request)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/research_task.py\", line 114, in _research\n    harness_result = await self.harness.run(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/tool_call_harness.py\", line 117, in run\n    return await self._run(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/tool_call_harness.py\", line 432, in _run\n    runtime.finish_tool_call(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/runtime_artifacts.py\", line 457, in finish_tool_call\n    error_payload = self._coerce_error(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/runtime_artifacts.py\", line 788, in _coerce_error\n    \"traceback\": \"\".join(traceback_module.format_stack()),\n",
+      "type": "ToolExecutionError"
+    },
+    {
+      "error_id": "error_0011",
+      "message": "1 validation error for ConfiguredReaderCall8000_16000\n  Value error, batch offsets and limits belong inside each reads item [type=value_error, input_value={'char_start': 42000, 'ma...00, 'max_chars': 8000}]}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error",
+      "stage": "run_research_task",
+      "timestamp": "2026-09-16T16:45:10.614131+00:00",
+      "tool_call_id": "tool_0050",
+      "traceback": "  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/scripts/run_full_workflow_live.py\", line 214, in <module>\n    main()\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/scripts/run_full_workflow_live.py\", line 116, in main\n    result = workflow.run(paper, run_identity=identity)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py\", line 1104, in run\n    return asyncio.run(self.arun(paper, run_identity=run_identity))\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/runners.py\", line 190, in run\n    return runner.run(main)\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/runners.py\", line 118, in run\n    return self._loop.run_until_complete(task)\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/base_events.py\", line 641, in run_until_complete\n    self.run_forever()\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/base_events.py\", line 608, in run_forever\n    self._run_once()\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/base_events.py\", line 1936, in _run_once\n    handle._run()\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/events.py\", line 84, in _run\n    self._context.run(self._callback, *self._args)\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/site-packages/langgraph/_internal/_runnable.py\", line 501, in ainvoke\n    ret = await self.afunc(*args, **kwargs)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py\", line 291, in recorded\n    output = await function(state)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py\", line 502, in _run_research_task\n    await self.services.task_researcher.ainvoke(request)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/research_task.py\", line 104, in ainvoke\n    result, trace = await self._research(request)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/research_task.py\", line 114, in _research\n    harness_result = await self.harness.run(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/tool_call_harness.py\", line 117, in run\n    return await self._run(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/tool_call_harness.py\", line 432, in _run\n    runtime.finish_tool_call(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/runtime_artifacts.py\", line 457, in finish_tool_call\n    error_payload = self._coerce_error(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/runtime_artifacts.py\", line 788, in _coerce_error\n    \"traceback\": \"\".join(traceback_module.format_stack()),\n",
+      "type": "ValidationError"
+    },
+    {
+      "error_id": "error_0012",
+      "message": "1 validation error for ConfiguredReaderCall8000_16000\n  Value error, batch offsets and limits belong inside each reads item [type=value_error, input_value={'char_start': 58000, 'ma...00, 'max_chars': 8000}]}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error",
+      "stage": "run_research_task",
+      "timestamp": "2026-09-16T16:45:16.963335+00:00",
+      "tool_call_id": "tool_0054",
+      "traceback": "  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/scripts/run_full_workflow_live.py\", line 214, in <module>\n    main()\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/scripts/run_full_workflow_live.py\", line 116, in main\n    result = workflow.run(paper, run_identity=identity)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py\", line 1104, in run\n    return asyncio.run(self.arun(paper, run_identity=run_identity))\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/runners.py\", line 190, in run\n    return runner.run(main)\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/runners.py\", line 118, in run\n    return self._loop.run_until_complete(task)\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/base_events.py\", line 641, in run_until_complete\n    self.run_forever()\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/base_events.py\", line 608, in run_forever\n    self._run_once()\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/base_events.py\", line 1936, in _run_once\n    handle._run()\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/events.py\", line 84, in _run\n    self._context.run(self._callback, *self._args)\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/site-packages/langgraph/_internal/_runnable.py\", line 501, in ainvoke\n    ret = await self.afunc(*args, **kwargs)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py\", line 291, in recorded\n    output = await function(state)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py\", line 502, in _run_research_task\n    await self.services.task_researcher.ainvoke(request)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/research_task.py\", line 104, in ainvoke\n    result, trace = await self._research(request)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/research_task.py\", line 114, in _research\n    harness_result = await self.harness.run(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/tool_call_harness.py\", line 117, in run\n    return await self._run(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/tool_call_harness.py\", line 432, in _run\n    runtime.finish_tool_call(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/runtime_artifacts.py\", line 457, in finish_tool_call\n    error_payload = self._coerce_error(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/runtime_artifacts.py\", line 788, in _coerce_error\n    \"traceback\": \"\".join(traceback_module.format_stack()),\n",
+      "type": "ValidationError"
+    },
+    {
+      "error_id": "error_0013",
+      "message": "1 validation error for ConfiguredReaderCall8000_16000\n  Value error, batch offsets and limits belong inside each reads item [type=value_error, input_value={'char_start': 58000, 'ma...00, 'max_chars': 8000}]}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error",
+      "stage": "run_research_task",
+      "timestamp": "2026-09-16T16:45:18.852182+00:00",
+      "tool_call_id": "tool_0056",
+      "traceback": "  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/scripts/run_full_workflow_live.py\", line 214, in <module>\n    main()\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/scripts/run_full_workflow_live.py\", line 116, in main\n    result = workflow.run(paper, run_identity=identity)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py\", line 1104, in run\n    return asyncio.run(self.arun(paper, run_identity=run_identity))\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/runners.py\", line 190, in run\n    return runner.run(main)\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/runners.py\", line 118, in run\n    return self._loop.run_until_complete(task)\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/base_events.py\", line 641, in run_until_complete\n    self.run_forever()\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/base_events.py\", line 608, in run_forever\n    self._run_once()\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/base_events.py\", line 1936, in _run_once\n    handle._run()\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/events.py\", line 84, in _run\n    self._context.run(self._callback, *self._args)\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/site-packages/langgraph/_internal/_runnable.py\", line 501, in ainvoke\n    ret = await self.afunc(*args, **kwargs)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py\", line 291, in recorded\n    output = await function(state)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py\", line 502, in _run_research_task\n    await self.services.task_researcher.ainvoke(request)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/research_task.py\", line 104, in ainvoke\n    result, trace = await self._research(request)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/research_task.py\", line 114, in _research\n    harness_result = await self.harness.run(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/tool_call_harness.py\", line 117, in run\n    return await self._run(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/tool_call_harness.py\", line 432, in _run\n    runtime.finish_tool_call(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/runtime_artifacts.py\", line 457, in finish_tool_call\n    error_payload = self._coerce_error(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/runtime_artifacts.py\", line 788, in _coerce_error\n    \"traceback\": \"\".join(traceback_module.format_stack()),\n",
+      "type": "ValidationError"
+    },
+    {
+      "error_id": "error_0014",
+      "message": "total tool-call budget exhausted",
+      "stage": "run_research_task",
+      "timestamp": "2026-09-16T16:45:38.977144+00:00",
+      "tool_call_id": "tool_0061",
+      "traceback": "",
+      "type": "HarnessPolicyError"
+    },
+    {
+      "error_id": "error_0015",
+      "message": "reader required after database_search returned artifact_ids",
+      "stage": "run_research_task",
+      "timestamp": "2026-09-16T16:46:54.921378+00:00",
+      "tool_call_id": "tool_0070",
+      "traceback": "",
+      "type": "HarnessPolicyError"
+    },
+    {
+      "error_id": "error_0016",
+      "message": "all 1 search executions failed",
+      "stage": "run_research_task",
+      "timestamp": "2026-09-16T16:47:01.785145+00:00",
+      "tool_call_id": "tool_0072",
+      "traceback": "  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/scripts/run_full_workflow_live.py\", line 214, in <module>\n    main()\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/scripts/run_full_workflow_live.py\", line 116, in main\n    result = workflow.run(paper, run_identity=identity)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py\", line 1104, in run\n    return asyncio.run(self.arun(paper, run_identity=run_identity))\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/runners.py\", line 190, in run\n    return runner.run(main)\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/runners.py\", line 118, in run\n    return self._loop.run_until_complete(task)\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/base_events.py\", line 641, in run_until_complete\n    self.run_forever()\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/base_events.py\", line 608, in run_forever\n    self._run_once()\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/base_events.py\", line 1936, in _run_once\n    handle._run()\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/events.py\", line 84, in _run\n    self._context.run(self._callback, *self._args)\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/site-packages/langgraph/_internal/_runnable.py\", line 501, in ainvoke\n    ret = await self.afunc(*args, **kwargs)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py\", line 291, in recorded\n    output = await function(state)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py\", line 502, in _run_research_task\n    await self.services.task_researcher.ainvoke(request)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/research_task.py\", line 104, in ainvoke\n    result, trace = await self._research(request)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/research_task.py\", line 114, in _research\n    harness_result = await self.harness.run(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/tool_call_harness.py\", line 117, in run\n    return await self._run(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/tool_call_harness.py\", line 432, in _run\n    runtime.finish_tool_call(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/runtime_artifacts.py\", line 457, in finish_tool_call\n    error_payload = self._coerce_error(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/runtime_artifacts.py\", line 788, in _coerce_error\n    \"traceback\": \"\".join(traceback_module.format_stack()),\n",
+      "type": "ToolExecutionError"
+    },
+    {
+      "error_id": "error_0017",
+      "message": "reader required after database_search returned artifact_ids",
+      "stage": "run_research_task",
+      "timestamp": "2026-09-16T16:47:09.701515+00:00",
+      "tool_call_id": "tool_0074",
+      "traceback": "",
+      "type": "HarnessPolicyError"
+    },
+    {
+      "error_id": "error_0018",
+      "message": "all 1 search executions failed",
+      "stage": "run_research_task",
+      "timestamp": "2026-09-16T16:47:18.495491+00:00",
+      "tool_call_id": "tool_0076",
+      "traceback": "  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/scripts/run_full_workflow_live.py\", line 214, in <module>\n    main()\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/scripts/run_full_workflow_live.py\", line 116, in main\n    result = workflow.run(paper, run_identity=identity)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py\", line 1104, in run\n    return asyncio.run(self.arun(paper, run_identity=run_identity))\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/runners.py\", line 190, in run\n    return runner.run(main)\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/runners.py\", line 118, in run\n    return self._loop.run_until_complete(task)\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/base_events.py\", line 641, in run_until_complete\n    self.run_forever()\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/base_events.py\", line 608, in run_forever\n    self._run_once()\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/base_events.py\", line 1936, in _run_once\n    handle._run()\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/events.py\", line 84, in _run\n    self._context.run(self._callback, *self._args)\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/site-packages/langgraph/_internal/_runnable.py\", line 501, in ainvoke\n    ret = await self.afunc(*args, **kwargs)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py\", line 291, in recorded\n    output = await function(state)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py\", line 502, in _run_research_task\n    await self.services.task_researcher.ainvoke(request)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/research_task.py\", line 104, in ainvoke\n    result, trace = await self._research(request)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/research_task.py\", line 114, in _research\n    harness_result = await self.harness.run(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/tool_call_harness.py\", line 117, in run\n    return await self._run(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/tool_call_harness.py\", line 432, in _run\n    runtime.finish_tool_call(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/runtime_artifacts.py\", line 457, in finish_tool_call\n    error_payload = self._coerce_error(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/runtime_artifacts.py\", line 788, in _coerce_error\n    \"traceback\": \"\".join(traceback_module.format_stack()),\n",
+      "type": "ToolExecutionError"
+    },
+    {
+      "error_id": "error_0019",
+      "message": "all 1 search executions failed",
+      "stage": "run_research_task",
+      "timestamp": "2026-09-16T16:47:22.376620+00:00",
+      "tool_call_id": "tool_0077",
+      "traceback": "  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/scripts/run_full_workflow_live.py\", line 214, in <module>\n    main()\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/scripts/run_full_workflow_live.py\", line 116, in main\n    result = workflow.run(paper, run_identity=identity)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py\", line 1104, in run\n    return asyncio.run(self.arun(paper, run_identity=run_identity))\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/runners.py\", line 190, in run\n    return runner.run(main)\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/runners.py\", line 118, in run\n    return self._loop.run_until_complete(task)\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/base_events.py\", line 641, in run_until_complete\n    self.run_forever()\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/base_events.py\", line 608, in run_forever\n    self._run_once()\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/base_events.py\", line 1936, in _run_once\n    handle._run()\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/events.py\", line 84, in _run\n    self._context.run(self._callback, *self._args)\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/site-packages/langgraph/_internal/_runnable.py\", line 501, in ainvoke\n    ret = await self.afunc(*args, **kwargs)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py\", line 291, in recorded\n    output = await function(state)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py\", line 502, in _run_research_task\n    await self.services.task_researcher.ainvoke(request)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/research_task.py\", line 104, in ainvoke\n    result, trace = await self._research(request)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/research_task.py\", line 114, in _research\n    harness_result = await self.harness.run(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/tool_call_harness.py\", line 117, in run\n    return await self._run(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/tool_call_harness.py\", line 432, in _run\n    runtime.finish_tool_call(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/runtime_artifacts.py\", line 457, in finish_tool_call\n    error_payload = self._coerce_error(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/runtime_artifacts.py\", line 788, in _coerce_error\n    \"traceback\": \"\".join(traceback_module.format_stack()),\n",
+      "type": "ToolExecutionError"
+    },
+    {
+      "error_id": "error_0020",
+      "message": "all 1 search executions failed",
+      "stage": "run_research_task",
+      "timestamp": "2026-09-16T16:47:28.697731+00:00",
+      "tool_call_id": "tool_0078",
+      "traceback": "  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/scripts/run_full_workflow_live.py\", line 214, in <module>\n    main()\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/scripts/run_full_workflow_live.py\", line 116, in main\n    result = workflow.run(paper, run_identity=identity)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py\", line 1104, in run\n    return asyncio.run(self.arun(paper, run_identity=run_identity))\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/runners.py\", line 190, in run\n    return runner.run(main)\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/runners.py\", line 118, in run\n    return self._loop.run_until_complete(task)\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/base_events.py\", line 641, in run_until_complete\n    self.run_forever()\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/base_events.py\", line 608, in run_forever\n    self._run_once()\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/base_events.py\", line 1936, in _run_once\n    handle._run()\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/events.py\", line 84, in _run\n    self._context.run(self._callback, *self._args)\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/site-packages/langgraph/_internal/_runnable.py\", line 501, in ainvoke\n    ret = await self.afunc(*args, **kwargs)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py\", line 291, in recorded\n    output = await function(state)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py\", line 502, in _run_research_task\n    await self.services.task_researcher.ainvoke(request)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/research_task.py\", line 104, in ainvoke\n    result, trace = await self._research(request)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/research_task.py\", line 114, in _research\n    harness_result = await self.harness.run(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/tool_call_harness.py\", line 117, in run\n    return await self._run(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/tool_call_harness.py\", line 432, in _run\n    runtime.finish_tool_call(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/runtime_artifacts.py\", line 457, in finish_tool_call\n    error_payload = self._coerce_error(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/runtime_artifacts.py\", line 788, in _coerce_error\n    \"traceback\": \"\".join(traceback_module.format_stack()),\n",
+      "type": "ToolExecutionError"
+    },
+    {
+      "error_id": "error_0021",
+      "message": "reader required after database_search returned artifact_ids",
+      "stage": "run_research_task",
+      "timestamp": "2026-09-16T16:47:32.438765+00:00",
+      "tool_call_id": "tool_0080",
+      "traceback": "",
+      "type": "HarnessPolicyError"
+    },
+    {
+      "error_id": "error_0022",
+      "message": "reader required after database_search returned artifact_ids",
+      "stage": "run_research_task",
+      "timestamp": "2026-09-16T16:47:37.081133+00:00",
+      "tool_call_id": "tool_0081",
+      "traceback": "",
+      "type": "HarnessPolicyError"
+    },
+    {
+      "error_id": "error_0023",
+      "message": "all 1 search executions failed",
+      "stage": "run_research_task",
+      "timestamp": "2026-09-16T16:47:45.307326+00:00",
+      "tool_call_id": "tool_0083",
+      "traceback": "  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/scripts/run_full_workflow_live.py\", line 214, in <module>\n    main()\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/scripts/run_full_workflow_live.py\", line 116, in main\n    result = workflow.run(paper, run_identity=identity)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py\", line 1104, in run\n    return asyncio.run(self.arun(paper, run_identity=run_identity))\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/runners.py\", line 190, in run\n    return runner.run(main)\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/runners.py\", line 118, in run\n    return self._loop.run_until_complete(task)\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/base_events.py\", line 641, in run_until_complete\n    self.run_forever()\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/base_events.py\", line 608, in run_forever\n    self._run_once()\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/base_events.py\", line 1936, in _run_once\n    handle._run()\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/asyncio/events.py\", line 84, in _run\n    self._context.run(self._callback, *self._args)\n  File \"/home/lya3106643285/miniconda3/envs/Novelty/lib/python3.11/site-packages/langgraph/_internal/_runnable.py\", line 501, in ainvoke\n    ret = await self.afunc(*args, **kwargs)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py\", line 291, in recorded\n    output = await function(state)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py\", line 502, in _run_research_task\n    await self.services.task_researcher.ainvoke(request)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/research_task.py\", line 104, in ainvoke\n    result, trace = await self._research(request)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/research_task.py\", line 114, in _research\n    harness_result = await self.harness.run(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/tool_call_harness.py\", line 117, in run\n    return await self._run(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/tool_call_harness.py\", line 432, in _run\n    runtime.finish_tool_call(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/runtime_artifacts.py\", line 457, in finish_tool_call\n    error_payload = self._coerce_error(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/runtime_artifacts.py\", line 788, in _coerce_error\n    \"traceback\": \"\".join(traceback_module.format_stack()),\n",
+      "type": "ToolExecutionError"
+    },
+    {
+      "error_id": "error_0024",
+      "message": "database_search tool-call budget exhausted",
+      "stage": "run_research_task",
+      "timestamp": "2026-09-16T16:47:50.320643+00:00",
+      "tool_call_id": "tool_0084",
+      "traceback": "",
+      "type": "HarnessPolicyError"
+    }
+  ],
+  "final_evidence_sufficiency_checks": [
+    {
+      "actual_next_stage": "plan_supplement",
+      "calculated_insufficient_final_evidence_points": [
+        {
+          "novelty_point_id": "NP-3",
+          "reason": "insufficient_final_evidence",
+          "required_card_count": 1,
+          "valid_card_count": 0
+        }
+      ],
+      "calculated_insufficient_point_ids": [
+        "NP-3"
+      ],
+      "calculated_status": "INSUFFICIENT",
+      "check_status": "INSUFFICIENT",
+      "configured_cut": 1,
+      "counted_final_valid_card_count": 2,
+      "ignored_card_count": 0,
+      "input_final_valid_card_count": 2,
+      "max_rounds": 2,
+      "output_matches_calculation": true,
+      "point_results": [
+        {
+          "novelty_point_id": "NP-1",
+          "required_card_count": 1,
+          "status": "PASS",
+          "valid_card_count": 1
+        },
+        {
+          "novelty_point_id": "NP-2",
+          "required_card_count": 1,
+          "status": "PASS",
+          "valid_card_count": 1
+        },
+        {
+          "novelty_point_id": "NP-3",
+          "required_card_count": 1,
+          "status": "INSUFFICIENT",
+          "valid_card_count": 0
+        }
+      ],
+      "reported_insufficient_final_evidence_points": [
+        {
+          "novelty_point_id": "NP-3",
+          "reason": "insufficient_final_evidence",
+          "required_card_count": 1,
+          "valid_card_count": 0
+        }
+      ],
+      "round": 1,
+      "round_limit_allows_supplement": true,
+      "stage_id": "stage_0014",
+      "stage_status": "SUCCESS"
+    },
+    {
+      "actual_next_stage": "synthesize_report",
+      "calculated_insufficient_final_evidence_points": [
+        {
+          "novelty_point_id": "NP-3",
+          "reason": "insufficient_final_evidence",
+          "required_card_count": 1,
+          "valid_card_count": 0
+        }
+      ],
+      "calculated_insufficient_point_ids": [
+        "NP-3"
+      ],
+      "calculated_status": "INSUFFICIENT",
+      "check_status": "INSUFFICIENT",
+      "configured_cut": 1,
+      "counted_final_valid_card_count": 2,
+      "ignored_card_count": 0,
+      "input_final_valid_card_count": 2,
+      "max_rounds": 2,
+      "output_matches_calculation": true,
+      "point_results": [
+        {
+          "novelty_point_id": "NP-1",
+          "required_card_count": 1,
+          "status": "PASS",
+          "valid_card_count": 1
+        },
+        {
+          "novelty_point_id": "NP-2",
+          "required_card_count": 1,
+          "status": "PASS",
+          "valid_card_count": 1
+        },
+        {
+          "novelty_point_id": "NP-3",
+          "required_card_count": 1,
+          "status": "INSUFFICIENT",
+          "valid_card_count": 0
+        }
+      ],
+      "reported_insufficient_final_evidence_points": [
+        {
+          "novelty_point_id": "NP-3",
+          "reason": "insufficient_final_evidence",
+          "required_card_count": 1,
+          "valid_card_count": 0
+        }
+      ],
+      "round": 2,
+      "round_limit_allows_supplement": false,
+      "stage_id": "stage_0023",
+      "stage_status": "SUCCESS"
+    }
+  ],
+  "integrity_gates": [
+    {
+      "accepted_card_count": 2,
+      "accepted_card_ids": [
+        "card_d215b0e5a7dd31cc57f586c1",
+        "card_430dca87eee8908e02934852"
+      ],
+      "checked_card_count": 2,
+      "rejected_card_count": 0,
+      "rejected_card_ids": [],
+      "rejected_cards": [],
+      "stage_name": "validate_synthesis_input",
+      "validation_passed": true
+    },
+    {
+      "accepted_card_count": 2,
+      "accepted_card_ids": [
+        "card_d215b0e5a7dd31cc57f586c1",
+        "card_430dca87eee8908e02934852"
+      ],
+      "checked_card_count": 2,
+      "rejected_card_count": 0,
+      "rejected_card_ids": [],
+      "rejected_cards": [],
+      "stage_name": "validate_synthesis_input",
+      "validation_passed": true
+    },
+    {
+      "checked_conclusion_count": 3,
+      "conclusion_count": 3,
+      "issues": [],
+      "matched_count": 3,
+      "mismatch_count": 0,
+      "mismatched_point_ids": [],
+      "reference_occurrence_count": 2,
+      "referenced_card_count": 2,
+      "review_count": 3,
+      "stage_name": "validate_report_integrity",
+      "validation_passed": true
+    }
+  ],
+  "last_completed_stage": "render_report",
+  "llm_usage": {
+    "by_model": [
+      {
+        "amount_rmb": 3.7825488,
+        "cached_input_tokens": 106496,
+        "calls": 111,
+        "failed_calls": 0,
+        "free_calls": 0,
+        "input_tokens": 1267245,
+        "model": "deepseek-ai/DeepSeek-V4-Flash",
+        "output_tokens": 29817,
+        "priced_calls": 111,
+        "reasoning_tokens": 1143,
+        "successful_calls": 111,
+        "total_tokens": 1297062,
+        "unpriced_calls": 0,
+        "usage_unavailable_calls": 0
+      }
+    ],
+    "totals": {
+      "amount_rmb": 3.7825488,
+      "cached_input_tokens": 106496,
+      "calls": 111,
+      "cost_completeness": "COMPLETE",
+      "currency": "RMB",
+      "failed_calls": 0,
+      "free_calls": 0,
+      "input_tokens": 1267245,
+      "output_tokens": 29817,
+      "priced_calls": 111,
+      "reasoning_tokens": 1143,
+      "successful_calls": 111,
+      "total_tokens": 1297062,
+      "unpriced_calls": 0,
+      "usage_unavailable_calls": 0
+    }
+  },
+  "outcome": null,
+  "provider_requests": {
+    "api_elapsed_ms": 9362.337,
+    "average_batch_size": 4.666666666666667,
+    "batch_count": 6,
+    "by_transport": {
+      "api": {
+        "api_elapsed_ms": 9362.337,
+        "average_batch_size": 4.666666666666667,
+        "batch_count": 6,
+        "circuit_open_count": 0,
+        "dedup_count": 0,
+        "http_200_count": 21,
+        "http_429_count": 1,
+        "interval_violation_count": 0,
+        "logical_api_requests": 40,
+        "logical_web_requests": 0,
+        "max_batch_size": 8,
+        "metadata_batch_ratio": 4.0,
+        "metadata_logical_requests": 24,
+        "metadata_physical_requests": 6,
+        "physical_api_requests": 22,
+        "physical_web_requests": 0,
+        "queue_wait_ms": 188494.845,
+        "read_timeout_count": 0,
+        "request_compression_ratio": 1.8181818181818181,
+        "retry_count": 1,
+        "status_counts": {
+          "200": 21,
+          "429": 1
+        },
+        "timeout_count": 0,
+        "total_arxiv_elapsed_ms": 217986.994,
+        "transports": [
+          "api"
+        ],
+        "unique_metadata_ids": 28
+      }
+    },
+    "circuit_open_count": 0,
+    "dedup_count": 0,
+    "http_200_count": 21,
+    "http_429_count": 1,
+    "interval_violation_count": 0,
+    "logical_api_requests": 40,
+    "logical_web_requests": 0,
+    "max_batch_size": 8,
+    "metadata_batch_ratio": 4.0,
+    "metadata_logical_requests": 24,
+    "metadata_physical_requests": 6,
+    "physical_api_requests": 22,
+    "physical_web_requests": 0,
+    "queue_wait_ms": 188494.845,
+    "read_timeout_count": 0,
+    "request_compression_ratio": 1.8181818181818181,
+    "retry_count": 1,
+    "status_counts": {
+      "200": 21,
+      "429": 1
+    },
+    "timeout_count": 0,
+    "total_arxiv_elapsed_ms": 217986.994,
+    "transports": [
+      "api"
+    ],
+    "unique_metadata_ids": 28
+  },
+  "reviewer_information_adjudication_checks": [
+    {
+      "actual_next_stage": "validate_synthesis_input",
+      "cards_preserved": true,
+      "duplicate_review_point_ids": [],
+      "expected_point_ids": [
+        "NP-1",
+        "NP-2",
+        "NP-3"
+      ],
+      "input_card_ids": [
+        "card_d215b0e5a7dd31cc57f586c1",
+        "card_430dca87eee8908e02934852"
+      ],
+      "missing_review_point_ids": [],
+      "output_card_ids": [
+        "card_d215b0e5a7dd31cc57f586c1",
+        "card_430dca87eee8908e02934852"
+      ],
+      "point_scopes": [
+        {
+          "allowed_artifact_ids": [
+            "art_b8462b011f5690bfcdcaa3c6"
+          ],
+          "card_ids": [
+            "card_d215b0e5a7dd31cc57f586c1"
+          ],
+          "novelty_point_id": "NP-1",
+          "referenced_evidence_ids": [
+            "ev_5a30784e336b4807f30072da"
+          ],
+          "unresolved_evidence_ids": []
+        },
+        {
+          "allowed_artifact_ids": [
+            "art_5a95e23353233acf80dfb52a"
+          ],
+          "card_ids": [
+            "card_430dca87eee8908e02934852"
+          ],
+          "novelty_point_id": "NP-2",
+          "referenced_evidence_ids": [
+            "ev_1598b6c5df6dcc2e02caa241"
+          ],
+          "unresolved_evidence_ids": []
+        },
+        {
+          "allowed_artifact_ids": [],
+          "card_ids": [],
+          "novelty_point_id": "NP-3",
+          "referenced_evidence_ids": [],
+          "unresolved_evidence_ids": []
+        }
+      ],
+      "review_results": [
+        {
+          "confidence": null,
+          "has_supplement_request": true,
+          "highly_relevant_work_count": 1,
+          "novelty_point_id": "NP-1",
+          "status": "insufficient_evidence",
+          "supplement_reason": "裁定依赖文献未采用特征的断言，但输入引文没有直接支持该否定；需核验原文。",
+          "verdict": null
+        },
+        {
+          "confidence": null,
+          "has_supplement_request": true,
+          "highly_relevant_work_count": 1,
+          "novelty_point_id": "NP-2",
+          "status": "insufficient_evidence",
+          "supplement_reason": "裁定依赖文献未采用特征的断言，但输入引文没有直接支持该否定；需核验原文。",
+          "verdict": null
+        },
+        {
+          "confidence": null,
+          "has_supplement_request": true,
+          "highly_relevant_work_count": 0,
+          "novelty_point_id": "NP-3",
+          "status": "insufficient_evidence",
+          "supplement_reason": "当前查新点没有可供可靠判定的已绑定证据。",
+          "verdict": null
+        }
+      ],
+      "reviewed_point_ids": [
+        "NP-1",
+        "NP-2",
+        "NP-3"
+      ],
+      "stage_id": "stage_0012",
+      "stage_status": "SUCCESS",
+      "supplement_requests_control_route": false,
+      "unexpected_review_point_ids": [],
+      "unresolved_evidence_ids": []
+    },
+    {
+      "actual_next_stage": "validate_synthesis_input",
+      "cards_preserved": true,
+      "duplicate_review_point_ids": [],
+      "expected_point_ids": [
+        "NP-1",
+        "NP-2",
+        "NP-3"
+      ],
+      "input_card_ids": [
+        "card_d215b0e5a7dd31cc57f586c1",
+        "card_430dca87eee8908e02934852"
+      ],
+      "missing_review_point_ids": [],
+      "output_card_ids": [
+        "card_d215b0e5a7dd31cc57f586c1",
+        "card_430dca87eee8908e02934852"
+      ],
+      "point_scopes": [
+        {
+          "allowed_artifact_ids": [
+            "art_b8462b011f5690bfcdcaa3c6"
+          ],
+          "card_ids": [
+            "card_d215b0e5a7dd31cc57f586c1"
+          ],
+          "novelty_point_id": "NP-1",
+          "referenced_evidence_ids": [
+            "ev_5a30784e336b4807f30072da"
+          ],
+          "unresolved_evidence_ids": []
+        },
+        {
+          "allowed_artifact_ids": [
+            "art_5a95e23353233acf80dfb52a"
+          ],
+          "card_ids": [
+            "card_430dca87eee8908e02934852"
+          ],
+          "novelty_point_id": "NP-2",
+          "referenced_evidence_ids": [
+            "ev_1598b6c5df6dcc2e02caa241"
+          ],
+          "unresolved_evidence_ids": []
+        },
+        {
+          "allowed_artifact_ids": [],
+          "card_ids": [],
+          "novelty_point_id": "NP-3",
+          "referenced_evidence_ids": [],
+          "unresolved_evidence_ids": []
+        }
+      ],
+      "review_results": [
+        {
+          "confidence": null,
+          "has_supplement_request": true,
+          "highly_relevant_work_count": 1,
+          "novelty_point_id": "NP-1",
+          "status": "insufficient_evidence",
+          "supplement_reason": "裁定依赖文献未采用特征的断言，但输入引文没有直接支持该否定；需核验原文。",
+          "verdict": null
+        },
+        {
+          "confidence": null,
+          "has_supplement_request": true,
+          "highly_relevant_work_count": 1,
+          "novelty_point_id": "NP-2",
+          "status": "insufficient_evidence",
+          "supplement_reason": "裁定依赖文献未采用特征的断言，但输入引文没有直接支持该否定；需核验原文。",
+          "verdict": null
+        },
+        {
+          "confidence": null,
+          "has_supplement_request": true,
+          "highly_relevant_work_count": 0,
+          "novelty_point_id": "NP-3",
+          "status": "insufficient_evidence",
+          "supplement_reason": "当前查新点没有可供可靠判定的已绑定证据。",
+          "verdict": null
+        }
+      ],
+      "reviewed_point_ids": [
+        "NP-1",
+        "NP-2",
+        "NP-3"
+      ],
+      "stage_id": "stage_0021",
+      "stage_status": "SUCCESS",
+      "supplement_requests_control_route": false,
+      "unexpected_review_point_ids": [],
+      "unresolved_evidence_ids": []
+    }
+  ],
+  "run": {
+    "duration_ms": 417712,
+    "end_time": "2026-09-16T16:49:34.063796+00:00",
+    "entrypoint": "paper_input",
+    "input_identity": {
+      "novelty_point_id": null,
+      "paper_json": "docs/experiments/20260917_v01_staging/input/sample_a.paper.json",
+      "paper_sha256": "89fcc578efcc840daa9c4e0698943314f794e096e176c067dbbd6e603d42ea66",
+      "search_plan_id": null,
+      "task_id": null
+    },
+    "paper_id": "MF2033k6lC",
+    "run_id": "run-bdb2796a9ad145e2b741706bd4dd4368",
+    "start_time": "2026-09-16T16:42:36.392858+00:00",
+    "status": "SUCCESS"
+  },
+  "stages": [
+    {
+      "duration": 10.642272,
+      "duration_ms": 10642,
+      "error": null,
+      "finished_at": "2026-09-16T16:42:47.055535+00:00",
+      "stage_id": "stage_0001",
+      "stage_name": "extract_points",
+      "started_at": "2026-09-16T16:42:36.405754+00:00",
+      "status": "SUCCESS",
+      "validation_result": null
+    },
+    {
+      "duration": 0.000105,
+      "duration_ms": 0,
+      "error": null,
+      "finished_at": "2026-09-16T16:42:47.067370+00:00",
+      "stage_id": "stage_0002",
+      "stage_name": "plan",
+      "started_at": "2026-09-16T16:42:47.059627+00:00",
+      "status": "SUCCESS",
+      "validation_result": null
+    },
+    {
+      "duration": 2.8e-05,
+      "duration_ms": 0,
+      "error": null,
+      "finished_at": "2026-09-16T16:42:47.079779+00:00",
+      "stage_id": "stage_0003",
+      "stage_name": "dispatch_planning_tasks",
+      "started_at": "2026-09-16T16:42:47.071422+00:00",
+      "status": "SUCCESS",
+      "validation_result": null
+    },
+    {
+      "duration": 8.265725,
+      "duration_ms": 8265,
+      "error": null,
+      "finished_at": "2026-09-16T16:42:55.352409+00:00",
+      "stage_id": "stage_0004",
+      "stage_name": "plan_research_task",
+      "started_at": "2026-09-16T16:42:47.083415+00:00",
+      "status": "SUCCESS",
+      "validation_result": null
+    },
+    {
+      "duration": 11.187547,
+      "duration_ms": 11187,
+      "error": null,
+      "finished_at": "2026-09-16T16:43:06.546687+00:00",
+      "stage_id": "stage_0005",
+      "stage_name": "plan_research_task",
+      "started_at": "2026-09-16T16:42:55.355533+00:00",
+      "status": "SUCCESS",
+      "validation_result": null
+    },
+    {
+      "duration": 3.699939,
+      "duration_ms": 3699,
+      "error": null,
+      "finished_at": "2026-09-16T16:43:10.253852+00:00",
+      "stage_id": "stage_0006",
+      "stage_name": "plan_research_task",
+      "started_at": "2026-09-16T16:43:06.550278+00:00",
+      "status": "SUCCESS",
+      "validation_result": null
+    },
+    {
+      "duration": 2.8e-05,
+      "duration_ms": 0,
+      "error": null,
+      "finished_at": "2026-09-16T16:43:10.266794+00:00",
+      "stage_id": "stage_0007",
+      "stage_name": "dispatch_research_tasks",
+      "started_at": "2026-09-16T16:43:10.258035+00:00",
+      "status": "SUCCESS",
+      "validation_result": null
+    },
+    {
+      "duration": 156.185999,
+      "duration_ms": 156186,
+      "error": null,
+      "finished_at": "2026-09-16T16:45:46.461009+00:00",
+      "stage_id": "stage_0008",
+      "stage_name": "run_research_task",
+      "started_at": "2026-09-16T16:43:10.271220+00:00",
+      "status": "SUCCESS",
+      "validation_result": null
+    },
+    {
+      "duration": 102.699055,
+      "duration_ms": 102699,
+      "error": null,
+      "finished_at": "2026-09-16T16:44:52.981762+00:00",
+      "stage_id": "stage_0009",
+      "stage_name": "run_research_task",
+      "started_at": "2026-09-16T16:43:10.278437+00:00",
+      "status": "SUCCESS",
+      "validation_result": null
+    },
+    {
+      "duration": 143.602525,
+      "duration_ms": 143602,
+      "error": null,
+      "finished_at": "2026-09-16T16:45:33.892497+00:00",
+      "stage_id": "stage_0010",
+      "stage_name": "run_research_task",
+      "started_at": "2026-09-16T16:43:10.286018+00:00",
+      "status": "SUCCESS",
+      "validation_result": null
+    },
+    {
+      "duration": 0.002179,
+      "duration_ms": 2,
+      "error": null,
+      "finished_at": "2026-09-16T16:45:46.512815+00:00",
+      "stage_id": "stage_0011",
+      "stage_name": "validate_evidence",
+      "started_at": "2026-09-16T16:45:46.474560+00:00",
+      "status": "SUCCESS",
+      "validation_result": null
+    },
+    {
+      "debug_details": {
+        "reviewer_information_adjudication": {
+          "cards_preserved": true,
+          "duplicate_review_point_ids": [],
+          "expected_point_ids": [
+            "NP-1",
+            "NP-2",
+            "NP-3"
+          ],
+          "input_card_ids": [
+            "card_d215b0e5a7dd31cc57f586c1",
+            "card_430dca87eee8908e02934852"
+          ],
+          "missing_review_point_ids": [],
+          "output_card_ids": [
+            "card_d215b0e5a7dd31cc57f586c1",
+            "card_430dca87eee8908e02934852"
+          ],
+          "point_scopes": [
+            {
+              "allowed_artifact_ids": [
+                "art_b8462b011f5690bfcdcaa3c6"
+              ],
+              "card_ids": [
+                "card_d215b0e5a7dd31cc57f586c1"
+              ],
+              "novelty_point_id": "NP-1",
+              "referenced_evidence_ids": [
+                "ev_5a30784e336b4807f30072da"
+              ],
+              "unresolved_evidence_ids": []
+            },
+            {
+              "allowed_artifact_ids": [
+                "art_5a95e23353233acf80dfb52a"
+              ],
+              "card_ids": [
+                "card_430dca87eee8908e02934852"
+              ],
+              "novelty_point_id": "NP-2",
+              "referenced_evidence_ids": [
+                "ev_1598b6c5df6dcc2e02caa241"
+              ],
+              "unresolved_evidence_ids": []
+            },
+            {
+              "allowed_artifact_ids": [],
+              "card_ids": [],
+              "novelty_point_id": "NP-3",
+              "referenced_evidence_ids": [],
+              "unresolved_evidence_ids": []
+            }
+          ],
+          "review_results": [
+            {
+              "confidence": null,
+              "has_supplement_request": true,
+              "highly_relevant_work_count": 1,
+              "novelty_point_id": "NP-1",
+              "status": "insufficient_evidence",
+              "supplement_reason": "裁定依赖文献未采用特征的断言，但输入引文没有直接支持该否定；需核验原文。",
+              "verdict": null
+            },
+            {
+              "confidence": null,
+              "has_supplement_request": true,
+              "highly_relevant_work_count": 1,
+              "novelty_point_id": "NP-2",
+              "status": "insufficient_evidence",
+              "supplement_reason": "裁定依赖文献未采用特征的断言，但输入引文没有直接支持该否定；需核验原文。",
+              "verdict": null
+            },
+            {
+              "confidence": null,
+              "has_supplement_request": true,
+              "highly_relevant_work_count": 0,
+              "novelty_point_id": "NP-3",
+              "status": "insufficient_evidence",
+              "supplement_reason": "当前查新点没有可供可靠判定的已绑定证据。",
+              "verdict": null
+            }
+          ],
+          "reviewed_point_ids": [
+            "NP-1",
+            "NP-2",
+            "NP-3"
+          ],
+          "supplement_requests_control_route": false,
+          "unexpected_review_point_ids": [],
+          "unresolved_evidence_ids": []
+        }
+      },
+      "duration": 21.236096,
+      "duration_ms": 21236,
+      "error": null,
+      "finished_at": "2026-09-16T16:46:07.787625+00:00",
+      "stage_id": "stage_0012",
+      "stage_name": "review_evidence",
+      "started_at": "2026-09-16T16:45:46.516283+00:00",
+      "status": "SUCCESS",
+      "validation_result": null
+    },
+    {
+      "duration": 0.005606,
+      "duration_ms": 5,
+      "error": null,
+      "finished_at": "2026-09-16T16:46:07.833952+00:00",
+      "stage_id": "stage_0013",
+      "stage_name": "validate_synthesis_input",
+      "started_at": "2026-09-16T16:46:07.791955+00:00",
+      "status": "SUCCESS",
+      "validation_result": {
+        "accepted_card_count": 2,
+        "accepted_card_ids": [
+          "card_d215b0e5a7dd31cc57f586c1",
+          "card_430dca87eee8908e02934852"
+        ],
+        "checked_card_count": 2,
+        "rejected_card_count": 0,
+        "rejected_card_ids": [],
+        "rejected_cards": [],
+        "validation_passed": true
+      }
+    },
+    {
+      "debug_details": {
+        "final_evidence_sufficiency": {
+          "calculated_insufficient_final_evidence_points": [
+            {
+              "novelty_point_id": "NP-3",
+              "reason": "insufficient_final_evidence",
+              "required_card_count": 1,
+              "valid_card_count": 0
+            }
+          ],
+          "calculated_insufficient_point_ids": [
+            "NP-3"
+          ],
+          "calculated_status": "INSUFFICIENT",
+          "check_status": "INSUFFICIENT",
+          "configured_cut": 1,
+          "counted_final_valid_card_count": 2,
+          "ignored_card_count": 0,
+          "input_final_valid_card_count": 2,
+          "max_rounds": 2,
+          "output_matches_calculation": true,
+          "point_results": [
+            {
+              "novelty_point_id": "NP-1",
+              "required_card_count": 1,
+              "status": "PASS",
+              "valid_card_count": 1
+            },
+            {
+              "novelty_point_id": "NP-2",
+              "required_card_count": 1,
+              "status": "PASS",
+              "valid_card_count": 1
+            },
+            {
+              "novelty_point_id": "NP-3",
+              "required_card_count": 1,
+              "status": "INSUFFICIENT",
+              "valid_card_count": 0
+            }
+          ],
+          "reported_insufficient_final_evidence_points": [
+            {
+              "novelty_point_id": "NP-3",
+              "reason": "insufficient_final_evidence",
+              "required_card_count": 1,
+              "valid_card_count": 0
+            }
+          ],
+          "round": 1,
+          "round_limit_allows_supplement": true
+        }
+      },
+      "duration": 0.000126,
+      "duration_ms": 0,
+      "error": null,
+      "finished_at": "2026-09-16T16:46:07.875680+00:00",
+      "stage_id": "stage_0014",
+      "stage_name": "check_final_evidence_sufficiency",
+      "started_at": "2026-09-16T16:46:07.837826+00:00",
+      "status": "SUCCESS",
+      "validation_result": null
+    },
+    {
+      "duration": 13.530146,
+      "duration_ms": 13530,
+      "error": null,
+      "finished_at": "2026-09-16T16:46:21.447250+00:00",
+      "stage_id": "stage_0015",
+      "stage_name": "plan_supplement",
+      "started_at": "2026-09-16T16:46:07.879207+00:00",
+      "status": "SUCCESS",
+      "validation_result": null
+    },
+    {
+      "duration": 3.4e-05,
+      "duration_ms": 0,
+      "error": null,
+      "finished_at": "2026-09-16T16:46:21.486711+00:00",
+      "stage_id": "stage_0016",
+      "stage_name": "dispatch_planning_tasks",
+      "started_at": "2026-09-16T16:46:21.450801+00:00",
+      "status": "SUCCESS",
+      "validation_result": null
+    },
+    {
+      "duration": 8.909802,
+      "duration_ms": 8909,
+      "error": null,
+      "finished_at": "2026-09-16T16:46:30.402681+00:00",
+      "stage_id": "stage_0017",
+      "stage_name": "plan_research_task",
+      "started_at": "2026-09-16T16:46:21.489725+00:00",
+      "status": "SUCCESS",
+      "validation_result": null
+    },
+    {
+      "duration": 5.9e-05,
+      "duration_ms": 0,
+      "error": null,
+      "finished_at": "2026-09-16T16:46:30.442980+00:00",
+      "stage_id": "stage_0018",
+      "stage_name": "dispatch_research_tasks",
+      "started_at": "2026-09-16T16:46:30.406641+00:00",
+      "status": "SUCCESS",
+      "validation_result": null
+    },
+    {
+      "duration": 89.117254,
+      "duration_ms": 89117,
+      "error": null,
+      "finished_at": "2026-09-16T16:47:59.568499+00:00",
+      "stage_id": "stage_0019",
+      "stage_name": "run_research_task",
+      "started_at": "2026-09-16T16:46:30.447354+00:00",
+      "status": "SUCCESS",
+      "validation_result": null
+    },
+    {
+      "duration": 0.002379,
+      "duration_ms": 2,
+      "error": null,
+      "finished_at": "2026-09-16T16:47:59.627363+00:00",
+      "stage_id": "stage_0020",
+      "stage_name": "validate_evidence",
+      "started_at": "2026-09-16T16:47:59.580417+00:00",
+      "status": "SUCCESS",
+      "validation_result": null
+    },
+    {
+      "debug_details": {
+        "reviewer_information_adjudication": {
+          "cards_preserved": true,
+          "duplicate_review_point_ids": [],
+          "expected_point_ids": [
+            "NP-1",
+            "NP-2",
+            "NP-3"
+          ],
+          "input_card_ids": [
+            "card_d215b0e5a7dd31cc57f586c1",
+            "card_430dca87eee8908e02934852"
+          ],
+          "missing_review_point_ids": [],
+          "output_card_ids": [
+            "card_d215b0e5a7dd31cc57f586c1",
+            "card_430dca87eee8908e02934852"
+          ],
+          "point_scopes": [
+            {
+              "allowed_artifact_ids": [
+                "art_b8462b011f5690bfcdcaa3c6"
+              ],
+              "card_ids": [
+                "card_d215b0e5a7dd31cc57f586c1"
+              ],
+              "novelty_point_id": "NP-1",
+              "referenced_evidence_ids": [
+                "ev_5a30784e336b4807f30072da"
+              ],
+              "unresolved_evidence_ids": []
+            },
+            {
+              "allowed_artifact_ids": [
+                "art_5a95e23353233acf80dfb52a"
+              ],
+              "card_ids": [
+                "card_430dca87eee8908e02934852"
+              ],
+              "novelty_point_id": "NP-2",
+              "referenced_evidence_ids": [
+                "ev_1598b6c5df6dcc2e02caa241"
+              ],
+              "unresolved_evidence_ids": []
+            },
+            {
+              "allowed_artifact_ids": [],
+              "card_ids": [],
+              "novelty_point_id": "NP-3",
+              "referenced_evidence_ids": [],
+              "unresolved_evidence_ids": []
+            }
+          ],
+          "review_results": [
+            {
+              "confidence": null,
+              "has_supplement_request": true,
+              "highly_relevant_work_count": 1,
+              "novelty_point_id": "NP-1",
+              "status": "insufficient_evidence",
+              "supplement_reason": "裁定依赖文献未采用特征的断言，但输入引文没有直接支持该否定；需核验原文。",
+              "verdict": null
+            },
+            {
+              "confidence": null,
+              "has_supplement_request": true,
+              "highly_relevant_work_count": 1,
+              "novelty_point_id": "NP-2",
+              "status": "insufficient_evidence",
+              "supplement_reason": "裁定依赖文献未采用特征的断言，但输入引文没有直接支持该否定；需核验原文。",
+              "verdict": null
+            },
+            {
+              "confidence": null,
+              "has_supplement_request": true,
+              "highly_relevant_work_count": 0,
+              "novelty_point_id": "NP-3",
+              "status": "insufficient_evidence",
+              "supplement_reason": "当前查新点没有可供可靠判定的已绑定证据。",
+              "verdict": null
+            }
+          ],
+          "reviewed_point_ids": [
+            "NP-1",
+            "NP-2",
+            "NP-3"
+          ],
+          "supplement_requests_control_route": false,
+          "unexpected_review_point_ids": [],
+          "unresolved_evidence_ids": []
+        }
+      },
+      "duration": 16.140654,
+      "duration_ms": 16140,
+      "error": null,
+      "finished_at": "2026-09-16T16:48:15.817666+00:00",
+      "stage_id": "stage_0021",
+      "stage_name": "review_evidence",
+      "started_at": "2026-09-16T16:47:59.631303+00:00",
+      "status": "SUCCESS",
+      "validation_result": null
+    },
+    {
+      "duration": 0.00651,
+      "duration_ms": 6,
+      "error": null,
+      "finished_at": "2026-09-16T16:48:15.872974+00:00",
+      "stage_id": "stage_0022",
+      "stage_name": "validate_synthesis_input",
+      "started_at": "2026-09-16T16:48:15.821536+00:00",
+      "status": "SUCCESS",
+      "validation_result": {
+        "accepted_card_count": 2,
+        "accepted_card_ids": [
+          "card_d215b0e5a7dd31cc57f586c1",
+          "card_430dca87eee8908e02934852"
+        ],
+        "checked_card_count": 2,
+        "rejected_card_count": 0,
+        "rejected_card_ids": [],
+        "rejected_cards": [],
+        "validation_passed": true
+      }
+    },
+    {
+      "debug_details": {
+        "final_evidence_sufficiency": {
+          "calculated_insufficient_final_evidence_points": [
+            {
+              "novelty_point_id": "NP-3",
+              "reason": "insufficient_final_evidence",
+              "required_card_count": 1,
+              "valid_card_count": 0
+            }
+          ],
+          "calculated_insufficient_point_ids": [
+            "NP-3"
+          ],
+          "calculated_status": "INSUFFICIENT",
+          "check_status": "INSUFFICIENT",
+          "configured_cut": 1,
+          "counted_final_valid_card_count": 2,
+          "ignored_card_count": 0,
+          "input_final_valid_card_count": 2,
+          "max_rounds": 2,
+          "output_matches_calculation": true,
+          "point_results": [
+            {
+              "novelty_point_id": "NP-1",
+              "required_card_count": 1,
+              "status": "PASS",
+              "valid_card_count": 1
+            },
+            {
+              "novelty_point_id": "NP-2",
+              "required_card_count": 1,
+              "status": "PASS",
+              "valid_card_count": 1
+            },
+            {
+              "novelty_point_id": "NP-3",
+              "required_card_count": 1,
+              "status": "INSUFFICIENT",
+              "valid_card_count": 0
+            }
+          ],
+          "reported_insufficient_final_evidence_points": [
+            {
+              "novelty_point_id": "NP-3",
+              "reason": "insufficient_final_evidence",
+              "required_card_count": 1,
+              "valid_card_count": 0
+            }
+          ],
+          "round": 2,
+          "round_limit_allows_supplement": false
+        }
+      },
+      "duration": 0.00014,
+      "duration_ms": 0,
+      "error": null,
+      "finished_at": "2026-09-16T16:48:15.922179+00:00",
+      "stage_id": "stage_0023",
+      "stage_name": "check_final_evidence_sufficiency",
+      "started_at": "2026-09-16T16:48:15.876999+00:00",
+      "status": "SUCCESS",
+      "validation_result": null
+    },
+    {
+      "duration": 77.942815,
+      "duration_ms": 77942,
+      "error": null,
+      "finished_at": "2026-09-16T16:49:33.912648+00:00",
+      "stage_id": "stage_0024",
+      "stage_name": "synthesize_report",
+      "started_at": "2026-09-16T16:48:15.926211+00:00",
+      "status": "SUCCESS",
+      "validation_result": null
+    },
+    {
+      "duration": 0.000182,
+      "duration_ms": 0,
+      "error": null,
+      "finished_at": "2026-09-16T16:49:33.961242+00:00",
+      "stage_id": "stage_0025",
+      "stage_name": "validate_report_integrity",
+      "started_at": "2026-09-16T16:49:33.916251+00:00",
+      "status": "SUCCESS",
+      "validation_result": {
+        "checked_conclusion_count": 3,
+        "conclusion_count": 3,
+        "issues": [],
+        "matched_count": 3,
+        "mismatch_count": 0,
+        "mismatched_point_ids": [],
+        "reference_occurrence_count": 2,
+        "referenced_card_count": 2,
+        "review_count": 3,
+        "validation_passed": true
+      }
+    },
+    {
+      "duration": 0.000589,
+      "duration_ms": 0,
+      "error": null,
+      "finished_at": "2026-09-16T16:49:34.009615+00:00",
+      "stage_id": "stage_0026",
+      "stage_name": "persist_report",
+      "started_at": "2026-09-16T16:49:33.965216+00:00",
+      "status": "SUCCESS",
+      "validation_result": null
+    },
+    {
+      "duration": 0.003235,
+      "duration_ms": 3,
+      "error": null,
+      "finished_at": "2026-09-16T16:49:34.060289+00:00",
+      "stage_id": "stage_0027",
+      "stage_name": "render_report",
+      "started_at": "2026-09-16T16:49:34.013005+00:00",
+      "status": "SUCCESS",
+      "validation_result": null
+    }
+  ],
+  "tool_calls": [
+    {
+      "calls": 15,
+      "empty": 15,
+      "failed": 0,
+      "success": 15,
+      "tool_name": "reference_search"
+    },
+    {
+      "calls": 30,
+      "empty": 0,
+      "failed": 19,
+      "success": 11,
+      "tool_name": "database_search"
+    },
+    {
+      "calls": 43,
+      "empty": 0,
+      "failed": 5,
+      "success": 38,
+      "tool_name": "reader"
+    }
+  ]
+}

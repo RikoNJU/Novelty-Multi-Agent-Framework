@@ -1,0 +1,75 @@
+{
+  "issues": [],
+  "novelty_points": [
+    {
+      "claim": "提出Museformer模型，一种结合细粒度和粗粒度注意力的Transformer变体，用于音乐生成中的长序列建模和音乐结构建模。",
+      "claim_en": "Proposes Museformer, a Transformer model with a novel fine- and coarse-grained attention for long sequence and music structure modeling in music generation.",
+      "point_id": "NP-1",
+      "source_locations": [
+        "abstract",
+        "english_abstract",
+        "第三章 Museformer：结合细和粗粒度注意力的 Transformer 模型"
+      ],
+      "technical_features": [
+        "细粒度注意力机制：每个token直接关注与音乐结构最相关的小节的所有token。",
+        "粗粒度注意力机制：每个token只关注其他小节的总结信息，而非每个具体token，以降低计算成本。",
+        "结合细粒度和粗粒度注意力，同时捕获音乐结构相关信息和上下文信息。",
+        "相比原始Transformer，具有更低的存储和计算复杂度，能建模超过3倍长的音乐序列。"
+      ],
+      "technical_features_en": [
+        "Fine-grained attention: a token of a specific bar directly attends to all tokens of the bars most relevant to music structures.",
+        "Coarse-grained attention: a token only attends to the summarization of other bars rather than each token, reducing computational cost.",
+        "Combines fine- and coarse-grained attention to capture both music structure-related correlations and contextual information.",
+        "Compared to vanilla Transformer, it has lower storage and computation complexity and can model over 3 times longer music sequences."
+      ]
+    },
+    {
+      "claim": "提出使用相似度统计方法探究音乐结构，并据此确定结构相关小节，用于指导细粒度注意力的选择。",
+      "claim_en": "Proposes using similarity statistics to explore music structures and determine structure-related bars, guiding the selection of fine-grained attention.",
+      "point_id": "NP-2",
+      "source_locations": [
+        "abstract",
+        "english_abstract",
+        "3.3音乐结构分析和结构相关小节选择",
+        "3.4 多轨音乐的相似度分布"
+      ],
+      "technical_features": [
+        "通过自相似度矩阵分析音乐中的重复结构。",
+        "基于训练集和不同数据集的相似度分布，确定与音乐结构最相关的小节（如前1、2、4、8小节）。",
+        "将相似度统计结果用于细粒度注意力的结构相关小节选择。",
+        "分析了多轨音乐的相似度分布，以支持不同音乐类型的结构建模。"
+      ],
+      "technical_features_en": [
+        "Analyzes repetition structures in music via self-similarity matrices.",
+        "Determines bars most relevant to music structures (e.g., previous 1st, 2nd, 4th, and 8th bars) based on similarity distributions in training sets and various datasets.",
+        "Uses similarity statistics results to select structure-related bars for fine-grained attention.",
+        "Analyzes similarity distributions of multi-track music to support structure modeling across different music types."
+      ]
+    },
+    {
+      "claim": "提出利用区块稀疏技术实现Museformer的高效编码，包括总结token序列构建、位置编码构建和FC-Attention的高效实现。",
+      "claim_en": "Proposes efficient implementation of Museformer using block-sparse techniques, including construction of summary token sequences, positional encodings, and efficient FC-Attention.",
+      "point_id": "NP-3",
+      "source_locations": [
+        "abstract",
+        "english_abstract",
+        "3.5 编码实现",
+        "3.5.1 总结 token 序列的构建",
+        "3.5.2 位置编码的构建",
+        "3.5.3 FC-Attention 的高效实现"
+      ],
+      "technical_features": [
+        "构建总结token序列，用于粗粒度注意力中的小节总结信息。",
+        "构建位置编码以支持细-粗粒度注意力的结构。",
+        "利用区块稀疏技术实现FC-Attention的高效计算，降低存储和计算复杂度。",
+        "通过区块稀疏可视化展示编码实现的效率。"
+      ],
+      "technical_features_en": [
+        "Constructs summary token sequences for bar summarization in coarse-grained attention.",
+        "Constructs positional encodings to support the fine- and coarse-grained attention structure.",
+        "Implements efficient FC-Attention using block-sparse techniques, reducing storage and computation complexity.",
+        "Visualizes the efficiency of the block-sparse implementation."
+      ]
+    }
+  ]
+}

@@ -31,6 +31,7 @@ from ..ports import (
     TaskResearcher,
 )
 from ..core.runtime_artifacts import RuntimeDebugConfig
+from ..schemas.research import TargetPaperIdentity
 
 
 class NoveltyState(TypedDict, total=False):
@@ -46,6 +47,7 @@ class NoveltyState(TypedDict, total=False):
     current_point: NoveltyPoint
     current_task: ResearchTask
     current_search_plan: SearchPlan
+    target_identity: TargetPaperIdentity
     search_plans: Annotated[list[SearchPlan], add]
     task_research_results: Annotated[list[TaskResearchResult], add]
     raw_evidence: Annotated[list[Evidence], add]

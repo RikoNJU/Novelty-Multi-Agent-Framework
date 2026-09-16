@@ -48,6 +48,19 @@ def build_candidate_audit(trace, reads, evidence, cards, *, interrupted=False):
         if observation is None or event.kind != "tool_result":
             continue
         payload = observation.payload
+        for row in _rows(payload.get("target_exclusions")):
+            key = (row.get("namespace", "research_reference"),
+                   "work:" + row["work_id"] if row.get("work_id") else
+                   "source:" + str(row.get("source_record_id")))
+            candidates[key] = {
+                "namespace": row.get("namespace", "research_reference"),
+                "work_id": row.get("work_id"),
+                "source_record_id": row.get("source_record_id"),
+                "title": row.get("title"),
+                "artifact_ids": [], "read_ids": [], "card_ids": [],
+                "status": "excluded", "reason": "Target paper identity gate excluded this candidate.",
+                "excluded_reason": "target_paper", "identity_match": row.get("identity_match"),
+            }
         bundle = _mapping(payload.get("research_bundle") or payload.get("bundle"))
         # Discovery facts remain auditable even if the search observation failed.
         for record in [*_rows(bundle.get("source_records")), *_rows(payload.get("source_records"))]:
@@ -79,6 +92,9 @@ def build_candidate_audit(trace, reads, evidence, cards, *, interrupted=False):
 
     rows = []
     for item in candidates.values():
+        if item.get("status") == "excluded":
+            rows.append(CandidateAuditRecord(**item))
+            continue
         if item["card_ids"]:
             status, reason = "card_produced", "Builder produced grounded evidence; final validation is separate."
         elif item["read_ids"]:

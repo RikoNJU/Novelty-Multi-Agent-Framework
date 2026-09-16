@@ -8,10 +8,17 @@ from typing import Annotated, Any, Literal
 from pydantic import Field, StringConstraints, model_validator
 
 from .domain import EvidenceCard, NoveltyPoint, ResearchTask, SearchPlan, StrictModel
-from .references import Evidence, ResearchBundle, SearchExecution
+from .references import Evidence, ExternalIdentifier, ResearchBundle, SearchExecution
 from .research_tools import ResearchFinishDraft, ReferenceReadResult
 
 NonEmptyStr = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
+
+
+class TargetPaperIdentity(StrictModel):
+    title: NonEmptyStr
+    alternate_titles: list[NonEmptyStr] = Field(default_factory=list)
+    authors: list[NonEmptyStr] = Field(default_factory=list)
+    identifiers: list[ExternalIdentifier] = Field(default_factory=list)
 
 
 class TaskResearchRequest(StrictModel):
@@ -20,6 +27,7 @@ class TaskResearchRequest(StrictModel):
     novelty_point: NoveltyPoint
     research_task: ResearchTask
     search_plan: SearchPlan
+    target_identity: TargetPaperIdentity | None = None
 
     @model_validator(mode="after")
     def bind_task(self) -> TaskResearchRequest:
@@ -117,9 +125,11 @@ class CandidateAuditRecord(StrictModel):
     card_ids: list[str] = Field(default_factory=list)
     status: Literal[
         "not_read", "acquisition_unavailable", "read_without_card",
-        "read_task_interrupted", "card_produced",
+        "read_task_interrupted", "card_produced", "excluded",
     ]
     reason: NonEmptyStr
+    excluded_reason: Literal["target_paper"] | None = None
+    identity_match: NonEmptyStr | None = None
 
 
 class TaskResearchResult(StrictModel):

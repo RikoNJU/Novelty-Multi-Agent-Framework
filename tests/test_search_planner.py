@@ -18,6 +18,10 @@ from novelty_agent_framework.agents import (
     SearchPlannerExhaustedError,
 )
 from novelty_agent_framework.schemas import NoveltyPoint, ResearchTask, SearchPlan
+from novelty_agent_framework.agents.search_plan_compiler import (
+    SearchPlanCompilationError, build_runtime_plan,
+)
+from novelty_agent_framework.schemas.search_plan_draft import SearchPlanDraft
 
 PROMPTS_ROOT = Path("backend/src/novelty_agent_framework/prompts")
 
@@ -147,6 +151,67 @@ def test_plans_english_task_when_point_has_no_english_claim() -> None:
 
     assert plan.concepts[0].name == "dynamic graph neural network"
     assert len(client.calls) == 1
+
+
+@pytest.mark.parametrize("where,exclude", [
+    ("term", "streaming graph partitioning"),
+    ("alias", "SGP"),
+    ("core", "streaming"),
+])
+def test_exclude_conflicting_with_positive_concept_is_rejected(where, exclude):
+    task = make_task(language="en")
+    data = valid_draft(task)
+    data["concepts"][0]["terms"] = ["streaming graph partitioning"]
+    data["concepts"][0]["alias"] = ["SGP"]
+    data["concepts"][1]["exclude"] = [exclude]
+    with pytest.raises(SearchPlanCompilationError) as caught:
+        build_runtime_plan(SearchPlanDraft.model_validate(data), task=task)
+    assert any(issue.code == "exclude_conflicts_positive_concept"
+               for issue in caught.value.issues)
+
+
+def test_noise_exclude_does_not_conflict_with_positive_concepts():
+    task = make_task(language="en")
+    data = valid_draft(task)
+    data["concepts"][0]["exclude"] = ["survey", "tutorial"]
+    plan = build_runtime_plan(SearchPlanDraft.model_validate(data), task=task)
+    assert plan.concepts[0].exclude == ["survey", "tutorial"]
+
+
+@pytest.mark.parametrize("concepts,anchor", [
+    ([
+        {"role": "object", "terms": ["distributed graph neural network training"], "importance": 3},
+        {"role": "method", "terms": ["graph summarization"], "importance": 3},
+        {"role": "feature", "terms": ["mini-batch training"], "importance": 2},
+    ], "C1"),
+    ([
+        {"role": "object", "terms": ["symbolic music generation"], "importance": 3},
+        {"role": "method", "terms": ["hierarchical attention"], "importance": 3},
+        {"role": "setting", "terms": ["long musical sequences"], "importance": 2},
+    ], "C1"),
+    ([
+        {"role": "object", "terms": ["reaction"], "importance": 3},
+        {"role": "method", "terms": ["catalytic bond cleavage"], "importance": 2},
+        {"role": "feature", "terms": ["low temperature"], "importance": 1},
+    ], "C2"),
+])
+def test_strict_medium_broad_preserve_same_anchor(concepts, anchor):
+    task = make_task(language="en")
+    draft = SearchPlanDraft.model_validate({
+        "concepts": concepts,
+        "strategies": [
+            {"level": "strict", "focus_concepts": ["C1", "C2", "C3"]},
+            {"level": "medium", "focus_concepts": ["C2", "C3"]},
+            {"level": "broad", "focus_concepts": ["C3"]},
+        ],
+    })
+    plan = build_runtime_plan(draft, task=task)
+    expressions = {strategy.level: strategy.expression for strategy in plan.strategies}
+    assert expressions["broad"] == anchor
+    assert anchor in expressions["strict"].split(" AND ")
+    assert anchor in expressions["medium"].split(" AND ")
+    assert set(expressions["broad"].split(" AND ")) <= set(expressions["medium"].split(" AND "))
+    assert set(expressions["medium"].split(" AND ")) <= set(expressions["strict"].split(" AND "))
 
 
 def test_task_point_mismatch_fails_before_model_call() -> None:

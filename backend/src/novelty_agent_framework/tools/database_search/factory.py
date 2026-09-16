@@ -99,6 +99,7 @@ def build_database_search_tool(
     reference_store: ReferenceStore,
     source_registry: RetrievalSourceRegistry | None = None,
     max_concurrency: int = 4,
+    include_testing_only: bool = True,
 ) -> DatabaseSearchTool:
     """Build all sources; ``search_planner`` is constructor compatibility only."""
 
@@ -110,6 +111,8 @@ def build_database_search_tool(
     for raw_source_id, raw_config in sources.items():
         source_id = str(raw_source_id).strip().lower()
         if not isinstance(raw_config, Mapping) or not raw_config.get("enabled", False):
+            continue
+        if raw_config.get("testing_only", False) and not include_testing_only:
             continue
         tools[source_id] = build_structured_source_retrieval_tool(
             retrieval,

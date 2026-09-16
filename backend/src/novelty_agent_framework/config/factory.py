@@ -354,6 +354,7 @@ def build_workflow(
             reference_store=store,
             source_registry=source_registry,
             max_concurrency=int(retrieval_cfg["max_concurrency"]),
+            include_testing_only=False,
         ),
     ]
     if web_cfg.get("enabled", True):
@@ -606,6 +607,7 @@ def _build_workflow_from_application_config(
             reference_store=store,
             source_registry=source_registry,
             max_concurrency=database.max_concurrency,
+            include_testing_only=False,
         ),
     ]
     if web.enabled:
