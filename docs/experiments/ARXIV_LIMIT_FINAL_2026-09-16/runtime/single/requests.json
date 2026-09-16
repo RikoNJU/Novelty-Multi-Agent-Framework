@@ -1,0 +1,144 @@
+[
+  {
+    "subject_paper_id": "MF2033k6lC",
+    "run_id": "run-20260916T040710883332Z-22d23d373b",
+    "novelty_point": {
+      "point_id": "NP-2",
+      "claim": "提出了基于图摘要的分布式图神经网络优化训练算法DSGNN，采用“领导-工作者”模式，由领导节点基于边分割的图流划分算法划分原图，工作节点执行基于图摘要技术的小批量训练，并通过注意力层返回结果，领导节点汇总计算梯度并同步更新所有节点模型，显著加速GNN训练并提升链路预测性能。",
+      "claim_en": "Proposed a distributed graph neural network optimization training algorithm DSGNN based on graph summarization, which adopts a leader-worker mode, where the leader divides the original graph using a graph flow partition algorithm based on edge segmentation, workers perform mini-batch training based on graph summarization, and an attention layer is used to return results, then the leader aggregates results, computes gradients, and synchronously updates all model replicas, greatly accelerating GNN training and improving link prediction performance.",
+      "technical_features": [
+        "采用“领导-工作者”分布式工作模式，由领导节点负责图划分和梯度汇总",
+        "提出基于边分割的图流划分算法，将原图划分为子图分配给工作节点",
+        "工作节点使用图摘要技术进行小批量训练，降低通信与计算开销",
+        "通过注意力层聚合各工作节点的训练结果，再由领导节点计算梯度并同步更新所有节点模型"
+      ],
+      "technical_features_en": [
+        "Adopts a leader-worker distributed mode, where the leader node is responsible for graph partitioning and gradient aggregation",
+        "Proposes a graph flow partition algorithm based on edge segmentation to divide the original graph into subgraphs assigned to workers",
+        "Workers use graph summarization for mini-batch training to reduce communication and computation cost",
+        "An attention layer aggregates the training results from workers, and the leader computes gradients and synchronously updates all model replicas"
+      ],
+      "source_locations": [
+        "abstract_paragraph_3",
+        "full_text_excerpt_paragraph_2"
+      ]
+    },
+    "research_task": {
+      "task_id": "T-2",
+      "novelty_point_id": "NP-2",
+      "task_type": "literature_search",
+      "language": "en",
+      "description": "针对该查新点执行英文文献检索。",
+      "attempt": 1
+    },
+    "search_plan": {
+      "task_id": "T-2",
+      "novelty_point_id": "NP-2",
+      "concepts": [
+        {
+          "concept_id": "C1",
+          "name": "distributed graph neural network training",
+          "terms": [
+            "distributed graph neural network training"
+          ],
+          "role": "object",
+          "alias": [
+            "distributed GNN training"
+          ],
+          "exclude": [],
+          "importance": 3
+        },
+        {
+          "concept_id": "C2",
+          "name": "graph summarization",
+          "terms": [
+            "graph summarization"
+          ],
+          "role": "method",
+          "alias": [
+            "graph summary"
+          ],
+          "exclude": [],
+          "importance": 3
+        },
+        {
+          "concept_id": "C3",
+          "name": "leader-worker mode",
+          "terms": [
+            "leader-worker mode"
+          ],
+          "role": "method",
+          "alias": [
+            "leader-follower",
+            "master-worker"
+          ],
+          "exclude": [],
+          "importance": 2
+        },
+        {
+          "concept_id": "C4",
+          "name": "graph flow partition algorithm",
+          "terms": [
+            "graph flow partition algorithm"
+          ],
+          "role": "method",
+          "alias": [
+            "edge-based graph partitioning"
+          ],
+          "exclude": [],
+          "importance": 2
+        },
+        {
+          "concept_id": "C5",
+          "name": "attention layer",
+          "terms": [
+            "attention layer"
+          ],
+          "role": "feature",
+          "alias": [
+            "attention mechanism"
+          ],
+          "exclude": [],
+          "importance": 2
+        },
+        {
+          "concept_id": "C6",
+          "name": "link prediction",
+          "terms": [
+            "link prediction"
+          ],
+          "role": "escape",
+          "alias": [],
+          "exclude": [],
+          "importance": 1
+        }
+      ],
+      "strategies": [
+        {
+          "strategy_id": "S1",
+          "level": "strict",
+          "expression": "C1 AND C2",
+          "description": "distributed graph neural network training AND graph summarization",
+          "use_alias": false,
+          "use_exclude": true
+        },
+        {
+          "strategy_id": "S2",
+          "level": "medium",
+          "expression": "C1 AND C2",
+          "description": "distributed graph neural network training AND graph summarization",
+          "use_alias": true,
+          "use_exclude": true
+        },
+        {
+          "strategy_id": "S3",
+          "level": "broad",
+          "expression": "C1 OR C2 OR C3 OR C4",
+          "description": "distributed graph neural network training OR graph summarization OR leader-worker mode OR graph flow partition algorithm",
+          "use_alias": true,
+          "use_exclude": true
+        }
+      ]
+    }
+  }
+]

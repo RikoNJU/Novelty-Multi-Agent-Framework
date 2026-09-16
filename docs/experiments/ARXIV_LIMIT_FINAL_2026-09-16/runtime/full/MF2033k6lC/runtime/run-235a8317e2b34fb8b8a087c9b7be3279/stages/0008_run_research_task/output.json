@@ -1,0 +1,1778 @@
+{
+  "issues": [],
+  "raw_evidence": [
+    {
+      "artifact_id": "art_2b963a61ae0d71cc1b4c5842",
+      "confidence": 0.9,
+      "evidence_id": "ev_e25e9b9ed93051eef729ad18",
+      "interpretation": "The DGC paper models dynamic graphs as snapshots at each time and uses RNN as time encoders to capture temporal dependencies, overlapping with features 1 and 4 of the novelty point.",
+      "locator": {
+        "block_id": null,
+        "char_end": 5052,
+        "char_start": 4781,
+        "page_end": null,
+        "page_start": null,
+        "paragraph_end": null,
+        "paragraph_start": null,
+        "section": null,
+        "selector": null
+      },
+      "novelty_point_id": "NP-1",
+      "provenance": {
+        "artifact_namespace": "research_reference",
+        "builder": "evidence_card_builder",
+        "evidence_type": "database_evidence",
+        "quote_char_end": 5052,
+        "quote_char_start": 4781,
+        "read_char_end": 8000,
+        "read_char_start": 0,
+        "read_id": "read_36e7e30a4d136866b7f1aa42",
+        "source_kind": "structured_database",
+        "source_record_id": "src_b1fb2d49a3bc79e689b1a440"
+      },
+      "quote": "a dynamic graph is divided into a number of snapshots, each of which represents the graph at a specific time. These snapshots are fed to structure encoders (e.g., GCN), respectively, followed by time encoders (e.g., RNN) to exploit temporal relationship across snapshots.",
+      "task_id": "T-1",
+      "work_id": "wrk_820bea3aec0826aa27db0b5a"
+    },
+    {
+      "artifact_id": "art_1858acd5aca7680aec2f1bc7",
+      "confidence": 0.9,
+      "evidence_id": "ev_24b39a7893c52a91046b680e",
+      "interpretation": "The DGC paper uses graph coarsening, a form of graph summarization, to compress dynamic graphs for partitioning, overlapping with feature 2 of the novelty point.",
+      "locator": {
+        "block_id": null,
+        "char_end": 1222,
+        "char_start": 1124,
+        "page_end": null,
+        "page_start": null,
+        "paragraph_end": null,
+        "paragraph_start": null,
+        "section": null,
+        "selector": null
+      },
+      "novelty_point_id": "NP-1",
+      "provenance": {
+        "artifact_namespace": "research_reference",
+        "builder": "evidence_card_builder",
+        "evidence_type": "database_evidence",
+        "quote_char_end": 1222,
+        "quote_char_start": 1124,
+        "read_char_end": 1493,
+        "read_char_start": 0,
+        "read_id": "read_c75e10dddacecff7444b9cc9",
+        "source_kind": "structured_database",
+        "source_record_id": "src_b1fb2d49a3bc79e689b1a440"
+      },
+      "quote": "This partitioning algorithm is based on graph coarsening, which can run very fast on large graphs.",
+      "task_id": "T-1",
+      "work_id": "wrk_820bea3aec0826aa27db0b5a"
+    },
+    {
+      "artifact_id": "art_2b963a61ae0d71cc1b4c5842",
+      "confidence": 0.85,
+      "evidence_id": "ev_39234817bdf77bdd1dfc458e",
+      "interpretation": "The DGC paper's DGNN framework uses GCN as structure encoders and GRU (a type of RNN) as time encoders, confirming the use of RNN for temporal modeling but not a graph autoencoder.",
+      "locator": {
+        "block_id": null,
+        "char_end": 14367,
+        "char_start": 14204,
+        "page_end": null,
+        "page_start": null,
+        "paragraph_end": null,
+        "paragraph_start": null,
+        "section": null,
+        "selector": null
+      },
+      "novelty_point_id": "NP-1",
+      "provenance": {
+        "artifact_namespace": "research_reference",
+        "builder": "evidence_card_builder",
+        "evidence_type": "database_evidence",
+        "quote_char_end": 14367,
+        "quote_char_start": 14204,
+        "read_char_end": 16000,
+        "read_char_start": 8000,
+        "read_id": "read_5561919310f739e24c8913d8",
+        "source_kind": "structured_database",
+        "source_record_id": "src_b1fb2d49a3bc79e689b1a440"
+      },
+      "quote": "T-GCN (Zhao et al., 2019) uses three 2-layer GCN (Kipf and Welling, 2016) as the structure encoder, and a 1-layer GRU (Cho et al., 2014) model as the time encoder.",
+      "task_id": "T-1",
+      "work_id": "wrk_820bea3aec0826aa27db0b5a"
+    }
+  ],
+  "raw_evidence_cards": [
+    {
+      "card_id": "card_7a049fd9d35cd2e205956ff7",
+      "cited_by_paper": null,
+      "confidence": 0.7,
+      "differences": [
+        "DGC does not use a graph autoencoder for representation learning; it uses GCN structure encoders and RNN time encoders for DGNN training",
+        "DGC focuses on distributed training acceleration via graph partitioning, not on learning node representations via reconstruction error with the original graph",
+        "DGC's graph coarsening is used for partitioning to minimize cross-GPU communication, not for compressing the graph to reduce memory consumption in representation learning"
+      ],
+      "document_title": "DGC: Training Dynamic Graphs with Spatio-Temporal Non-Uniformity using Graph Partitioning by Chunks",
+      "evidence_ids": [
+        "ev_e25e9b9ed93051eef729ad18",
+        "ev_24b39a7893c52a91046b680e",
+        "ev_39234817bdf77bdd1dfc458e"
+      ],
+      "main_contribution": "DGC proposes a distributed DGNN training system that partitions dynamic graphs into chunks using graph coarsening, modeling dynamic graphs as snapshots with structure encoders (GCN) and time encoders (RNN/GRU), achieving significant training speedup.",
+      "novelty_point_id": "NP-1",
+      "overlaps": [
+        "Models dynamic graphs as a sequence of snapshots at each timestep (feature 1)",
+        "Uses graph coarsening, a form of graph summarization, to compress/partition dynamic graph snapshots (feature 2)",
+        "Uses RNN/GRU as time encoders to model temporal dependencies across snapshots (feature 4)"
+      ],
+      "possible_baseline": false,
+      "relevance": 0.6,
+      "sources": [
+        {
+          "doi": null,
+          "location": "artifact art_2b963a61ae0d71cc1b4c5842 chars:4781-5052",
+          "quote": "a dynamic graph is divided into a number of snapshots, each of which represents the graph at a specific time. These snapshots are fed to structure encoders (e.g., GCN), respectively, followed by time encoders (e.g., RNN) to exploit temporal relationship across snapshots.",
+          "title": "DGC: Training Dynamic Graphs with Spatio-Temporal Non-Uniformity using Graph Partitioning by Chunks",
+          "url": "https://arxiv.org/pdf/2309.03523"
+        },
+        {
+          "doi": null,
+          "location": "artifact art_1858acd5aca7680aec2f1bc7 chars:1124-1222",
+          "quote": "This partitioning algorithm is based on graph coarsening, which can run very fast on large graphs.",
+          "title": "DGC: Training Dynamic Graphs with Spatio-Temporal Non-Uniformity using Graph Partitioning by Chunks",
+          "url": "https://arxiv.org/pdf/2309.03523"
+        },
+        {
+          "doi": null,
+          "location": "artifact art_2b963a61ae0d71cc1b4c5842 chars:14204-14367",
+          "quote": "T-GCN (Zhao et al., 2019) uses three 2-layer GCN (Kipf and Welling, 2016) as the structure encoder, and a 1-layer GRU (Cho et al., 2014) model as the time encoder.",
+          "title": "DGC: Training Dynamic Graphs with Spatio-Temporal Non-Uniformity using Graph Partitioning by Chunks",
+          "url": "https://arxiv.org/pdf/2309.03523"
+        }
+      ],
+      "task_id": "T-1"
+    }
+  ],
+  "task_research_results": [
+    {
+      "candidate_audit": [
+        {
+          "artifact_ids": [
+            "art_b8b821043e4485fda0b8527c"
+          ],
+          "card_ids": [],
+          "namespace": "subject_reference",
+          "read_ids": [
+            "read_e0bdaa7d2bb5a4724ff5cca2"
+          ],
+          "reason": "No valid card selected or built; no per-work irrelevance claim is inferred.",
+          "source_record_id": null,
+          "status": "read_without_card",
+          "title": "Inductive Representation Learning on Temporal Graphs",
+          "work_id": "wrk_b6b76b1dae1837f54a226290"
+        },
+        {
+          "artifact_ids": [
+            "art_6f98816ebc9005d24844fdfd"
+          ],
+          "card_ids": [],
+          "namespace": "subject_reference",
+          "read_ids": [
+            "read_6054302c8ef451f1a9b9925e"
+          ],
+          "reason": "No valid card selected or built; no per-work irrelevance claim is inferred.",
+          "source_record_id": null,
+          "status": "read_without_card",
+          "title": "AGL: a Scalable System for Industrial-purpose Graph Machine Learning",
+          "work_id": "wrk_ff5aa18cf0cfe7be1ba5e8bd"
+        },
+        {
+          "artifact_ids": [
+            "art_d88778158223021b818fdd97"
+          ],
+          "card_ids": [],
+          "namespace": "subject_reference",
+          "read_ids": [
+            "read_ad9c179efe983c834ad3a571"
+          ],
+          "reason": "No valid card selected or built; no per-work irrelevance claim is inferred.",
+          "source_record_id": null,
+          "status": "read_without_card",
+          "title": "AliGraph: A Comprehensive Graph Neural Network Platform",
+          "work_id": "wrk_e59b8b7248dcc080455b8690"
+        },
+        {
+          "artifact_ids": [
+            "art_646de98cecaee1517f7729c3"
+          ],
+          "card_ids": [],
+          "namespace": "subject_reference",
+          "read_ids": [],
+          "reason": "Readable candidate was not read before this task ended.",
+          "source_record_id": null,
+          "status": "not_read",
+          "title": "Graph Attention Networks",
+          "work_id": "wrk_3180db5605a7a65ed07ab891"
+        },
+        {
+          "artifact_ids": [
+            "art_ea01d9c5f48ad68092a07bf7"
+          ],
+          "card_ids": [],
+          "namespace": "subject_reference",
+          "read_ids": [
+            "read_7b9a219a1e43bf5f616ce80c"
+          ],
+          "reason": "No valid card selected or built; no per-work irrelevance claim is inferred.",
+          "source_record_id": null,
+          "status": "read_without_card",
+          "title": "Temporal Graph Networks for Deep Learning on Dynamic Graphs",
+          "work_id": "wrk_712252459ef2697739d75d40"
+        },
+        {
+          "artifact_ids": [
+            "art_4144023700aceff174c81183"
+          ],
+          "card_ids": [],
+          "namespace": "subject_reference",
+          "read_ids": [],
+          "reason": "Readable candidate was not read before this task ended.",
+          "source_record_id": null,
+          "status": "not_read",
+          "title": "GraphSAINT: Graph Sampling Based Inductive Learning Method",
+          "work_id": "wrk_9567984f4fecd1cfc596ae3b"
+        },
+        {
+          "artifact_ids": [
+            "art_1f31712052c4bf754e0e3895"
+          ],
+          "card_ids": [],
+          "namespace": "subject_reference",
+          "read_ids": [],
+          "reason": "Readable candidate was not read before this task ended.",
+          "source_record_id": null,
+          "status": "not_read",
+          "title": "FastGCN: Fast Learning with Graph Convolutional Networks via Importance Sampling",
+          "work_id": "wrk_ad8ebe4c193e14adb4c6ac1d"
+        },
+        {
+          "artifact_ids": [
+            "art_0d2cdef5f4571d306c727ae2"
+          ],
+          "card_ids": [],
+          "namespace": "subject_reference",
+          "read_ids": [],
+          "reason": "Readable candidate was not read before this task ended.",
+          "source_record_id": null,
+          "status": "not_read",
+          "title": "Stochastic Training of Graph Convolutional Networks with Variance Reduction",
+          "work_id": "wrk_f071f8bcb2eaf960a340e94f"
+        },
+        {
+          "artifact_ids": [
+            "art_1858acd5aca7680aec2f1bc7",
+            "art_2b963a61ae0d71cc1b4c5842"
+          ],
+          "card_ids": [
+            "card_7a049fd9d35cd2e205956ff7"
+          ],
+          "namespace": "research_reference",
+          "read_ids": [
+            "read_c75e10dddacecff7444b9cc9",
+            "read_36e7e30a4d136866b7f1aa42",
+            "read_5561919310f739e24c8913d8",
+            "read_4ab4ca421b38a61ef7ea4e98",
+            "read_ae8af159a60621ec63afa7ae",
+            "read_463cdb937d7f304a7a69a3a0"
+          ],
+          "reason": "Builder produced grounded evidence; final validation is separate.",
+          "source_record_id": "src_b1fb2d49a3bc79e689b1a440",
+          "status": "card_produced",
+          "title": "DGC: Training Dynamic Graphs with Spatio-Temporal Non-Uniformity using Graph Partitioning by Chunks",
+          "work_id": "wrk_820bea3aec0826aa27db0b5a"
+        },
+        {
+          "artifact_ids": [
+            "art_152c950c11f3eeb51760abfa",
+            "art_43ad4f142993abda682de1b5"
+          ],
+          "card_ids": [],
+          "namespace": "research_reference",
+          "read_ids": [],
+          "reason": "Readable candidate was not read before this task ended.",
+          "source_record_id": "src_b8c2a5a2ce7e5e5b256e859b",
+          "status": "not_read",
+          "title": "Transformer-Based Token Fusion and Dynamic Graph Planning for Audio-Visual Navigation",
+          "work_id": "wrk_171a71953dfe9bc080b85871"
+        },
+        {
+          "artifact_ids": [
+            "art_3986dc652a0665c3b5204585",
+            "art_c3b89cfcb4e19c8af03e12b0"
+          ],
+          "card_ids": [],
+          "namespace": "research_reference",
+          "read_ids": [],
+          "reason": "Readable candidate was not read before this task ended.",
+          "source_record_id": "src_a7a4cb72d84ef8468e29a7da",
+          "status": "not_read",
+          "title": "SEMA-GUARD: Semantic and Graph-Based Vulnerability Detection in Assembly Code",
+          "work_id": "wrk_815a9db5a302ee3ea8a600ba"
+        },
+        {
+          "artifact_ids": [
+            "art_639653d7d204860c07380382",
+            "art_6c601ac348da5aaf422df11e"
+          ],
+          "card_ids": [],
+          "namespace": "research_reference",
+          "read_ids": [],
+          "reason": "Readable candidate was not read before this task ended.",
+          "source_record_id": "src_58d248bdbf8c09956d42fb34",
+          "status": "not_read",
+          "title": "Intervention problems in the Linear Threshold Model: A general formulation and new results",
+          "work_id": "wrk_1e3d33fa769e6a31fa8fb96b"
+        },
+        {
+          "artifact_ids": [
+            "art_52080b56bc0c576cb6501725",
+            "art_491da1f1f7d9e5d58bfc15e6"
+          ],
+          "card_ids": [],
+          "namespace": "research_reference",
+          "read_ids": [
+            "read_40b3c2e1d112114cd8625a8d"
+          ],
+          "reason": "No valid card selected or built; no per-work irrelevance claim is inferred.",
+          "source_record_id": "src_208db142bb497c80b95a3a56",
+          "status": "read_without_card",
+          "title": "Repurposing Unified Topological Signatures for Graph Representation Learning",
+          "work_id": "wrk_8facaa24c827ac803e17fa0c"
+        },
+        {
+          "artifact_ids": [
+            "art_8a6791dfe33ed80e7f103012",
+            "art_5354bd5ed37d1eb634c61acd"
+          ],
+          "card_ids": [],
+          "namespace": "research_reference",
+          "read_ids": [],
+          "reason": "Readable candidate was not read before this task ended.",
+          "source_record_id": "src_5de85851645eac529444dc0d",
+          "status": "not_read",
+          "title": "Structural Negative Transfer in Federated Graph Neural Networks: Diagnosis, Causal Investigation, and the Limits of Divergence-Aware Mitigation",
+          "work_id": "wrk_cde936c7871781a3a7d034a3"
+        },
+        {
+          "artifact_ids": [
+            "art_8d4771ce0fc15f27e8280744",
+            "art_7e04c4a83d5451d047587b1a"
+          ],
+          "card_ids": [],
+          "namespace": "research_reference",
+          "read_ids": [],
+          "reason": "Readable candidate was not read before this task ended.",
+          "source_record_id": "src_bb74354307739a6c50d8d98b",
+          "status": "not_read",
+          "title": "Unified Heterogeneous Graph Neural Network solver for Power Flow, Optimal Power Flow and State Estimation",
+          "work_id": "wrk_73df3a80869495657909414b"
+        },
+        {
+          "artifact_ids": [
+            "art_3d2f973c3cd3d41c00aed2c4",
+            "art_1ac23e328a07dc73508b77da"
+          ],
+          "card_ids": [],
+          "namespace": "research_reference",
+          "read_ids": [],
+          "reason": "Readable candidate was not read before this task ended.",
+          "source_record_id": "src_7e60e8ca1daad6e786d91088",
+          "status": "not_read",
+          "title": "ReliGRec: Reliability-Oriented LLM-Based Generative Recommendation via User-Risk-Aware Prompt Routing",
+          "work_id": "wrk_389503c4733d4bf39a371c90"
+        },
+        {
+          "artifact_ids": [
+            "art_66c8b8683025b1475148467c"
+          ],
+          "card_ids": [],
+          "namespace": "subject_reference",
+          "read_ids": [
+            "read_9f0ea4de231a79f397a78e35"
+          ],
+          "reason": "No valid card selected or built; no per-work irrelevance claim is inferred.",
+          "source_record_id": null,
+          "status": "read_without_card",
+          "title": "Auto-Encoding Variational Bayes",
+          "work_id": "wrk_03271ba130d423fec68c5166"
+        }
+      ],
+      "evidence": [
+        {
+          "artifact_id": "art_2b963a61ae0d71cc1b4c5842",
+          "confidence": 0.9,
+          "evidence_id": "ev_e25e9b9ed93051eef729ad18",
+          "interpretation": "The DGC paper models dynamic graphs as snapshots at each time and uses RNN as time encoders to capture temporal dependencies, overlapping with features 1 and 4 of the novelty point.",
+          "locator": {
+            "block_id": null,
+            "char_end": 5052,
+            "char_start": 4781,
+            "page_end": null,
+            "page_start": null,
+            "paragraph_end": null,
+            "paragraph_start": null,
+            "section": null,
+            "selector": null
+          },
+          "novelty_point_id": "NP-1",
+          "provenance": {
+            "artifact_namespace": "research_reference",
+            "builder": "evidence_card_builder",
+            "evidence_type": "database_evidence",
+            "quote_char_end": 5052,
+            "quote_char_start": 4781,
+            "read_char_end": 8000,
+            "read_char_start": 0,
+            "read_id": "read_36e7e30a4d136866b7f1aa42",
+            "source_kind": "structured_database",
+            "source_record_id": "src_b1fb2d49a3bc79e689b1a440"
+          },
+          "quote": "a dynamic graph is divided into a number of snapshots, each of which represents the graph at a specific time. These snapshots are fed to structure encoders (e.g., GCN), respectively, followed by time encoders (e.g., RNN) to exploit temporal relationship across snapshots.",
+          "task_id": "T-1",
+          "work_id": "wrk_820bea3aec0826aa27db0b5a"
+        },
+        {
+          "artifact_id": "art_1858acd5aca7680aec2f1bc7",
+          "confidence": 0.9,
+          "evidence_id": "ev_24b39a7893c52a91046b680e",
+          "interpretation": "The DGC paper uses graph coarsening, a form of graph summarization, to compress dynamic graphs for partitioning, overlapping with feature 2 of the novelty point.",
+          "locator": {
+            "block_id": null,
+            "char_end": 1222,
+            "char_start": 1124,
+            "page_end": null,
+            "page_start": null,
+            "paragraph_end": null,
+            "paragraph_start": null,
+            "section": null,
+            "selector": null
+          },
+          "novelty_point_id": "NP-1",
+          "provenance": {
+            "artifact_namespace": "research_reference",
+            "builder": "evidence_card_builder",
+            "evidence_type": "database_evidence",
+            "quote_char_end": 1222,
+            "quote_char_start": 1124,
+            "read_char_end": 1493,
+            "read_char_start": 0,
+            "read_id": "read_c75e10dddacecff7444b9cc9",
+            "source_kind": "structured_database",
+            "source_record_id": "src_b1fb2d49a3bc79e689b1a440"
+          },
+          "quote": "This partitioning algorithm is based on graph coarsening, which can run very fast on large graphs.",
+          "task_id": "T-1",
+          "work_id": "wrk_820bea3aec0826aa27db0b5a"
+        },
+        {
+          "artifact_id": "art_2b963a61ae0d71cc1b4c5842",
+          "confidence": 0.85,
+          "evidence_id": "ev_39234817bdf77bdd1dfc458e",
+          "interpretation": "The DGC paper's DGNN framework uses GCN as structure encoders and GRU (a type of RNN) as time encoders, confirming the use of RNN for temporal modeling but not a graph autoencoder.",
+          "locator": {
+            "block_id": null,
+            "char_end": 14367,
+            "char_start": 14204,
+            "page_end": null,
+            "page_start": null,
+            "paragraph_end": null,
+            "paragraph_start": null,
+            "section": null,
+            "selector": null
+          },
+          "novelty_point_id": "NP-1",
+          "provenance": {
+            "artifact_namespace": "research_reference",
+            "builder": "evidence_card_builder",
+            "evidence_type": "database_evidence",
+            "quote_char_end": 14367,
+            "quote_char_start": 14204,
+            "read_char_end": 16000,
+            "read_char_start": 8000,
+            "read_id": "read_5561919310f739e24c8913d8",
+            "source_kind": "structured_database",
+            "source_record_id": "src_b1fb2d49a3bc79e689b1a440"
+          },
+          "quote": "T-GCN (Zhao et al., 2019) uses three 2-layer GCN (Kipf and Welling, 2016) as the structure encoder, and a 1-layer GRU (Cho et al., 2014) model as the time encoder.",
+          "task_id": "T-1",
+          "work_id": "wrk_820bea3aec0826aa27db0b5a"
+        }
+      ],
+      "evidence_cards": [
+        {
+          "card_id": "card_7a049fd9d35cd2e205956ff7",
+          "cited_by_paper": null,
+          "confidence": 0.7,
+          "differences": [
+            "DGC does not use a graph autoencoder for representation learning; it uses GCN structure encoders and RNN time encoders for DGNN training",
+            "DGC focuses on distributed training acceleration via graph partitioning, not on learning node representations via reconstruction error with the original graph",
+            "DGC's graph coarsening is used for partitioning to minimize cross-GPU communication, not for compressing the graph to reduce memory consumption in representation learning"
+          ],
+          "document_title": "DGC: Training Dynamic Graphs with Spatio-Temporal Non-Uniformity using Graph Partitioning by Chunks",
+          "evidence_ids": [
+            "ev_e25e9b9ed93051eef729ad18",
+            "ev_24b39a7893c52a91046b680e",
+            "ev_39234817bdf77bdd1dfc458e"
+          ],
+          "main_contribution": "DGC proposes a distributed DGNN training system that partitions dynamic graphs into chunks using graph coarsening, modeling dynamic graphs as snapshots with structure encoders (GCN) and time encoders (RNN/GRU), achieving significant training speedup.",
+          "novelty_point_id": "NP-1",
+          "overlaps": [
+            "Models dynamic graphs as a sequence of snapshots at each timestep (feature 1)",
+            "Uses graph coarsening, a form of graph summarization, to compress/partition dynamic graph snapshots (feature 2)",
+            "Uses RNN/GRU as time encoders to model temporal dependencies across snapshots (feature 4)"
+          ],
+          "possible_baseline": false,
+          "relevance": 0.6,
+          "sources": [
+            {
+              "doi": null,
+              "location": "artifact art_2b963a61ae0d71cc1b4c5842 chars:4781-5052",
+              "quote": "a dynamic graph is divided into a number of snapshots, each of which represents the graph at a specific time. These snapshots are fed to structure encoders (e.g., GCN), respectively, followed by time encoders (e.g., RNN) to exploit temporal relationship across snapshots.",
+              "title": "DGC: Training Dynamic Graphs with Spatio-Temporal Non-Uniformity using Graph Partitioning by Chunks",
+              "url": "https://arxiv.org/pdf/2309.03523"
+            },
+            {
+              "doi": null,
+              "location": "artifact art_1858acd5aca7680aec2f1bc7 chars:1124-1222",
+              "quote": "This partitioning algorithm is based on graph coarsening, which can run very fast on large graphs.",
+              "title": "DGC: Training Dynamic Graphs with Spatio-Temporal Non-Uniformity using Graph Partitioning by Chunks",
+              "url": "https://arxiv.org/pdf/2309.03523"
+            },
+            {
+              "doi": null,
+              "location": "artifact art_2b963a61ae0d71cc1b4c5842 chars:14204-14367",
+              "quote": "T-GCN (Zhao et al., 2019) uses three 2-layer GCN (Kipf and Welling, 2016) as the structure encoder, and a 1-layer GRU (Cho et al., 2014) model as the time encoder.",
+              "title": "DGC: Training Dynamic Graphs with Spatio-Temporal Non-Uniformity using Graph Partitioning by Chunks",
+              "url": "https://arxiv.org/pdf/2309.03523"
+            }
+          ],
+          "task_id": "T-1"
+        }
+      ],
+      "novelty_point_id": "NP-1",
+      "read_results": [
+        {
+          "artifact_id": "art_1858acd5aca7680aec2f1bc7",
+          "char_end": 1493,
+          "char_start": 0,
+          "has_more": false,
+          "namespace": "research_reference",
+          "read_id": "read_c75e10dddacecff7444b9cc9",
+          "role": "abstract",
+          "sha256": "7cbe278001ebc0ed9c00d6fa5e21011253648eb505a20ccf15d363cc1d579aa5",
+          "text": "Dynamic Graph Neural Network (DGNN) has shown a strong capability of learning dynamic graphs by exploiting both spatial and temporal features. Although DGNN has recently received considerable attention by AI community and various DGNN models have been proposed, building a distributed system for efficient DGNN training is still challenging. It has been well recognized that how to partition the dynamic graph and assign workloads to multiple GPUs plays a critical role in training acceleration. Existing works partition a dynamic graph into snapshots or temporal sequences, which only work well when the graph has uniform spatio-temporal structures. However, dynamic graphs in practice are not uniformly structured, with some snapshots being very dense while others are sparse. To address this issue, we propose DGC, a distributed DGNN training system that achieves a 1.25x - 7.52x speedup over the state-of-the-art in our testbed. DGC's success stems from a new graph partitioning method that partitions dynamic graphs into chunks, which are essentially subgraphs with modest training workloads and few inter connections. This partitioning algorithm is based on graph coarsening, which can run very fast on large graphs. In addition, DGC has a highly efficient run-time, powered by the proposed chunk fusion and adaptive stale aggregation techniques. Extensive experimental results on 3 typical DGNN models and 4 popular dynamic graph datasets are presented to show the effectiveness of DGC.",
+          "work_id": "wrk_820bea3aec0826aa27db0b5a"
+        },
+        {
+          "artifact_id": "art_b8b821043e4485fda0b8527c",
+          "char_end": 1465,
+          "char_start": 0,
+          "has_more": false,
+          "namespace": "subject_reference",
+          "read_id": "read_e0bdaa7d2bb5a4724ff5cca2",
+          "role": "abstract",
+          "sha256": "942afe693070c7d08aed31a3e18c560cee90599ee0c30854f6d7b721a4b55801",
+          "text": "Inductive representation learning on temporal graphs is an important step toward salable machine learning on real-world dynamic networks. The evolving nature of temporal dynamic graphs requires handling new nodes as well as capturing temporal patterns. The node embeddings, which are now functions of time, should represent both the static node features and the evolving topological structures. Moreover, node and topological features can be temporal as well, whose patterns the node embeddings should also capture. We propose the temporal graph attention (TGAT) layer to efficiently aggregate temporal-topological neighborhood features as well as to learn the time-feature interactions. For TGAT, we use the self-attention mechanism as building block and develop a novel functional time encoding technique based on the classical Bochner's theorem from harmonic analysis. By stacking TGAT layers, the network recognizes the node embeddings as functions of time and is able to inductively infer embeddings for both new and observed nodes as the graph evolves. The proposed approach handles both node classification and link prediction task, and can be naturally extended to include the temporal edge features. We evaluate our method with transductive and inductive tasks under temporal settings with two benchmark and one industrial dataset. Our TGAT model compares favorably to state-of-the-art baselines as well as the previous temporal graph embedding approaches.",
+          "work_id": "wrk_b6b76b1dae1837f54a226290"
+        },
+        {
+          "artifact_id": "art_ea01d9c5f48ad68092a07bf7",
+          "char_end": 1225,
+          "char_start": 0,
+          "has_more": false,
+          "namespace": "subject_reference",
+          "read_id": "read_7b9a219a1e43bf5f616ce80c",
+          "role": "abstract",
+          "sha256": "748e07add495b116ba5358b0e40513813f2dedbc001b892985488de2c5bc3116",
+          "text": "Graph Neural Networks (GNNs) have recently become increasingly popular due to their ability to learn complex systems of relations or interactions arising in a broad spectrum of problems ranging from biology and particle physics to social networks and recommendation systems. Despite the plethora of different models for deep learning on graphs, few approaches have been proposed thus far for dealing with graphs that present some sort of dynamic nature (e.g. evolving features or connectivity over time). In this paper, we present Temporal Graph Networks (TGNs), a generic, efficient framework for deep learning on dynamic graphs represented as sequences of timed events. Thanks to a novel combination of memory modules and graph-based operators, TGNs are able to significantly outperform previous approaches being at the same time more computationally efficient. We furthermore show that several previous models for learning on dynamic graphs can be cast as specific instances of our framework. We perform a detailed ablation study of different components of our framework and devise the best configuration that achieves state-of-the-art performance on several transductive and inductive prediction tasks for dynamic graphs.",
+          "work_id": "wrk_712252459ef2697739d75d40"
+        },
+        {
+          "artifact_id": "art_2b963a61ae0d71cc1b4c5842",
+          "char_end": 8000,
+          "char_start": 0,
+          "has_more": true,
+          "namespace": "research_reference",
+          "read_id": "read_36e7e30a4d136866b7f1aa42",
+          "role": "extracted_text",
+          "sha256": "5283c445f484f1687eefe40c0b01c7ba95a9612547675c2b24e53cb473c2ad8c",
+          "text": "DGC: Training Dynamic Graphs with Spatio-Temporal Non-Uniformity using Graph Partitioning by Chunks\n\n      Report GitHub Issue\n      ×\n\n      Title:\n\nContent selection saved. Describe the issue below:\n\n      Description:\n\n      Submit without GitHub\n      Submit in GitHub\n\n    arXiv is now an independent nonprofit!\n    Learn more\n    ×\n\n      Back to arXiv\n\n    Why HTML?\n\n      Report Issue\n\n      Back to Abstract\n\n      Download PDF\n\nAbstract.\n\n1 Introduction\n\n2 Preliminaries and Motivations\n\n2.1 Preliminaries\n\n2.2 Motivation\n\n2.2.1 Spatio-temporal non-uniformity of dynamic graphs\n\n2.2.2 Performance of dynamic graph partitioning methods on different datasets\n\n2.2.3 Performance of dynamic graph partitioning methods within a single dataset\n\n3 System Overview\n\n4 Partitioning by Graph Chunks\n\n4.1 Chunk Generation\n\n4.2 Chunk Assignment\n\n5 Run-time Optimization\n\n5.1 Chunk Fusion\n\n5.1.1 Spatial Fusion\n\n5.1.2 Temporal Fusion\n\n5.2 Adaptive Stale Embedding Aggregation\n\n6 Implementation\n\n7 Evaluation\n\n7.1 Experiment Setup\n\n7.2 Overall Performance Comparison\n\n7.3 Ablation Study\n\n7.3.1 Impact of PGC module\n\n7.3.2 Impact of chunk fusion module\n\n7.3.3 Impact of adaptive stale aggregation module\n\n7.4 Chunk workload prediction.\n\n7.5 DGC Overhead\n\n7.6 Convergence Evaluation\n\n8 Related Work\n\n9 Conclusion\n\nReferences\n\n    License: arXiv.org perpetual non-exclusive license\n\narXiv:2309.03523v1 [cs.DC] 07 Sep 2023\n\nDGC: Training Dynamic Graphs with Spatio-Temporal Non-Uniformity using Graph Partitioning by Chunks\n\nConference: Proceedings of In Proceedings of the 2024 International Conference on Management of Data; June 9–15, 2024; Santiago, Chile.Proceedings of In Proceedings of the 2024 International Conference on Management of Data (SIGMOD ’24), June 9–15, 2024, Santiago, ChilePrice: 15.00ISBN: 978-1-4503-XXXX-XDOI: https://doi.org/XXXXXXX.XXXXXXX\n\nFahao Chen, Peng Li\n\nNote: Peng Li is the corresponding author.\n\nAffiliation: School of Computer Science and Engineering\n\nThe University of Aizu, Japan\n\nemail: d8232101, pengli@u-aizu.ac.jp\n\n and\nCelimuge Wu\n\nAffiliation: Department of Computer and Network Engineering\n\nGraduate School of Informatics and Engineering\n\nUniversity of Electro-Communications, Japan\n\nemail: celimuge@uec.ac.jp\n\n© acmcopyright\n\nAbstract.\n\nDynamic Graph Neural Network (DGNN) has shown a strong capability of learning dynamic graphs by exploiting both spatial and temporal features. Although DGNN has recently received considerable attention by AI community and various DGNN models have been proposed, building a distributed system for efficient DGNN training is still challenging. It has been well recognized that how to partition the dynamic graph and assign workloads to multiple GPUs plays a critical role in training acceleration. Existing works partition a dynamic graph into snapshots or temporal sequences, which only work well when the graph has uniform spatio-temporal structures. However, dynamic graphs in practice are not uniformly structured, with some snapshots being very dense while others are sparse. To address this issue, we propose DGC, a distributed DGNN training system that achieves a 1.25×\\times - 7.52×\\times speedup over the state-of-the-art in our testbed. DGC’s success stems from a new graph partitioning method that partitions dynamic graphs into chunks, which are essentially subgraphs with modest training workloads and few inter connections. This partitioning algorithm is based on graph coarsening, which can run very fast on large graphs. In addition, DGC has a highly efficient run-time, powered by the proposed chunk fusion and adaptive stale aggregation techniques. Extensive experimental results on 3 typical DGNN models and 4 popular dynamic graph datasets are presented to show the effectiveness of DGC.\n\nKeywords: dynamic graphs, distributed machine learning, graph partitioning\n\n1. Introduction\n\nGraph Neural Network (GNN) has achieved great success in learning graph data in many fields, i.e., drug discovery (Wishart et al., 2018), recommendation systems (Ying et al., 2018), and social networks (Wu et al., 2020). Existing GNN can handle only static graphs, where vertices and edges, as well as associated features, have no change across time. However, many practical applications generate dynamic graphs whose vertices and edges change over time. Typical examples include traffic graphs that describe real-time traffic flows of roads (Zhang et al., 2018; Zhao et al., 2019; Guo et al., 2021), and social networks where edges representing friend connections could be created or removed as the change of social relationship (Ma et al., 2020; Zhang et al., 2022).\nThe strong demand of processing dynamic graphs motivates the design of the Dynamic Graph Neural Network (DGNN). As shown in Figure 1, a dynamic graph is divided into a number of snapshots, each of which represents the graph at a specific time. These snapshots are fed to structure encoders (e.g., GCN), respectively, followed by time encoders (e.g., RNN) to exploit temporal relationship across snapshots. By stacking multiple layers of structure encoders and time encoders, DGNN has a strong capability of capturing spatio-temporal features of dynamic graphs. Based on this basic model, various DGNN variants, EvolveGCN (Pareja et al., 2020) and DySAT (Sankar et al., 2020), have been proposed recently and dynamic graph learning has become a booming research area.\n\nDespite the great research enthusiasm for DGNN model design, its system-level support has been seldom studied. Since dynamic graphs could be very large, DGNN training usually runs on distributed systems consisting of multiple GPUs or other accelerators. To build an efficient distributed DGNN system, one of the most crucial challenges is how to partition the dynamic graph among multiple GPUs to minimize cross-GPU traffic, which has been recognized as the main system bottleneck by existing work (Guan et al., 2022; Chakaravarthy et al., 2021).\nA straightforward idea is to partition the dynamic graph into snapshots and assign them to GPUs, as shown in Figure 2(a). This method is referred to as partitioning by spatial snapshots (PSS).\nHowever, PSS would incur high communication costs when handling dynamic graphs with long temporal information since time encoders need to share temporal embeddings across GPUs.\n\nTo eliminate temporal embedding transmissions, the method of partitioning by temporal sequences (PTS) has been proposed (Guan et al., 2022). As shown in Figure 2(b), PTS divides dynamic graphs into temporal sequences. Each sequence contains the same vertex’s embeddings of different time, and it is the basic assignment unit to GPUs. PTS hides all communication of temporal embedding sharing within each GPU, but pays the cost of aggregating spatial embeddings across GPUs. Recently, Chakaravarthy et al. (Chakaravarthy et al., 2021) have proposed a joint partitioning method to take the benefits of both PSS and PTS methods. As illustrated in Figure 2(c), it applies PSS to assign snapshots to GPUs and runs structure encoders. Then, generated embeddings are shuffled by PTS, so that the ones of the same temporal sequence are gathered into the same GPU. This method is referred to as PSS-TS. Although both spatial and temporal communication is avoided, the embedding shuffling process incurs additional communication cost.\n\nWe have conducted a quantitative study (in §2.2) on the aforementioned methods by comparing their performance on various datasets. Our results indicate that these methods demonstrate different performance on these datasets, and there is no single method that always outperforms the others. We find that main reason of this inconsistency is an implicit assumption of these methods that dynamic graphs are uniform in both spatial and temporal structures. However, many graphs are not uniformly structured, with some snapshots being very dense while others are sparse.\nAdditionally, temporal sequences could have different lengths, with some ve",
+          "work_id": "wrk_820bea3aec0826aa27db0b5a"
+        },
+        {
+          "artifact_id": "art_491da1f1f7d9e5d58bfc15e6",
+          "char_end": 8000,
+          "char_start": 0,
+          "has_more": true,
+          "namespace": "research_reference",
+          "read_id": "read_40b3c2e1d112114cd8625a8d",
+          "role": "extracted_text",
+          "sha256": "aa6072a0e21b113ea713df25ef43c808e2aceb79fbc835994d4a16b6482c225b",
+          "text": "Repurposing Unified Topological Signatures for Graph Representation Learning\n\n      Report GitHub Issue\n      ×\n\n      Title:\n\nContent selection saved. Describe the issue below:\n\n      Description:\n\n      Submit without GitHub\n      Submit in GitHub\n\n    arXiv is now an independent nonprofit!\n    Learn more\n    ×\n\n      Back to arXiv\n\n    Why HTML?\n\n      Report Issue\n\n      Back to Abstract\n\n      Download PDF\n\nAbstract\n\n1 Introduction\n\n2 Related work\n\n3 Preliminaries\n\n3.1 Problem Setting\n\n3.2 GIN Backbone\n\n4 Methodology\n\n4.1 Dual Unified Topological Signatures\n\n4.1.1 Embedding-UTS\n\n4.1.2 Graph-UTS\n\n4.2 UTS-Aug: Topology-Enhanced Graph Representation\n\n4.3 UTS-Reg: Topology-Preserving Regularization\n\nTopological Alignment Loss\n\nTopological Evolution Loss\n\n4.4 UTS-Pool: Topology-aware pooling\n\nTopology-Aware Node Scoring\n\nEfficient Variant for Large Graphs\n\n5 Experiments and Results\n\n5.1 Experimental Protocol\n\n5.2 Effect of Dual Unified Topological Signatures as UTS-Aug\n\n5.3 Effect of UTS-Reg (Topology-Preserving Regularization)\n\n5.4 Evaluation of UTS-Pool (Topology-aware pooling)\n\n6 Theoretical Analysis\n\n6.1 Expressive Power of Dual Unified Topological Signatures\n\n6.2 Topology-Preserving Regularization\n\n6.3 Computational Complexity\n\n7 Conclusion and Future Work\n\nReferences\n\nA Appendix\n\nA.1 Full Derivations of Universal Topological Signatures\n\nA.2 Embedding UTS: Φemb\\Phi_{\\mathrm{emb}}\n\nA.2.1 Pairwise Distance Matrix\n\nA.2.2 Local Geometry Features (Dimensions 7–10)\n\nRemark on Differentiability.\n\nA.2.3 Persistence Features (Dimensions 1-6)\n\nA.2.4 Spectral Features (Dimensions 11–14)\n\nStability.\n\nA.3 Graph UTS: Φgrph\\Phi_{\\mathrm{grph}}\n\nA.3.1 Ollivier-Ricci Curvature (Dimensions 1-4)\n\nA.3.2 Forman-Ricci Curvature (Dimensions 5-8)\n\nA.3.3 Distance Features (Dimensions 9-10)\n\nA.3.4 Spectral Features (Dimensions 11-13)\n\nA.3.5 Persistence Features (Dimensions 14-17)\n\nA.3.6 Structural Features (Dimensions 18-27)\n\nA.4 Differentiable Surrogate Formulation of Φemb\\Phi_{\\mathrm{emb}}\n\nPairwise distances.\n\nH0H_{0} surrogate.\n\nH1H_{1} surrogate.\n\nSoft Betti numbers.\n\nSpectral features.\n\nIntrinsic dimensionality.\n\nA.5 Architecture and Training Details\n\nFull readout dimensionalities.\n\nTopoRegLoss projection.\n\nUTS-Pool gradient flow.\n\nTraining protocol.\n\nGraphUTS precomputation.\n\nA.6 Dataset Statistics and Descriptions\n\nB Full Ablation Results\n\nB.1 UTS Descriptor Variants\n\nB.2 Topological Loss Variants\n\nB.3 Capacity Control (Random Descriptor Baselines)\n\nB.4 Pooling Comparison\n\nB.5 Discussion: Cross-Dataset Consistency and the Role of Scale\n\nC Full Proofs and Theoretical Concepts\n\nC.1 Proof of Theorem  \n\nC.2 Full Justification of Proposition \n\nEmpirical evidence.\n\nC.3 Geometric Control of Local Persistence Topology\n\nC.4 Computational Complexity Analysis\n\nC.4.1 Graph Signature Φgrph\\Phi_{\\mathrm{grph}}\n\nC.4.2 Embedding Signature Φemb\\Phi_{\\mathrm{emb}} (Full, Per Layer)\n\nC.4.3 Lightweight Proxy ϕvlight\\phi_{v}^{\\mathrm{light}} (Per-Node Pooling Score)\n\nC.4.4 Chunked Memory Bound\n\nC.4.5 Summary\n\nD Oversmoothing Analysis\n\nD.1 Oversmoothing Index\n\nD.2 Oversmoothing diagnostic\n\nE Pooling Comparison Details\n\nUTS-Pool vs. TopKPool and SAGPool.\n\nTOGL: implementation.\n\nF Layer-wise UTS Analysis: Full Results\n\nF.1 Layer-wise UTS Feature Evolution and Signature Space Analysis\n\nUTS Feature Evolution Across GNN Layers\n\nPCA of UTS Signature Space per Layer\n\nF.2 Importance of Ollivier-Ricci Curvature in Biological and Chemical Networks\n\nAblation Study: The Necessity of Curvature Features\n\nG Computational Scalability of UTS Variants\n\nG.1 Benchmark Setup\n\nG.2 Results\n\nG.3 Implications and Limitations\n\n    License: CC BY 4.0\n\narXiv:2609.17061v1 [cs.LG] 15 Sep 2026\n\nRepurposing Unified Topological Signatures for Graph Representation Learning\n\nSanyam Sanjay Jain\n\nAffiliation: BITS Pilani, India\n\n  \nAnshika Krishnatray\n\nAffiliation: BITS Pilani, India\n\n  \nAditya Sharma\n\nAffiliation: BITS Pilani, India\n\n  \nVinti Agarwal\n\nAffiliation: BITS Pilani, India\n\nAbstract\n\nMessage-passing Graph Neural Networks (GNNs) iteratively propagate and aggregate local neighborhood information followed by global readout to learn graph representations. However, their discriminative power is upper-bounded by the Weisfeiler–Lehman (1-WL) graph isomorphism test. This prevents GNNs from distinguishing certain non-isomorphic graphs with identical local neighborhood structures, often leading to similar graph representations. Unified Topological Signatures (UTS) capture compact, multi-scale representation of global graph topology derived from persistent homology. We introduce two complementary UTS signatures: Φgrph\\Phi_{\\mathrm{grph}}, a static signature of the input graph topology, and Φemb\\Phi_{\\mathrm{emb}}, a dynamic signature of the evolving embedding topology. They encode structural information inaccessible to 1-WL-based message-passing GNNs, yet their capabilities are explored solely for post-hoc embedding-space analysis. We integrate UTS into GNN training across three architectural interventions: (i) UTS-Aug: augmenting with standard readout feature that encodes graph’s true topology; (ii) UTS-Reg: topological regularizer that constrains representation collapse; (iii) UTS-Pool: topology-guided pooling that retains structurally critical nodes. We further leverage UTS as a layer-wise diagnostic to quantify oversmoothing during GNN training.\nTheoretically, we show that integrating UTS into GNN optimization strictly extends GNN expressivity beyond the 1-WL hierarchy.\nExperiments on three graph classification benchmarks show consistent benefits: Graph-UTS, Dual-UTS, and UTS-Pool improve accuracy across all three datasets, Embedding-UTS provides smaller but similarly consistent gains, and UTS-Reg’s benefit varies across graph domains. Accuracy improves by up to 5.8%5.8\\% with Graph-UTS augmentation, by up to 1.9%1.9\\% with UTS-Reg, and achieves comparable performance to TOGL with UTS-Pool.\n\n     \n\n[]\n \n\n1 Introduction\n\nGraph Neural Networks (GNNs) have become the default architecture for relational learning, propagating and aggregating information across neighborhoods in a permutation-invariant manner [12].\nFor graph-level tasks, this aggregation exposes a representational limitation at readout. Standard readout functions (sum, mean, max) retain only first-order statistics of node embeddings, discarding higher-order connectivity almost entirely. Learned pooling operators perform adaptive graph coarsening [11, 1, 27],\nbut select nodes based on local neighborhood, offering no guarantee that global topology survives pooling.\nDeeper message-passing layers enlarge the receptive field, but repeated aggregation acts as a low-pass filter on the feature matrix, collapsing node embeddings toward a common value as the Dirichlet energy decays exponentially in depth—resulting in\noversmoothing [16, 21]. Oversmoothing collapses node embeddings and, consequently, graph representations after readout, eliminating structural information essential for graph-level prediction. Standard GNN objectives also lack an explicit mechanism to monitor topological fidelity during training.\n\nThe expressive power of message-passing GNNs is provably upper bounded by the 11-dimensional Weisfeiler–Leman (11-WL) test: any two graphs that are 11-WL equivalent yield identical node embeddings under any message-passing GNN, regardless of depth or width [26]. As a result, non-isomorphic graphs with distinct global organization ( e.g., G1 and G2 in Figure 1), collapse to indistinguishable representations despite having different cycle structure and connectivity.\n\nTopological Data Analysis offers a natural way to expose what message passing hides. Persistent homology [8] extracts stable, multi-scale descriptors (components, cycles, higher-order voids), while recent work has incorporated topological priors into GNNs through persistence-based pooling [5] and discrete curvature methods such as Ricci flow and ORC-POOL [20, 9]. These confirm topological signal b",
+          "work_id": "wrk_8facaa24c827ac803e17fa0c"
+        },
+        {
+          "artifact_id": "art_2b963a61ae0d71cc1b4c5842",
+          "char_end": 16000,
+          "char_start": 8000,
+          "has_more": true,
+          "namespace": "research_reference",
+          "read_id": "read_5561919310f739e24c8913d8",
+          "role": "extracted_text",
+          "sha256": "5283c445f484f1687eefe40c0b01c7ba95a9612547675c2b24e53cb473c2ad8c",
+          "text": "rtices existing for a long time and being associated with long temporal sequences while others have short sequences. Our experiments in §2.2 have also revealed that such spatio-temporal non-uniformity is prevalent in popular datasets. This important observation motivates us to re-examine the graph partitioning problem for DGNN training, and to design a new dynamic graph partitioning method aware of such spatio-temporal non-uniformity, so that it can always outperform existing ones on a variety of datasets.\n\nAs a positive response to this challenging problem, we design DGC, a distributed system for efficient DGNN training, implementing a new method called partitioning by graph chunk (PGC). Different from existing works that treat snapshots or temporal sequences as basic partitioning units, we propose to partition dynamic graphs into chunks that are essentially sub-graphs across the spatial and temporal boundaries. As shown in Figure 2(d), each graph chunk may contain vertices and edges belonging to different snapshots and temporal sequences. We design a graph chunk generation algorithm based on the graph coarsening technique with a full consideration of spatio-temporal non-uniformity, so that each graph chunk has modest training workload and few edge connections to other chunks. By a simple heuristic to assign these chunks to GPUs, DGC can achieve better workload balance and reduced communication cost, to significantly improve DGNN training efficiency.\n\nFigure 1. Dynamic graph neural network.\n\nIn addition, we propose two techniques to optimize the run-time of DGC by exploiting unique characteristics of graph chunks for further performance improvement. The first one is called chunk fusion. The graph chunks assigned to a GPU need to first go through the structure encoder. A default scheme is to load and train these chunks one by one, which would be inefficient because of redundant data loading and low GPU utilization. To address this issue, we propose to fuse these chunks into larger ones before loading, while considering the GPU memory constraint. Furthermore, the temporal sequences sent to the time encoder could have different lengths. In order to pack them for GPU processing, we need to align these sequences by padding a large number of zeros, which could waste GPU memory. Thus, we propose to fuse these sequences by concatenating short ones to reduce padded zeros. However, an intuitive sequence concatenation scheme would generate incorrect outputs of time encoders, and thus impose negative influence on training accuracy. We design a masking scheme for the time encoder, so that it can generate correct embeddings while padded zeros can be reduced.\n\nFigure 2. Different dynamic graph partitioning methods for distributed training. Different node shapes (such as rectangles, circles, triangles, and rhombuses) represent different vertices, while colors and numbers signify vertices belonging to different snapshots. Red dotted arrows indicate communication between GPUs. Within each GPU, vertices aggregated from other GPUs are represented by dotted lines.\n\nSecond, we propose adaptive stale embedding aggregation to further reduce communication cost among GPUs. This is motivated by the observation that vertices may generate similar embeddings in different training epochs (§5.2). DGC allows GPUs to reuse stale embeddings from previous epochs if they are sufficiently similar, to reduce data traffic between GPUs. However, using stale embeddings could slow down the training convergence or even decrease the final training accuracy. It is quite challenging to estimate embedding similarity and decide when they can be reused, to balance communication cost and training convergence. We propose an adaptive stale aggregation scheme, which decides whether stale embeddings could be used according to the current training loss.\n\nWe deploy DGC on an 8-GPU testbed and conduct experiments using four different dynamic graphs and three representative DGNN models (including T-GCN (Zhao et al., 2019), DySAT (Sankar et al., 2020), and MPNN-LSTM (Malik et al., 2021)). The experimental results show that DGC achieves a 1.25×\\times - 7.52×\\times speedup over the state-of-the-art. We also conduct ablation experiments to study the benefits of our proposed run-time optimization techniques.\n\nThe rest of this paper is organized as follows. We present the preliminary and the motivation in §2. A system overview is in §3. We present the method of partitioning by graph chunk in §4, followed by the run-time optimizations in §5. §6 discusses the implementation and §7 presents our experimental results. Related work is in §8. §9 finally concludes this paper.\n\n2. Preliminaries and Motivations\n\n2.1. Preliminaries\n\nDynamic Graphs. A dynamic graph can be represented by 𝒢={G1,G2,…,GT}\\mathcal{G}=\\{G_{1},G_{2},...,G_{T}\\}, where Gt=(Vt,Et)G_{t}=(V_{t},E_{t}) is a snapshot at timestep tt. VtV_{t} and EtE_{t} represent the vertex and edge sets of snapshot GtG_{t}, respectively. Each vertex vi,tv_{i,t} in VtV_{t} is associated with a feature vector xi,tx_{i,t}. In addition, a vertex vi,tv_{i,t} has spatial and temporal neighbors. (1) Spatial neighbors, denoted as 𝒩​𝒮​(i,t)\\mathcal{NS}(i,t), are the vertices that are directly connected to vi,tv_{i,t} through an edge in the same snapshot GtG_{t}. They represent the immediate connections or relationships among the vertices in a specific timestep. (2) Temporal neighbors, denoted as 𝒩​𝒯​(i,t)\\mathcal{NT}(i,t), are the vertices corresponding to the same entity as vi,tv_{i,t} but in different snapshots. They represent the changes or evolution of vertex features across different timesteps.\n\nDynamic Graph Neural Networks. A dynamic graph neural network (DGNN) is composed of multiple blocks, where each block consists of a structure encoder and a time encoder, as illustrated in Figure 1. The structure encoder extracts hidden information for each vertex by aggregating information from its structural neighbors. Meanwhile, the time encoder accumulates information for each vertex from its temporal neighbors. Note that different DGNN models have different implementation of structure and time encoders. For example, T-GCN (Zhao et al., 2019) uses three 2-layer GCN (Kipf and Welling, 2016) as the structure encoder, and a 1-layer GRU (Cho et al., 2014) model as the time encoder. DySAT (Sankar et al., 2020) incorporates a 1-layer graph attention network (GAT) (Veličković et al., 2017) and a 1-layer scaled dot-product attention model (Vaswani et al., 2017) within each of its DGNN blocks.\n\nDistributed DGNN training.\nDistributed DGNN training across multiple GPUs is a promising approach for handling large dynamic graphs. However, the challenge lies in determining how to partition the dynamic graph. The partitioning algorithm should minimize cross-GPU communication by reducing data dependency breakdown while maintaining workload balance.\n\nGraph partitioning has been extensively studied in distributed GNN training for static graphs (Ma et al., 2019; Jia et al., 2020; Cai et al., 2021; Md et al., 2021; Gandhi et al., 2021; Wang et al., 2021a). However, these methods designed for unraveling spatial dependency cannot be applied to dynamic graph partitioning with complex temporal dependency, which motivates several recent works about dynamic graph partitioning. These existing works can be classified into three categories. (1) Partitioning by Spatial Snapshots (PSS): it treats a snapshot as the partition unit and always keeps spatial dependencies within the same GPU. (2) Partitioning by Temporal Sequences (PTS): A temporal sequence records the states of the same vertex in different time. This approach eliminates communication overhead for vertices when aggregating their temporal neighborhoods. However, high communication overhead may arise when vertices aggregate their spatial neighborhoods, as spatial dependencies are broken down across GPUs. (3) Partitioning by Snapshots and Sequences (PS",
+          "work_id": "wrk_820bea3aec0826aa27db0b5a"
+        },
+        {
+          "artifact_id": "art_2b963a61ae0d71cc1b4c5842",
+          "char_end": 24000,
+          "char_start": 16000,
+          "has_more": true,
+          "namespace": "research_reference",
+          "read_id": "read_4ab4ca421b38a61ef7ea4e98",
+          "role": "extracted_text",
+          "sha256": "5283c445f484f1687eefe40c0b01c7ba95a9612547675c2b24e53cb473c2ad8c",
+          "text": "S-TS): a joint method adopts PSS for the structure encoder while transitioning to PTS for the time encoder. This approach avoids communication overhead when aggregating both spatial and temporal neighborhoods. However, it involves additional shuffling cost to re-assign vertices across GPUs.\n\nAttributes\nAmazon\nEpinion\nMovie\nStack\n\n# of snapshots\n121\n500\n289\n93\n\nTotal # of vertices\n103M\n72M\n43M\n83M\n\nTotal # of edges\n5.7M\n13M\n27M\n47M\n\nTable 1.  Dynamic Graph Datasets.\n\n(a) CDF of number of spatial neighbors.\n\n(b) CDF of vertex sequence lengths.\n\nFigure 3. Spatio-temporal non-uniformity of different datasets.\n\n2.2. Motivation\n\n2.2.1. Spatio-temporal non-uniformity of dynamic graphs\n\nWe demonstrate the spatio-temporal non-uniformity of dynamic graphs using four datasets, whose details are shown in Table 1. In Figure 3(a), we plot the cumulative distribution function (CDF) curves of the number of edges within snapshots. We observe that some snapshots have very few edges, while others could be very dense, indicating diverse spatial features among snapshots. The CDF about lengths of vertex sequences is shown in Figure 3(b). Some vertices exist for a long time and thus have long temporal sequences, while others are short.\n\n2.2.2. Performance of dynamic graph partitioning methods on different datasets\n\nWe use the four datasets in Table 1 to train DySAT (Sankar et al., 2020) models on 4 NVIDIA V100 GPUs.\nThe average epoch time of PSS, PTS, and PSS-TS is shown in Figure 4(a).\nAlthough all methods are performing the same training task using the same dataset and model, they are different in graph partitioning and thus assign different workloads to GPUs.\nWe can see that the PTS has the shortest epoch time on Amazon, Epinion, and Stack datasets, but longer than PSS and PSS-TS methods on the Movie dataset. The breakdown of computation time and communication time is also shown in this figure. For the Epinion dataset, all methods have similar computation time, but PSS has much longer communication time, because more nodes are involved in temporal computation and their embeddings are shared across GPUs. However, since the Movive dataset has dense spatial structures, PTS breaks this structure and incurs higher communication overhead. Although PSS-TS avoids communication overhead within both spatial and temporal computations, it incurs significant overhead because of embedding re-assignment, especially when the number of vertices is large (e.g., Amazon and Stack datasets).\nThe fact in Figure 4(a) demonstrates that different datasets show distinct spatio-temporal features and neither method can always win over all datasets.\n\n(a) Average epoch time.\n\n(b) GPU workload divergence.\n\nFigure 4. Performance of dynamic graph partitioning methods on different datasets.\n\nWe also conduct experiments to study GPU load balance of existing methods. For the PSS method, we follow the strategies proposed in (Guan et al., 2022; Chakaravarthy et al., 2021) to assign the same number of snapshots to each GPU. Similarly, we let each GPU get the same number of sequences in the PTS method. We define a metric λ=Tm​a​xTm​i​n\\lambda=\\frac{T_{max}}{T_{min}} to evaluate the level of GPU load balance, where Tm​a​xT_{max} and Tm​i​nT_{min} is the maximum and minimum epoch time, respectively, among GPUs. If the value of λ\\lambda is close to 1, training workloads are well balanced. Otherwise, faster GPUs need to wait for slower ones, leading to low hardware utilization. As shown in Figure 4(b), we find that PTS method has a good load balance with λ=1.1\\lambda=1.1 under the Stack dataset, but its load balance becomes worse when training other datasets. PSS and PSS-TS have bigger λ\\lambda, indicating stronger imbalance of training workloads among GPUs.\n\n2.2.3. Performance of dynamic graph partitioning methods within a single dataset\n\n(a) Number of vertices on different parts.\n\n(b) Number of edges on different parts.\n\n(c) Training time breakdown on Movie.\n\nFigure 5. Performance of dynamic graph partitioning methods within a single dataset.\n\nWe then dig into the Movie dataset to study its internal spatio-temporal features. We divide the whole dataset into 4 parts by snapshots, and each part has the same number of snapshots. The average number of vertices and edges in each part are shown in Figure 5(a) and Figure 5(b). We can see that the number of vertices changes significantly across different parts. The fourth part has 3 times more vertices than the first one. Meanwhile, the number of edges also changes, but with a different pattern from vertices. For example, the first part has the most edges but it has only half of vertices of the fourth part.\n\nTo study how internal spatio-temporal features affect graph training, we measure the epoch time of three methods on 4 sub-datasets. As shown in Figure 5(c), these methods show distinct performance. PSS and PSS-TS outperform PTS when training the first and second sub-datasets, thanks to its much shorter communication time. However, PTS has better performance on the third and fourth sub-datasets. We also find that the communication overhead of PSS and PSS-TS grows as the increasing of number of vertices. In contrast, PTS has longer epoch time on sub-datasets with more edges. That is because PSS partitions dynamic graph data by snapshots, and denser snapshots incur more data sharing over networks. PTS conducts data partition by sequences, i.e., cutting edges within snapshots, and thus more edges would generate more traffic.\n\nWe also conduct experiments for other 3 datasets and have similar observations. For even a single dataset, its different parts show distinct spatio-temporal features.\nHowever, existing works are unaware of such graph internal diversity and apply a single partitioning strategy for the whole dataset.\n\n3. System Overview\n\nFigure 6. System Overview. DGC contains an offline PGC module and an optimized run-time. The PGC module partitions the dynamic graph into chunks and assigns them to GPUs. The run-time contains two new modules of chunk fusion and adaptive stale embedding aggregation.\n\nIn this section, we present an overview of the DGC design.\nWe first set our design goals as follows.\n\nHigh training efficiency.\nDue to massive data dependencies (including spatial and temporal dependencies) among vertices in dynamic graphs, distributed DGNN training suffers from high communication cost that would be the performance bottleneck. DGC needs to reduce communication cost to accelerate training process.\n\nHigh GPU utilization. Multiple GPUs are used to train DGNNs for handling large dynamic graphs. GPU utilization is a crucial metric for efficient resource management. DGC should ensure high GPU utilization during DGNN training.\n\nConsistent training convergence. While introducing various optimizations to accelerate DGNN training, DGC needs to ensure that these designs do not compromise training convergence, preserving the quality of the final model.\n\nFigure 6 illustrates an overview of DGC’s design. In order to handle large dynamic graphs, DGC uses multiple GPUs that collaboratively train the DGNN model. Specifically, DGC maintains some training workers, and each worker is bonded to a GPU. The system workflow is as follows.\n❶ First, a PGC (Partitioning by Graph Chunk) module partitions the dynamic graph into multiple graph chunks and assigns them to workers. ❷ Based on the partitioning and assignment results, each GPU worker loads their assigned graph chunks, and then trains the corresponding DGNN model for multiple epochs. As mentioned in §2.1, a DGNN model could include multiple blocks, and each block consists of a structure encoder and a time encoder. In Figure 6, we show a DGNN model with a single block for simplicity.\n3a The structure encoder computes spatial embeddings of local vertices. Note that spatial neighbors may be located on other workers, their embeddings need to be transmitted over the network. 3b Similarly, time encoders of different workers n",
+          "work_id": "wrk_820bea3aec0826aa27db0b5a"
+        },
+        {
+          "artifact_id": "art_2b963a61ae0d71cc1b4c5842",
+          "char_end": 32000,
+          "char_start": 24000,
+          "has_more": true,
+          "namespace": "research_reference",
+          "read_id": "read_ae8af159a60621ec63afa7ae",
+          "role": "extracted_text",
+          "sha256": "5283c445f484f1687eefe40c0b01c7ba95a9612547675c2b24e53cb473c2ad8c",
+          "text": "eed to share embeddings of temporal neighbors. Since these embeddings could be very large, frequent embedding sharing would incur high communication costs.\n❹ Finally, each GPU worker calculates gradients based on a loss function and synchronizes them with other workers, so that they can update DGNN model weights and proceed to the next training epoch.\n\nWe can see that DGC is different from traditional data parallelism and model parallelism, which are popular distributed training approaches adopted by CNN or transformer models, because of the complicated spatio-temporal dependency. The whole system performance is mainly affected by communication costs among GPUs and their workload balance. In order to achieve our design goals, we design the following three key modules.\n\nPGC: The PGC module partitions the dynamic graph, by introducing the concept of graph chunks to minimize cross-GPU communication cost while maintaining workload balance (§4).\n\nChunk fusion: This module fuses multiple chunks assigned to each GPU to reduce data loading cost, so that the GPU utilization can be significantly improved (§5.1).\n\nAdaptive stale embedding aggregation: We observe that some vertex embeddings have no big changes in different training epochs. Thus, we are motivated to propose a stale aggregation module that enables some GPUs to reuse some previously received embeddings if there is only trivial difference. Many embedding transmissions can be avoided to reduce communication costs (§5.2).\n\n4. Partitioning by Graph Chunks\n\nThe issues of PTS and PSS stem from their high-level semantic graph partitioning, i.e., in units of snapshots or sequences, without considering the potential influence to running efficiency of the distributed system. Since snapshots and temporal sequences could be very large, it leaves little optimization space for the following workload assignment algorithm. No matter how sophisticated assignment algorithms are designed, it is still difficult to achieve good workload balance among GPU while minimizing cross-GPU traffic.\n\nTo fundamentally solve these issues, we propose the method of partitioning by graph chunk (PGC), by jointly considering graph features and hardware resources. PGC partitions graphs into chunks that are sub-graphs across spatial and temporal boundaries of original dynamic graphs. Each graph chunk has modest training workload and few edge connections to other chunks, so that even a simple chunk assignment algorithm can achieve significant efficiency improvement.\n\nHowever, designing an efficient PGC is challenging. Since the weaknesses of PTS and PSS are mainly because of their coarse-grained partition at the snapshot or sequence level, a straightforward improvement is to treat dynamic graphs as a super graph by linking vertices with temporal relationship. We can then partition this super graph into several parts, each of which is assigned to a GPU for training. Such a kind of graph partitioning has been widely studied by existing works (Stanton and Kliot, 2012; Tsourakakis et al., 2014; Zhang et al., 2017). Even though it is an NP-hard problem, there exist methods with good theoretical and empirical results. However, these methods have high computational overhead, which can be hardly applied for dynamic graphs with millions or even billions of vertices and edges. We address this overhead challenge by borrowing the idea of graph coarsening (Purohit et al., 2014; LaSalle et al., 2015; Bravo Hermsdorff and Gunderson, 2019; Huang et al., 2021), and customizing it for dynamic graph partitioning.\nIn addition, we design a fast algorithm to assign chunks to GPUs.\n\n4.1. Chunk Generation\n\nThe chunk generation algorithm is based on label propagation and its basic idea is to assign a unique label to each vertex, which is then propagated along graph edges and be updated iteratively according to a label updating policy. Finally, vertices with the same label can be grouped together to form a chunk.\n\nTwo key challenges must be addressed to make this algorithm work efficiently for dynamic graphs. First, traditional label propagation is constrained within snapshots (because there is no edge between snapshots) and temporal features cannot be fully exploited. Therefore, we add virtual temporal edges between temporal vertices so that labels can be propagated across snapshots.\n\nSecond, even with these virtual edges, the label propagation algorithm could be difficult to generate chunks with minimum inter connections as we desire, because the algorithm lets labels have the same opportunity to travel along all edges. However, spatial edges and temporal edges have different communication cost. For example, T-GCN involves two GCN layers and one GRU layer for each DGNN block, which means that vertices aggregate their spatial neighborhoods twice, while only aggregating temporal neighborhoods once. To reflect this unique characteristic, we propose to customize edge weights during label propagation according to their communication cost. Specifically, we initialize the label of each vertex vi,tv_{i,t} as follows:\n\n(1)\n\nc⁡(vi,t)=∑τ=1t−1|Vτ|+i,\\displaystyle c(v_{i,t})=\\sum_{\\tau=1}^{t-1}|V_{\\tau}|+i,\n\nwhere |Vτ||V_{\\tau}| is the number of vertices in snapshot GτG_{\\tau} and τ∈[1,t−1]\\tau\\in[1,t-1], so that each vertex can get a unique label. After initialization, the algorithm runs several iterations of label propagation. In each iteration, vertices propagate labels to both spatial and temporal neighbors and update their labels in a weighted manner. Specifically, each vertex vi,tv_{i,t} receives multiple labels from its neighbors, and these labels are maintained in a set ℒ⁡(vi,t)\\mathcal{L}(v_{i,t}). The set of vertices sending the same label cc is denoted by S⁡(c)S(c). Each label cc is associated with a weight w​e​i​g​h​t​(c)weight(c) that is the total amount of traffic for embedding sharing from vertices in S⁡(c)S(c) to vv.\nNote that w​e​i​g​h​t​(c)weight(c) may vary depending on the specific DGNN model and can be easily obtained through profiling. Vertex vi,tv_{i,t} updates its label by:\n\n(2)\n\nc⁡(vi,t)=argmaxc∈ℒ⁡(vi,t)⁡w​e​i​g​h​t​(c),\\displaystyle c(v_{i,t})=\\argmax_{c\\in\\mathcal{L}(v_{i,t})}weight(c),\n\nwhich chooses the label with the maximum weight. The rationale is as follows. Recall that our final goal is to create graph chunks with minimum inter connections. Since directly minimizing inter-chunk connections could be difficult, we convert the problem into an equivalent one of maximizing the communication cost within chunks. The equivalence can be proved by formulating both problems and showing that the sum of their objective functions is a constant, i.e., the total cost of all edges. Therefore, we choose a neighboring label with the most weight, so that they can be grouped together as a chunk. The above process is repeated until convergence, i.e., no labels can be changed. Note that we control the maximum size of chunks by constraining the propagation of some labels if they are attached to too many vertices.\n\nDiscussion. To maximize GPU utilization, an alternative method is to let graph chunks expand until they reach GPU memory capacity during chunk generation.\nHowever, due to the convergence of label propagation, this method cannot guarantee that each generated chunk perfectly saturates GPU memory. Imposing chunks to expand to GPU memory would falsely group vertices, leading to high cross-GPU traffic. Our design respects the convergence of label propagation and uses a fast algorithm to fuse chunks (in §5.1.1) for high utilization of GPU memory.\n\nFigure 7. The execution time of different chunks with the same number of vertices.\n\n4.2. Chunk Assignment\n\nAfter chunk generation, we need to assign generated chunks to GPUs, by considering cross-GPU communication cost and workload balance among GPUs. An important step in chunk assignment algorithm design is to evaluate chunk workload. A simple and straightforward method of evaluating chunk workload is to count the ",
+          "work_id": "wrk_820bea3aec0826aa27db0b5a"
+        },
+        {
+          "artifact_id": "art_6f98816ebc9005d24844fdfd",
+          "char_end": 1867,
+          "char_start": 0,
+          "has_more": false,
+          "namespace": "subject_reference",
+          "read_id": "read_6054302c8ef451f1a9b9925e",
+          "role": "abstract",
+          "sha256": "fe5325d3e880edb66950067e5f1c35e829a9362cdf1a6f20fdfe0e4ba49b01af",
+          "text": "Machine learning over graphs have been emerging as powerful learning tools for graph data. However, it is challenging for industrial communities to leverage the techniques, such as graph neural networks (GNNs), and solve real-world problems at scale because of inherent data dependency in the graphs. As such, we cannot simply train a GNN with classic learning systems, for instance parameter server that assumes data parallel. Existing systems store the graph data in-memory for fast accesses either in a single machine or graph stores from remote. The major drawbacks are in three-fold. First, they cannot scale because of the limitations on the volume of the memory, or the bandwidth between graph stores and workers. Second, they require extra development of graph stores without well exploiting mature infrastructures such as MapReduce that guarantee good system properties. Third, they focus on training but ignore the optimization of inference over graphs, thus makes them an unintegrated system.\n  In this paper, we design AGL, a scalable, fault-tolerance and integrated system, with fully-functional training and inference for GNNs. Our system design follows the message passing scheme underlying the computations of GNNs. We design to generate the $k$-hop neighborhood, an information-complete subgraph for each node, as well as do the inference simply by merging values from in-edge neighbors and propagating values to out-edge neighbors via MapReduce. In addition, the $k$-hop neighborhood contains information-complete subgraphs for each node, thus we simply do the training on parameter servers due to data independency. Our system AGL, implemented on mature infrastructures, can finish the training of a 2-layer graph attention network on a graph with billions of nodes and hundred billions of edges in 14 hours, and complete the inference in 1.2 hour.",
+          "work_id": "wrk_ff5aa18cf0cfe7be1ba5e8bd"
+        },
+        {
+          "artifact_id": "art_d88778158223021b818fdd97",
+          "char_end": 1726,
+          "char_start": 0,
+          "has_more": false,
+          "namespace": "subject_reference",
+          "read_id": "read_ad9c179efe983c834ad3a571",
+          "role": "abstract",
+          "sha256": "6088620bd1823d7b3eeab3bfb186787146ca4190110dd4a74716310cbaa62b43",
+          "text": "An increasing number of machine learning tasks require dealing with large graph datasets, which capture rich and complex relationship among potentially billions of elements. Graph Neural Network (GNN) becomes an effective way to address the graph learning problem by converting the graph data into a low dimensional space while keeping both the structural and property information to the maximum extent and constructing a neural network for training and referencing. However, it is challenging to provide an efficient graph storage and computation capabilities to facilitate GNN training and enable development of new GNN algorithms. In this paper, we present a comprehensive graph neural network system, namely AliGraph, which consists of distributed graph storage, optimized sampling operators and runtime to efficiently support not only existing popular GNNs but also a series of in-house developed ones for different scenarios. The system is currently deployed at Alibaba to support a variety of business scenarios, including product recommendation and personalized search at Alibaba's E-Commerce platform. By conducting extensive experiments on a real-world dataset with 492.90 million vertices, 6.82 billion edges and rich attributes, AliGraph performs an order of magnitude faster in terms of graph building (5 minutes vs hours reported from the state-of-the-art PowerGraph platform). At training, AliGraph runs 40%-50% faster with the novel caching strategy and demonstrates around 12 times speed up with the improved runtime. In addition, our in-house developed GNN models all showcase their statistically significant superiorities in terms of both effectiveness and efficiency (e.g., 4.12%-17.19% lift by F1 scores).",
+          "work_id": "wrk_e59b8b7248dcc080455b8690"
+        },
+        {
+          "artifact_id": "art_66c8b8683025b1475148467c",
+          "char_end": 952,
+          "char_start": 0,
+          "has_more": false,
+          "namespace": "subject_reference",
+          "read_id": "read_9f0ea4de231a79f397a78e35",
+          "role": "abstract",
+          "sha256": "e8c00c05f6cba75fd48dfec978dc660890ddbaf30a6ccd259ad97a916e06678a",
+          "text": "How can we perform efficient inference and learning in directed probabilistic models, in the presence of continuous latent variables with intractable posterior distributions, and large datasets? We introduce a stochastic variational inference and learning algorithm that scales to large datasets and, under some mild differentiability conditions, even works in the intractable case. Our contributions are two-fold. First, we show that a reparameterization of the variational lower bound yields a lower bound estimator that can be straightforwardly optimized using standard stochastic gradient methods. Second, we show that for i.i.d. datasets with continuous latent variables per datapoint, posterior inference can be made especially efficient by fitting an approximate inference model (also called a recognition model) to the intractable posterior using the proposed lower bound estimator. Theoretical advantages are reflected in experimental results.",
+          "work_id": "wrk_03271ba130d423fec68c5166"
+        },
+        {
+          "artifact_id": "art_2b963a61ae0d71cc1b4c5842",
+          "char_end": 1493,
+          "char_start": 0,
+          "has_more": true,
+          "namespace": "research_reference",
+          "read_id": "read_463cdb937d7f304a7a69a3a0",
+          "role": "extracted_text",
+          "sha256": "5283c445f484f1687eefe40c0b01c7ba95a9612547675c2b24e53cb473c2ad8c",
+          "text": "DGC: Training Dynamic Graphs with Spatio-Temporal Non-Uniformity using Graph Partitioning by Chunks\n\n      Report GitHub Issue\n      ×\n\n      Title:\n\nContent selection saved. Describe the issue below:\n\n      Description:\n\n      Submit without GitHub\n      Submit in GitHub\n\n    arXiv is now an independent nonprofit!\n    Learn more\n    ×\n\n      Back to arXiv\n\n    Why HTML?\n\n      Report Issue\n\n      Back to Abstract\n\n      Download PDF\n\nAbstract.\n\n1 Introduction\n\n2 Preliminaries and Motivations\n\n2.1 Preliminaries\n\n2.2 Motivation\n\n2.2.1 Spatio-temporal non-uniformity of dynamic graphs\n\n2.2.2 Performance of dynamic graph partitioning methods on different datasets\n\n2.2.3 Performance of dynamic graph partitioning methods within a single dataset\n\n3 System Overview\n\n4 Partitioning by Graph Chunks\n\n4.1 Chunk Generation\n\n4.2 Chunk Assignment\n\n5 Run-time Optimization\n\n5.1 Chunk Fusion\n\n5.1.1 Spatial Fusion\n\n5.1.2 Temporal Fusion\n\n5.2 Adaptive Stale Embedding Aggregation\n\n6 Implementation\n\n7 Evaluation\n\n7.1 Experiment Setup\n\n7.2 Overall Performance Comparison\n\n7.3 Ablation Study\n\n7.3.1 Impact of PGC module\n\n7.3.2 Impact of chunk fusion module\n\n7.3.3 Impact of adaptive stale aggregation module\n\n7.4 Chunk workload prediction.\n\n7.5 DGC Overhead\n\n7.6 Convergence Evaluation\n\n8 Related Work\n\n9 Conclusion\n\nReferences\n\n    License: arXiv.org perpetual non-exclusive license\n\narXiv:2309.03523v1 [cs.DC] 07 Sep 2023\n\nDGC: Training Dynamic Graphs with Spatio-Temporal Non-Uniformity using Graph",
+          "work_id": "wrk_820bea3aec0826aa27db0b5a"
+        }
+      ],
+      "research_bundles": [
+        {
+          "artifacts": [
+            {
+              "acquired_at": "2026-09-16T04:20:37.423331Z",
+              "artifact_id": "art_1858acd5aca7680aec2f1bc7",
+              "byte_size": 1493,
+              "content_extent": "full",
+              "derived_from_artifact_id": null,
+              "extraction_warnings": [],
+              "language": null,
+              "media_type": "text/plain",
+              "provenance": {
+                "source": "search_hit.abstract"
+              },
+              "relative_path": "documents/wrk_820bea3aec0826aa27db0b5a/art_1858acd5aca7680aec2f1bc7.txt",
+              "role": "abstract",
+              "sha256": "7cbe278001ebc0ed9c00d6fa5e21011253648eb505a20ccf15d363cc1d579aa5",
+              "source_record_id": "src_b1fb2d49a3bc79e689b1a440",
+              "version_label": null,
+              "work_id": "wrk_820bea3aec0826aa27db0b5a"
+            },
+            {
+              "acquired_at": "2026-09-16T04:20:37.425383Z",
+              "artifact_id": "art_152c950c11f3eeb51760abfa",
+              "byte_size": 1255,
+              "content_extent": "full",
+              "derived_from_artifact_id": null,
+              "extraction_warnings": [],
+              "language": null,
+              "media_type": "text/plain",
+              "provenance": {
+                "source": "search_hit.abstract"
+              },
+              "relative_path": "documents/wrk_171a71953dfe9bc080b85871/art_152c950c11f3eeb51760abfa.txt",
+              "role": "abstract",
+              "sha256": "25369b5c2e78817f4918972605cf03bde556d3eb3a961cc9164ed79a97d56fb6",
+              "source_record_id": "src_b8c2a5a2ce7e5e5b256e859b",
+              "version_label": null,
+              "work_id": "wrk_171a71953dfe9bc080b85871"
+            },
+            {
+              "acquired_at": "2026-09-16T04:20:37.427896Z",
+              "artifact_id": "art_3986dc652a0665c3b5204585",
+              "byte_size": 1274,
+              "content_extent": "full",
+              "derived_from_artifact_id": null,
+              "extraction_warnings": [],
+              "language": null,
+              "media_type": "text/plain",
+              "provenance": {
+                "source": "search_hit.abstract"
+              },
+              "relative_path": "documents/wrk_815a9db5a302ee3ea8a600ba/art_3986dc652a0665c3b5204585.txt",
+              "role": "abstract",
+              "sha256": "73c9d6363a253d78b6ac90f68ecb43c612b2fbf2c61890099d394a8f6f97c1d5",
+              "source_record_id": "src_a7a4cb72d84ef8468e29a7da",
+              "version_label": null,
+              "work_id": "wrk_815a9db5a302ee3ea8a600ba"
+            },
+            {
+              "acquired_at": "2026-09-16T04:20:37.430018Z",
+              "artifact_id": "art_639653d7d204860c07380382",
+              "byte_size": 1108,
+              "content_extent": "full",
+              "derived_from_artifact_id": null,
+              "extraction_warnings": [],
+              "language": null,
+              "media_type": "text/plain",
+              "provenance": {
+                "source": "search_hit.abstract"
+              },
+              "relative_path": "documents/wrk_1e3d33fa769e6a31fa8fb96b/art_639653d7d204860c07380382.txt",
+              "role": "abstract",
+              "sha256": "0cc4616b4068da139e084cbe0bc3d9376387fee2c20bbe3c88bbee247fb96220",
+              "source_record_id": "src_58d248bdbf8c09956d42fb34",
+              "version_label": null,
+              "work_id": "wrk_1e3d33fa769e6a31fa8fb96b"
+            },
+            {
+              "acquired_at": "2026-09-16T04:20:37.432712Z",
+              "artifact_id": "art_52080b56bc0c576cb6501725",
+              "byte_size": 1902,
+              "content_extent": "full",
+              "derived_from_artifact_id": null,
+              "extraction_warnings": [],
+              "language": null,
+              "media_type": "text/plain",
+              "provenance": {
+                "source": "search_hit.abstract"
+              },
+              "relative_path": "documents/wrk_8facaa24c827ac803e17fa0c/art_52080b56bc0c576cb6501725.txt",
+              "role": "abstract",
+              "sha256": "9ce85d6bc74a5dcb5749d8243b871079b08cd7e48d06f2b2b16f7b21b0a05163",
+              "source_record_id": "src_208db142bb497c80b95a3a56",
+              "version_label": null,
+              "work_id": "wrk_8facaa24c827ac803e17fa0c"
+            },
+            {
+              "acquired_at": "2026-09-16T04:20:37.435727Z",
+              "artifact_id": "art_8a6791dfe33ed80e7f103012",
+              "byte_size": 1799,
+              "content_extent": "full",
+              "derived_from_artifact_id": null,
+              "extraction_warnings": [],
+              "language": null,
+              "media_type": "text/plain",
+              "provenance": {
+                "source": "search_hit.abstract"
+              },
+              "relative_path": "documents/wrk_cde936c7871781a3a7d034a3/art_8a6791dfe33ed80e7f103012.txt",
+              "role": "abstract",
+              "sha256": "0906e1dbc13edb375e90bd764797653d856b92fa0f779c5656bc47c2a0481930",
+              "source_record_id": "src_5de85851645eac529444dc0d",
+              "version_label": null,
+              "work_id": "wrk_cde936c7871781a3a7d034a3"
+            },
+            {
+              "acquired_at": "2026-09-16T04:20:37.438389Z",
+              "artifact_id": "art_8d4771ce0fc15f27e8280744",
+              "byte_size": 1134,
+              "content_extent": "full",
+              "derived_from_artifact_id": null,
+              "extraction_warnings": [],
+              "language": null,
+              "media_type": "text/plain",
+              "provenance": {
+                "source": "search_hit.abstract"
+              },
+              "relative_path": "documents/wrk_73df3a80869495657909414b/art_8d4771ce0fc15f27e8280744.txt",
+              "role": "abstract",
+              "sha256": "ca849fe5a3bd0a30167887576d3a9f34fbbeffce537836ad573feccf7e4d79d3",
+              "source_record_id": "src_bb74354307739a6c50d8d98b",
+              "version_label": null,
+              "work_id": "wrk_73df3a80869495657909414b"
+            },
+            {
+              "acquired_at": "2026-09-16T04:20:37.440911Z",
+              "artifact_id": "art_3d2f973c3cd3d41c00aed2c4",
+              "byte_size": 1856,
+              "content_extent": "full",
+              "derived_from_artifact_id": null,
+              "extraction_warnings": [],
+              "language": null,
+              "media_type": "text/plain",
+              "provenance": {
+                "source": "search_hit.abstract"
+              },
+              "relative_path": "documents/wrk_389503c4733d4bf39a371c90/art_3d2f973c3cd3d41c00aed2c4.txt",
+              "role": "abstract",
+              "sha256": "b3530d6fbeaebda8c6210e99f58ba71d14e475d3f33e021ca3ba67d9fae227e0",
+              "source_record_id": "src_7e60e8ca1daad6e786d91088",
+              "version_label": null,
+              "work_id": "wrk_389503c4733d4bf39a371c90"
+            },
+            {
+              "acquired_at": "2026-09-16T04:21:55.581312Z",
+              "artifact_id": "art_2b963a61ae0d71cc1b4c5842",
+              "byte_size": 90572,
+              "content_extent": "unknown",
+              "derived_from_artifact_id": null,
+              "extraction_warnings": [],
+              "language": null,
+              "media_type": "text/plain",
+              "provenance": {
+                "media_type_received": "text/plain",
+                "source": "full_text_tool",
+                "source_url": "https://arxiv.org/html/2309.03523"
+              },
+              "relative_path": "documents/wrk_820bea3aec0826aa27db0b5a/art_2b963a61ae0d71cc1b4c5842.txt",
+              "role": "extracted_text",
+              "sha256": "5283c445f484f1687eefe40c0b01c7ba95a9612547675c2b24e53cb473c2ad8c",
+              "source_record_id": "src_b1fb2d49a3bc79e689b1a440",
+              "version_label": null,
+              "work_id": "wrk_820bea3aec0826aa27db0b5a"
+            },
+            {
+              "acquired_at": "2026-09-16T04:21:55.584678Z",
+              "artifact_id": "art_43ad4f142993abda682de1b5",
+              "byte_size": 34614,
+              "content_extent": "unknown",
+              "derived_from_artifact_id": null,
+              "extraction_warnings": [],
+              "language": null,
+              "media_type": "text/plain",
+              "provenance": {
+                "media_type_received": "text/plain",
+                "source": "full_text_tool",
+                "source_url": "https://arxiv.org/html/2609.17421"
+              },
+              "relative_path": "documents/wrk_171a71953dfe9bc080b85871/art_43ad4f142993abda682de1b5.txt",
+              "role": "extracted_text",
+              "sha256": "7efe41effe305f242dda088b9f5d9aa6954f5a1c44d8b09ba6f2f0f351ac450a",
+              "source_record_id": "src_b8c2a5a2ce7e5e5b256e859b",
+              "version_label": null,
+              "work_id": "wrk_171a71953dfe9bc080b85871"
+            },
+            {
+              "acquired_at": "2026-09-16T04:21:55.587395Z",
+              "artifact_id": "art_c3b89cfcb4e19c8af03e12b0",
+              "byte_size": 47021,
+              "content_extent": "unknown",
+              "derived_from_artifact_id": null,
+              "extraction_warnings": [],
+              "language": null,
+              "media_type": "text/plain",
+              "provenance": {
+                "media_type_received": "text/plain",
+                "source": "full_text_tool",
+                "source_url": "https://arxiv.org/html/2609.17254"
+              },
+              "relative_path": "documents/wrk_815a9db5a302ee3ea8a600ba/art_c3b89cfcb4e19c8af03e12b0.txt",
+              "role": "extracted_text",
+              "sha256": "1ec7ddd426d74c1707d7be6f1be75c79d52896c837fba7751b0f06dcfc4dfe85",
+              "source_record_id": "src_a7a4cb72d84ef8468e29a7da",
+              "version_label": null,
+              "work_id": "wrk_815a9db5a302ee3ea8a600ba"
+            },
+            {
+              "acquired_at": "2026-09-16T04:21:55.589437Z",
+              "artifact_id": "art_6c601ac348da5aaf422df11e",
+              "byte_size": 45889,
+              "content_extent": "unknown",
+              "derived_from_artifact_id": null,
+              "extraction_warnings": [],
+              "language": null,
+              "media_type": "text/plain",
+              "provenance": {
+                "media_type_received": "text/plain",
+                "source": "full_text_tool",
+                "source_url": "https://arxiv.org/html/2609.17146"
+              },
+              "relative_path": "documents/wrk_1e3d33fa769e6a31fa8fb96b/art_6c601ac348da5aaf422df11e.txt",
+              "role": "extracted_text",
+              "sha256": "4d528b2f8d105c8780f075fb9eff0b3725f808b7650594a7b6ccb95a3e6d3f6d",
+              "source_record_id": "src_58d248bdbf8c09956d42fb34",
+              "version_label": null,
+              "work_id": "wrk_1e3d33fa769e6a31fa8fb96b"
+            },
+            {
+              "acquired_at": "2026-09-16T04:21:55.591970Z",
+              "artifact_id": "art_491da1f1f7d9e5d58bfc15e6",
+              "byte_size": 102981,
+              "content_extent": "partial",
+              "derived_from_artifact_id": null,
+              "extraction_warnings": [],
+              "language": null,
+              "media_type": "text/plain",
+              "provenance": {
+                "media_type_received": "text/plain",
+                "source": "full_text_tool",
+                "source_url": "https://arxiv.org/html/2609.17061"
+              },
+              "relative_path": "documents/wrk_8facaa24c827ac803e17fa0c/art_491da1f1f7d9e5d58bfc15e6.txt",
+              "role": "extracted_text",
+              "sha256": "aa6072a0e21b113ea713df25ef43c808e2aceb79fbc835994d4a16b6482c225b",
+              "source_record_id": "src_208db142bb497c80b95a3a56",
+              "version_label": null,
+              "work_id": "wrk_8facaa24c827ac803e17fa0c"
+            },
+            {
+              "acquired_at": "2026-09-16T04:21:55.594410Z",
+              "artifact_id": "art_5354bd5ed37d1eb634c61acd",
+              "byte_size": 98519,
+              "content_extent": "unknown",
+              "derived_from_artifact_id": null,
+              "extraction_warnings": [],
+              "language": null,
+              "media_type": "text/plain",
+              "provenance": {
+                "media_type_received": "text/plain",
+                "source": "full_text_tool",
+                "source_url": "https://arxiv.org/html/2609.16977"
+              },
+              "relative_path": "documents/wrk_cde936c7871781a3a7d034a3/art_5354bd5ed37d1eb634c61acd.txt",
+              "role": "extracted_text",
+              "sha256": "3c1aca5f5cb08efa2a0d282938c81b76dcf67602d7c71f961bac4f88b0578ce0",
+              "source_record_id": "src_5de85851645eac529444dc0d",
+              "version_label": null,
+              "work_id": "wrk_cde936c7871781a3a7d034a3"
+            },
+            {
+              "acquired_at": "2026-09-16T04:21:55.596305Z",
+              "artifact_id": "art_7e04c4a83d5451d047587b1a",
+              "byte_size": 58958,
+              "content_extent": "unknown",
+              "derived_from_artifact_id": null,
+              "extraction_warnings": [],
+              "language": null,
+              "media_type": "text/plain",
+              "provenance": {
+                "media_type_received": "text/plain",
+                "source": "full_text_tool",
+                "source_url": "https://arxiv.org/html/2609.16738"
+              },
+              "relative_path": "documents/wrk_73df3a80869495657909414b/art_7e04c4a83d5451d047587b1a.txt",
+              "role": "extracted_text",
+              "sha256": "d057df64aea97137864728c3898e80aaf4bfe2a75fc0ffa8cca1db7b1f9001b1",
+              "source_record_id": "src_bb74354307739a6c50d8d98b",
+              "version_label": null,
+              "work_id": "wrk_73df3a80869495657909414b"
+            },
+            {
+              "acquired_at": "2026-09-16T04:21:55.598715Z",
+              "artifact_id": "art_1ac23e328a07dc73508b77da",
+              "byte_size": 47323,
+              "content_extent": "unknown",
+              "derived_from_artifact_id": null,
+              "extraction_warnings": [],
+              "language": null,
+              "media_type": "text/plain",
+              "provenance": {
+                "media_type_received": "text/plain",
+                "source": "full_text_tool",
+                "source_url": "https://arxiv.org/html/2609.16560"
+              },
+              "relative_path": "documents/wrk_389503c4733d4bf39a371c90/art_1ac23e328a07dc73508b77da.txt",
+              "role": "extracted_text",
+              "sha256": "b92994ce18709c3bc3c005bfc01cae3bff117b33fc9720c5c3102731aa56273d",
+              "source_record_id": "src_7e60e8ca1daad6e786d91088",
+              "version_label": null,
+              "work_id": "wrk_389503c4733d4bf39a371c90"
+            }
+          ],
+          "bundle_id": "bnd_34cb2728fefebd572a4110db",
+          "evidence": [],
+          "producer": "structured_source_retrieval:arxiv",
+          "search_executions": [
+            {
+              "completed_at": "2026-09-16T04:18:43.689309Z",
+              "error": null,
+              "execution_id": "sex_384cd65e828d50b5ba7c435c",
+              "parameters": {
+                "base_strategy": "S1",
+                "fallback_reason": null,
+                "level": "strict",
+                "limit": 8,
+                "novelty_point_id": "NP-1",
+                "strategy_id": "S1",
+                "task_id": "T-1",
+                "variant_id": "S1"
+              },
+              "query": "(ti:\"large-scale sequential graph\" OR ti:\"dynamic graph\" OR ti:\"temporal graph\") AND (abs:\"graph summarization\" OR abs:\"graph compression\") AND (abs:\"graph autoencoder\" OR abs:\"graph representation learning\") AND (abs:\"recurrent neural network\" OR abs:\"temporal dependency modeling\")",
+              "results": [],
+              "run_id": "run-235a8317e2b34fb8b8a087c9b7be3279",
+              "source_id": "arxiv",
+              "started_at": "2026-09-16T04:18:31.754267Z",
+              "status": "succeeded",
+              "tool_name": "structured_source_retrieval"
+            },
+            {
+              "completed_at": "2026-09-16T04:19:31.678170Z",
+              "error": null,
+              "execution_id": "sex_60805063443823fe7ec7890d",
+              "parameters": {
+                "base_strategy": "S1",
+                "fallback_reason": "丢弃概念 C4（recurrent neural network，importance=2）",
+                "level": "strict",
+                "limit": 8,
+                "novelty_point_id": "NP-1",
+                "strategy_id": "S1-fb1",
+                "task_id": "T-1",
+                "variant_id": "S1-fb1"
+              },
+              "query": "(ti:\"large-scale sequential graph\" OR ti:\"dynamic graph\" OR ti:\"temporal graph\") AND (abs:\"graph summarization\" OR abs:\"graph compression\") AND (abs:\"graph autoencoder\" OR abs:\"graph representation learning\")",
+              "results": [],
+              "run_id": "run-235a8317e2b34fb8b8a087c9b7be3279",
+              "source_id": "arxiv",
+              "started_at": "2026-09-16T04:18:43.689437Z",
+              "status": "succeeded",
+              "tool_name": "structured_source_retrieval"
+            },
+            {
+              "completed_at": "2026-09-16T04:20:20.021421Z",
+              "error": null,
+              "execution_id": "sex_c65aaa7ecf957f2e28a568eb",
+              "parameters": {
+                "base_strategy": "S2",
+                "fallback_reason": null,
+                "level": "medium",
+                "limit": 8,
+                "novelty_point_id": "NP-1",
+                "strategy_id": "S2",
+                "task_id": "T-1",
+                "variant_id": "S2"
+              },
+              "query": "(ti:\"large-scale sequential graph\" OR ti:\"dynamic graph\" OR ti:\"temporal graph\" OR ti:\"dynamic networks\" OR ti:\"time-evolving graphs\") AND (abs:\"graph summarization\" OR abs:\"graph compression\" OR abs:\"graph coarsening\" OR abs:\"graph reduction\") AND (abs:\"graph autoencoder\" OR abs:\"graph representation learning\" OR abs:\"graph neural network\" OR abs:\"node embedding\")",
+              "results": [
+                {
+                  "rank": 1,
+                  "score": null,
+                  "snippet": null,
+                  "source_record_id": "src_b1fb2d49a3bc79e689b1a440"
+                }
+              ],
+              "run_id": "run-235a8317e2b34fb8b8a087c9b7be3279",
+              "source_id": "arxiv",
+              "started_at": "2026-09-16T04:19:31.678311Z",
+              "status": "succeeded",
+              "tool_name": "structured_source_retrieval"
+            },
+            {
+              "completed_at": "2026-09-16T04:20:37.418689Z",
+              "error": null,
+              "execution_id": "sex_dca8ef29a4d660f9fcaa62dc",
+              "parameters": {
+                "base_strategy": "S3",
+                "fallback_reason": null,
+                "level": "broad",
+                "limit": 8,
+                "novelty_point_id": "NP-1",
+                "strategy_id": "S3",
+                "task_id": "T-1",
+                "variant_id": "S3"
+              },
+              "query": "(ti:\"large-scale sequential graph\" OR ti:\"dynamic graph\" OR ti:\"temporal graph\" OR ti:\"dynamic networks\" OR ti:\"time-evolving graphs\") OR (abs:\"graph autoencoder\" OR abs:\"graph representation learning\" OR abs:\"graph neural network\" OR abs:\"node embedding\")",
+              "results": [
+                {
+                  "rank": 1,
+                  "score": null,
+                  "snippet": null,
+                  "source_record_id": "src_b8c2a5a2ce7e5e5b256e859b"
+                },
+                {
+                  "rank": 2,
+                  "score": null,
+                  "snippet": null,
+                  "source_record_id": "src_a7a4cb72d84ef8468e29a7da"
+                },
+                {
+                  "rank": 3,
+                  "score": null,
+                  "snippet": null,
+                  "source_record_id": "src_58d248bdbf8c09956d42fb34"
+                },
+                {
+                  "rank": 4,
+                  "score": null,
+                  "snippet": null,
+                  "source_record_id": "src_208db142bb497c80b95a3a56"
+                },
+                {
+                  "rank": 5,
+                  "score": null,
+                  "snippet": null,
+                  "source_record_id": "src_5de85851645eac529444dc0d"
+                },
+                {
+                  "rank": 6,
+                  "score": null,
+                  "snippet": null,
+                  "source_record_id": "src_bb74354307739a6c50d8d98b"
+                },
+                {
+                  "rank": 7,
+                  "score": null,
+                  "snippet": null,
+                  "source_record_id": "src_7e60e8ca1daad6e786d91088"
+                }
+              ],
+              "run_id": "run-235a8317e2b34fb8b8a087c9b7be3279",
+              "source_id": "arxiv",
+              "started_at": "2026-09-16T04:20:20.021544Z",
+              "status": "partial",
+              "tool_name": "structured_source_retrieval"
+            }
+          ],
+          "source_records": [
+            {
+              "abstract": "Dynamic Graph Neural Network (DGNN) has shown a strong capability of learning dynamic graphs by exploiting both spatial and temporal features. Although DGNN has recently received considerable attention by AI community and various DGNN models have been proposed, building a distributed system for efficient DGNN training is still challenging. It has been well recognized that how to partition the dynamic graph and assign workloads to multiple GPUs plays a critical role in training acceleration. Existing works partition a dynamic graph into snapshots or temporal sequences, which only work well when the graph has uniform spatio-temporal structures. However, dynamic graphs in practice are not uniformly structured, with some snapshots being very dense while others are sparse. To address this issue, we propose DGC, a distributed DGNN training system that achieves a 1.25x - 7.52x speedup over the state-of-the-art in our testbed. DGC's success stems from a new graph partitioning method that partitions dynamic graphs into chunks, which are essentially subgraphs with modest training workloads and few inter connections. This partitioning algorithm is based on graph coarsening, which can run very fast on large graphs. In addition, DGC has a highly efficient run-time, powered by the proposed chunk fusion and adaptive stale aggregation techniques. Extensive experimental results on 3 typical DGNN models and 4 popular dynamic graph datasets are presented to show the effectiveness of DGC.",
+              "access_status": "full_text_acquired",
+              "authors": [
+                "Fahao Chen",
+                "Peng Li",
+                "Celimuge Wu"
+              ],
+              "external_id": "2309.03523v1",
+              "full_text_url": "https://arxiv.org/pdf/2309.03523",
+              "identifiers": [
+                {
+                  "namespace": "arxiv",
+                  "value": "2309.03523"
+                }
+              ],
+              "landing_url": "https://arxiv.org/abs/2309.03523",
+              "observed_at": "2026-09-16T04:20:37.420570Z",
+              "provenance": {
+                "adapter": "structured_retrieval",
+                "identity_basis": "arxiv"
+              },
+              "publication_stage": "unknown",
+              "publication_stage_provenance": null,
+              "publication_year": 2023,
+              "raw_metadata": {
+                "channel": "arxiv-web-search"
+              },
+              "source_id": "arxiv",
+              "source_kind": "structured_database",
+              "source_record_id": "src_b1fb2d49a3bc79e689b1a440",
+              "title": "DGC: Training Dynamic Graphs with Spatio-Temporal Non-Uniformity using Graph Partitioning by Chunks",
+              "work_id": "wrk_820bea3aec0826aa27db0b5a"
+            },
+            {
+              "abstract": "Audio-Visual Navigation (AVN) requires an agent to localize and navigate toward a continuously vocalizing target relying solely on visual observations and acoustic cues. Currently, systems lack the ability to adaptively correct and replan when faced with incomplete or misleading visual perception. Furthermore, relying on physical collisions to compensate for missing visual information results in inefficient and unsafe navigation, whereas existing methods are overly dependent on passive visual perception. To address these issues, we propose the Transformer-based Token Fusion and Dynamic Graph Planning (TDGP) model, which incorporates high-level perception layers and leverages the Transformer model to fuse multimodal cues for precise local planning. Next, a low-level planning layer is designed that uses physical collision penalties to remove edges that collide with the map in real time and apply corresponding penalties, forcing the agent to automatically re-plan to compensate for the lack of visual information. Experiments show that our TDGP model outperforms baseline models on the Replica and Matterport3D (MP3D) datasets, and that the model's sound enhancement strategy significantly improves generalization in unheard acoustic scenarios.",
+              "access_status": "full_text_acquired",
+              "authors": [
+                "Shaohang Wu",
+                "Yinfeng Yu"
+              ],
+              "external_id": "2609.17421v1",
+              "full_text_url": "https://arxiv.org/pdf/2609.17421",
+              "identifiers": [
+                {
+                  "namespace": "arxiv",
+                  "value": "2609.17421"
+                }
+              ],
+              "landing_url": "https://arxiv.org/abs/2609.17421",
+              "observed_at": "2026-09-16T04:20:37.420570Z",
+              "provenance": {
+                "adapter": "structured_retrieval",
+                "identity_basis": "arxiv"
+              },
+              "publication_stage": "unknown",
+              "publication_stage_provenance": null,
+              "publication_year": 2026,
+              "raw_metadata": {
+                "channel": "arxiv-web-search"
+              },
+              "source_id": "arxiv",
+              "source_kind": "structured_database",
+              "source_record_id": "src_b8c2a5a2ce7e5e5b256e859b",
+              "title": "Transformer-Based Token Fusion and Dynamic Graph Planning for Audio-Visual Navigation",
+              "work_id": "wrk_171a71953dfe9bc080b85871"
+            },
+            {
+              "abstract": "In cases where source code is not available, such as malware analysis, firmware analysis, and embedded systems analysis, vulnerability detection in compiled programs has gained importance. Current methods are heavily reliant on syntactical regularities or higher level representations that are vulnerable to changes in the compiler and may not be readily applicable to assembly code.In this article, we present SEMA-GUARD, a framework that uses semantic analysis and graph neural networks to identify flaws in assembly code. The approach improves the representation of control flow graphs by adding information about the program's execution at a lower level of abstraction, including stack manipulations, memory accesses, and data flow. A set based on the Juliet Test Suite was used to evaluate the effectiveness of SEMA-GUARD. In this set, each piece of source code is initially translated into assembly language and then broken down into function-level chunks. The suggested method, which relies only on statistical or structural data, achieves an accuracy of 85.1\\% and an F1 score of 0.801, according to the results. Such results imply that including semantic information in graph-based models may be a successful method for identifying vulnerabilities in compiled code.",
+              "access_status": "full_text_acquired",
+              "authors": [
+                "Halil Dursunoglu",
+                "Kaan Sulkalar"
+              ],
+              "external_id": "2609.17254v1",
+              "full_text_url": "https://arxiv.org/pdf/2609.17254",
+              "identifiers": [
+                {
+                  "namespace": "arxiv",
+                  "value": "2609.17254"
+                }
+              ],
+              "landing_url": "https://arxiv.org/abs/2609.17254",
+              "observed_at": "2026-09-16T04:20:37.420570Z",
+              "provenance": {
+                "adapter": "structured_retrieval",
+                "identity_basis": "arxiv"
+              },
+              "publication_stage": "unknown",
+              "publication_stage_provenance": null,
+              "publication_year": 2026,
+              "raw_metadata": {
+                "channel": "arxiv-web-search"
+              },
+              "source_id": "arxiv",
+              "source_kind": "structured_database",
+              "source_record_id": "src_a7a4cb72d84ef8468e29a7da",
+              "title": "SEMA-GUARD: Semantic and Graph-Based Vulnerability Detection in Assembly Code",
+              "work_id": "wrk_815a9db5a302ee3ea8a600ba"
+            },
+            {
+              "abstract": "We study an optimal intervention problem for linear threshold models. This is a popular class of dynamical network systems whereby a number of agents, identified with the nodes of a graph, strategically change their binary action (0 or 1) according to a threshold rule. Specifically, an agent adopts action 1 if and only if the fraction of its neighbors in the interaction graph that do so is greater than or equal to a prescribed threshold. Assuming that a planner can modify the agents' thresholds at a cost equal to the aggregate threshold increase, we study the minimum intervention cost needed to ensure global convergence to the all-1 configuration. Our main contribution is the introduction of a new graph-theoretic quantity, called oriented path number, that is the minimum number of disjoint paths needed to cover the graph that can be oriented to form a directed acyclic graph. When thresholds are all equal to 1/2, the optimal cost is shown to coincide with the oriented path number, whereas, in the general case, it turns out to be the main ingredient of a bound on the optimal intervention cost.",
+              "access_status": "full_text_acquired",
+              "authors": [
+                "Giacomo Como",
+                "Fabio Fagnani",
+                "Stephane Durand"
+              ],
+              "external_id": "2609.17146v1",
+              "full_text_url": "https://arxiv.org/pdf/2609.17146",
+              "identifiers": [
+                {
+                  "namespace": "arxiv",
+                  "value": "2609.17146"
+                }
+              ],
+              "landing_url": "https://arxiv.org/abs/2609.17146",
+              "observed_at": "2026-09-16T04:20:37.420570Z",
+              "provenance": {
+                "adapter": "structured_retrieval",
+                "identity_basis": "arxiv"
+              },
+              "publication_stage": "unknown",
+              "publication_stage_provenance": null,
+              "publication_year": 2026,
+              "raw_metadata": {
+                "channel": "arxiv-web-search"
+              },
+              "source_id": "arxiv",
+              "source_kind": "structured_database",
+              "source_record_id": "src_58d248bdbf8c09956d42fb34",
+              "title": "Intervention problems in the Linear Threshold Model: A general formulation and new results",
+              "work_id": "wrk_1e3d33fa769e6a31fa8fb96b"
+            },
+            {
+              "abstract": "Message-passing Graph Neural Networks (GNNs) iteratively propagate and aggregate local neighborhood information followed by global readout to learn graph representations. However, their discriminative power is upper-bounded by the Weisfeiler--Lehman (1-WL) graph isomorphism test. This prevents GNNs from distinguishing certain non-isomorphic graphs with identical local neighborhood structures, often leading to similar graph representations. Unified Topological Signatures (UTS) capture compact, multi-scale representation of global graph topology derived from persistent homology. We introduce two complementary UTS signatures: Graph_UTS- a static signature of the input graph topology, and Embedding_UTS- a dynamic signature of the evolving embedding topology. They encode structural information inaccessible to 1-WL-based message-passing GNNs, yet their capabilities are explored solely for post-hoc embedding-space analysis. We integrate UTS into GNN training across three architectural interventions: (i) UTS-Aug: augmenting with standard readout feature that encodes graph's true topology; (ii) UTS-Reg: topological regularizer that constrains representation collapse; (iii) UTS-Pool: topology-guided pooling that retains structurally critical nodes. We further leverage UTS as a layer-wise diagnostic to quantify oversmoothing during GNN training. Theoretically, we show that integrating UTS into GNN optimization strictly extends GNN expressivity beyond the 1-WL hierarchy. Experiments on three graph classification benchmarks show consistent benefits: Graph-UTS, Dual-UTS, and UTS-Pool improve accuracy across all three datasets, Embedding-UTS provides smaller but similarly consistent gains, and UTS-Reg's benefit varies across graph domains. Accuracy improves by up to 5.8% with Graph-UTS augmentation, by up to 1.9% with UTS-Reg, and achieves comparable performance to TOGL with UTS-Pool.",
+              "access_status": "full_text_acquired",
+              "authors": [
+                "Sanyam Sanjay Jain",
+                "Anshika Krishnatray",
+                "Aditya Sharma",
+                "Vinti Agarwal"
+              ],
+              "external_id": "2609.17061v1",
+              "full_text_url": "https://arxiv.org/pdf/2609.17061",
+              "identifiers": [
+                {
+                  "namespace": "arxiv",
+                  "value": "2609.17061"
+                }
+              ],
+              "landing_url": "https://arxiv.org/abs/2609.17061",
+              "observed_at": "2026-09-16T04:20:37.420570Z",
+              "provenance": {
+                "adapter": "structured_retrieval",
+                "identity_basis": "arxiv"
+              },
+              "publication_stage": "unknown",
+              "publication_stage_provenance": null,
+              "publication_year": 2026,
+              "raw_metadata": {
+                "channel": "arxiv-web-search"
+              },
+              "source_id": "arxiv",
+              "source_kind": "structured_database",
+              "source_record_id": "src_208db142bb497c80b95a3a56",
+              "title": "Repurposing Unified Topological Signatures for Graph Representation Learning",
+              "work_id": "wrk_8facaa24c827ac803e17fa0c"
+            },
+            {
+              "abstract": "Federated learning lets multiple participants train a shared model without pooling raw data, by exchanging locally trained model updates instead. Federated averaging assumes that averaging local models is a reasonable way to solve one shared problem when participants' data are broadly similar. Work on non-IID federated learning has shown that this assumption can withstand differences in label and feature distributions. We ask whether it survives a different strain specific to graph neural networks, where client graphs differ not in label or feature distribution but in structure itself, requiring the same shared weights to operate over fundamentally different topologies. We call the resulting harm structural negative transfer. In a federation of real citation networks and synthetic structural proxies, a structurally atypical client lost more than half its achievable accuracy simply by joining. In an initial six-client federation, two label-free structural statistics computable before training were strongly associated with this harm. Expanding to twenty clients showed that degree divergence remained associated with harm, although more weakly, and survived removal of domain contrast. Spectral divergence did not replicate, which we trace to a confound caused by the composition of the reference pool used for leave-one-out statistics. A causal intervention isolating topology found no significant effect. A degree-normalization mechanism held across twenty-four seeds but did not explain the harm when corrected. The best of five candidate fixes beat a tuned baseline only until a matched, structurally blind control was applied, after which the gain disappeared. What survives is a modest, partially replicated, degree-specific signal that is not yet a validated predictor at scale.",
+              "access_status": "full_text_acquired",
+              "authors": [
+                "Chethana Prasad Kabgere",
+                "Shylaja SS"
+              ],
+              "external_id": "2609.16977v1",
+              "full_text_url": "https://arxiv.org/pdf/2609.16977",
+              "identifiers": [
+                {
+                  "namespace": "arxiv",
+                  "value": "2609.16977"
+                }
+              ],
+              "landing_url": "https://arxiv.org/abs/2609.16977",
+              "observed_at": "2026-09-16T04:20:37.420570Z",
+              "provenance": {
+                "adapter": "structured_retrieval",
+                "identity_basis": "arxiv"
+              },
+              "publication_stage": "unknown",
+              "publication_stage_provenance": null,
+              "publication_year": 2026,
+              "raw_metadata": {
+                "channel": "arxiv-web-search"
+              },
+              "source_id": "arxiv",
+              "source_kind": "structured_database",
+              "source_record_id": "src_5de85851645eac529444dc0d",
+              "title": "Structural Negative Transfer in Federated Graph Neural Networks: Diagnosis, Causal Investigation, and the Limits of Divergence-Aware Mitigation",
+              "work_id": "wrk_cde936c7871781a3a7d034a3"
+            },
+            {
+              "abstract": "Power Flow (PF), Optimal Power Flow (OPF), and State Estimation (SE) are fundamental problems in power system analysis, but solving them is computationally expensive. Graph Neural Networks (GNNs) have been proposed as fast surrogates, yet existing solvers are trained for a single problem at a time, producing narrow models that must be rebuilt for each new task. We propose a more general approach: a single Heterogeneous Residual Gated Graph Convolutional Network that solves all three problems with one shared backbone. Rather than learning one mapping, the model learns a reusable representation of how the network behaves, from which PF, OPF, and SE can each be estimated. Trained jointly on the three problems across diverse topologies and loading conditions, and evaluated on the IEEE 14-bus and 118-bus systems, the shared model matches the accuracy of task-specific GNN solvers and stays robust on unseen loading levels and topologies. These results show that a single model can capture the basic operation of a power network and serve several analysis tasks at once, a first step toward a foundation model for power systems.",
+              "access_status": "full_text_acquired",
+              "authors": [
+                "Ferran Bohigas-Daranas",
+                "Hamid Latif-Martínez",
+                "Eduardo Prieto-Araujo",
+                "Oriol Gomis-Bellmunt",
+                "Pere Barlet-Ros"
+              ],
+              "external_id": "2609.16738v1",
+              "full_text_url": "https://arxiv.org/pdf/2609.16738",
+              "identifiers": [
+                {
+                  "namespace": "arxiv",
+                  "value": "2609.16738"
+                }
+              ],
+              "landing_url": "https://arxiv.org/abs/2609.16738",
+              "observed_at": "2026-09-16T04:20:37.420570Z",
+              "provenance": {
+                "adapter": "structured_retrieval",
+                "identity_basis": "arxiv"
+              },
+              "publication_stage": "unknown",
+              "publication_stage_provenance": null,
+              "publication_year": 2026,
+              "raw_metadata": {
+                "channel": "arxiv-web-search"
+              },
+              "source_id": "arxiv",
+              "source_kind": "structured_database",
+              "source_record_id": "src_bb74354307739a6c50d8d98b",
+              "title": "Unified Heterogeneous Graph Neural Network solver for Power Flow, Optimal Power Flow and State Estimation",
+              "work_id": "wrk_73df3a80869495657909414b"
+            },
+            {
+              "abstract": "User behavior in real-world recommender systems is heterogeneous. While some users exhibit coherent preferences, others show abrupt interest shifts, bursty interactions, excessive repetition, or inconsistency with collaborative neighborhoods. Such deviations may arise from benign variation or manipulation, including shilling attacks, but do not alone establish malicious intent. Existing robust recommenders exploit user-risk signals through training-time reweighting or graph aggregation, whereas adapting generation to estimated user-level weak risk remains underexplored in LLM-based generative recommendation. We propose ReliGRec (Reliability-oriented Generative Recommendation), a weakly supervised framework whose name denotes its design goal rather than a supervised reliability variable. ReliGRec derives user-level weak-risk proxy labels from review-feedback signals for a subset of users and represents sequential behavior and collaborative context using a Behavior Token and temporal Graph Tokens, respectively. A Dual-View Weak-Risk Estimator fuses the representations to produce a user-level weak-risk score that selects a Simple or Cautious Prompt at inference. The Cautious Prompt is designed to encourage attention to stable, collaboratively supported evidence while reducing overreliance on isolated, short-term, or repeated interactions. The Behavior Token affects generation through weak-risk estimation and routing, whereas the aggregated Graph Token provides collaborative context for next-item Semantic ID generation. ReliGRec thus turns weak-risk estimation from an auxiliary prediction into a generation-time control signal. Experiments report competitive recommendation and weak-risk proxy-label prediction, while routing analyses characterize the recommendation-quality and inference-cost behavior of weak-risk-guided prompting.",
+              "access_status": "full_text_acquired",
+              "authors": [
+                "Haoran Yang",
+                "Fei Chen",
+                "Yutian Xiao",
+                "Jiahao Liang"
+              ],
+              "external_id": "2609.16560v1",
+              "full_text_url": "https://arxiv.org/pdf/2609.16560",
+              "identifiers": [
+                {
+                  "namespace": "arxiv",
+                  "value": "2609.16560"
+                }
+              ],
+              "landing_url": "https://arxiv.org/abs/2609.16560",
+              "observed_at": "2026-09-16T04:20:37.420570Z",
+              "provenance": {
+                "adapter": "structured_retrieval",
+                "identity_basis": "arxiv"
+              },
+              "publication_stage": "unknown",
+              "publication_stage_provenance": null,
+              "publication_year": 2026,
+              "raw_metadata": {
+                "channel": "arxiv-web-search"
+              },
+              "source_id": "arxiv",
+              "source_kind": "structured_database",
+              "source_record_id": "src_7e60e8ca1daad6e786d91088",
+              "title": "ReliGRec: Reliability-Oriented LLM-Based Generative Recommendation via User-Risk-Aware Prompt Routing",
+              "work_id": "wrk_389503c4733d4bf39a371c90"
+            }
+          ],
+          "warnings": [],
+          "works": [
+            {
+              "authors": [
+                "Fahao Chen",
+                "Peng Li",
+                "Celimuge Wu"
+              ],
+              "canonical_source_record_id": null,
+              "identifiers": [
+                {
+                  "namespace": "arxiv",
+                  "value": "2309.03523"
+                }
+              ],
+              "language": null,
+              "publication_stage": "unknown",
+              "publication_stage_provenance": null,
+              "publication_year": 2023,
+              "title": "DGC: Training Dynamic Graphs with Spatio-Temporal Non-Uniformity using Graph Partitioning by Chunks",
+              "venue": null,
+              "work_id": "wrk_820bea3aec0826aa27db0b5a",
+              "work_type": "article"
+            },
+            {
+              "authors": [
+                "Shaohang Wu",
+                "Yinfeng Yu"
+              ],
+              "canonical_source_record_id": null,
+              "identifiers": [
+                {
+                  "namespace": "arxiv",
+                  "value": "2609.17421"
+                }
+              ],
+              "language": null,
+              "publication_stage": "unknown",
+              "publication_stage_provenance": null,
+              "publication_year": 2026,
+              "title": "Transformer-Based Token Fusion and Dynamic Graph Planning for Audio-Visual Navigation",
+              "venue": null,
+              "work_id": "wrk_171a71953dfe9bc080b85871",
+              "work_type": "article"
+            },
+            {
+              "authors": [
+                "Halil Dursunoglu",
+                "Kaan Sulkalar"
+              ],
+              "canonical_source_record_id": null,
+              "identifiers": [
+                {
+                  "namespace": "arxiv",
+                  "value": "2609.17254"
+                }
+              ],
+              "language": null,
+              "publication_stage": "unknown",
+              "publication_stage_provenance": null,
+              "publication_year": 2026,
+              "title": "SEMA-GUARD: Semantic and Graph-Based Vulnerability Detection in Assembly Code",
+              "venue": null,
+              "work_id": "wrk_815a9db5a302ee3ea8a600ba",
+              "work_type": "article"
+            },
+            {
+              "authors": [
+                "Giacomo Como",
+                "Fabio Fagnani",
+                "Stephane Durand"
+              ],
+              "canonical_source_record_id": null,
+              "identifiers": [
+                {
+                  "namespace": "arxiv",
+                  "value": "2609.17146"
+                }
+              ],
+              "language": null,
+              "publication_stage": "unknown",
+              "publication_stage_provenance": null,
+              "publication_year": 2026,
+              "title": "Intervention problems in the Linear Threshold Model: A general formulation and new results",
+              "venue": null,
+              "work_id": "wrk_1e3d33fa769e6a31fa8fb96b",
+              "work_type": "article"
+            },
+            {
+              "authors": [
+                "Sanyam Sanjay Jain",
+                "Anshika Krishnatray",
+                "Aditya Sharma",
+                "Vinti Agarwal"
+              ],
+              "canonical_source_record_id": null,
+              "identifiers": [
+                {
+                  "namespace": "arxiv",
+                  "value": "2609.17061"
+                }
+              ],
+              "language": null,
+              "publication_stage": "unknown",
+              "publication_stage_provenance": null,
+              "publication_year": 2026,
+              "title": "Repurposing Unified Topological Signatures for Graph Representation Learning",
+              "venue": null,
+              "work_id": "wrk_8facaa24c827ac803e17fa0c",
+              "work_type": "article"
+            },
+            {
+              "authors": [
+                "Chethana Prasad Kabgere",
+                "Shylaja SS"
+              ],
+              "canonical_source_record_id": null,
+              "identifiers": [
+                {
+                  "namespace": "arxiv",
+                  "value": "2609.16977"
+                }
+              ],
+              "language": null,
+              "publication_stage": "unknown",
+              "publication_stage_provenance": null,
+              "publication_year": 2026,
+              "title": "Structural Negative Transfer in Federated Graph Neural Networks: Diagnosis, Causal Investigation, and the Limits of Divergence-Aware Mitigation",
+              "venue": null,
+              "work_id": "wrk_cde936c7871781a3a7d034a3",
+              "work_type": "article"
+            },
+            {
+              "authors": [
+                "Ferran Bohigas-Daranas",
+                "Hamid Latif-Martínez",
+                "Eduardo Prieto-Araujo",
+                "Oriol Gomis-Bellmunt",
+                "Pere Barlet-Ros"
+              ],
+              "canonical_source_record_id": null,
+              "identifiers": [
+                {
+                  "namespace": "arxiv",
+                  "value": "2609.16738"
+                }
+              ],
+              "language": null,
+              "publication_stage": "unknown",
+              "publication_stage_provenance": null,
+              "publication_year": 2026,
+              "title": "Unified Heterogeneous Graph Neural Network solver for Power Flow, Optimal Power Flow and State Estimation",
+              "venue": null,
+              "work_id": "wrk_73df3a80869495657909414b",
+              "work_type": "article"
+            },
+            {
+              "authors": [
+                "Haoran Yang",
+                "Fei Chen",
+                "Yutian Xiao",
+                "Jiahao Liang"
+              ],
+              "canonical_source_record_id": null,
+              "identifiers": [
+                {
+                  "namespace": "arxiv",
+                  "value": "2609.16560"
+                }
+              ],
+              "language": null,
+              "publication_stage": "unknown",
+              "publication_stage_provenance": null,
+              "publication_year": 2026,
+              "title": "ReliGRec: Reliability-Oriented LLM-Based Generative Recommendation via User-Risk-Aware Prompt Routing",
+              "venue": null,
+              "work_id": "wrk_389503c4733d4bf39a371c90",
+              "work_type": "article"
+            }
+          ]
+        }
+      ],
+      "search_executions": [
+        {
+          "completed_at": "2026-09-16T04:18:43.689309Z",
+          "error": null,
+          "execution_id": "sex_384cd65e828d50b5ba7c435c",
+          "parameters": {
+            "base_strategy": "S1",
+            "fallback_reason": null,
+            "level": "strict",
+            "limit": 8,
+            "novelty_point_id": "NP-1",
+            "strategy_id": "S1",
+            "task_id": "T-1",
+            "variant_id": "S1"
+          },
+          "query": "(ti:\"large-scale sequential graph\" OR ti:\"dynamic graph\" OR ti:\"temporal graph\") AND (abs:\"graph summarization\" OR abs:\"graph compression\") AND (abs:\"graph autoencoder\" OR abs:\"graph representation learning\") AND (abs:\"recurrent neural network\" OR abs:\"temporal dependency modeling\")",
+          "results": [],
+          "run_id": "run-235a8317e2b34fb8b8a087c9b7be3279",
+          "source_id": "arxiv",
+          "started_at": "2026-09-16T04:18:31.754267Z",
+          "status": "succeeded",
+          "tool_name": "structured_source_retrieval"
+        },
+        {
+          "completed_at": "2026-09-16T04:19:31.678170Z",
+          "error": null,
+          "execution_id": "sex_60805063443823fe7ec7890d",
+          "parameters": {
+            "base_strategy": "S1",
+            "fallback_reason": "丢弃概念 C4（recurrent neural network，importance=2）",
+            "level": "strict",
+            "limit": 8,
+            "novelty_point_id": "NP-1",
+            "strategy_id": "S1-fb1",
+            "task_id": "T-1",
+            "variant_id": "S1-fb1"
+          },
+          "query": "(ti:\"large-scale sequential graph\" OR ti:\"dynamic graph\" OR ti:\"temporal graph\") AND (abs:\"graph summarization\" OR abs:\"graph compression\") AND (abs:\"graph autoencoder\" OR abs:\"graph representation learning\")",
+          "results": [],
+          "run_id": "run-235a8317e2b34fb8b8a087c9b7be3279",
+          "source_id": "arxiv",
+          "started_at": "2026-09-16T04:18:43.689437Z",
+          "status": "succeeded",
+          "tool_name": "structured_source_retrieval"
+        },
+        {
+          "completed_at": "2026-09-16T04:20:20.021421Z",
+          "error": null,
+          "execution_id": "sex_c65aaa7ecf957f2e28a568eb",
+          "parameters": {
+            "base_strategy": "S2",
+            "fallback_reason": null,
+            "level": "medium",
+            "limit": 8,
+            "novelty_point_id": "NP-1",
+            "strategy_id": "S2",
+            "task_id": "T-1",
+            "variant_id": "S2"
+          },
+          "query": "(ti:\"large-scale sequential graph\" OR ti:\"dynamic graph\" OR ti:\"temporal graph\" OR ti:\"dynamic networks\" OR ti:\"time-evolving graphs\") AND (abs:\"graph summarization\" OR abs:\"graph compression\" OR abs:\"graph coarsening\" OR abs:\"graph reduction\") AND (abs:\"graph autoencoder\" OR abs:\"graph representation learning\" OR abs:\"graph neural network\" OR abs:\"node embedding\")",
+          "results": [
+            {
+              "rank": 1,
+              "score": null,
+              "snippet": null,
+              "source_record_id": "src_b1fb2d49a3bc79e689b1a440"
+            }
+          ],
+          "run_id": "run-235a8317e2b34fb8b8a087c9b7be3279",
+          "source_id": "arxiv",
+          "started_at": "2026-09-16T04:19:31.678311Z",
+          "status": "succeeded",
+          "tool_name": "structured_source_retrieval"
+        },
+        {
+          "completed_at": "2026-09-16T04:20:37.418689Z",
+          "error": null,
+          "execution_id": "sex_dca8ef29a4d660f9fcaa62dc",
+          "parameters": {
+            "base_strategy": "S3",
+            "fallback_reason": null,
+            "level": "broad",
+            "limit": 8,
+            "novelty_point_id": "NP-1",
+            "strategy_id": "S3",
+            "task_id": "T-1",
+            "variant_id": "S3"
+          },
+          "query": "(ti:\"large-scale sequential graph\" OR ti:\"dynamic graph\" OR ti:\"temporal graph\" OR ti:\"dynamic networks\" OR ti:\"time-evolving graphs\") OR (abs:\"graph autoencoder\" OR abs:\"graph representation learning\" OR abs:\"graph neural network\" OR abs:\"node embedding\")",
+          "results": [
+            {
+              "rank": 1,
+              "score": null,
+              "snippet": null,
+              "source_record_id": "src_b8c2a5a2ce7e5e5b256e859b"
+            },
+            {
+              "rank": 2,
+              "score": null,
+              "snippet": null,
+              "source_record_id": "src_a7a4cb72d84ef8468e29a7da"
+            },
+            {
+              "rank": 3,
+              "score": null,
+              "snippet": null,
+              "source_record_id": "src_58d248bdbf8c09956d42fb34"
+            },
+            {
+              "rank": 4,
+              "score": null,
+              "snippet": null,
+              "source_record_id": "src_208db142bb497c80b95a3a56"
+            },
+            {
+              "rank": 5,
+              "score": null,
+              "snippet": null,
+              "source_record_id": "src_5de85851645eac529444dc0d"
+            },
+            {
+              "rank": 6,
+              "score": null,
+              "snippet": null,
+              "source_record_id": "src_bb74354307739a6c50d8d98b"
+            },
+            {
+              "rank": 7,
+              "score": null,
+              "snippet": null,
+              "source_record_id": "src_7e60e8ca1daad6e786d91088"
+            }
+          ],
+          "run_id": "run-235a8317e2b34fb8b8a087c9b7be3279",
+          "source_id": "arxiv",
+          "started_at": "2026-09-16T04:20:20.021544Z",
+          "status": "partial",
+          "tool_name": "structured_source_retrieval"
+        }
+      ],
+      "status": "completed",
+      "steps_used": 20,
+      "task_id": "T-1",
+      "warnings": []
+    }
+  ]
+}
