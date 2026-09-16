@@ -1,0 +1,562 @@
+{
+  "agent_arguments": {
+    "max_results": 10,
+    "query": "graph flow partition distributed GNN training edge"
+  },
+  "agent_tool_call_id": "01a0aa182c7875b67cbfae107423ba38",
+  "business_status": "NORMAL",
+  "duration": 1.190012,
+  "duration_ms": 1190,
+  "error": null,
+  "execution_status": "SUCCESS",
+  "failure_phase": null,
+  "finished_at": "2026-09-16T12:01:47.406339+00:00",
+  "normalized_result": {
+    "query": "graph flow partition distributed GNN training edge",
+    "results": [
+      {
+        "published_at": "2021-01-01T00:00:00",
+        "snippet": "Graph Neural Networks (GNNs) have gained significant attention in the recent past, and become one of the fastest growing subareas in deep learning. While several new GNN architectures have been proposed, the scale of real-world graphs—in many cases billions of nodes and edges—poses challenges during model training. In this paper, we presentP3, a system that focuses on scaling GNN model training to large real-world graphs in adistributedsetting. We observe that scalability challenges in training GNNs are fundamentally different from that in training classical deep neural networks and distributed graph processing; and that commonly used techniques, such as intelligent partitioning of the graph do not yield desired results. Based on this observation,P3proposes a new approach for distributed GNN training. Our approach effectively eliminates high communication and partitioning overheads, and couples it with a newpipelined push-pullparallelism based execution strategy for fast model training.P3exposes a simple API that captures many different classes of GNN architectures for generality. When further combined with a simple caching strategy, our evaluation shows thatP3is able to outperform existing state-of-the-art distributed GNN frameworks by up to 7✕.",
+        "source_name": "无",
+        "source_record_id": "src_2f508aed20eeb011a17b8c0a",
+        "title": "P3: Distributed Deep Graph Learning at Scale",
+        "url": "https://www.usenix.org/conference/osdi21/presentation/gandhi"
+      },
+      {
+        "published_at": "2023-02-26T11:31:45",
+        "snippet": "来自计算所发布的 研究分布式GNN训练中使用的各种优化技术,提供了分布式GNN训练的全面综述 。 图神经网络(GNNs)在图学习方面的有效性已被证明是广泛应用领域的一种强大的算法模型。为了扩大GNN训练以适应大规模和不断增长的图,最有前途的解决方案是分布式训练,它将训练工作量分布到多个计算节点。然而,对分布式GNN训练的工作流程、计算模式、通信模式和优化技术仍有初步了解。 在本文中,我们通过研究分布式GNN训练中使用的各种优化技术,提供了分布式GNN训练的全面综述 。首先,根据分布式GNN训练的工作流程将其分为几类;此外,还介绍了它们的计算模式和通信模式,以及最新工作提出的优化技术。其次,介绍了分布式GNN训练的软件框架和硬件平台,以加深对分布式GNN训练的了解。第三,将分布式GNN训练与深度神经网络的分布式训练进行了比较,强调了分布式GNN训练的唯一性。最后,讨论了该领域的研究热点和发展机遇。 https://www.zhuanzhi.ai/paper/e85caecb1c45f7412fc38a4f681097ab 1. 概述 图具有强大的数据表示能力,特别是在表示对象之间的关联[1],[2]等方面有着广泛的应用 。许多真实世界的数据可以自然地表示为由一组顶点和边组成的图。以社交网络为例[3],[4],图中的顶点表示人,边表示人在Facebook上的互动[5]。如图1 (a)所示,圆圈代表顶点,箭头代表边。另一个众所周知的例子是知识图[6]、[7],其中顶点表示实体,而边表示实体之间的关系[8]。图神经网络(GNNs)在图[9]-[11]的学习中表现出优于其他算法模型的性能。深度神经网络(DNNs)已广泛应用于分析图像[12]等欧几里德数据。然而,由于图[13]的任意大小和复杂的拓扑结构,非欧氏域的图数据对它们提出了挑战。此外,工业界识别的 深度学习 范式的一个主要弱点是不能有效地进行因果推理,这大大降低了智能系统[14]的认知能力。为此,GNN已成为图学习的主要范式,并赋予智能系统认知能力。如图1 (b)所示。GNN在获取图数据作为输入后,使用前向传播和后向传播来更新模型参数。然后将训练好的模型应用于图任务,包括顶点预测[15](预测特定顶点的属性),链接预测[16](预测两个顶点之间是否存在一条边),图预测[17](预测整个图的属性),如图1 (c)所示。 由于GNN的优越性,它们在许多关键领域的各种实际应用中得到了广泛的应用。这些实际应用包括知识推理[18]、 自然语言处理 [19]、[20]、 机器翻译 [21]、 推荐系统 [22]-[24]、视觉推理",
+        "source_name": "Tencent腾讯（腾讯官方网）",
+        "source_record_id": "src_1dc3274385ea01b5579cbd4d",
+        "title": "GNN如何分布式?中科院综述《图神经网络分布式训练》",
+        "url": "https://cloud.tencent.com/developer/article/2226265"
+      },
+      {
+        "published_at": "2023-03-01T14:09:25",
+        "snippet": "图神经网络(GNNs)是一种在图上学习的深度学习模型,并已成功应用于许多领域。尽管 GNN 有效,但 GNN 有效地扩展到大型图仍然具有挑战性 。作为一种补救措施, 分布式计算 成为训练大规模 GNN 的一种有前途的解决方案,因为它能够提供丰富的计算资源。然而, 图结构的依赖性 增加了实现高效分布式 GNN 训练的难度,导致 大量通信和工作负载不平衡 。近年来,在分布式 GNN 训练方面做出了很多努力,并提出了一系列训练算法和系统。然而,缺乏 对从图处理到分布式执行的优化技术 的系统回顾。在本次调查中,我们分析了分布式 GNN 训练的 三大挑战 ,即 海量特征通信、模型精度损失 和 工作负载不平衡 。然后,我们为分布式 GNN 训练中的优化技术引入了一种 新的分类法 ,以应对上述挑战。新分类法将现有技术分为四类,即 GNN 数据分区、GNN 批处理生成、GNN 执行模型 和 GNN 通信协议 。我们仔细讨论了每个类别中的技术。最后,我们分别总结了用于 多GPU、GPU 集群和 CPU 集群 的现有分布式 GNN 系统,并讨论了可扩展 GNN 的 未来发展方向 。 简介 GNN 是处理图建模问题的强大工具,并已广泛应用于各种应用,包括社交网络(例如,社交垃圾邮件发送者检测 [87、112]、社交网络分析 [91])、生物信息学(例如,蛋白质界面预测 [35]、疾病-基因关联 [83])、药物发现 [11、66]、流量预测[61]、医疗保健 [2、21]、推荐 [32、49、 55、111]、自然语言处理 [134、145] 和其他 [26、85、133、141、144]。通过将图结构信息集成到深度学习模型中,GNN 可以获得比传统机器学习和数据挖掘方法明显更好的结果。 GNN 模型通常包含多图卷积层,其中每个顶点聚合其邻居的最新状态,更新顶点的状态,并将神经网络(即转换)应用于顶点的更新状态。以传统的图卷积网络(GCN)为例,在每一层中,一个顶点使用 求和函数 聚合邻居状态和自己的状态,然后应用 单层MLP 来转换新状态。如果层数为 𝐿,则此类过程重复 𝐿次。第𝐿层生成的顶点状态被下游任务使用,如节点分类、链路预测等。在过去的几年中,许多研究工作在图神经网络模型的设计方面取得了显着进展。突出的模型包括 GCN [108]、GraphSAGE [46]、GAT [95]、GIN [118] 和许多其他特定于应用程序的 GNN 模型 [128、130]。迄今为止,有数十项调查审查了 GNN 模型 [114、116、135、147]。",
+        "source_name": "Tencent腾讯（腾讯官方网）",
+        "source_record_id": "src_1eee03f7afd673e24551ee6f",
+        "title": "【阅读】Distributed Graph Neural Network Training: A Survey——翻译",
+        "url": "https://cloud.tencent.com/developer/article/2230138"
+      },
+      {
+        "published_at": "2024-05-08T16:40:00",
+        "snippet": "一、分布式训练概述 分布式训练(Distributed Training)是指将机器学习或深度学习模型训练任务分解成多个子任务,并在多个计算设备上并行地进行训练。图1给出了单个计算设备和多个计算设备的示例,这里计算设备可以是中央处理器(Central Processing Unit,CPU)、图形处理器(Graphics Processing Unit,GPU)、张量处理器(Tensor Processing Unit,TPU)也可以是神经网络处理器(Neural network Processing Unit,NPU)。 由于同一个服务器内部的多个计算设备之间内存也可能并不共享,因此无论这些计算设备是否处于一个服务器还是多个服务器中,其系统架构都属于分布式系统范畴。",
+        "source_name": "华为",
+        "source_record_id": "src_2112c0589883069e9c0111e0",
+        "title": "理论+实践,带你了解分布式训练",
+        "url": "https://developer.huawei.com/consumer/cn/forum/topic/0204150568838017022"
+      },
+      {
+        "published_at": "2026-09-03T00:00:00",
+        "snippet": "Heterogeneous Dynamic-Aware GNN for RUL Prediction of AeroengineGraph flow learninggraph neural network (GNN)remaining useful life (RUL) predictionspatiotemporal featurestransformerAccurate remaining useful life (RUL) prediction is crucial for achieving predictive maintenance. The performance degradation process of equipment is, however, not only manifested as anomalies in individual variables but also as changes in the constraint relationships among multiple variables. Human operations and changes in operating conditions further complicate the state representation of the performance degradation process, making RUL prediction for complex systems like aeroengines a challenging task. This article proposes a novel graph flow learning model for RUL prediction in such complex systems with dynamic interactive operations, termed the heterogeneous dynamic-aware graph neural network (HDA-GNN). First, various correlation evaluation metrics are used to convert sensor signals into heterogeneous graphs to represent the complex relationships among sensor signals. Then, gated recurrent unit (GRU) and attention mechanisms are employed to dynamically calculate the edge weights of the heterogeneous graphs, and a graph convolutional network (GCN) is used to integrate the features of these dynamic heterogeneous graphs. Finally, the transformer is applied to learn the temporal features within the graph flows. This model is capable of learning dynamic features under human external operation disturbances from multiple perspectives, thereby reducing the impact of the randomness of human operations on dynamic features. Experimental results on the NASA commercial modular aero-propulsion system simulation (C-MAPSS) dataset demonstrate the effectiveness and superiority of this model for RUL prediction tasks in complex systems like aeroengines.",
+        "source_name": "无",
+        "source_record_id": "src_48a4f75a7dc43a1ec26a6203",
+        "title": "Heterogeneous Dynamic-Aware GNN for RUL Prediction of Aeroengine",
+        "url": "http://ieeexplore.ieee.org/document/11004129/"
+      },
+      {
+        "published_at": "2023-08-28T23:25:23",
+        "snippet": "2.2Citeseer 2.4DBLP 3.1 如何读取文件 3.2 训练步骤 4. 下载链接 5. 参考 1.Project基本信息介绍 项目开源代码地址:https://github.com/IntelLabs/SAR/tree/main 参考论文:https://arxiv.org/pdf/2111.06483.pdf 论文【SEQUENTIAL AGGREGATION AND REMATERIALIZATION: DISTRIBUTED FULL-BATCH TRAINING OF GRAPH NEURAL NETWORKS ON LARGE GRAPHS】 SAR(Sequential Aggregation and Rematerialization)是一种分布式的全批次训练大规模GNN(Graph Neural Network)的方法。与其他大规模训练GNN的方法相比,SAR有以下优势: 1. 可以直接在整个大图上训练任何类型的GNN,而不是基于采样的方法或基于不可学习消息传递的方法。 2. SAR采用分步恢复计算图的方法,构造并释放GNN计算图的部分,从而在反向传播期间获得卓越的内存伸缩行为。这意味着在密集连接的图上,每个工作机器的内存消耗会随着工作机器数量的增加而线性下降。 3. SAR优化了关注力模型的运行时和内存效率,这是一种基于内核融合和关注力矩阵恢复的通用技术。通过SAR结合关注力内核的优化,可以大大加快并节省注意力型GNN的内存。 2. 图数据集 下面我们介绍一下深度学习中常用的图数据集:Cora、Citeseer(Cite)、Pubmed、DBLP、ACM、AMAP、AMAC、Corafull、WIKI、COCS、BAT、EAT、UAT。 每个数据集都包括: label(图节点的真实标签) feat(图节点的自身属性) adj(图结构对应的邻接矩阵) 2.1 Cora Cora数据集包括2708份科学出版物,分为7类。",
+        "source_name": "知乎",
+        "source_record_id": "src_0874fc655a271adb0a4ea373",
+        "title": "AutoDL教程:分布式gnn训练及数据集整理",
+        "url": "https://zhuanlan.zhihu.com/p/652927264"
+      },
+      {
+        "published_at": "2024-05-16T10:05:00",
+        "snippet": "图神经网络的并行与分布式执行:深入并发性分析 作者:Maciej Besta 和 Torsten Hoeﬂer 摘要 图神经网络(GNNs)是深度学习中最强大的工具之一。它们通常在无结构网络上解决复杂问题,如节点分类、图分类或链接预测,准确度很高。然而,GNNs 的推理和训练都很复杂,并且它们独特地结合了不规则图处理的特征与密集和规则计算。这种复杂性使得在现代大规模并行架构上有效执行 GNNs 变得非常具有挑战性。为了缓解这个问题,我们首先设计了一个 GNNs 中并行性的分类法,考虑了数据和模型并行性以及不同形式的流水线处理。然后,我们使用这个分类法来研究众多 GNN 模型、由 GNN 驱动的机器学习任务、软件框架或硬件加速器中的并行性量。我们使用了工作深度模型,并评估了通信量和同步。我们特别关注相关张量的稀疏性/密度,以了解如何有效地应用技术,如向量化。我们还正式分析了 GNN 流水线处理,并推广了已建立的 Message-Passing 类 GNN 模型,以覆盖任意流水线深度,促进未来的优化。最后,我们研究了不同形式的异步性,为未来异步并行 GNN 流水线铺平了道路。我们的分析结果综合了一系列见解,有助于最大化 GNN 性能,并全面列出了进一步研究高效 GNN 计算的挑战和机会。我们的工作将有助于推进未来 GNN 的设计。 深度学习 并行处理 并列算法 引言 图神经网络(GNNs)正在以风暴般的速度接管机器学习(ML)的世界 [1]。它们已经被用于大量复杂问题,如节点分类、图分类或边缘预测。应用示例领域包括社会科学、生物信息学、化学、医学、网络安全、语言学、交通等 [1]。一些最近的成功案例包括成本效益高且快速放置高性能芯片 [2]、引导数学发现 [3] 或显著提高蛋白质折叠预测的准确性 [4]。 GNNs 概括了传统的深度学习(DL)和图处理。与前者不同,它们不在规则网格和高度结构化的数据上操作(例如,图像处理);相反,数据是高度无结构的、不规则的,由此产生的计算是数据驱动的,缺乏直接的空间或时间局部性 [5]。此外,与后者不同,顶点和/或边与复杂数据和处理相关联。例如,在许多 GNN 模型中,每个顶点 i 都有一个分配的 k 维特征向量,并且每个这样的向量都与 i 的邻居的向量结合;这个过程迭代重复。因此,尽管这种 GNN 计算的整体风格类似于标签传播算法,如 PageRank [6],但由于顶点特征的高维数,它带来了额外的复杂性。 然而,这只是最简单的 GNN 模型,如基本的图卷积网络(GCN)[7] 的工作方式。它们通常在无结构网络上解决复杂问题,如节点分类、图分类或链接预测,准确度很高。",
+        "source_name": "腾讯网",
+        "source_record_id": "src_e9a03ae6c0d18fd3cb821a0a",
+        "title": "【荐读IEEE TPAMI】图神经网络的并行与分布式执行:深入并发性分析",
+        "url": "https://mp.weixin.qq.com/s?__biz=MzU0NjgzMDIxMQ==&mid=2247618736&idx=3&sn=1ddd2df434b0167f36550d151b740d9e&chksm=fa06eb2abee8069f01302c139f1c8fb406a5f11d0f69400e3b17ec8c94840d3052240af2c30a&scene=27"
+      },
+      {
+        "published_at": "2024-06-22T08:21:49",
+        "snippet": "图神经网络(Graph Neural Networks, GNNs)作为一种新兴的机器学习方法,能够有效地处理和分析图结构数据。GNNs通过传播机制(message passing)在图的节点和边之间传播信息,捕捉复杂的节点间关系和图的全局结构,从而实现对图数据的深层次理解和高效处理。近年来,随着深度学习技术的发展,GNNs在多个领域取得了显著的成果,成为研究热点。 本文旨在系统地介绍图神经网络的基本原理、主要模型及其在不同应用场景中的实际案例。首先,我们将概述图的基本概念及传统图分析方法,接着深入探讨GNN的主要模型和应用,最后讨论当前GNN研究面临的挑战与未来发展方向。通过本文的介绍,读者将能够全面了解图神经网络这一强大工具在图结构数据分析中的潜力与应用前景。 节点(Node):图中的基本元素,表示实体或对象。 边(Edge):连接节点的线,表示节点间的关系。 邻接矩阵(Adjacency Matrix):用矩阵形式表示图中节点之间连接关系的矩阵。 例如,一个简单的无向图可以表示为: 图的类型:  无向图(Undirected Graph):边没有方向。 有向图(Directed Graph):边具有方向。 加权图(Weighted Graph):边带有权重,表示关系的强度。 图神经网络通过一种称为传播机制(Message Passing)的过程来实现信息在图中节点和边之间的传递与更新。具体来说,GNN的基本原理包括以下几个步骤: 消息传递(Message Passing):每个节点从其邻居节点接收信息。 信息聚合(Aggregation):将接收到的邻居节点信息进行聚合,通常使用求和、平均或最大值等操作。  状态更新(Update):根据聚合的邻居信息和节点自身的信息更新节点状态。",
+        "source_name": "Tencent腾讯（腾讯官方网）",
+        "source_record_id": "src_23b53be5b67a78059ebdf094",
+        "title": "【机器学习】使用Python实现图神经网络(GNN):图结构数据的分析与应用",
+        "url": "https://cloud.tencent.com/developer/article/2430691"
+      },
+      {
+        "published_at": "2025-09-25T17:40:00",
+        "snippet": "一、Graph基础:核心概念与数据结构选择 Graph(图)作为非线性数据结构,由顶点(Vertex)和边(Edge)构成,其数学定义可表示为G=(V,E)。根据边的方向性,图分为有向图(Directed Graph)和无向图(Undirected Graph),根据边的权重属性,又可分为加权图和非加权图。在计算机实现中,图的存储方式直接影响算法效率,常见方案包括: 邻接矩阵(Adjacency Matrix) 使用二维数组存储顶点间连接关系,空间复杂度为O(V²)。适用于稠密图(边数接近V²),可快速判断任意两顶点是否相连(O(1)时间复杂度)。例如,在社交网络中,若用户关系密集,邻接矩阵能高效查询好友关系: classGraphMatrix: def__init__(self,vertices): self.vertices =vertices self.matrix =[[0]*vertices for_ inrange(vertices)] defadd_edge(self,u,v,weight=1): self.matrix[u][v]=weight # 无向图需对称存储:self.matrix[v][u] = weight 邻接表(Adjacency List) 通过链表或数组存储每个顶点的邻居,空间复杂度为O(V+E)。适用于稀疏图(边数远小于V²),可高效遍历顶点的所有邻居(O(deg(v))时间复杂度)。以电商推荐系统为例,邻接表能高效存储用户-商品交互关系: classGraphList: def__init__(self,vertices): self.vertices =vertices self.adj_list =[[]for_ inrange(vertices)] defadd_edge(self,u,v,weight=1): self.adj_list[u].append((v,weight)) # 无向图需双向添加:self.adj_list[v].append((u, weight)) 边列表(Edge List) 直接存储所有边的三元组(起点、终点、权重),空间复杂度为O(E)。适用于需要频繁遍历所有边的场景,如最短路径计算中的Dijkstra算法。",
+        "source_name": "百度智能云",
+        "source_record_id": "src_6b2578e8306b63d422f05364",
+        "title": "从零构建高效图结构:创建Graph的完整技术指南",
+        "url": "https://cloud.baidu.com/article/3728266"
+      },
+      {
+        "published_at": "2024-05-08T00:00:00",
+        "snippet": "一、分布式训练概述 分布式训练(Distributed Training)是指将机器学习或深度学习模型训练任务分解成多个子任务,并在多个计算设备上并行地进行训练。图 1 给出了单个计算设备和多个计算设备的示例,这里计算设备可以是中央处理器(Central Processing Unit,CPU)、图形处理器(Graphics Processing Unit,GPU)、张量处理器(Tensor Processing Unit,TPU)也可以是神经网络处理器(Neural network Processing Unit,NPU)。 由于同一个服务器内部的多个计算设备之间内存也可能并不共享,因此无论这些计算设备是否处于一个服务器还是多个服务器中,其系统架构都属于分布式系统范畴。",
+        "source_name": "极客邦",
+        "source_record_id": "src_e9cb7f87a8eead24083bb0ed",
+        "title": "理论+ 实践,带你了解分布式训练",
+        "url": "https://xie.infoq.cn/article/5acdc4dc912a9fd525f1159d5"
+      }
+    ],
+    "succeeded": true,
+    "summary": "发现并保存 10 个 Web 候选来源",
+    "warnings": []
+  },
+  "raw_result": {
+    "arguments": {
+      "max_results": 10,
+      "query": "graph flow partition distributed GNN training edge"
+    },
+    "elapsed_ms": 1189,
+    "error": null,
+    "payload": {
+      "search_result": {
+        "query": "graph flow partition distributed GNN training edge",
+        "results": [
+          {
+            "published_at": "2021-01-01T00:00:00",
+            "rank": 1,
+            "score": null,
+            "snippet": "Graph Neural Networks (GNNs) have gained significant attention in the recent past, and become one of the fastest growing subareas in deep learning. While several new GNN architectures have been proposed, the scale of real-world graphs—in many cases billions of nodes and edges—poses challenges during model training. In this paper, we presentP3, a system that focuses on scaling GNN model training to large real-world graphs in adistributedsetting. We observe that scalability challenges in training GNNs are fundamentally different from that in training classical deep neural networks and distributed graph processing; and that commonly used techniques, such as intelligent partitioning of the graph do not yield desired results. Based on this observation,P3proposes a new approach for distributed GNN training. Our approach effectively eliminates high communication and partitioning overheads, and couples it with a newpipelined push-pullparallelism based execution strategy for fast model training.P3exposes a simple API that captures many different classes of GNN architectures for generality. When further combined with a simple caching strategy, our evaluation shows thatP3is able to outperform existing state-of-the-art distributed GNN frameworks by up to 7✕.",
+            "source_name": "无",
+            "source_record_id": "src_2f508aed20eeb011a17b8c0a",
+            "title": "P3: Distributed Deep Graph Learning at Scale",
+            "url": "https://www.usenix.org/conference/osdi21/presentation/gandhi"
+          },
+          {
+            "published_at": "2023-02-26T11:31:45",
+            "rank": 2,
+            "score": null,
+            "snippet": "来自计算所发布的 研究分布式GNN训练中使用的各种优化技术,提供了分布式GNN训练的全面综述 。 图神经网络(GNNs)在图学习方面的有效性已被证明是广泛应用领域的一种强大的算法模型。为了扩大GNN训练以适应大规模和不断增长的图,最有前途的解决方案是分布式训练,它将训练工作量分布到多个计算节点。然而,对分布式GNN训练的工作流程、计算模式、通信模式和优化技术仍有初步了解。 在本文中,我们通过研究分布式GNN训练中使用的各种优化技术,提供了分布式GNN训练的全面综述 。首先,根据分布式GNN训练的工作流程将其分为几类;此外,还介绍了它们的计算模式和通信模式,以及最新工作提出的优化技术。其次,介绍了分布式GNN训练的软件框架和硬件平台,以加深对分布式GNN训练的了解。第三,将分布式GNN训练与深度神经网络的分布式训练进行了比较,强调了分布式GNN训练的唯一性。最后,讨论了该领域的研究热点和发展机遇。 https://www.zhuanzhi.ai/paper/e85caecb1c45f7412fc38a4f681097ab 1. 概述 图具有强大的数据表示能力,特别是在表示对象之间的关联[1],[2]等方面有着广泛的应用 。许多真实世界的数据可以自然地表示为由一组顶点和边组成的图。以社交网络为例[3],[4],图中的顶点表示人,边表示人在Facebook上的互动[5]。如图1 (a)所示,圆圈代表顶点,箭头代表边。另一个众所周知的例子是知识图[6]、[7],其中顶点表示实体,而边表示实体之间的关系[8]。图神经网络(GNNs)在图[9]-[11]的学习中表现出优于其他算法模型的性能。深度神经网络(DNNs)已广泛应用于分析图像[12]等欧几里德数据。然而,由于图[13]的任意大小和复杂的拓扑结构,非欧氏域的图数据对它们提出了挑战。此外,工业界识别的 深度学习 范式的一个主要弱点是不能有效地进行因果推理,这大大降低了智能系统[14]的认知能力。为此,GNN已成为图学习的主要范式,并赋予智能系统认知能力。如图1 (b)所示。GNN在获取图数据作为输入后,使用前向传播和后向传播来更新模型参数。然后将训练好的模型应用于图任务,包括顶点预测[15](预测特定顶点的属性),链接预测[16](预测两个顶点之间是否存在一条边),图预测[17](预测整个图的属性),如图1 (c)所示。 由于GNN的优越性,它们在许多关键领域的各种实际应用中得到了广泛的应用。这些实际应用包括知识推理[18]、 自然语言处理 [19]、[20]、 机器翻译 [21]、 推荐系统 [22]-[24]、视觉推理",
+            "source_name": "Tencent腾讯（腾讯官方网）",
+            "source_record_id": "src_1dc3274385ea01b5579cbd4d",
+            "title": "GNN如何分布式?中科院综述《图神经网络分布式训练》",
+            "url": "https://cloud.tencent.com/developer/article/2226265"
+          },
+          {
+            "published_at": "2023-03-01T14:09:25",
+            "rank": 3,
+            "score": null,
+            "snippet": "图神经网络(GNNs)是一种在图上学习的深度学习模型,并已成功应用于许多领域。尽管 GNN 有效,但 GNN 有效地扩展到大型图仍然具有挑战性 。作为一种补救措施, 分布式计算 成为训练大规模 GNN 的一种有前途的解决方案,因为它能够提供丰富的计算资源。然而, 图结构的依赖性 增加了实现高效分布式 GNN 训练的难度,导致 大量通信和工作负载不平衡 。近年来,在分布式 GNN 训练方面做出了很多努力,并提出了一系列训练算法和系统。然而,缺乏 对从图处理到分布式执行的优化技术 的系统回顾。在本次调查中,我们分析了分布式 GNN 训练的 三大挑战 ,即 海量特征通信、模型精度损失 和 工作负载不平衡 。然后,我们为分布式 GNN 训练中的优化技术引入了一种 新的分类法 ,以应对上述挑战。新分类法将现有技术分为四类,即 GNN 数据分区、GNN 批处理生成、GNN 执行模型 和 GNN 通信协议 。我们仔细讨论了每个类别中的技术。最后,我们分别总结了用于 多GPU、GPU 集群和 CPU 集群 的现有分布式 GNN 系统,并讨论了可扩展 GNN 的 未来发展方向 。 简介 GNN 是处理图建模问题的强大工具,并已广泛应用于各种应用,包括社交网络(例如,社交垃圾邮件发送者检测 [87、112]、社交网络分析 [91])、生物信息学(例如,蛋白质界面预测 [35]、疾病-基因关联 [83])、药物发现 [11、66]、流量预测[61]、医疗保健 [2、21]、推荐 [32、49、 55、111]、自然语言处理 [134、145] 和其他 [26、85、133、141、144]。通过将图结构信息集成到深度学习模型中,GNN 可以获得比传统机器学习和数据挖掘方法明显更好的结果。 GNN 模型通常包含多图卷积层,其中每个顶点聚合其邻居的最新状态,更新顶点的状态,并将神经网络(即转换)应用于顶点的更新状态。以传统的图卷积网络(GCN)为例,在每一层中,一个顶点使用 求和函数 聚合邻居状态和自己的状态,然后应用 单层MLP 来转换新状态。如果层数为 𝐿,则此类过程重复 𝐿次。第𝐿层生成的顶点状态被下游任务使用,如节点分类、链路预测等。在过去的几年中,许多研究工作在图神经网络模型的设计方面取得了显着进展。突出的模型包括 GCN [108]、GraphSAGE [46]、GAT [95]、GIN [118] 和许多其他特定于应用程序的 GNN 模型 [128、130]。迄今为止,有数十项调查审查了 GNN 模型 [114、116、135、147]。",
+            "source_name": "Tencent腾讯（腾讯官方网）",
+            "source_record_id": "src_1eee03f7afd673e24551ee6f",
+            "title": "【阅读】Distributed Graph Neural Network Training: A Survey——翻译",
+            "url": "https://cloud.tencent.com/developer/article/2230138"
+          },
+          {
+            "published_at": "2024-05-08T16:40:00",
+            "rank": 4,
+            "score": null,
+            "snippet": "一、分布式训练概述 分布式训练(Distributed Training)是指将机器学习或深度学习模型训练任务分解成多个子任务,并在多个计算设备上并行地进行训练。图1给出了单个计算设备和多个计算设备的示例,这里计算设备可以是中央处理器(Central Processing Unit,CPU)、图形处理器(Graphics Processing Unit,GPU)、张量处理器(Tensor Processing Unit,TPU)也可以是神经网络处理器(Neural network Processing Unit,NPU)。 由于同一个服务器内部的多个计算设备之间内存也可能并不共享,因此无论这些计算设备是否处于一个服务器还是多个服务器中,其系统架构都属于分布式系统范畴。",
+            "source_name": "华为",
+            "source_record_id": "src_2112c0589883069e9c0111e0",
+            "title": "理论+实践,带你了解分布式训练",
+            "url": "https://developer.huawei.com/consumer/cn/forum/topic/0204150568838017022"
+          },
+          {
+            "published_at": "2026-09-03T00:00:00",
+            "rank": 5,
+            "score": null,
+            "snippet": "Heterogeneous Dynamic-Aware GNN for RUL Prediction of AeroengineGraph flow learninggraph neural network (GNN)remaining useful life (RUL) predictionspatiotemporal featurestransformerAccurate remaining useful life (RUL) prediction is crucial for achieving predictive maintenance. The performance degradation process of equipment is, however, not only manifested as anomalies in individual variables but also as changes in the constraint relationships among multiple variables. Human operations and changes in operating conditions further complicate the state representation of the performance degradation process, making RUL prediction for complex systems like aeroengines a challenging task. This article proposes a novel graph flow learning model for RUL prediction in such complex systems with dynamic interactive operations, termed the heterogeneous dynamic-aware graph neural network (HDA-GNN). First, various correlation evaluation metrics are used to convert sensor signals into heterogeneous graphs to represent the complex relationships among sensor signals. Then, gated recurrent unit (GRU) and attention mechanisms are employed to dynamically calculate the edge weights of the heterogeneous graphs, and a graph convolutional network (GCN) is used to integrate the features of these dynamic heterogeneous graphs. Finally, the transformer is applied to learn the temporal features within the graph flows. This model is capable of learning dynamic features under human external operation disturbances from multiple perspectives, thereby reducing the impact of the randomness of human operations on dynamic features. Experimental results on the NASA commercial modular aero-propulsion system simulation (C-MAPSS) dataset demonstrate the effectiveness and superiority of this model for RUL prediction tasks in complex systems like aeroengines.",
+            "source_name": "无",
+            "source_record_id": "src_48a4f75a7dc43a1ec26a6203",
+            "title": "Heterogeneous Dynamic-Aware GNN for RUL Prediction of Aeroengine",
+            "url": "http://ieeexplore.ieee.org/document/11004129/"
+          },
+          {
+            "published_at": "2023-08-28T23:25:23",
+            "rank": 6,
+            "score": null,
+            "snippet": "2.2Citeseer 2.4DBLP 3.1 如何读取文件 3.2 训练步骤 4. 下载链接 5. 参考 1.Project基本信息介绍 项目开源代码地址:https://github.com/IntelLabs/SAR/tree/main 参考论文:https://arxiv.org/pdf/2111.06483.pdf 论文【SEQUENTIAL AGGREGATION AND REMATERIALIZATION: DISTRIBUTED FULL-BATCH TRAINING OF GRAPH NEURAL NETWORKS ON LARGE GRAPHS】 SAR(Sequential Aggregation and Rematerialization)是一种分布式的全批次训练大规模GNN(Graph Neural Network)的方法。与其他大规模训练GNN的方法相比,SAR有以下优势: 1. 可以直接在整个大图上训练任何类型的GNN,而不是基于采样的方法或基于不可学习消息传递的方法。 2. SAR采用分步恢复计算图的方法,构造并释放GNN计算图的部分,从而在反向传播期间获得卓越的内存伸缩行为。这意味着在密集连接的图上,每个工作机器的内存消耗会随着工作机器数量的增加而线性下降。 3. SAR优化了关注力模型的运行时和内存效率,这是一种基于内核融合和关注力矩阵恢复的通用技术。通过SAR结合关注力内核的优化,可以大大加快并节省注意力型GNN的内存。 2. 图数据集 下面我们介绍一下深度学习中常用的图数据集:Cora、Citeseer(Cite)、Pubmed、DBLP、ACM、AMAP、AMAC、Corafull、WIKI、COCS、BAT、EAT、UAT。 每个数据集都包括: label(图节点的真实标签) feat(图节点的自身属性) adj(图结构对应的邻接矩阵) 2.1 Cora Cora数据集包括2708份科学出版物,分为7类。",
+            "source_name": "知乎",
+            "source_record_id": "src_0874fc655a271adb0a4ea373",
+            "title": "AutoDL教程:分布式gnn训练及数据集整理",
+            "url": "https://zhuanlan.zhihu.com/p/652927264"
+          },
+          {
+            "published_at": "2024-05-16T10:05:00",
+            "rank": 7,
+            "score": null,
+            "snippet": "图神经网络的并行与分布式执行:深入并发性分析 作者:Maciej Besta 和 Torsten Hoeﬂer 摘要 图神经网络(GNNs)是深度学习中最强大的工具之一。它们通常在无结构网络上解决复杂问题,如节点分类、图分类或链接预测,准确度很高。然而,GNNs 的推理和训练都很复杂,并且它们独特地结合了不规则图处理的特征与密集和规则计算。这种复杂性使得在现代大规模并行架构上有效执行 GNNs 变得非常具有挑战性。为了缓解这个问题,我们首先设计了一个 GNNs 中并行性的分类法,考虑了数据和模型并行性以及不同形式的流水线处理。然后,我们使用这个分类法来研究众多 GNN 模型、由 GNN 驱动的机器学习任务、软件框架或硬件加速器中的并行性量。我们使用了工作深度模型,并评估了通信量和同步。我们特别关注相关张量的稀疏性/密度,以了解如何有效地应用技术,如向量化。我们还正式分析了 GNN 流水线处理,并推广了已建立的 Message-Passing 类 GNN 模型,以覆盖任意流水线深度,促进未来的优化。最后,我们研究了不同形式的异步性,为未来异步并行 GNN 流水线铺平了道路。我们的分析结果综合了一系列见解,有助于最大化 GNN 性能,并全面列出了进一步研究高效 GNN 计算的挑战和机会。我们的工作将有助于推进未来 GNN 的设计。 深度学习 并行处理 并列算法 引言 图神经网络(GNNs)正在以风暴般的速度接管机器学习(ML)的世界 [1]。它们已经被用于大量复杂问题,如节点分类、图分类或边缘预测。应用示例领域包括社会科学、生物信息学、化学、医学、网络安全、语言学、交通等 [1]。一些最近的成功案例包括成本效益高且快速放置高性能芯片 [2]、引导数学发现 [3] 或显著提高蛋白质折叠预测的准确性 [4]。 GNNs 概括了传统的深度学习(DL)和图处理。与前者不同,它们不在规则网格和高度结构化的数据上操作(例如,图像处理);相反,数据是高度无结构的、不规则的,由此产生的计算是数据驱动的,缺乏直接的空间或时间局部性 [5]。此外,与后者不同,顶点和/或边与复杂数据和处理相关联。例如,在许多 GNN 模型中,每个顶点 i 都有一个分配的 k 维特征向量,并且每个这样的向量都与 i 的邻居的向量结合;这个过程迭代重复。因此,尽管这种 GNN 计算的整体风格类似于标签传播算法,如 PageRank [6],但由于顶点特征的高维数,它带来了额外的复杂性。 然而,这只是最简单的 GNN 模型,如基本的图卷积网络(GCN)[7] 的工作方式。它们通常在无结构网络上解决复杂问题,如节点分类、图分类或链接预测,准确度很高。",
+            "source_name": "腾讯网",
+            "source_record_id": "src_e9a03ae6c0d18fd3cb821a0a",
+            "title": "【荐读IEEE TPAMI】图神经网络的并行与分布式执行:深入并发性分析",
+            "url": "https://mp.weixin.qq.com/s?__biz=MzU0NjgzMDIxMQ==&mid=2247618736&idx=3&sn=1ddd2df434b0167f36550d151b740d9e&chksm=fa06eb2abee8069f01302c139f1c8fb406a5f11d0f69400e3b17ec8c94840d3052240af2c30a&scene=27"
+          },
+          {
+            "published_at": "2024-06-22T08:21:49",
+            "rank": 8,
+            "score": null,
+            "snippet": "图神经网络(Graph Neural Networks, GNNs)作为一种新兴的机器学习方法,能够有效地处理和分析图结构数据。GNNs通过传播机制(message passing)在图的节点和边之间传播信息,捕捉复杂的节点间关系和图的全局结构,从而实现对图数据的深层次理解和高效处理。近年来,随着深度学习技术的发展,GNNs在多个领域取得了显著的成果,成为研究热点。 本文旨在系统地介绍图神经网络的基本原理、主要模型及其在不同应用场景中的实际案例。首先,我们将概述图的基本概念及传统图分析方法,接着深入探讨GNN的主要模型和应用,最后讨论当前GNN研究面临的挑战与未来发展方向。通过本文的介绍,读者将能够全面了解图神经网络这一强大工具在图结构数据分析中的潜力与应用前景。 节点(Node):图中的基本元素,表示实体或对象。 边(Edge):连接节点的线,表示节点间的关系。 邻接矩阵(Adjacency Matrix):用矩阵形式表示图中节点之间连接关系的矩阵。 例如,一个简单的无向图可以表示为: 图的类型:  无向图(Undirected Graph):边没有方向。 有向图(Directed Graph):边具有方向。 加权图(Weighted Graph):边带有权重,表示关系的强度。 图神经网络通过一种称为传播机制(Message Passing)的过程来实现信息在图中节点和边之间的传递与更新。具体来说,GNN的基本原理包括以下几个步骤: 消息传递(Message Passing):每个节点从其邻居节点接收信息。 信息聚合(Aggregation):将接收到的邻居节点信息进行聚合,通常使用求和、平均或最大值等操作。  状态更新(Update):根据聚合的邻居信息和节点自身的信息更新节点状态。",
+            "source_name": "Tencent腾讯（腾讯官方网）",
+            "source_record_id": "src_23b53be5b67a78059ebdf094",
+            "title": "【机器学习】使用Python实现图神经网络(GNN):图结构数据的分析与应用",
+            "url": "https://cloud.tencent.com/developer/article/2430691"
+          },
+          {
+            "published_at": "2025-09-25T17:40:00",
+            "rank": 9,
+            "score": null,
+            "snippet": "一、Graph基础:核心概念与数据结构选择 Graph(图)作为非线性数据结构,由顶点(Vertex)和边(Edge)构成,其数学定义可表示为G=(V,E)。根据边的方向性,图分为有向图(Directed Graph)和无向图(Undirected Graph),根据边的权重属性,又可分为加权图和非加权图。在计算机实现中,图的存储方式直接影响算法效率,常见方案包括: 邻接矩阵(Adjacency Matrix) 使用二维数组存储顶点间连接关系,空间复杂度为O(V²)。适用于稠密图(边数接近V²),可快速判断任意两顶点是否相连(O(1)时间复杂度)。例如,在社交网络中,若用户关系密集,邻接矩阵能高效查询好友关系: classGraphMatrix: def__init__(self,vertices): self.vertices =vertices self.matrix =[[0]*vertices for_ inrange(vertices)] defadd_edge(self,u,v,weight=1): self.matrix[u][v]=weight # 无向图需对称存储:self.matrix[v][u] = weight 邻接表(Adjacency List) 通过链表或数组存储每个顶点的邻居,空间复杂度为O(V+E)。适用于稀疏图(边数远小于V²),可高效遍历顶点的所有邻居(O(deg(v))时间复杂度)。以电商推荐系统为例,邻接表能高效存储用户-商品交互关系: classGraphList: def__init__(self,vertices): self.vertices =vertices self.adj_list =[[]for_ inrange(vertices)] defadd_edge(self,u,v,weight=1): self.adj_list[u].append((v,weight)) # 无向图需双向添加:self.adj_list[v].append((u, weight)) 边列表(Edge List) 直接存储所有边的三元组(起点、终点、权重),空间复杂度为O(E)。适用于需要频繁遍历所有边的场景,如最短路径计算中的Dijkstra算法。",
+            "source_name": "百度智能云",
+            "source_record_id": "src_6b2578e8306b63d422f05364",
+            "title": "从零构建高效图结构:创建Graph的完整技术指南",
+            "url": "https://cloud.baidu.com/article/3728266"
+          },
+          {
+            "published_at": "2024-05-08T00:00:00",
+            "rank": 10,
+            "score": null,
+            "snippet": "一、分布式训练概述 分布式训练(Distributed Training)是指将机器学习或深度学习模型训练任务分解成多个子任务,并在多个计算设备上并行地进行训练。图 1 给出了单个计算设备和多个计算设备的示例,这里计算设备可以是中央处理器(Central Processing Unit,CPU)、图形处理器(Graphics Processing Unit,GPU)、张量处理器(Tensor Processing Unit,TPU)也可以是神经网络处理器(Neural network Processing Unit,NPU)。 由于同一个服务器内部的多个计算设备之间内存也可能并不共享,因此无论这些计算设备是否处于一个服务器还是多个服务器中,其系统架构都属于分布式系统范畴。",
+            "source_name": "极客邦",
+            "source_record_id": "src_e9cb7f87a8eead24083bb0ed",
+            "title": "理论+ 实践,带你了解分布式训练",
+            "url": "https://xie.infoq.cn/article/5acdc4dc912a9fd525f1159d5"
+          }
+        ],
+        "warnings": []
+      },
+      "source_records": [
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "1",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://www.usenix.org/conference/osdi21/presentation/gandhi",
+          "observed_at": "2026-09-16T12:01:47.391479Z",
+          "provenance": {
+            "query": "graph flow partition distributed GNN training edge",
+            "rank": 1,
+            "run_id": "run-fb1de326c099455984af33097a9c386a",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": " Graph Neural Networks (GNNs) have gained significant attention in the recent past, and become one of the fastest growing subareas in deep learning. While several new GNN architectures have been proposed, the scale of real-world graphs—in many cases billions of nodes and edges—poses challenges during model training. In this paper, we presentP3, a system that focuses on scaling GNN model training to large real-world graphs in adistributedsetting. We observe that scalability challenges in training GNNs are fundamentally different from that in training classical deep neural networks and distributed graph processing; and that commonly used techniques, such as intelligent partitioning of the graph do not yield desired results. Based on this observation,P3proposes a new approach for distributed GNN training. Our approach effectively eliminates high communication and partitioning overheads, and couples it with a newpipelined push-pullparallelism based execution strategy for fast model training.P3exposes a simple API that captures many different classes of GNN architectures for generality. When further combined with a simple caching strategy, our evaluation shows thatP3is able to outperform existing state-of-the-art distributed GNN frameworks by up to 7✕.",
+            "published_at": "2021-01-01T00:00:00",
+            "request_id": "ad785f69-9447-4589-b128-0787b51ac561",
+            "search_score": null,
+            "search_snippet": "Graph Neural Networks (GNNs) have gained significant attention in the recent past, and become one of the fastest growing subareas in deep learning. While several new GNN architectures have been proposed, the scale of real-world graphs—in many cases billions of nodes and edges—poses challenges during model training. In this paper, we presentP3, a system that focuses on scaling GNN model training to large real-world graphs in adistributedsetting. We observe that scalability challenges in training GNNs are fundamentally different from that in training classical deep neural networks and distributed graph processing; and that commonly used techniques, such as intelligent partitioning of the graph do not yield desired results. Based on this observation,P3proposes a new approach for distributed GNN training. Our approach effectively eliminates high communication and partitioning overheads, and couples it with a newpipelined push-pullparallelism based execution strategy for fast model training.P3exposes a simple API that captures many different classes of GNN architectures for generality. When further combined with a simple caching strategy, our evaluation shows thatP3is able to outperform existing state-of-the-art distributed GNN frameworks by up to 7✕.",
+            "source_name": "无",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web_supplement",
+          "source_record_id": "src_2f508aed20eeb011a17b8c0a",
+          "title": "P3: Distributed Deep Graph Learning at Scale",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "2",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://cloud.tencent.com/developer/article/2226265",
+          "observed_at": "2026-09-16T12:01:47.391479Z",
+          "provenance": {
+            "query": "graph flow partition distributed GNN training edge",
+            "rank": 2,
+            "run_id": "run-fb1de326c099455984af33097a9c386a",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": " 来自计算所发布的 研究分布式GNN训练中使用的各种优化技术,提供了分布式GNN训练的全面综述 。 图神经网络(GNNs)在图学习方面的有效性已被证明是广泛应用领域的一种强大的算法模型。为了扩大GNN训练以适应大规模和不断增长的图,最有前途的解决方案是分布式训练,它将训练工作量分布到多个计算节点。然而,对分布式GNN训练的工作流程、计算模式、通信模式和优化技术仍有初步了解。 在本文中,我们通过研究分布式GNN训练中使用的各种优化技术,提供了分布式GNN训练的全面综述 。首先,根据分布式GNN训练的工作流程将其分为几类;此外,还介绍了它们的计算模式和通信模式,以及最新工作提出的优化技术。其次,介绍了分布式GNN训练的软件框架和硬件平台,以加深对分布式GNN训练的了解。第三,将分布式GNN训练与深度神经网络的分布式训练进行了比较,强调了分布式GNN训练的唯一性。最后,讨论了该领域的研究热点和发展机遇。 https://www.zhuanzhi.ai/paper/e85caecb1c45f7412fc38a4f681097ab 1. 概述 图具有强大的数据表示能力,特别是在表示对象之间的关联[1],[2]等方面有着广泛的应用 。许多真实世界的数据可以自然地表示为由一组顶点和边组成的图。以社交网络为例[3],[4],图中的顶点表示人,边表示人在Facebook上的互动[5]。如图1 (a)所示,圆圈代表顶点,箭头代表边。另一个众所周知的例子是知识图[6]、[7],其中顶点表示实体,而边表示实体之间的关系[8]。图神经网络(GNNs)在图[9]-[11]的学习中表现出优于其他算法模型的性能。深度神经网络(DNNs)已广泛应用于分析图像[12]等欧几里德数据。然而,由于图[13]的任意大小和复杂的拓扑结构,非欧氏域的图数据对它们提出了挑战。此外,工业界识别的 深度学习 范式的一个主要弱点是不能有效地进行因果推理,这大大降低了智能系统[14]的认知能力。为此,GNN已成为图学习的主要范式,并赋予智能系统认知能力。如图1 (b)所示。GNN在获取图数据作为输入后,使用前向传播和后向传播来更新模型参数。然后将训练好的模型应用于图任务,包括顶点预测[15](预测特定顶点的属性),链接预测[16](预测两个顶点之间是否存在一条边),图预测[17](预测整个图的属性),如图1 (c)所示。 由于GNN的优越性,它们在许多关键领域的各种实际应用中得到了广泛的应用。这些实际应用包括知识推理[18]、 自然语言处理 [19]、[20]、 机器翻译 [21]、 推荐系统 [22]-[24]、视觉推理",
+            "published_at": "2023-02-26T11:31:45",
+            "request_id": "ad785f69-9447-4589-b128-0787b51ac561",
+            "search_score": null,
+            "search_snippet": "来自计算所发布的 研究分布式GNN训练中使用的各种优化技术,提供了分布式GNN训练的全面综述 。 图神经网络(GNNs)在图学习方面的有效性已被证明是广泛应用领域的一种强大的算法模型。为了扩大GNN训练以适应大规模和不断增长的图,最有前途的解决方案是分布式训练,它将训练工作量分布到多个计算节点。然而,对分布式GNN训练的工作流程、计算模式、通信模式和优化技术仍有初步了解。 在本文中,我们通过研究分布式GNN训练中使用的各种优化技术,提供了分布式GNN训练的全面综述 。首先,根据分布式GNN训练的工作流程将其分为几类;此外,还介绍了它们的计算模式和通信模式,以及最新工作提出的优化技术。其次,介绍了分布式GNN训练的软件框架和硬件平台,以加深对分布式GNN训练的了解。第三,将分布式GNN训练与深度神经网络的分布式训练进行了比较,强调了分布式GNN训练的唯一性。最后,讨论了该领域的研究热点和发展机遇。 https://www.zhuanzhi.ai/paper/e85caecb1c45f7412fc38a4f681097ab 1. 概述 图具有强大的数据表示能力,特别是在表示对象之间的关联[1],[2]等方面有着广泛的应用 。许多真实世界的数据可以自然地表示为由一组顶点和边组成的图。以社交网络为例[3],[4],图中的顶点表示人,边表示人在Facebook上的互动[5]。如图1 (a)所示,圆圈代表顶点,箭头代表边。另一个众所周知的例子是知识图[6]、[7],其中顶点表示实体,而边表示实体之间的关系[8]。图神经网络(GNNs)在图[9]-[11]的学习中表现出优于其他算法模型的性能。深度神经网络(DNNs)已广泛应用于分析图像[12]等欧几里德数据。然而,由于图[13]的任意大小和复杂的拓扑结构,非欧氏域的图数据对它们提出了挑战。此外,工业界识别的 深度学习 范式的一个主要弱点是不能有效地进行因果推理,这大大降低了智能系统[14]的认知能力。为此,GNN已成为图学习的主要范式,并赋予智能系统认知能力。如图1 (b)所示。GNN在获取图数据作为输入后,使用前向传播和后向传播来更新模型参数。然后将训练好的模型应用于图任务,包括顶点预测[15](预测特定顶点的属性),链接预测[16](预测两个顶点之间是否存在一条边),图预测[17](预测整个图的属性),如图1 (c)所示。 由于GNN的优越性,它们在许多关键领域的各种实际应用中得到了广泛的应用。这些实际应用包括知识推理[18]、 自然语言处理 [19]、[20]、 机器翻译 [21]、 推荐系统 [22]-[24]、视觉推理",
+            "source_name": "Tencent腾讯（腾讯官方网）",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web_supplement",
+          "source_record_id": "src_1dc3274385ea01b5579cbd4d",
+          "title": "GNN如何分布式?中科院综述《图神经网络分布式训练》",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "3",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://cloud.tencent.com/developer/article/2230138",
+          "observed_at": "2026-09-16T12:01:47.391479Z",
+          "provenance": {
+            "query": "graph flow partition distributed GNN training edge",
+            "rank": 3,
+            "run_id": "run-fb1de326c099455984af33097a9c386a",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": " 图神经网络(GNNs)是一种在图上学习的深度学习模型,并已成功应用于许多领域。尽管 GNN 有效,但 GNN 有效地扩展到大型图仍然具有挑战性 。作为一种补救措施, 分布式计算 成为训练大规模 GNN 的一种有前途的解决方案,因为它能够提供丰富的计算资源。然而, 图结构的依赖性 增加了实现高效分布式 GNN 训练的难度,导致 大量通信和工作负载不平衡 。近年来,在分布式 GNN 训练方面做出了很多努力,并提出了一系列训练算法和系统。然而,缺乏 对从图处理到分布式执行的优化技术 的系统回顾。在本次调查中,我们分析了分布式 GNN 训练的 三大挑战 ,即 海量特征通信、模型精度损失 和 工作负载不平衡 。然后,我们为分布式 GNN 训练中的优化技术引入了一种 新的分类法 ,以应对上述挑战。新分类法将现有技术分为四类,即 GNN 数据分区、GNN 批处理生成、GNN 执行模型 和 GNN 通信协议 。我们仔细讨论了每个类别中的技术。最后,我们分别总结了用于 多GPU、GPU 集群和 CPU 集群 的现有分布式 GNN 系统,并讨论了可扩展 GNN 的 未来发展方向 。 简介 GNN 是处理图建模问题的强大工具,并已广泛应用于各种应用,包括社交网络(例如,社交垃圾邮件发送者检测 [87、112]、社交网络分析 [91])、生物信息学(例如,蛋白质界面预测 [35]、疾病-基因关联 [83])、药物发现 [11、66]、流量预测[61]、医疗保健 [2、21]、推荐 [32、49、 55、111]、自然语言处理 [134、145] 和其他 [26、85、133、141、144]。通过将图结构信息集成到深度学习模型中,GNN 可以获得比传统机器学习和数据挖掘方法明显更好的结果。 GNN 模型通常包含多图卷积层,其中每个顶点聚合其邻居的最新状态,更新顶点的状态,并将神经网络(即转换)应用于顶点的更新状态。以传统的图卷积网络(GCN)为例,在每一层中,一个顶点使用 求和函数 聚合邻居状态和自己的状态,然后应用 单层MLP 来转换新状态。如果层数为 𝐿,则此类过程重复 𝐿次。第𝐿层生成的顶点状态被下游任务使用,如节点分类、链路预测等。在过去的几年中,许多研究工作在图神经网络模型的设计方面取得了显着进展。突出的模型包括 GCN [108]、GraphSAGE [46]、GAT [95]、GIN [118] 和许多其他特定于应用程序的 GNN 模型 [128、130]。迄今为止,有数十项调查审查了 GNN 模型 [114、116、135、147]。",
+            "published_at": "2023-03-01T14:09:25",
+            "request_id": "ad785f69-9447-4589-b128-0787b51ac561",
+            "search_score": null,
+            "search_snippet": "图神经网络(GNNs)是一种在图上学习的深度学习模型,并已成功应用于许多领域。尽管 GNN 有效,但 GNN 有效地扩展到大型图仍然具有挑战性 。作为一种补救措施, 分布式计算 成为训练大规模 GNN 的一种有前途的解决方案,因为它能够提供丰富的计算资源。然而, 图结构的依赖性 增加了实现高效分布式 GNN 训练的难度,导致 大量通信和工作负载不平衡 。近年来,在分布式 GNN 训练方面做出了很多努力,并提出了一系列训练算法和系统。然而,缺乏 对从图处理到分布式执行的优化技术 的系统回顾。在本次调查中,我们分析了分布式 GNN 训练的 三大挑战 ,即 海量特征通信、模型精度损失 和 工作负载不平衡 。然后,我们为分布式 GNN 训练中的优化技术引入了一种 新的分类法 ,以应对上述挑战。新分类法将现有技术分为四类,即 GNN 数据分区、GNN 批处理生成、GNN 执行模型 和 GNN 通信协议 。我们仔细讨论了每个类别中的技术。最后,我们分别总结了用于 多GPU、GPU 集群和 CPU 集群 的现有分布式 GNN 系统,并讨论了可扩展 GNN 的 未来发展方向 。 简介 GNN 是处理图建模问题的强大工具,并已广泛应用于各种应用,包括社交网络(例如,社交垃圾邮件发送者检测 [87、112]、社交网络分析 [91])、生物信息学(例如,蛋白质界面预测 [35]、疾病-基因关联 [83])、药物发现 [11、66]、流量预测[61]、医疗保健 [2、21]、推荐 [32、49、 55、111]、自然语言处理 [134、145] 和其他 [26、85、133、141、144]。通过将图结构信息集成到深度学习模型中,GNN 可以获得比传统机器学习和数据挖掘方法明显更好的结果。 GNN 模型通常包含多图卷积层,其中每个顶点聚合其邻居的最新状态,更新顶点的状态,并将神经网络(即转换)应用于顶点的更新状态。以传统的图卷积网络(GCN)为例,在每一层中,一个顶点使用 求和函数 聚合邻居状态和自己的状态,然后应用 单层MLP 来转换新状态。如果层数为 𝐿,则此类过程重复 𝐿次。第𝐿层生成的顶点状态被下游任务使用,如节点分类、链路预测等。在过去的几年中,许多研究工作在图神经网络模型的设计方面取得了显着进展。突出的模型包括 GCN [108]、GraphSAGE [46]、GAT [95]、GIN [118] 和许多其他特定于应用程序的 GNN 模型 [128、130]。迄今为止,有数十项调查审查了 GNN 模型 [114、116、135、147]。",
+            "source_name": "Tencent腾讯（腾讯官方网）",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web_supplement",
+          "source_record_id": "src_1eee03f7afd673e24551ee6f",
+          "title": "【阅读】Distributed Graph Neural Network Training: A Survey——翻译",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "4",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://developer.huawei.com/consumer/cn/forum/topic/0204150568838017022",
+          "observed_at": "2026-09-16T12:01:47.391479Z",
+          "provenance": {
+            "query": "graph flow partition distributed GNN training edge",
+            "rank": 4,
+            "run_id": "run-fb1de326c099455984af33097a9c386a",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": " 一、分布式训练概述 分布式训练(Distributed Training)是指将机器学习或深度学习模型训练任务分解成多个子任务,并在多个计算设备上并行地进行训练。图1给出了单个计算设备和多个计算设备的示例,这里计算设备可以是中央处理器(Central Processing Unit,CPU)、图形处理器(Graphics Processing Unit,GPU)、张量处理器(Tensor Processing Unit,TPU)也可以是神经网络处理器(Neural network Processing Unit,NPU)。 由于同一个服务器内部的多个计算设备之间内存也可能并不共享,因此无论这些计算设备是否处于一个服务器还是多个服务器中,其系统架构都属于分布式系统范畴。",
+            "published_at": "2024-05-08T16:40:00",
+            "request_id": "ad785f69-9447-4589-b128-0787b51ac561",
+            "search_score": null,
+            "search_snippet": "一、分布式训练概述 分布式训练(Distributed Training)是指将机器学习或深度学习模型训练任务分解成多个子任务,并在多个计算设备上并行地进行训练。图1给出了单个计算设备和多个计算设备的示例,这里计算设备可以是中央处理器(Central Processing Unit,CPU)、图形处理器(Graphics Processing Unit,GPU)、张量处理器(Tensor Processing Unit,TPU)也可以是神经网络处理器(Neural network Processing Unit,NPU)。 由于同一个服务器内部的多个计算设备之间内存也可能并不共享,因此无论这些计算设备是否处于一个服务器还是多个服务器中,其系统架构都属于分布式系统范畴。",
+            "source_name": "华为",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web_supplement",
+          "source_record_id": "src_2112c0589883069e9c0111e0",
+          "title": "理论+实践,带你了解分布式训练",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "5",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "http://ieeexplore.ieee.org/document/11004129/",
+          "observed_at": "2026-09-16T12:01:47.391479Z",
+          "provenance": {
+            "query": "graph flow partition distributed GNN training edge",
+            "rank": 5,
+            "run_id": "run-fb1de326c099455984af33097a9c386a",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": "Heterogeneous Dynamic-Aware GNN for RUL Prediction of AeroengineGraph flow learninggraph neural network (GNN)remaining useful life (RUL) predictionspatiotemporal featurestransformerAccurate remaining useful life (RUL) prediction is crucial for achieving predictive maintenance. The performance degradation process of equipment is, however, not only manifested as anomalies in individual variables but also as changes in the constraint relationships among multiple variables. Human operations and changes in operating conditions further complicate the state representation of the performance degradation process, making RUL prediction for complex systems like aeroengines a challenging task. This article proposes a novel graph flow learning model for RUL prediction in such complex systems with dynamic interactive operations, termed the heterogeneous dynamic-aware graph neural network (HDA-GNN). First, various correlation evaluation metrics are used to convert sensor signals into heterogeneous graphs to represent the complex relationships among sensor signals. Then, gated recurrent unit (GRU) and attention mechanisms are employed to dynamically calculate the edge weights of the heterogeneous graphs, and a graph convolutional network (GCN) is used to integrate the features of these dynamic heterogeneous graphs. Finally, the transformer is applied to learn the temporal features within the graph flows. This model is capable of learning dynamic features under human external operation disturbances from multiple perspectives, thereby reducing the impact of the randomness of human operations on dynamic features. Experimental results on the NASA commercial modular aero-propulsion system simulation (C-MAPSS) dataset demonstrate the effectiveness and superiority of this model for RUL prediction tasks in complex systems like aeroengines.",
+            "published_at": "2026-09-03T00:00:00",
+            "request_id": "ad785f69-9447-4589-b128-0787b51ac561",
+            "search_score": null,
+            "search_snippet": "Heterogeneous Dynamic-Aware GNN for RUL Prediction of AeroengineGraph flow learninggraph neural network (GNN)remaining useful life (RUL) predictionspatiotemporal featurestransformerAccurate remaining useful life (RUL) prediction is crucial for achieving predictive maintenance. The performance degradation process of equipment is, however, not only manifested as anomalies in individual variables but also as changes in the constraint relationships among multiple variables. Human operations and changes in operating conditions further complicate the state representation of the performance degradation process, making RUL prediction for complex systems like aeroengines a challenging task. This article proposes a novel graph flow learning model for RUL prediction in such complex systems with dynamic interactive operations, termed the heterogeneous dynamic-aware graph neural network (HDA-GNN). First, various correlation evaluation metrics are used to convert sensor signals into heterogeneous graphs to represent the complex relationships among sensor signals. Then, gated recurrent unit (GRU) and attention mechanisms are employed to dynamically calculate the edge weights of the heterogeneous graphs, and a graph convolutional network (GCN) is used to integrate the features of these dynamic heterogeneous graphs. Finally, the transformer is applied to learn the temporal features within the graph flows. This model is capable of learning dynamic features under human external operation disturbances from multiple perspectives, thereby reducing the impact of the randomness of human operations on dynamic features. Experimental results on the NASA commercial modular aero-propulsion system simulation (C-MAPSS) dataset demonstrate the effectiveness and superiority of this model for RUL prediction tasks in complex systems like aeroengines.",
+            "source_name": "无",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web_supplement",
+          "source_record_id": "src_48a4f75a7dc43a1ec26a6203",
+          "title": "Heterogeneous Dynamic-Aware GNN for RUL Prediction of Aeroengine",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "6",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://zhuanlan.zhihu.com/p/652927264",
+          "observed_at": "2026-09-16T12:01:47.391479Z",
+          "provenance": {
+            "query": "graph flow partition distributed GNN training edge",
+            "rank": 6,
+            "run_id": "run-fb1de326c099455984af33097a9c386a",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": " 2.2Citeseer 2.4DBLP 3.1 如何读取文件 3.2 训练步骤 4. 下载链接 5. 参考 1.Project基本信息介绍 项目开源代码地址:https://github.com/IntelLabs/SAR/tree/main 参考论文:https://arxiv.org/pdf/2111.06483.pdf 论文【SEQUENTIAL AGGREGATION AND REMATERIALIZATION: DISTRIBUTED FULL-BATCH TRAINING OF GRAPH NEURAL NETWORKS ON LARGE GRAPHS】 SAR(Sequential Aggregation and Rematerialization)是一种分布式的全批次训练大规模GNN(Graph Neural Network)的方法。与其他大规模训练GNN的方法相比,SAR有以下优势: 1. 可以直接在整个大图上训练任何类型的GNN,而不是基于采样的方法或基于不可学习消息传递的方法。 2. SAR采用分步恢复计算图的方法,构造并释放GNN计算图的部分,从而在反向传播期间获得卓越的内存伸缩行为。这意味着在密集连接的图上,每个工作机器的内存消耗会随着工作机器数量的增加而线性下降。 3. SAR优化了关注力模型的运行时和内存效率,这是一种基于内核融合和关注力矩阵恢复的通用技术。通过SAR结合关注力内核的优化,可以大大加快并节省注意力型GNN的内存。 2. 图数据集 下面我们介绍一下深度学习中常用的图数据集:Cora、Citeseer(Cite)、Pubmed、DBLP、ACM、AMAP、AMAC、Corafull、WIKI、COCS、BAT、EAT、UAT。 每个数据集都包括: label(图节点的真实标签) feat(图节点的自身属性) adj(图结构对应的邻接矩阵) 2.1 Cora Cora数据集包括2708份科学出版物,分为7类。",
+            "published_at": "2023-08-28T23:25:23",
+            "request_id": "ad785f69-9447-4589-b128-0787b51ac561",
+            "search_score": null,
+            "search_snippet": "2.2Citeseer 2.4DBLP 3.1 如何读取文件 3.2 训练步骤 4. 下载链接 5. 参考 1.Project基本信息介绍 项目开源代码地址:https://github.com/IntelLabs/SAR/tree/main 参考论文:https://arxiv.org/pdf/2111.06483.pdf 论文【SEQUENTIAL AGGREGATION AND REMATERIALIZATION: DISTRIBUTED FULL-BATCH TRAINING OF GRAPH NEURAL NETWORKS ON LARGE GRAPHS】 SAR(Sequential Aggregation and Rematerialization)是一种分布式的全批次训练大规模GNN(Graph Neural Network)的方法。与其他大规模训练GNN的方法相比,SAR有以下优势: 1. 可以直接在整个大图上训练任何类型的GNN,而不是基于采样的方法或基于不可学习消息传递的方法。 2. SAR采用分步恢复计算图的方法,构造并释放GNN计算图的部分,从而在反向传播期间获得卓越的内存伸缩行为。这意味着在密集连接的图上,每个工作机器的内存消耗会随着工作机器数量的增加而线性下降。 3. SAR优化了关注力模型的运行时和内存效率,这是一种基于内核融合和关注力矩阵恢复的通用技术。通过SAR结合关注力内核的优化,可以大大加快并节省注意力型GNN的内存。 2. 图数据集 下面我们介绍一下深度学习中常用的图数据集:Cora、Citeseer(Cite)、Pubmed、DBLP、ACM、AMAP、AMAC、Corafull、WIKI、COCS、BAT、EAT、UAT。 每个数据集都包括: label(图节点的真实标签) feat(图节点的自身属性) adj(图结构对应的邻接矩阵) 2.1 Cora Cora数据集包括2708份科学出版物,分为7类。",
+            "source_name": "知乎",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web_supplement",
+          "source_record_id": "src_0874fc655a271adb0a4ea373",
+          "title": "AutoDL教程:分布式gnn训练及数据集整理",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "7",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://mp.weixin.qq.com/s?__biz=MzU0NjgzMDIxMQ==&mid=2247618736&idx=3&sn=1ddd2df434b0167f36550d151b740d9e&chksm=fa06eb2abee8069f01302c139f1c8fb406a5f11d0f69400e3b17ec8c94840d3052240af2c30a&scene=27",
+          "observed_at": "2026-09-16T12:01:47.391479Z",
+          "provenance": {
+            "query": "graph flow partition distributed GNN training edge",
+            "rank": 7,
+            "run_id": "run-fb1de326c099455984af33097a9c386a",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": " 图神经网络的并行与分布式执行:深入并发性分析 作者:Maciej Besta 和 Torsten Hoeﬂer 摘要 图神经网络(GNNs)是深度学习中最强大的工具之一。它们通常在无结构网络上解决复杂问题,如节点分类、图分类或链接预测,准确度很高。然而,GNNs 的推理和训练都很复杂,并且它们独特地结合了不规则图处理的特征与密集和规则计算。这种复杂性使得在现代大规模并行架构上有效执行 GNNs 变得非常具有挑战性。为了缓解这个问题,我们首先设计了一个 GNNs 中并行性的分类法,考虑了数据和模型并行性以及不同形式的流水线处理。然后,我们使用这个分类法来研究众多 GNN 模型、由 GNN 驱动的机器学习任务、软件框架或硬件加速器中的并行性量。我们使用了工作深度模型,并评估了通信量和同步。我们特别关注相关张量的稀疏性/密度,以了解如何有效地应用技术,如向量化。我们还正式分析了 GNN 流水线处理,并推广了已建立的 Message-Passing 类 GNN 模型,以覆盖任意流水线深度,促进未来的优化。最后,我们研究了不同形式的异步性,为未来异步并行 GNN 流水线铺平了道路。我们的分析结果综合了一系列见解,有助于最大化 GNN 性能,并全面列出了进一步研究高效 GNN 计算的挑战和机会。我们的工作将有助于推进未来 GNN 的设计。 深度学习 并行处理 并列算法 引言 图神经网络(GNNs)正在以风暴般的速度接管机器学习(ML)的世界 [1]。它们已经被用于大量复杂问题,如节点分类、图分类或边缘预测。应用示例领域包括社会科学、生物信息学、化学、医学、网络安全、语言学、交通等 [1]。一些最近的成功案例包括成本效益高且快速放置高性能芯片 [2]、引导数学发现 [3] 或显著提高蛋白质折叠预测的准确性 [4]。 GNNs 概括了传统的深度学习(DL)和图处理。与前者不同,它们不在规则网格和高度结构化的数据上操作(例如,图像处理);相反,数据是高度无结构的、不规则的,由此产生的计算是数据驱动的,缺乏直接的空间或时间局部性 [5]。此外,与后者不同,顶点和/或边与复杂数据和处理相关联。例如,在许多 GNN 模型中,每个顶点 i 都有一个分配的 k 维特征向量,并且每个这样的向量都与 i 的邻居的向量结合;这个过程迭代重复。因此,尽管这种 GNN 计算的整体风格类似于标签传播算法,如 PageRank [6],但由于顶点特征的高维数,它带来了额外的复杂性。 然而,这只是最简单的 GNN 模型,如基本的图卷积网络(GCN)[7] 的工作方式。它们通常在无结构网络上解决复杂问题,如节点分类、图分类或链接预测,准确度很高。",
+            "published_at": "2024-05-16T10:05:00",
+            "request_id": "ad785f69-9447-4589-b128-0787b51ac561",
+            "search_score": null,
+            "search_snippet": "图神经网络的并行与分布式执行:深入并发性分析 作者:Maciej Besta 和 Torsten Hoeﬂer 摘要 图神经网络(GNNs)是深度学习中最强大的工具之一。它们通常在无结构网络上解决复杂问题,如节点分类、图分类或链接预测,准确度很高。然而,GNNs 的推理和训练都很复杂,并且它们独特地结合了不规则图处理的特征与密集和规则计算。这种复杂性使得在现代大规模并行架构上有效执行 GNNs 变得非常具有挑战性。为了缓解这个问题,我们首先设计了一个 GNNs 中并行性的分类法,考虑了数据和模型并行性以及不同形式的流水线处理。然后,我们使用这个分类法来研究众多 GNN 模型、由 GNN 驱动的机器学习任务、软件框架或硬件加速器中的并行性量。我们使用了工作深度模型,并评估了通信量和同步。我们特别关注相关张量的稀疏性/密度,以了解如何有效地应用技术,如向量化。我们还正式分析了 GNN 流水线处理,并推广了已建立的 Message-Passing 类 GNN 模型,以覆盖任意流水线深度,促进未来的优化。最后,我们研究了不同形式的异步性,为未来异步并行 GNN 流水线铺平了道路。我们的分析结果综合了一系列见解,有助于最大化 GNN 性能,并全面列出了进一步研究高效 GNN 计算的挑战和机会。我们的工作将有助于推进未来 GNN 的设计。 深度学习 并行处理 并列算法 引言 图神经网络(GNNs)正在以风暴般的速度接管机器学习(ML)的世界 [1]。它们已经被用于大量复杂问题,如节点分类、图分类或边缘预测。应用示例领域包括社会科学、生物信息学、化学、医学、网络安全、语言学、交通等 [1]。一些最近的成功案例包括成本效益高且快速放置高性能芯片 [2]、引导数学发现 [3] 或显著提高蛋白质折叠预测的准确性 [4]。 GNNs 概括了传统的深度学习(DL)和图处理。与前者不同,它们不在规则网格和高度结构化的数据上操作(例如,图像处理);相反,数据是高度无结构的、不规则的,由此产生的计算是数据驱动的,缺乏直接的空间或时间局部性 [5]。此外,与后者不同,顶点和/或边与复杂数据和处理相关联。例如,在许多 GNN 模型中,每个顶点 i 都有一个分配的 k 维特征向量,并且每个这样的向量都与 i 的邻居的向量结合;这个过程迭代重复。因此,尽管这种 GNN 计算的整体风格类似于标签传播算法,如 PageRank [6],但由于顶点特征的高维数,它带来了额外的复杂性。 然而,这只是最简单的 GNN 模型,如基本的图卷积网络(GCN)[7] 的工作方式。它们通常在无结构网络上解决复杂问题,如节点分类、图分类或链接预测,准确度很高。",
+            "source_name": "腾讯网",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web_supplement",
+          "source_record_id": "src_e9a03ae6c0d18fd3cb821a0a",
+          "title": "【荐读IEEE TPAMI】图神经网络的并行与分布式执行:深入并发性分析",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "8",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://cloud.tencent.com/developer/article/2430691",
+          "observed_at": "2026-09-16T12:01:47.391479Z",
+          "provenance": {
+            "query": "graph flow partition distributed GNN training edge",
+            "rank": 8,
+            "run_id": "run-fb1de326c099455984af33097a9c386a",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": " 图神经网络(Graph Neural Networks, GNNs)作为一种新兴的机器学习方法,能够有效地处理和分析图结构数据。GNNs通过传播机制(message passing)在图的节点和边之间传播信息,捕捉复杂的节点间关系和图的全局结构,从而实现对图数据的深层次理解和高效处理。近年来,随着深度学习技术的发展,GNNs在多个领域取得了显著的成果,成为研究热点。 本文旨在系统地介绍图神经网络的基本原理、主要模型及其在不同应用场景中的实际案例。首先,我们将概述图的基本概念及传统图分析方法,接着深入探讨GNN的主要模型和应用,最后讨论当前GNN研究面临的挑战与未来发展方向。通过本文的介绍,读者将能够全面了解图神经网络这一强大工具在图结构数据分析中的潜力与应用前景。 节点(Node):图中的基本元素,表示实体或对象。 边(Edge):连接节点的线,表示节点间的关系。 邻接矩阵(Adjacency Matrix):用矩阵形式表示图中节点之间连接关系的矩阵。 例如,一个简单的无向图可以表示为: 图的类型:  无向图(Undirected Graph):边没有方向。 有向图(Directed Graph):边具有方向。 加权图(Weighted Graph):边带有权重,表示关系的强度。 图神经网络通过一种称为传播机制(Message Passing)的过程来实现信息在图中节点和边之间的传递与更新。具体来说,GNN的基本原理包括以下几个步骤: 消息传递(Message Passing):每个节点从其邻居节点接收信息。 信息聚合(Aggregation):将接收到的邻居节点信息进行聚合,通常使用求和、平均或最大值等操作。  状态更新(Update):根据聚合的邻居信息和节点自身的信息更新节点状态。",
+            "published_at": "2024-06-22T08:21:49",
+            "request_id": "ad785f69-9447-4589-b128-0787b51ac561",
+            "search_score": null,
+            "search_snippet": "图神经网络(Graph Neural Networks, GNNs)作为一种新兴的机器学习方法,能够有效地处理和分析图结构数据。GNNs通过传播机制(message passing)在图的节点和边之间传播信息,捕捉复杂的节点间关系和图的全局结构,从而实现对图数据的深层次理解和高效处理。近年来,随着深度学习技术的发展,GNNs在多个领域取得了显著的成果,成为研究热点。 本文旨在系统地介绍图神经网络的基本原理、主要模型及其在不同应用场景中的实际案例。首先,我们将概述图的基本概念及传统图分析方法,接着深入探讨GNN的主要模型和应用,最后讨论当前GNN研究面临的挑战与未来发展方向。通过本文的介绍,读者将能够全面了解图神经网络这一强大工具在图结构数据分析中的潜力与应用前景。 节点(Node):图中的基本元素,表示实体或对象。 边(Edge):连接节点的线,表示节点间的关系。 邻接矩阵(Adjacency Matrix):用矩阵形式表示图中节点之间连接关系的矩阵。 例如,一个简单的无向图可以表示为: 图的类型:  无向图(Undirected Graph):边没有方向。 有向图(Directed Graph):边具有方向。 加权图(Weighted Graph):边带有权重,表示关系的强度。 图神经网络通过一种称为传播机制(Message Passing)的过程来实现信息在图中节点和边之间的传递与更新。具体来说,GNN的基本原理包括以下几个步骤: 消息传递(Message Passing):每个节点从其邻居节点接收信息。 信息聚合(Aggregation):将接收到的邻居节点信息进行聚合,通常使用求和、平均或最大值等操作。  状态更新(Update):根据聚合的邻居信息和节点自身的信息更新节点状态。",
+            "source_name": "Tencent腾讯（腾讯官方网）",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web_supplement",
+          "source_record_id": "src_23b53be5b67a78059ebdf094",
+          "title": "【机器学习】使用Python实现图神经网络(GNN):图结构数据的分析与应用",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "9",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://cloud.baidu.com/article/3728266",
+          "observed_at": "2026-09-16T12:01:47.391479Z",
+          "provenance": {
+            "query": "graph flow partition distributed GNN training edge",
+            "rank": 9,
+            "run_id": "run-fb1de326c099455984af33097a9c386a",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": " 一、Graph基础:核心概念与数据结构选择 Graph(图)作为非线性数据结构,由顶点(Vertex)和边(Edge)构成,其数学定义可表示为G=(V,E)。根据边的方向性,图分为有向图(Directed Graph)和无向图(Undirected Graph),根据边的权重属性,又可分为加权图和非加权图。在计算机实现中,图的存储方式直接影响算法效率,常见方案包括: 邻接矩阵(Adjacency Matrix) 使用二维数组存储顶点间连接关系,空间复杂度为O(V²)。适用于稠密图(边数接近V²),可快速判断任意两顶点是否相连(O(1)时间复杂度)。例如,在社交网络中,若用户关系密集,邻接矩阵能高效查询好友关系: classGraphMatrix: def__init__(self,vertices): self.vertices =vertices self.matrix =[[0]*vertices for_ inrange(vertices)] defadd_edge(self,u,v,weight=1): self.matrix[u][v]=weight # 无向图需对称存储:self.matrix[v][u] = weight 邻接表(Adjacency List) 通过链表或数组存储每个顶点的邻居,空间复杂度为O(V+E)。适用于稀疏图(边数远小于V²),可高效遍历顶点的所有邻居(O(deg(v))时间复杂度)。以电商推荐系统为例,邻接表能高效存储用户-商品交互关系: classGraphList: def__init__(self,vertices): self.vertices =vertices self.adj_list =[[]for_ inrange(vertices)] defadd_edge(self,u,v,weight=1): self.adj_list[u].append((v,weight)) # 无向图需双向添加:self.adj_list[v].append((u, weight)) 边列表(Edge List) 直接存储所有边的三元组(起点、终点、权重),空间复杂度为O(E)。适用于需要频繁遍历所有边的场景,如最短路径计算中的Dijkstra算法。",
+            "published_at": "2025-09-25T17:40:00",
+            "request_id": "ad785f69-9447-4589-b128-0787b51ac561",
+            "search_score": null,
+            "search_snippet": "一、Graph基础:核心概念与数据结构选择 Graph(图)作为非线性数据结构,由顶点(Vertex)和边(Edge)构成,其数学定义可表示为G=(V,E)。根据边的方向性,图分为有向图(Directed Graph)和无向图(Undirected Graph),根据边的权重属性,又可分为加权图和非加权图。在计算机实现中,图的存储方式直接影响算法效率,常见方案包括: 邻接矩阵(Adjacency Matrix) 使用二维数组存储顶点间连接关系,空间复杂度为O(V²)。适用于稠密图(边数接近V²),可快速判断任意两顶点是否相连(O(1)时间复杂度)。例如,在社交网络中,若用户关系密集,邻接矩阵能高效查询好友关系: classGraphMatrix: def__init__(self,vertices): self.vertices =vertices self.matrix =[[0]*vertices for_ inrange(vertices)] defadd_edge(self,u,v,weight=1): self.matrix[u][v]=weight # 无向图需对称存储:self.matrix[v][u] = weight 邻接表(Adjacency List) 通过链表或数组存储每个顶点的邻居,空间复杂度为O(V+E)。适用于稀疏图(边数远小于V²),可高效遍历顶点的所有邻居(O(deg(v))时间复杂度)。以电商推荐系统为例,邻接表能高效存储用户-商品交互关系: classGraphList: def__init__(self,vertices): self.vertices =vertices self.adj_list =[[]for_ inrange(vertices)] defadd_edge(self,u,v,weight=1): self.adj_list[u].append((v,weight)) # 无向图需双向添加:self.adj_list[v].append((u, weight)) 边列表(Edge List) 直接存储所有边的三元组(起点、终点、权重),空间复杂度为O(E)。适用于需要频繁遍历所有边的场景,如最短路径计算中的Dijkstra算法。",
+            "source_name": "百度智能云",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web_supplement",
+          "source_record_id": "src_6b2578e8306b63d422f05364",
+          "title": "从零构建高效图结构:创建Graph的完整技术指南",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "10",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://xie.infoq.cn/article/5acdc4dc912a9fd525f1159d5",
+          "observed_at": "2026-09-16T12:01:47.391479Z",
+          "provenance": {
+            "query": "graph flow partition distributed GNN training edge",
+            "rank": 10,
+            "run_id": "run-fb1de326c099455984af33097a9c386a",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": " 一、分布式训练概述 分布式训练(Distributed Training)是指将机器学习或深度学习模型训练任务分解成多个子任务,并在多个计算设备上并行地进行训练。图 1 给出了单个计算设备和多个计算设备的示例,这里计算设备可以是中央处理器(Central Processing Unit,CPU)、图形处理器(Graphics Processing Unit,GPU)、张量处理器(Tensor Processing Unit,TPU)也可以是神经网络处理器(Neural network Processing Unit,NPU)。 由于同一个服务器内部的多个计算设备之间内存也可能并不共享,因此无论这些计算设备是否处于一个服务器还是多个服务器中,其系统架构都属于分布式系统范畴。",
+            "published_at": "2024-05-08T00:00:00",
+            "request_id": "ad785f69-9447-4589-b128-0787b51ac561",
+            "search_score": null,
+            "search_snippet": "一、分布式训练概述 分布式训练(Distributed Training)是指将机器学习或深度学习模型训练任务分解成多个子任务,并在多个计算设备上并行地进行训练。图 1 给出了单个计算设备和多个计算设备的示例,这里计算设备可以是中央处理器(Central Processing Unit,CPU)、图形处理器(Graphics Processing Unit,GPU)、张量处理器(Tensor Processing Unit,TPU)也可以是神经网络处理器(Neural network Processing Unit,NPU)。 由于同一个服务器内部的多个计算设备之间内存也可能并不共享,因此无论这些计算设备是否处于一个服务器还是多个服务器中,其系统架构都属于分布式系统范畴。",
+            "source_name": "极客邦",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web_supplement",
+          "source_record_id": "src_e9cb7f87a8eead24083bb0ed",
+          "title": "理论+ 实践,带你了解分布式训练",
+          "work_id": null
+        }
+      ]
+    },
+    "succeeded": true,
+    "summary": "发现并保存 10 个 Web 候选来源",
+    "tool_name": "web_search"
+  },
+  "resolved_arguments": {
+    "max_results": 10,
+    "query": "graph flow partition distributed GNN training edge"
+  },
+  "result_count": 10,
+  "stage_name": "run_research_task",
+  "started_at": "2026-09-16T12:01:46.214969+00:00",
+  "tool_call_id": "tool_0042",
+  "tool_name": "web_search"
+}

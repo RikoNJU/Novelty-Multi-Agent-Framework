@@ -1,0 +1,613 @@
+{
+  "brief": {
+    "paper_summary": "由于现实世界中的大多数数据都可以用图表示，因此近年来针对图表示学\n习的研究越来越受到关注。通过将高维图数据转化成低维的表征向量，图表示\n学习可以有效地对图的信息进行存储并快捷地访问图中实体的关键知识。利用\n学习到的图表征数据可以为社交网络行为分析、节点分类、链路预测和聚类等\n下游任务提供帮助。随着深度学习的快速发展，研究人员提出了基于图神经网\n络的图表示学习方法，其使图中的节点能够同时学习图的结构信息以及邻域节\n点的特征信息，从而得到高质量的低维表征。针对图神经网络上的图表示学\n习，本文主要关注两个问题：大规模时序图场景下的图表示学习方法和分布式\n场景下的大规模图的图神经网络优化训练方法。\n真实世界中的图数据规模往往十分庞大且处于动态变化的状态，而现有的\n图神经网络要么无法处理动态时序图上的图表征学习，要么面对大规模图数据\n集时训练效率低下。为了解决大规模动态图上的图表征学习问题，本文提出了\n一种基于图摘要的大规模时序图表示学习方法——GSAERU 模型。GSAERU 模\n型由“图表征学习模块”和“时序学习模块”两部分构成。首先将动态时序图\n建模为各时刻上原图快照的序列，接着在单时间步上将图快照输入图表征学习\n模块。该模块通过图摘要技术对原图进行压缩，并将压缩后的新图输入图自编\n码器，利用和原图的重构误差训练原图节点的表征。在获得单时间步上的图表\n征后将其输入时序学习模块，并通过一个循环神经网络学习原图在时间维度上\n的特征信息与依赖关系，从而得到大规模时序图的高质量表征。基于在四个真\n实世界的大规模图数据集上的大量实验表明，GSAERU 模型能够高效生成时序\n图的表征。与传统的图神经网络算法相比，其平均内存消耗和平均训练时长只\n有其9.86% 与13.27%，且与性能最好的算法在大部分指标下的差距都不超过\n3.5%。\n\nii\n使用分布式技术加速神经网络训练也是如今热门的研究课题，因为在处理\n大规模数据时，单个设备（如CPU，GPU）有限的内存和计算资源往往会成为\n训练瓶颈。而分布式技术可以提供更多的计算资源来提高训练效率。然而由于\n图数据的不规则性，传统分布式机器学习方法中的子任务划分和模型训练方法\n难以直接应用于图神经网络。针对大规模图流数据场景下的分布式图神经网络\n训练优化问题，本文提出了基于图摘要的分布式图神经网络优化训练算法——\nDSGNN 模型。DSGNN 模型采用“领导——工作者”工作模式，首先由领导节\n点利用一个基于边分割的图流划分算法对原图进行划分并将划分子图分配给各\n个工作节点。工作节点随后执行一个基于图摘要技术的小批量训练并将训练结\n果通过一个注意力层返回给领导节点，最后由领导节点汇总结果并计算梯度，\n并根据梯度同步更新所有计算节点上的模型。基于四个真实世界的大规模图数\n据集上的大量实验，结果表明DSGNN 模型可以大大加速GNN 模型的训练，\n并且在链路预测任务上的F1 分数显著高于其它分布式图神经网络模型。",
+    "research_problem": "面向大规模动态图的图神经网络优化机制研究",
+    "novelty_points": [
+      {
+        "point_id": "NP-1",
+        "claim": "提出了一种基于图摘要的大规模时序图表示学习方法GSAERU，该方法结合图摘要技术和图自编码器，并利用循环神经网络学习时间维度的特征与依赖关系，能够高效生成大规模动态时序图的表征，显著降低内存消耗和训练时间。",
+        "claim_en": "Proposed a large-scale sequential graph representation learning method GSAERU based on graph summarization, which combines graph summarization with graph autoencoder and uses recurrent neural networks to learn temporal features and dependencies, enabling efficient representation generation for large-scale dynamic graphs with significantly reduced memory consumption and training time.",
+        "technical_features": [
+          "将动态时序图建模为各时刻上原图快照的序列",
+          "利用图摘要技术对原图进行压缩，将压缩后的新图输入图自编码器，通过重构误差训练原图节点的表征",
+          "引入循环神经网络作为时序学习模块，学习原图在时间维度上的特征信息与依赖关系",
+          "在四个真实世界大规模图数据集上验证，平均内存消耗和平均训练时长分别仅为传统图神经网络算法的9.86%和13.27%"
+        ],
+        "technical_features_en": [
+          "Modeling dynamic sequential graphs as a sequence of snapshots of the original graph at each moment",
+          "Compressing the original graph via graph summarization and feeding the compressed graph into a graph autoencoder, using reconstruction error to train node representations of the original graph",
+          "Introducing a recurrent neural network as the time sequence learning module to learn feature information and dependencies of the original graph in the temporal dimension",
+          "Extensive experiments on four real-world large-scale graph datasets demonstrate that average memory consumption and average training time are only 9.86% and 13.27% of those of traditional graph neural network algorithms"
+        ],
+        "source_locations": [
+          "Abstract (GSAERU section)"
+        ]
+      },
+      {
+        "point_id": "NP-2",
+        "claim": "提出了一种基于图摘要的分布式图神经网络优化训练算法DSGNN，采用“领导—工作者”工作模式，通过基于边分割的图流划分算法对原图进行划分，工作节点执行基于图摘要的小批量训练，并通过注意力层将结果汇总至领导节点，实现大规模图流数据上GNN训练的高效加速。",
+        "claim_en": "Proposed a distributed graph neural network optimization training algorithm DSGNN based on graph summarization, which adopts a leader-worker mode, partitions the original graph using a graph flow partition algorithm based on edge segmentation, workers perform mini-batch training based on graph summarization, and results are summarized to the leader through an attention layer, enabling efficient acceleration of GNN training on large-scale graph streaming data.",
+        "technical_features": [
+          "采用“领导—工作者”工作模式，由领导节点划分图并分配子图，工作者节点负责训练",
+          "基于边分割的图流划分算法对原图进行划分，适应图数据的不规则性",
+          "工作节点执行基于图摘要的小批量训练，压缩子图以降低计算量",
+          "训练结果通过注意力层返回给领导节点，领导节点汇总并计算梯度，同步更新所有计算节点模型"
+        ],
+        "technical_features_en": [
+          "Adopting a leader-worker mode where the leader partitions the graph and assigns subgraphs to workers, and workers are responsible for training",
+          "A graph flow partition algorithm based on edge segmentation partitions the original graph, accommodating the irregularity of graph data",
+          "Workers perform mini-batch training based on graph summarization, compressing subgraphs to reduce computation",
+          "Training results are returned to the leader through an attention layer, and the leader aggregates results and computes gradients, synchronously updating models on all computing nodes"
+        ],
+        "source_locations": [
+          "Abstract (DSGNN section)"
+        ]
+      },
+      {
+        "point_id": "NP-3",
+        "claim": "在分布式图神经网络训练中，提出了基于边分割的图流划分算法，用于将大规模图数据划分为多个子图并分配给工作者节点，有效解决了图数据不规则性导致的分布式训练难点，提升了训练效率。",
+        "claim_en": "In distributed graph neural network training, a graph flow partition algorithm based on edge segmentation is proposed to partition large-scale graph data into multiple subgraphs and assign them to worker nodes, effectively addressing the difficulties caused by irregularity of graph data in distributed training and improving training efficiency.",
+        "technical_features": [
+          "基于边分割的图流划分算法将原图划分为子图，适用于图流数据场景",
+          "划分后的子图分配给各工作节点，实现并行处理",
+          "该算法能够适应动态图流数据的变化，提高分布式训练的扩展性"
+        ],
+        "technical_features_en": [
+          "A graph flow partition algorithm based on edge segmentation partitions the original graph into subgraphs, suitable for graph streaming data scenarios",
+          "The partitioned subgraphs are assigned to worker nodes for parallel processing",
+          "The algorithm adapts to changes in dynamic graph streaming data, improving scalability of distributed training"
+        ],
+        "source_locations": [
+          "Abstract (DSGNN section)"
+        ]
+      }
+    ],
+    "keywords_zh": [
+      "图表示学习",
+      "深度学习",
+      "图神经网络",
+      "分布式技术"
+    ],
+    "keywords_en": [
+      "graph representation learning",
+      "deep learning",
+      "graph neural network",
+      "distributed"
+    ],
+    "research_tasks": [
+      {
+        "task_id": "T-1",
+        "novelty_point_id": "NP-1",
+        "task_type": "literature_search",
+        "language": "en",
+        "description": "针对该查新点执行英文文献检索。",
+        "attempt": 1
+      },
+      {
+        "task_id": "T-1",
+        "novelty_point_id": "NP-2",
+        "task_type": "literature_search",
+        "language": "en",
+        "description": "针对该查新点执行英文文献检索。",
+        "attempt": 1
+      },
+      {
+        "task_id": "T-1",
+        "novelty_point_id": "NP-3",
+        "task_type": "literature_search",
+        "language": "en",
+        "description": "针对该查新点执行英文文献检索。",
+        "attempt": 1
+      }
+    ]
+  },
+  "evidence_cards": [
+    {
+      "card_id": "card_62cce85b10e07492d6d66e87",
+      "task_id": "T-1",
+      "novelty_point_id": "NP-1",
+      "document_title": "Efficient Learning-based Graph Simulation for Temporal Graphs",
+      "main_contribution": "TGAE proposes an efficient learning-based approach using a temporal graph autoencoder to generate graph snapshots for temporal graphs, achieving good simulation quality and efficiency.",
+      "overlaps": [
+        "Both use graph autoencoders for temporal/dynamic graphs",
+        "Both handle temporal graphs composed of evolving graph snapshots"
+      ],
+      "differences": [
+        "TGAE is designed for graph generation/simulation, whereas GSAERU is for node representation learning on large-scale dynamic graphs",
+        "TGAE does not use graph summarization to compress the original graph; GSAERU compresses the graph via summarization before autoencoder training",
+        "TGAE does not use a recurrent neural network for temporal feature learning; GSAERU introduces an RNN as a temporal learning module",
+        "TGAE focuses on simulation quality and efficiency of graph generation, not on reducing memory consumption and training time for representation learning"
+      ],
+      "sources": [
+        {
+          "title": "Efficient Learning-based Graph Simulation for Temporal Graphs",
+          "quote": "we propose an efficient learning-based approach to generate graph snapshots, namely temporal graph autoencoder (TGAE)",
+          "location": "artifact art_532328167974ec703a74ac56 chars:847-964",
+          "doi": "10.1109/ICDE65448.2025.00026",
+          "url": "https://arxiv.org/pdf/2510.05569"
+        }
+      ],
+      "cited_by_paper": null,
+      "possible_baseline": false,
+      "relevance": 0.5,
+      "confidence": 0.75,
+      "evidence_ids": [
+        "ev_8e3c333b95eec51657d65cc3"
+      ]
+    },
+    {
+      "card_id": "card_3d9d0903795629dfa516c9a7",
+      "task_id": "T-1",
+      "novelty_point_id": "NP-1",
+      "document_title": "Scalable and Efficient Joint Spiking Embedding Predictive Architecture for Large-Scale Dynamic Graphs",
+      "main_contribution": "SG-JEPA proposes a joint spiking embedding predictive architecture for large-scale dynamic graph representation learning, achieving superior training efficiency and memory scalability compared with prior self-supervised dynamic graph baselines.",
+      "overlaps": [
+        "Both address large-scale dynamic graph representation learning with efficiency gains in training time and memory",
+        "Both handle sequential/temporal inputs from dynamic graphs",
+        "Both aim to generate task-agnostic graph embeddings for large-scale dynamic graphs"
+      ],
+      "differences": [
+        "SG-JEPA uses spiking neural networks and a joint embedding predictive architecture, whereas GSAERU combines graph summarization with a graph autoencoder",
+        "SG-JEPA does not compress the original graph via graph summarization; GSAERU explicitly compresses the graph before feeding it into the autoencoder",
+        "SG-JEPA does not use reconstruction error to train node representations; GSAERU trains node representations via reconstruction error on the compressed graph",
+        "SG-JEPA does not use a recurrent neural network as a dedicated temporal learning module; GSAERU introduces an RNN to learn temporal features and dependencies"
+      ],
+      "sources": [
+        {
+          "title": "Scalable and Efficient Joint Spiking Embedding Predictive Architecture for Large-Scale Dynamic Graphs",
+          "quote": "we propose SG-JEPA, a joint spiking embedding predictive architecture for large-scale dynamic graphs",
+          "location": "artifact art_190612103e0aa1229a4ecb57 chars:2641-2741",
+          "doi": null,
+          "url": "https://arxiv.org/pdf/2607.18412"
+        },
+        {
+          "title": "Scalable and Efficient Joint Spiking Embedding Predictive Architecture for Large-Scale Dynamic Graphs",
+          "quote": "SG-JEPA avoids the complex machinery (negative sampling, graph augmentations, edge-level reconstruction, etc.), resulting in superior training efficiency and memory scalability compared with prior self-supervised dynamic graph baselines.",
+          "location": "artifact art_190612103e0aa1229a4ecb57 chars:3389-3626",
+          "doi": null,
+          "url": "https://arxiv.org/pdf/2607.18412"
+        }
+      ],
+      "cited_by_paper": null,
+      "possible_baseline": true,
+      "relevance": 0.7,
+      "confidence": 0.8,
+      "evidence_ids": [
+        "ev_4c6a4419f38ae631919f9452",
+        "ev_d80ebcbbc1b67bf5c89d8c5f"
+      ]
+    },
+    {
+      "card_id": "card_0bbbbd9ffac0fc04893533cb",
+      "task_id": "T-1",
+      "novelty_point_id": "NP-2",
+      "document_title": "AGL: a Scalable System for Industrial-purpose Graph Machine Learning",
+      "main_contribution": "Designs AGL, a scalable, fault-tolerant, and integrated system for GNN training and inference using MapReduce-based message passing.",
+      "overlaps": [
+        "Distributed GNN training on large-scale graphs",
+        "Scalable GNN training"
+      ],
+      "differences": [
+        "Does not use graph summarization for training",
+        "Does not adopt a leader-worker mode",
+        "Does not use edge-based graph flow partitioning",
+        "Does not use attention layer for result aggregation"
+      ],
+      "sources": [
+        {
+          "title": "AGL: a Scalable System for Industrial-purpose Graph Machine Learning",
+          "quote": "In this paper, we design AGL, a scalable, fault-tolerance and integrated system, with fully-functional training and inference for GNNs.",
+          "location": "artifact art_6f98816ebc9005d24844fdfd chars:1006-1141",
+          "doi": null,
+          "url": "https://arxiv.org/pdf/2003.02454"
+        }
+      ],
+      "cited_by_paper": null,
+      "possible_baseline": false,
+      "relevance": 0.5,
+      "confidence": 0.8,
+      "evidence_ids": [
+        "ev_db4d928b83c1911e4e90f2c1"
+      ]
+    },
+    {
+      "card_id": "card_b3631b654e6dc98339a9f88e",
+      "task_id": "T-1",
+      "novelty_point_id": "NP-2",
+      "document_title": "AliGraph: A Comprehensive Graph Neural Network Platform",
+      "main_contribution": "Presents AliGraph, a comprehensive graph neural network system with distributed graph storage, optimized sampling operators, and runtime to support GNN training at scale.",
+      "overlaps": [
+        "Distributed GNN training on large-scale graphs",
+        "Optimized sampling for GNN training"
+      ],
+      "differences": [
+        "Does not use graph summarization for training",
+        "Does not adopt a leader-worker mode",
+        "Does not use edge-based graph flow partitioning",
+        "Does not use attention layer for result aggregation"
+      ],
+      "sources": [
+        {
+          "title": "AliGraph: A Comprehensive Graph Neural Network Platform",
+          "quote": "we present a comprehensive graph neural network system, namely AliGraph, which consists of distributed graph storage, optimized sampling operators and runtime to efficiently support not only existing popular GNNs but also a series of in-house developed ones for different scenarios",
+          "location": "artifact art_d88778158223021b818fdd97 chars:649-930",
+          "doi": null,
+          "url": "https://arxiv.org/pdf/1902.08730"
+        }
+      ],
+      "cited_by_paper": null,
+      "possible_baseline": false,
+      "relevance": 0.5,
+      "confidence": 0.8,
+      "evidence_ids": [
+        "ev_1c168c900d2e01e8708f1e38"
+      ]
+    },
+    {
+      "card_id": "card_cfd4c8d0fd2251cfb98d889b",
+      "task_id": "T-1",
+      "novelty_point_id": "NP-2",
+      "document_title": "Graph Attention Networks",
+      "main_contribution": "Presents graph attention networks (GATs), novel neural network architectures that leverage masked self-attentional layers for graph-structured data.",
+      "overlaps": [
+        "Attention layer in GNNs"
+      ],
+      "differences": [
+        "Not distributed",
+        "Does not use graph summarization",
+        "Does not adopt a leader-worker mode",
+        "Does not use edge-based graph flow partitioning"
+      ],
+      "sources": [
+        {
+          "title": "Graph Attention Networks",
+          "quote": "We present graph attention networks (GATs), novel neural network architectures that operate on graph-structured data, leveraging masked self-attentional layers",
+          "location": "artifact art_646de98cecaee1517f7729c3 chars:0-159",
+          "doi": null,
+          "url": "https://arxiv.org/pdf/1710.10903"
+        }
+      ],
+      "cited_by_paper": null,
+      "possible_baseline": false,
+      "relevance": 0.3,
+      "confidence": 0.8,
+      "evidence_ids": [
+        "ev_bc2d36762ef0fd3c654dd37c"
+      ]
+    },
+    {
+      "card_id": "card_e507ee5ab93c2063b40182b1",
+      "task_id": "T-1",
+      "novelty_point_id": "NP-2",
+      "document_title": "GraphSAINT: Graph Sampling Based Inductive Learning Method",
+      "main_contribution": "Proposes GraphSAINT, a graph sampling based inductive learning method that improves training efficiency and accuracy for GCNs.",
+      "overlaps": [
+        "Mini-batch training on graphs",
+        "Graph sampling for efficient training"
+      ],
+      "differences": [
+        "Not distributed",
+        "Does not use graph summarization",
+        "Does not adopt a leader-worker mode",
+        "Does not use attention layer for result aggregation"
+      ],
+      "sources": [
+        {
+          "title": "GraphSAINT: Graph Sampling Based Inductive Learning Method",
+          "quote": "We propose GraphSAINT, a graph sampling based inductive learning method that improves training efficiency and accuracy in a fundamentally different way.",
+          "location": "artifact art_4144023700aceff174c81183 chars:274-426",
+          "doi": null,
+          "url": "https://arxiv.org/pdf/1907.04931"
+        }
+      ],
+      "cited_by_paper": null,
+      "possible_baseline": false,
+      "relevance": 0.4,
+      "confidence": 0.8,
+      "evidence_ids": [
+        "ev_ff44ae4bc13f37521ed063eb"
+      ]
+    },
+    {
+      "card_id": "card_d3a23b3829ff3bd86dd433bf",
+      "task_id": "T-1",
+      "novelty_point_id": "NP-3",
+      "document_title": "HGP-IC: graph neural networks via hotness-based partitioning and information compensation",
+      "main_contribution": "HGP-IC proposes a refined graph partitioning strategy (HGP) combined with information compensation (IC) for GNN training on large-scale graphs, addressing the challenges of edge partitioning where nodes cannot access all their original neighbors during subgraph training.",
+      "overlaps": [
+        "Both address edge-based graph partitioning for GNN training on large-scale graphs",
+        "Both aim to split large graphs into subgraphs to enable training on limited resources",
+        "Both address the irregularity and memory constraints of large-scale graph data in distributed/local training"
+      ],
+      "differences": [
+        "HGP-IC focuses on static graph partitioning with information compensation for local learning, not on a graph flow (streaming) partition algorithm",
+        "HGP-IC does not explicitly address dynamic graph streaming data changes or adapting partitions to evolving graphs",
+        "HGP-IC's approach combines partitioning with information compensation (IC) to restore lost neighbor information, whereas the novelty point describes a flow-based partition algorithm for assigning subgraphs to worker nodes"
+      ],
+      "sources": [
+        {
+          "title": "HGP-IC: graph neural networks via hotness-based partitioning and information compensation",
+          "quote": "Existing graph partitioning methods fall into node and edge partitioning. Node partitioning drops inter-subgraph edges, causing incomplete information, while edge partitioning, though structure-preserving, introduces two major challenges",
+          "location": "artifact art_0bc5a7702aa10720af9a7f2a chars:423-660",
+          "doi": "10.1007/s11227-025-07880-w",
+          "url": "http://link.springer.com/openurl/fulltext?id=doi:10.1007/s11227-025-07880-w"
+        },
+        {
+          "title": "HGP-IC: graph neural networks via hotness-based partitioning and information compensation",
+          "quote": "the \"graph partitioning $$ + $$ + local learning\" framework splits the global graph into smaller subgraphs for independent training",
+          "location": "artifact art_0bc5a7702aa10720af9a7f2a chars:290-421",
+          "doi": "10.1007/s11227-025-07880-w",
+          "url": "http://link.springer.com/openurl/fulltext?id=doi:10.1007/s11227-025-07880-w"
+        }
+      ],
+      "cited_by_paper": null,
+      "possible_baseline": true,
+      "relevance": 0.85,
+      "confidence": 0.9,
+      "evidence_ids": [
+        "ev_d8d9adaa81320e842e4fe631",
+        "ev_2233ee60eeaf0501ac2306fa"
+      ]
+    }
+  ],
+  "rejected_evidence": [],
+  "novelty_reviews": [
+    {
+      "novelty_point_id": "NP-1",
+      "status": "reviewed",
+      "verdict": "partially_novel",
+      "verdict_reason": "综合两张单卡核验结果：card_62cce85b10e07492d6d66e87（TGAE）与 card_3d9d0903795629dfa516c9a7（SG-JEPA）均仅部分重叠，未公开 GSAERU 的完整技术组合（图摘要压缩+图自编码器重构误差+RNN时序模块）。TGAE 使用图自编码器处理快照序列但面向图模拟生成，不含图摘要与RNN；SG-JEPA 面向大规模动态图表示学习但采用脉冲联合嵌入预测架构，明确未使用图摘要、重构误差与独立RNN时序模块。两篇均不能视为单篇完整公开该组合，故不构成先占性公开。但存在关键证据缺口：未核验申请人原始论文（GSAERU 自身）作为对照，且未检索到任何同时组合图摘要+图自编码器+RNN的文献，无法完全排除他人已公开类似组合。因此判定为部分新颖，置信度中等。",
+      "confidence": 0.65,
+      "highly_relevant_works": [
+        {
+          "work_id": "wrk_bd8b204d16e97238a8fc4373",
+          "card_ids": [
+            "card_62cce85b10e07492d6d66e87"
+          ],
+          "evidence_ids": [
+            "ev_8e3c333b95eec51657d65cc3"
+          ],
+          "relevance_reason": "与查新点共享图自编码器处理时序快照序列的要素，但用于图模拟生成而非节点表征学习，且不含图摘要与RNN时序模块，属部分重叠文献，需保留以体现部分相关。"
+        },
+        {
+          "work_id": "wrk_03f809d7b47d9dc5d4aaf002",
+          "card_ids": [
+            "card_3d9d0903795629dfa516c9a7"
+          ],
+          "evidence_ids": [
+            "ev_d80ebcbbc1b67bf5c89d8c5f",
+            "ev_4c6a4419f38ae631919f9452"
+          ],
+          "relevance_reason": "同属大规模动态图表示学习领域，共享效率与内存可扩展目标，但未使用图摘要压缩、图自编码器重构误差或RNN时序模块，不覆盖查新点核心技术组合，属部分相关文献。"
+        }
+      ],
+      "supplement_request": {
+        "reason": "单卡结果均未覆盖图摘要+图自编码器+RNN的完整组合，且申请人原始论文未纳入对照，需补检以判断是否存在多篇文献共同公开全部特征或单篇完整公开组合的情况。",
+        "missing_aspects": [
+          "是否存在将图摘要压缩与图自编码器重构误差结合用于动态/时序图的文献",
+          "是否存在采用RNN作为时序依赖学习模块的图表示学习方法",
+          "GSAERU 原始论文（作为申请人来源）是否已公开并可作为新颖性对照基线",
+          "四个真实世界大规模数据集上的内存与训练时间量化对比基线"
+        ],
+        "suggested_focus": [
+          "检索图摘要（graph summarization）+图自编码器（graph autoencoder）组合的时序/动态图工作",
+          "检索RNN时序图编码或图表示学习中的循环时序模块工作",
+          "检索GSAERU论文原文并核对技术细节与实验数据",
+          "检索大规模动态图表示学习中内存与训练效率的量化对比研究"
+        ]
+      }
+    },
+    {
+      "novelty_point_id": "NP-2",
+      "status": "reviewed",
+      "verdict": "partially_novel",
+      "verdict_reason": "综合核验的3篇文献（AGL、AliGraph、GraphSAINT）均仅部分覆盖DSGNN的某些技术特征，未有任何单篇公开完整组合。AGL覆盖分布式GNN训练但缺少leader-worker、边分割图流划分、图摘要小批量训练和注意力层汇总；AliGraph为工业系统，覆盖分布式训练但未涉及任何核心特征；GraphSAINT覆盖基于子图的小批量训练但非分布式且为图采样而非图摘要，亦无leader-worker、边分割划分和注意力聚合。这些文献分别公开了部分特征，但多篇分别公开不等于单篇完整公开，不能据此否定新颖性。现有证据不足以证实或否定DSGNN四个特征组合的完整公开，故判定为partially_novel，置信度较低。",
+      "confidence": 0.55,
+      "highly_relevant_works": [
+        {
+          "work_id": "wrk_ff5aa18cf0cfe7be1ba5e8bd",
+          "card_ids": [
+            "card_0bbbbd9ffac0fc04893533cb"
+          ],
+          "evidence_ids": [
+            "ev_db4d928b83c1911e4e90f2c1"
+          ],
+          "relevance_reason": "部分相关：大规模分布式GNN训练系统，但缺少DSGNN四项核心特征（leader-worker、边分割图流划分、图摘要小批量、注意力聚合）。"
+        },
+        {
+          "work_id": "wrk_e59b8b7248dcc080455b8690",
+          "card_ids": [
+            "card_b3631b654e6dc98339a9f88e"
+          ],
+          "evidence_ids": [
+            "ev_1c168c900d2e01e8708f1e38"
+          ],
+          "relevance_reason": "部分相关：分布式GNN训练平台，覆盖大规模数据场景，但未涉及图摘要、leader-worker、边分割划分及注意力聚合。"
+        },
+        {
+          "work_id": "wrk_9567984f4fecd1cfc596ae3b",
+          "card_ids": [
+            "card_e507ee5ab93c2063b40182b1"
+          ],
+          "evidence_ids": [
+            "ev_ff44ae4bc13f37521ed063eb"
+          ],
+          "relevance_reason": "部分相关：基于图采样的子图小批量训练，与工作节点小批量训练特征有重叠，但非分布式且无其他核心特征。"
+        }
+      ],
+      "supplement_request": {
+        "reason": "现有单卡证据仅分别覆盖部分特征，未发现任何单篇公开完整组合，需补充检索以确认是否存在完整披露或支持新颖性的强证据。",
+        "missing_aspects": [
+          "结合leader-worker分布式模式与图摘要训练的GNN系统",
+          "基于边分割的图流划分算法",
+          "注意力层用于训练结果聚合与梯度同步更新",
+          "图摘要（graph summarization）mini-batch压缩训练"
+        ],
+        "suggested_focus": [
+          "graph summarization + distributed GNN training",
+          "leader-worker distributed GNN with graph partition",
+          "edge-cut streaming graph partition for GNN",
+          "attention-based aggregation in distributed graph learning"
+        ]
+      }
+    },
+    {
+      "novelty_point_id": "NP-3",
+      "status": "reviewed",
+      "verdict": "partially_novel",
+      "verdict_reason": "单篇文献HGP-IC覆盖了基于边分割的图划分、大规模图划分为子图并分配处理的特征（技术特征1、2），但其划分面向静态图，未涉及图流/流式数据场景，也未实现动态图流下的自适应分区与扩展性提升，与查新点特征3不重合。基于当前单一文献证据，NP-3为部分新颖。",
+      "confidence": 0.7,
+      "highly_relevant_works": [
+        {
+          "work_id": "wrk_41ddb8f3ff7a0fea5ed4c575",
+          "card_ids": [
+            "card_d3a23b3829ff3bd86dd433bf"
+          ],
+          "evidence_ids": [
+            "ev_d8d9adaa81320e842e4fe631",
+            "ev_2233ee60eeaf0501ac2306fa"
+          ],
+          "relevance_reason": "该文献提出基于边分割的图划分策略（HGP），覆盖将大规模图划分为子图以缓解内存与不规则性问题的特征，但不涉及图流/流式数据的自适应划分，为部分相关文献。"
+        }
+      ],
+      "supplement_request": {
+        "reason": "当前仅核验单篇静态图划分文献，未覆盖图流（流式）划分与动态图自适应这一关键区别特征，不足以支撑最终新颖性裁定。",
+        "missing_aspects": [
+          "面向图流（graph streaming）数据的边分割划分算法",
+          "动态图流变化下的自适应分区与扩展性提升"
+        ],
+        "suggested_focus": [
+          "GraphStream/graph streaming partitioning for GNN training",
+          "online/adaptive edge partitioning for evolving graphs",
+          "distributed GNN with stream partitioning"
+        ]
+      }
+    }
+  ],
+  "insufficient_final_evidence_points": [],
+  "issues": [],
+  "rounds": 1,
+  "report": {
+    "paper_id": "MF2033k6lC",
+    "conclusions": [
+      {
+        "novelty_point_id": "NP-1",
+        "review_status": "reviewed",
+        "verdict": "partially_novel",
+        "verdict_reason": "综合两张单卡核验结果：card_62cce85b10e07492d6d66e87（TGAE）与 card_3d9d0903795629dfa516c9a7（SG-JEPA）均仅部分重叠，未公开 GSAERU 的完整技术组合（图摘要压缩+图自编码器重构误差+RNN时序模块）。TGAE 使用图自编码器处理快照序列但面向图模拟生成，不含图摘要与RNN；SG-JEPA 面向大规模动态图表示学习但采用脉冲联合嵌入预测架构，明确未使用图摘要、重构误差与独立RNN时序模块。两篇均不能视为单篇完整公开该组合，故不构成先占性公开。但存在关键证据缺口：未核验申请人原始论文（GSAERU 自身）作为对照，且未检索到任何同时组合图摘要+图自编码器+RNN的文献，无法完全排除他人已公开类似组合。因此判定为部分新颖，置信度中等。",
+        "confidence": 0.65,
+        "summary": "基于提供的有效证据卡，GSAERU 所提出的“图摘要压缩 + 图自编码器重构误差 + 循环神经网络时序模块”完整技术组合在现有检索覆盖内未被任何单篇文献完整公开。检索到的两篇相关文献（TGAE、SG-JEPA）分别涉及图自编码器处理时序图快照和大规模动态图表示学习，但均未同时组合图摘要、自编码器重构误差与独立RNN时序模块，故仅构成部分重叠。由于检索覆盖执行情况未知且申请人原始论文未纳入对照，无法完全排除已有类似公开，因此新颖性判定为部分新颖。",
+        "supporting_card_ids": [],
+        "counter_card_ids": [
+          "card_62cce85b10e07492d6d66e87",
+          "card_3d9d0903795629dfa516c9a7"
+        ],
+        "highly_relevant_works": [
+          {
+            "work_id": "wrk_bd8b204d16e97238a8fc4373",
+            "card_ids": [
+              "card_62cce85b10e07492d6d66e87"
+            ],
+            "evidence_ids": [
+              "ev_8e3c333b95eec51657d65cc3"
+            ],
+            "relevance_reason": "与查新点共享图自编码器处理时序快照序列的要素，但用于图模拟生成而非节点表征学习，且不含图摘要与RNN时序模块，属部分重叠文献，需保留以体现部分相关。"
+          },
+          {
+            "work_id": "wrk_03f809d7b47d9dc5d4aaf002",
+            "card_ids": [
+              "card_3d9d0903795629dfa516c9a7"
+            ],
+            "evidence_ids": [
+              "ev_d80ebcbbc1b67bf5c89d8c5f",
+              "ev_4c6a4419f38ae631919f9452"
+            ],
+            "relevance_reason": "同属大规模动态图表示学习领域，共享效率与内存可扩展目标，但未使用图摘要压缩、图自编码器重构误差或RNN时序模块，不覆盖查新点核心技术组合，属部分相关文献。"
+          }
+        ]
+      },
+      {
+        "novelty_point_id": "NP-2",
+        "review_status": "reviewed",
+        "verdict": "partially_novel",
+        "verdict_reason": "综合核验的3篇文献（AGL、AliGraph、GraphSAINT）均仅部分覆盖DSGNN的某些技术特征，未有任何单篇公开完整组合。AGL覆盖分布式GNN训练但缺少leader-worker、边分割图流划分、图摘要小批量训练和注意力层汇总；AliGraph为工业系统，覆盖分布式训练但未涉及任何核心特征；GraphSAINT覆盖基于子图的小批量训练但非分布式且为图采样而非图摘要，亦无leader-worker、边分割划分和注意力聚合。这些文献分别公开了部分特征，但多篇分别公开不等于单篇完整公开，不能据此否定新颖性。现有证据不足以证实或否定DSGNN四个特征组合的完整公开，故判定为partially_novel，置信度较低。",
+        "confidence": 0.55,
+        "summary": "基于有效证据卡，DSGNN 的“领导—工作者模式 + 边分割图流划分 + 图摘要小批量训练 + 注意力层结果聚合”完整技术组合未在任何单篇文献中完整公开。检索到的 AGL、AliGraph、GraphSAINT 均仅部分覆盖该框架的个别特征（分别涉及分布式训练、图采样小批量训练等），但都缺少图摘要压缩、leader-worker工作模式及注意力聚合等核心要素，因此无法构成先占性公开。由于检索覆盖执行未知且缺少直接针对该组合的文献，新颖性判定为部分新颖。",
+        "supporting_card_ids": [],
+        "counter_card_ids": [
+          "card_0bbbbd9ffac0fc04893533cb",
+          "card_b3631b654e6dc98339a9f88e",
+          "card_e507ee5ab93c2063b40182b1"
+        ],
+        "highly_relevant_works": [
+          {
+            "work_id": "wrk_ff5aa18cf0cfe7be1ba5e8bd",
+            "card_ids": [
+              "card_0bbbbd9ffac0fc04893533cb"
+            ],
+            "evidence_ids": [
+              "ev_db4d928b83c1911e4e90f2c1"
+            ],
+            "relevance_reason": "部分相关：大规模分布式GNN训练系统，但缺少DSGNN四项核心特征（leader-worker、边分割图流划分、图摘要小批量、注意力聚合）。"
+          },
+          {
+            "work_id": "wrk_e59b8b7248dcc080455b8690",
+            "card_ids": [
+              "card_b3631b654e6dc98339a9f88e"
+            ],
+            "evidence_ids": [
+              "ev_1c168c900d2e01e8708f1e38"
+            ],
+            "relevance_reason": "部分相关：分布式GNN训练平台，覆盖大规模数据场景，但未涉及图摘要、leader-worker、边分割划分及注意力聚合。"
+          },
+          {
+            "work_id": "wrk_9567984f4fecd1cfc596ae3b",
+            "card_ids": [
+              "card_e507ee5ab93c2063b40182b1"
+            ],
+            "evidence_ids": [
+              "ev_ff44ae4bc13f37521ed063eb"
+            ],
+            "relevance_reason": "部分相关：基于图采样的子图小批量训练，与工作节点小批量训练特征有重叠，但非分布式且无其他核心特征。"
+          }
+        ]
+      },
+      {
+        "novelty_point_id": "NP-3",
+        "review_status": "reviewed",
+        "verdict": "partially_novel",
+        "verdict_reason": "单篇文献HGP-IC覆盖了基于边分割的图划分、大规模图划分为子图并分配处理的特征（技术特征1、2），但其划分面向静态图，未涉及图流/流式数据场景，也未实现动态图流下的自适应分区与扩展性提升，与查新点特征3不重合。基于当前单一文献证据，NP-3为部分新颖。",
+        "confidence": 0.7,
+        "summary": "基于有效证据卡，所提出的基于边分割的图流划分算法（Sketch-DBH）未在现有文献中完整公开。HGP-IC 提出了静态图上的边分割分区策略，并覆盖了大规模图划分为子图以适应资源限制的特征，但其未涉及图流（流式）数据场景下的自适应分区与扩展性提升，因此仅部分重叠。由于检索覆盖未知且缺乏专门针对图流划分与动态图自适应分区的文献，新颖性判定为部分新颖。",
+        "supporting_card_ids": [],
+        "counter_card_ids": [
+          "card_d3a23b3829ff3bd86dd433bf"
+        ],
+        "highly_relevant_works": [
+          {
+            "work_id": "wrk_41ddb8f3ff7a0fea5ed4c575",
+            "card_ids": [
+              "card_d3a23b3829ff3bd86dd433bf"
+            ],
+            "evidence_ids": [
+              "ev_d8d9adaa81320e842e4fe631",
+              "ev_2233ee60eeaf0501ac2306fa"
+            ],
+            "relevance_reason": "该文献提出基于边分割的图划分策略（HGP），覆盖将大规模图划分为子图以缓解内存与不规则性问题的特征，但不涉及图流/流式数据的自适应划分，为部分相关文献。"
+          }
+        ]
+      }
+    ],
+    "missing_references": [],
+    "missing_baselines": [
+      "申请人原始论文（GSAERU 与 DSGNN）未纳入对照检索基线，导致无法直接比对申请人自身的方案与现有工作。"
+    ],
+    "citation_issues": [],
+    "limitations": [
+      "本次查新未提供检索覆盖执行事实（如各来源是否成功执行、命中记录数等），因此无法区分检索失败与成功零命中，也无法确认全部必要来源均已覆盖；结论基于所提供的有效证据卡，检索完整性未知。",
+      "所有有效证据卡均通过证据门控，但仅部分覆盖查新点技术特征，未发现同时公开完整技术组合的文献，故各查新点均裁定为部分新颖。",
+      "未发现被拒绝证据（rejected_evidence 为空），不存在技术性质疑或格式性拒绝。",
+      "证据卡所依托的文献主要涉及图自编码器、动态图表示学习、分布式 GNN 训练及静态图边分割划分，均未完整涵盖 GSAERU 或 DSGNN 的核心组合；且申请人自身论文未作为对照基线纳入查新，进一步限制了新颖性确认的充分性。"
+    ]
+  }
+}

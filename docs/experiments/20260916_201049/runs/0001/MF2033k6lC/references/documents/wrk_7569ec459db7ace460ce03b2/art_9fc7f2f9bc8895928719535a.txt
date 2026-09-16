@@ -1,0 +1,3353 @@
+SPECTRAL MODEL EXPLAINER: A CHEMICALLY-GROUNDED
+EXPLAINABILITY FRAMEWORK FOR SPECTRAL-BASED MACHINE
+LEARNING MODELS
+A PREPRINT
+José Vinícius Ribeiro∗
+Applied Nuclear Physics Laboratory
+State University of Londrina
+Dept. of Engineering and Architecture
+University of Trieste
+ribeirojosevinicius@gmail.com
+Rafael Figueira Goncalves
+Dept. of Mathematics and Geosciences
+University of Trieste
+rafael.figueiragoncalves@phd.units.it
+Fábio Luiz Melquiades
+Applied Nuclear Physics Laboratory
+State University of Londrina
+fmelquiades@uel.br
+Sylvio Barbon Junior
+Dept. of Engineering and Architecture
+University of Trieste
+sylvio.barbonjunior@units.it
+May 5, 2026
+ABSTRACT
+Spectral-based machine learning models have been increasingly deployed in chemometrics and spec-
+troscopy, where predictive accuracy is as important as explainability. Current employed eXplainable
+Artificial Intelligence (XAI) methods are largely adapted from tabular or generic multivariate domains,
+assigning relevance to isolated spectral variables rather than to the chemically meaningful spectral
+zones. Widely adopted tools such as SHapley Additive exPlanations (SHAP), Permutation Feature
+Importance (PFI), and Variable Importance in Projection scores (VIP) were not designed for the
+physical continuity and high collinearity of spectral data, and their variable-level outputs require
+post-hoc aggregation to recover zone-level information. This study introduces the Spectral Model
+eXplainer (SMX), a post-hoc, global, model-agnostic XAI framework that explains spectral classifiers
+through expert-informed spectral zones. SMX summarizes each zone via PCA, defines quantile-based
+logical predicates, estimates predicate relevance with perturbation in stochastic subsamples, and
+aggregates bag-wise rankings in a directed weighted graph summarized by Local Reaching Centrality.
+A key component is threshold spectrum reconstruction, which back-projects predicate boundaries
+to the original spectral domain in natural measurement units, enabling direct visual comparison
+with measured spectra. The method was evaluated on eight real spectral datasets (six based on
+X-ray Fluorescence–XRF and two based on Gamma-ray Spectrometry) and one synthetic benchmark
+with known ground truth, explaining classifiers with increasing complexity, namely PLS, SVM, and
+MLP. Comparative analyses via Wilcoxon signed-rank tests covering XAI desiderata indicated broad
+SMX faithfulness equivalence with baselines (SHAP, PFI, and VIP), competitive-to-superior domain
+alignment and stability, and simpler outputs than PFI and VIP while remaining comparable to SHAP.
+A soil fertility XRF-centered study case further showed that predicate-derived thresholds map model
+behavior to actionable spectral boundaries linked to meaningful elemental signals. Overall, by bridg-
+ing the gap between model behavior and spectral interpretation, SMX represents a promising step
+toward spectral-native explainability, opening new avenues for integrating XAI insights into practical
+workflows, decision support, and physicochemical reasoning across spectroscopic applications.
+Keywords Machine learning · Chemometrics · eXplainable Artificial Intelligence (XAI) · Explainability · Spectroscopy ·
+Spectral zones · Graph-based explainability
+arXiv:2605.02684v1  [cs.LG]  4 May 2026
+
+Spectral Model eXplainer
+A PREPRINT
+1
+Introduction
+Spectroscopy stands as one of the most versatile analyt-
+ical tools in modern science. Grounded in the interac-
+tion between electromagnetic radiation and matter, it al-
+lows for the non-destructive, rapid, and often minimal or
+preparation-free characterization of the chemical and struc-
+tural patterns of diverse sample matrices. Methods such
+as X-Ray Fluorescence (XRF), Gamma-Ray Spectrometry
+(GRS), visible and Near-InfraRed (vis-NIR), and Laser-
+Induced Breakdown Spectroscopy (LIBS) have found
+widespread applications across disciplines such as agri-
+culture, food science, pharmaceuticals, materials science,
+medicine, among others. This ubiquity stems from a foun-
+dational principle: the spectral profile of a sample carries
+its characteristic, unique signature, encoding meaningful
+information that describes its identity and properties.
+Despite such wealth of features contained in spectra, their
+complex, high-dimensional nature poses significant chal-
+lenges for traditional, univariate statistical methods. In
+this context, coupling spectroscopic data with supervised
+Machine Learning (ML) has become a routine approach
+for high-throughput classification and regression tasks in
+analytical chemistry and chemometrics. As spectroscopic
+modeling increasingly influences analytical decisions, de-
+ploying such models in regulated or scientifically demand-
+ing contexts requires more than predictive accuracy: pre-
+dictions should be traceable to physically and chemically
+meaningful spectral regions to support validation, quality
+assurance, model refinement, and scientific discovery.
+Given the recent introduction and growing interest in eX-
+plainable Artificial Intelligence (XAI), a recent systematic
+review by Contreras and Bocklitz [1] confirmed that the
+field remains nascent within the spectroscopy domain, as
+the identified, earliest study directly mentioning both XAI
+and spectroscopy dates back to 2020. This is consequen-
+tial because explainability serves several distinct purposes
+in AI. As discussed in the XAI literature, explanations
+may be required to justify decisions, especially in settings
+demanding transparency and accountability; to control sys-
+tems by enabling auditing, debugging and detection of
+undesirable behavior; to improve models through the iden-
+tification of biases, brittle dependencies and suboptimal
+design choices; and to discover novel patterns that can
+be turned into scientific or domain knowledge [2, 3]. In
+spectroscopic modeling, these motivations highlight the
+need for explanations that are chemically grounded, able to
+distinguish genuine signals from artefactual or instrument-
+specific cues, and robust to the strong correlation structure
+of spectral variables.
+The XAI methods catalogued in the review [1] included
+perturbation-based approaches such as SHapley Additive
+exPlanations (SHAP) [4] and Local Interpretable Model-
+agnostic Explanations (LIME) [5], gradient-based attri-
+butions such as Class Activation Mapping (CAM/Grad-
+CAM) [6, 7], activation-map embeddings, and global sur-
+rogate models [1]. Among these, SHAP was the most
+prevalent technique. In parallel, several studies combin-
+ing spectroscopy with traditional chemometrics techniques
+have been published over the years. They span a wide
+range of sample matrices and spectroscopic methods, in-
+cluding vis-NIR and mid-infrared for cocoa, coffee, and
+teff flour analysis [8, 9, 10], XRF and GRS for evaluating
+soil fertility, soybean protein levels, and milk authentica-
+tion [11, 12, 13, 14], LIBS for assessing cadmium levels
+in rice roots and for compositional analysis of copper- and
+iron-based alloys [15, 16], among many others.
+Although not always framed under the XAI umbrella, tools
+capable of providing insights into model behavior have
+also been leveraged, such as weighted coefficients in Mul-
+tivariate Linear Models [17], Variable Importance in Pro-
+jection (VIP) scores in Partial Least Squares Regression
+(PLS) [12, 18], and Permutation Feature Importance (PFI)
+in Support Vector Machines (SVMs) [19]. While useful,
+most of these explainability tools (both those traditionally
+applied in chemometrics and those grounded in XAI) have
+been borrowed from image analysis or general multivariate
+data settings, i.e., are not naturally designed to account
+for distinctive properties of spectroscopic measurements,
+such as physical continuity across adjacent variables, high
+correlation within spectral bands, and the direct correspon-
+dence between variables and physicochemical phenom-
+ena. Most methods attribute importance at the level of
+individual features (e.g., single wavenumbers or energy
+variables) rather than at the level of spectral zones, which
+can lead to fragmented and chemically inconsistent expla-
+nations [1]. Moreover, XAI techniques such as CAM and
+gradient-based attributions are restricted to differentiable
+architectures (e.g., Multi-Layer Perceptrons, MLPs, and
+Convolutional Neural Networks, CNNs), thereby exclud-
+ing classical chemometric models (e.g., PLS and SVM)
+that remain widely used in spectral analysis.
+On the other hand, interval-based variable selection meth-
+ods such as Interval PLS (iPLS [20]) and its synergy vari-
+ant (siPLS [21]) have long been used when combining
+spectroscopy and chemometrics to identify useful spec-
+tral windows by training independent PLS models on each
+candidate interval and selecting those that minimize pre-
+diction error. However, these methods are fundamentally
+ante-hoc, i.e., they operate during model construction to
+select features, not after training to explain a fixed model’s
+decisions. As a result, they answer the question of which
+interval yields the most accurate predictive model, rather
+than which zones drove the reasoning of a model already
+deployed.
+Taken together, these aspects point to a scientific gap for ex-
+plainability methods that are natively designed for spectral
+data, operate at the level of chemically meaningful spectral
+regions, communicate explanations directly aligned with
+the model’s reasoning, remain readily interpretable by do-
+main experts, and are model-independent and integrable
+with either ML or chemometric workflows.
+To advance the field, we introduce Spectral Model eX-
+plainer (SMX), a explainability framework developed for
+2
+
+Spectral Model eXplainer
+A PREPRINT
+handling spectral-based models. It builds upon the Deci-
+sion Predicate Graph (DPG) method introduced by Arrighi
+et al. [22], which formalized the use of model-centric logi-
+cal rules termed predicates (e.g., Feature > Threshold)
+and directed weighted graphs for explaining tree ensem-
+ble models. SMX adapts and substantially extends this
+foundation toward spectral-grounded outcomes. Specifi-
+cally, it reconceptualizes explanation as a navigation prob-
+lem across expert-informed spectral zones. Each zone
+is compressed into a representative PCA score, preserv-
+ing the continuity and collinearity of spectral variables,
+from which predicates are extracted. Through a bagging
+strategy, multiple bags are generated, each proposing an
+ordered route through the defined spectral ranges. SMX
+then queries the underlying model through perturbations to
+identify the most relevant paths and integrates the results
+into a graph whose topology summarizes which predicates
+are repeatedly useful from the model’s perspective.
+This design yields practical advantages. SMX is struc-
+tured as a model-agnostic framework, i.e., applicable to
+any spectral classifier, including PLS, SVM, and MLP.
+As predicates operate on aggregated spectral zones, ex-
+planations are derived considering the joint contribution
+of the multiple variables that compose each zone, being
+chemically plausible and readily communicable to domain
+experts. Furthermore, SMX belongs to the post-hoc XAI
+paradigm, providing explanations centered on the behavior
+of the trained models, rather than the features influencing
+their construction. Beyond identifying the most relevant
+spectral zones from the model’s perspective and ranking
+their influence through graph-based centrality measures,
+each predicate carries an additional interpretive layer: its
+threshold-reconstructed spectral profile (called the thresh-
+old spectrum) functions as a visual decision boundary that
+users can directly overlay on their measured spectra. This
+bridge between a statistical logical rule and a physicochem-
+ical spectral profile enables practitioners to visually assess
+how their samples relate to the model’s learned boundaries,
+extracting intuitive and actionable insights that purely nu-
+merical importance scores extracted by existing explain-
+ability methods cannot provide. Moreover, the bagging
+strategy emphasizes relations that survive sampling dis-
+turbances, improving stability relative to single-instance
+perturbation methods. Finally, graph-theoretic metrics
+(e.g., Local Reaching Centrality, LRC) provide global ex-
+planations upon the captured model reasoning.
+In this paper, SMX theory is formalized and its behavior
+for explaining spectral-based binary classifiers of different
+complexity (PLS, SVM, MLP) is assessed when handling
+synthetic and real spectral datasets. An extensive compari-
+son with state-of-the-art XAI and chemometric methods
+(namely SHAP, PFI and VIP) is provided and a discussion
+of SMX limitations and directions for future studies is
+presented.
+In summary, the main contributions are as follows:
+• The proposal of SMX, a post-hoc, global, and
+model-agnostic explainability framework tailored
+to the specific structural properties of spectral
+data.
+• A zone-based predicate formulation that replaces
+isolated variable attribution with explanations
+grounded on meaningful spectral regions.
+• The introduction of a spectral threshold recon-
+struction, enabling the mapping of logical predi-
+cates back to interpretable spectral profiles in the
+original measurement space.
+2
+XAI-related concepts and terminologies
+Given the interdisciplinary nature of this study, this section
+briefly introduces the XAI concepts and evaluation criteria
+used throughout the analyses. In our context, an expla-
+nation is envisioned as a human-interpretable representa-
+tion of the reasoning or behavior of a machine learning
+model [23], intended to help users understand, validate,
+and act upon its predictions. The XAI field addresses the
+challenge of generating such representations for complex,
+opaque predictors. Explanations may be local (elucidat-
+ing a single prediction) or global (characterizing model
+behavior across all instances) [24, 25]. They may also be
+generated post-hoc, after model training, or ante-hoc, as an
+intrinsic property of the model architecture. This ante-hoc
+versus post-hoc distinction is consequential for method
+comparison: ante-hoc approaches such as interval-based
+PLS variants (iPLS, siPLS) optimize model construction
+by selecting spectral windows focusing on improving the
+models’ performance, while post-hoc methods explain the
+behavior of models that have already been trained and
+deployed. Accordingly, post-hoc methods are typically
+model-agnostic, applicable to any trained predictor regard-
+less of its internal structure [24].
+Beyond these structural dimensions, recent literature has
+emphasized that explanation quality is inherently multi-
+dimensional and should be assessed against explicit criteria
+reflecting both the behavior of the underlying model and
+the needs of the intended users [3, 23]. In this study, par-
+ticular attention is given to complementary properties that
+are especially relevant for spectral analysis: faithfulness,
+stability, composition, simplicity, and domain alignment.
+Table 1 summarizes each one in terms of general XAI
+concepts and translated to their meaning in spectroscopic
+domain. Furthermore, it is worth mentioning that the pre-
+cise terminology used to refer to these properties varies
+across the XAI literature, where they are closely related
+to established notions of correctness, robustness, sensi-
+tivity, human-grounded interpretability, and application-
+grounded usefulness according to [3, 23, 26].
+3
+Spectral model explainer
+As mentioned, the SMX framework is conceptually in-
+spired by the DPG [22], from which it inherits the predicate
+extraction, directed weighted graph structure, and LRC as a
+global importance metric. A detailed structural comparison
+3
+
+Spectral Model eXplainer
+A PREPRINT
+Table 1: XAI quality properties evaluated and their meaning in spectroscopic modeling contexts.
+Property
+General definition
+Spectroscopic meaning
+Faithfulness
+Degree to which the explanations re-
+flect the model’s actual decision pro-
+cess rather than merely plausible post-
+rationalization [3, 23].
+Important zones should genuinely drive
+model output, not merely correspond to
+visually prominent peaks unrelated to
+the classification.
+Stability
+Explanations remain consistent across
+repeated runs, minor input perturbations,
+or modest data variations [3, 23].
+Small measurement noise, preprocess-
+ing choices, fluctuations in training data,
+or repeated runs should not produce sub-
+stantially different zone rankings.
+Composition
+Presentation format, organization, and
+structure of explanations aimed at favor-
+ing their clarity [23]
+Delivering explanations through well-
+organized, structured, summarized spec-
+tral entities to facilitate user understand-
+ing and acting upon
+Simplicity
+Ability to reduce the number of entities
+involved in the explanation [3]
+Explanations
+expressed
+as
+spectral
+zones or profiles in natural units (e.g.,
+keV, wavenumber) are more actionable
+than lists of hundreds of individual vari-
+able scores.
+Domain alignment
+The extent to which explanations are
+well-aligned with domain knowledge [3,
+23].
+Outputs should correspond to known el-
+emental signals or plausible spectral fea-
+tures rather than arbitrary, noisy patterns
+lacking interpretive value
+between DPG and SMX summarizing similar components
+and novel extensions is provided in Appendix A.6. Specifi-
+cally, DPG is designed for tree ensemble models operating
+on general tabular features, where each predicate corre-
+sponds directly to a decision node split extracted from the
+model internal logic, while SMX is agnostic and motivated
+by the structure of spectral data.
+This section formalizes the SMX method. Let X ∈Rn×p
+denote the preprocessed spectral matrix (n samples, p vari-
+ables) and let f be a trained supervised model whose pre-
+dictions are ˆyi = f(xi). SMX proceeds through five
+main stages for extracting global, post-hoc explanations:
+(i) spectral-zone decomposition and aggregation (Section
+3.1), (ii) predicate formulation (Section 3.2), (iii) stochas-
+tic bag generation (Section 3.3), (iv) perturbation-based
+predicate scoring (Section 3.4), and (v) graph construc-
+tion and centrality analysis (Section 3.5). Accordingly, the
+explanations delivered consist of a ranking of predicate rel-
+evance scores, from which it is possible to identify the most
+influential spectral features, the predicate intervals most
+associated with model’s behavior, and the corresponding
+threshold spectra (Section 3.6). An overview is provided
+in the Figure 1.
+3.1
+Spectral-zone decomposition and aggregation
+The continuous spectrum is partitioned into M meaning-
+ful zones in light of the studied dataset and the expert-
+informed spectral zones. Accordingly, each zone Zm is
+an index set defined by variable boundaries λstart(m) and
+λend(m) (e.g., 6.0 ≤energy ranges ≤6.8) so that:
+Zm =
+
+j : λ(m)
+start ≤λj ≤λ(m)
+end
+	
+,
+m = 1, . . . , M,
+(1)
+yielding M sub-matrices XZm ∈Rn×dm, where dm =
+|Zm|.
+Each zone is then summarized into a scalar per sample
+value via PCA with one principal component. Mathe-
+matically, each Zm is centered and the first principal-
+component loading vector w(m)
+1
+∈Rdm is obtained as
+the eigenvector associated with the largest eigenvalue of
+the sample covariance matrix:
+w(m)
+1
+= arg max
+∥w∥=1 Var
+  ˜XZm w
+
+,
+(2)
+where ˜XZm = XZm −1n ¯x⊤
+Zm is the column-centered
+sub-matrix and ¯xZm is the zone mean vector. The score of
+sample i in zone m is
+t(m)
+i
+=
+ x(m)
+i
+−¯xZm
+⊤w(m)
+1
+.
+(3)
+This produces a score matrix T ∈Rn×M. The fraction of
+variance explained by PC1,
+VE(m) =
+σ2
+1
+Pdm
+k=1 σ2
+k
+,
+(4)
+4
+
+Spectral Model eXplainer
+A PREPRINT
+Spectral matrix
+Spectral-zone decomposition
+and aggregation
+Predicate
+formulation
+Stochastic bag 
+generation
+Perturbation-based
+predicate scoring
+Graph construction
+and centrality analysis
+Spectral-based
+classfier - Explained
+Multivariate thresholds
+Zone importance
+Ranked predicate scores
+𝑓(𝒙𝑖)
+Classifier
+Class A
+Class B
+Figure 1: Pipeline of the Spectral Model eXplainer (SMX). Given a preprocessed spectral matrix and a trained supervised model,
+SMX extracts global post-hoc explanations.
+quantifies how well the score captures the information con-
+tent of the zone and is later used to weight edge importance
+in the graph.
+Although approximating to one component, PCA aggrega-
+tion offers two key advantages over simpler aggregators
+(e.g., sum, mean). First, it optimally weights each zone
+according to the direction of maximum variance, thereby
+providing a compact summary of the dominant variation
+within the zone. Second, the transformation is invertible: a
+scalar threshold τ can be projected back into the original
+spectral space as a multivariate threshold spectrum (Sec-
+tion 3.6), which is impossible with non-linear aggregators.
+Algorithmically, the spectral-zone decomposition and PCA
+aggregation stage is detailed in the pseudocode of Algo-
+rithm 1 in the Appendix A.1).
+3.2
+Predicate formulation
+Predicates are logical rules derived from thresholding the
+zone-level scores. Each threshold induces a binary split of
+the samples, giving rise to two complementary rules: the
+samples above (>) or below-or-equal (≤) the limit.
+Given a set of quantile levels chosen a priori by the prac-
+titioner Q = {q1, . . . , qK} (e.g., {0.2, 0.4, 0.6, 0.8}), for
+each zone m and each quantile qk, the empirical quantile
+threshold τm,k = Qqk(t(m)
+1
+, . . . , t(m)
+n
+) is computed and
+two complementary predicates are defined:
+P ≤
+m,k : t(m)
+i
+≤τm,k,
+P >
+m,k : t(m)
+i
+> τm,k
+(5)
+The maximum number of predicates is NP = 2MK; du-
+plicate predicates arising from tied quantile values are
+removed, yielding N ′
+P ≤NP unique predicates. A binary
+indicator matrix I ∈{0, 1}n×N ′
+P records which samples
+satisfy each predicate.
+Algorithmically, the predicate formulation stage is detailed
+in the pseudocode of the Algorithm 2 in the Appendix A.1).
+3.3
+Stochastic bag generation
+In high-dimensional spectral tasks, modest sample sizes,
+class imbalance, and outliers may lead to instability and
+bias when extracting the real importance of features
+through perturbation-based methods. Since SMX relies on
+perturbing the spectral zones (discussed in Section 3.4), a
+stochastic bagging scheme is adopted to expose the predi-
+cate set to diverse but representative subsamples, reducing
+the variance of impact estimates and favoring predicates
+whose importance is recurrent across resamples. Specif-
+ically, for each bag b = 1, . . . , B, a subsample Sb ⊂
+{1, . . . , n} of size nb (typically 0.8 n) is drawn without re-
+placement. Within each bag, the samples satisfying a given
+predicate Pj are collected as S(j)
+b
+= {i ∈Sb : Ii,j = 1}.
+Predicates for which |S(j)
+b | falls below a minimum-support
+threshold nmin of 20 % of the training set size are excluded
+from that bag to ensure statistical reliability. The entire
+bagging, scoring, and graph-based pipeline is repeated in-
+dependently across a predefined set of R random seeds
+R = {r1, . . . , rR}, and the final centrality score of each
+predicate are averaged across |R| repetitions. This multi-
+seed averaging reduces the sensitivity of the final ranking
+to individual stochastic subsampling outcomes, acting as a
+variance-reduction mechanism. Accordingly, such strategy
+leads to hyperparameters to be defined a priori by the prac-
+titioner, namely the number of bags B, the subsample size
+nb, and the |R| number of repetitions.
+3.4
+Perturbation-based predicate scoring
+The relevance of a predicate within each bag is quantified
+by measuring how much the model’s output changes when
+the spectral information in the corresponding zone and
+subset of samples is perturbed. The underlying rationale
+is that if a zone is important to the model, replacing its
+values with an uninformative substitute should produce a
+noticeable shift in predictions.
+5
+
+Spectral Model eXplainer
+A PREPRINT
+Concretely, for a predicate Pj associated with the Zm zone
+and the subset of samples S ≡S(j)
+b , a perturbed input ˜xi
+is constructed by replacing only the variables belonging to
+Zm while leaving all other features intact:
+˜xi,j =
+(
+med{xk,j : k = 1, . . . , n},
+j ∈Zm,
+xi,j,
+j /∈Zm,
+(6)
+where med{·} denotes the column-wise median computed
+over the entire training set. Even though other replacement
+statistics (mean, constant zero, min, max) are supported
+in the SMX method, the median is adopted as the default
+owing to its robustness to outliers.
+The model is then queried on both the original and the
+perturbed instances, and an impact metric is computed.
+For models whose outputs are continuous numeric values
+(e.g., PLS), the default metric is the mean absolute error
+(MAE):
+Imp(Pj) = 1
+|S|
+X
+i∈S
+ˆyi −ˆy pert
+i
+.
+(7)
+For models whose primary output is a discrete class la-
+bel rather than a continuous value (e.g., SVM and MLP),
+predicted class probabilities are used in place of raw predic-
+tions to obtain a continuously distributed impact measure.
+Specifically, the impact is quantified as the Probability
+Shift, defined as the mean absolute difference in predicted
+class probabilities before and after zone perturbation:
+Imp(Pj) = 1
+|S|
+X
+i∈S
+1
+C
+C
+X
+c=1
+pi,c −ppert
+i,c
+ ,
+(8)
+where pi,c and ppert
+i,c
+are the predicted probabilities for class
+c of sample i before and after perturbation, respectively,
+and C is the number of classes (C = 2 in the binary case).
+This formulation captures subtle perturbation effects on
+model confidence that may not manifest as changes in
+the predicted class label but nonetheless reflect a mean-
+ingful shift in the model’s internal reasoning, providing
+a more granular and sensitive measure of zone influence
+than discrete classification accuracy.
+Furthermore, each predicate’s relevance score is normal-
+ized by the length of the zone it represents to compensate
+for the tendency associated to wider zones, which tend to
+produce larger perturbations simply due to their cumulative
+small contributions across more variables (e.g., spectral
+background). Accordingly, this normalization is achieved
+by dividing the raw impact score by the number of vari-
+ables in the zone (dm), yielding a per-variable average
+score that allows for a fair comparison across predicates
+regardless of their zone. The corresponding bag genera-
+tion and perturbation scoring processes are algorithmically
+detailed in the pseudocode of the Algorithm 3 in the Ap-
+pendix A.1.
+3.5
+Graph construction and centrality analysis
+The predicates and the perturbation scores computed for
+each bag are assembled into a global directed weighted
+graph G = (V, E), in which V denotes the set of predi-
+cates and E the set of directed edges. Within each bag b,
+the predicates are sorted in descending order of perturba-
+tion impact and directed edges (w) are created between
+them:
+P (b)
+1
+w1
+−−→P (b)
+2
+w2
+−−→· · ·
+wL−1
+−−−→P (b)
+L
+wL
+−−→Classc∗,
+(9)
+The weight of each edge is the perturbation score of its
+source node multiplied by the explained variance of the
+corresponding zone (wVE
+i
+= wi × VE(mi)). This causes
+zones where PC 1 captures a smaller share of the variance
+to have their weights reduced: a penalty for the quality
+of the representation. Additionally, c∗is the majority pre-
+dicted class among the samples satisfying the last predicate
+of the list. When paths from different bags produce the
+same edge (u, v), the weights are accumulated by summa-
+tion. After all bags have been processed, possible bidirec-
+tional edges are resolved by retaining only the direction
+with the larger cumulative weight to avoid cyclical routes
+that might impair the analysis of the graph‘s centrality.
+The global relevance of each predicate (or each node v of
+G) is then quantified through its Local Reaching Centrality
+according to Mones et al. [27], which is the proportion of
+other nodes reachable from v via directed paths, weighted
+by the average edge strength along those paths. Let π(v, u)
+denote the shortest directed path from node v to node u in
+G, and let |π(v, u)| denote the number of edges along that
+path. The LRC of node v is computed as:
+LRC(v) =
+1
+|V | −1
+X
+u∈V \{v}
+d(v,u)<∞
+1
+|π(v, u)|
+|π(v,u)|
+X
+k=1
+w(v,u)
+k
+,
+(10)
+where w(v,u)
+k
+is the explained variance-weighted edge
+weight of the k-th edge along the shortest directed path
+π(v, u) from v to u, and the inner sum accumulates these
+weights over |π(v, u)| edges composing that path. The
+outer sum runs over all nodes u reachable from v via at
+least one directed path (d(v, u) < ∞), normalised by the
+total number of other nodes |V | −1. Since predicates
+are ranked within each bag by perturbation impact, and
+directed edges encode this hierarchical ordering under the
+sampled data, LRC provides a global measure of predi-
+cate relevance. Predicates that repeatedly appear adjacent
+in high-impact positions across bags accumulate stronger
+edge weights and, consequently, higher LRC values. Ac-
+cordingly, LRC summarises recurrent bag-wise evidence
+of influence in the ranking topology and can be interpreted
+as an importance-like score.
+Importantly, the final graph does not encode direct causal
+or conditional dependencies between predicates but rather
+a principled aggregation of local oriented rankings prioritiz-
+ing predicates based on their actual impact on the model’s
+behavior. Furthermore, as the bag generation is stochastic,
+the resulting graph topology and LRC scores might slightly
+vary across different random seeds. As mentioned in sec-
+tion 3.3, the full SMX pipeline is repeated over multiple
+6
+
+Spectral Model eXplainer
+A PREPRINT
+Figure 2: Illustrative example of a threshold spectrum corre-
+sponding to a predicate defined on the Fe Kα zone from a XRF
+dataset covering two classes
+independent seeds R = {r1, . . . , rR}, and the final cen-
+trality score of the j-th predicate is taken as the j-th mean
+LRC(Pj) = |R|−1 PR
+s=1 LRCrs(Pj). This multi-seed
+averaging acts as a variance-reduction mechanism analo-
+gous to ensemble averaging in which individual runs might
+fluctuate, but their mean converges to a robust centrality es-
+timate as |R| grows. The graph construction and centrality
+analysis is summarized in Algorithm 4 (Appendix A.1).
+3.6
+Threshold spectrum
+A distinctive feature of PCA-based aggregation is that the
+scalar threshold τ of a predicate can be mapped back to a
+full spectral profile. Because PCA is a linear projection,
+the inverse mapping yields the threshold spectrum:
+τ spectrum = ¯xZm + τ w(m)
+1
+∈Rdm,
+(11)
+which represents the spectral profile lying exactly on the de-
+cision boundary of the predicate within zone Zm. Since the
+threshold and PCA are computed on the inputted data, the
+resulting spectrum is expressed in natural, inputted mea-
+surement units and can be directly overlaid on measured
+spectra. This capability transforms an abstract logical rule
+(e.g., “Iron-connected zone > 1.23”) into a concrete model-
+related spectral boundary that domain experts can visually
+compare against their samples, bridging the gap between
+statistical explanations and physicochemical interpretation.
+Figure 2 illustrates a typical example of this mapping.
+The analytical interpretation of threshold spectra in a case
+study classification scenario and their practical utility for
+sample screening, instrument monitoring, and hypothesis
+generation, is fully discussed in sections 5.4 and 5.3.
+4
+Materials and methods
+4.1
+Datasets and preprocessing
+This study assessed and compared SMX and baseline’s
+explanations derived from both synthetic (for ablation pur-
+pose) and real spectral datasets covering binary classifi-
+cation tasks. Regression problems were not considered
+in this first proposal, since current XAI literature focuses
+predominantly on classification settings, and the extension
+to regression will be the subject of future studies.
+The synthetic data were generated by modeling each spec-
+trum as a superposition of Gaussian peaks plus additive
+noise. The appendix provides the detailed mathematical
+formulation of the data generation process (Section A.3).
+Specifically, the two-class scenario was constructed over
+a spectral axis of p = 300 points spanning the interval
+[1, 600] (generic spectral units). The two classes shared
+common peaks centered at positions 150, 300, and 500,
+however with different amplitudes and widths for each
+class to introduce within-class variability. While the peaks
+at position 150 were highly more intense in Class A than
+in Class B, the imbalance was less pronounced for the
+peaks at positions 300 and no imbalance was introduced
+for the peaks at position 500. This design created a well-
+defined ground truth where the spectral zone surrounding
+position 150 carry the strongest discriminative informa-
+tion, the zone around position 300 carries weaker but still
+relevant information, and the zone around position 500 is
+non-discriminative but differs from the random noise of
+the backgrounds. Table 2 summarizes the parameters set.
+Accordingly, such a ground truth was leveraged to evaluate
+the sensitivity of SMX hyperparameters in the ablation
+study discussed further below.
+Table 2:
+Configuration of the synthetic two-class spectral
+dataset.
+Class
+n
+Peak center
+¯A
+sA
+¯σ
+sσ
+σε
+A
+116
+150
+2.50
+0.30
+15.0
+2.0
+0.08
+300
+2.00
+0.30
+15.0
+2.0
+500
+0.50
+0.30
+15.0
+2.0
+B
+126
+150
+0.10
+0.005
+15.0
+2.0
+0.10
+300
+0.80
+0.30
+14.0
+1.5
+500
+0.45
+0.30
+15.0
+2.0
+n: number of samples; ¯
+A, sA: mean and standard deviation of peak amplitudes;
+¯σ, sσ: mean and standard deviation of peak widths; σε: baseline noise standard
+deviation.
+Common generation settings: p = 300 points, spectral interval
+[1, 600],random seed = 42.
+Conversely, real spectral datasets based on XRF and GRS
+measurements were also employed to demonstrate SMX’s
+behavior in real-world scenarios and to compare its outputs
+with other pertinent XAI methods. These data covered
+a wide range of applications and sample characteristics,
+including data extracted from soil, sediments, food, plant
+and bank-note instances. Eight datasets were considered
+in total, and Table 3 summarizes their main details (further
+information is provided in the appendix A.4)
+Table 3: Evaluated binary-class XRF and GRS datasets
+Dataset
+n
+Class A
+Class B
+p
+Range
+Zones
+Domain
+Bank notes
+407
+251
+156
+785
+2.74-22.71
+15
+XRF
+Forage
+195
+58
+137
+971
+1.40-20.81
+22
+XRF
+Milk
+383
+143
+240
+781
+2.66-22.62
+10
+XRF
+Sediments
+50
+25
+25
+1166
+1.40-13.05
+19
+XRF
+Soil fertility
+212
+110
+102
+590
+1.32-13.10
+20
+XRF
+Soil fertility
+80
+56
+24
+516
+95-610
+9
+GRS
+Soil types
+156
+77
+79
+374
+57-430
+9
+GRS
+Tomato
+52
+20
+32
+1049
+2.12-23.08
+17
+XRF
+n: total number of samples; p: number of spectral variables; Zones: number of
+spectral zones; XRF ranges unit (keV); GRS ranges unit (number of channels)
+7
+
+Spectral Model eXplainer
+A PREPRINT
+Standardized for ML modeling, all datasets were split into
+training/calibration (70 % of samples) and test/validation
+(30 % of samples) sets employing the Kennard-Stone (KS)
+algorithm [28] to ensure representativeness. The KS was
+applied individually to each class subset, and then the se-
+lected samples were merged to form the final training and
+validation sets so that they contain representative samples
+from each class. Afterwards, the data were preprocessed
+according to mean centering (synthetic data), Poisson scal-
+ing (i.e., scaling by the square root of the variables’ mean)
+plus mean centering (XRF datasets), or Savitzky-Golay
+smoothing (window length 15, polynomial order 2) plus
+mean centering (GRS datasets). The preprocessing tech-
+niques were applied to the calibration sets and the resulting
+parameters were used to transform the test sets accordingly.
+4.2
+Machine learning modeling
+For each dataset, three supervised classifiers were trained:
+Partial Least Squares discriminant analysis (PLS), Sup-
+port Vector Machine (SVM), and Multilayer Perceptron
+(MLP). They were selected because they are widely used
+in chemometrics, machine learning, and spectroscopy do-
+mains, while also representing different levels of structural
+complexity and interpretability. PLS is a linear method
+commonly regarded as intrinsically more interpretable, par-
+ticularly due to its available model-specific feature impor-
+tance methods such as Variable Importance in Projection
+(VIP) scores. SVM with an RBF kernel is a non-linear
+learner that can capture complex relationships but is less
+interpretable, being grounded on maximizing the margin
+between classes in a transformed, high-dimensional space,
+which is not directly accessible to human interpretation.
+MLP is a feed-forward neural network that can model
+highly non-linear patterns but is often referred to as a
+black-box model due to its complex architecture and the
+distributed nature of its learned representations.
+All models were implemented in Python using the
+scikit-learn library and specific configurations are
+summarized in Table 4. For PLS, the number of latent
+variables was selected by 10-fold cross-validation on the
+training set, minimizing the root mean square error. For
+SVM and MLP, the remaining hyperparameters were kept
+at their default scikit-learn values unless otherwise
+stated. After training, all models were evaluated on the
+validation sets to confirm predictive performance before
+applying the explainability methods.
+Specifically for MLP, a maximum of 10 training iterations
+was adopted deliberately, reflecting the relatively small
+sample sizes across the evaluated datasets. Given that
+the ratio of spectral variables to samples is high in most
+datasets considered, a shallow training budget acts as an
+implicit regularization mechanism, reducing the risk of
+overfitting to training data, and the use of an adaptive
+learning rate further supports efficient convergence within
+this budget.
+Table 4: Machine learning models and training configurations
+adopted in this study.
+Model
+Implementation
+Configuration
+PLS
+PLSRegression
+Number of latent variables selected by 10-fold cross-
+validation on the training set, minimizing the root
+mean square error
+SVM
+SVC
+Radial Basis Function (RBF) kernel; remaining hy-
+perparameters kept at default values
+MLP
+MLPClassifier
+Two hidden layers with 64 and 32 neurons; tanh
+activation; adaptive learning rate; maximum of 10
+iterations; remaining hyperparameters kept at default
+values
+4.3
+Ablation study
+To uncover the SMX’s sensitivity to its hyperparameters,
+an ablation study was conducted on the synthetic dataset.
+The hyperparameters evaluated included the quantile levels
+(Q), the number of bags (B), the subsample size or num-
+ber of samples per bag (nb), and the number of internal
+repetitions (|R|). Each hyperparameter was varied across
+a wide range of values while keeping the others fixed at
+their default settings. The range of values for each hyper-
+parameter was chosen to cover both more conservative and
+more aggressive configurations. Table 5 summarizes the
+specific values tested for each hyperparameter.
+Table 5: Hyperparameter range values tested in the ablation
+study.
+Hyperparameter
+Values tested
+Quantile level steps (Q)
+0.05, 0.1, 0.15, 0.2, 0.25, 0.3
+Number of bags (B)
+5, 10, 15, 20, 25, 30, 35, 40
+Subsample size (nb)
+0.3n, 0.4n, 0.5n, 0.6n, 0.7n, 0.8n, 0.9n
+Number of internal repetitions (|R|)
+2, 4, 6, 8, 10
+SMX’s default values are highlighted in bold. n is the per-dataset number of
+samples and the Quantile level steps are defined as Q = {q, 2q, . . . , (K −1)q},
+where q is the quantile level step and K is the number of quantiles
+The resulting importance rankings were compared against
+the ground-truth discriminant zones to evaluate how
+changes in hyperparameters affect SMX’s ability to cor-
+rectly identify relevant spectral regions. As such, this
+analysis provided insights into the robustness of SMX-
+extracted explanations.
+4.4
+Explainability methods
+From each pair of trained ML model and dataset, SMX ex-
+planations were compared with established explainability
+methods to contextualize its behavior.
+SHAP [4] is a well-established XAI method that attributes
+feature relevance through cooperative game theory, where
+each feature is a player and the model output is the payout.
+The Shapley value of feature j for sample xi is:
+ϕj(xi) =
+X
+S⊆F \{j}
+|S|! (|F| −|S| −1)!
+|F|!
+
+fS∪{j}(xi)−fS(xi)
+
+,
+(12)
+where F is the feature set, S spans all subsets exclud-
+ing j, and fS is the expected model output conditioned
+on S. By construction, ϕj(xi) provides a local explana-
+tion. Global explanations are then extracted through the
+8
+
+Spectral Model eXplainer
+A PREPRINT
+mean absolute Shapley values over all samples (¯ϕj =
+1
+n
+Pn
+i=1 |ϕj(xi)|). Because exact computation is expo-
+nential, KernelSHAP [4] approximates Eq. (12) with a
+locally weighted linear surrogate on sampled coalition
+masks.
+In this study, SHAP explanations were com-
+puted with KernelExplainer (SHAP library), using raw
+model outputs for PLS and predicted class probabilities
+for SVM/MLP to reach a more granular quantification of
+feature importance, as opposed to discrete metrics such as
+accuracy. The time series-grounded variants of SHAP (e.g.,
+Time-SHAP [29], GroupSegment-SHAP [30]) were not
+included as baseline because, although supporting window-
+based explanations, they are designed to handle temporal
+dependencies in sequential data, which is not the primary
+structure of spectral data. Spectral data, while ordered,
+do not exhibit the same kind of temporal dynamics, and
+therefore the assumptions underlying time series-specific
+methods are not well-suited for spectral analysis.
+Permutation Feature Importance (PFI) [31] is a method cen-
+tered on quantifying feature relevance by the performance
+degradation induced by random permutation of each vari-
+able. Such tool is widely used in both the chemometrics
+and machine learning communities due to its simplicity
+and intuitive appeal. Formally:
+PFIj = L(f, X, y) −L(f, Xperm(j), y),
+(13)
+where L is the performance metric, f is the trained model,
+X and y are the original data, and Xperm(j) is the dataset
+with feature j permuted. Larger PFIj indicates stronger
+dependence on feature j. Here, PFI was implemented
+using the average of 10 repetitions of random permutations
+and MAE computed on the raw predictions for PLS and
+on the predicted class probabilities for SVM/MLP, also for
+reaching more granular importance quantification.
+As a traditional chemometric baseline for PLS, model-
+specific VIP scores [32] were also extracted. The VIP
+score of variable j is:
+VIPj =
+v
+u
+u
+tp
+LV
+X
+l=1
+W 2
+j,lSSYl
+SSYtotalLV ,
+(14)
+where p is the number of variables, LV is the number of
+latent variables, SSYl is the response variance explained
+by latent variable l, SSYtotal is total response variance,
+and Wj,l is the PLS weight of variable j on latent vari-
+able l. VIP provides a global measure representing how
+much each variable contributes to explaining the variance
+in the response considering all model‘s latent variables. Its
+results were computed from the fitted PLS model parame-
+ters.
+SMX-based
+explanations
+were
+generated
+adopting
+our
+implementation
+provided
+in
+the
+open-source
+spectral-model-explainer python library (freely
+available via the Python Package Index at the link
+SMX2), setting the following default hyperparameters:
+2https://github.com/joseviniciusr/SMX
+K = 4 quantiles ({0.2, 0.4, 0.6, 0.8}), B = 10 bags
+with subsample size nb = 0.8×each training set size,
+and 4 repetitions for averaging.
+The personalized
+spectral zones were defined according to the expected
+chemical elements/signals in each dataset, based on prior
+knowledge of the physical principles of XRF and GRS
+(e.g., fluorescence/scattering features and radionuclide
+peaks [33, 34, 35]), as well as the sample composition and
+measurement setup (e.g., excitation conditions, detector
+response and acquisition settings [36, 34]). Appendix A.5
+summarizes the zone ranges for each dataset.
+It is worth noting that ante-hoc variable selection methods
+such as iPLS and siPLS [20, 21] were not included as base-
+lines in this comparison as they identify optimal spectral
+intervals by training and evaluating separate PLS models
+on each candidate window, and therefore operates at the
+model selection stage rather than the explanation stage.
+Since SMX, SHAP, PFI, and VIP all operate post-hoc on
+a single trained model, comparison with variable selec-
+tion methods would conflate two methodologically distinct
+problems: predictive interval selection and post-hoc model
+explanation.
+In light of the underlying principles of each explainability
+method, it is possible to qualitatively characterize their
+groundings according to the XAI evaluative dimensions (as
+clarified in section 2) to contextualize the kind of evidence
+each one provide and under which assumptions the insights
+are comparable. Table 6 summarizes such specificities.
+From this standpoint, SMX is referred to as a spectral-
+native explanation method, whose explanatory units and
+outputs are defined directly in terms of spectral structure.
+4.5
+XAI evaluation metrics and statistical analysis
+Since SMX and compared baselines deliver outputs at
+different granularities and touch distinctly on the XAI
+dimensions (as described in Table 6), a comprehensive,
+quantitative evaluation was conducted to compare their
+explanations according to the discussed standard explain-
+ability desiderata (section 2), namely faithfulness, domain
+alignment, stability, and simplicity.
+For faithfulness, the explanations of each method were
+aggregated into ranked lists of spectral zones, extracted by
+sorting the feature-level importance scores in descending
+order, indexed by the zones they belong to, and dropping
+duplicates while keeping the first occurrences. Then, based
+on the incremental deletion strategy for assessing faithful-
+ness [23], each method-specific zone ranking was used
+in a progressive top-k masking strategy, where the cor-
+responding spectral variables were sequentially masked
+(by replacing them with zeros) from the validation set,
+and the changes in the models’ outcomes were quantified
+at each step using MAE (Eq. 7) for PLS and Probabil-
+ity Shift (Eq. 8) for SVM and MLP. The area under the
+curve (AUC) of the resulted MAE/probability shifts vs k
+curves were computed, so that higher AUC values indicate
+stronger faithfulness to the model’s behavior. Then, the
+9
+
+Spectral Model eXplainer
+A PREPRINT
+Table 6: Explainability method based on game theory and its classification within the proposed taxonomy
+VIP
+PFI
+SHAP
+SMX
+Scope
+Global
+Global
+Local (native),
+global (aggregated)
+Global
+(subset-aware)
+Timing
+Post-hoc
+Post-hoc
+Post-hoc
+Post-hoc
+Agnosticism
+PLS-specific
+Model-agnostic
+Model-agnostic
+Model-agnostic
+Faithfulness alignment
+Indirect
+(latent-variance proxy)
+Direct (model’s performance
+degradation response)
+Direct (decomposes
+model’s prediction into
+additive contributions)
+Direct (spectral
+zone-wise
+perturbation impact)
+Stability nature
+Deterministic
+Non-deterministic
+Deterministic (as configured)
+Non-deterministic
+Explanations simplicity
+Feature-level rankings
+Feature-level rankings
+Local aggregated
+feature-level rankings
+Zone-based
+predicate-level rankings
+Output composition
+Dimensionless feature
+importance scores
+Dimensionless feature
+importance scores
+Aggregated feature marginal
+contribution scores
+Zone-based predicates with
+threshold-derived conditions
+in natural spectral units
+Grounding
+PLS theory
+Permutation theory
+Game theory
+Spectral domain
+AUCs of SMX versus each of the other methods across
+all datasets were statistically compared via the pairwise
+Wilcoxon signed-rank tests [37] to assess whether the ob-
+served per-model differences were statistically significant,
+with a significance level of α = 0.05. It is important to
+note that in each per-dataset comparison, the k values for
+the compared methods were normalized to the same range
+(the minimum between the two methods’ maximum k),
+since, in some cases, the SHAP values for some spectral
+zones were zero.
+For domain alignment, the ranked zones generated for
+each dataset were compared with expert-defined plausibil-
+ity lists that classified each spectral zone as either plau-
+sible (linked to known elemental signals or radionuclide
+peaks expected to carry discriminative information for the
+specific classification task and dataset) or non-plausible
+(corresponding to background regions, scattering continua,
+or energy ranges devoid of characteristic signals given
+the excitation conditions and sample matrices involved).
+Specifically, these classifications were established based
+on well-documented spectroscopic principles such as char-
+acteristic XRF lines[33, 34], and GRS known radionuclide
+decay series and their characteristic emission energies [35].
+The complete plausibility classifications for each dataset
+are provided in Appendix A.5.
+The rankings were then scored against the plausible set
+(discarding zones with zero importance scores across all in-
+volved spectral variables for that method), and cumulative
+agreements were computed by depth as
+agreement_rate(k) = 1
+k
+k
+X
+i=1
+I[zi ∈Zplausible] ,
+(15)
+where zi is the zone at rank i and I[·] is the indicator
+function. Hence, agreement_rate(k) is 1.0 when all top-
+k zones are plausible (best case) and 0.0 when none is
+plausible (worst case). Analogously to the faithfulness
+evaluation, the area under the curve of the agreement rates
+across compatible k values was extracted and the SMX
+results were statistically compared with the other methods
+via pairwise Wilcoxon signed-rank tests.
+For simplicity, the importance scores within each explainer
+(predicates for SMX and individual variables for SHAP,
+PFI, and VIP) were normalized so that they sum to 1.0,
+i.e., dividing each variable’s importance by the total im-
+portance across all variables for that method. The lower
+the number of features cumulating a high proportion of
+the total importance (e.g., 80 %) the simpler the explana-
+tion. Because the number of features greatly differs across
+methods (e.g., SHAP and PFI provide importance scores
+for all variables, while SMX provides importance scores
+for predicates), the cumulative importance of the top-20
+features was computed for each method, model and dataset,
+as it represented a plateau in the cumulative importance
+curves for most cases. The AUC of the resulted curves
+were then statistically compared between SMX and the
+other methods across models and datasets via pairwise
+Wilcoxon signed-rank tests. Conversely, the explanations’
+composition was also qualitatively evaluated through de-
+tailed discussions on the format, organization and structure
+of the explanations provided by each method.
+For stability, only the non-deterministic methods (SMX
+and PFI) were compared. For each model-dataset pair,
+the explainers were rerun on the same setting but with 10
+different internal seeds, producing 10 explainability lists.
+Then, the lists of all possible seed pairs were compared
+via Rank-Biased Overlap (RBO) [38], yielding
+ 10
+2
+
+= 45
+pairwise scores per method, model, and dataset. RBO is an
+intersection-based similarity method specifically designed
+for quantitatively comparing ranked lists, providing a score
+in [0, 1] where 0 indicates completely disjoint rankings and
+1 indicates identical rankings (more details can be found
+in [38]). Accordingly, for each seed pair (ra, rb), the insta-
+bility score 1-RBOab was computed (with top-weighting
+parameter ρ = 0.7), so that the lower the values, the higher
+the reproducibility of the explainer under internal stochas-
+tic variation. Given each dataset, the median instability
+score across all seed pairs was computed and the per-model
+SMX and PFI results were statistically compared via pair-
+wise Wilcoxon signed-rank tests.
+10
+
+Spectral Model eXplainer
+A PREPRINT
+0
+50
+100
+150
+200
+250
+300
+350
+400
+450
+500
+550
+0
+1
+2
+3
+4
+Class A
+Class B
+Variables (a.u.)
+Intensity (a.u.)
+background 1
+Feature 1
+background 2
+Feature 2
+background 3
+Feature 3
+background 4
+Figure 3: Synthetic-generated spectra, colored by class. Vertical
+delimited areas indicate the defined spectral zones. a.u.: arbitrary
+units
+5
+Results and discussion
+5.1
+Spectral datasets and modeling results
+Figures 3 and 4 show the synthetic and a preprocessed XRF
+spectra (of the soil fertility dataset) to serve as a represen-
+tative examples and to visually contextualize the defined
+spectral zones. The synthetic data (Figure 3) exhibit the
+expected Gaussian peaks at the predefined positions, with
+variability in their amplitudes and widths across samples,
+as well as a noisy baseline. The discriminant peaks at
+positions 150 and 300 presented different levels of class
+separation, with the former being more intense and well-
+separated between classes than the latter, while the shared
+peak at positions 500 is present in both classes without
+clear separation. The XRF spectra (Figure 4) display multi-
+ple peaks corresponding to different soil-related elemental
+signals, with varying intensities across samples and classes.
+Table 7 summarizes the predictive performance of the
+trained ML models. Overall, the learners achieved high ac-
+curacy on both training and test sets, validating the adopted
+modeling configurations and indicating that the relevant
+discriminative structure was effectively captured within
+the allotted training procedure. This trend was particularly
+evident for the Bank notes, Forage, Soil types, and Syn-
+thetic datasets, in which the derived accuracy on the test
+set ranged from 0.98 to 1.0 across models.
+Nevertheless, some exceptions were observed for more
+challenging datasets, notably Soil (GRS), Sediments,
+Tomato, and Milk. It is noteworthy that MLP models
+generally underperformed relative to PLS and SVM, with
+more pronounced differences, especially for such datasets.
+Such outcomes are consistent with dataset-level complex-
+ity, namely class imbalance, small sample sizes, and high
+spectral dimensionality, rather than with premature train-
+ing termination, since these same datasets also challenged
+PLS and SVM models.
+Two model–dataset combinations produced test accuracy
+at or below the full samples’ majority-class baseline: Soil
+(GRS) MLP (acc = 0.44, majority-class baseline = 0.70)
+and Sediments MLP (acc = 0.50, majority-class base-
+line = 0.50). Additionally, the Soil (GRS) SVM model
+achieved high overall accuracy (0.72) but near-zero sensi-
+tivity (0.12), indicating a degenerate classifier dominated
+Table 7: Predictive performance of trained ML models across
+datasets
+Model
+Dataset
+Train
+Test
+Acc
+Sen
+Spec
+Acc
+Sen
+Spec
+PLS
+0.99
+0.98
+1.00
+0.99
+0.98
+1.00
+SVM
+Bank notes
+0.99
+0.98
+1.00
+1.00
+1.00
+1.00
+MLP
+1.00
+1.00
+1.00
+1.00
+1.00
+1.00
+PLS
+1.00
+1.00
+1.00
+1.00
+1.00
+1.00
+SVM
+Forage
+1.00
+1.00
+1.00
+1.00
+1.00
+1.00
+MLP
+0.99
+0.98
+1.00
+1.00
+1.00
+1.00
+PLS
+0.82
+0.88
+0.73
+0.77
+0.83
+0.65
+SVM
+Milk
+0.97
+0.99
+0.93
+0.84
+0.85
+0.84
+MLP
+0.98
+0.97
+1.00
+0.72
+0.63
+0.88
+PLS
+1.00
+1.00
+1.00
+1.00
+1.00
+1.00
+SVM
+Sediments
+0.79
+0.82
+0.76
+0.69
+0.50
+0.88
+MLP*
+0.74
+0.88
+0.59
+0.50
+1.00
+0.00
+PLS
+0.88
+0.89
+0.87
+0.84
+0.90
+0.79
+SVM
+Soil (XRF)
+0.93
+0.94
+0.91
+0.88
+0.97
+0.79
+MLP
+0.82
+0.86
+0.79
+0.77
+0.84
+0.70
+PLS
+0.73
+0.12
+0.97
+0.72
+0.12
+1.00
+SVM
+Soil (GRS)
+0.75
+0.12
+1.00
+0.72
+0.12
+1.00
+MLP*
+1.00
+1.00
+1.00
+0.44
+0.63
+0.35
+PLS
+1.00
+1.00
+1.00
+1.00
+1.00
+1.00
+SVM
+Soil types
+1.00
+1.00
+1.00
+1.00
+1.00
+1.00
+MLP
+1.00
+1.00
+1.00
+1.00
+1.00
+1.00
+PLS
+1.00
+1.00
+1.00
+1.00
+1.00
+1.00
+SVM
+Synthetic
+1.00
+1.00
+1.00
+1.00
+1.00
+1.00
+MLP
+1.00
+1.00
+1.00
+1.00
+1.00
+1.00
+PLS
+0.75
+0.82
+0.64
+0.69
+0.80
+0.50
+SVM
+Tomato
+0.86
+1.00
+0.64
+0.63
+0.70
+0.50
+MLP
+0.78
+0.82
+0.71
+0.62
+0.90
+0.17
+Acc: accuracy; Sen: sensitivity; Spec: specificity.
+Models
+marked * achieved test accuracy at or below the full samples’
+majority-class baseline
+by majority-class predictions. In these cases, the under-
+lying classifiers did not capture a reliable discriminative
+structure in the spectral data, and the derived explanations
+tend to confuse the importance of features related to noisy
+background regions with genuine element-based signals,
+regardless of the explainability method applied.
+This finding itself carries a methodological implication:
+explainability methods cannot substitute for predictive per-
+formance. A high-ranking zone from a near-random model
+provides no actionable analytical insight. Practitioners
+should always confirm model reliability before interpret-
+ing zone importance scores, and explainability pipelines
+should incorporate a performance gate as a prerequisite for
+explanation generation.
+5.2
+Explainability evaluation analysis
+According to the XAI evaluative dimensions (faithfulness,
+domain alignment, stability and simplicity) the compar-
+isons between SMX and baselines are summarized as fol-
+lows.
+5.2.1
+Faithfulness
+Regarding faithfulness, the mean results across datasets
+for the first 9 most important zones are shown in Figure 5
+(dataset-specific results are provided in the supplemen-
+11
+
+Spectral Model eXplainer
+A PREPRINT
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+5
+10
+15
+20
+25
+30
+35
+Class A
+Class B
+Energy (keV)
+Normalized intensity (cps/A) 1/2 
+Al
+Si
+P
+S
+Rh L + Ar
+K
+Ca kα
+Ca kβ
+Ti kα
+Ti kβ
+Cr
+Mn
+Fe kα
+Fe kβ
+background 1
+Cu
+background 2
+Fe kα + Ti kα
+background 3
+sum Fe
+Figure 4: Poisson preprocessed spectra of the soil dataset, colored by class. Vertical delimited areas indicate the defined
+spectral zones. Class A corresponds to eutrophic soils, while class B corresponds to dystrophic soils
+Table 8: Wilcoxon signed-rank results for faithfulness,
+focusing on comparisons involving SMX across datasets
+(n=8). Median diff corresponds to the paired median of
+SHAP, PFI or VIP −SMX
+Model
+Comparison
+Median diff
+p-value
+PLS
+PFI−SMX
+-0.006
+0.742
+PLS
+SHAP−SMX
+-0.039
+0.057
+PLS
+VIP−SMX
+0.001
+0.844
+SVM
+PFI−SMX
+0.010
+0.999
+SVM
+SHAP−SMX
+-0.079
+0.195
+MLP
+PFI−SMX
+0.053
+0.078
+MLP
+SHAP−SMX
+0.102
+0.009
+tary material). The 9th zone was chosen as the maximum
+depth for visualization purposes and general interpretabil-
+ity, since it is the highest common depth across all datasets.
+However, the statistical comparisons were performed at
+the dataset level using the maximum compatible depth
+for each method pair, as described in section 4.5. The
+progressive top-k masking curves consistently increased
+prediction changes for all methods, indicating that their
+top-ranked zones were genuinely the most influential to
+model behavior. Although differences among methods
+were small, VIP for PLS showed a slightly weaker effect in
+the first three zones, resulting in a lower AUC throughout
+the zones. To complement this analysis, paired Wilcoxon
+signed-rank tests across datasets, focusing on comparisons
+involving SMX, are reported in Table 8.
+Overall, the Wilcoxon results supported non-detectable
+faithfulness differences (considering the sampling size,
+n = 8) between SMX and the baselines in six out of seven
+comparisons (Table 8). The only significant difference
+was observed for MLP in the SHAP vs SMX compari-
+son (p −value = 0.009), indicating stronger faithfulness
+scores for SHAP under that specific model setting. This
+outcome suggest that, in general, SMX is competitive with
+the baselines in terms of faithfulness.
+1
+2
+3
+4
+5
+6
+7
+8
+9
+0.15
+0.2
+0.25
+1
+2
+3
+4
+5
+6
+7
+8
+9
+0.1
+0.2
+0.3
+1
+2
+3
+4
+5
+6
+7
+8
+9
+0.1
+0.15
+0.2
+0.25
+SMX (AUC=1.98)
+SHAP (AUC=1.95)
+PFI (AUC=1.98)
+VIP scores (AUC=1.87)
+SMX (AUC=2.13)
+SHAP (AUC=2.08)
+PFI (AUC=2.08)
+SMX (AUC=1.13)
+SHAP (AUC=1.24)
+PFI (AUC=1.20)
+Faithfulness analysis (mean values across datasets)
+Number of masked spectral zones
+MAE
+Probability shift
+Probability shift
+PLS
+SVM
+MLP
+Figure 5: Faithfulness analysis via progressive top-k masking.
+The plots show the per-k mean MAE (for PLS) and probability
+shift (for SVM and MLP) across the datasets (n=8). The legends
+indicate the mean area under the curve (AUC) encompassing
+the results for the first 9 most important zones for each method.
+The 9th zone was chosen as the maximum depth for visualiza-
+tion purposes, since it is the highest common depth across all
+datasets. However, the statistical comparisons were performed at
+the dataset level using the maximum compatible depth for each
+method pair, as described in section 4.5
+5.2.2
+Domain alignment
+For domain alignment, Figure 6 reports mean cumulative
+agreement rates for the first 9 most important zones across
+datasets (per-dataset detailed domain alignment results
+are available in supplementary materials). Similarly to
+faitfulness analyses, the 9th zone was chosen as the maxi-
+mum depth for general interpretability and the statistical
+12
+
+Spectral Model eXplainer
+A PREPRINT
+1
+2
+3
+4
+5
+6
+7
+8
+9
+0.9
+1
+1.1
+1
+2
+3
+4
+5
+6
+7
+8
+9
+0.8
+0.9
+1
+1.1
+1
+2
+3
+4
+5
+6
+7
+8
+9
+0.9
+1
+1.1
+SMX (AUC: 7.78)
+SHAP (AUC: 7.96)
+PFI (AUC: 7.76)
+VIP scores (AUC: 7.73)
+SMX (AUC: 7.78)
+SHAP (AUC: 7.40)
+PFI (AUC: 7.82)
+SMX (AUC: 7.86)
+SHAP (AUC: 7.73)
+PFI (AUC: 7.78)
+Domain alignment (mean values across datasets)
+Rank of spectral zones
+agreement_rate
+agreement_rate
+agreement_rate
+PLS
+SVM
+MLP
+Figure 6: Domain alignment analysis via agreement with expert-
+defined plausible zones. The plots show the per-zone mean cumu-
+lative agreement rate across the datasets (n=8) for each method.
+The legends indicate the mean area under the curve (AUC) en-
+compassing the results for the first 9 most important zones for
+each method. The 9th zone was chosen as the maximum depth
+for visualization purposes, since it is the highest common depth
+across all datasets. However, the statistical comparisons were
+performed at the dataset level using the maximum compatible
+depth for each method pair, as described in section 4.5
+Table 9: Wilcoxon signed-rank results for domain align-
+ment, focusing on comparisons involving SMX across
+datasets (n=8). Median diff corresponds to the paired
+median of SHAP, PFI or VIP −SMX
+Model
+Comparison
+Median diff
+p-value
+PLS
+PFI−SMX
+0.036
+0.999
+PLS
+SHAP−SMX
+0.000
+0.500
+PLS
+VIP−SMX
+0.002
+0.844
+SVM
+PFI−SMX
+0.056
+0.999
+SVM
+SHAP−SMX
+-0.420
+0.046
+MLP
+PFI−SMX
+-0.276
+0.023
+MLP
+SHAP−SMX
+-0.421
+0.016
+comparisons were performed at the dataset level using the
+maximum compatible depths. The explainers showed sim-
+ilar trends, with comparable AUCs. SHAP was slightly
+higher for PLS, whereas SMX and PFI were higher for
+SVM and MLP. Paired Wilcoxon comparisons (Table 9)
+supported this pattern. For PLS, all SMX-centered com-
+parison were non-significant, exhibiting non-detectable
+difference given the sampling size. For SVM and MLP,
+SHAP−SMX showed significant negative median differ-
+ences (p −value = 0.046 and p −value = 0.016, re-
+spectively), favoring SMX. In MLP, PFI−SMX was also
+significant (p −value = 0.023), again favoring SMX.
+Hence, these inferential results indicate that SMX is com-
+petitive and, in specific scenarios, statistically superior in
+domain alignment (within the sampling size context).
+Table 10: Wilcoxon signed-rank results for instability (1-RBO),
+SMX vs PFI across datasets (n=8). Median diff corresponds to
+the paired median of SHAP, PFI or VIP −SMX
+Model
+Comparison
+Median diff
+p-value
+PLS
+PFI−SMX
+-0.096
+0.195
+SVM
+PFI−SMX
+-0.305
+0.016
+MLP
+PFI−SMX
+-0.104
+0.313
+Despite that, a structural asymmetry should be acknowl-
+edged in this comparison: SMX operates natively on pre-
+defined zones and therefore can not select variables outside
+these boundaries, whereas SHAP, PFI, and VIP operate
+at the variable level and were aggregated at post-hoc tim-
+ing. This difference means that SMX’s domain alignment
+is partly a function of zone quality rather than purely of
+explanation quality. Nevertheless, the fact that variable-
+level methods can select variables within non-plausible
+background regions, as reflected in their lower alignment
+scores for SVM and MLP, supports the practical value of
+zone-constrained operation.
+5.2.3
+Instability
+For instability, SMX and PFI were compared through his-
+tograms of instability scores (1-RBO) over all 45 seed
+pairs possible combinations. The results (Figure 7) are re-
+ported as mean pairwise values across datasets (individual
+histograms are presented in the supplementary materials)
+for overall interpretability, but the statistical comparisons
+were performed at the dataset level. At the raw-output
+level (predicate lists for SMX and variable lists for PFI),
+SMX generally showed lower instability, especially for
+SVM. Wilcoxon tests (Table 10) showed non-significant
+differences for PLS and MLP given the sampling size, and
+a significant difference for SVM favoring SMX (median
+difference −0.305 and p −value = 0.016). A plausible
+explanation is the SMX’s ensemble design, which reduces
+sensitivity to random fluctuations during explanation gen-
+eration. Given that PFI is a widely used non-deterministic
+baseline in chemometrics and machine learning, these re-
+sults reinforce SMX as a promising, reproducible alterna-
+tive for explaining spectral-based models. SHAP and VIP
+were not included in the stability analysis since they are
+deterministic.
+5.2.4
+Simplicity and compositional quality
+Considering simplicity, Figure 8 shows mean cumulative
+importance proportions across datasets (individual results
+are available in the supplementary materials). SMX and
+SHAP produced the highest AUC values and therefore
+the simplest explanations, with close curve trajectories
+across models. In practical terms, both methods concen-
+trated relevance in fewer elements, whereas PFI and VIP
+spread importance more diffusely across larger feature sets.
+Wilcoxon signed-rank tests on the dataset level (Table 11)
+confirm this pattern, as SMX was significantly simpler
+than PFI in all models (p −values = 0.008), signifi-
+13
+
+Spectral Model eXplainer
+A PREPRINT
+0
+0.05
+0.1
+0.15
+0.2
+0.25
+0.3
+0.35
+0
+2
+4
+6
+8
+0
+0.05
+0.1
+0.15
+0.2
+0.25
+0.3
+0.35
+0.4
+0.45
+0
+5
+10
+0
+0.05
+0.1
+0.15
+0.2
+0.25
+0.3
+0.35
+0
+2
+4
+6
+8
+SMX (0.12 ± 0.03, n=45)
+PFI (0.20 ± 0.05, n=45)
+SMX (0.06 ± 0.03, n=45)
+PFI (0.28 ± 0.05, n=45)
+SMX (0.14 ± 0.04, n=45)
+PFI (0.17 ± 0.05, n=45)
+Distribution of Instability via seed-paired RBO
+1 - mean RBO across datasets
+Frequency
+Frequency
+Frequency
+PLS
+SVM
+MLP
+Figure 7: Stability analysis via pairwise RBO comparisons
+between the ranked predicate (SMX) and variable importance
+(PFI) lists obtained from 10 different random seeds for SMX and
+PFI, both with 4 internal repetitions. The histograms show the
+distribution of instability scores (1-RBO) across all seed pairs
+(n=45) averaged across the datasets (n=8) for each method. The
+mean ± standard deviation of the instability scores are indicated
+in the legends. The lower the instability score, the higher the
+stability of the method under internal stochastic variation
+cantly simpler than VIP in PLS (p −value = 0.008), and
+statistically non-differentiable from SHAP in all models
+(p −value ≥0.05) within the sampled context. Overall,
+these evidences indicate that SMX attains high simplicity
+while remaining equivalent with SHAP, which is a well-
+established baseline.
+Conversely, simplicity alone does not guarantee explana-
+tion quality, as format, organization, and structure also
+play a crucial role in their compositional level. Here, SMX
+offers a practical advantage for spectral data that is not
+directly reproduced by the other methods. SHAP, PFI, and
+VIP primarily return feature-level scores, usually requiring
+additional aggregation and visualization (e.g., bar plots,
+line plots, or heatmaps). SMX instead produces predicate-
+based outputs already linked to spectral zones, reducing
+the distance between algorithmic output and domain in-
+terpretation. These predicates are logical rules that define
+threshold conditions over spectral variables and delimit
+model-relevant sample subsets. As a result, SMX com-
+municates not only where relevance is located (zone), but
+also how it contributes (condition/range) and from which
+instances (most impactful subset) it emerges, adding con-
+textual information that raw importance magnitudes alone
+do not provide. Although predicates are generated in PCA
+space (dimensionless), they are converted back to thresh-
+old ranges in natural spectral shapes and units and overlaid
+on the original signal, uncovering spectral boundaries that
+are related to the model’s perspective. Accordingly, this
+mapping enables direct inspection in the same coordinate
+system used in laboratory interpretation, supporting chem-
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+0.2
+0.4
+0.6
+0.8
+1
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+0
+0.2
+0.4
+0.6
+0.8
+1
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+0
+0.2
+0.4
+0.6
+0.8
+1
+SMX (AUC=12.32)
+PFI (AUC=6.43)
+SHAP (AUC=12.87)
+VIP scores (AUC=2.62)
+SMX (AUC=14.25)
+SHAP (AUC=11.71)
+PFI (AUC=6.58)
+SMX (AUC=10.76)
+SHAP (AUC=10.11)
+PFI (AUC=4.33)
+Simplicity analysis (mean values across datasets)
+Number of ranked features
+Cumulative normalized importance
+PLS
+SVM
+MLP
+Figure 8: Simplicity analysis via cumulative importance propor-
+tion. The plots show the mean cumulative importance proportion
+across the datasets (n=8) for each method. The x-axis indicates
+the number of features (variables for SHAP/PFI/VIP and predi-
+cates for SMX) sorted in descending order of importance. The
+legends indicate the mean area under the curve (AUC) values
+Table 11: Wilcoxon signed-rank results for simplicity, focusing
+on comparisons involving SMX across datasets (n=8). Median
+diff corresponds to the paired median of SHAP, PFI or VIP −
+SMX
+Model
+Comparison
+Median diff
+p-value
+PLS
+PFI−SMX
+-0.306
+0.008
+PLS
+SHAP−SMX
+0.063
+0.078
+PLS
+VIP−SMX
+-0.531
+0.008
+SVM
+PFI−SMX
+-0.202
+0.008
+SVM
+SHAP−SMX
+0.089
+0.641
+MLP
+PFI−SMX
+-0.341
+0.008
+MLP
+SHAP−SMX
+-0.022
+0.945
+ical/physical reasoning and more actionable conclusions,
+fueling insights and hypothesis generation.
+5.3
+Case study: soil fertility using XRF spectra
+After establishing the competitive performance and
+methodological properties of SMX, the next step is to
+illustrate how these features translate into practical explain-
+ability in a real spectral analysis scenario. As a showcase,
+this section presents a study case on the soil (XRF) dataset,
+more detailedly comparing explanations from SMX, SHAP,
+PFI, and VIP. This Brazilian dataset represents a realistic
+and challenging spectral classification task, where the ob-
+jective is to discriminate eutrophic (more fertile) from
+dystrophic (less fertile) soils based on XRF signatures.
+The distinction is a fundamental pedological classification
+in Brazilian and tropical soil science that reflects differ-
+ences in natural fertility, weathering history, and parent
+material, being based on the Base Saturation Percentage
+14
+
+Spectral Model eXplainer
+A PREPRINT
+(BSP%). BSP% is computed from exchangeable Calcium,
+Magnesium, Potassium, and potential acidity (H+Al) as
+the Sum of Bases (SB) over the Cation Exchange Capac-
+ity (CEC) in percentage, with the conventional thresholds
+BSP% > 50.0% (eutrophic) and BSP% ≤50.0% (dys-
+trophic) [39, 18]. As the reference for regular soil as-
+sessment, these soil properties are measured in laboratory
+through wet-chemistry procedures that, although accurate,
+are time-consuming, costly, and dependent on hazardous
+reagents. Accordingly, the development of rapid, cost-
+effective, and greener alternatives within this context is
+a key research topic in precision agriculture and environ-
+mental monitoring, where XRF-based machine learning
+modeling emerges as a promising solution.
+As shown in Figure 4, the spectra carry useful Ca-derived
+signatures, proportional to its total content in the sam-
+ples, which is particularly relevant for discriminating the
+two soil classes, since Ca directly relates to the BSP%.
+However, such features are superimposed with overlap-
+ping contributions from other elements and background
+regions, making the differentiation non-trivial and explains
+the moderate-to-high performance levels reported in Ta-
+ble 7.
+For this study case, we focus on PLS because all compared
+explainers are available (including VIP). Table 12 reports
+the top-10 explanatory entities per method (full rankings
+are provided in the supplementary materials). A key point
+is that the four methods produced scores with different
+numerical behavior and granularity. SHAP and PFI are
+variable-level methods, so neighboring variables within the
+same spectral zone might receive close scores due to the
+inherent adjacency correlation structure of spectral data,
+which produces local collinearity among related features.
+In practice, this created dense rankings where discrimi-
+nating adjacent positions required more decimal places.
+By contrast, SMX ranks predicates over aggregated zones,
+and VIP summarizes variable relevance through latent vari-
+ables, with both tending to produce a wider score spacing
+in the top ranks, usually distinguishable with fewer dec-
+imals. Furthermore, variable-level methods (SHAP, PFI,
+and VIP) naturally generate long lists (proportional to the
+number of spectral variables), whereas SMX is intrinsi-
+cally simpler because it ranks predicates tied to a finite set
+of zones and thresholds. Consequently, SMX can preserve
+the main explanatory signal while reducing ranking length
+and cognitive load, which is advantageous for human inter-
+pretability in high-dimensional spectra.
+Despite these differences, the methods converge on the
+most relevant regions (Table 12). Top entities are concen-
+trated in Ca kα, Mn, Si, and Fe kα zones, with Ca kα
+occupying the first positions across methods. The main
+divergence is the diversification after repeated Ca selec-
+tions, as PFI, SHAP, and VIP keep selecting adjacent Ca
+variables for longer, whereas SMX introduces cross-zone
+predicates earlier (e.g., Mn and Si). In this example, VIP
+is the least diverse in the top-10, concentrating on Ca kα
+and Fe kα.
+Table 12: Top-10 explanatory entities for the PLS model on the
+soil (XRF) dataset, according to each compared method
+Rank
+SMX
+PFI
+SHAP
+VIP
+Predicate
+LRC Variable (zone)
+Score
+Variable (zone)
+Score
+Variable (zone) Score
+1
+Ca kα > -0.36
+9.40
+3.70 (Ca kα)
+0.0331
+3.70 (Ca kα)
+0.0267
+3.70 (Ca kα)
+6.95
+2
+Ca kα > -1.02
+6.75
+3.72 (Ca kα)
+0.0302
+3.72 (Ca kα)
+0.0236
+3.68 (Ca kα)
+6.75
+3
+Mn > 0.64
+6.20
+3.68 (Ca kα)
+0.0296
+3.68 (Ca kα)
+0.0234
+3.72 (Ca kα)
+6.59
+4
+Si ≤-0.66
+5.90
+3.66 (Ca kα)
+0.0240
+3.66 (Ca kα)
+0.0178
+3.66 (Ca kα)
+5.89
+5
+Ca kα > -1.73
+5.51
+1.74 (Si)
+0.0204
+5.90 (Mn)
+0.0131
+3.74 (Ca kα)
+5.53
+6
+Si > 0.13
+5.07
+6.42 (Fe kα)
+0.0194
+6.42 (Fe kα)
+0.0123
+3.64 (Ca kα)
+4.74
+7
+Mn > -0.15
+4.17
+5.90 (Mn)
+0.0187
+3.64 (Ca kα)
+0.0122
+6.44 (Fe kα)
+4.63
+8
+Si ≤-0.20
+3.87
+4.46 (Ti kα)
+0.0186
+3.74 (Ca kα)
+0.0111
+6.46 (Fe kα)
+4.56
+9
+Ca kα ≤-1.02
+3.38
+3.64 (Ca kα)
+0.0184
+5.92 (Mn)
+0.0110
+6.42 (Fe kα)
+4.51
+10
+Si > -0.66
+3.34
+3.74 (Ca kα)
+0.0180
+1.74 (Si)
+0.0107
+6.48 (Fe kα)
+4.34
+LRC: Local Reaching Centrality. In Variable (zone), the value corresponds to
+energy (keV) and the parenthesized label corresponds to the spectral zone.
+Table 13: Top-10 ranked spectral zones for the PLS model
+on the soil (XRF) dataset after removing repeated zones (first
+occurrence kept)
+Rank
+SMX
+PFI
+SHAP
+VIP
+1
+Ca kα
+Ca kα
+Ca kα
+Ca kα
+2
+Mn
+Si
+Mn
+Fe kα
+3
+Si
+Fe kα
+Fe kα
+Mn
+4
+Fe kα
+Mn
+Si
+Si
+5
+Ti kα
+Ti kα
+Ti kα
+Fe kβ
+6
+K
+Fe kβ
+Fe kβ
+Ca kβ
+7
+Al
+Al
+K
+Ti kα
+8
+Fe kβ
+Ti kβ
+sum Fe
+Al
+9
+Ca kβ
+K
+P
+K
+10
+P
+Ca kβ
+Background 2
+sum Fe
+To compare methods on a common semantic unit, variable-
+level and predicate-level outputs were converted into
+ranked zone lists using the procedure described in sec-
+tion 4.5. The resulting top-10 rankings are shown in Ta-
+ble 13. This conversion is intentionally lossy: when adja-
+cent variables collapse into one zone, small feature-level
+order differences can become larger position shifts at zone
+level. Accordingly, these lists should be interpreted as
+high-level summaries, not exact projections of the original
+rankings. The results (Table 13) indicated strong agree-
+ments at the top. All methods share the same four domi-
+nant zones (Ca kα, Mn, Si, and Fe kα), differing mainly
+in order. Greater variability at deeper ranks is expected,
+because lower-importance zones tend to have closer scores
+and are therefore more sensitive to minor fluctuations.
+To quantify this top-weighted agreement, we computed
+pairwise RBO similarities (ρ=0.7; depth = 20) between
+the zone rankings, producing Table 14. All pairwise val-
+ues were high (0.80–0.92), indicating convergence on the
+dominant explanatory signal despite differences at deeper
+ranks. The strongest agreement is between SMX and
+SHAP (0.92), while agreement with PFI (0.82) and VIP
+(0.80) remains substantial despite different methodological
+principles. Taken together, Tables 12, 13, and 14 indicate
+that SMX is consistent with established explainers while
+offering a more compact, zone-centered representation.
+Having quantitatively and qualitatively compared SMX
+and baselines, we now examine the practical insights
+uniquely enabled by SMX. Comparing per-class score dis-
+tributions (Figure 9) with the ranking in Table 13 shows
+that top-ranked zones (e.g., Ca kα, Mn, Si, and Fe kα) are
+15
+
+Spectral Model eXplainer
+A PREPRINT
+Table 14: RBO similarity matrix comparing the ranked zone
+lists of the different explainability methods for the PLS model on
+the soil dataset (XRF). The RBO similarity (ρ=0.7) emphasizes
+the top ranks in the comparison so that higher values indicate
+greater similarity between the ranked lists, with 1.0 representing
+identical rankings
+SMX
+PFI
+SHAP
+VIP
+SMX
+1.00
+-
+-
+-
+PFI
+0.82
+1.00
+-
+-
+SHAP
+0.92
+0.82
+1.00
+-
+VIP
+0.80
+0.80
+0.85
+1.00
+those with clearer class separation. This is consistent with
+the faithfulness-alignment mechanism of SMX, which pri-
+oritizes zones where perturbations produce stronger shifts
+in model output.
+From a soil-fertility standpoint, the SMX-derived ranking
+indicate that the model learned from agronomically coher-
+ent features, since the first ranked spectral zones arise from
+elements intrinsically connected to BSP%, which is the ref-
+erence indicator for the eutrophic/dystrophic classification.
+Calcium confirmed its importance as the most relevant ele-
+ment, reflecting its central relation to the BSP% through
+SB and CEC [39]. Soil acidity, which is inversely related to
+fertility, linked to CEC and therefore co-varies with BSP%,
+regulates the solubility and availability of several elements,
+including Fe and specially Mn, frequently leading to their
+increased availability and toxicity at lower pH levels [40].
+Silicon, in turn, acts as a structural contributor to soil min-
+eralogy and texture (Clay vs Sand), indirectly influencing
+fertility and thereby also co-varying with BSP%. There-
+fore, the SMX ranking is not only statistically grounded
+but also consistent with soil science principles.
+On the other hand, predicates represent operational state-
+ments about model-relevant subpopulations within each
+zone. This is illustrated for Ca kα in Figure 10, where
+the violin plots depict the per-zone PCA score distribu-
+tions, with the dashed horizontal lines marking the quantile
+thresholds (q=[0.2, 0.4, 0.6, 0.8]) computed on the training
+set. These class distributions explain why this zone is the
+most relevant for the model’s predictions: eutrophic soils
+occupy broader and generally higher score ranges, while
+dystrophic soils concentrate at lower values. Moreover,
+each quantile vertically defines a different partition, and
+therefore a different explanatory lens. Higher quantiles
+(e.g., q = 0.8) produced purer subsets, whereas lower
+quantiles (e.g., q = 0.2) produced larger, more hetero-
+geneous subsets. Here, a distinction is important: SMX
+does not rank predicates by class purity, as highly pure
+subsets not necessarily correspond to the most influen-
+tial ones from the model’s perspective (unless the models’
+learning nature is grounded on identifying pure data parti-
+tions, e.g., decision trees, random forests, and boost-based
+variants). Instead, SMX seeks the thresholds that most
+shift the model outputs when the corresponding zones are
+perturbed according to the delimited subsets, producing a
+causality-oriented ranking that prioritizes predicates based
+on their actual impact on the model’s behavior. For in-
+stance, the predicate induced by q=0.6 outranks q=0.8
+(Table 12) because it causes a stronger output shift.
+Beyond identifying relevant sample subsets, the predicate’s
+threshold values themselves live in PCA space and are not
+directly interpretable in natural spectral units. SMX ad-
+dresses this by back-projecting them to the original domain
+as multivariate, spectral thresholds. Figure 11 shows this
+reconstruction overlaid on measured spectra for the three
+top-ranked predicates, translating abstract conditions into
+an easily readable boundaries. In practical terms, Ca kα
+> -0.36, Ca kα > -1.02, and Mn > 0.64 correspond to
+samples above the boundaries (or below if the predicates
+involved ≤), predominantly eutrophic and associated with
+higher Ca and Mn signal intensities. This step is central
+to SMX’s contribution, since it preserves faithfulness to
+model behavior (via perturbation-based relevance) while
+improving the explanations’ domain alignment and com-
+position (via interpretation in the specialist’s coordinate
+system).
+5.4
+Threshold spectrum reconstruction: analytical
+interpretation
+This section fully discusses the physical interpretation of
+the predicate boundaries and extends their utility from
+model interpretation to concrete analytical workflows.
+5.4.1
+Physical meaning of the threshold spectrum
+The threshold spectrum τ spectrum corresponding to a pred-
+icate Pm,k is defined in Eq. 11 as the spectral profile lying
+exactly on the decision boundary of that predicate within
+zone Zm. Concretely, it is the multivariate spectral signal
+that, when projected onto the first principal component
+of zone Zm, yields a score exactly equal to the quantile
+threshold τm,k. Samples whose zone score exceeds τm,k
+(predicate P >
+m,k) produce spectra with higher intensity in
+the directions captured by the loading vector w(m)
+1
+rel-
+ative to the threshold profile, while samples below τm,k
+(predicate P ≤
+m,k) produce spectra with comparatively lower
+intensity in those directions. The threshold spectrum there-
+fore represents a physically meaningful boundary: it is the
+spectral signature of a hypothetical sample sitting exactly
+at the predicate frontier. Therefore, as more important
+the predicate is, more relevant the spectral features of its
+threshold spectrum are for the model’s decision process.
+5.4.2
+Practical utility for analytical workflows
+Beyond model interpretation, threshold spectra enable con-
+crete applications in analytical practice that purely numer-
+ical importance scores cannot support. Some examples
+include:
+Sample screening and class assignment. A practitioner
+can overlay a newly acquired spectrum on the threshold
+profiles of the top-ranked predicates and assess, by direct
+visual inspection, whether the sample lies above or below
+16
+
+Spectral Model eXplainer
+A PREPRINT
+Al
+Si
+P
+S
+Rh L + Ar
+K
+Ca ka
+Ca kb
+Ti ka
+Ti kb
+Cr
+Mn
+Fe ka
+Fe kb
+Background 1
+Cu
+Background 2
+Fe ka + Ti ka
+Background 3
+Sum Fe
+−10
+−5
+0
+5
+10
+15
+20
+Class A (eutrophic)
+Class B (dystrophic)
+Per-class spectral zone distributions
+PC 1 scores
+Figure 9: Violin plots showing the distribution of PC 1 scores for the spectral zones of the soil (XRF) dataset
+        
+         
+  
+ 
+ 
+  
+  
+  
+        
+       
+       
+                   
+          
+−0.36 (𝑞= 0.6)
+−1.02 (𝑞= 0.4)
+−1.73 (𝑞= 0.2)
+1.21 (𝑞= 0.8)
+Ca kα spectral zone
+(eutrophic)
+(dystrophic)
+Figure 10: Violin plots showing the distribution of PCA scores
+for the Ca kα zone. The horizontal dashed line indicates the
+threshold defined by the employed quantiles (q=[0.2, 0.4, 0.6,
+0.8]) for drawing the predicates, computed on the complete train-
+ing set
+each boundary. For well-separated classes such as eu-
+trophic and dystrophic soils in the Ca kα zone, this visual
+comparison may suffice to support a preliminary classifi-
+cation decision without invoking the full model, reducing
+the computational overhead for routine screening.
+Prioritisation of confirmatory analysis. Samples whose
+spectra lie close to a predicate threshold represent border-
+line cases where the opposite class may be close. There-
+fore, spectra that nearly coincide with the dotted boundary
+in one or more top-ranked zones may be prioritized for
+confirmatory wet-chemistry analysis, focusing laboratory
+resources on pertinent cases rather than on samples that
+are clearly classified.
+Instrument monitoring and calibration drift detection. If
+the threshold spectrum derived from a calibration dataset
+is stored as a reference profile, systematic shifts of routine
+spectra relative to this reference in the high-importance
+zones may signal calibration drift, matrix effects, or
+changes in instrument response before any degradation
+in predictive performance becomes evident. This enables
+proactive quality control based on spectral boundaries that
+are directly tied to the model’s decision logic rather than
+to global spectral statistics.
+Hypothesis generation for domain research. When thresh-
+old spectra recur consistently across different quantile lev-
+els or datasets, their spectral position and intensity provide
+a structured, evidence-based starting point for hypotheses
+about the physicochemical mechanisms underlying class
+separation. In the soil fertility example, the convergence of
+Ca kα and Mn threshold profiles across multiple predicates
+is consistent with the joint role of Ca and Mn in determin-
+ing BSP% and soil pH, respectively, and could motivate
+targeted geochemical investigations into the co-variation
+of these elements across tropical soil types.
+5.5
+SMX hyperparameters sensitivity
+To further clarify the sensitivity of SMX to its key hyperpa-
+rameters, an ablation study was conducted on the synthetic
+dataset. As shown in Table 7, the synthetic data-based
+models achieved the highest performance levels (Accu-
+racy, Sensitivity, and Specificity = 1.0). Accordingly, the
+SMX-extracted explanations following the baseline set-
+tings (Table 15) delivered a list of predicates hierarchically
+consistent with the data generation logic, where the top-
+ranked features reflect the granular conditions defining
+the most influential spectral zones. For instance, predi-
+cates corresponding to the Feature 1 (the zone carrying the
+strongest discriminative signals) occupied the top positions
+and exhibited higher LRC scores, while predicates firstly
+17
+
+Spectral Model eXplainer
+A PREPRINT
+3.55
+3.6
+3.65
+3.7
+3.75
+3.8
+5
+10
+15
+20
+25
+3.55
+3.6
+3.65
+3.7
+3.75
+3.8
+5
+10
+15
+20
+25
+5.8
+5.85
+5.9
+5.95
+6.0
+6.05
+6.1
+2
+4
+6
+8
+10
+Class A (eutrophic)
+Class B (dystrophic)
+Multivariate threshold
+Energy (keV)
+Energy (keV)
+Energy (keV)
+Intensity (cps/uA)
+Ca kα > -0.36
+Ca kα > -1.02
+Mn > 0.64
+Figure 11: Measured XRF spectra of eutrophic (Class A, red) and dystrophic (Class B, blue) soils overlaid with the threshold
+spectra τ spectrum (dotted curves, Eq. 11) of the three top-ranked SMX predicates for the PLS model. Each dotted curve represents
+the spectral profile of a sample lying exactly on the predicate boundary: spectra above it satisfy the > condition (predominantly
+eutrophic) and spectra below satisfy the ≤condition (predominantly dystrophic). Left: Ca kα > −0.36 (LRC = 9.40), Center:
+Ca kα > −1.02 (LRC = 6.75), and Right: Mn > 0.64 (LRC = 6.20)
+Table 15: Top-20 ranked predicates for the synthetic dataset in
+the PLS, SVM, and MLP models. The predicates are ordered
+by their Local Reaching Centrality (LRC) values, where the
+rounding was atypically set to 6 due to the proximity of the
+scores of the related to Feature 3 and background variables
+Rank
+PLS
+LRC
+SVM
+LRC
+MLP
+LRC
+1
+Feat 1 > 3.27
+8.553126
+Feat 1 > 3.27
+13.046961
+Feat 1 > 3.27
+10.887024
+2
+Feat 1 > -4.02 6.221655 Feat 1 > -4.02
+9.086454
+Feat 1 > -4.02
+7.678767
+3
+Feat 1 > -4.13 4.186363 Feat 1 > -4.13
+5.495456
+Feat 1 > -4.13
+4.800323
+4
+Feat 1 ≤4.66
+2.452428
+Feat 1 ≤4.66
+2.683337
+Feat 1 ≤4.66
+2.529788
+5
+Feat 1 ≤3.27
+2.029708
+Feat 1 ≤3.27
+0.891648
+Feat 1 ≤3.27
+1.083680
+6
+Feat 2 > 1.07
+1.768245
+Feat 2 > 1.07
+0.143849
+Feat 2 > 1.07
+0.455096
+7
+Feat 2 ≤-1.36 1.550746 Feat 2 > -1.36
+0.117657
+Feat 2 > -1.36
+0.343913
+8
+Feat 2 > -1.36 1.263268 Feat 2 > -2.24
+0.093897
+Feat 1 ≤-4.02
+0.328563
+9
+Feat 2 > -2.24 0.985201 Feat 1 ≤-4.02
+0.086908
+Feat 2 > -2.24
+0.312550
+10
+Feat 2 ≤2.23
+0.688141
+Feat 2 ≤2.23
+0.082857
+Feat 2 ≤-1.36
+0.280756
+11
+Feat 2 ≤1.07
+0.498153
+Feat 3 > 0.37
+0.079914
+Feat 2 ≤2.23
+0.208652
+12
+Feat 1 ≤-4.02 0.212261 Feat 2 ≤-1.36
+0.073188
+Feat 2 ≤1.07
+0.131328
+13
+Feat 3 > 0.37
+0.015712
+Feat 2 ≤1.07
+0.061942
+Feat 3 ≤-0.32
+0.069232
+14
+Feat 3 ≤-0.32 0.013940 Feat 3 > -0.32
+0.049132
+Feat 3 > 0.37
+0.060472
+15
+Feat 3 ≤0.37
+0.008962 Feat 3 > -1.13
+0.039224
+Feat 3 ≤0.37
+0.050569
+16
+Feat 3 > -0.32 0.008270 Feat 3 ≤-0.32
+0.029456
+Feat 3 ≤1.11
+0.043085
+17
+Feat 3 ≤1.11
+0.007539
+Feat 3 ≤1.11
+0.018940
+Feat 3 > -0.32
+0.031364
+18
+Feat 3 > -1.13 0.005767
+Feat 3 ≤0.37
+0.006249
+Feat 3 > -1.13
+0.015690
+19
+Back 2 ≤-0.01 0.000151 Back 4 ≤-0.03
+0.000395
+Back 2 ≤-0.01
+0.002258
+20
+Back 2 > 0.02 0.000121 Back 4 > 0.04
+0.000336
+Back 2 ≤0.02
+0.001472
+LRC: Local Reaching Centrality, Feat: Features, Back: Background
+related to Feature 2 and then to Feature 3 (zones with the
+second and third strongest signals, respectively) appeared
+in subsequent ranks, followed by background-related vari-
+ables.
+Based on these baseline models, the SMX hyperparameters
+were varied one at a time to evaluate their influence on the
+extracted explanations, following the procedure described
+in detail in section 4.3. The results for the number of bags,
+repetitions and samples per bag are reported in Figure 12,
+where the predicates related to Feature 1 and Feature 2 con-
+sistently occupied the top positions, while those centered
+on Feature 3 and background zones occupied the bottom
+ones and exhibited more pronounced rank fluctuations
+across the different hyperparameter settings, as expected
+given their close-to-zero, tightly-spaced LRC levels and
+therefore higher sensitivity to the hyperparameter. Shifts
+in the first positions (predicates based on Features 1 and
+2) were observed when varying the number of samples per
+bag, mainly when small-to-medium fractions of the train-
+ing set were employed (0.3–0.6 %). This is consistent with
+the fact that smaller bags yield sample subsets with higher
+variance, which can lead to more variable perturbation
+effects and therefore more fluctuations in the LRC-based
+rankings. Again, the most affected predicates were those
+related to Feature 3 and background zones. Despite that,
+even in these cases, the data generation hierarchical con-
+sistency of the top-ranked predicates was preserved.
+Regarding the quantiles, the analysis is different, since they
+define the predicates themselves through the thresholds,
+so their variation produces distinct sets of explanations.
+Aggregating them into their corresponding zones and com-
+paring the resulted rankings (Figure 13) showed that the
+referenced zones (Feature 1, Feature 2, and Feature 3)
+consistently occupied the top positions according to the
+expected order throughout the different quantile settings,
+with rank fluctuations centered on the background zones,
+which is consistent with the previous analyses. This in-
+dicates that the most relevant features were consistently
+ranked regardless of the specific thresholds employed to
+define the predicates, supporting the robustness of SMX to
+this hyperparameter.
+According to these findings, we recommend adopting a
+moderate number of bags (e.g., 5–10) and repetitions (e.g.,
+4–6), as this configuration offers a practical balance be-
+tween stability and computational cost in SMX experi-
+ments. The number of samples per bag, conversely, should
+be set cautiously to limit excessive variance in perturbation
+effects but yet allow for sampling variability that supports
+robust predicate relevance estimation. This is especially
+important when the modeling task is expected to involve
+equally or closely important spectral zones, as the result-
+18
+
+Spectral Model eXplainer
+A PREPRINT
+0.3
+0.4
+0.5
+0.6
+0.7
+0.8
+0.9
+0.00
+0.25
+0.50
+0.75
+1.00
+Normalized LRC
+MLP 
+ n_samples_fraction
+0.3
+0.4
+0.5
+0.6
+0.7
+0.8
+0.9
+0.00
+0.25
+0.50
+0.75
+1.00
+PLS 
+ n_samples_fraction
+0.3
+0.4
+0.5
+0.6
+0.7
+0.8
+0.9
+0.00
+0.25
+0.50
+0.75
+1.00
+SVM 
+ n_samples_fraction
+5
+10
+15
+20
+25
+30
+35
+40
+0.00
+0.25
+0.50
+0.75
+1.00
+Normalized LRC
+MLP 
+ n_bags
+5
+10
+15
+20
+25
+30
+35
+40
+0.00
+0.25
+0.50
+0.75
+1.00
+PLS 
+ n_bags
+5
+10
+15
+20
+25
+30
+35
+40
+0.00
+0.25
+0.50
+0.75
+1.00
+SVM 
+ n_bags
+2
+4
+6
+8
+10
+0.00
+0.25
+0.50
+0.75
+1.00
+Normalized LRC
+MLP 
+ number_of_repetitions
+2
+4
+6
+8
+10
+0.00
+0.25
+0.50
+0.75
+1.00
+PLS 
+ number_of_repetitions
+2
+4
+6
+8
+10
+0.00
+0.25
+0.50
+0.75
+1.00
+SVM 
+ number_of_repetitions
+Predicate LRC Sensitivity (Normalized)
+Feat 1 > 3.27
+Feat 1 > -4.02
+Feat 1 > -4.13
+Feat 1 <= 4.66
+Feat 1 <= 3.27
+Feat 1 <= -4.02
+Feat 1 > 4.66
+Feat 1 <= -4.13
+Feat 2 > 1.07
+Feat 2 <= -1.36
+Feat 2 > -1.36
+Feat 2 > -2.24
+Feat 2 <= 2.23
+Feat 2 <= 1.07
+Feat 2 > 2.23
+Feat 2 <= -2.24
+Feat 3 <= -0.32
+Feat 3 <= 0.37
+Feat 3 > 0.37
+Feat 3 <= 1.11
+Feat 3 > -0.32
+Feat 3 > -1.13
+Feat 3 > 1.11
+Feat 3 <= -1.13
+Back 2 <= 0.10
+Back 2 <= 0.02
+Back 2 > -0.12
+Back 2 > -0.01
+Back 2 <= -0.01
+Back 1 <= 0.11
+Back 1 > -0.10
+Back 1 > -0.03
+Back 4 > -0.11
+Back 2 > 0.02
+Back 4 > -0.03
+Back 4 <= 0.11
+Back 3 > -0.12
+Back 4 <= 0.04
+Back 4 <= -0.03
+Back 4 > 0.04
+Back 1 <= 0.02
+Back 1 > 0.11
+Back 1 > 0.02
+Back 3 <= -0.12
+Figure 12: Ablation study on the number of bags hyperparameter employing the synthetic dataset. LRC: Local Reaching Centrality,
+Feat: Features, Back: Background
+0.05
+0.1
+0.15
+0.2
+0.25
+0.3
+quantiles step size
+2
+4
+6
+Zone Rank
+MLP
+0.05
+0.1
+0.15
+0.2
+0.25
+0.3
+quantiles step size
+2
+4
+6
+PLS
+0.05
+0.1
+0.15
+0.2
+0.25
+0.3
+quantiles step size
+2
+4
+6
+SVM
+Zone Ranking Sensitivity: quantiles_step
+Feature 1
+Feature 2
+Feature 3
+background 1
+background 2
+background 3
+background 4
+Figure 13: Ablation study on the quantiles hyperparameter employing the synthetic dataset
+19
+
+Spectral Model eXplainer
+A PREPRINT
+ing predicates will have close LRC scores and therefore
+be more sensitive to sampling fluctuations. Therefore, we
+recommend using per-bag sample numbers directly linked
+to the training set size (e.g., 70–90 % of the samples).
+In contrast, the choice of quantile thresholds should be
+guided by the level of precision required in each applica-
+tion. More closely spaced quantile thresholds along the
+score distribution produce finer-grained sets of explana-
+tions by splitting the data into narrower and more specific
+subsets, which supports a more detailed connection to the
+model behavior and purer class-related boundaries. How-
+ever, this granularity lead to spending more resources in
+computing and analyzing a larger number of predicates, as
+their maximum number grows with the number of quan-
+tiles as npredicates = 2 × nzones × nquantiles (see section
+3.2). More widely spaced thresholds, in turn, produce a
+more concise set of explanations by creating broader sub-
+sets that are less computationally demanding but might
+provide less discriminative multivariate threshold curves
+when back-projected to the original domain. Therefore, we
+recommend a balance between granularity and conciseness
+(e.g., q=[0.2, 0.4, 0.6, 0.8]) when selecting quantile values,
+considering especially how overlapped the studied data
+classes are throughout the spectral zones.
+6
+Limitations and Future Directions
+While SMX offers a novel and spectral-grounded approach
+to explain models, some limitations and opportunities for
+improvement deserve attention.
+Task scope: The current implementation is restricted to
+binary classification. Extension to multi-class settings is
+conceptually direct: the perturbation impact metric can
+be computed per-class using one-vs-rest probability shifts,
+and the graph terminal nodes can be expanded to accommo-
+date C > 2 class labels. Extension to regression is equally
+tractable at the perturbation scoring stage, where the mean
+absolute error between original and perturbed predictions
+replaces the probability shift metric, and the predicate
+formulation and threshold spectrum reconstruction stages
+require no modification. The primary methodological chal-
+lenge for regression lies in the graph construction, where
+class-terminal nodes must be replaced by, for example, dis-
+cretized output range intervals (e.g., defined by quantiles
+of the response distribution). This adaptation would make
+SMX directly applicable to quantitative spectroscopic tasks
+such as elemental concentration determination, moisture
+content prediction, and physical or chemical property esti-
+mation, which represent a large share of analytical chem-
+istry applications. Experimental validation on these tasks
+are direct continuations of the present study.
+Explanation scope: SMX currently delivers global expla-
+nations summarizing model behavior across all training
+instances. Future work could exploit the predicates’ subset-
+awareness, each predicate already partitions samples into
+condition-defined subgroups, to formalize local explana-
+tion routines that characterize model behavior for individ-
+ual samples or specific subpopulations, complementing the
+global perspective.
+Zone delimitation: Zone boundaries are expert-defined in
+this first proposal, which reduces portability in domains
+where prior spectroscopic knowledge is limited or where
+characteristic signals are not well established. A promis-
+ing direction is to employ data-driven zone definitions to
+replace or complement expert input, improving applica-
+bility in less-characterized matrices. This could include
+automatic segmentation via peak detection algorithms,
+clustering-based approaches grouping adjacent variables
+with similar behavior, or hybrid strategies merging expert
+knowledge with data-driven insights to refine zone bound-
+aries iteratively based on model-relevant patterns.
+Predicate refinement: Current predicate formulation relies
+on predefined quantiles. Although this is a straightfor-
+ward approach, algorithmic strategies for seeking optimal
+per-zone thresholds (e.g., linear or binary searches) that tar-
+get subsets of samples with maximum perturbation scores
+could enhance the relevance of the extracted predicates.
+Computational cost:
+Predicate relevance estimation
+through repeated perturbations across bags and seeds
+scales linearly with the number of bags, predicates, and
+repetitions, and is strongly influenced by the inference
+cost of the explained model. For large datasets or fine
+quantile grids this can become demanding. Paralleliza-
+tion of the bag-wise perturbation loop, adaptive stopping
+criteria based on ranking convergence, and predicate prun-
+ing strategies that discard low-support predicates early are
+promising directions for improving scalability without sac-
+rificing explanation quality.
+External validation: The evaluation was conducted ex-
+clusively on synthetic, XRF and GRS data. Broader val-
+idation across other spectral modalities, such as vis-NIR,
+mid-infrared, Raman, and LIBS, is needed to consolidate
+the generalizability of SMX, particularly given that spec-
+tral correlation structures, peak widths, and signal-to-noise
+characteristics differ substantially across the spectroscopic
+techniques.
+7
+Conclusion
+Spectral-based machine learning models are increasingly
+deployed in analytical chemistry workflows where pre-
+dictive accuracy alone is insufficient. Predictions should
+be traceable to physically meaningful spectral regions to
+support validation, quality assurance, and scientific in-
+terpretation. This study introduced the Spectral Model
+eXplainer (SMX), a post-hoc, global, and model-agnostic
+explainability framework that addresses this need by op-
+erating natively on expert-defined spectral zones rather
+than on isolated variables. Through quantile-based predi-
+cate formulation, stochastic bagging, perturbation scoring,
+and graph-based centrality analysis, SMX produces ranked
+zone explanations that are compact, reproducible, and ex-
+20
+
+Spectral Model eXplainer
+A PREPRINT
+pressed in the natural units of the instrument via threshold
+spectrum reconstruction.
+Evaluated across eight real datasets including XRF and
+GRS spectra and three classifiers of increasing complexity
+(PLS, SVM, and MLP), SMX demonstrated faithfulness
+equivalence with baselines (SHAP, PFI, and VIP) in most
+settings, competitive-to-superior domain
