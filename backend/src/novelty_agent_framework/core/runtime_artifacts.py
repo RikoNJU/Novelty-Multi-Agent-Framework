@@ -451,7 +451,8 @@ class RuntimeArtifactManager:
             if result_count is None:
                 result_count = _infer_result_count(normalized_result)
             if business_status is None:
-                business_status = "EMPTY" if succeeded and result_count == 0 else "NORMAL"
+                retrieval_status = normalized_result.get("retrieval_status") if isinstance(normalized_result, Mapping) else None
+                business_status = retrieval_status or ("EMPTY" if succeeded and result_count == 0 else "NORMAL")
             record.update(
                 finished_at=_iso(_now()),
                 duration=_elapsed_seconds(handle.monotonic_started),
@@ -655,7 +656,7 @@ class RuntimeArtifactManager:
                 stats["success"] += 1
             elif record["execution_status"] == "FAILED":
                 stats["failed"] += 1
-            if record["business_status"] == "EMPTY":
+            if record["business_status"] in {"EMPTY", "ZERO_RESULT"}:
                 stats["empty"] += 1
         completed = [item for item in self._stage_records if item["status"] == "SUCCESS"]
         integrity_gates = [
@@ -949,7 +950,9 @@ def _infer_result_count(value: Any) -> int | None:
     return None
 
 
-def _summarize_provider_requests(records: list[dict[str, Any]]) -> dict[str, Any]:
+def _summarize_provider_requests(
+    records: list[dict[str, Any]], *, by_transport: bool = True
+) -> dict[str, Any]:
     logical = [item for item in records if item.get("event_type") == "logical_request"]
     physical = [item for item in records if item.get("event_type") == "physical_request"]
     metadata_logical = [item for item in logical if item.get("operation") == "metadata"]
@@ -964,9 +967,15 @@ def _summarize_provider_requests(records: list[dict[str, Any]]) -> dict[str, Any
         for item in records
         if item.get("recorded_at")
     ]
-    return {
-        "logical_api_requests": len(logical),
-        "physical_api_requests": len(physical),
+    summary = {
+        "transports": sorted({item.get("transport", "api") for item in records}),
+        "logical_api_requests": sum(item.get("transport", "api") == "api" for item in logical),
+        "physical_api_requests": sum(item.get("transport", "api") == "api" for item in physical),
+        "logical_web_requests": sum(item.get("transport") == "web" for item in logical),
+        "physical_web_requests": sum(item.get("transport") == "web" for item in physical),
+        "timeout_count": sum("Timeout" in (item.get("error_type") or "") for item in physical),
+        "circuit_open_count": sum(item.get("event_type") == "circuit_transition" and item.get("circuit_state") == "OPEN" for item in records),
+        "interval_violation_count": sum(bool(item.get("interval_violation")) for item in physical),
         "metadata_logical_requests": len(metadata_logical),
         "metadata_physical_requests": len(metadata_physical),
         "unique_metadata_ids": sum(batch_sizes),
@@ -995,6 +1004,15 @@ def _summarize_provider_requests(records: list[dict[str, Any]]) -> dict[str, Any
             else 0.0
         ),
     }
+    if by_transport:
+        summary["by_transport"] = {
+            transport: _summarize_provider_requests(
+                [item for item in records if item.get("transport", "api") == transport],
+                by_transport=False,
+            )
+            for transport in summary["transports"]
+        }
+    return summary
 
 
 def _summarize_llm_usage(records: list[dict[str, Any]]) -> dict[str, Any]:

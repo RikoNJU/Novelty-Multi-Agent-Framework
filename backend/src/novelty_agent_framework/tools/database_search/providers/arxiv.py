@@ -36,6 +36,15 @@ from .arxiv_scheduler import (
     retry_delay as _retry_delay,
 )
 
+from .arxiv_web import (
+    ArxivWebChannelError,
+    ArxivWebMetadataTool,
+    ArxivWebSearchTool,
+    build_arxiv_web_metadata_tool,
+    build_arxiv_web_search_tool,
+    build_arxiv_web_session,
+)
+
 ARXIV_ABS_URL = "https://arxiv.org/abs/"
 ARXIV_HTML_URL = "https://arxiv.org/html/"
 ARXIV_PDF_URL = "https://arxiv.org/pdf/"
@@ -46,6 +55,34 @@ ARXIV_NS = "{http://arxiv.org/schemas/atom}"
 _VERSION_RE = re.compile(r"v\d+$")
 # Deprecated compatibility sentinel; scheduling state now lives in the scheduler.
 _LAST_REQUEST_AT = 0.0
+
+DEFAULT_SEARCH_TRANSPORT = "api"
+SEARCH_TRANSPORTS = ("api", "web")
+
+
+def resolve_search_transport(config: Mapping[str, Any] | None = None) -> str:
+    """读取并校验 ``search_transport``。
+
+    取值非法时直接抛错而不是静默退回 API —— 打错一个字母就悄悄走另一条通道，
+    比启动即失败更难排查。
+    """
+
+    raw = (
+        str((config or {}).get("search_transport", DEFAULT_SEARCH_TRANSPORT))
+        .strip()
+        .lower()
+    )
+    if raw not in SEARCH_TRANSPORTS:
+        raise ValueError(
+            f"未知的 arxiv search_transport：{raw!r}；"
+            f"可选：{', '.join(SEARCH_TRANSPORTS)}"
+        )
+    return raw
+
+
+def search_transport_is_web(config: Mapping[str, Any] | None = None) -> bool:
+    return resolve_search_transport(config) == "web"
+
 
 class ArxivQueryAdapter(QueryAdapter):
     """把通用检索 Concept 编译为 arXiv ``all:`` 查询。"""
@@ -393,7 +430,7 @@ class ArxivFullTextTool(FullTextTool):
             response = self._client.get(url)
             response.raise_for_status()
             return response
-        except httpx.HTTPError:
+        except (httpx.HTTPError, ArxivWebChannelError):
             return None
 
     @staticmethod
@@ -455,6 +492,26 @@ def build_arxiv_source(config: Mapping[str, Any]) -> RetrievalSource:
             query_adapter=ArxivQueryAdapter(render_v2=render_v2),
         )
     timeout_seconds = float(config["timeout_seconds"])
+    if search_transport_is_web(config):
+        session = build_arxiv_web_session(config)
+        full_text_tool = ArxivFullTextTool(client=session, max_chars=int(config["full_text_max_chars"]))
+        search_tool = build_arxiv_web_search_tool(config, session=session)
+        return RetrievalSource(
+            source_id="arxiv",
+            query_adapter=ArxivQueryAdapter(render_v2=render_v2),
+            search_tool=search_tool,
+            full_text_tool=full_text_tool,
+            # 复用检索工具的 /abs/ 缓存：同一 work_id 先被检索链解析、再被元数据
+            # 核验时不再重复打主站。
+            metadata_tool=build_arxiv_web_metadata_tool(
+                config, session=session, search=search_tool
+            ),
+        )
+
+    full_text_client = httpx.Client(timeout=timeout_seconds, follow_redirects=True)
+    full_text_tool = ArxivFullTextTool(
+        client=full_text_client, max_chars=int(config["full_text_max_chars"])
+    )
     scheduler = get_shared_arxiv_scheduler(
         min_interval=float(config.get("api_min_interval_seconds", config["min_interval_seconds"])),
         max_retries=int(config["max_retries"]),
@@ -468,7 +525,6 @@ def build_arxiv_source(config: Mapping[str, Any]) -> RetrievalSource:
         metadata_batch_window_ms=int(config.get("metadata_batch_window_ms", 200)),
         metadata_batch_max_size=int(config.get("metadata_batch_max_size", 32)),
     )
-    full_text_client = httpx.Client(timeout=timeout_seconds, follow_redirects=True)
     return RetrievalSource(
         source_id="arxiv",
         query_adapter=ArxivQueryAdapter(render_v2=render_v2),
@@ -486,8 +542,23 @@ def build_arxiv_source(config: Mapping[str, Any]) -> RetrievalSource:
                 config.get("circuit_cooldown_seconds", 60.0)
             ),
         ),
-        full_text_tool=ArxivFullTextTool(
-            client=full_text_client, max_chars=int(config["full_text_max_chars"])
-        ),
+        full_text_tool=full_text_tool,
         metadata_tool=ArxivMetadataTool(scheduler=scheduler),
+    )
+
+
+def build_arxiv_search_tool(options=None, *, client=None, scheduler=None) -> SearchTool:
+    """Build the configured transport for bootstrap and provider callers."""
+    config = dict(options or {})
+    if search_transport_is_web(config):
+        return build_arxiv_web_search_tool(config, session=build_arxiv_web_session(config, client=client))
+    return ArxivSearchTool(
+        client=client, scheduler=scheduler,
+        min_interval=float(config.get("api_min_interval_seconds", config.get("min_interval_seconds", 4.0))),
+        timeout=float(config.get("timeout_seconds", 20.0)),
+        max_retries=int(config.get("max_retries", 2)),
+        max_retry_delay=float(config.get("max_retry_delay_seconds", 5.0)),
+        retry_budget_seconds=float(config.get("retry_budget_seconds", 45.0)),
+        circuit_failure_threshold=int(config.get("circuit_failure_threshold", 2)),
+        circuit_cooldown_seconds=float(config.get("circuit_cooldown_seconds", 60.0)),
     )

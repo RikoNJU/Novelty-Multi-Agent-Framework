@@ -12,6 +12,7 @@ import time
 import uuid
 import xml.etree.ElementTree as ET
 from concurrent.futures import Future
+from contextvars import ContextVar
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
 from typing import Any, Callable
@@ -20,13 +21,14 @@ from urllib.parse import parse_qsl, urlsplit
 import httpx
 
 
+provider_task_id: ContextVar[str | None] = ContextVar("arxiv_task_id", default=None)
+
 ARXIV_QUERY_URL = "https://export.arxiv.org/api/query"
 ATOM_NS = "{http://www.w3.org/2005/Atom}"
 _RETRYABLE_STATUS = frozenset({429, 500, 502, 503, 504})
 _RETRYABLE_TRANSPORT_ERRORS = (
-    httpx.ReadTimeout,
-    httpx.ConnectTimeout,
-    httpx.ConnectError,
+    httpx.TimeoutException,
+    httpx.NetworkError,
 )
 
 
@@ -131,6 +133,7 @@ class ArxivRequestScheduler:
         self._probe_in_flight = False
         self._started_at = time.monotonic()
         self._events: list[dict[str, Any]] = []
+        self._logical_tasks: dict[str, str | None] = {}
         self._metrics: dict[str, Any] = {
             "logical_api_requests": 0,
             "physical_api_requests": 0,
@@ -276,21 +279,22 @@ class ArxivRequestScheduler:
         recorders: list[Any],
     ) -> httpx.Response:
         with self._request_gate:
-            was_probe = self._acquire_circuit_permission()
+            was_probe = self._acquire_circuit_permission(recorders)
             deadline = time.monotonic() + self._retry_budget_seconds
             last_error: Exception | None = None
-            for attempt in range(self._max_retries + 1):
+            attempt_limit = 1 if was_probe else self._max_retries + 1
+            for attempt in range(attempt_limit):
                 wait = max(self._next_allowed_at, self._blocked_until) - time.monotonic()
                 if wait > 0:
                     if wait >= deadline - time.monotonic():
                         error = last_error or self._budget_error()
-                        self._record_failure(was_probe)
+                        self._record_failure(was_probe, recorders)
                         raise error
                     time.sleep(wait)
                 now = time.monotonic()
                 if now >= deadline:
                     error = last_error or self._budget_error()
-                    self._record_failure(was_probe)
+                    self._record_failure(was_probe, recorders)
                     raise error
                 previous_interval_ms = (
                     None if self._last_dispatch_at is None else (now - self._last_dispatch_at) * 1000
@@ -313,7 +317,7 @@ class ArxivRequestScheduler:
                         timeout=min(self._timeout, deadline - now),
                     )
                     response.raise_for_status()
-                    self._record_success()
+                    self._record_success(recorders)
                     self._record_physical(
                         request_id, operation, logical_request_ids, logical_count,
                         unique_count, queue_started, batch_wait_ms, now,
@@ -339,7 +343,7 @@ class ArxivRequestScheduler:
                         response_body=exc.response.text[:2000],
                     )
                     if status not in _RETRYABLE_STATUS:
-                        self._record_success()
+                        self._record_success(recorders)
                         raise
                     last_error = exc
                     if status == 429:
@@ -354,8 +358,8 @@ class ArxivRequestScheduler:
                         started, recorders, dispatch_wall=dispatch_wall,
                         error_type=type(exc).__name__,
                     )
-                if attempt >= self._max_retries:
-                    self._record_failure(was_probe)
+                if attempt + 1 >= attempt_limit:
+                    self._record_failure(was_probe, recorders)
                     raise last_error
                 with self._state_lock:
                     self._metrics["retry_count"] += 1
@@ -363,7 +367,7 @@ class ArxivRequestScheduler:
                 if remaining <= 0 or backoff >= remaining:
                     if remaining > 0:
                         time.sleep(remaining)
-                    self._record_failure(was_probe)
+                    self._record_failure(was_probe, recorders)
                     raise last_error
                 # For 429, blocked_until drives this wait on the next iteration.
                 if not (response is not None and response.status_code == 429):
@@ -375,17 +379,19 @@ class ArxivRequestScheduler:
         event = {
             "event_type": "logical_request",
             "provider": "arxiv",
+            "transport": "api",
             "operation": operation,
             "logical_request_id": logical_id,
-            "task_id": None,
+            "task_id": provider_task_id.get(),
             **fields,
         }
         with self._state_lock:
+            self._logical_tasks[logical_id] = provider_task_id.get()
             self._metrics["logical_api_requests"] += 1
             if operation == "metadata":
                 self._metrics["metadata_logical_requests"] += 1
             self._events.append(event)
-        self._emit_runtime(recorder, event)
+        self._emit_runtime(recorder if recorder is not None else _runtime_recorder(), event)
         return logical_id
 
     def _record_physical(
@@ -403,7 +409,12 @@ class ArxivRequestScheduler:
         event = {
             "event_type": "physical_request",
             "provider": "arxiv",
+            "transport": "api",
             "physical_request_id": request_id,
+            "request_id": request_id,
+            "task_id": self._logical_tasks.get(logical_ids[0]) if logical_ids else None,
+            "task_ids": list(dict.fromkeys(self._logical_tasks.get(key) for key in logical_ids if self._logical_tasks.get(key) is not None)),
+            "interval_violation": previous_interval_ms is not None and previous_interval_ms + 0.001 < self._min_interval * 1000,
             "operation": operation,
             "batch_id": request_id if operation == "metadata_batch" else None,
             "logical_request_ids": logical_ids,
@@ -447,7 +458,7 @@ class ArxivRequestScheduler:
         if recorder is not None and hasattr(recorder, "record_provider_request"):
             recorder.record_provider_request(event)
 
-    def _acquire_circuit_permission(self) -> bool:
+    def _acquire_circuit_permission(self, recorders: list[Any]) -> bool:
         now = time.monotonic()
         with self._state_lock:
             if self._circuit_open_until <= 0:
@@ -457,20 +468,31 @@ class ArxivRequestScheduler:
                     "arxiv circuit is open after consecutive provider failures"
                 )
             self._probe_in_flight = True
+            self._record_circuit("HALF_OPEN", recorders)
             return True
 
-    def _record_success(self) -> None:
+    def _record_success(self, recorders: list[Any]) -> None:
         with self._state_lock:
+            if self._circuit_open_until > 0:
+                self._record_circuit("CLOSED", recorders)
             self._consecutive_failures = 0
             self._circuit_open_until = 0.0
             self._probe_in_flight = False
 
-    def _record_failure(self, was_probe: bool) -> None:
+    def _record_failure(self, was_probe: bool, recorders: list[Any]) -> None:
         with self._state_lock:
             self._probe_in_flight = False
             self._consecutive_failures += 1
             if was_probe or self._consecutive_failures >= self._failure_threshold:
                 self._circuit_open_until = time.monotonic() + self._cooldown
+                self._record_circuit("OPEN", recorders)
+
+    def _record_circuit(self, state: str, recorders: list[Any]) -> None:
+        event = {"event_type": "circuit_transition", "provider": "arxiv",
+                 "transport": "api", "operation": "circuit", "circuit_state": state}
+        self._events.append(event)
+        for recorder in {id(r): r for r in recorders if r is not None}.values():
+            self._emit_runtime(recorder, event)
 
     def _budget_error(self) -> ArxivRetryBudgetExceeded:
         return ArxivRetryBudgetExceeded(
@@ -485,6 +507,8 @@ class ArxivRequestScheduler:
             physical = result["physical_api_requests"]
             metadata_physical = result["metadata_physical_requests"]
             result.update(
+                circuit_open_count=sum(e.get("circuit_state") == "OPEN" for e in self._events),
+                circuit_state="HALF_OPEN" if self._probe_in_flight else "OPEN" if self._circuit_open_until else "CLOSED",
                 average_batch_size=(sum(sizes) / len(sizes) if sizes else 0.0),
                 max_batch_size=max(sizes, default=0),
                 request_compression_ratio=(result["logical_api_requests"] / physical if physical else 0.0),

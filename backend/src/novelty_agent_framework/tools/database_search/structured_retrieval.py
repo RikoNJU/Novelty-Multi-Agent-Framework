@@ -182,7 +182,18 @@ class StructuredSourceRetrievalTool:
     async def ainvoke(
         self, request: StructuredSourceRetrievalRequest
     ) -> ResearchBundle:
+        from .providers.arxiv_scheduler import provider_task_id
+
         request = StructuredSourceRetrievalRequest.model_validate(request)
+        token = provider_task_id.set(request.research_task.task_id)
+        try:
+            return await self._ainvoke_with_task(request)
+        finally:
+            provider_task_id.reset(token)
+
+    async def _ainvoke_with_task(
+        self, request: StructuredSourceRetrievalRequest
+    ) -> ResearchBundle:
         if request.source_id != self.source_id:
             raise ValueError(
                 f"request source_id {request.source_id!r} does not match "

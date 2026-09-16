@@ -42,6 +42,7 @@ def _summarize_search_executions(
         "requires_human": counts[SearchExecutionStatus.REQUIRES_HUMAN],
         "degraded": failed > 0 and usable > 0,
         "all_failed": all_failed,
+        "provider_failed": failed > 0,
         "no_execution": total == 0,
     }
 
@@ -197,6 +198,11 @@ class DatabaseSearchTool:
                               and not observation.payload["execution_summary"].get("degraded")
                               else "has_hits" if observation.succeeded and result["results"]
                               else "partial" if observation.succeeded else "failed"),
+            "retrieval_status": (
+                "PROVIDER_FAILED" if observation.payload["execution_summary"].get("provider_failed")
+                else "ZERO_RESULT" if observation.succeeded and not result["results"]
+                else "HAS_RESULTS" if observation.succeeded else "FAILED"
+            ),
             "source_id": result["source_id"],
             "results": result["results"],
             "warnings": result["warnings"],
