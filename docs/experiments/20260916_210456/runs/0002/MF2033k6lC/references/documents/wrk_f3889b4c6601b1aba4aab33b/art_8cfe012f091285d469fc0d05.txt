@@ -1,0 +1,2209 @@
+CGS: Configurable Graph Summarization with Bounded Neighborhood Loss and Query Support
+
+      Report GitHub Issue
+      ×
+
+      Title:
+
+Content selection saved. Describe the issue below:
+
+      Description:
+
+      Submit without GitHub
+      Submit in GitHub
+
+    arXiv is now an independent nonprofit!
+    Learn more
+    ×
+
+      Back to arXiv
+
+    Why HTML?
+
+      Report Issue
+
+      Back to Abstract
+
+      Download PDF
+
+Abstract.
+
+1 Introduction
+
+1.1 Background and Motivation
+
+1.2 Major Contributions
+
+1.3 Organization of the Article
+
+2 Related Work
+
+2.1 Comparison of Key Related Work
+
+2.2 Difference with Existing Compression Algorithms based on Merging of Nodes
+
+3 Configurable Graph Summarization, ConfiGS
+
+3.1 Graph Summarization
+
+3.2 Configuring the Summarization Variants
+
+3.3 Configuring the Neighborhood Loss
+
+3.4 Query Processing
+
+3.5 Problem Statement
+
+4 The CGS Framework
+
+4.1 Overview of CGS
+
+4.2 Merging Nodes with Common Neighborhoods
+
+4.3 Example
+
+5 The CGS Algorithm
+
+5.1 The DiscoverCN Procedure
+
+5.2 The ComputeCG Procedure
+
+5.3 The IsSafeMerge Procedure
+
+5.4 The Anc Procedure
+
+5.5 The MergeNodes Procedure
+
+5.6 The UpdateDegree Procedure
+
+5.7 The UpdateCG Procedure
+
+5.8 Working Example
+
+5.9 The Reconstruction Algorithm
+
+6 Query Processing through CGS
+
+6.1 Local versus Global Decompression
+
+6.2 Query Processing
+
+6.2.1 Neighborhood Query
+
+6.2.2 Reachability Query and Shortest Path Query
+
+6.3 Query Characteristics
+
+7 Correctness of CGS
+
+8 Graph Properties that Guarantee Compression by the CGS Framework
+
+9 Complexity of CGS
+
+10 Experimental Results
+
+10.1 Research Questions and Objectives
+
+10.2 Experimental Methodology
+
+10.2.1 Experimental Setup
+
+10.2.2 Datasets
+
+10.2.3 Lossless Baselines
+
+10.2.4 Lossy Baselines
+
+10.2.5 Evaluation Metrics
+
+10.2.6 CGS Framework Parameters
+
+10.3 Comparison of Compression Ratio with Existing Baselines
+
+10.3.1 Lossless Schemes
+
+10.3.2 Lossy Schemes
+
+10.4 Comparison of Reconstruction Error with Existing Baselines
+
+10.5 Effect of Neighborhood Loss Tolerance Threshold δ\delta
+
+10.6 Query Processing through CGS
+
+10.6.1 Neighborhood Queries
+
+10.6.2 Shortest Path Queries
+
+10.6.3 Reachability queries
+
+10.6.4 Query Response Times
+
+10.6.5 Local versus Global Decompression
+
+10.7 Scalability Results
+
+10.8 Summary of the Experiments
+
+11 Conclusions
+
+References
+
+    License: CC BY 4.0
+
+arXiv:2607.10969v1 [cs.DS] 13 Jul 2026
+
+CGS: Configurable Graph Summarization with Bounded Neighborhood Loss and Query Support
+
+DOI: 10.1145/3786788Journal: TKDDVolume: 0000CCS: Information systems Data compressionCCS: Information systems Graph-based database models
+
+Shubhadip Mitra
+
+Affiliation: Blue Yonder India Pvt. Ltd., Bengaluru, India
+
+email: shubhadip.mitra@blueyonder.com
+
+,
+Sona Elza Simon
+
+Affiliation: Centre for Machine Intelligence and Data Science, Indian Institute of Technology Bombay, Mumbai, India
+
+email: sonasimonp@gmail.com
+
+,
+C Oswald
+
+Affiliation: Dept. of Computer Science and Engineering, National Institute of Technology Tiruchirappalli, Tiruchirapalli, India
+
+email: oswald@nitt.edu
+
+,
+Arnab Bhattacharya
+
+Affiliation: Dept. of Computer Science and Engineering, Indian Institute of Technology Kanpur, Kanpur, India
+
+email: arnabb@cse.iitk.ac.in
+
+ and
+Arindam Pal
+
+Affiliation: TechSoftX Corporation, Sydney, New South Wales, Australia
+
+email: arindamp@gmail.com
+
+Received  24th October, 2025
+
+Abstract.
+
+Given a large graph, how to generate a compact summary graph that is
+configurable by the user and supports multiple graph queries with either
+no loss or with high accuracy? The ever growing size of graph
+datasets makes the above question on graph summarization very pertinent.
+Although, there are several approaches, there does not exist a
+configurable graph summarization method that offers high compression
+along with support for multiple graph queries on the summary graph with
+high accuracy, and allows the user to configure the summarization based on:
+(1) lossless or lossy summarization, (2) amount of tolerable neighborhood
+loss, (3) the type of loss it can tolerate, in terms of false
+positive edges (i.e., extra edges), false negative edges (i.e.,
+missing edges), or neither, in both the (a) reconstructed graph and the
+(b) query answers. To overcome these limitations, we propose a novel graph
+summarization framework CGS (Configurable Graph Summarizer) that
+builds upon the idea of aggregating nodes with common neighborhoods.
+The CGS framework consists of three summarization variants, CGS-E, CGS-I and
+CGS-U. While CGS-E is a lossless scheme, CGS-I and CGS-U are lossy schemes
+that allow reconstruction of the input graph with no false positive
+edges and no false negative edges, respectively. To bound the graph
+reconstruction loss, we introduce a user-specified parameter
+neighborhood loss tolerance threshold, that limits the maximum loss
+allowed in the neighborhood of each node. This allows graph reconstruction
+and neighborhood query evaluation with either no loss or with
+bounded loss guarantees. This, in turn, enables retrieval of
+multiple graph queries such as shortest path and reachability queries with
+either no loss or with fairly high accuracy. Empirical evaluation on
+several synthetic and real-world graphs shows that CGS offers superior
+summarization than the state-of-the-art methods, and can answer graph
+queries with fairly high accuracy and efficiency. The implementation code
+and the datasets are available at
+https://github.com/sonaelzasimon/CGS_Configurable_Graph_Summarization.
+
+Keywords: Graph Summarization, Graph Compression, Web Graphs, Social Networks, Common Neighborhoods
+
+††cc-license: by
+
+1. Introduction
+
+One of the key challenges in graph data mining is the ever increasing
+size of the graphs that prohibits its scalability in terms of storage,
+communication and analysis. To address this challenge, several graph
+summarization schemes have been proposed
+(Navlakha et al., 2008; Khan et al., 2017; Lee et al., 2022; Lai et al., 2023) that generate a compact summary of a graph that allows
+reconstruction of the original graph with minimal or no loss. A summary
+graph is typically produced by aggregation of nodes and edges of the
+input graph. Due to its numerous applications (Liu et al., 2018), graph
+summarization has remained an area of active research for the past two
+decades.
+
+1.1. Background and Motivation
+
+A graph summarization scheme is
+defined as follows. An input graph GG is summarized to a graph GsG_{s}
+that is later decompressed or expanded to produce a graph GrG_{r}, which is
+referred to as the reconstructed graph. A graph summarization scheme (along with
+its corresponding reconstruction) is said to be lossless if and only if
+Gr=GG_{r}=G; else, it is lossy.
+
+Though there are several graph summarization works, most of them lack
+configurability as required by the user with no or
+limited  support for queries. They are either lossless
+(Lee et al., 2022; Khan et al., 2015; Fan et al., 2012; Lai et al., 2023; Berberidis et al., 2022; Ramezani et al., 2022), or lossy
+(Emamzadeh Esmaeili Nejad et al., 2021; Li et al., 2019; Lee et al., 2020; Anagnostopoulos et al., 2024). There are limited works that allow both
+lossless as well as lossy summarization
+(Shin et al., 2019; Navlakha et al., 2008). Moreover, majority of the lossy
+summarization schemes do not allow the user to control the loss
+(Emamzadeh Esmaeili Nejad et al., 2021; Li et al., 2019; Yong et al., 2021; Anagnostopoulos et al., 2024; Lai et al., 2023). Hence, these works fail
+to provide bounded quality guarantees on queries. Further, none of the
+existing works allow the flexibility to choose the type of loss in terms
+of either false positive edges (i.e., extra edges), or
+false negative edges (i.e., missing edges) in the reconstructed
+graph. Finally, there are many works that offer good summarization but
+provide no support for queries
+(Navlakha et al., 2008; Lee et al., 2022; Yong et al., 2021; Lee et al., 2020; Lai et al., 2023; Berberidis et al., 2022).
+
+In particular, through an extensive review of the prior works (Sec. 2), we observe that there does not exist a general purpose configurable graph summarization framework that offers high compression along with all the following desirable capabilities, where the user is allowed to:
+
+(1)
+
+choose between lossless and lossy summarization,
+
+(2)
+
+control the amount of neighborhood loss that it can tolerate,
+
+(3)
+
+run graph queries on the summary graph (without decompressing it) including neighborhood queries, reachability queries and shortest path queries, and
+
+(4)
+
+specify the type of loss it can tolerate—false positive edges (i.e., extra edges) or false negative edges (i.e., missing edges)—in the reconstructed graph or query answers.
+
+In this work, we introduce the ConfiGS (Configurable Graph Summarization)
+problem that achieves all the above desirable properties and
+proposes a solution framework, CGS (Configurable Graph
+Summarizer). The framework offers three summarization variants:
+
+(1)
+
+CGS-E (CGS-Exact): a lossless scheme that
+allows neither false positive edges nor false negative edges in
+the reconstructed graph
+
+(2)
+
+CGS-I (CGS-Intersection): a lossy scheme that
+allows only false negative edges, but no false positive edges
+
+(3)
+
+CGS-U (CGS-Union): a lossy scheme that allows only
+false positive edges, but no false negative edges
+
+Thus, the two lossy schemes in our framework have only one-sided
+errors. Hence, an application can judiciously select whatever fits its
+requirements the best. For example, a friend recommendation application
+may tolerate false positive answers, but not false negative answers,
+while a route navigation application may tolerate false negative edges,
+but not false positive edges in its recommended route.
+
+The CGS framework leverages the fact that several nodes in a graph share
+common neighbors. Hence, nodes that share common neighbors can be
+aggregated into a single supernode. The exact details of the schemes are
+described in Sec. 4. In contrast to many prior works (Navlakha et al., 2008; Khan et al., 2015; Shin et al., 2019; Ko et al., 2020; Yong et al., 2021), this work does not use correction edges to control the reconstruction loss, which avoids the space overhead to store the correction edges. This in turn, leads to superior compression ratio, as shown in Sec. 10.
+
+1.2. Major Contributions
+
+The key contributions of this work are as follows:
+
+(1)
+
+Configurable Graph Summarization Framework: We introduce
+the problem of configurable graph summarization, called ConfiGS,
+for summarizing large, undirected, unweighted graphs, and
+propose a solution framework called CGS, based on the discovery
+of common neighbors. The CGS framework offers three
+summarization variants, namely CGS-E, CGS-I and CGS-U, While CGS-E is a lossless summarization scheme, CGS-I and CGS-U are lossy
+summarization schemes that allow reconstruction with no
+false positive edges and no false negative edges, respectively.
+
+(2)
+
+Support for Multiple Graph Queries: The CGS framework
+can handle multiple graph queries including neighborhood
+queries, shortest path queries and reachability queries. Without
+compromising on query accuracy, the CGS framework can answer
+queries on the summary graph without reconstructing the input
+graph. To this end, it uses the concept of local decompression,
+explained in Sec. 6.
+
+(3)
+
+Bounded Neighborhood Loss: The lossy variants of CGS,
+namely, CGS-I and CGS-U, offer parameterized control to bound
+the neighborhood loss. More specifically, we introduce a user
+specified parameter, the neighborhood loss tolerance
+threshold, that quantifies the maximum loss allowed in the
+neighborhood of each node in the graph. This allows graph reconstruction
+and neighborhood query evaluation with either no loss or
+with bounded loss guarantees. This, in turn, enables
+retrieval of other graph queries such as shortest path and
+reachability queries with either no loss or with fairly
+high accuracy.
+
+(4)
+
+Extensive Benchmarking: Empirical evaluation on multiple
+synthetic and real-world graphs demonstrates that CGS offers superior
+summarization than the state-of-the-art methods. Moreover, it also showcases the ability of CGS to
+answer a wide variety of graph queries with high accuracy and
+efficiency.
+
+1.3. Organization of the Article
+
+The rest of the article is organized as follows. Sec. 2 discusses the related works. Sec. 3 states the preliminary concepts and formally states the configurable graph summarization problem. The CGS framework is presented in Sec. 4 and Sec. 5. Sec. 6 describes the query processing through the proposed framework. Sec. 7 establishes the correctness of CGS.
+In addition, the graph properties that are necessary for summarization through the CGS framework are stated in Sec. 8.
+The complexity of CGS is analyzed in Sec. 9.
+The empirical findings are presented in Sec. 10. The conclusions and future works are discussed in Sec. 11.
+
+2. Related Work
+
+Algorithm
+Type of Graph
+Summarization
+Bound on
+Loss Type
+Query Support
+Key Metrics
+
+Type
+Neighborhood Loss
+(FP/FN)
+(NQ/SPQ/RQ)
+
+CGS (this work)
+Undirected, Unweighted
+Both
+Yes
+Either FP or FN or none
+NQ, SPQ, RQ
+Compression ratio c​r=|Gs||G|cr=\frac{|G_{s}|}{|G|}
+
+SWeG (Shin et al., 2019)
+Undirected, Unweighted
+Both
+Yes
+Both
+NQ
+Size of output =|P∗|+|C+|+|C−|=|P^{*}|+|C^{+}|+|C^{-}|
+
+APXMDL (Navlakha et al., 2008)
+Undirected, Unweighted
+Both
+Yes
+Not stated
+None
+Compression ratio c​rcr
+
+GraphZip (Rossi and Zhou, 2018)
+Undirected, Unweighted
+Both
+No
+None
+NQ, SPQ, RQ
+Space savings =1−|Gs||G|=1-\frac{|G_{s}|}{|G|}
+
+GSQG (Riondato et al., 2017)
+Undirected, Unweighted
+Both
+No
+None
+NQ
+Compression ratio c​rcr
+
+SLUGGER (Lee et al., 2022)
+Undirected, Unweighted
+Lossless
+Not applicable
+Not applicable
+None
+Encoding cost =|P+|+|P−|+|H|=|P^{+}|+|P^{-}|+|H|
+
+MoSSo (Ko et al., 2020)
+Undirected, Unweighted
+Lossless
+Not applicable
+Not applicable
+NQ
+Size of output =|Pt|+|Ct+|+|Ct−|=|P_{t}|+|C_{t}^{+}|+|C_{t}^{-}|
+
+SAGS (Khan et al., 2015)
+Undirected, Unweighted
+Lossless
+Not applicable
+Not applicable
+None
+Compression ratio c​rcr
+
+compressR (Fan et al., 2012)
+Directed, Weighted
+Lossless
+Not applicable
+Not applicable
+RQ
+Compression ratio c​rcr
+
+optGS (Lai et al., 2023)
+Undirected, Unweighted
+Lossless
+No
+False Positive
+None
+Compactness = |P|+|C+|+|C−||E|\frac{|P|+|C^{+}|+|C^{-}|}{|E|}
+
+LM-GSUM (Berberidis et al., 2022)
+Directed, Weighted
+Lossless
+Not applicable
+Not applicable
+None
+Compression Ratio = B​i​t​s​_​B​e​f​o​r​e−B​i​t​s​_​A​f​t​e​rB​i​t​s​_​B​e​f​o​r​e\frac{Bits\_Before-Bits\_After}{Bits\_Before}
+
+NQFCSN (Maserrat and Pei, 2010)
+Directed, Unweighted
+Lossless
+Not applicable
+Not applicable
+NQ
+bits per edge rate
+
+Traverse+K2T (Emamzadeh Esmaeili Nejad et al., 2021)
+Undirected, Unweighted
+Lossy
+No
+Both
+NQ, RQ
+Compression ratio c​rcr
+
+StarZip (Li et al., 2019)
+Undirected, Unweighted
+Lossy
+No
+Not stated
+SPQ
+v​c​r=|V||Vs|vcr=\frac{|V|}{|V_{s}|}, e​c​r=|E||Es|ecr=\frac{|E|}{|E_{s}|}
+
+GraSS (LeFevre and Terzi, 2010)
+Undirected, Unweighted
+Lossy
+No
+Not stated
+NQ
+Reconstruction error
+
+LDME (Yong et al., 2021)
+Undirected, Unweighted
+Lossy
+No
+Not stated
+None
+Compression c=1−|P|+|C+|+|C−||E|c=1-\frac{|P|+|C^{+}|+|C^{-}|}{|E|}
+
+SSumM (Lee et al., 2020)
+Undirected, Weighted
+Lossy
+Yes
+Not stated
+None
+Reconstruction error
+
+SSAG (Ali et al., 2024)
+Undirected, Unweighted
+Lossy
+No
+Not stated
+None
+Reconstruction error
+
+GPQPS (Anagnostopoulos et al., 2024)
+Undirected, Weighted
+Lossy
+No
+Not stated
+SPQ
+Relative error
+
+GRAPHGUESS (Ramezani et al., 2022)
+Undirected, Unweighted
+Not stated
+Not applicable
+Not applicable
+SPQ
+—
+
+QMG (Nabti and Seba, 2017)
+Undirected, Unweighted
+Not stated
+Not applicable
+Not applicable
+No specific query
+Compression Rate = |E⁡(C⁡(G))||E⁡(G)|\frac{|E(C(G))|}{|E(G)|}
+
+Table 1. Comparison of key related works in terms of their various properties (FP = False Positive, FN = False Negative, NQ = Neighborhood Query, SPQ = Shortest Path Query, RQ = Reachability Query)
+
+The related works can be broadly classified into two categories:
+
+(1)
+
+Graph compression methods: (Boldi and Vigna, 2004; Grabowski and Bieniecki, 2010; Liakos et al., 2014; Besta et al., 2019; Besta and Hoefler, 2018; Li et al., 2019; Maneth and Peternek, 2015; Emamzadeh Esmaeili Nejad et al., 2021)
+
+(2)
+
+Graph summarization methods: (Beg et al., 2018; Li et al., 2019; Kang et al., 2022; Ko et al., 2020; Navlakha et al., 2008; Ali et al., 2024; Lai et al., 2023; Berberidis et al., 2022; Maserrat and Pei, 2010)
+
+While
+the former methods attempt to produce a compressed representation of the input graph by optimizing the minimum description length (MDL) using encoding techniques to compress frequently
+occurring subgraphs in a graph, the latter produces a summary graph of the input graph while still retaining its key
+structural properties, either exactly or approximately. The former methods usually do not allow querying on the compressed graph without fully decompressing it (Boldi and Vigna, 2004; Grabowski and Bieniecki, 2010; Liakos et al., 2014). On the other hand, the summary graphs produced by some of the latter methods may support queries (Riondato et al., 2017; Shin et al., 2019; Anagnostopoulos et al., 2024). Given that graph compression methods are complementary to this work that falls in the category of graph summarization methods, the related work discussion primarily focuses on graph summarization.
+
+2.1. Comparison of Key Related Work
+
+Table 1 presents a comparison of the key related works based on
+their configurable capabilities and query support. More specifically, the
+works have been categorized based on the type of input graph, type of
+summarization, i.e., lossy, lossless or both, whether the neighborhood loss
+is bounded, type of loss, i.e., false positive edges, false negative edges
+or both, support for queries on the summary graph such as neighborhood
+queries (NQ), reachability queries (RQ) and shortest path queries (SPQ),
+and the key metrics evaluated. In the table, G=(V,E)G=(V,E) refers to the
+input graph, Gs=(Vs,Es)G_{s}=(V_{s},E_{s}) refers to the summary graph, PP is the set
+of super edges of the summary graph GsG_{s}, C+C^{+} is the set of edges to be
+inserted, C−C^{-} is the set of edges to be deleted, and HH is the set of
+hierarchy edges between the supernodes. For further details on the key
+metrics stated in the table, please refer to the respective works. The
+algorithms are ordered based on their similarity to CGS.
+
+SWeG (Shin et al., 2019) is a parallel graph summarization algorithm that is designed for both shared-memory and MapReduce settings. SWeG repeats two steps: (1) dividing the input graph into small subgraphs, and (2) processing the subgraphs in parallel without having to load the entire graph in main memory. SWeG is closely related to CGS and it offers both lossy as well as lossless summarization variants, in addition to bounded loss of neighborhood and support for neighborhood queries. However, the reconstructed graph can contain both false positive as well as false negative edges. In particular, it does not allow the user to configure the type of loss in terms of its tolerance to false positive edges or false negative edges in the reconstructed graph and the neighborhood queries.
+
+Navlakha et al. (Navlakha et al., 2008) considered the problem of computing the Minimum Description Length (MDL) representation of a graph. Although this method offers bounded neighborhood loss, it does not allow
+any control over false positive and false negative edges in the
+reconstructed graph. Moreover, it does not support query processing.
+GraphZip (Rossi and Zhou, 2018) is based on decomposing a graph into a number of cliques of varying
+sizes. It does not offer any bound on the neighborhood loss. Further, evaluating on just
+two datasets, the authors claimed that their approach competes favorably with the
+Layered Label Propagation (LLP) technique (Boldi et al., 2011).
+GSQG (Riondato et al., 2017) is based on partitioning the original set of
+vertices into a small number of supernodes connected by super edges to form a
+complete weighted graph. To quantify the dissimilarity between the original
+graph and a summary, the authors optimized the reconstruction error and the
+cut-norm error. They developed the first polynomial-time approximation
+algorithms to compute the best possible summary of a certain size under both
+measures. However, compared with CGS, this method neither offers direct control
+on the neighborhood loss, nor it allows any choice of either false positive
+or false negative edges in the reconstructed graph and neighborhood
+queries.
+
+SLUGGER (Lee et al., 2022) is a lossless hierarchical summarization technique that extends the work of (Navlakha et al., 2008). Although this method is effective in summarizing massive graphs, it does not support query processing.
+Ko et al. (Ko et al., 2020) presented MoSSo for lossless
+graph summarization of fully dynamic graphs. With each edge insertion or
+deletion, this method moves nodes among the supernodes in the summary graph.
+Experimental results (Sec. 10) show that the lossless scheme
+of CGS, i.e., CGS-E offers considerably better summarization than both, SLUGGER and
+MoSSo.
+SAGS (Khan et al., 2015) is a set-based summarization approach that summarizes naturally occurring sets of similar nodes that are identified using locality sensitive hashing. This method, however, does not support queries.
+CompressR (Fan et al., 2012) is a lossless compression method designed for directed and weighted graphs. However, their approach is restricted to only two specific classes of queries, reachability and graph pattern.
+
+Traverse+K2T (Emamzadeh Esmaeili Nejad et al., 2021) is based on the transitivity property often found in social networks and
+web graphs. However, it has neither any bound on the neighborhood loss nor any support for answering queries.
+StarZip (Li et al., 2019) is a lossy compression scheme for streaming graphs. It repeatedly identifies dominating sets in a
+graph, and represents each such dominating set by a supernode. However,
+there is no control over false positive and false negative edges, or
+any guarantee on the neighborhood loss. GraSS (LeFevre and Terzi, 2010) is based on a random world model which does not offer any bound on the neighborhood loss. Further, this method seeks to minimize the reconstruction error rather than compression ratio.
+LDME (Yong et al., 2021) is a correction set based graph summarization algorithm that is based on weighted locality sensitive hashing. The algorithm allows trading compression for running time. However, there is no support to answer queries and there is no guarantee on the quality of the reconstructed graph.
+SSumM (Lee et al., 2020) is a sparse summarization method based on the MDL principle. This method, however lacks support for queries and focuses on reducing the reconstruction error rather than the compression ratio.
+
+The technique by Maserrat et al. (Maserrat and Pei, 2010) proposes an Eulerian data structure with multi-position linearizations to compress social networks while allowing sublinear-time in-neighbor and out-neighbor queries without decompression. Although it is interesting to see that the algorithm provides a high compression ratio along with supporting both neighbor query types and provides theoretical bounds with empirical validation, it addresses only lossless versions and focuses on neighbor queries alone. It may not generalize well to other query types, and involves complex preprocessing. On the other hand, our proposed approach CGS focuses on Neighborhood query, Reachability query and Shortest-path query. Nabti et al. (Nabti and Seba, 2017) uses modular decomposition to compress both query and data graphs, enabling subgraph isomorphism search directly on compressed graphs to reduce search space. It reduces storage and computation to some extent and is scalable to massive graphs, and avoids decompression. It is best suited with a restriction to labeled graphs with structural regularities only. Moreover, the compression quality affects query accuracy, and is not optimized for highly dynamic graphs.
+The work by Sarwan Ali et al. SsAG, a scalable lossy summarization method for attributed graphs that merges nodes into supernodes while minimizing reconstruction error and maximizing attribute homogeneity, followed by sparsification to reduce storage (Ali et al., 2024). Though it handles large-scale graphs incorporating both topology and attributes, summaries may have slightly higher storage cost and minor quality degradation. Moreover, they consider only the lossy type with no support for query processing. optGS (Lai et al., 2023) proposes an optimized correction set–based lossless graph summarization method that improves grouping, merging, and computation efficiency through computation-oriented supernode splitting. Although it is interesting to observe that optGS maintains exact reconstruction and scalable to large graphs, it is complex and may not be suitable for scenarios tolerating lossy compression and fails to address query support whereas CGS addresses various query processing mechanisms along with a bound on reconstruction loss. LMGSUM (Berberidis et al., 2022) introduces methods for summarizing labeled multi-graphs by grouping nodes and aggregating edges while preserving label and multiplicity information. The algorithm is good in supporting multiple edge labels and parallel edges but the summaries may still be large for highly heterogeneous graphs. Moreover, the complexity increases with the number of labels and may require domain-specific tuning for optimal grouping. The technique GPQPS proposed by Aris Anagnostopoulos et al. introduces a framework to process general-purpose queries directly on summary graphs by introducing a query translation mechanism that maps queries to the summarized structure without full decompression (Anagnostopoulos et al., 2024). In some terms, though, it reduces storage and computation, it handles only shortest-path queries for which the results are not encouraging and tackles only lossy version whereas CGS handles three different types of queries namely neighborhood query, shortest-path and reachability query and addresses lossless version as well. GRAPHGUESS is a runtime adaptive approximation model for graph processing that minimizes preprocessing, deactivates low-influence edges, and uses periodic super steps for adaptive correction. Although it has minimal accuracy loss, applicable to various algorithms and avoids heavy preprocessing, it is not clearly stated as to whether it is lossless/lossy and could handle only shortest-path queries (Ramezani et al., 2022).
+
+Koutra et al. (Koutra et al., 2014) constructed a vocabulary of subgraph types
+that occur frequently in real graphs (e.g., stars, cliques, chains). It builds
+a succinct description of a graph from a set of subgraphs using this vocabulary
+and the MDL principle. Utility driven graph
+summarization (Kumar and Efstathopoulos, 2018) aims to summarize graphs such that the
+utility does not drop below a given threshold. Besta et al.
+(Besta et al., 2019) proposed a programming framework for lossy graph
+compression based on a novel abstraction of compression kernels. Kang et al.
+(Kang et al., 2022) proposed personalized graph summarization that
+focuses on connections closer to a given set of target nodes. Berberidis et
+al. (Berberidis et al., 2022) proposed a summarization framework that
+can handle different graph characteristics like node labels, directed edges,
+edge multiplicities, and self-loops. Liang et al. (Liang et al., 2020)
+proposed two summarization schemes to answer reachability queries on dynamic
+graphs. Detailed surveys on various graph summarization and compression methods
+are available in (Maneth and Peternek, 2015; Khan et al., 2017; Besta and Hoefler, 2018; Lab, 2024).
+
+2.2. Difference with Existing Compression Algorithms based on Merging of Nodes
+
+We next briefly review the merging approaches employed by the existing methods how they are different from the merging approached used in the CGS framework.
+
+Navlakha et al. (Navlakha et al., 2008) used a greedy algorithm
+to compress a graph. The basic idea is that, any two nodes that share common
+neighbors can give a cost reduction. The more the number of common neighbors,
+the higher is the cost reduction. Suppose, vv is a supernode, and the cost
+cvc_{v} of supernode vv is the sum of the costs of all the super edges (v,x)(v,x) to
+its neighbors x∈N⁡(v)x\in N(v), i.e., cv=∑x∈N⁡(v)c⁡(v,x)c_{v}=\sum_{x\in N(v)}c(v,x). Suppose,
+two supernodes u,vu,v are merged into a new supernode ww. The authors proposed
+a fractional cost reduction metric: s⁡(u,v)=cu+cv−cwcu+cvs(u,v)=\frac{c_{u}+c_{v}-c_{w}}{c_{u}+c_{v}}. The pair (u,v)(u,v) of supernodes for which s⁡(u,v)s(u,v) is maximized is chosen
+for merging.
+
+Kumar and Efstathopoulos (Kumar and Efstathopoulos, 2018) tried to prioritize the
+merging of two nodes by considering edge importance. Their goal is to pick an
+edge e=(u,v)e=(u,v) with the lowest importance and merge the nodes uu and vv so
+as to form a supernode ww. At each step, they pick the node pair (u,v)(u,v) with
+the lowest importance score f⁡(n​o​d​e​I​S​[u])+f⁡(n​o​d​e​I​S​[v])f(nodeIS[u])+f(nodeIS[v]). Here, f⁡()f() is a
+square function, as it helps in further delaying the merging of important nodes
+with relatively important nodes.
+
+Lee et al. (Lee et al., 2022) developed an algorithm called
+Slugger, which greedily merges a root node pair among those sampled
+within each candidate set, which is obtained in the previous step.
+Simultaneously, Slugger updates pp-edges and nn-edges incident to the
+merged nodes and/or their 1-level descendants by exploiting the hierarchy
+between supernodes. Slugger accelerates this update through memoization.
+
+Shin et al. (Shin et al., 2019) developed an algorithm named SWeG, which
+merges some supernodes within each group in a greedy manner. The merging step is
+quite involved, and is described in detail in
+the paper.
+
+The merging strategy adopted in the CGS framework (detailed in Sec. 4) is different from the above approaches in multiple ways. Firstly, it carefully discovers all eligible pairs of nodes that offer positive compression gain. This compression gain is different for each of the three variants of the CGS framework (Sec. 4). This compression gain not only factors the number of common neighbors but also the number of exclusive neighbors. Then among all the eligible pairs to be merged, it identifies the pair that offers the maximum compression gain. Then, it is checked whether the given pair is safe to be merged, i.e., whether the merging would violate the neighborhood loss constraint stated in Sec. 3. Once it is confirmed to be safe, the merge is executed. Subsequently, the merging is applied to the remaining pairs of nodes and super-nodes that are formed in the process.
+
+3. Configurable Graph Summarization, ConfiGS
+
+We consider an undirected, unweighted, simple graph G=(V,E)G=(V,E), where VV and
+EE denote the vertex set and edge set, respectively. Assuming the graph GG to
+be stored using the adjacency list representation, the space required to
+store GG, denoted by |G||G|, is
+
+(1)
+
+|G|=|V|+2⋅|E|\displaystyle|G|=|V|+2\cdot|E|
+
+3.1. Graph Summarization
+
+Given an undirected, unweighted, simple graph G=(V,E)G=(V,E), the goal of graph summarization
+is to produce a summary graph Gs=(Vs,Es)G_{s}=(V_{s},E_{s}) (where VsV_{s} and EsE_{s}
+denote the vertex set and edge set of GsG_{s} respectively) with two objectives:
+(1) |Gs|≤|G||G_{s}|\leq|G|, i.e., the summary graph requires lesser space than the
+original graph, and (2) it is possible to reconstruct the original graph GG
+from GsG_{s} with no or limited loss of information. It is important to note that
+|Gs||G_{s}| must take into account the total space required to store GsG_{s} along with the space overhead of additional data structures (if any) that are necessary to reconstruct GG from GsG_{s}. Thus, it may be the case that |Gs|>|Vs|+2​|Es||G_{s}|>|V_{s}|+2|E_{s}|. This point will be elaborated later.
+
+Some prior works (Li et al., 2019), including those that offer summarization without graph reconstruction (Lee et al., 2020), do not factor this point and compute compression ratios simply based on |Vs||V_{s}| and/or |Es||E_{s}| (refer to the key metrics column in Table 1).
+
+Lossy and Lossless Summarization
+
+Let ⟨S,R⟩\langle S,R\rangle denote a graph summarization scheme where S:G→GsS:G\rightarrow G_{s} is a graph summarization algorithm that summarizes an
+undirected, unweighted graph G=(V,E)G=(V,E) to a summary graph
+Gs=(Vs,Es)G_{s}=(V_{s},E_{s}), and R:Gs→GrR:G_{s}\rightarrow G_{r} is a reconstruction
+algorithm that takes the summary graph Gs=(Vs,Es)G_{s}=(V_{s},E_{s}) as input and returns
+a reconstructed graph Gr=(Vr,Er)G_{r}=(V_{r},E_{r}).
+Here, reconstruction (also referred to as decompression) refers to the process of
+reproducing the original graph GG from GsG_{s}. The overall goal is that GrG_{r}
+should be a good approximation of GG with respect to certain graph properties.
+If RR is able to retrieve the original graph GG
+from the summary graph GsG_{s} exactly, i.e., Gr=GG_{r}=G, then the summarization
+scheme ⟨S,R⟩\langle S,R\rangle is said to be lossless. Otherwise, the
+scheme is lossy. In a lossy scheme, the set of edges Er∖EE_{r}\setminus E are referred to as false positive edges, while E∖ErE\setminus E_{r} are referred to as false negative edges.
+Typically, the vertex set is reconstructed without loss, i.e., Vr=VV_{r}=V.
+
+Summarization Objective
+
+Our graph summarization scheme seeks to produce a summary graph GsG_{s}
+of a given graph GG that reduces the space overhead. In other words, the goal
+is to minimize the compression ratio, c​r=|Gs|/|G|cr=|G_{s}|/|G|
+(Emamzadeh Esmaeili Nejad et al., 2021).
+
+3.2. Configuring the Summarization Variants
+
+Our proposed ConfiGS framework allows three summarization variants, namely, CGS-E,
+CGS-I, and CGS-U 11
+              1
+
+            As we will explain later, the variant-letters stand for exact, intersection, and union, respectively., that are characterized by the presence or absence of false
+positive and false negative edges in the edge set ErE_{r} of the
+reconstructed graph GrG_{r}. If false positives need to be avoided, i.e., Er⊆EE_{r}\subseteq E, then CGS-I can be used, while to have no false
+negatives, i.e., Er⊇EE_{r}\supseteq E, then CGS-U can be used. The variant CGS-E avoids both false positives and false negatives, i.e., Er=EE_{r}=E and, thus,
+incurs no loss.
+These variants are identified using a parameter ​𝑣𝑎𝑟\operatorname{\emph{var}} that assumes three values, EE, II and UU:
+
+(2)
+
+​𝑣𝑎𝑟={E⇒CGS-E:Er=E,i.e., ​∀u∈G,NGr​(u)=NG​(u)I⇒CGS-I:Er⊆E,i.e., ​∀u∈G,NGr​(u)⊆NG​(u)U⇒CGS-U:Er⊇E,i.e., ​∀u∈G,NGr​(u)⊇NG​(u)\displaystyle\operatorname{\emph{var}}=\begin{cases}E\Rightarrow\textsc{CGS-E}:&E_{r}=E,\text{i.e., }\forall u\in G,N_{G_{r}}(u)=N_{G}(u)\\
+I\Rightarrow\textsc{CGS-I}:&E_{r}\subseteq E,\text{i.e., }\forall u\in G,N_{G_{r}}(u)\subseteq N_{G}(u)\\
+U\Rightarrow\textsc{CGS-U}:&E_{r}\supseteq E,\text{i.e., }\forall u\in G,N_{G_{r}}(u)\supseteq N_{G}(u)\\
+\end{cases}
+
+where NG​(u)N_{G}(u) and NGr​(u)N_{G_{r}}(u) denote the 1-hop neighborhood vertex set of
+node uu in GG and GrG_{r} respectively.
+
+3.3. Configuring the Neighborhood Loss
+
+The neighborhood loss n​l​(u)nl(u) of a node uu is the
+loss of neighborhood information as a consequence of summarization and
+reconstruction. It is measured as a fraction of the neighborhood set NG​(u)N_{G}(u)
+that is lost after reconstruction (Navlakha et al., 2008):
+
+(3)
+
+n​l​(u)=|NG​(u)∖NGr​(u)|+|NGr​(u)∖NG​(u)||NG​(u)|\displaystyle\small nl(u)=\frac{|N_{G}(u)\setminus N_{G_{r}}(u)|+|N_{G_{r}}(u)\setminus N_{G}(u)|}{|N_{G}(u)|}
+
+The above equation is applicable for only those
+summarization schemes that do not permit loss/gain of nodes, i.e., Vr=VV_{r}=V. The
+CGS framework satisfies this property and,
+hence, uses this neighborhood loss model. For the different variants,
+it follows that
+
+(4)
+
+​𝑣𝑎𝑟={E⇒n​l​(u)=0I⇒n​l​(u)=|NG​(u)∖NGr​(u)|/|NG​(u)|U⇒n​l​(u)=|NGr​(u)∖NG​(u)|/|NG​(u)|\displaystyle\operatorname{\emph{var}}=\begin{cases}E\Rightarrow&nl(u)=0\\
+I\Rightarrow&nl(u)=|N_{G}(u)\setminus N_{G_{r}}(u)|/|N_{G}(u)|\\
+U\Rightarrow&nl(u)=|N_{G_{r}}(u)\setminus N_{G}(u)|/|N_{G}(u)|\\
+\end{cases}
+
+The neighborhood loss for CGS-I and CGS-U as defined in Eq. (4) is unbounded.
+To bound it, we define a neighborhood loss tolerance threshold parameter δu\delta_{u} for each vertex uu, where 0≤δu≤10\leq\delta_{u}\leq 1.
+The threshold parameter δu\delta_{u} limits the maximum neighborhood loss:
+
+(5)
+
+∀u∈G,n​l​(u)≤δu\displaystyle\forall u\in G,\ nl(u)\leq\delta_{u}
+
+The neighborhood loss threshold set parameter, Δ\Delta, is defined as the set
+of neighborhood loss tolerance threshold parameters for all vertices uu in GG:
+
+(6)
+
+Δ={δu|u∈G}\displaystyle\Delta=\{\delta_{u}|u\in G\}
+
+The above definition allows the user to control the maximum neighborhood loss
+for each node uu in an independent manner.
+This feature may be useful for applications that require nodes of different priorities to tolerate different levels of neighborhood loss.
+Hence, this
+flexibility to control the neighborhood loss makes this model powerful and
+unique.
+Setting δu\delta_{u}
+to be the same value for all vertices uu sets
+a uniform loss threshold.
+
+3.4. Query Processing
+
+When the graph size is large, retrieving many graph queries becomes a challenge (Emamzadeh Esmaeili Nejad et al., 2021). Hence, it is desirable to build a graph summarization scheme that can support graph queries on the summary graph without necessarily reconstructing the graph (Shin et al., 2019). The queries may be answered exactly or approximately, as preferred by the user. If the user is tolerant to loss in the query answers, it is desirable to answer the queries with bounded quality guarantees or with high accuracy.
+
+3.5. Problem Statement
+
+We next formally define the problem statement.
+
+Problem 1 (Configurable Graph Summarization, ConfiGS).
+
+Given an undirected, unweighted, simple graph G=(V,E)G=(V,E), summarization
+variant parameter ​𝑣𝑎𝑟∈{I,E,U}\operatorname{\emph{var}}\in\{I,E,U\}, and a neighborhood loss threshold
+Δ\Delta, design a graph summarization scheme ⟨S,R⟩\langle S,R\rangle
+to return a summary graph GsG_{s} that minimizes the compression
+ratio c​r=|Gs|/|G|cr=|G_{s}|/|G| such that the reconstructed graph GrG_{r} satisfies the
+neighborhood loss constraint, i.e., ∀u∈G,n​l​(u)≤δu\forall{u\in G},\ nl(u)\leq\delta_{u}, and GsG_{s} supports multiple graph queries such as neighborhood queries, reachability queries and shortest path queries.
+
+The CGS framework addresses the above ConfiGS problem.
+
+For evaluating any graph query on an undirected unweighted graph, it is necessary to be able to answer the neighborhood queries. This is because one can always reconstruct (part or whole of) the input graph using neighborhood queries, and then retrieve the desired query. This is why CGS is designed to answer neighborhood queries with either no loss or with bounded neighborhood loss, as desired by the user. Consequently, this enables answering other graph queries such as reachability queries and shortest path queries exactly or with high
+accuracy.
+
+The neighborhood query for a vertex uu
+in GG returns the 1-hop neighborhood NG​(u)N_{G}(u), i.e., all the immediate
+neighbors of uu.
+Given an ordered pair of nodes, (u,v)∈G(u,v)\in G, the reachability query, RG​(u,v)R_{G}(u,v), determines the existence of a path from uu to vv.
+We denote the set of nodes that are reachable from uu via any path in
+GG by RG​(u)R_{G}(u). Thus, RG​(u,v)=​t​r​u​eR_{G}(u,v)=\emph{true} if and only if v∈RG​(u)v\in R_{G}(u). Given an ordered pair of nodes, (u,v)∈G(u,v)\in G, the shortest path query returns the shortest path from the source
+node uu to the destination node vv along with its distance, denoted by dG​(u,v)d_{G}(u,v), i.e., the number of edges on the shortest path from uu to vv. If v∉RG​(u)v\notin R_{G}(u), d⁡(u,v)=∞d(u,v)=\infty. If
+GG is undirected, these queries are symmetric. In other words, u∈NG​(v)u\in N_{G}(v) if and only if v∈NG​(u)v\in N_{G}(u), RG​(u,v)=RG​(v,u)R_{G}(u,v)=R_{G}(v,u) and dG​(u,v)=dG​(v,u)d_{G}(u,v)=d_{G}(v,u).
+
+The query characteristics of the three summarization variants for these three
+queries are summarized in Table 2. These
+characteristics are verified in Sec. 6.
+
+CGS Variant
+Neighborhood query
+Reachability query
+Shortest Path query
+
+CGS-E
+NGr​(u)=NG​(u)N_{G_{r}}(u)=N_{G}(u)
+RGr​(u)=RG​(u)R_{G_{r}}(u)=R_{G}(u)
+dGr​(u,v)=dG​(u,v)d_{G_{r}}(u,v)=d_{G}(u,v)
+
+CGS-I
+NGr​(u)⊆NG​(u)N_{G_{r}}(u)\subseteq N_{G}(u), (1−δu)​|NG​(u)|≤|NGr​(u)|≤|NG​(u)|(1-\delta_{u})|N_{G}(u)|\leq|N_{G_{r}}(u)|\leq|N_{G}(u)|
+RGr​(u)⊆RG​(u)R_{G_{r}}(u)\subseteq R_{G}(u)
+dGr​(u,v)≥dG​(u,v)d_{G_{r}}(u,v)\geq d_{G}(u,v)
+
+CGS-U
+NGr​(u)⊇NG​(u)N_{G_{r}}(u)\supseteq N_{G}(u), |NG​(u)|≤|NGr​(u)|≤(1+δu)​|NG​(u)||N_{G}(u)|\leq|N_{G_{r}}(u)|\leq(1+\delta_{u})|N_{G}(u)|
+RGr​(u)=RG​(u)R_{G_{r}}(u)=R_{G}(u)
+dGr​(u,v)≤dG​(u,v)d_{G_{r}}(u,v)\leq d_{G}(u,v)
+
+Table 2. Query characteristics of the different summarization variants of CGS
+
+4. The CGS Framework
+
+Figure 1. Flowchart of the CGS framework. The algorithm proceeds in iterations and continues till there is a pair of nodes whose merge results in a compression and is safe according to the CGS variant.This figure demonstrates the overall algorithm of our proposed CGS framework.The algorithm proceeds in iterations and continues till there is a pair of nodes whose merge results in a compression and is safe according to the \cnvariant.
+
+In this section, we describe in detail our CGS framework. We first
+describe the merging procedure, and then the entire compression algorithm for
+CGS, and decompression.
+
+4.1. Overview of CGS
+
+The CGS framework is based on merging a pair of nodes that share a
+common neighborhood. Fig. 1 shows the high level
+flowchart of this framework. The algorithm runs in iterations. In every iteration, it finds all
+pairs of nodes in GG that are eligible to be merged. If there exists such an
+eligible pair, it determines the pair that offers the maximum compression
+gain. If the variant is lossy, i.e., for CGS-I and CGS-U, it checks whether merging of the given pair is
+safe, i.e., it would not violate the neighborhood loss constraint
+stated in Eq. 5.
+If the merge is found to be safe, the given
+pair is merged; else, it is rejected.
+For the lossless variant CGS-E, it is guaranteed to
+be safe (we prove this later).
+This process terminates when there is
+no other eligible pair left that can be safely merged. The final
+summary graph GsG_{s} is then returned.
+
+At any stage of the algorithm, consider the graph Gs′=(Vs′,Es′)G^{\prime}_{s}=(V^{\prime}_{s},E^{\prime}_{s}).
+Initially, Gs′=GG^{\prime}_{s}=G. A pair of nodes (u,v)(u,v) (where u,v∈Gs′u,v\in G^{\prime}_{s} such
+that v∈NGs′2​(u)v\in N^{2}_{G^{\prime}_{s}}(u), i.e., vv is in the 2-hop neighborhood of uu) is
+merged if this leads to compression gain, i.e., space savings. Suppose
+the graph resulting at the end of the above merge operation is referred to as
+Gs∗=(Vs∗,Es∗)G_{s}^{*}=(V_{s}^{*},E_{s}^{*}). The compression gain achieved by merging the pair
+(u,v)(u,v) is |Gs′|−|Gs∗||G^{\prime}_{s}|-|G_{s}^{*}|. A merge operation is performed only if the
+compression gain is positive, i.e., |Gs∗|<|Gs′||G_{s}^{*}|<|G^{\prime}_{s}|.
+
+The following section describes the merging procedure in detail.
+
+4.2. Merging Nodes with Common Neighborhoods
+
+Consider the graph Gs′G^{\prime}_{s} at any stage.
+Before merging, Gs∗G_{s}^{*} is initialized to Gs′G^{\prime}_{s}. If the nodes uu and vv
+are merged, a supernode s=s​n​(u,v)s=sn(u,v) is created and added to the vertex
+set Vs∗V_{s}^{*} of Gs∗G_{s}^{*}. The pair of nodes {u,v}\{u,v\} form the parents of
+the supernode ss. The supernode ss is referred to as the child of
+both uu and vv. Based on the variant of CGS, the neighborhood of the
+merged node ss is set according to the intersection or the union of
+the neighborhoods of uu and vv. The details are as follows.
+
+First, consider the CGS-I variant. For each common neighbor ww, i.e., when the
+pair of edges, (u,w),(v,w)∈Es′(u,w),(v,w)\in E^{\prime}_{s}, only a single edge (s,w)(s,w) is
+added to Es∗E_{s}^{*}. The nodes uu and vv are removed from Gs∗G_{s}^{*} along with all
+their incident edges. This, thus, corresponds to the intersection of
+the neighborhoods of uu and vv.
+
+Next, consider the CGS-U variant. Consider merging of uu and vv to form a supernode
+s=s​n​(u,v)s=sn(u,v). If (u,v)∈Es′(u,v)\in E^{\prime}_{s}, it is retained in Es∗E_{s}^{*} along with its incident nodes. For every other
+edge of the form (u,w)∈Es′(u,w)\in E^{\prime}_{s} (or (v,w)∈Es′(v,w)\in E^{\prime}_{s}), the edge is removed from
+Es∗E_{s}^{*}, and an edge (s,w)(s,w) is added to Es∗E_{s}^{*}. If (u,v)∉Es′(u,v)\notin E^{\prime}_{s}, then the nodes uu and vv are removed from Gs∗G_{s}^{*}.
+This operation
+corresponds to the union of the neighborhoods of uu and vv.
+
+Finally, consider the CGS-E variant. For each pair of edges, (u,w),(v,w)∈Es′(u,w),(v,w)\in E^{\prime}_{s}, a single edge (s,w)(s,w) is added to Es∗E_{s}^{*} and the
+former pair of edges is removed from Es∗E_{s}^{*}. However,
+edges corresponding to the difference of the neighborhood sets are not
+removed but retained. Formally, for each edge (u,w)∈Es′(u,w)\in E^{\prime}_{s}, such
+that (v,w)∉Es′(v,w)\notin E^{\prime}_{s}, the edge (u,w)(u,w) is still retained in Es∗E_{s}^{*} along with
+its incident nodes. Similarly, every edge (v,w)∈Es′(v,w)\in E^{\prime}_{s}, where (u,w)∉Es′(u,w)\notin E^{\prime}_{s}, is retained in Es∗E_{s}^{*} along with its incident nodes.
+
+Notably, the above merge operation is not limited to only a pair of
+nodes, but can be performed between any node and a supernode, or between any
+pair of supernodes as well.
+
+We assume that the graphs are stored using adjacency lists. Thus,
+|G|=|V|+2⋅|E||G|=|V|+2\cdot|E|. If there are kk merge operations, each producing a supernode
+having exactly two parents, the space overhead of GsG_{s} is
+|Gs|=|Vs|+2⋅|Es|+2​k|G_{s}|=|V_{s}|+2\cdot|E_{s}|+2k. Thus, the compression gain
+achieved by merging the pair u,v∈Gs′u,v\in G^{\prime}_{s} is
+
+(7)
+
+c​g​(u,v)=(|Vs′|−|Vs∗|)+2​(|Es′|−|Es∗|)−2\displaystyle cg(u,v)=(|V^{\prime}_{s}|-|V_{s}^{*}|)+2(|E^{\prime}_{s}|-|E_{s}^{*}|)-2
+
+​𝑣𝑎𝑟\operatorname{\emph{var}}
+
+Input graph GG
+
+Subsequent merge operations in GsG_{s}
+
+Reconstructed graph GrG_{r}
+
+II
+
+(a) |G|=27|G|=27
+
+(b) |Gs|=18|G_{s}|=18
+
+(c) |Gs|=17|G_{s}|=17
+
+(d) |Gr|=21|G_{r}|=21
+
+UU
+
+(e) |G|=27|G|=27
+
+(f) |Gs|=24|G_{s}|=24
+
+(g) |Gs|=21|G_{s}|=21
+
+(h) |Gr|=29|G_{r}|=29
+
+EE
+
+(i) |G|=27|G|=27
+
+(j) |Gs|=24|G_{s}|=24
+
+(k) |Gr|=27|G_{r}|=27
+
+Table 3. Illustration of how different variants of CGS work for the
+same input graph
+
+Compression
+
+Step 1
+Step 2
+
+Variant
+
+(u,v)(u,v)
+c​g​(u,v)cg(u,v)
+(u,v)(u,v)
+c​g​(u,v)cg(u,v)
+
+CGS-I (δ=1/2\delta=1/2)
+
+(2,5)(2,5)
+99
+(1,6)(1,6)
+11
+
+CGS-U (δ=3/5\delta=3/5)
+
+(1,3)(1,3)
+33
+(4,5)(4,5)
+33
+
+CGS-E
+
+(2,4)(2,4)
+33
+-
+-
+
+Table 4. Working of CGS algorithm for the examples in Table 3, where c​g​(u,v)cg(u,v) is the compression gain achieved by merging (u,v)(u,v).
+
+4.3. Example
+
+We illustrate the merge operation for different variants of CGS with
+an example shown in Table 3. The size of the graph is shown
+below each figure.
+
+First, consider CGS-I. Consider the merging of the node pair (2,5)(2,5) in the
+input graph GG shown in Fig. (a). The resulting graph is shown in Fig. (b).
+The pair (2,5)(2,5) are merged to form the supernode s=S2,5s=S_{2,5}. The common
+neighbors (i.e., intersection) {3,4}\{3,4\} form the neighborhood of ss.
+The parents of ss, i.e., {2,5}\{2,5\} are removed along with their incident
+edges. Consequently, edges (2,1)(2,1) and (5,6)(5,6) get deleted. Fig. (c) shows
+the merging of the node pair (1,6)(1,6). Note that formation of the supernode
+S1,6S_{1,6} does not lose any edge.
+
+Next, consider CGS-U. Consider the merging of the node pair
+(1,3)(1,3) in the input graph GG shown in Fig. (e). The resulting graph is shown
+in Fig. (f). The pair (1,3)(1,3) is merged to form the supernode s=S1,3s=S_{1,3}. The
+union of neighbors of 11 and 33 is {2,4,5}\{2,4,5\}, which form the
+neighborhood of ss. Similar to CGS-I, the parents of ss, i.e., {1,3}\{1,3\}
+are removed along with their incident edges. Fig. (g) shows the merging step
+for the node pair (4,5)(4,5).
+
+Finally, consider CGS-E. Consider the merging of the node pair (2,4)(2,4) in the
+input graph GG shown in Fig. (i). The resulting graph is shown in Fig. (j).
+The pair (2,4)(2,4) are merged to form the supernode s=S2,4s=S_{2,4}. The common
+neighborhood of 22 and 44 is {1,3,5}\{1,3,5\}. Once the common neighbors of 22
+and 44 are absorbed by ss, the neighborhood sets of 22 and 44 reduce to
+{4}\{4\} and {2,6}\{2,6\} respectively. Unlike ​𝑣𝑎𝑟=I\operatorname{\emph{var}}=I, these two nodes are
+retained with their updated neighborhood sets.
+
+The compression gain achieved for each merge operation in the example in
+Table 3 is shown in Table 4. The key
+difference between the three summarization variants lies in the way the nodes are
+merged which, in turn, influences the compression ratio and the neighborhood
+loss.
+
+5. The CGS Algorithm
+
+This section presents the proposed graph summarization scheme, CGS, that is based
+on the idea of merging nodes with common neighborhoods (described in Sec. 4.2). The CGS algorithm (pseudo code shown in Algo. 1) is parameterized with the summarization variant parameter ​𝑣𝑎𝑟\operatorname{\emph{var}}. It acts
+as CGS-I or CGS-E or CGS-U, corresponding to ​𝑣𝑎𝑟=I\operatorname{\emph{var}}=I or ​𝑣𝑎𝑟=E\operatorname{\emph{var}}=E or ​𝑣𝑎𝑟=U\operatorname{\emph{var}}=U respectively.
+Given a graph GG and a neighborhood loss tolerance threshold parameter set Δ\Delta, it returns a summary graph GsG_{s}.
+
+The CGS procedure (Algo. 1) is based on the greedy paradigm. It iteratively merges a pair of nodes that offer the maximum compression gain.
+First, it initializes GsG_{s} to GG. Next, through the DiscoverCN procedure, it discovers all pairs of nodes (u,v)(u,v) (where v∈NG2​(u)v\in N^{2}_{G}(u)) that
+can be merged potentially (line 6). The details of this procedure are described next.
+
+Algorithm 1 CGS
+
+Input: An undirected, unweighted graph G=(V,E)G=(V,E), the summarization variant parameter ​𝑣𝑎𝑟\operatorname{\emph{var}} and a set of neighborhood loss tolerance thresholds Δ\Delta.
+
+Output: A summary graph Gs∗G^{*}_{s} that is an approximate solution to the ConfiGS problem for the given graph GG.
+
+            1
+          Function CGS (G,​𝑣𝑎𝑟,ΔG,\operatorname{\emph{var}},\Delta)
+
+   
+            2
+          Gs←GG_{s}\leftarrow G
+
+   
+            3
+          for each  u∈Gsu\in G_{s} do
+
+      
+            4
+          PGs​(u)←∅P_{G_{s}}(u)\leftarrow\emptyset
+
+      
+            5
+          degGr⁡(u)←|NG​(u)|\deg_{G_{r}}(u)\leftarrow|N_{G}(u)|
+
+   
+            6
+          H←H\leftarrow DiscoverCN (G,​𝑣𝑎𝑟)(G,\operatorname{\emph{var}})
+
+   
+            7
+          while  HH is non-empty do
+
+      
+            8
+          h←h\leftarrow Extract-Max (H)(H)
+
+      
+            9
+          if k​e​y​(h)≤0key(h)\leq 0 then
+
+         
+            10
+          return GsG_{s}
+
+      
+            11
+          (u∗,v∗)←v​a​l​u​e​(h)(u^{*},v^{*})\leftarrow value(h)
+
+      
+            12
+          if
+(​𝑣𝑎𝑟=E\operatorname{\emph{var}}=E) ∨\vee (IsSafeMerge(Gs,​𝑣𝑎𝑟,u∗,v∗,Δ)(G_{s},\operatorname{\emph{var}},u^{*},v^{*},\Delta) is true)
+ then
+
+         
+            13
+          MergeNodes (Gs,​𝑣𝑎𝑟,H,u∗,v∗)(G_{s},\operatorname{\emph{var}},H,u^{*},v^{*})
+
+   
+            14
+          return GsG_{s}
+
+5.1. The DiscoverCN Procedure
+
+The DiscoverCN procedure (Algo. 2) discovers the pairs of nodes
+that are eligible to be merged, i.e., all pairs of nodes (u,v)(u,v) where vv is a 2-hop neighbor of uu, such that their compression gain c​g​(u,v)>0cg(u,v)>0. To this end, the CGS algorithm, computes the the size of the intersection as i​c​(u,v)=|NG​(u)∩NG​(v)|ic(u,v)=|N_{G}(u)\cap N_{G}(v)| through the ComputeNIC procedure (Algo. 3). Then, it computes the compression gain using the ComputeCG procedure (Algo. 4). Based on the value of the compression variant ​𝑣𝑎𝑟∈{I,E,U}\operatorname{\emph{var}}\in\{I,E,U\}, this procedure returns the appropriate compression gain (as detailed in Sec. 4.2). It computes the size of the union u​c​(u,v)=|NG​(u∪NG​(v))|uc(u,v)=|N_{G}(u\cup N_{G}(v))| using the degrees of the nodes uu and vv and i​c​(u,v)ic(u,v), as stated in line 3. Once the compression gain is computed, and it is found to be positive, it is added to a binary max-heap where the compression gain of the pair acts as its key. The reason we choose binary max-heap is because the algorithm needs to iteratively update the compression gain of one or more pairs. and retrieve the pair that offers the maximum compression gain. Since each of these operations can be performed in logarithmic time in a binary max-heap, it is the best data structure for this purpose.
+
+Algorithm 2 DiscoverCN
+
+Function DiscoverCN (G,​𝑣𝑎𝑟G,\operatorname{\emph{var}})
+
+   
+              1
+            Create an empty binary max-heap HH.
+
+   
+              2
+            for each  u∈Gu\in G do
+
+      
+              3
+            ComputeNIC (G,u)
+
+      
+              4
+            for each  v∈NG​(u)v\in N_{G}(u) do
+
+         
+              5
+            for each  w∈NG​(v)w\in N_{G}(v) do
+
+            
+              6
+            if u<wu<w then
+
+               
+              7
+            c​g←cg\leftarrow ComputeCG (G,​𝑣𝑎𝑟\operatorname{\emph{var}},u,w)
+
+               
+              8
+            if c​g>0cg>0 then
+
+                  
+              9
+            Insert-Key (H,u,w,c​gH,u,w,cg)  // inserts a node into the heap HH with k​e​y=c​gkey=cg and v​a​l​u​e=(u,w)value=(u,w)
+
+   
+              10
+            return HH
+
+Algorithm 3 ComputeNIC
+
+Function ComputeNIC (G,uG,u)
+
+   
+              1
+            for each  v∈NG​(u)v\in N_{G}(u) do
+
+      
+              2
+            for each  w∈NG​(v)w\in N_{G}(v) do
+
+         
+              3
+            if u<wu<w then
+
+            
+              4
+            i​c​(u,w)←0ic(u,w)\leftarrow 0
+
+   
+              5
+            for each  v∈NG​(u)v\in N_{G}(u) do
+
+      
+              6
+            for each  w∈NG​(v)w\in N_{G}(v) do
+
+         
+              7
+            if u<wu<w then
+
+            
+              8
+            i​c​(u,w)←i​c​(u,w)+1ic(u,w)\leftarrow ic(u,w)+1
+
+5.2. The ComputeCG Procedure
+
+Algorithm 4 ComputeCG
+
+Function ComputeCG (Gs,​𝑣𝑎𝑟,u,vG_{s},\operatorname{\emph{var}},u,v)
+
+   
+              1
+            if ​𝑣𝑎𝑟=I\operatorname{\emph{var}}=I then
+
+      
+              2
+            u​c​(u,v)←degGs⁡(u)+degGs⁡(v)−i​c​(u,v)uc(u,v)\leftarrow\deg_{G_{s}}(u)+\deg_{G_{s}}(v)-ic(u,v)
+
+      
+              3
+            c​g←2​u​c​(u,v)−3cg\leftarrow 2uc(u,v)-3
+
+      
+              4
+            if  v∈NGs​(u)v\in N_{G_{s}}(u) then
+
+         
+              5
+            c​g←c​g−2cg\leftarrow cg-2
+
+   
+              6
+            else if ​𝑣𝑎𝑟=E∨​𝑣𝑎𝑟=U\operatorname{\emph{var}}=E\vee\operatorname{\emph{var}}=U then
+
+      
+              7
+            c​g←2​i​c​(u,v)−3cg\leftarrow 2ic(u,v)-3
+
+   
+              8
+            for each w∈{u,v}w\in\{u,v\} do
+
+      
+              9
+            if |PGs​(w)|=0|P_{G_{s}}(w)|=0 then
+
+         
+              10
+            if ​𝑣𝑎𝑟=I\operatorname{\emph{var}}=I then
+
+            
+              11
+            c​g←c​g+1cg\leftarrow cg+1
+
+         
+              12
+            else if ​𝑣𝑎𝑟=U∧v∉NGs​(u)\operatorname{\emph{var}}=U\wedge v\notin N_{G_{s}}(u) then
+
+            
+              13
+            c​g←c​g+1cg\leftarrow cg+1
+
+         
+              14
+            else if ​𝑣𝑎𝑟=E\operatorname{\emph{var}}=E then
+
+            
+              15
+            w′←{u,v}−{w}w^{\prime}\leftarrow\{u,v\}-\{w\}
+
+            
+              16
+            W←NGs​(w)−NGs​(w′)W\leftarrow N_{G_{s}}(w)-N_{G_{s}}(w^{\prime})
+
+            
+              17
+            if |W|=0|W|=0 then
+
+               
+              18
+            c​g←c​g+1cg\leftarrow cg+1
+
+   
+              19
+            return c​gcg
+
+The CGS procedure maintains those pairs (u,v)(u,v) that offer
+positive compression gain, i.e., c​g​(u,v)>0cg(u,v)>0 using the binary max-heap HH that is generated by the DiscoverCN procedure, as discussed above. Then, the algorithm proceeds in
+iterations. In each iteration, it selects a pair of nodes (u∗,v∗)(u^{*},v^{*}) that
+offers the maximal compression gain (line 8).
+
+However, if ​𝑣𝑎𝑟=I\operatorname{\emph{var}}=I or ​𝑣𝑎𝑟=U\operatorname{\emph{var}}=U, it is not necessary that a merge operation is
+safe, i.e., it does not violate the neighborhood loss constraint
+(Eq. (5)). Hence, the algorithm runs the procedure IsSafeMerge (line 12) to check
+that. If the merge is found to be safe, the algorithm executes the merge operation through the MergeNodes procedure (Algo. 7). The algorithm terminates when there are no more pairs
+that offer positive compression gain.
+
+5.3. The IsSafeMerge Procedure
+
+The IsSafeMerge procedure (Algo. 5) validates whether
+merging a given pair (u,v)(u,v) is safe, i.e., it would not violate the
+neighborhood loss constraint (Eq. (5)). To realize this, this procedure correctly computes the degree degGr⁡(u)\deg_{G_{r}}(u) of each node uu in the
+reconstructed graph GrG_{r}, without performing the actual reconstruction. Using
+this, checking the neighborhood loss constraint simplifies to checking whether
+|degGr⁡(u)−degG⁡(u)|/degG⁡(u)≤δu|\deg_{G_{r}}(u)-\deg_{G}(u)|/\deg_{G}(u)\leq\delta_{u} for all u∈Gu\in G. This
+check is performed based on the notion of ancestors defined as follows.
+
+Algorithm 5 IsSafeMerge
+
+Function IsSafeMerge (Gs,​𝑣𝑎𝑟,u∗,v∗,ΔG_{s},\operatorname{\emph{var}},u^{*},v^{*},\Delta)
+
+   
+              1
+            if ​𝑣𝑎𝑟=E\operatorname{\emph{var}}=E then
+
+      
+              2
+            return true
+
+   
+              3
+            U∗←A​n​c​(Gs,u∗)U^{*}\leftarrow Anc(G_{s},u^{*})
+
+   
+              4
+            V∗←A​n​c​(Gs,v∗)V^{*}\leftarrow Anc(G_{s},v^{*})
+
+   
+              5
+            if ​𝑣𝑎𝑟=I\operatorname{\emph{var}}=I then
+
+      
+              6
+            U′←{u′∈A​n​c​(Gs,u′′)|u′′∈(NGs​(u∗)−NGs​(v∗))}U^{\prime}\leftarrow\{u^{\prime}\in Anc(G_{s},u^{\prime\prime})|u^{\prime\prime}\in(N_{G_{s}}(u^{*})-N_{G_{s}}(v^{*}))\}
+
+      
+              7
+            V′←{v′∈A​n​c​(Gs,v′′)|v′′∈(NGs​(v∗)−NGs​(u∗))}V^{\prime}\leftarrow\{v^{\prime}\in Anc(G_{s},v^{\prime\prime})|v^{\prime\prime}\in(N_{G_{s}}(v^{*})-N_{G_{s}}(u^{*}))\}
+
+      
+              8
+            for each u∈U∗u\in U^{*} do
+
+         
+              9
+            if degGr⁡(u)−|U′|degG⁡(u)<1−δu\frac{\deg_{G_{r}}(u)-|U^{\prime}|}{\deg_{G}(u)}<1-\delta_{u} then
+
+            
+              10
+            return false
+
+      
+              11
+            for each v∈V∗v\in V^{*} do
+
+         
+              12
+            if degGr⁡(v)−|V′|degG⁡(v)<1−δv\frac{\deg_{G_{r}}(v)-|V^{\prime}|}{\deg_{G}(v)}<1-\delta_{v} then
+
+            
+              13
+            return false
+
+      
+              14
+            for each u∈U′−V∗u\in U^{\prime}-V^{*} do
+
+         
+              15
+            if degGr⁡(u)−|U∗|degG⁡(u)<1−δu\frac{\deg_{G_{r}}(u)-|U^{*}|}{\deg_{G}(u)}<1-\delta_{u} then
+
+            
+              16
+            return false
+
+      
+              17
+            for each v∈V′−U∗v\in V^{\prime}-U^{*} do
+
+         
+              18
+            if degGr⁡(v)−|V∗|degG⁡(v)<1−δv\frac{\deg_{G_{r}}(v)-|V^{*}|}{\deg_{G}(v)}<1-\delta_{v} then
+
+            
+              19
+            return false
+
+      
+              20
+            return true
+
+   
+              21
+            else if ​𝑣𝑎𝑟=U\operatorname{\emph{var}}=U then
+
+      
+              22
+            U′←{u′∈A​n​c​(Gs,u′′)|u′′∈(NGs​(u∗)−{v∗}−NGs​(v∗))}U^{\prime}\leftarrow\{u^{\prime}\in Anc(G_{s},u^{\prime\prime})|u^{\prime\prime}\in(N_{G_{s}}(u^{*})-\{v^{*}\}-N_{G_{s}}(v^{*}))\}
+
+      
+              23
+            V′←{v′∈A​n​c​(Gs,v′′)|v′′∈(NGs​(v∗)−{u∗}−NGs​(u∗))}V^{\prime}\leftarrow\{v^{\prime}\in Anc(G_{s},v^{\prime\prime})|v^{\prime\prime}\in(N_{G_{s}}(v^{*})-\{u^{*}\}-N_{G_{s}}(u^{*}))\}
+
+      
+              24
+            for each u∈U∗u\in U^{*} do
+
+         
+              25
+            if degGr⁡(u)+|V′|degG⁡(u)>1+δu\frac{\deg_{G_{r}}(u)+|V^{\prime}|}{\deg_{G}(u)}>1+\delta_{u} then
+
+            
+              26
+            return false
+
+      
+              27
+            for each v∈V∗v\in V^{*} do
+
+         
+              28
+            if degGr⁡(v)+|U′|degG⁡(v)>1+δv\frac{\deg_{G_{r}}(v)+|U^{\prime}|}{\deg_{G}(v)}>1+\delta_{v} then
+
+            
+              29
+            return false
+
+      
+              30
+            for each u∈U′u\in U^{\prime} do
+
+         
+              31
+            if degGr⁡(u)+|V∗|degG⁡(u)>1+δu\frac{\deg_{G_{r}}(u)+|V^{*}|}{\deg_{G}(u)}>1+\delta_{u} then
+
+            
+              32
+            return false
+
+      
+              33
+            for each v∈V′v\in V^{\prime} do
+
+         
+              34
+            if degGr⁡(v)+|U∗|degG⁡(v)>1+δv\frac{\deg_{G_{r}}(v)+|U^{*}|}{\deg_{G}(v)}>1+\delta_{v} then
+
+            
+              35
+            return false
+
+      
+              36
+            return true
+
+Algorithm 6 Anc
+
+Function Anc (Gs,sG_{s},s)
+
+   
+              1
+            N​o​d​e​s←∅Nodes\leftarrow\emptyset
+
+   
+              2
+            Let S​t​a​c​kStack be an empty stack.
+
+   
+              3
+            S​t​a​c​k.p​u​s​h​(s)Stack.push(s)
+
+   
+              4
+            while S​t​a​c​kStack is non-empty do
+
+      
+              5
+            u=S​t​a​c​k.p​o​p​()u=Stack.pop()
+
+      
+              6
+            if u∉Gs∨PGs​(u)=∅u\notin G_{s}\vee P_{G_{s}}(u)=\emptyset then
+
+           // uu is a simple node.
+
+         
+              7
+            N​o​d​e​s←N​o​d​e​s∪{u}Nodes\leftarrow Nodes\cup\{u\}
+
+      
+              8
+            else
+
+           // uu is a super-node.
+
+         
+              9
+            for each v∈PGs​(u)v\in P_{G_{s}}(u) do
+
+            
+              10
+            S​t​a​c​k.p​u​s​h​(v)Stack.push(v)
+
+   
+              11
+            return N​o​d​e​sNodes
+
+Algorithm 7 MergeNodes
+
+Function MergeNodes (Gs,​𝑣𝑎𝑟,H,u∗,v∗G_{s},\operatorname{\emph{var}},H,u^{*},v^{*})
+
+   
+              1
+            Add supernode s=s​n​(u∗,v∗)s=sn(u^{*},v^{*}) to VsV_{s}
+
+   
+              2
+            PGs​(s)←{u∗,v∗}P_{G_{s}}(s)\leftarrow\{u^{*},v^{*}\}
+
+   
+              3
+            if ​𝑣𝑎𝑟=I∨​𝑣𝑎𝑟=E\operatorname{\emph{var}}=I\vee\operatorname{\emph{var}}=E then
+
+      
+              4
+            NGs​(s)←NGs​(u∗)∩NGs​(v∗)N_{G_{s}}(s)\leftarrow N_{G_{s}}(u^{*})\cap N_{G_{s}}(v^{*})
+
+   
+              5
+            else if ​𝑣𝑎𝑟=U\operatorname{\emph{var}}=U then
+
+      
+              6
+            NGs​(s)←NGs​(u∗)∪NGs​(v∗)−{u∗,v∗}N_{G_{s}}(s)\leftarrow N_{G_{s}}(u^{*})\cup N_{G_{s}}(v^{*})-\{u^{*},v^{*}\}
+
+   
+              7
+            if ​𝑣𝑎𝑟=I∨​𝑣𝑎𝑟=U\operatorname{\emph{var}}=I\vee\operatorname{\emph{var}}=U then
+
+      
+              8
+            UpdateDegree (Gs,​𝑣𝑎𝑟,u∗,v∗G_{s},\operatorname{\emph{var}},u^{*},v^{*})
+
+   
+              9
+            UpdateCG (Gs,​𝑣𝑎𝑟,H,s,u∗,v∗G_{s},\operatorname{\emph{var}},H,s,u^{*},v^{*})
+
+   
+              10
+            for each w∈NGs​(s)w\in N_{G_{s}}(s) do
+
+      
+              11
+            NGs​(w)←NGs​(w)−{u∗,v∗}∪{s}N_{G_{s}}(w)\leftarrow N_{G_{s}}(w)-\{u^{*},v^{*}\}\cup\{s\}
+
+   
+              12
+            if ​𝑣𝑎𝑟=I\operatorname{\emph{var}}=I then
+
+      
+              13
+            for each w∈NGs​(u∗)−NGs​(s)w\in N_{G_{s}}(u^{*})-N_{G_{s}}(s) do
+
+         
+              14
+            NGs​(w)←NGs​(w)−{u∗}N_{G_{s}}(w)\leftarrow N_{G_{s}}(w)-\{u^{*}\}
+
+      
+              15
+            for each w∈NGs​(v∗)−NGs​(s)w\in N_{G_{s}}(v^{*})-N_{G_{s}}(s) do
+
+         
+              16
+            NGs​(w)←NGs​(w)−{v∗}N_{G_{s}}(w)\leftarrow N_{G_{s}}(w)-\{v^{*}\}
+
+      
+              17
+            NGs​(u∗)←∅N_{G_{s}}(u^{*})\leftarrow\emptyset,
+NGs​(v∗)←∅N_{G_{s}}(v^{*})\leftarrow\emptyset
+
+   
+              18
+            else if ​𝑣𝑎𝑟=E∨​𝑣𝑎𝑟=U\operatorname{\emph{var}}=E\vee\operatorname{\emph{var}}=U then
+
+      
+              19
+            NGs​(u∗)←NGs​(u∗)−NGs​(s)N_{G_{s}}(u^{*})\leftarrow N_{G_{s}}(u^{*})-N_{G_{s}}(s)
+
+      
+              20
+            NGs​(v∗)←NGs​(v∗)−NGs​(s)N_{G_{s}}(v^{*})\leftarrow N_{G_{s}}(v^{*})-N_{G_{s}}(s)
+
+   
+              21
+            for each  node w∈{u∗,v∗}w\in\{u^{*},v^{*}\} do
+
+      
+              22
+            if |NGs​(w)|=0∧|PGs​(w)|=0|N_{G_{s}}(w)|=0\wedge|P_{G_{s}}(w)|=0 then
+
+         
+              23
+            Remove node ww from GsG_{s}
+
+A node u1∈Gu_{1}\in G in the original graph is said to be an ancestor of a
+node ul∈Gsu_{l}\in G_{s} in the summary graph, if there exist a sequence of nodes
+u1,…,ulu_{1},\dots,u_{l} in the interim summary graphs such that for each
+i=1,…,l−1i=1,\dots,l-1, uiu_{i} is a parent of ui+1u_{i+1}. As a special case, if
+l=1l=1, i.e., a node u1∈Gu_{1}\in G has no child, then u1u_{1} is its own ancestor as
+well. For any node u∗∈Gsu^{*}\in G_{s}, let A​n​cGs​(u∗)Anc_{G_{s}}(u^{*}) denote the set of
+ancestors of u∗u^{*}. For computing the set of ancestors, the algorithm employs the Anc procedure (Algo. 6). To realize these ancestor sets, the algorithm maintains the parents of each super-node s​nsn as they get produced after each merge operation, denoted by PGs​(s​n)P_{G_{s}}(sn). If a node u∈Gsu\in G_{s} did not undergo any merge operation, its parent set is deemed to be empty.
+
+Subsequently, the procedure evaluates all the cases applicable to each of the lossy variants ​𝑣𝑎𝑟∈{I,U}\operatorname{\emph{var}}\in\{I,U\} where the degree of a node in the reconstructed graph can potentially get altered due to a subsequent merge operation. For this purpose, it computes the potential neighborhood loss for each node in the graph GG and correctly computes the altered degree of each node in the potential reconstructed graph.If none of the nodes violate the neighborhood loss constraint, the procedure returns true. Otherwise, it returns false.
+
+5.4. The Anc Procedure
+
+The Anc procedure
+(Algo. 6) computes the ancestors of a node u∈Gsu\in G_{s}, where the ancestors are defined in Sec. 5.3. The procedure successively pushes the parents of the super-node uu into a stack. It iteratively pops out a node, and pushes its parents, in turn. Finally, when the stack becomes empty, it returns the ancestor set.
+
+5.5. The MergeNodes Procedure
+
+The MergeNodes procedure (Algo. 7) performs the merge operation on a pair of nodes (u,v)(u,v), after it is confirmed that the given pair is safe to be merged. Given the choice of the CGS variant, i.e., ​𝑣𝑎𝑟∈{I,E,U}\operatorname{\emph{var}}\in\{I,E,U\}, this merge operation is carried out based on the details stated in Sec. 4.2.
+Once the nodes (u,v)(u,v) are merged to a super-node s​n​(u,v)sn(u,v), the parent set of s​n​(u,v)sn(u,v)is set to contain the nodes {u,v}\{u,v\}. Then, the neighborhoods of uu and vv are updated, along with that of the super-node s​n​(u,v)sn(u,v).
+
+Algorithm 8 UpdateDegree
+
+Function UpdateDegree (Gs,​𝑣𝑎𝑟,u∗,v∗G_{s},\operatorname{\emph{var}},u^{*},v^{*})
+
+   
+              1
+            U∗←A​n​c​(Gs,u∗)U^{*}\leftarrow Anc(G_{s},u^{*})
+
+   
+              2
+            V∗←A​n​c​(Gs,v∗)V^{*}\leftarrow Anc(G_{s},v^{*})
+
+   
+              3
+            if ​𝑣𝑎𝑟=I\operatorname{\emph{var}}=I then
+
+      
+              4
+            U′←{u′∈A​n​c​(Gs,u′′)|u′′∈(NGs​(u∗)−NGs​(v∗))}U^{\prime}\leftarrow\{u^{\prime}\in Anc(G_{s},u^{\prime\prime})|u^{\prime\prime}\in(N_{G_{s}}(u^{*})-N_{G_{s}}(v^{*}))\}
+
+      
+              5
+            V′←{v′∈A​n​c​(Gs,v′′)|v′′∈(NGs​(v∗)−NGs​(u∗))}V^{\prime}\leftarrow\{v^{\prime}\in Anc(G_{s},v^{\prime\prime})|v^{\prime\prime}\in(N_{G_{s}}(v^{*})-N_{G_{s}}(u^{*}))\}
+
+      
+              6
+            for each u∈U∗u\in U^{*} do
+
+         
+              7
+            degGr⁡(u)←degGr⁡(u)−|U′|\deg_{G_{r}}(u)\leftarrow\deg_{G_{r}}(u)-|U^{\prime}|
+
+      
+              8
+            for each v∈V∗v\in V^{*} do
+
+         
+              9
+            degGr⁡(v)←degGr⁡(v)−|V′|\deg_{G_{r}}(v)\leftarrow\deg_{G_{r}}(v)-|V^{\prime}|
+
+      
+              10
+            for each u∈U′−V∗u\in U^{\prime}-V^{*} do
+
+         
+              11
+            degGr⁡(u)←degGr⁡(u)−|U∗|\deg_{G_{r}}(u)\leftarrow\deg_{G_{r}}(u)-|U^{*}|
+
+      
+              12
+            for each v∈V′−U∗v\in V^{\prime}-U^{*} do
+
+         
+              13
+            degGr⁡(v)←degGr⁡(v)−|V∗|\deg_{G_{r}}(v)\leftarrow\deg_{G_{r}}(v)-|V^{*}|
+
+   
+              14
+            else if ​𝑣𝑎𝑟=U\operatorname{\emph{var}}=U then
+
+      
+              15
+            U′←{u′∈A​n​c​(Gs,u′′)|u′′∈(NGs​(u∗)−{v∗}−NGs​(v∗))}U^{\prime}\leftarrow\{u^{\prime}\in Anc(G_{s},u^{\prime\prime})|u^{\prime\prime}\in(N_{G_{s}}(u^{*})-\{v^{*}\}-N_{G_{s}}(v^{*}))\}
+
+      
+              16
+            V′←{v′∈A​n​c​(Gs,v′′)|v′′∈(NGs​(v∗)−{u∗}−NGs​(u∗))}V^{\prime}\leftarrow\{v^{\prime}\in Anc(G_{s},v^{\prime\prime})|v^{\prime\prime}\in(N_{G_{s}}(v^{*})-\{u^{*}\}-N_{G_{s}}(u^{*}))\}
+
+      
+              17
+            for each u∈U∗u\in U^{*} do
+
+         
+              18
+            degGr⁡(u)←degGr⁡(u)+|V′|\deg_{G_{r}}(u)\leftarrow\deg_{G_{r}}(u)+|V^{\prime}|
+
+      
+              19
+            for each v∈V∗v\in V^{*} do
+
+         
+              20
+            degGr⁡(v)←degGr⁡(v)+|U′|\deg_{G_{r}}(v)\leftarrow\deg_{G_{r}}(v)+|U^{\prime}|
+
+      
+              21
+            for each u∈U′u\in U^{\prime} do
+
+         
+              22
+            degGr⁡(u)←degGr⁡(u)+|V∗|\deg_{G_{r}}(u)\leftarrow\deg_{G_{r}}(u)+|V^{*}|
+
+      
+              23
+            for each v∈V′v\in V^{\prime} do
+
+         
+              24
+            degGr⁡(v)←degGr⁡(v)+|U∗|\deg_{G_{r}}(v)\leftarrow\deg_{G_{r}}(v)+|U^{*}|
+
+5.6. The UpdateDegree Procedure
+
+Once a given pair
+is merged, the UpdateDegree procedure (Algo. 8) updates
+the degree of each node u∈Gru\in G_{r}, given by degGr⁡(u)\deg_{G_{r}}(u).As in the case of IsSafeMerge procedure, this procedure evaluates the neighborhood loss for each node in the reconstructed graph, and updates its degree accordingly.
+
+5.7. The UpdateCG Procedure
+
+The UpdateCG procedure (Algo. 9) is responsible for updating the heap HH
+after a given pair of nodes is merged. As a consequence of a merge operation of a pair of nodes (u,v)(u,v), the compression gain of other pairs may get affected. To this end, this procedure not only identifies the relevant pairs whose compression gain can potentially be affected due to the previous merge operation, but it also computes the change in the compression gain for all such pairs. It evaluates all possible scenarios for each of the three variants of the CGS framework. For efficiency, the above updates are
+performed in a manner that avoids accessing nodes whose neighborhoods do not
+change. The details are stated in Algo. 9.
+
+Algorithm 9 UpdateCG
+
+Function UpdateCG (Gs,​𝑣𝑎𝑟,H,s,u∗,v∗G_{s},\operatorname{\emph{var}},H,s,u^{*},v^{*})
+
+   
+              1
+            C​o​m​p​u​t​e​N​I​C​(Gs,s)ComputeNIC(G_{s},s)
+
+   
+              2
+            for each  pair (s,u)(s,u) such that u∈NGs2​(s)u\in N^{2}_{G_{s}}(s) do
+
+      
+              3
+            c​g←cg\leftarrow ComputeCG (Gs,​𝑣𝑎𝑟,s,uG_{s},\operatorname{\emph{var}},s,u)
+
+      
+              4
+            if c​g>0cg>0 then
+
+         
+              5
+            Insert-Key (H,s,u,c​gH,s,u,cg)
+
+   
+              6
+            if ​𝑣𝑎𝑟=I∨​𝑣𝑎𝑟=U\operatorname{\emph{var}}=I\vee\operatorname{\emph{var}}=U then
+
+      
+              7
+            for each  pair (u,v∗)∈H(u,v^{*})\in H do
+
+         
+              8
+            Decrease-Key (H,u,v∗,∞H,u,v^{*},\infty)
+
+      
+              9
+            for each  pair (u∗,v)∈H(u^{*},v)\in H do
+
+         
+              10
+            Decrease-Key (H,u∗,v,∞H,u^{*},v,\infty)
+
+   
+              11
+            if ​𝑣𝑎𝑟=I\operatorname{\emph{var}}=I then
+
+      
+              12
+            for each  pair (u,v)∈H(u,v)\in H, such that either uu or vv or both lie in NGs​(u∗)∪NGs​(v∗)N_{G_{s}}(u^{*})\cup N_{G_{s}}(v^{*}) do
+
+         
+              13
+            Decrease-Key (H,u,v,2H,u,v,2)
+
+   
+              14
+            else if ​𝑣𝑎𝑟=U\operatorname{\emph{var}}=U then
+
+      
+              15
+            for each pair (u,v)∈H(u,v)\in H, such that u∈(NGs​(u∗)−NGs​(v∗))u\in(N_{G_{s}}(u^{*})-N_{G_{s}}(v^{*})), v∈(NGs​(v∗)−NGs​(u∗))v\in(N_{G_{s}}(v^{*})-N_{G_{s}}(u^{*})) do
+
+         
+              16
+            Increase-Key (H,u,v,2H,u,v,2)
+
+      
+              17
+            for each pair (u,v)∈H(u,v)\in H, such that both u,v∈(NGs​(u∗)∩NGs​(v∗))u,v\in(N_{G_{s}}(u^{*})\cap N_{G_{s}}(v^{*})) do
+
+         
+              18
+            Decrease-Key (H,u,v,2H,u,v,2)
+
+   
+              19
+            else if ​𝑣𝑎𝑟=E\operatorname{\emph{var}}=E then
+
+      
+              20
+            for each  pair (u,v∗)∈H(u,v^{*})\in H do
+
+         
+              21
+            v​a​l​u​e←2​|NGs​(u∗)∩NGs​(v∗)∩NGs​(u)|value\leftarrow 2|N_{G_{s}}(u^{*})\cap N_{G_{s}}(v^{*})\cap N_{G_{s}}(u)|
+
+         
+              22
+            Decrease-Key (H,u,v∗,v​a​l​u​eH,u,v^{*},value)
+
+      
+              23
+            for each  pair (u∗,v)∈H(u^{*},v)\in H do
+
+         
+              24
+            v​a​l​u​e←2​|NGs​(u∗)∩NGs​(v∗)∩NGs​(v)|value\leftarrow 2|N_{G_{s}}(u^{*})\cap N_{G_{s}}(v^{*})\cap N_{G_{s}}(v)|
+
+         
+              25
+            Decrease-Key (H,u∗,v,v​a​l​u​eH,u^{*},v,value)
+
+      
+              26
+            for each  pair (u,v)(u,v) such that either uu or vv or both lie in NGs​(u∗)∩NGs​(v∗)N_{G_{s}}(u^{*})\cap N_{G_{s}}(v^{*}) do
+
+         
+              27
+            Decrease-Key (H,u,v,2H,u,v,2)
+
+5.8. Working Example
+
+The working of the CGS algorithm on the example stated in
+Table 3 is shown in Table 4. Fig. (a), (e)
+and (i) show the input graphs for ​𝑣𝑎𝑟=I,U,E\operatorname{\emph{var}}=I,U,E respectively. For
+​𝑣𝑎𝑟=I,U,E\operatorname{\emph{var}}=I,U,E, there are 2, 2 and 1 merge operations respectively. The
+compression gains achieved in each merge operation is stated in
+Table 4. The final summary graphs for ​𝑣𝑎𝑟=I,E\operatorname{\emph{var}}=I,E and UU are
+shown in Fig. (c), (g) and (j) respectively.
+
+For example, the compression gain in the first (and only) step of CGS-E is |G|−|Gs||G|-|G_{s}|. Using Eq. (1), |G|=7+2×10=27|G|=7+2\times 10=27.
+Similarly, |Gs|=8+2×7+2×1=24|G_{s}|=8+2\times 7+2\times 1=24 (22 is added for 11 supernode).
+Hence, the compression gain is 27−24=327-24=3.
+
+Algorithm 10 Reconstruction
+
+Function Reconstruction (GsG_{s})
+
+   
+              1
+            Vr←∅V_{r}\leftarrow\emptyset, Er←∅E_{r}\leftarrow\emptyset
+
+   
+              2
+            for each  node u∈Vsu\in V_{s} do
+
+      
+              3
+            U←A​n​c​(Gs,u)U\leftarrow Anc(G_{s},u),
+Vr←Vr∪UV_{r}\leftarrow V_{r}\cup U
+
+   
+              4
+            for each  edge (u,v)∈Es(u,v)\in E_{s} do
+
+      
+              5
+            U←A​n​c​(Gs,u),V←A​n​c​(Gs,v)U\leftarrow Anc(G_{s},u),V\leftarrow Anc(G_{s},v)
+
+      
+              6
+            Er←Er∪(U×V)E_{r}\leftarrow E_{r}\cup(U\times V)
+
+   
+              7
+            return Gr=(Vr,Er)G_{r}=(V_{r},E_{r})
+
+5.9. The Reconstruction Algorithm
+
+The decompression (or reconstruction) algorithm (Algo. 10) takes as input a given
+summary graph Gs=(Vs,Es)G_{s}=(V_{s},E_{s}) that is generated by the CGS framework, and
+computes the reconstructed graph Gr=(Vr,Er)G_{r}=(V_{r},E_{r}). For each node u∗∈Gsu^{*}\in G_{s},
+the algorithm computes the ancestors A​n​cGs​(u∗)Anc_{G_{s}}(u^{*}) using the parent
+relationships. The set of nodes VrV_{r} is the union of all such ancestor nodes,
+i.e., Vr={u|u∈AncGs(u∗)|u∗∈Gs}V_{r}=\{u|u\in Anc_{G_{s}}(u^{*})|u^{*}\in G_{s}\}. The edge set ErE_{r} is
+the union of all edges formed by taking the Cartesian product of the ancestors of the end-vertices corresponding to each edge in the summary graph. Formally,
+Er={(u,v)|(u∗,v∗)∈Es,u∈AncGs(u∗),v∈AncGs(v∗)}E_{r}=\{(u,v)|(u^{*},v^{*})\in E_{s},u\in Anc_{G_{s}}(u^{*}),v\in Anc_{G_{s}}(v^{*})\}.
+
+Referring to the example stated in Table 3, the reconstructed
+graphs returned for ​𝑣𝑎𝑟=I,E,U\operatorname{\emph{var}}=I,E,U are shown in Fig. (d), (g) and (k)
+respectively. The vertex set Vr=VV_{r}=V for ​𝑣𝑎𝑟=I,E,U\operatorname{\emph{var}}=I,E,U. For ​𝑣𝑎𝑟=I\operatorname{\emph{var}}=I, the edge
+set Er⊆EE_{r}\subseteq E; for ​𝑣𝑎𝑟=E\operatorname{\emph{var}}=E, Er=EE_{r}=E; and, for ​𝑣𝑎𝑟=U\operatorname{\emph{var}}=U, Er⊇EE_{r}\supseteq E. The neighborhood loss for each u∈Gu\in G is r​l​(u)≤δrl(u)\leq\delta, for
+​𝑣𝑎𝑟=I,E,U\operatorname{\emph{var}}=I,E,U.
+
+6. Query Processing through CGS
+
+6.1. Local versus Global Decompression
+
+The CGS framework can process the queries in two ways: (1) Querying with local
+decompression, (2) Querying with global decompression. The former case is
+applicable when it is not possible to reconstruct the full graph due to space
+constraints or the query workload is sufficiently small. In this scenario,
+the queries are run on the summary graph GsG_{s} directly without reconstructing the graph GrG_{r}. More specifically, it performs local
+decompression, i.e., decompressing only those nodes that are necessary to
+answer the given query. The latter case is applicable when there is no space
+constraint to prohibit the reconstruction of the graph GrG_{r} and the query workload is sufficiently large. In this scenario, it is better to reconstruct the
+graph GrG_{r}, and then run the queries on GrG_{r}, since each query
+runs faster on GrG_{r} than GsG_{s} due to no requirement of local decompression.
+
+It should be noted that local decompression and global decompression yield
+the same query answer. This is because the local decompression steps
+essentially mimic the global decompression, but only at a per-neighborhood (i.e.,
+local) level. The global decompression runs the steps for all
+neighborhoods.
+
+6.2. Query Processing
+
+Given that the CGS framework allows reconstruction of the input graph, and evaluation of neighborhood queries with either no loss, or with bounded loss guarantees depending on the choice of the summarization variant, the proposed framework can be used to retrieve multiple graph queries with either no loss or with fairly high accuracy, as demonstrated in Sec. 10. As examples of graph queries, we chose to evaluate the neighborhood queries, reachability queries and shortest path queries. Next,
+we describe the processing of these queries.
+
+Algorithm 11 NeighborhoodQuery
+
+Function NeighborhoodQuery (Gs,uG_{s},u)
+
+   
+              1
+            NGr​(u)←∅N_{G_{r}}(u)\leftarrow\emptyset
+
+   
+              2
+            D​e​s​c←Desc\leftarrow Desc (Gs,u)(G_{s},u)
+
+   
+              3
+            for each  node v∈D​e​s​cv\in Desc do
+
+      
+              4
+            for each  node w∈NGs​(v)w\in N_{G_{s}}(v) do
+
+         
+              5
+            NGr​(u)←NGr​(u)∪A​n​c​(Gs,w)N_{G_{r}}(u)\leftarrow N_{G_{r}}(u)\cup Anc(G_{s},w)
+
+   
+              6
+            return NGr​(u)N_{G_{r}}(u)
+
+Algorithm 12 Desc
+
+Function Desc (Gs,uG_{s},u)
+
+   
+              1
+            N​o​d​e​s←∅Nodes\leftarrow\emptyset
+
+   
+              2
+            Let S​t​a​c​kStack be an empty stack.
+
+   
+              3
+            S​t​a​c​k.p​u​s​h​(u)Stack.push(u)
+
+   
+              4
+            while S​t​a​c​kStack is non-empty do
+
+      
+              5
+            v=S​t​a​c​k.p​o​p​()v=Stack.pop()
+
+      
+              6
+            for each w∈C​h​i​l​dGs​(v)w\in Child_{G_{s}}(v) do
+
+         
+              7
+            N​o​d​e​s←N​o​d​e​s∪{w}Nodes\leftarrow Nodes\cup\{w\}
+
+         
+              8
+            S​t​a​c​k.p​u​s​h​(w)Stack.push(w)
+
+   
+              9
+            return N​o​d​e​sNodes
+
+6.2.1. Neighborhood Query
+
+To answer the neighborhood query NG​(u)N_{G}(u) posed on a node u∈Gu\in G, we report
+its neighborhood NGr​(u)N_{G_{r}}(u) in the reconstructed graph GrG_{r}. First, the
+Child sets are computed using parent relationships: if u∈PGs​(v)u\in P_{G_{s}}(v),
+then v∈C​h​i​l​dGs​(u)v\in Child_{G_{s}}(u). Next, for the given query node uu, its
+descendants are computed by enumerating the Child sets in a depth-first
+manner. A node vv is said to be a descendant of uu, if uu is an ancestor of
+vv. Subsequently, for each descendant vv of uu, its neighborhood
+NGs​(v)N_{G_{s}}(v) is computed. For each w∈NGs​(v)w\in N_{G_{s}}(v), the ancestors of ww are
+reported as the answer NGr​(u)N_{G_{r}}(u). The detailed procedures are given in Algo. 11 and Algo. 12.
+
+6.2.2. Reachability Query and Shortest Path Query
+
+We answer the reachability query RG​(u,v)R_{G}(u,v) and the distance query
+dG​(u,v)d_{G}(u,v) on a node pair u,v∈Gu,v\in G, by its corresponding queries
+RGr​(u,v)R_{G_{r}}(u,v) and dGr​(u,v)d_{G_{r}}(u,v) respectively in the reconstructed graph
+GrG_{r}. The reachability query is solved by a breadth-first search on the
+reconstructed graph GrG_{r} using the neighborhood querying procedure, discussed
+above. The search begins at node uu and terminates when it finds the node vv
+or when it has discovered all the nodes in the underlying connected component
+of GrG_{r}. The shortest path query is solved using the standard Dijkstra’s
+algorithm (Cormen et al., 2022).
+
+6.3. Query Characteristics
+
+We next verify the query characteristics of the three summarization
+variants of CGS, as stated in Table 2. Since CGS-E is a
+lossless scheme, it retrieves all the queries exactly.
+
+Let us next consider CGS-I. From Eq. (2), Eq. (4)
+and Eq. (5), it follows that for any node uu, NGr​(u)⊆NG​(u)N_{G_{r}}(u)\subseteq N_{G}(u), OPEN1−δu)​|NG​(u)|≤|NGr​(u)|≤|NG​(u)|1-\delta_{u})|N_{G}(u)|\leq|N_{G_{r}}(u)|\leq|N_{G}(u)|.
+To prove that RGr​(u)⊆RG​(u)R_{G_{r}}(u)\subseteq R_{G}(u),
+it is sufficient to show that RGr​(u)∖RG​(u)=∅R_{G_{r}}(u)\setminus R_{G}(u)=\emptyset.
+Since no new edge is added in GrG_{r} with respect to GG, if vv is not
+reachable from a given node uu in GG, then it continues to remain
+unreachable in GrG_{r}. However, since GrG_{r} loses edges present in GG, it may
+happen that vv that was originally reachable from uu in GG, now becomes
+unreachable in GrG_{r}. Thus, RGr​(u)⊆RG​(u)R_{G_{r}}(u)\subseteq R_{G}(u). Following the same
+logic, since Er⊆EE_{r}\subseteq E, the shortest path length between any
+pair of nodes u,vu,v can only get increased in GrG_{r}. Hence, dGr​(u,v)≥dG​(u,v)d_{G_{r}}(u,v)\geq d_{G}(u,v).
+
+Next, let us consider CGS-U. From Eq. (2), Eq. (4) and
+Eq. (5), it follows that for any node uu, NGr​(u)⊇NG​(u)N_{G_{r}}(u)\supseteq N_{G}(u), |NG​(u)|≤|NGr​(u)|≤(1+δu)​|NG​(u)||N_{G}(u)|\leq|N_{G_{r}}(u)|\leq(1+\delta_{u})|N_{G}(u)|. Next,
+consider the reachability query. Since no edge is lost in GrG_{r} that is
+present in GG, if uu is reachable from any given node vv in GG, then they
+continue to be so in GrG_{r}, as well. Thus, RG​(u)⊆RGr​(u)R_{G}(u)\subseteq R_{G_{r}}(u).
+Although the reconstructed graph GrG_{r} generated by CGS-U may contain extra edges with respect to the original graph GG, the extra edges are always
+between the 2-hop neighbors. This indicates that nodes that remain in separate
+connected components in GG, continue to remain in separated connected components in GrG_{r}. In
+other words, the connected components remain unaltered. Thus, RGr​(u)⊆RG​(u)R_{G_{r}}(u)\subseteq R_{G}(u). Together, RGr​(u)=RG​(u)R_{G_{r}}(u)=R_{G}(u). Since Er⊇EE_{r}\supseteq E,
+i.e., extra edges are possibly added, lengths of paths can get reduced. Hence,
+dGr​(u,v)≤dG​(u,v)d_{G_{r}}(u,v)\leq d_{G}(u,v).
+
+7. Correctness of CGS
+
+The following result helps to establish the correctness of the CGS algorithm.
+
+The correctness of the CGS algorithm is established through the correctness of the procedures:
+UpdateDegree and IsSafeMerge, that are established as follows
+
+Lemma 1.
+
+The procedure UpdateDegree (Algo. 8) is correct.
+
+Proof.
+
+To prove the correctness of the procedure UpdateDegree, we need to show that after each merge operation, the procedure correctly computes the degree degGr⁡(u)\deg_{G_{r}}(u) for each node u∈Gru\in G_{r}. Note that this procedure is executed only for ​𝑣𝑎𝑟∈{I,U}\operatorname{\emph{var}}\in\{I,U\}. For ​𝑣𝑎𝑟=E\operatorname{\emph{var}}=E, the degree degGr⁡(u)=degG⁡(u)\deg_{G_{r}}(u)=\deg_{G}(u) for each node u∈Gu\in G. Hence there is no necessity to update the degrees. Next, consider ​𝑣𝑎𝑟∈{I,U}\operatorname{\emph{var}}\in\{I,U\}. Firstly, we note that the given procedure correctly computes the set of all the nodes in GrG_{r} (the sets U∗,V∗,U′U^{*},V^{*},U^{\prime} and V′V^{\prime}, as stated in Algorithm 8) whose degrees are possibly altered as a result of the given merge operation. In other words, the procedure does not miss any node u∈Gru\in G_{r} whose degree gets altered due to the given merge operation. Next, it is noted that the procedure correctly computes the new degree for each such node u∈Gru\in G_{r} whose degree gets altered due to the given merge operation. This can be shown inductively.
+∎
+
+Lemma 2.
+
+The procedure IsSafeMerge (Algo. 5) is correct.
+
+Proof.
+
+To prove the correctness of the IsSafeMerge procedure, it is sufficient to show that the procedure returns true if and only if it is safe to merge any pair of nodes, u∗,v∗∈Gsu^{*},v^{*}\in G_{s}, i.e., it would not violate the neighborhood loss constraint (Eq. (5)). If ​𝑣𝑎𝑟=E\operatorname{\emph{var}}=E, this fact is trivially true. If ​𝑣𝑎𝑟∈{I,U}\operatorname{\emph{var}}\in\{I,U\}, the algorithm carefully scans each node u∈Gru\in G_{r}, whose degree may get changed due to the given merge operation. To this end, the given procedure computes the sets U∗,V∗,U′U^{*},V^{*},U^{\prime} and V′V^{\prime}, as stated in Algorithm 5, that contain all the nodes whose degree may get altered due to a merge operation.
+From Lem. 1, it is clear that the CGS algorithm correctly keeps track of degGr⁡(u)\deg_{G_{r}}(u) for each node u∈Gru\in G_{r}. Using these degree value degGr⁡(u)\deg_{G_{r}}(u), the IsSafeMerge procedure computes the possible updated degree of uu (considering realization of the given potential merge operation) and checks if the new degree values would violate the neighborhood loss constraint (Eq. (5)). The algorithm returns true if and only if each such node uu passes this test.
+∎
+
+Theorem 1.
+
+Given an input graph G=(V,E)G=(V,E) that is summarized by the CGS algorithm to produce the summary graph Gs=(Vs,Es)G_{s}=(V_{s},E_{s}) that is later decompressed to produce the reconstructed graph Gr=(Vr,Er)G_{r}=(V_{r},E_{r}). Then, Vr=VV_{r}=V. Also, CGS-U, CGS-E and CGS-I respectively guarantee that Er⊇EE_{r}\supseteq E, Er=EE_{r}=E and Er⊆EE_{r}\subseteq E. Additionally, GrG_{r} respects the neighborhood loss constraint stated in Eq. (5).
+
+Proof.
+
+Suppose there is a node u∈Gu\in G, such that u∉Gru\notin G_{r}. Since the CGS algorithm does not remove a node unless it merges with another node, there must exist a node u∗u^{*} such that uu is an ancestor of u∗u^{*}. If uu did not undergo any merge operation, then u∗=uu^{*}=u. From the reconstruction algorithm, it follows that u∈Gru\in G_{r}. This is a contradiction. Hence, V⊆VrV\subseteq V_{r}. Similarly, it can be proved that Vr⊆VV_{r}\subseteq V. Hence, V=VrV=V_{r}.
+
+Next, consider ​𝑣𝑎𝑟=U\operatorname{\emph{var}}=U. Suppose there exists an edge (u,v)∈E(u,v)\in E such that (u,v)∉Er(u,v)\notin E_{r}. Referring to the merge operation for ​𝑣𝑎𝑟=U\operatorname{\emph{var}}=U (Sec. 4.2),
+there must exist at least a pair of nodes, u∗,v∗∈Vsu^{*},v^{*}\in V_{s}, (where u∗≠v∗u^{*}\neq v^{*}) such that uu and vv are ancestors of u∗u^{*} and v∗v^{*}, respectively, and (u∗,v∗)∈Es(u^{*},v^{*})\in E_{s}. Using the reconstruction algorithm, since
+(u∗,v∗)∈Es(u^{*},v^{*})\in E_{s}, therefore, (u,v)∈Er(u,v)\in E_{r}, which is a contradiction. Hence, CGS-U ensures that Er⊇EE_{r}\supseteq E.
+
+Similarly, CGS-I ensures that Er⊆EE_{r}\subseteq E, and CGS-E ensures that Er=EE_{r}=E.
+
+Next, consider ​𝑣𝑎𝑟∈{I,U}\operatorname{\emph{var}}\in\{I,U\}. In either case, from Lem. 2, it follows that a merge operation is realized only after it is confirmed that it would not violate the neighborhood loss constraint (Eq. (5)). Therefore, when the algorithm terminates, it is guaranteed that the given constraint remains satisfied. The reconstruction algorithm also respects the neighborhood loss constraint.
+∎
+
+From the above discussion, it follows that the summary graph GsG_{s} generated by the Configurable Graph Summarizer (CGS) framework need not necessarily have the optimal compression ratio but the reconstructed graph GrG_{r} and the query answers satisfy all the constraints stated in the ConfiGS problem (Problem 1).
+
+8. Graph Properties that Guarantee Compression by the CGS Framework
+
+The following results analyze the necessary and sufficient conditions to guarantee that |Gs|<|G||G_{s}|<|G|, i.e., c​r<1cr<1, for each of the three algorithms, namely, CGS-E, CGS-I and CGS-U.
+
+Theorem 2.
+
+Let GsG_{s} be the summary graph of GG as produced by the CGS-E algorithm. Then,
+|Gs|<|G||G_{s}|<|G| if and only if there exists at least a pair of nodes u,v∈Gu,v\in G such that either |NG​(u)∩NG​(v)|≥2|N_{G}(u)\cap N_{G}(v)|\geq 2 or |NG​(u)∩NG​(v)|=1∧NG​(u)=NG​(v)|N_{G}(u)\cap N_{G}(v)|=1\ \wedge N_{G}(u)=N_{G}(v).
+
+Proof.
+
+Suppose the graph GG has a pair of nodes u,v∈Gu,v\in G such that |NG​(u)∩NG​(v)|≥2|N_{G}(u)\cap N_{G}(v)|\geq 2. It is sufficient to show that the CGS-E algorithm executes at least one MergeNodes operation, and eventually produces a graph GsG_{s} such that |Gs|<|G||G_{s}|<|G|. For this to happen, it is sufficient to show that the heap HH has at least one pair of nodes that offer positive compression gain. If such a pair exists, the CGS-E algorithm would eventually extract and merge such a pair. We show that the pair (u,v)(u,v) satisfies the above requirement.
+
+From the ComputeCG algorithm (Algo. 4), we observe that for the given pair (u,v)(u,v), c​g​(u,v)≥2​|NG​(u)∩NG​(v)|−3+xcg(u,v)\geq 2|N_{G}(u)\cap N_{G}(v)|-3+x where xx is given as follows:
+
+(8)
+
+x={0 if ​|NG​(u)−NG​(v)|≥1∧|NG​(v)−NG​(u)|≥11 if either ​NG​(u)⊂NG​(v)​ or ​NG​(v)⊂NG​(u)2 if ​NG​(u)=NG​(v)\displaystyle x=\begin{cases}0&\text{ if }|N_{G}(u)-N_{G}(v)|\geq 1\wedge|N_{G}(v)-N_{G}(u)|\geq 1\\
+1&\text{ if either }N_{G}(u)\subset N_{G}(v)\text{ or }N_{G}(v)\subset N_{G}(u)\\
+2&\text{ if }N_{G}(u)=N_{G}(v)\end{cases}
+
+If |NG​(u)∩NG​(v)|≥2|N_{G}(u)\cap N_{G}(v)|\geq 2 then c​g​(u,v)≥1cg(u,v)\geq 1. If |NG​(u)∩NG​(v)|=1|N_{G}(u)\cap N_{G}(v)|=1 and NG​(u)=NG​(v)N_{G}(u)=N_{G}(v), then x=2x=2. Consequently, c​g​(u,v)=1cg(u,v)=1. Thus, in either of the above cases, c​g​(u,v)>0cg(u,v)>0.
+It follows that the CGS-E algorithm would have executed at least one merge operation, thereby producing a graph GsG_{s} such that |Gs|<|G||G_{s}|<|G|.
+
+Next consider the case |Gs|<|G||G_{s}|<|G|. This is only possible if the graph GG undergoes at least one iteration of MergeNodes. This can only happen if there exists at least a pair of nodes u,v∈Gu,v\in G such that c​g​(u,v)>0cg(u,v)>0. From the ComputeCG algorithm (Algo. 4), we know that c​g​(u,v)≥2​|NG​(u)∩NG​(v)|−3+xcg(u,v)\geq 2|N_{G}(u)\cap N_{G}(v)|-3+x where xx is given in Eq. (8). Thus, if c​g​(u,v)>0cg(u,v)>0, it implies that GG has a pair of nodes u,v∈Gu,v\in G such that |NG​(u)∩NG​(v)|≥2|N_{G}(u)\cap N_{G}(v)|\geq 2 or |NG​(u)∩NG​(v)|=1∧NG​(u)=NG​(v)|N_{G}(u)\cap N_{G}(v)|=1\ \wedge N_{G}(u)=N_{G}(v).
+∎
+
+Theorem 3.
+
+Let GsG_{s} be the summary graph of GG as produced by the CGS-I algorithm. Then,
+|Gs|<|G||G_{s}|<|G| if and only if there exists at least a pair of nodes u,v∈Gu,v\in G such that v∈NG2​(u)v\in N^{2}_{G}(u), |NG​(u)|≤|NG​(u)∩NG​(v)|/(1−δu)|N_{G}(u)|\leq|N_{G}(u)\cap N_{G}(v)|/(1-\delta_{u}) and |NG​(v)|≤|NG​(u)∩NG​(v)|/(1−δv)|N_{G}(v)|\leq|N_{G}(u)\cap N_{G}(v)|/(1-\delta_{v}).
+
+Proof.
+
+Suppose the graph GG has a pair of nodes u,v∈Gu,v\in G such that v∈NG2​(u)v\in N^{2}_{G}(u), |NG​(u)∪NG​(v)|≥2|N_{G}(u)\cup N_{G}(v)|\geq 2, |NG​(u)|≤|NG​(u)∩NG​(v)|/(1−δu)|N_{G}(u)|\leq|N_{G}(u)\cap N_{G}(v)|/(1-\delta_{u}) and |NG​(v)|≤|NG​(u)∩NG​(v)|/(1−δv)|N_{G}(v)|\leq|N_{G}(u)\cap N_{G}(v)|/(1-\delta_{v}).
+It is sufficient to show that the CGS-I algorithm executes at least one MergeNodes operation, and eventually produces a graph GsG_{s} such that |Gs|<|G||G_{s}|<|G|. For this to happen, it is sufficient to show that the heap HH has at least one pair of nodes that offer positive compression gain and their merging does not violate the neighborhood loss constraint. If such a pair exists, the CGS-I algorithm would eventually extract and merge such a pair. We show that the pair (u,v)(u,v) satisfies the above requirement.
+
+Firstly, from the ComputeCG algorithm (Algo. 4), we observe that for a given pair u,v∈Gu,v\in G, c​g​(u,v)≥2​|NG​(u)∪NG​(v)|−3+ycg(u,v)\geq 2|N_{G}(u)\cup N_{G}(v)|-3+y where yy is given as follows:
+
+(9)
+
+y={0 if ​(u,v)∈E2 otherwise\displaystyle y=\begin{cases}0&\text{ if }(u,v)\in E\\
+2&\text{ otherwise }\end{cases}
+
+Since v∈NG2​(u)v\in N^{2}_{G}(u), therefore, it follows that |NG​(u)∪NG​(v)|≥1|N_{G}(u)\cup N_{G}(v)|\geq 1. Moreover, if (u,v)∈E(u,v)\in E, then, |NG​(u)∪NG​(v)|≥2|N_{G}(u)\cup N_{G}(v)|\geq 2. Hence, for either of the cases: (u,v)∈E(u,v)\in E or (u,v)∉E(u,v)\notin E, c​g​(u,v)>0cg(u,v)>0.
+
+Next, we note that r​l​(u)=|NG​(u)−NGr​(u)|/|NG​(u)|=(|NG​(u)−(NG​(u)∩NG​(v))|)/|NG​(u)|rl(u)=|N_{G}(u)-N_{G_{r}}(u)|/|N_{G}(u)|=(|N_{G}(u)-(N_{G}(u)\cap N_{G}(v))|)/|N_{G}(u)|. Since (NG​(u)∩NG​(v))⊆NG​(u)(N_{G}(u)\cap N_{G}(v))\subseteq N_{G}(u), therefore, the above expression simplifies to r​l​(u)=1−|NG​(u)∩NG​(v)|/|NG​(u)|rl(u)=1-|N_{G}(u)\cap N_{G}(v)|/|N_{G}(u)|. From the condition stated above, |NG​(u)∩NG​(v)|≥(1−δu)​|NG​(u)||N_{G}(u)\cap N_{G}(v)|\geq(1-\delta_{u})|N_{G}(u)|. Hence, r​l​(u)≤δurl(u)\leq\delta_{u}. In a similar manner, it can be shown that r​l​(v)≤δvrl(v)\leq\delta_{v}. Therefore, if the pair of nodes (u,v)(u,v) is merged, it does not violate the neighborhood loss constraint. It follows that the CGS-I algorithm would have executed at least one merge operation, thereby producing a graph GsG_{s} such that |Gs|<|G||G_{s}|<|G|.
+
+Next consider the case |Gs|<|G||G_{s}|<|G|. This is only possible if the graph GG undergoes at least one iteration of MergeNodes. This can only happen if there exists at least a pair of nodes u,v∈Gu,v\in G such that c​g​(u,v)>0cg(u,v)>0 and their merging does not violate the neighborhood loss constraint. From the ComputeCG algorithm (Algo. 4), we know that c​g​(u,v)≥2​|NG​(u)∪NG​(v)|−3+ycg(u,v)\geq 2|N_{G}(u)\cup N_{G}(v)|-3+y where yy is given by Eq. (9). Thus, if c​g​(u,v)>0cg(u,v)>0, then it implies that v∈NG2​(u)v\in N^{2}_{G}(u). Further, if the merging of the pair (u,v)(u,v) does not violate the neighborhood loss constraint, then, r​l​(u)≤δurl(u)\leq\delta_{u} and r​l​(v)≤δvrl(v)\leq\delta_{v}. It follows that the graph GG has a pair of nodes u,v∈Gu,v\in G such that v∈NG2​(u)v\in N^{2}_{G}(u), |NG​(u)|≤|NG​(u)∩NG​(v)|/(1−δu)|N_{G}(u)|\leq|N_{G}(u)\cap N_{G}(v)|/(1-\delta_{u}) and |NG​(v)|≤|NG​(u)∩NG​(v)|/(1−δv)|N_{G}(v)|\leq|N_{G}(u)\cap N_{G}(v)|/(1-\delta_{v}).
+∎
+
+Theorem 4.
+
+Let GsG_{s} be the summary graph of GG as produced by the CGS-U algorithm. Then,
+|Gs|<|G||G_{s}|<|G| if and only if there exists at least a pair of nodes u,v∈Gu,v\in G such that either |NG​(u)∩NG​(v)|≥2|N_{G}(u)\cap N_{G}(v)|\geq 2 or |NG​(u)∩NG​(v)|=1∧(u,v)∉E|N_{G}(u)\cap N_{G}(v)|=1\wedge(u,v)\notin E; |NG​(u)|≥|NG​(u)∪NG​(v)|/(1+δu)|N_{G}(u)|\geq|N_{G}(u)\cup N_{G}(v)|/(1+\delta_{u}) and |NG​(v)|≥|NG​(u)∪NG​(v)|/(1+δv)|N_{G}(v)|\geq|N_{G}(u)\cup N_{G}(v)|/(1+\delta_{v}).
+
+Proof.
+
+Suppose the graph GG has a pair of nodes u,v∈Gu,v\in G such that |NG​(u)∩NG​(v)|≥2|N_{G}(u)\cap N_{G}(v)|\geq 2, |NG​(u)|≥|NG​(u)∪NG​(v)|/(1+δu)|N_{G}(u)|\geq|N_{G}(u)\cup N_{G}(v)|/(1+\delta_{u}) and |NG​(v)|≥|NG​(u)∪NG​(v)|/(1+δv)|N_{G}(v)|\geq|N_{G}(u)\cup N_{G}(v)|/(1+\delta_{v}).
+It is sufficient to show that the CGS-U algorithm executes at least one MergeNodes operation, and eventually produces a graph GsG_{s} such that |Gs|<|G||G_{s}|<|G|. For this to happen, it is sufficient to show that the heap HH has at least one pair of nodes that offer positive compression gain and their merging does not violate the neighborhood loss constraint. If such a pair exists, the CGS-U algorithm would eventually extract and merge such a pair. We show that the pair (u,v)(u,v) satisfies the above requirement.
+
+Firstly, from the ComputeCG algorithm (Algo. 4), we observe that for a given pair (u,v)(u,v), c​g​(u,v)≥2​|NG​(u)∩NG​(v)|−3+zcg(u,v)\geq 2|N_{G}(u)\cap N_{G}(v)|-3+z where zz is given as follows:
+
+(10)
+
+z={0 if ​(u,v)∈E2 otherwise\displaystyle z=\begin{cases}0&\text{ if }(u,v)\in E\\
+2&\text{ otherwise }\end{cases}
+
+Since v∈NG2​(u)v\in N^{2}_{G}(u), therefore, |NG​(u)∩NG​(v)|≥1|N_{G}(u)\cap N_{G}(v)|\geq 1. Note that if (u,v)∉E(u,v)\notin E, then z=2z=2. Consequently, c​g​(u,v)>0cg(u,v)>0. Else, if |NG​(u)∩NG​(v)|≥2|N_{G}(u)\cap N_{G}(v)|\geq 2, then c​g​(u,v)>0cg(u,v)>0.
+
+Next, we note that r​l​(u)=|NGr​(u)−NG​(u)|/|NG​(u)|=(|(NG​(u)∪NG​(v)−NG​(u))|)/|NG​(u)|rl(u)=|N_{G_{r}}(u)-N_{G}(u)|/|N_{G}(u)|=(|(N_{G}(u)\cup N_{G}(v)-N_{G}(u))|)/|N_{G}(u)|. Since NG​(u)⊆(NG​(u)∪NG​(v))N_{G}(u)\subseteq(N_{G}(u)\cup N_{G}(v)), therefore, the above expression simplifies to r​l​(u)=|NG​(u)∪NG​(v)|/|NG​(u)|−1rl(u)=|N_{G}(u)\cup N_{G}(v)|/|N_{G}(u)|-1. From the condition stated above, |NG​(u)∪NG​(v)|≤(1+δu)​|NG​(u)||N_{G}(u)\cup N_{G}(v)|\leq(1+\delta_{u})|N_{G}(u)|. Hence, r​l​(u)≤δurl(u)\leq\delta_{u}. In a similar manner, it can be shown that r​l​(v)≤δvrl(v)\leq\delta_{v}. Therefore, if the pair of nodes (u,v)(u,v) is merged, it does not violate the neighborhood loss constraint. It follows that the CGS-U algorithm would have executed at least one merge operation, thereby producing a graph GsG_{s} such that |Gs|<|G||G_{s}|<|G|.
+
+Next consider the case |Gs|<|G||G_{s}|<|G|. This is only possible if the graph GG undergoes at least one iteration of MergeNodes. This can only happen if there exists at least a pair of nodes u,v∈Gu,v\in G such that c​g​(u,v)>0cg(u,v)>0 and their merging does not violate the neighborhood loss constraint. From the ComputeCG algorithm (Algo. 4), we know that c​g​(u,v)≥2​|NG​(u)∩NG​(v)|−3+zcg(u,v)\geq 2|N_{G}(u)\cap N_{G}(v)|-3+z where zz is given in Eq. (10). Thus, if c​g​(u,v)>0cg(u,v)>0, then it implies that either (u,v)∉E(u,v)\notin E or |NG​(u)∩NG​(v)|≥2|N_{G}(u)\cap N_{G}(v)|\geq 2. Further, if the merging of the pair (u,v)(u,v) does not violate the neighborhood loss constraint, then, r​l​(u)≤δurl(u)\leq\delta_{u} and r​l​(v)≤δvrl(v)\leq\delta_{v}. It follows that the graph GG has a pair of nodes u,v∈Gu,v\in G such that either |NG​(u)∩NG​(v)|≥2|N_{G}(u)\cap N_{G}(v)|\geq 2 or |NG​(u)∩NG​(v)|=1∧(u,v)∉E|N_{G}(u)\cap N_{G}(v)|=1\wedge(u,v)\notin E; |NG​(u)|≥|NG​(u)∪NG​(v)|/(1+δu)|N_{G}(u)|\geq|N_{G}(u)\cup N_{G}(v)|/(1+\delta_{u}) and |NG​(v)|≥|NG​(u)∪NG​(v)|/(1+δv)|N_{G}(v)|\geq|N_{G}(u)\cup N_{G}(v)|/(1+\delta_{v}).
+∎
+
+9. Complexity of CGS
+
+In this section, we analyze the time complexity of the CGS algorithm. Suppose
+the maximum degree of any node u∈Gu\in G is d∗{d^{*}}, i.e., |NG​(u)|≤d∗|N_{G}(u)|\leq{d^{*}}. Assume the neighborhood sets NG​(u),NGs​(u)N_{G}(u),N_{G_{s}}(u) are maintained as
+hash-sets for each node uu. Thus, neighborhood checks such asv∈NG​(u)v\in N_{G}(u)
+are answered in O⁡(1)O(1) time. Further, let |V|=n|V|=n, and |E|=m|E|=m. Let
+δ=max⁡{δu|u∈G}\delta=\max\{\delta_{u}|u\in G\}. The complexity of the CGS algorithm is
+established through the following series of results.
+
+Lemma 3.
+
+Given a graph GG of nn nodes, the number of pairs of nodes that are eligible to be merged is O⁡(min⁡(m​d∗,(n2)))O(\min(m{d^{*}},\binom{n}{2})).
+
+Proof.
+
+A pair of nodes u,v∈Gu,v\in G is eligible to be merged if v∈NG2​(u)v\in N_{G}^{2}(u).
+The number of 2-hop neighbors of u∈Gu\in G, is |NG2​(u)|=∑v∈NG​(u)(degG⁡(v)−1)|N_{G}^{2}(u)|=\sum_{v\in N_{G}(u)}(\deg_{G}(v)-1). Thus, the total number of pairs of nodes that are eligible to be merged is at most ∑u∈G|NG2​(u)|≤∑u∈G∑v∈NG​(u)(degG⁡(v)−1)≤∑u∈Gdeg

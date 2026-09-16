@@ -1,0 +1,1597 @@
+Fairness Attacks on Recommender Systems
+
+      Report GitHub Issue
+      ×
+
+      Title:
+
+Content selection saved. Describe the issue below:
+
+      Description:
+
+      Submit without GitHub
+      Submit in GitHub
+
+    arXiv is now an independent nonprofit!
+    Learn more
+    ×
+
+      Back to arXiv
+
+    Why HTML?
+
+      Report Issue
+
+      Back to Abstract
+
+      Download PDF
+
+Abstract
+
+I Introduction
+
+II Related Work
+
+II-A Attacks on Recommender Systems
+
+II-B Attacks on Machine Learning Fairness
+
+II-C Fairness-aware Recommender Systems
+
+III Problem Statement
+
+IV Method
+
+IV-A MDP Formulation
+
+IV-B Overview
+
+IV-C Surrogate Recommender
+
+IV-D Graph-based Structure Encoder
+
+IV-E Sequential Encoder
+
+IV-F Masked Attention-based Output Layer
+
+IV-G Gender Selection
+
+IV-G1 Sequential Encoder for Gender Selection
+
+IV-G2 Gender Policy Output Layer
+
+IV-H Training
+
+V Experiment
+
+V-A Datasets
+
+V-B Experimental Setup
+
+V-B1 Evaluation Metrics
+
+V-B2 Target Recommendation Models
+
+V-B3 Implementation Details
+
+V-B4 Baseline Methods
+
+V-C Fairness Attack Results on Recommender System (RQ1)
+
+V-D Fairness Attack Results on Fairness-aware Recommender System (RQ2)
+
+V-E Impact of the Percentage of Training Data (RQ3)
+
+V-F Impact of Attacker’s Capability of NN and MM (RQ4)
+
+VI Conclusion
+
+References
+
+    License: CC BY 4.0
+
+arXiv:2606.29064v1 [cs.IR] 27 Jun 2026
+
+Fairness Attacks on Recommender Systems
+
+Yanan Wang
+
+  
+Yong Ge
+††thanks:
+Yanan Wang is with Department of Information Systems and Operations Management, College of Business, The University of Texas at Arlington. Yong Ge is with Department of Management Information Systems, Eller College of Management, the University of Arizona.
+
+E-mail: yanan.wang@uta.edu, yongge@arizona.edu
+
+Abstract
+
+The unfairness of recommender systems has become a topic of concern due to its significant social and ethical implications. Although existing works have shown the effectiveness of attacks on the performance of recommender systems (e.g., promotion and demotion attack), the study of fairness attacks on recommender systems remains largely under-explored. To this end, we propose a novel structure-aware reinforcement learning-based fairness attack method designed to exacerbate the unfairness of target recommender systems. Specifically, we first employ a graph-based structure encoder to model the structural dependencies among the generated fake user-item interactions and the original user-item interactions. Then, we model the sequential dependency of the injected fake items using a recurrent neural network. Based on the learned structure-aware and sequence-aware representations of the fake user and item, the item selection policy attentively decides the next injected fake item. Since the target recommender system may employ fairness-aware training and leverage the user’s sensitive attribute information, such as gender, we further designed a gender selection policy to decide the gender of the entire fake user profile. Both the item selection and gender selection policy are learned jointly in our proposed method. Finally, experimental results on four types of target recommendation models and two real-world datasets demonstrate the effectiveness of the proposed attack method in exacerbating the unfairness of recommender systems.
+
+Index Terms: Recommendation, Fairness Attacks, Reinforcement Learning.
+
+I Introduction
+
+Recommender systems aim to provide personalized recommendations to cater to user interests, thereby mitigating information overload. They are typically trained using collected historical user-item interaction data and, post-training, predict items potentially interesting to users. Due to its significance, recommender systems are employed across various domains, including e-commerce [1], education [2], and employment [3].
+
+Although recommendation services considerably enhance daily life, contributing to significant economic and social impacts, they face an escalating challenge: unfair recommendations, wherein recommenders systematically and unfairly discriminate against specific user groups. Such unfairness has been observed in online learning recommendation services, where STEM lectures are disproportionately recommended to minority groups [4], in online job recommendations, favoring male candidates over female ones for technical roles [5], and in online rental recommendations, where certain apartment types are not suggested to minority groups like single parents [6]. The pervasiveness of this unfairness results in inequitable information services for end-users, leading to social injustice in education and career development, and legal and ethical issues for system providers [7]. To tackle this, researchers and practitioners have developed fairness-aware recommenders focused on addressing the inherent bias in consumer-generated ratings to mitigate recommendation unfairness [8, 9, 10, 11].
+
+Most recommender systems, e.g., YouTube, are accessible to external users who can create accounts, input ratings, and access most historical ratings provided by other users. This openness allows adversaries to inject intentionally generated fake ratings, influencing the underlying algorithm post-training, and leading to recommendations desired by the adversaries. Previous studies have documented evidences of such adversarial attacks promoting or demoting products in recommendation lists across different recommender systems [12, 13]. Hence, it is plausible for adversaries to launch similar attacks to harm recommendation fairness, exacerbating the recommender system’s unfairness issue. Various parties are also motivated to perform such adversarial fairness attacks on recommender systems. For example, opponents of a recommendation platform may attempt to damage its reputation and trustworthiness to gain a competitive market advantage or even embroil the platform owner in legal trouble. Despite the high likelihood and strong motivation, to our knowledge, such adversarial fairness attacks on recommender systems remain underexplored.
+
+(a) Fake item selection in existing RL-based recommendation performance attack methods
+
+(b) Fake item selection in the proposed structure-aware fairness attack method
+
+Fig. 1: Comparison of fake item selection strategies.
+
+From a cybersecurity perspective, this motivates a red-teaming mindset for recommender fairness. In the cat-and-mouse dynamics between defenders and adaptive adversaries, robust evaluation requires aggressive attack simulation. If attacks used in evaluation are weak, we may substantially underestimate how much a recommender’s fairness can deteriorate, leading to a false sense of robustness [14]. Therefore, developing advanced fairness attack algorithms is a prerequisite for proactively identifying vulnerabilities, evaluating mitigation mechanisms, and ultimately improving the resilience and accountability of the fairness of recommendation services.
+
+To address this crucial research gap, we examine the problem of fairness attacks on recommender systems intending to harm their fairness. Designing a fairness attack algorithm presents several challenges. Firstly, due to the existing fairness issue in recommendations, the target recommender system may employ fairness-aware training to improve recommendation fairness. Such potential fairness-aware recommendations also leverage sensitive attribute information in the training data, which, in this paper, is the gender attribute. Therefore, besides deciding on selecting fake items in the recommendation performance attack setting [12], fairness attackers also need to determine the gender attribute information of each fake user profile to maximize the fairness attack performance. Jointly deciding the fake items and gender attributes of each fake user profile is the first challenge. Secondly, during the fake user profile generation process, attackers must decide each item in the fake user profile and each gender attribute in the created fake user profile. This multi-step decision process naturally aligns with reinforcement learning [15, 16], which is well-suited to solve such decision processes. A few works have applied reinforcement learning (RL) to attack the recommendation model’s performance [17, 18]. However, as shown in Fig. 1 (a), these existing RL-based recommendation performance attack methods overlook the structural dependency among the injected fake user-item interactions and the original user-item interactions. Therefore, modeling the structural dependency is the second challenge.
+
+To overcome these challenges, we propose a novel Structure-aware Reinforcement Learning based Fairness Attack (SRLFA) method to jointly learn the fake item selection and gender attribute selection strategy. Specifically, the user-item interactions can be naturally viewed as a bipartite graph. As depicted in Fig. 1 (b), the fake user nodes are added to the original user-item interaction graph. Each subsequent injected fake user-item can be viewed as adding a new fake edge to the original user-item interaction graph. Therefore, both the added fake user nodes and fake user-item interaction edges alter the structure of the original user-item interaction graph. To model the structural dependency among the fake user-item interaction and the original user-item interaction graph, we utilize a graph-based structure encoder to learn the structure-aware representation of each fake user and fake item. As each fake item is decided sequentially, we further model the sequential dependency among the generated fake items using a recurrent neural network. Based on the learned structure-aware and sequence-aware representations, the item selection policy attentively decides the selected fake item at the current time step. To decide each fake user profile’s gender attribute, we further learn a gender selection policy based on the structure-aware and sequence-aware representation on the user profile level. In practice, the target recommender system is often unknown to the attacker. To optimize the fake user profile based on feedback, we employ a local surrogate recommender. This surrogate is designed with fairness-aware training, emulating potential fairness considerations in the target recommender systems. Both the item selection policy and gender selection policy are learned jointly using reinforcement learning.
+
+We conduct comprehensive experiments to evaluate our developed method. We adopt two representative target recommendation models and assess the fairness attack performance on two real-world datasets. To simulate the potential fairness-aware training of the target recommendation model, we further evaluate the fairness attack performance on the target recommendation models incorporating fairness-aware training. Experimental results demonstrate the proposed fairness attack method’s superiority compared to baseline attack methods. In summary, this paper’s main contributions are as follows:
+
+•
+
+We explore the scarcely investigated problem of fairness attacks on recommender systems, which can have a profound social impact.
+
+•
+
+We propose a novel structure-aware reinforcement learning based fairness attack method, modeling the structural dependency among the generated fake user-item interaction and original user-item interaction graph.
+
+•
+
+In the proposed method, the fake item and gender attribute of the fake user profile are jointly learned in an end-to-end manner using reinforcement learning.
+
+•
+
+Extensive experiments demonstrate the effectiveness of the proposed method in exacerbating the unfairness of original recommender systems and fairness-aware recommender systems, which servers as an important foundation for studying the vulnerability of recommendation fairness.
+
+The remainder of this paper is organized as follows: Section 2 offers a brief review of the existing literature on attacks against recommender systems, machine learning fairness, and fairness-aware recommender systems. Section 3 introduces the
+concept of a fairness attack and the associated threat model, including the attacker’s goal, knowledge, and capability. In Section 4, we elaborate on our proposed method for conducting fairness attacks. Section 5 discusses the results of our experiments. Finally, we concludes the article in Section 6.
+
+II Related Work
+
+In this section, we briefly review the related works from two categories: attacks on recommender systems, attacks on machine learning fairness and fairness in recommender systems.
+
+II-A Attacks on Recommender Systems
+
+Due to openness of the recommender systems, previous researches have shown that it is possible to attack the recommender systems [13, 12, 19, 20]. The attackers can inject the fake user profiles into the training data of the target recommendation systems and the recommendation results can be manipulated after the recommender system get retrained with these malicious data. There are two types of attacking goals: promotion attack and demotion attack [13]. Promotion attack aims to promote a set of target items while demotion attack aims to demote a set of target items.
+
+Existing attacking methods can be classified into two categories: white-box attack and black-box attack. White-box attack [21, 22, 23, 24, 25] assumes the parameters and model type of the target recommender system is known to the attackers. This kind of assumption is usually unpractical in the real world as it is hard for the attackers to have a full access to the target recommender system. While the black-box attack does not assume the knowledge of the target recommender system and regard the target recommender system as a black box. To generate the fake user profiles, existing black-box attack methods either adopt a local surrogate recommender or query the target recommender [12, 17, 26]. Among the attack strategies used by the black-box attack methods, early shilling-based attack methods [27] adopt heuristic rules to manually create the fake user profiles and the attack performance is limited. Machine learning-based attack methods are later proposed to improve the attack performance. Revisit method [12] updates the fake user profile using the gradient of the adversarial loss, where the adversarial loss is related to the likelihood of target items in the recommendation list. Generative adversarial neural network has also been used to generate the fake user profiles to approximate the ratings of real users [28]. Recently, a few works formulate the fake user profile generation as a multiple step decision making problem and adopt reinforcement learning to solve this problem [17, 18]. The limitations of existing RL-based recommendation performance attack methods are discussed in Section I as well as Fig. 1.
+
+However, all these works focus on attacking the performance of recommender systems, i.e., promotion or demotion attack. While in this paper, we focus on the fairness attacks on recommender system, which aims to decrease the fairness of the recommender system and has a profound social impact. Moreover, we design a hierarchical fairness attack policy to decide the selected items and gender of each fake user profile. The developed fairness attack policy further incorporate user-item interaction graph to model the structural influence of each injected fake user-item interaction, which is ignored in previous works.
+
+II-B Attacks on Machine Learning Fairness
+
+Due to the importance of the fairness of machine learning algorithms, a few recent works study the vulnerability of machine learning fairness by design attack methods. Gradient-based and influence-based attack has been developed to decrease the fairness of machine learning classification algorithms [29, 30]. Gradient-based attack method [30] derive the gradient of the adversarial loss that maximize classification disparities. Influence-based attack
+[29]method estimates the influence of the poisoned sample on the unfairness of the classification algorithm using the influence function [31] and then update the poisoned sample using the estimated influence to maximize the unfairness.
+
+Different from these attacks on the fairness of machine learning classification algorithms, this paper aims to study the fairness attacks on recommender systems, which is a fundamental different task. Moreover, in contrast to the gradient and influence-based fairness attack method [29, 30], our fairness attack method is based on reinforcement learning by utilizing the structure information of user-item interactions.
+
+II-C Fairness-aware Recommender Systems
+
+Recent advancements highlight the growing importance of fairness in recommender systems due to its significant societal implications [10]. A variety of fairness-aware recommender systems have been developed to enhance recommendation fairness [10, 32, 33]. These fairness-centric recommendation techniques can be categorized into three main categories: pre-processing, in-processing, and post-processing [34]. Pre-processing methods [32, 11] focus on modifying the training data to improve the fairness of recommendation model. In-processing methods [4, 35] change the training process of recommendation models to reduce unfairness. A notable example is the regularization-based approach where a fairness regularization term is incorporated into the matrix factorization loss function to enhance fairness [4]. Lastly, post-processing methods modify the model output to improve the fairness [33, 36].
+
+In this study, we not only explore fairness attacks on conventional target recommendation models but also examine such attacks on models that integrate fairness-aware training. Specifically, we choose the fairness regularization method as the representative fairness-aware training techniques.
+
+III Problem Statement
+
+In this section, we first briefly introduce the recommendation task and then provide the definition of recommendation fairness. After that, we formally define the problem of fairness attack by illustrating the attacker’s goal, attacker’s knowledge and attacker’s capability.
+
+A recommender is essentially an algorithm trained on historical user-item interaction data. This interaction data can be represented by the matrix X∈ℝ|U|×|V|X\in\mathbb{R}^{|U|\times|V|}, where 𝒰={u1,…,u|𝒰|}\mathcal{U}=\{u_{1},\ldots,u_{|\mathcal{U}|}\} and 𝒱={v1,…,v|𝒱|}\mathcal{V}=\{v_{1},\ldots,v_{|\mathcal{V}|}\} denote the sets of users and items in the recommender system, respectively. An interaction (e.g., click, purchase) between the ii-th user and the jj-th item results in a non-zero matrix entry. This paper emphasizes user’s implicit feedback, which is often more accessible in real-world recommendation scenarios. Based on the historical user-item interaction data XX, the goal of the recommender system is to provide recommendations to match user’s interest.
+
+Apart from evaluating the overall effectiveness of recommendations, the fairness in recommendations has received significant attention recently [10, 32, 33]. In the group fairness definition, users can be categorized into different groups according to the sensitive attribute such as gender and race. To adhere to this fairness principle, recommendation systems should yield comparable performance across distinct user groups. For our analysis, we consider two groups of users denoted as G1G_{1} and G2G_{2} (e.g., male and female users). We prioritize gender as the primary sensitive attribute in this study. The performance disparity (unfairness) among different gender groups is defined as follows:
+
+U​n​f​a​i​rℱ=|1|G1|​∑u∈G1ℱ⁡(u)−1|G2|​∑u∈G2ℱ⁡(u)|,Unfair_{\mathcal{F}}=\left|\frac{1}{\left|G_{1}\right|}\sum_{u\in G_{1}}\mathcal{F}\left(u\right)-\frac{1}{\left|G_{2}\right|}\sum_{u\in G_{2}}\mathcal{F}\left(u\right)\right|,
+
+(1)
+
+where ℱ\mathcal{F} is the recommendation performance metric such as NDCG, Precision and F1 score.
+
+Based on the definition of the U​n​f​a​i​rℱUnfair_{\mathcal{F}}, given a target recommendation model, the threat model is defined as follows:
+
+Attacker’s Goal: The goal of the attacker is to compromise the fairness of the target recommendation model by increasing the unfairness metric: U​n​f​a​i​rℱUnfair_{\mathcal{F}}.
+
+Attacker’s Knowledge:
+In our assumption, attacker does not have the knowledge of the parameters and models used in the target recommender system, which is the black-box attack setting. Due to the openness of the recommender system (e.g., Amazon,YouTube), it’s reasonable to assume the attackers have the access to full or partial training data used by the target recommender system [12, 18].
+
+Attacker’s Capability:
+The attacker has the capability to manipulate numerous fake user profiles and inject them into the target recommendation system. Given practical constraints on the attacker’s resources, we posit that the count of these fake user profiles is NN, with each profile encompassing MM interactions. each fake user profile integrates the sensitive attribute, represented by guig_{u_{i}}, along with a list of interacted items, expressed as x^ui={gui;v0,⋯,vM−1}\hat{x}_{u_{i}}=\{g_{u_{i}};v_{0},\cdots,v_{M-1}\}.
+
+IV Method
+
+During the fake user profile generation process, the attacker decides each fake item sequentially and update the attacking strategy by receiving feedback from the recommendation model, which naturally fits to the reinforcement learning setting [15, 16]. Therefore, we formulate this sequential decision making process as a Markov Decision Making (MDP) process. In this section, we first provide the formulation of the MDP process. Then, we provide an overview of the proposed method. After that, we detail each component of the framework. Finally, we provide the training algorithm of the proposed model.
+
+IV-A MDP Formulation
+
+We formulate the fake user profile generation as an MDP process. The MDP is defined as a tuple (𝒮,𝒜,𝒫,ℛ,γ)(\mathcal{S},\mathcal{A},\mathcal{P},\mathcal{R},\gamma), where 𝒫\mathcal{P} is the state transition probability, γ\gamma is the discount factor and the rest is listed as follows:
+
+•
+
+Action 𝒜\mathcal{A}: There are two types of actions when generating each fake user profile: the item selection action and gender selection action. The selected item at time tt is ati​t​e​m∈𝒱a^{item}_{t}\in\mathcal{V}. The gender selection action is auig∈{0,1}a^{g}_{u_{i}}\in\{0,1\}, where 0 and 1 represent the male and female genders, respectively. The gender action is decided every MM steps, where MM is the number of selected items in each fake user profile.
+
+•
+
+State Space 𝒮\mathcal{S}: st∈𝒮s_{t}\in\mathcal{S} is the previous generated fake users and selected items before time tt. st={u|𝒰|+1,a0i​t​e​m,a1i​t​e​m,⋯,aM−1i​t​e​m,u|𝒰|+2,⋯,at−1i​t​e​m}s_{t}=\{u_{|\mathcal{U}|+1},a_{0}^{item},a_{1}^{item},\cdots,a_{M-1}^{item},u_{|\mathcal{U}|+2},\cdots,a_{t-1}^{item}\}.
+
+•
+
+Reward ℛ\mathcal{R}: As the goal of the attacker is to increase the unfairness of the target recommender system, the reward is defined as the U​n​f​a​i​rℱUnfair_{\mathcal{F}} in Eq. 1. Specifically, we adopt the unfairness metric U​n​f​a​i​rF​1Unfair_{F1}. Due to the black-box attack setting, the attack has no knowledge about the target recommendation model. Therefore, we adopt the surrogate recommender to provide reward feedback. The reward is obtained every τ\tau time step by getting the surrogate recommender retrained with the generated fake data up to time tt and getting the performance of U​n​f​a​i​rF​1Unfair_{F1} on the validation dataset:
+
+rt={U​n​f​a​i​rF​1​(t),(t+1)%​τ=00,o​t​h​e​r​w​i​s​er_{t}=\left\{\begin{array}[]{l}Unfair_{F1}(t),(t+1)\%\tau=0\\
+0,otherwise\end{array}\right.
+
+(2)
+
+Given the above formulations, we aim to learn an item selection policy πϕi​t​e​m\pi^{item}_{\phi} with parameter ϕ\phi and the gender selection policy πψg\pi^{g}_{\psi} with parameter ψ\psi to maximize the expected cumulative reward as follows: maxπϕi​t​e​m,πψg⁡𝔼x^ui∼π​[∑t=0T−1γt​rt],\max_{\pi^{item}_{\phi},\pi^{g}_{\psi}}\mathbb{E}_{\hat{x}_{u_{i}}\sim\pi}\left[\sum_{t=0}^{T-1}\gamma^{t}r_{t}\right],
+where TT is the length of the generated attacking trajectory comprising all the fake user profiles.
+
+Fig. 2: Overview of the proposed framework.
+
+IV-B Overview
+
+As shown in Figure 2, our proposed framework mainly contains five modules: the graph-based structure encoder, the sequential encoder, the masked attention-based policy output layer, gender policy output layer and the surrogate recommender. The user-item interaction data can be naturally seen as a bipartite graph [37]. The injected fake user-item interaction will influence the original user-item interaction graph by adding the new fake user nodes and new edges to the graph. To capture the structural dependency, we propose to use the graph-based structure encoder to learn the graphical representation with injected fake user profiles. As the fake item is generated sequentially, we utilize a sequential encoder to model the sequential dependency among the generated fake items. Based on the learned state representation with structural and sequential dependency, the masked attention-based policy output layer yields selected item ati​t​e​ma^{item}_{t} at time step tt. As the target recommender system may incorporate the fairness-aware training and leverage the gender attribute of the user profile, we further design a gender policy to determine the gender attribute of the fake user profile. For determining the gender selection action auiga^{g}_{u_{i}} associated with an fake user profile uiu_{i}, the gender policy output layer designates a gender at predefined intervals, specifically every MM steps. Within the constraints of a black-box attack scenario, the attacker does not have the knowledge to the target recommender system. To facilitate feedback essential for the training of the policy πi​t​e​m\pi^{item} and πg\pi^{g}, fake user profiles are injected to a surrogate recommender, which subsequently provides the necessary reward by getting retrained with the injected data. To simulate the potential fairness-aware recommenders and induce a more potent fairness attack, we incorporate the fairness-aware training to the surrogate recommender.
+
+IV-C Surrogate Recommender
+
+As shown in the Attacker’s Knowledge, the target recommender system is a black box to the attacker. A prevalent strategy among adversarial attackers is to construct a local surrogate recommender, wherein the optimization of fake user profiles is executed through attacks on this surrogate. For our study, we utilize one representative recommender in the implicit feedback setting: matrix factorization with bayesian personalized ranking loss (BPR) [38]. The training loss of BPR with injected fake user profiles is represented as ℒ⁡(X~,θ)\mathcal{L}\left(\widetilde{X},\theta\right), where X~=X∪X^\widetilde{X}=X\cup\hat{X} is the combination of the original training data and the injected fake user profiles. To emulate a more potent attack on the recommender system with possible fairness-aware optimization, we further incorporate a fairness regularization loss into the training objective of the surrogate recommender as follows:
+
+ℒfair_train =ℒ+λ​ℒfair ,\displaystyle\mathcal{L}_{\text{fair\_train }}=\mathcal{L}+\lambda\mathcal{L}_{\text{fair }},
+
+(3)
+
+ℒfair ​(X~,θ)=|ℒ⁡(X~G1,θ)−ℒ⁡(X~G2,θ)|,\displaystyle\mathcal{L}_{\text{fair }}\left(\widetilde{X},\theta\right)=\left|\mathcal{L}\left(\widetilde{X}_{G_{1}},\theta\right)-\mathcal{L}\left(\widetilde{X}_{G_{2}},\theta\right)\right|,
+
+where X~G1\widetilde{X}_{G_{1}} and X~G2\widetilde{X}_{G_{2}} are the user profiles among the X~\widetilde{X} with sensitive attribute G1G_{1} and G2G_{2} respectively. ℒfair \mathcal{L}_{\text{fair }} is further smoothed using Huber loss [39]. λ\lambda is the weight of the fairness regularization and is set to 1 in the surrogate recomomender.
+
+IV-D Graph-based Structure Encoder
+
+To capture the structural dependency within the poisoned user-item interaction graph, we propose to use a multi-layer graph convolutional network (GCN) [40] to derive the graph representation at time step tt. Specifically, the representation of nodes in the (l+1)(l+1)-th layer, denoted as Ht(l+1)H^{(l+1)}_{t}, is computed as:
+
+Ht(l+1)=D~t−12​A~t​D~t−12​Ht(l)​W(l),H^{(l+1)}_{t}=\tilde{D}_{t}^{-\frac{1}{2}}\tilde{A}_{t}\tilde{D}_{t}^{-\frac{1}{2}}H^{(l)}_{t}W^{(l)},
+
+(4)
+
+where D~t,i​i\tilde{D}_{t,ii} is a diagonal matrix at time tt with the element D~t,i​i=∑jA~t,i​j\tilde{D}_{t,ii}=\sum_{j}\tilde{A}_{t,ij}. The matrix A~t=At+IN\tilde{A}_{t}=A_{t}+I_{N} represents the adjacency matrix of the poisoned user-item graph with added self-loops. This poisoned user-item graph integrates the original user-item interaction graph with the generated fake user nodes and user-item interactions up to time step tt. Here, INI_{N} is the identity matrix, W(l)W^{(l)} denotes the parameter matrix for the ll-th layer, and Ht0∈ℝ(|𝒰|+N+|𝒱|)×hH^{0}_{t}\in\mathbb{R}^{(|\mathcal{U}|+N+|\mathcal{V}|)\times h} is the embedding matrix for all nodes in the poisoned user-item interaction graph with hh represents the number of hidden units.
+
+The final graph-based representation is HtLH^{L}_{t}, with L=2L=2 indicating the number of GCN layers. Leveraging the graph-based structure encoder, the structure-aware representation for the most recently selected fake item at−1i​t​e​ma_{t-1}^{item} is given by zti​t​e​m=HtL​(at−1i​t​e​m)z_{t}^{item}=H_{t}^{L}(a_{t-1}^{item}), acquired from the node representation matrix HtLH_{t}^{L}. Since fake user profiles are generated sequentially and each has a length of MM, the relevant fake user profile at time tt is u|𝒰|+⌊tM⌋+1u_{|\mathcal{U}|+\lfloor\frac{t}{M}\rfloor+1}. Thus, the structure-aware representation for the fake user node at tt is ztu​s​e​r=HtL​(|𝒰|+⌊tM⌋+1)z_{t}^{user}=H_{t}^{L}({|\mathcal{U}|+\lfloor\frac{t}{M}\rfloor+1}), ascertained from HtLH_{t}^{L}.
+
+For global structural information, we employ the averaged node embedding across the entire graph, given by:
+
+G¯t=1|𝒰|+N+|𝒱|​∑i=1|𝒰|+N+|𝒱|HtL​(i),\bar{G}_{t}=\frac{1}{|\mathcal{U}|+N+|\mathcal{V}|}\sum_{i=1}^{|\mathcal{U}|+N+|\mathcal{V}|}H_{t}^{L}(i),
+
+(5)
+
+where HtL​(i)H_{t}^{L}(i) represents the ii-th node embedding representation.
+
+IV-E Sequential Encoder
+
+As the fake items are generated sequentially, we utilize a recurrent neural network with Long Short Term Memory (LSTM) unit [41] to model the sequential dependency among the generated fake items. The sequential dependency is computed with the structure-aware representation of the last generated fake item zti​t​e​mz_{t}^{item} and the previous hidden state ht−1i​t​e​mh_{t-1}^{item}. Specifically, the learned hidden state hti​t​e​mh_{t}^{item} is computed as follows:
+
+it=σ⁡(Wi​[zti​t​e​m,ht−1i​t​e​m]+bi),ft=σ⁡(Wf​[zti​t​e​m,ht−1i​t​e​m]+bf),C~t=tanh⁡(WC​[zti​t​e​m,ht−1i​t​e​m]+bC),Ct=ft⊙Ct−1+it⊙C~tot=σ⁡(Wo​[zti​t​e​m,ht−1i​t​e​m]+bo),hti​t​e​m=ot⊙tanh⁡(Ct),\begin{gathered}i_{t}=\sigma\left(W_{i}\left[z_{t}^{item},h_{t-1}^{item}\right]+b_{i}\right),\\
+f_{t}=\sigma\left(W_{f}\left[z_{t}^{item},h_{t-1}^{item}\right]+b_{f}\right),\\
+\tilde{C}_{t}=\tanh\left(W_{C}\left[z_{t}^{item},h_{t-1}^{item}\right]+b_{C}\right),\\
+C_{t}=f_{t}\odot C_{t-1}+i_{t}\odot\tilde{C}_{t}\\
+o_{t}=\sigma\left(W_{o}\left[z_{t}^{item},h_{t-1}^{item}\right]+b_{o}\right),\\
+h_{t}^{item}=o_{t}\odot\tanh\left(C_{t}\right),\end{gathered}
+
+(6)
+
+where Wi,Wf,WC,WoW_{i},W_{f},W_{C},W_{o} are parameter matrices; bi,bf,bC,bob_{i},b_{f},b_{C},b_{o} are parameter of biases. ⊙\odot represents element-wise multiplication and σ\sigma is the sigmoid function. The above update process is denoted in short as:
+
+hti​t​e​m=L​S​T​M​(zti​t​e​m,ht−1i​t​e​m).h_{t}^{item}=LSTM\left(z_{t}^{item},h_{t-1}^{item}\right).
+
+(7)
+
+IV-F Masked Attention-based Output Layer
+
+Based on the above learned representation with the structure and sequential dependency, the masked attention-based output layer aims to output the next selected fake item. Specifically, we utilize an masked attention mechanism [42] to determine the selection weight of different items. The weight for the jj-th item is calculated as follows:
+
+ωj\displaystyle\omega_{j}
+={C⋅tanh⁡(qT​kjdk) if ​j≠at′i​t​e​m∀t′∈u^​(t)−∞​ otherwise. \displaystyle=\begin{cases}C\cdot\tanh\left(\frac{q^{T}k_{j}}{\sqrt{d_{\mathrm{k}}}}\right)&\text{ if }j\neq a^{item}_{t^{\prime}}\quad\forall t^{\prime}\in\hat{u}(t)\\
+-\infty\text{ otherwise. }\end{cases}
+
+(8)
+
+where qq is the query representation, kjk_{j} is the key representation of the jj-th item such that vj∈𝒱v_{j}\in\mathcal{V} and dkd_{k} is the dimensionality of the query and key representation. To ensure each individual fake user profile selects different fake items, we utilize the mask mechanism to mask out the already selected fake items inside the fake user profile and u^​(t)\hat{u}({t}) represents the time indexes that belong to the same fake user profile before time tt. C=10C=10 is the constant. The query qq and key kjk_{j} are defined as follows:
+
+q\displaystyle q
+=WQ​h(c),\displaystyle=W^{Q}h_{(c)},
+
+(9)
+
+h(c)\displaystyle h_{(c)}
+=[hti​t​e​m​‖ztu​s​e​r‖​G¯t],\displaystyle=\left[h_{t}^{item}\|z^{user}_{t}\|\bar{G}_{t}\right],
+
+ki\displaystyle k_{i}
+=WKHtL(i)vi∈𝒱,\displaystyle=W^{K}H_{t}^{L}(i)\quad v_{i}\in\mathcal{V},
+
+where ∥\| is the concatenation operation. h(c)h_{(c)} is the context representation by incorporating the representation of last selected fake item hti​t​e​mh_{t}^{item} considering structural and sequential dependency, the current fake user representation ztu​s​e​rz^{user}_{t} and global representation of the current poisoned user-item interaction graph G¯t\bar{G}_{t}. HtL​(i)H_{t}^{L}(i) is ii-th item node representation. WQW^{Q} and WKW^{K} are the parameter matrices for the query and key transformation respectively.
+
+Based on the calculated selection weight for each item, the probability of picking the ii-th item as the selected fake item at time tt is computed using a softmax function as follows:
+
+πϕi​t​e​m​(ati​t​e​m=vi|st)=eωi∑jeωj.\pi^{item}_{\phi}(a_{t}^{item}=v_{i}|s_{t})=\frac{e^{\omega_{i}}}{\sum_{j}e^{\omega_{j}}}.
+
+(10)
+
+IV-G Gender Selection
+
+The above process demonstrates how to select the fake item for each fake user profile. In this section, we introduce how to determine the gender action for each fake user profile using the gender selection policy network. As shown in Figure 2, the gender selection policy outputs the gender action every MM steps, where MM is the length of the fake user profile. In other words, the gender policy outputs layer decides the gender action at time tt, where (t+1)%​M=0(t+1)\%M=0. Similar to the item selection policy network, the gender policy network consists of graph-based structure encoder, the sequential encoder and the gender policy output layer.
+
+The network structure of the graph-based structure encoder is the same as that in the item selection policy network to learn the structural dependency in the poisoned user-item interaction graph. In the following subsections, we detail the sequential encoder and gender policy output layer in the gender policy network.
+
+IV-G1 Sequential Encoder for Gender Selection
+
+As the gender policy network aims to decide the gender action at the user profile level (consisting of MM fake items), we get the averaged structure-aware item representation ztgz_{t}^{g} as the input of the sequential encoder as follows:
+
+ztg=1M​∑i=t−M+1tHtL​(i).z_{t}^{g}=\frac{1}{M}\sum_{i=t-M+1}^{t}H_{t}^{L}(i).
+
+(11)
+
+Then, the sequential dependency in the fake user profile level is modeled using the recurrent neural network with LSTM cell as follows:
+
+hc​u​rg=L​S​T​M​(ztg,hp​r​eg),h_{cur}^{g}=LSTM\left(z_{t}^{g},h_{pre}^{g}\right),
+
+(12)
+
+where hc​u​rgh_{cur}^{g} is the learned hidden representation for the current fake user profile. hp​r​egh_{pre}^{g} indicates the hidden presentation for the last fake user profile.
+
+IV-G2 Gender Policy Output Layer
+
+Based on the structure-aware and sequence-aware representation in the fake user profile level, the gender policy output layer outputs the selection probability over two types of genders (e.g., male and female) using the softmax function as follows:
+
+πψg(⋅∣st)=Softmax(f(hc​u​rg∥ztu​s​e​r)),\pi^{g}_{\psi}\left(\cdot\mid s_{t}\right)=\operatorname{Softmax}\left(f\left(h_{cur}^{g}\|z_{t}^{user}\right)\right),
+
+(13)
+
+where ∥\| is the concatenation operation and ff is a two-layer MultiLayer Perceptron (MLP) with ReLU activation.
+
+IV-H Training
+
+Algorithm 1  Fairness Attack Policy Training
+
+              1:
+
+            Item selection policy πϕ\pi_{\phi}, gender selection policy πψ\pi_{\psi}, surrogate recommender parameters θ\theta, number of fake user profiles NN, number of selected fake items MM.
+
+              2:
+
+            Learned item selection policy πϕ\pi_{\phi} and gender selection policy πψ\pi_{\psi}.
+
+              3:
+
+            Initialize parameters ϕ,ψ,θ\phi,\psi,\theta.
+
+              4:
+
+            for epoch =1=1 to max-epochs do
+
+              5:
+
+              Reset the initial state s0s_{0}.
+
+              6:
+
+              for t=0t=0 to T−1T-1 do
+
+              7:
+
+               Select fake item action ati​t​e​ma^{item}_{t} with probability πϕi​t​e​m​(ati​t​e​m=vi∣st)\pi^{item}_{\phi}(a^{item}_{t}=v_{i}\mid s_{t}).
+
+              8:
+
+               Obtain reward rtr_{t} using Eq. 2.
+
+              9:
+
+               Update state st+1←{st,ati​t​e​m}s_{t+1}\leftarrow\{s_{t},a^{item}_{t}\}.
+
+              10:
+
+               if (t+1)modM=0(t+1)\bmod M=0 then
+
+              11:
+
+                 Output gender action atga^{g}_{t} according to πψg\pi^{g}_{\psi}.
+     
+
+              12:
+
+              Update πϕi​t​e​m\pi^{item}_{\phi} and πψg\pi^{g}_{\psi} using Eq. 14.
+
+Finally, the item selection policy πϕ\pi_{\phi} and gender selection policy πψ\pi_{\psi} are learned using the widely used Proximal Policy Optimization (PPO) [43] method. Each of them is optimized using gradient ascent by maximizing the objective ℒp​p​o​(φ)\mathcal{L}^{ppo}(\varphi), where φ\varphi can be ϕ\phi or ψ\psi:
+
+ℒp​p​o​(φ)=∑t=0T−1min⁡(ratiot⁡(φ)​R^t,clip⁡(ratiot⁡(φ),1−ϵ,1+ϵ)​R^t]ratiot⁡(φ)=πφ​(at∣st)πφold ​(at∣st)R^t=∑h=tT−1γh−t​rh,\begin{gathered}\mathcal{L}^{ppo}(\varphi)=\sum_{t=0}^{T-1}\min(\operatorname{ratio}_{t}(\varphi)\hat{R}_{t},\operatorname{clip}(\operatorname{ratio}_{t}(\varphi),1-\epsilon,1+\epsilon)\hat{R}_{t}]\\
+\operatorname{ratio}_{t}(\varphi)=\frac{\pi_{\varphi}\left(a_{t}\mid s_{t}\right)}{\pi_{\varphi_{\text{old }}}\left(a_{t}\mid s_{t}\right)}\\
+\hat{R}_{t}=\sum_{h=t}^{T-1}\gamma^{h-t}r_{h},\end{gathered}
+
+(14)
+
+where ϵ\epsilon is a hyperparameter. φold \varphi_{\text{old }} denotes the old parameters of the policy network and the clip operation restricts ratio ratiot⁡(φ)\operatorname{ratio}_{t}(\varphi) to be in the range [1−ϵ,1+ϵ][1-\epsilon,1+\epsilon] to avoid drastically policy update. Specifically, the pseudocode of the training algorithm is shown in Algorithm 1.
+
+V Experiment
+
+In this section, we evaluate the effectiveness of our Structure-Aware Reinforcement Learning-Based Fairness Attack (SRLFA) approach using two publicly available datasets and two representative target recommendation models. We aim to address the following Research Questions:
+
+•
+
+RQ1: Does our proposed method exacerbate the unfairness in the recommender system?
+
+•
+
+RQ2: How does our fairness attack method perform when the target recommender system incorporates fairness-aware training?
+
+•
+
+RQ3: What is the performance of the fairness attack method when only a subset of the training data is available?
+
+•
+
+RQ4: How does the number of fake user profiles NN and interactions per fake user profile MM influence the sensitivity of our proposed fairness attack method?
+
+V-A Datasets
+
+TABLE I: Statistics of the real-world datasets.
+
+Datasets
+#Users
+#Items
+#Interactions
+Density
+
+MovieLens
+6,040
+3,706
+1,000,209
+4.47%
+
+Last.fm
+587
+7,782
+160,427
+3.51%
+
+We evaluate the proposed SRLFA method on two widely used real-world datasets. Table I presents the statistical details of these datasets. Below is a concise description of both datasets:
+
+•
+
+MovieLens: This dataset is sourced from the MovieLens-1M user-item interactions in the film domain [44]. Following conventional methodologies [45, 46], numeric ratings convert to implicit feedback, indicating user interactions with specific items. The dataset comprises 4,331 male and 1,709 female users.
+
+•
+
+Last.fm: This dataset captures user-song interactions, reflecting user listening preferences up to May 5th, 2009 (11
+                    1
+
+                  http://ocelma.net/MusicRecommendationDataset/lastfm-1K.html). We utilized data from the final month and excluded cold-start users and items with fewer than 10 interactions. Of the 587 users, 319 are male, 220 are female, with the remainder having unspecified genders.
+
+For each user in both datasets, interactions are chronologically ordered. The initial 80% of interactions are used for training, the subsequent 10% for validation, and the final 10% for testing.
+
+TABLE II: Fairness attack performance on the NCF recommender in the MovieLens dataset. "None" represents the recommendation results before fairness attack. All the metric values are multiplied by 100. The bold number indicates the best result.
+
+NDCG
+Precision
+F1
+
+Male
+Female
+Unfair
+Male
+Female
+Unfair
+Male
+Female
+Unfair
+
+None
+5.25
+5.16
+0.09
+1.73
+1.67
+0.06
+3.00
+2.91
+0.08
+
+Revisit
+5.53
+5.59
+0.06
+1.81
+1.69
+0.12
+3.13
+2.96
+0.17
+
+AttackMLFair
+5.47
+5.55
+0.08
+1.80
+1.69
+0.11
+3.12
+2.96
+0.16
+
+SRLFA
+5.61
+5.43
+0.18
+1.81
+1.66
+0.15
+3.14
+2.91
+0.23
+
+TABLE III: Fairness attack performance on the LightGCN recommender in the MovieLens dataset. "None" represents the recommendation results before fairness attack. All the metric values are multiplied by 100. The bold number indicates the best result.
+
+NDCG
+Precision
+F1
+
+Male
+Female
+Unfair
+Male
+Female
+Unfair
+Male
+Female
+Unfair
+
+None
+6.06
+5.87
+0.19
+2.02
+1.81
+0.21
+3.48
+3.16
+0.32
+
+Revisit
+6.06
+5.86
+0.20
+2.04
+1.82
+0.22
+3.52
+3.18
+0.34
+
+AttackMLFair
+5.97
+5.81
+0.16
+2.02
+1.83
+0.19
+3.48
+3.19
+0.29
+
+SRLFA
+5.90
+5.63
+0.27
+1.99
+1.71
+0.28
+3.43
+3.00
+0.43
+
+TABLE IV: Fairness attack performance on the NCF recommender in the Last.fm dataset. "None" represents the recommendation results before fairness attack. All the metric values are multiplied by 100. The bold number indicates the best result.
+
+NDCG
+Precision
+F1
+
+Male
+Female
+Unfair
+Male
+Female
+Unfair
+Male
+Female
+Unfair
+
+None
+24.64
+24.44
+0.20
+10.85
+9.06
+1.79
+16.06
+14.06
+2.00
+
+Revisit
+24.81
+21.77
+3.04
+11.05
+8.96
+2.09
+16.39
+13.81
+2.58
+
+AttackMLFair
+24.17
+22.58
+1.59
+10.66
+8.99
+1.67
+15.79
+13.94
+1.85
+
+SRLFA
+23.67
+21.46
+2.21
+10.89
+8.75
+2.14
+16.17
+13.46
+2.71
+
+TABLE V: Fairness attack performance on the LightGCN recommender in the Last.fm dataset. "None" represents the recommendation results before fairness attack. All the metric values are multiplied by 100. The bold number indicates the best result.
+
+NDCG
+Precision
+F1
+
+Male
+Female
+Unfair
+Male
+Female
+Unfair
+Male
+Female
+Unfair
+
+None
+26.01
+23.86
+2.15
+10.45
+8.70
+1.75
+15.95
+13.63
+2.31
+
+Revisit
+23.15
+20.43
+2.72
+10.01
+8.47
+1.54
+15.11
+13.21
+1.90
+
+AttackMLFair
+22.66
+20.78
+1.88
+9.97
+8.53
+1.44
+15.01
+13.18
+1.83
+
+SRLFA
+23.29
+19.27
+4.02
+10.04
+8.02
+2.02
+15.13
+12.52
+2.61
+
+V-B Experimental Setup
+
+V-B1 Evaluation Metrics
+
+To evaluate the performance of the fairness attack, we utilize the metrics U​n​f​a​i​rNDCGUnfair_{\mathcal{\text{NDCG}}}, U​n​f​a​i​rPrecisionUnfair_{\mathcal{\text{Precision}}}, and U​n​f​a​i​rF1Unfair_{\mathcal{\text{F1}}}, as defined in Eq. 1. These metrics are considered within the context of a recommendation list size of K=50K=50. Additionally, we present recommendation results separately for male and female groups.
+Specifically, NDCG for User uu represented as follows:N​D​C​G​@​K​(u)=D​C​G​@​K​(u)I​D​C​G​@​K​(u),D​C​G​@​K​(u)=∑i=1Kr​e​lu,ilog2⁡(i+1),NDCG@K(u)=\frac{DCG@K(u)}{IDCG@K(u)},DCG@K(u)=\sum_{i=1}^{K}\frac{rel_{u,i}}{\log_{2}(i+1)},
+where r​e​lu,irel_{u,i} designates the relevance of the item at position ii in the top-KK list recommended to user uu. If user uu prefers the ii-th item, then r​e​lu,i=1rel_{u,i}=1; otherwise, r​e​lu,i=0rel_{u,i}=0. I​D​C​G​@​KIDCG@K represents the ideal DCG spanning all possible recommendation lists of length KK, serving as a normalization factor. Precision for a user uu can be calculated using the following formula: P​r​e​c​i​s​i​o​n​@​K​(u)=|𝒞u,K∩Iu|K,Precision@K(u)=\frac{\left|\mathcal{C}_{u,K}\cap I_{u}\right|}{K},
+where 𝒞u,K\mathcal{C}_{u,K} represents the top-KK items recommended to user uu and ℐu\mathcal{I}_{u} signifies the set of items preferred by user uu. The F1 score is the harmonic mean of precision and recall, defined as follows:
+
+F​1​@​K​(u)\displaystyle F1@K(u)
+=2×P​r​e​c​i​s​i​o​n​@​K​(u)×R​e​c​a​l​l​@​K​(u)P​r​e​c​i​s​i​o​n​@​K​(u)+R​e​c​a​l​l​@​K​(u),\displaystyle=\frac{2\times Precision@K(u)\times Recall@K(u)}{Precision@K(u)+Recall@K(u)},
+
+(15)
+
+R​e​c​a​l​l​@​K​(u)\displaystyle Recall@K(u)
+=|𝒞u,K∩ℐu||ℐu|.\displaystyle=\frac{\left|\mathcal{C}_{u,K}\cap\mathcal{I}_{u}\right|}{\left|\mathcal{I}_{u}\right|}.
+
+V-B2 Target Recommendation Models
+
+We consider two representative recommendation models as the target recommendation model as follows:
+
+•
+
+NCF[45]: Neural Collaborative Filtering (NCF) combines the shallow matrix factorization layer with multiple-layer perceptron for the next-item prediction, which can learn both linear and non-linear user-item interaction.
+
+•
+
+LightGCN[46]: LightGCN is a simplified graph convolution network (GCN) for recommendation task by removing the feature transformation and non-linear activation part from the original GCN [40] model.
+
+To simulate the fairness-aware recommendation, we also include the fairness regularization in the training of above two recommenders. Specifically, we add a fairness regularization loss to the original training loss of the recommender as shown in Eq. 3. The above two recommenders with fairness regularization are denoted as NCF-fair and LightGCN-fair respectively.
+
+V-B3 Implementation Details
+
+For the surrogate recommendation model, the embedding sizes of both user and item were set to 64. The node embedding size in the graph-based structure encoder was set to 64 and 32 for the MovieLens and Last.fm dataest respectively. The hidden sizes of the graph-based structure encoder, the LSTM layer, the masked attention-based output layer, and the gender policy output layer were all configured to 64 and 32 for the MovieLens and Last.fm dataest respectively. Given the shared representation learned by the graph-based structure encoder, its parameters were utilized commonly among πϕi​t​e​m\pi^{item}_{\phi} and πψg\pi^{g}_{\psi}. The parameters of both πϕi​t​e​m\pi^{item}_{\phi} and πψg\pi^{g}_{\psi} were optimized employing the Adam optimizer [47] with a learning rate set at 0.001. For the attacker’s capability, the number of fake user profiles NN and the number of interactions per fake user profile MM for all the compared methods were set to N=180,M=160N=180,M=160 in the MovieLens dataset and N=60,M=300N=60,M=300 in the Last.fm dataset respectively. Further analysis about the the attacker’s capability is shown in Section V-F.
+
+For the target reommendation models, the embedding size was set to 32 for the NCF recommender and we utilized three-layer MLP with hidden size 32 and the regularization weight was set to 0.00001. For the LightGCN model, the embedding size was set to 64 and the regularization weight was set to 0.00001. The two recommenders was optimized using Adam [47] with learning rate of 0.001.
+For the MovieLens dataset, we set λ\lambda to 10 for NCF-fair and 5 for LightGCN-fair. In the case of the Last.fm dataset, λ\lambda was configured to 1 for NCF-fair and 5 for LightGCN-fair.
+
+TABLE VI: Fairness attack performance on the NCF-fair recommender in the MovieLens dataset. "None-Fair" represents the fairness-aware recommendation results before fairness attack. All the metric values are multiplied by 100. The bold number indicates the best result.
+
+NDCG
+Precision
+F1
+
+Male
+Female
+Unfair
+Male
+Female
+Unfair
+Male
+Female
+Unfair
+
+None-Fair
+4.42
+4.47
+0.05
+1.33
+1.27
+0.06
+2.36
+2.27
+0.08
+
+Revisit
+4.68
+4.66
+0.02
+1.42
+1.31
+0.11
+2.51
+2.33
+0.18
+
+AttackMLFair
+4.62
+4.53
+0.09
+1.35
+1.28
+0.07
+2.40
+2.28
+0.11
+
+SRLFA
+4.68
+4.76
+0.08
+1.38
+1.25
+0.13
+2.44
+2.25
+0.20
+
+TABLE VII: Fairness attack performance on the LightGCN-fair recommender in the MovieLens dataset. "None-Fair" represents the fairness-aware recommendation results before fairness attack. All the metric values are multiplied by 100. The bold number indicates the best result.
+
+NDCG
+Precision
+F1
+
+Male
+Female
+Unfair
+Male
+Female
+Unfair
+Male
+Female
+Unfair
+
+None-Fair
+6.17
+6.08
+0.09
+1.95
+1.75
+0.20
+3.41
+3.11
+0.30
+
+Revisit
+6.10
+6.04
+0.06
+1.94
+1.73
+0.21
+3.39
+3.07
+0.32
+
+AttackMLFair
+6.14
+6.11
+0.03
+1.93
+1.76
+0.17
+3.38
+3.12
+0.25
+
+SRLFA
+6.09
+5.95
+0.14
+1.95
+1.72
+0.23
+3.41
+3.05
+0.36
+
+TABLE VIII: Fairness attack performance on the NCF-fair recommender in the Last.fm dataset. "None-Fair" represents the fairness-aware recommendation results before fairness attack. All the metric values are multiplied by 100. The bold number indicates the best result.
+
+NDCG
+Precision
+F1
+
+Male
+Female
+Unfair
+Male
+Female
+Unfair
+Male
+Female
+Unfair
+
+None-Fair
+26.08
+26.13
+0.05
+11.10
+9.38
+1.72
+16.44
+14.80
+1.64
+
+Revisit
+25.61
+25.71
+0.10
+11.07
+9.45
+1.62
+16.45
+14.84
+1.61
+
+AttackMLFair
+25.31
+25.96
+0.65
+10.81
+9.59
+1.22
+16.12
+15.13
+0.99
+
+SRLFA
+26.69
+25.44
+1.25
+11.24
+9.42
+1.82
+16.72
+14.75
+1.96
+
+TABLE IX: Fairness attack performance on the LightGCN-fair recommender in the Last.fm dataset. "None-Fair" represents the fairness-aware recommendation results before fairness attack. All the metric values are multiplied by 100. The bold number indicates the best result.
+
+NDCG
+Precision
+F1
+
+Male
+Female
+Unfair
+Male
+Female
+Unfair
+Male
+Female
+Unfair
+
+None-Fair
+23.74
+23.87
+0.13
+9.94
+9.03
+0.91
+15.02
+14.09
+0.93
+
+Revisit
+22.07
+22.70
+0.63
+9.54
+9.12
+0.42
+14.34
+14.14
+0.20
+
+AttackMLFair
+22.09
+21.95
+0.14
+9.57
+8.88
+0.69
+14.27
+13.74
+0.54
+
+SRLFA
+21.08
+17.67
+3.41
+9.35
+7.61
+1.74
+14.06
+11.57
+2.49
+
+V-B4 Baseline Methods
+
+As there are no existing works studying the fairness attacks on recommender systems. We adapt two representative attacking methods for the fairness attack in recommender systems:
+
+•
+
+Revisit [12]:
+This is one state-of-the-art method for attacking the performance of recommendation model by promoting the target items. We modify the attack objective to decrease the fairness of the surrogate recommender (i.e., weighted matrix factorization model). For fair comparison, the training loss is the same as ℒfair_train \mathcal{L}_{\text{fair\_train }} used in our model.
+
+•
+
+AttackMLFair [29]: This is one state-of-the-art method for attacking the fairness of machine learning classification algorithms. This method modifies malicious data points to reduce fairness through an influence-based attack strategy [48]. We recalibrate the training loss in the surrogate recommender (i.e., weighted matrix factorization model) to match our adopted training loss in Eq. 3. Furthermore, we alter the influence estimation, focusing on compromising the fairness of the recommender rather than merely the classification fairness.
+
+Fig. 3: Impact of the percentage of training data on attacking NCF on Last.fm dataset.
+
+V-C Fairness Attack Results on Recommender System (RQ1)
+
+To answer RQ1, we compare the proposed method with the baseline methods on two target recommendation models over two real-world datasets. Table II - V show the comparison results. In addition to unfairness metrics, the tables also show the average recommendation performance for both male and female users. We have the following observations. First, our proposed method can exacerbate the unfairness of all the target recommenders on the three unfairness metrics across two datasets. For instance, as highlighted in Table II, our proposed SRLFA exacerbates the unfairness of NCF by 150.00% based on the U​n​f​a​i​rprecisionUnfair_{\text{precision}} metric. On average, our proposed fairness attack method amplifies unfairness by averages of 297.24% on U​n​f​a​i​rNDCGUnfair_{\text{NDCG}}, 53.72% on U​n​f​a​i​rprecisionUnfair_{\text{precision}} and 67.48% on U​n​f​a​i​rF1Unfair_{\text{F1}} across the two target recommenders and two datasets. Second, our method outperforms all the baseline methods on all the unfairness metrics across all the target recommender and dataset combinations except the U​n​f​a​i​rNDCGUnfair_{\text{NDCG}} in Table IV. Aggregated results indicate that SRLFA outperforms the best baseline by margins of 36.21%, 20.48%, and 25.91% for U​n​f​a​i​rNDCGUnfair_{\text{NDCG}}, U​n​f​a​i​rprecisionUnfair_{\text{precision}}, and U​n​f​a​i​rF1Unfair_{\text{F1}} respectively. Third, In contrast to baseline methods, our method appears to further diminish recommendation performance for the disadvantaged group (specifically, the female group, as evidenced in the "None" results). This deepens the performance disparity between male and female users. For instance, in Table III, our approach reduces the F1 metric performance for females from 3.16 to 3.00, marking the most pronounced decline in female user performance in comparison to baseline methods. These results clearly demonstrate that our fairness attack method can significantly exacerbate the unfairness of recommender system.
+
+V-D Fairness Attack Results on Fairness-aware Recommender System (RQ2)
+
+The above attack results demonstrate that the fairness attacks can indeed harm the fairness of recommender system. An intriguing question is how does the proposed fairness attack method perform when the target recommender system incorporate fairness aware training? (RQ2) To explore this, we assess the impact of fairness attacks on two fairness-aware recommenders: NCF-fair and LightGCN-fair, as outlined in Section V-B2. The ensuing fairness attack outcomes are detailed in Tables VI-IX. From these tables, we have the following observations. First, fairness-aware recommenders appear to attenuate the efficacy of fairness attacks when compared to their non-fairness-trained counterparts. For instance, LightGCN-fair reduced the U​n​f​a​i​rNDCGUnfair_{\text{NDCG}} induced by our SRLFA method from 4.02 (Table V) to 3.41 (Table IX). Nonetheless, SRLFA remains capable of intensifying the unfairness within these fairness-aware target recommenders. On average, our SRLFA method can exacerbate the unfairness of fairness-aware recommender (e.g., None-Fair) by 1259.66%, 57.17% and 89.31% on U​n​f​a​i​rNDCGUnfair_{\text{NDCG}}, U​n​f​a​i​rprecisionUnfair_{\text{precision}} and U​n​f​a​i​rF1Unfair_{\text{F1}} respectively. Second, the SRLFA method consistently surpasses all baseline methods across most unfairness metrics, with exceptions like U​n​f​a​i​rNDCGUnfair_{\text{NDCG}} in Table VI. On average, it exceeds the performance of the best baseline attack methods by 163.95% on U​n​f​a​i​rNDCGUnfair_{\text{NDCG}}, 48.06% on U​n​f​a​i​rprecisionUnfair_{\text{precision}}, and 101.62% on U​n​f​a​i​rF1Unfair_{\text{F1}} across two target recommenders and two datasets. Third, mirroring the observations on non-fairness-trained recommenders in Section V-C, SRLFA further diminishes recommendation accuracy for disadvantaged groups (e.g., female users), thereby amplifying disparity in recommendation outcomes between male and female user groups. These results clearly demonstrate that our fairness attack method can still significantly harm the fairness of fairness-aware recommenders.
+
+In the subsequent sections, we provide further analysis of the proposed method and use the fairness attack performance on NCF recommender on Last.fm dataset as an representative example.
+
+V-E Impact of the Percentage of Training Data (RQ3)
+
+In this section, we examine the performance of the proposed fairness attack method when the attacker has access to only a portion of the training data (RQ3). For each user’s interactions in the training data, we randomly sample a subset of the interactions to represent the training data observed by the attacker. Fig.3 illustrates the performance of the U​n​f​a​i​rF1Unfair_{\text{F1}} fairness attack on NCF recommender on the Last.fm dataset with different percentages of training data available. As can be seen from Fig. 3, our proposed SRLFA method surpasses the two baseline attack methods across various percentages of training data. Generally, the performance of the fairness attack improves with an increase in the percentage of available training data. Remarkably, the SRLFA method already achieves relatively strong fairness attack performance with just 30% of the training data. This outcome underscores the vulnerability of recommender systems’ fairness, even when only partial data is accessible to the attacker.
+
+V-F Impact of Attacker’s Capability of NN and MM (RQ4)
+
+(a) Impact of NN
+
+(b) Impact of MM
+
+Fig. 4: Impact of attacker capability NN and MM on fairness attack performance for the NCF recommender on the Last.fm dataset.
+
+In this section, we examine the influence of the attacker’s capability (i.e., the number of generated fake user profiles NN and the number of interactions per fake user profile MM) on the fairness attack performance (RQ4). To address RQ4, we vary both the number of fake user profiles and the number of interactions per fake user; the results of this variation on the fairness attack are illustrated in Fig. 4. As depicted in Fig. 4 (a), our proposed SRLFA method outperforms the two baseline attack methods across a range of fake user profiles. The optimal fairness attack performance of SRLFA is attained when the number of fake user profiles is medium (i.e., N=20N=20). Likewise, Fig. 4 (b) reveals that our fairness attack method continues to surpass the two baseline attack methods across different numbers of interactions per fake user profile, with the peak fairness attack performance achieved when M=300M=300. This value approximates the average number of user interactions in the Last.fm dataset.
+
+VI Conclusion
+
+In this paper, we investigate the under-explored problem of fairness attacks on recommender systems and propose a novel Structure-aware Reinforcement Learning based Fairness Attack (SRLFA) method designed to exacerbate the unfairness of recommender systems. Our method models the structural dependency between fake user-item interactions and original user-item interactions. Specifically, we employ a graph-based structure encoder to model this structural dependency. Since fake items are determined sequentially, we then use a recurrent neural network to model the sequential dependency among these fake items. Based on the learned structure-aware and sequence-aware representations of the fake user and item, the item selection policy employs a masked attention mechanism to decide the next fake item. Additionally, as the target recommendation model may employ fairness-aware training and leverage gender attribute information, we further design a gender selection policy to decide the gender information of the generated fake user profile. Given the practical black-box attack setting, we utilize a fairness-aware surrogate model to simulate the potential fairness-aware target recommender and provide feedback for the optimization of the fake user profile. Both the item selection and gender selection policies are jointly trained using reinforcement learning in our proposed method. Extensive experiments on four representative recommender models and two real-world datasets demonstrate that SRLFA can significantly exacerbate system-level unfairness, highlighting critical fairness vulnerabilities and underscoring the importance of red-teaming approaches for proactive fairness risk management in recommender systems.
+
+References
+
+[1]
+P. Covington, J. Adams, and E. Sargin (2016)
+
+Deep neural networks for youtube recommendations.
+
+In Proceedings of the 10th ACM conference on recommender systems,
+
+pp. 191–198.
+
+Cited by: §I.
+
+[2]
+M. C. Urdaneta-Ponte, A. Mendez-Zorrilla, and I. Oleagordia-Ruiz (2021)
+
+Recommendation systems for education: systematic review.
+
+Electronics 10 (14), pp. 1611.
+
+Cited by: §I.
+
+[3]
+K. Kenthapadi, B. Le, and G. Venkataraman (2017)
+
+Personalized job recommendation system at linkedin: practical challenges and lessons learned.
+
+In Proceedings of the eleventh ACM conference on recommender systems,
+
+pp. 346–347.
+
+Cited by: §I.
+
+[4]
+S. Yao and B. Huang (2017)
+
+Beyond parity: fairness objectives for collaborative filtering.
+
+Advances in neural information processing systems 30.
+
+Cited by: §I,
+§II-C.
+
+[5]
+A. Köchling and M. C. Wehner (2020)
+
+Discriminated by an algorithm: a systematic review of discrimination and fairness by algorithmic decision-making in the context of hr recruitment and hr development.
+
+Business Research 13 (3), pp. 795–848.
+
+Cited by: §I.
+
+[6]
+C. N. Spinks (2019)
+
+Contemporary housing discrimination: facebook, targeted advertising, and the fair housing act.
+
+Hous. L. Rev. 57, pp. 925.
+
+Cited by: §I.
+
+[7]
+A. Tobin (2019)
+
+HUD sues facebook over housing discrimination and says the company’s algorithms have made the problem worse.
+
+ProPublica (March 28, 2019). Available at https://www. propublica. org/article/hud-sues-facebook-housing-discrimination-advertising-algorithms (last accessed April 29, 2019).
+
+Cited by: §I.
+
+[8]
+A. Beutel, J. Chen, T. Doshi, H. Qian, L. Wei, Y. Wu, L. Heldt, Z. Zhao, L. Hong, E. H. Chi, et al. (2019)
+
+Fairness in recommendation ranking through pairwise comparisons.
+
+In Proceedings of the 25th ACM SIGKDD international conference on knowledge discovery & data mining,
+
+pp. 2212–2220.
+
+Cited by: §I.
+
+[9]
+A. Bose and W. Hamilton (2019)
+
+Compositional fairness constraints for graph embeddings.
+
+In International Conference on Machine Learning,
+
+pp. 715–724.
+
+Cited by: §I.
+
+[10]
+Y. Wang, W. Ma, M. Zhang, Y. Liu, and S. Ma (2023)
+
+A survey on the fairness of recommender systems.
+
+ACM Transactions on Information Systems 41 (3), pp. 1–43.
+
+Cited by: §I,
+§II-C,
+§III.
+
+[11]
+M. D. Ekstrand, M. Tian, I. M. Azpiazu, J. D. Ekstrand, O. Anuyah, D. McNeill, and M. S. Pera (2018)
+
+All the cool kids, how do they fit in?: popularity and demographic biases in recommender evaluation and effectiveness.
+
+In Conference on fairness, accountability and transparency,
+
+pp. 172–186.
+
+Cited by: §I,
+§II-C.
+
+[12]
+J. Tang, H. Wen, and K. Wang (2020)
+
+Revisiting adversarially learned injection attacks against recommender systems.
+
+In Proceedings of the 14th ACM Conference on Recommender Systems,
+
+pp. 318–327.
+
+Cited by: §I,
+§I,
+§II-A,
+§II-A,
+§III,
+1st item.
+
+[13]
+G. Yang, N. Z. Gong, and Y. Cai (2017)
+
+Fake co-visitation injection attacks to recommender systems..
+
+In NDSS,
+
+Cited by: §I,
+§II-A.
+
+[14]
+Y. L. Khaleel, M. A. Habeeb, A. Albahri, T. Al-Quraishi, O. Albahri, and A. Alamoodi (2024)
+
+Network and cybersecurity applications of defense in adversarial attacks: a state-of-the-art using machine learning and deep learning methods.
+
+Journal of Intelligent Systems 33 (1), pp. 20240153.
+
+Cited by: §I.
+
+[15]
+R. S. Sutton and A. G. Barto (2018)
+
+Reinforcement learning: an introduction.
+
+ MIT press.
+
+Cited by: §I,
+§IV.
+
+[16]
+D. Silver, A. Huang, C. J. Maddison, A. Guez, L. Sifre, G. Van Den Driessche, J. Schrittwieser, I. Antonoglou, V. Panneershelvam, M. Lanctot, et al. (2016)
+
+Mastering the game of go with deep neural networks and tree search.
+
+nature 529 (7587), pp. 484–489.
+
+Cited by: §I,
+§IV.
+
+[17]
+J. Song, Z. Li, Z. Hu, Y. Wu, Z. Li, J. Li, and J. Gao (2020)
+
+Poisonrec: an adaptive data poisoning framework for attacking black-box recommender systems.
+
+In 2020 IEEE 36th International Conference on Data Engineering (ICDE),
+
+pp. 157–168.
+
+Cited by: §I,
+§II-A.
+
+[18]
+H. Zhang, Y. Li, B. Ding, and J. Gao (2020)
+
+Practical data poisoning attack against next-item recommendation.
+
+In Proceedings of The Web Conference 2020,
+
+pp. 2458–2464.
+
+Cited by: §I,
+§II-A,
+§III.
+
+[19]
+C. Wu, D. Lian, Y. Ge, Z. Zhu, and E. Chen (2021)
+
+Triple adversarial learning for influence based poisoning attack in recommender systems.
+
+In Proceedings of the 27th ACM SIGKDD Conference on Knowledge Discovery & Data Mining,
+
+pp. 1830–1840.
+
+Cited by: §II-A.
+
+[20]
+J. Lee and D. Zhu (2012)
+
+Shilling attack detection—a new approach for a trustworthy recommender system.
+
+INFORMS Journal on Computing 24 (1), pp. 117–131.
+
+Cited by: §II-A.
+
+[21]
+B. Li, Y. Wang, A. Singh, and Y. Vorobeychik (2016)
+
+Data poisoning attacks on factorization-based collaborative filtering.
+
+Advances in neural information processing systems 29.
+
+Cited by: §II-A.
+
+[22]
+K. Christakopoulou and A. Banerjee (2019)
+
+Adversarial attacks on an oblivious recommender.
+
+In Proceedings of the 13th ACM Conference on Recommender Systems,
+
+pp. 322–330.
+
+Cited by: §II-A.
+
+[23]
+M. Fang, N. Z. Gong, and J. Liu (2020)
+
+Influence function based data poisoning attacks to top-n recommender systems.
+
+In Proceedings of The Web Conference 2020,
+
+pp. 3019–3025.
+
+Cited by: §II-A.
+
+[24]
+M. Fang, G. Yang, N. Z. Gong, and J. Liu (2018)
+
+Poisoning attacks to graph-based recommender systems.
+
+In Proceedings of the 34th annual computer security applications conference,
+
+pp. 381–392.
+
+Cited by: §II-A.
+
+[25]
+Y. Wang and Y. Ge (2024)
+
+Security of recommender system: adversarial attack, vulnerability estimation and mitigation practice.
+
+In INFORMS Workshop on Data Science,
+
+Cited by: §II-A.
+
+[26]
+H. Zhang, C. Tian, Y. Li, L. Su, N. Yang, W. X. Zhao, and J. Gao (2021)
+
+Data poisoning attack against recommender system using incomplete and perturbed data.
+
+In Proceedings of the 27th ACM SIGKDD Conference on Knowledge Discovery & Data Mining,
+
+pp. 2154–2164.
+
+Cited by: §II-A.
+
+[27]
+P. Chirita, W. Nejdl, and C. Zamfir (2005)
+
+Preventing shilling attacks in online recommender systems.
+
+In Proceedings of the 7th annual ACM international workshop on Web information and data management,
+
+pp. 67–74.
+
+Cited by: §II-A.
+
+[28]
+C. Lin, S. Chen, H. Li, Y. Xiao, L. Li, and Q. Yang (2020)
+
+Attacking recommender systems with augmented user profiles.
+
+In Proceedings of the 29th ACM international conference on information & knowledge management,
+
+pp. 855–864.
+
+Cited by: §II-A.
+
+[29]
+N. Mehrabi, M. Naveed, F. Morstatter, and A. Galstyan (2021)
+
+Exacerbating algorithmic bias through fairness attacks.
+
+In Proceedings of the AAAI Conference on Artificial Intelligence,
+
+Vol. 35, pp. 8930–8938.
+
+Cited by: §II-B,
+§II-B,
+2nd item.
+
+[30]
+D. Solans, B. Biggio, and C. Castillo (2020)
+
+Poisoning attacks on algorithmic fairness.
+
+In Joint European Conference on Machine Learning and Knowledge Discovery in Databases,
+
+pp. 162–177.
+
+Cited by: §II-B,
+§II-B.
+
+[31]
+P. W. Koh and P. Liang (2017)
+
+Understanding black-box predictions via influence functions.
+
+In International conference on machine learning,
+
+pp. 1885–1894.
+
+Cited by: §II-B.
+
+[32]
+B. Rastegarpanah, K. P. Gummadi, and M. Crovella (2019)
+
+Fighting fire with fire: using antidote data to improve polarization and fairness of recommender systems.
+
+In Proceedings of the twelfth ACM international conference on web search and data mining,
+
+pp. 231–239.
+
+Cited by: §II-C,
+§III.
+
+[33]
+Y. Li, H. Chen, Z. Fu, Y. Ge, and Y. Zhang (2021)
+
+User-oriented fairness in recommendation.
+
+In Proceedings of the Web Conference 2021,
+
+pp. 624–632.
+
+Cited by: §II-C,
+§III.
+
+[34]
+Y. Li, H. Chen, S. Xu, Y. Ge, J. Tan, S. Liu, and Y. Zhang (2023)
+
+Fairness in recommendation: foundations, methods and applications.
+
+ACM Transactions on Intelligent Systems and Technology.
+
+Cited by: §II-C.
+
+[35]
+Z. Zhu, X. Hu, and J. Caverlee (2018)
+
+Fairness-aware tensor-based recommendation.
+
+In Proceedings of the 27th ACM international conference on information and knowledge management,
+
+pp. 1153–1162.
+
+Cited by: §II-C.
+
+[36]
+G. K. Patro, A. Biswas, N. Ganguly, K. P. Gummadi, and A. Chakraborty (2020)
+
+Fairrec: two-sided fairness for personalized recommendations in two-sided platforms.
+
+In Proceedings of the web conference 2020,
+
+pp. 1194–1204.
+
+Cited by: §II-C.
+
+[37]
+Z. Huang and D. D. Zeng (2011)
+
+Why does collaborative filtering work? transaction-based recommendation model validation and selection by analyzing bipartite random graphs.
+
+INFORMS Journal on Computing 23 (1), pp. 138–152.
+
+Cited by: §IV-B.
+
+[38]
+S. Rendle, C. Freudenthaler, Z. Gantner, and L. Schmidt-Thieme (2012)
+
+BPR: bayesian personalized ranking from implicit feedback.
+
+arXiv preprint arXiv:1205.2618.
+
+Cited by: §IV-C.
+
+[39]
+P. J. Huber (1992)
+
+Robust estimation of a location parameter.
+
+In Breakthroughs in statistics: Methodology and distribution,
+
+pp. 492–518.
+
+Cited by: §IV-C.
+
+[40]
+T. N. Kipf and M. Welling (2016)
+
+Semi-supervised classification with graph convolutional networks.
+
+arXiv preprint arXiv:1609.02907.
+
+Cited by: §IV-D,
+2nd item.
+
+[41]
+S. Hochreiter and J. Schmidhuber (1997)
+
+Long short-term memory.
+
+Neural computation 9 (8), pp. 1735–1780.
+
+Cited by: §IV-E.
+
+[42]
+W. Kool, H. Van Hoof, and M. Welling (2018)
+
+Attention, learn to solve routing problems!.
+
+arXiv preprint arXiv:1803.08475.
+
+Cited by: §IV-F.
+
+[43]
+J. Schulman, F. Wolski, P. Dhariwal, A. Radford, and O. Klimov (2017)
+
+Proximal policy optimization algorithms.
+
+arXiv preprint arXiv:1707.06347.
+
+Cited by: §IV-H.
+
+[44]
+F. M. Harper and J. A. Konstan (2015)
+
+The movielens datasets: history and context.
+
+Acm transactions on interactive intelligent systems (tiis) 5 (4), pp. 1–19.
+
+Cited by: 1st item.
+
+[45]
+X. He, L. Liao, H. Zhang, L. Nie, X. Hu, and T. Chua (2017)
+
+Neural collaborative filtering.
+
+In Proceedings of the 26th international conference on world wide web,
+
+pp. 173–182.
+
+Cited by: 1st item,
+1st item.
+
+[46]
+X. He, K. Deng, X. Wang, Y. Li, Y. Zhang, and M. Wang (2020)
+
+Lightgcn: simplifying and powering graph convolution network for recommendation.
+
+In Proceedings of the 43rd International ACM SIGIR conference on research and development in Information Retrieval,
+
+pp. 639–648.
+
+Cited by: 1st item,
+2nd item.
+
+[47]
+D. P. Kingma and J. Ba (2014)
+
+Adam: a method for stochastic optimization.
+
+arXiv preprint arXiv:1412.6980.
+
+Cited by: §V-B3,
+§V-B3.
+
+[48]
+P. W. Koh, J. Steinhardt, and P. Liang (2022)
+
+Stronger data poisoning attacks break data sanitization defenses.
+
+Machine Learning, pp. 1–47.
+
+Cited by: 2nd item.
+
+Yanan Wang  is currently an assistant professor in the Department of Information Systems and Operations Management, College of Business, The University of Texas at Arlington. He
+received the PhD in Management Information Systems from University of Arizona in 2025. His main research interests include reinforcement learning, large language models, AI security and AI alignment.
+
+Yong Ge  is a professor of Management Information Systems at the Eller College of Management at the University of Arizona. He received his PhD in Information Technology from Rutgers Business School at Rutgers, The State University of New Jersey in 2013. His primary research interests include data mining, big data, machine/deep learning, recommender systems, personalization services, social networking, target marketing, talent analytics, and business analytics.
+
+    Experimental support, please
+    view the build logs
+    for errors. Generated by
+
+        L
+        A
+        T
+        E
+
+      xml
+
+    .
+
+Instructions for reporting errors
+
+We are continuing to improve HTML versions of papers, and your feedback helps enhance accessibility and mobile
+      support. To report errors in the HTML that will help us improve conversion and rendering, choose any of the
+      methods listed below:
+
+Click the "Report Issue" (
+
+          ) button, located in the page header.
+
+Tip: You can select the relevant text first, to include it in your report.
+
+Our team has already identified the following issues. We appreciate your time reviewing and reporting rendering errors we
+      may not have found yet. Your efforts will help us improve the HTML versions for all readers, because disability
+      should not be a barrier to accessing research. Thank you for your continued support in championing open access for
+      all.
+
+Have a free development cycle? Help support accessibility at arXiv! Our collaborators at LaTeXML maintain a list of packages that need conversion, and welcome developer contributions.
+
+        We gratefully acknowledge support from
+        our major funders,
+        member institutions, ,
+        and all contributors.
+
+        About
+        ·
+        Help
+        ·
+        Contact
+        ·
+        Subscribe
+        ·
+        Copyright
+        ·
+        Privacy
+        ·
+        Accessibility
+        ·
+        Operational Status (opens in new tab)
+
+Major funding support from

@@ -1,0 +1,561 @@
+{
+  "agent_arguments": {
+    "query": "graph summarization temporal graph autoencoder RNN"
+  },
+  "agent_tool_call_id": "01a0aa4ba259f229da4be99971c99fb7",
+  "business_status": "NORMAL",
+  "duration": 1.016434,
+  "duration_ms": 1016,
+  "error": null,
+  "execution_status": "SUCCESS",
+  "failure_phase": null,
+  "finished_at": "2026-09-16T12:57:59.749804+00:00",
+  "normalized_result": {
+    "query": "graph summarization temporal graph autoencoder RNN",
+    "results": [
+      {
+        "published_at": "2020-10-15T14:26:23",
+        "snippet": "Wu, Zonghan , et al. \"A Comprehensive Survey on Graph Neural Networks.\" (2019).“”后的翻译与笔记,写下这篇文章后不久便意外地转换了研究方向,如今已不再研究深度学习,所以文中难免有纰漏之处,欢迎发现的知友在评论中指出并给予宝贵的修改意见。 一、什么是图神经网络 二、有哪些图神经网络 三、图神经网络的应用 一、什么是图神经网络? 在过去的几年中,神经网络的兴起与应用成功推动了模式识别和数据挖掘的研究。许多曾经严重依赖于手工提取特征的机器学习任务(如目标检测、机器翻译和语音识别),如今都已被各种端到端的深度学习范式(例如卷积神经网络(CNN)、长短期记忆(LSTM)和自动编码器)彻底改变了。曾有学者将本次人工智能浪潮的兴起归因于三个条件,分别是: 计算资源的快速发展(如GPU) 大量训练数据的可用性 深度学习从欧氏空间数据中提取潜在特征的有效性 尽管传统的深度学习方法被应用在提取欧氏空间数据的特征方面取得了巨大的成功,但许多实际应用场景中的数据是从非欧式空间生成的,传统的深度学习方法在处理非欧式空间数据上的表现却仍难以使人满意。例如,在电子商务中,一个基于图(Graph)的学习系统能够利用用户和产品之间的交互来做出非常准确的推荐,但图的复杂性使得现有的深度学习算法在处理时面临着巨大的挑战。这是因为图是不规则的,每个图都有一个大小可变的无序节点,图中的每个节点都有不同数量的相邻节点,导致一些重要的操作(例如卷积)在图像(Image)上很容易计算,但不再适合直接用于图。此外,现有深度学习算法的一个核心假设是数据样本之间彼此独立。然而,对于图来说,情况并非如此,图中的每个数据样本(节点)都会有边与图中其他实数据样本(节点)相关,这些信息可用于捕获实例之间的相互依赖关系。 近年来,人们对深度学习方法在图上的扩展越来越感兴趣。在多方因素的成功推动下,研究人员借鉴了卷积网络、循环网络和深度自动编码器的思想,定义和设计了用于处理图数据的神经网络结构,由此一个新的研究热点——“图神经网络(Graph Neural Networks,GNN)”应运而生,本篇文章主要对图神经网络的研究现状进行简单的概述。 需要注意的是,图神经网络的研究与图嵌入(对图嵌入不了解的读者可以参考我的这篇文章《图嵌入综述》)或网络嵌入密切相关,图嵌入或网络嵌入是数据挖掘和机器学习界日益关注的另一个课题。",
+        "source_name": "知乎",
+        "source_record_id": "src_f280173bcf0395341c5ab8f7",
+        "title": "图神经网络(Graph Neural Networks,GNN)综述",
+        "url": "https://zhuanlan.zhihu.com/p/265931094"
+      },
+      {
+        "published_at": "2023-03-01T14:35:27",
+        "snippet": "公众号:DataStrategy 分享代码及训练数据集 收录于 · 机器学习 Graph Neural Network (GNN)图神经网络,是一种旨在对图结构数据就行操作的深度学习算法。它可以很自然地表示现实世界中的很多问题,包括社交网络, 分子结构 和交通网络等。GNN旨在处理此类图结构数据,并对图中的节点和边进行预测或执行任务。 GNN中节点的信息 通过节点和节点之间连接的边 在节点之间传递。其中每个节点都可以从其和它相邻的节点中接收信息并相应地更新自己的信息,这个过程通常会重复多次以使信息充分地沿着边流动和在节点处聚合。然后这些更新的节点可以用于对节点的分类(node classification)、节点之间边的预测(两个节点之间是否存在边)、对于整个图的分类、生成一个新的图(比如VAE或GAN)等等。这些已经应用于化学,社交网络和推荐系统等各个领域。 在 计算机科学 中,图是一种抽象的数据类型,旨在实现数学图论领域中的无向图和 有向图 概念。图类型的 数据结构 由一组有限的(可能是可变的)顶点(也称为节点或点)组成,对于无向图,这些顶点在一组无序对内,对于有向图,这些顶点在一组有序对内。这些对被称为边(也称为链接或线),对于有向图,这些对也被称为边,但有时也称为箭头或圆弧。顶点可以是图形结构的一部分,也可以是由整数索引或引用表示的外部实体。 例如,我们使用图来表示社交网络,如下图所示,图中的每个节点代表一个人,每两个节点之间的边则代表了这两个人互相认识,比如Person A 分别和Person B和Person C是好朋友,B又和D是好朋友,但是C和D却互不认识。如果这条边是无向的,可以表示较为平等的关系,比如友谊,同学等;如果是有向的,可以用来表示上下级,或是师生等关系。 图神经网络 图神经网络是一类用于处理可以表示为图的数据的 人工神经网络 。在A Comprehensive Survey on Graph Neural Networks https://arxiv.org/pdf/1901.00596.pdf中提出了将图神经网络进一步地分为Recurrent  graph neural networks (RecGNNs) 递归图神经网络 、Convolutional graph neural networks (ConvGNNs) 卷积图神经网络 、Graph autoencoders (GAEs) 图自动编码器 和Spatial-temporal graph neural networks (STGNNs) 时空图神经网络 。 2.1 Recurrent graph neural networks (RecGNNs) 循环图神经网络 :  它是传统图神经网络的一种衍生,具有 循环结构 。\u0002",
+        "source_name": "知乎",
+        "source_record_id": "src_6a5d3d5e55174e6aab4c650d",
+        "title": "Graph Neural Network(GNN)图神经网络",
+        "url": "https://zhuanlan.zhihu.com/p/610036768"
+      },
+      {
+        "published_at": "2020-10-21T14:02:00",
+        "snippet": "1 Introduction 我们知道,CNNs、RNNs以及 autoencoders 等深度学习方法,可以取代手工的 特征提取 ,有效地捕获欧氏数据的隐含特征。但现实生活中,数据更普遍的形式是可以被构建为图的非欧数据。",
+        "source_name": "知乎",
+        "source_record_id": "src_610f21aae8353d9e701e0b1f",
+        "title": "【归纳综述】Graph Neural Network: An Introduction Ⅰ",
+        "url": "https://zhuanlan.zhihu.com/p/158984343"
+      },
+      {
+        "published_at": "2026-09-03T00:00:00",
+        "snippet": "We propose a single-document abstractive summarization system that integrates token relation into a traditional RNN-based encoder-decoder architecture. We employ pointer-wise mutual information to represent the token relation and adopt Graph Convolutional Networks (GCN) to extract token representation from the relation graph. In our experiment on Gigaword, we consider importing two kinds of structural information: token (node) representation from the relation graph. Also, we implement two kinds of GCNs, a spectral-based one and a spatial-based one, to extract structural information. The result shows that the spatial based GCN-enhanced model with node representation outperforms the classical RNN-based encoder-decoder model.",
+        "source_name": "无",
+        "source_record_id": "src_3a6f49f043a43d58892e20f7",
+        "title": "An Encoder-decoder Architecture with Graph Convolutional Networks for Abstractive Summarization",
+        "url": "http://ieeexplore.ieee.org/document/9515256/"
+      },
+      {
+        "published_at": "2022-04-30T03:33:46",
+        "snippet": "dynamic graph neural networks under spatio-temporal distribution shift zeyang zhang1∗, xin wang1†, ziwei zhang1, haoyang li1, zhou qin2, wenwu zhu1† 1tsinghua university, 2alibaba group zy-zhang20@mails.tsinghua.edu.cn, {xin_wang, zwzhang}@tsinghua.edu.cn, lihy18@mails.tsinghua.edu.cn, qinzhou.qinzhou@alibaba-inc.com, wwzhu@tsinghua.edu.cn abstract dynamic graph neural networks (dygnns) have demonstrated powerful predictive abilities by exploiting graph structural and temporal dynamics. however, the ex- isting dygnns fail to handle distribution shifts, which naturally exist in dynamic graphs, mainly because the patterns exploited by dygnns may be variant with respect to labels under distribution shifts. in this paper, we propose to handle spatio-temporal distribution shifts in dynamic graphs by discovering and utilizing invariant patterns, i.e., structures and features whose predictive abilities are stable across distribution shifts, which faces two key challenges: 1) how to discover the complex variant and invariant spatio-temporal patterns in dynamic graphs, which involve both time-varying graph structures and node features. 2) how to handle spatio-temporal distribution shifts with the discovered variant and invariant pat- terns. to tackle these challenges, we propose the disentangled intervention-based dynamic graph attention networks (dida). our proposed method can effectively handle spatio-temporal distribution shifts in dynamic graphs by discovering and fully utilizing invariant spatio-temporal patterns. specifically, we first propose a disentangled spatio-temporal attention network to capture the variant and invariant patterns. then, we design a spatio-temporal intervention mechanism to create multiple interventional distributions by sampling and reassembling variant patterns across neighborhoods and time stamps to eliminate the spurious impacts of variant patterns. lastly, we propose an invariance regularization term to minimize the variance of pred",
+        "source_name": "无",
+        "source_record_id": "src_fb38ee95f4979eefd5e27931",
+        "title": "Dynamic Graph Neural Networks Under Spatio-Temporal Distribution Shift",
+        "url": "https://mn.cs.tsinghua.edu.cn/xinwang/PDF/papers/2022_Dynamic%20Graph%20Neural%20Networks%20Under%20Spatio-Temporal%20Distribution%20Shift.pdf"
+      },
+      {
+        "published_at": "2026-05-21T16:27:48",
+        "snippet": "在探索大语言模型(LLM)内部工作机制的征途中,我们已经走过了漫长的路。从最初对输出结果的简单观察,到利用“思维链”(Chain-of-Thought, CoT)要求模型外显其推理步骤,再到通过“注意力流追踪”技术窥探其内部的聚焦点,我们的认知工具不断升级。 然而,这些方法大多提供的是静态的、离散的快照。它们能告诉我们模型在生成某个特定token时关注了什么,却难以描绘出整个推理过程是如何随时间演化、动态构建的。这就像只看到一幅幅静止的画面,而无法欣赏一部完整的电影。 动态注意力图谱分析(Dynamic Attention Graph Analysis)正是为了解决这一根本局限而诞生的革命性技术。它不再满足于孤立地观察单个时刻的注意力分布,而是将整个推理过程视为一个连续演化的信息网络。在这个网络中,输入序列的每个token是节点,而随时间变化的注意力权重则是连接这些节点的、具有方向和强度的动态边。 通过构建和分析这个动态图谱,我们得以以前所未有的粒度和深度,实时观测、量化并最终理解大模型是如何一步步构建其认知、形成其结论的。本文将系统性地、全方位地详解这项强大的技术,带你进入AI思考过程的核心腹地。 热门标签关联:#动态注意力图谱 #AI可解释性 #大模型原理 #注意力机制 #认知科学 #图神经网络 #实时推理分析 第一章:概念基石——什么是动态注意力图谱? 要掌握动态注意力图谱分析,我们必须首先清晰地定义其核心构成要素。 1.1 静态注意力 vs. 动态注意力 静态注意力:指在模型生成一个特定输出token时,其对输入序列所有token的注意力权重分布。这是一个瞬时的、固定的状态,通常用一个N维向量或一个N x N的热力图来表示(N为输入序列长度)。 动态注意力:指在整个自回归生成过程中(即从第一个输出token到最后一个),注意力权重如何随时间步t的变化而连续演变。它是一个时间序列,包含了T个(T为输出序列长度)静态注意力状态。 1.2 图谱(Graph)的构建 动态注意力图谱将上述动态注意力数据结构化为一个有向加权多图(Directed Weighted Multi-Graph): 节点(Nodes):代表输入序列中的每一个token(包括提示词和已生成的部分)。每个节点可以携带属性,如token本身的文本、其语义嵌入向量等。",
+        "source_name": "Tencent腾讯（腾讯官方网）",
+        "source_record_id": "src_6ae9a1d5678940af98426594",
+        "title": "详解动态注意力图谱分析:解构大模型实时认知轨迹的终极利器",
+        "url": "https://cloud.tencent.com/developer/article/2671990"
+      },
+      {
+        "published_at": "2022-06-28T09:13:59",
+        "snippet": "时间序列预测问题是根据一个序列的历史值预测未来值。当同时预测多个时间序列,并且各个时间序列之间存在空间上的关系时,就不能只将每个时间序列单独建模,而应该考虑不同时间序列之间的关系。 本节介绍几个图模型中的基础概念,感兴趣的同学可以深入其他图学习相关文章继续学习。N个节点组成的图可以由一个N*N的临接矩阵和一个N*N的度数矩阵表示。临接矩阵中第(i, j)个元素表示节点i和节点j之间在图上的距离,这个距离根据具体任务和图而定;度数矩阵是一个对角矩阵,第(i, i)个元素表示节点第i个节点和几个边相连。图的拉普拉斯矩阵由临接矩阵和度数矩阵计算得到,简单来说,拉普拉斯矩阵衡量了图中两两节点之间信息传递关系(具体来说,拉普拉斯矩阵是图上的拉普拉斯算子,拉普拉斯算子是高维空间二阶导数的推广)。通过拉普拉斯矩阵,我们可以将每个图中每个节点的特征进行扩散到其他节点,得到每个节点考虑了图中信息传播后新的特征。图卷积是图模型的一种实例。在将傅立叶变换拓展到图中时,发现傅立叶变换中的基就是图的拉普拉斯矩阵的特征向量。这样解决了Spatial卷积方法中,无法比较好的选择邻居节点、无向量化表示的问题。 拉普拉斯矩阵有不同的形式,例如最基础的拉普拉斯矩阵L=D-A,还有如下正则化拉普拉斯矩阵、随机游走拉普拉斯矩阵等,不同的拉普拉斯矩阵反应了图上信息流动方式的不同先验。 RNN是最基础的时间序列预测深度学习模型,RNN天然的序列建模能力可以很好的处理时间序列数据。在RNN的基础上,DIFFUSION CONVOLUTIONAL RECURRENT NEURAL NETWORK: DATA-DRIVEN TRAFFIC FORECASTING(ICLR 2018)提出DCRNN模型,通过将图的思想引入RNN,使RNN能够同时输入空间中多个节点的时间序列,在学习时间维度依赖的同时,学习不同节点的空间关系。 GRU是RNN模型的一种,DCRNN在GRU的基础上,将原来GRU中的全连接部分修改为diffusion convolutional layer(随机游走拉普拉斯矩阵+全连接),公式可以表示为如下形式: 不论是普通的GRU还是DCRNN,都可以将整个图上的所有节点序列同时输入到模型中(相当于一个batch)。",
+        "source_name": "北京智源人工智能研究院",
+        "source_record_id": "src_ae47cd33a84a9c9441c975f9",
+        "title": "Spatial-Temporal时间序列预测建模方法汇总",
+        "url": "https://hub.baai.ac.cn/view/18415"
+      },
+      {
+        "published_at": "2026-07-12T09:33:54",
+        "snippet": "GraphRNN的工作原理:从理论到实践 自回归图生成机制 GraphRNN的工作流程非常巧妙:首先将图转换为节点序列,然后使用两个循环神经网络(RNN)协同工作。第一个RNN(节点级RNN)负责生成节点,第二个RNN(边级RNN)负责为每个新节点生成与之前节点的连接关系。 在model.py中,您可以看到GraphRNN的核心实现。模型采用BFS(广度优先搜索)排序来确保生成过程的稳定性,这种排序方法使得相似的图结构在序列表示上也相似。",
+        "source_name": "CSDN软件开发网",
+        "source_record_id": "src_28e295c96ce4c102a38b7ecb",
+        "title": "GraphRNN完全指南:革命性深度自回归模型如何生成逼真图结构",
+        "url": "https://blog.csdn.net/gitblog_00093/article/details/154379921"
+      },
+      {
+        "published_at": "2022-11-11T17:55:29",
+        "snippet": "生成学习与对比学习 自监督学习从大量的无监督数据中挖掘出自己需要的的监督信息。与监督学习相比,它使用来自数据集本身的信息来构建伪标签。而在对比学习[9]方面,自监督学习作为监督学习的补充具有很大的潜力。 自MoCo和SimCLR引入以来,对比学习在图自监督学习领域占据主导地位,其在节点分类和图分类等任务上的表现远远超过生成式自监督学习方法。但是对比学习的成功往往取决于下面的两个因素: 高质量的数据扩充。GraphCL[5]探索了几种数据增强方法的有效性,如掩蔽属性、子图采样和随机添加和删除边。但是通过研究发现有效的图数据增强往往依赖于领域知识;例如,随机添加和删除边缘对社交网络中的训练是有利的,但它会会对分子图产生负面影响。所以到目前为止,在图对比学习中还没有普遍有效的数据增强方法。 复杂的策略来稳定训练。对比方法通过通用的训练技巧避免模型陷入繁琐的解决方案。GRACE[8]、DGI[7]和GraphCL[5]等方法在训练中使用负采样,而BGRL[6]利用了非对称网络结构和指数移动平均策略。 而生成式自监督学习可以避免上述依赖关系。生成式自监督学习能够重构数据本身的特征和信息。在自然语言处理(NLP)中,BERT[3]旨在恢复遮蔽词;在CV (Computer Vision)中,MAE[2]恢复图像的像素点(块)。 对于图,GAE (Graph Autoencoder)重建图的结构信息或节点特征。现有的图数据动编码器大多着眼于链接预测和图数据聚类目标,因此通常会选择重构图数据的结构信息,即邻接矩阵a。所以近年来图数据自编码器的进展远远落后于对比学习,在分类等任务上的表现并不令人满意。节点分类、图分类等任务的SOTA都是基于对比学习的方法。 与以前的图形自编码器不同,GraphMAE通过简单的重建被遮蔽的损坏节点特征,使图自编码器超越对比学习 GraphMAE的关键设计在于以下几个方面: 基于遮蔽的节点特征重构。现有的图数据自编码器通常以边缘作为重构目标,但其在下游分类任务中的表现通常较差。 以GNN为解码器进行以重建过程。现有的图自编码器通常选择MLP作为解码器,由于大多数图形节点特征是连续的向量,MLP的能力不足以从编码结果重建节点特征。",
+        "source_name": "Tencent腾讯（腾讯官方网）",
+        "source_record_id": "src_41e7baddd61d734e8bd4d859",
+        "title": "GraphMAE:将MAE的方法应用到图中使图的生成式自监督学习超越了对比学习",
+        "url": "https://cloud.tencent.com/developer/article/2160113"
+      },
+      {
+        "published_at": "2024-04-15T10:15:50",
+        "snippet": "在我们周围的各个领域,从分子结构到社交网络,再到城市设计结构,到处都有相互关联的图数据。图神经网络(GNN)作为一种强大的方法,正在用于建模和学习这类数据的空间和图结构。它已经被应用于蛋白质结构和其他分子应用,例如药物发现,以及模拟系统,如社交网络。标准的GNN可以结合来自其他机器学习模型的想法,比如将GNN与序列模型结合——时空图神经网络(Spatail-Temporal Graph),能够捕捉数据的时间和空间依赖性。 对于时空图神经网络Spatail-Temporal Graph来说,最简单的描述就是在原来的Graph基础上增加了时间这一个维度,也就是说我们的Graph的节点特征是会随着时间而变化的。 GNN模型和序列模型(如简单RNN、LSTM或GRU)本身就复杂。结合这些模型以处理空间和时间依赖性是强大的,但也很复杂:难以理解,也难以实现。所以在这篇文章中,我们将深入探讨这些模型的原理,并实现一个相对简单的示例,以更深入地理解它们的能力和应用。 图神经网络(GNN) 我们先介绍一些入门的知识简要讨论GNN。 图G可以定义为G = (V, E),其中V是节点集,E是它们之间的边。 一个包含n个节点的图的特征矩阵,每个节点具有f个特征,是所有特征的连接: GNN的关键问题是所有连接节点之间的消息传递,这种邻居特征转换和聚合可以写成: A是图的邻接矩阵,I是允许自连接的单位矩阵。虽然这不是完整的方程,但这已经可以说明可以学习不同节点之间空间依赖性的图卷积网络的基础。一个经典的图神经网络如下图所示: 时空图神经网络 (ST-GNN) ST-GNN中每个时间步都是一个图,并通过GCN/GAT网络传递,以获得嵌入数据空间相互依赖性的结果编码图。然后这些编码图可以像时间序列数据一样进行建模,只要保留每个时间步骤的数据的图结构的完整性。下图演示了这两个步骤,时间模型可以是从ARIMA或简单的循环神经网络或者是transformers的任何序列模型。 我们下面使用简单的循环神经网络来绘制ST-GNN的组件 上面就是ST-GNN的基本原理,将GNN和序列模型(如RNN、LSTM、GRU、Transformers 等)结合。如果你已经熟悉这些序列和GNN模型,那么理论来说是非常简单的,但是实际操作的时候就会有一些复杂,所以我们下面将直接使用Pytorch实现一个简单的ST-GNN。 ST-GNN的Pytorch实现 首先要说明:为了用于演示我将使用大型科技公司的股市数据。虽然这些数据本质上不是图数据,但这种网络可能会捕捉到这些公司之间的相互依赖性,例如一个公司的表现(好或坏)可能反过来影响市场中其他公司的价值。",
+        "source_name": "腾讯网",
+        "source_record_id": "src_eacc53f024e8154bcc934dc2",
+        "title": "https://new.qq.com/rain/a/20240415A01W6V00",
+        "url": "https://new.qq.com/rain/a/20240415A01W6V00"
+      }
+    ],
+    "succeeded": true,
+    "summary": "发现并保存 10 个 Web 候选来源",
+    "warnings": []
+  },
+  "raw_result": {
+    "arguments": {
+      "max_results": 10,
+      "query": "graph summarization temporal graph autoencoder RNN"
+    },
+    "elapsed_ms": 1016,
+    "error": null,
+    "payload": {
+      "search_result": {
+        "query": "graph summarization temporal graph autoencoder RNN",
+        "results": [
+          {
+            "published_at": "2020-10-15T14:26:23",
+            "rank": 1,
+            "score": null,
+            "snippet": "Wu, Zonghan , et al. \"A Comprehensive Survey on Graph Neural Networks.\" (2019).“”后的翻译与笔记,写下这篇文章后不久便意外地转换了研究方向,如今已不再研究深度学习,所以文中难免有纰漏之处,欢迎发现的知友在评论中指出并给予宝贵的修改意见。 一、什么是图神经网络 二、有哪些图神经网络 三、图神经网络的应用 一、什么是图神经网络? 在过去的几年中,神经网络的兴起与应用成功推动了模式识别和数据挖掘的研究。许多曾经严重依赖于手工提取特征的机器学习任务(如目标检测、机器翻译和语音识别),如今都已被各种端到端的深度学习范式(例如卷积神经网络(CNN)、长短期记忆(LSTM)和自动编码器)彻底改变了。曾有学者将本次人工智能浪潮的兴起归因于三个条件,分别是: 计算资源的快速发展(如GPU) 大量训练数据的可用性 深度学习从欧氏空间数据中提取潜在特征的有效性 尽管传统的深度学习方法被应用在提取欧氏空间数据的特征方面取得了巨大的成功,但许多实际应用场景中的数据是从非欧式空间生成的,传统的深度学习方法在处理非欧式空间数据上的表现却仍难以使人满意。例如,在电子商务中,一个基于图(Graph)的学习系统能够利用用户和产品之间的交互来做出非常准确的推荐,但图的复杂性使得现有的深度学习算法在处理时面临着巨大的挑战。这是因为图是不规则的,每个图都有一个大小可变的无序节点,图中的每个节点都有不同数量的相邻节点,导致一些重要的操作(例如卷积)在图像(Image)上很容易计算,但不再适合直接用于图。此外,现有深度学习算法的一个核心假设是数据样本之间彼此独立。然而,对于图来说,情况并非如此,图中的每个数据样本(节点)都会有边与图中其他实数据样本(节点)相关,这些信息可用于捕获实例之间的相互依赖关系。 近年来,人们对深度学习方法在图上的扩展越来越感兴趣。在多方因素的成功推动下,研究人员借鉴了卷积网络、循环网络和深度自动编码器的思想,定义和设计了用于处理图数据的神经网络结构,由此一个新的研究热点——“图神经网络(Graph Neural Networks,GNN)”应运而生,本篇文章主要对图神经网络的研究现状进行简单的概述。 需要注意的是,图神经网络的研究与图嵌入(对图嵌入不了解的读者可以参考我的这篇文章《图嵌入综述》)或网络嵌入密切相关,图嵌入或网络嵌入是数据挖掘和机器学习界日益关注的另一个课题。",
+            "source_name": "知乎",
+            "source_record_id": "src_f280173bcf0395341c5ab8f7",
+            "title": "图神经网络(Graph Neural Networks,GNN)综述",
+            "url": "https://zhuanlan.zhihu.com/p/265931094"
+          },
+          {
+            "published_at": "2023-03-01T14:35:27",
+            "rank": 2,
+            "score": null,
+            "snippet": "公众号:DataStrategy 分享代码及训练数据集 收录于 · 机器学习 Graph Neural Network (GNN)图神经网络,是一种旨在对图结构数据就行操作的深度学习算法。它可以很自然地表示现实世界中的很多问题,包括社交网络, 分子结构 和交通网络等。GNN旨在处理此类图结构数据,并对图中的节点和边进行预测或执行任务。 GNN中节点的信息 通过节点和节点之间连接的边 在节点之间传递。其中每个节点都可以从其和它相邻的节点中接收信息并相应地更新自己的信息,这个过程通常会重复多次以使信息充分地沿着边流动和在节点处聚合。然后这些更新的节点可以用于对节点的分类(node classification)、节点之间边的预测(两个节点之间是否存在边)、对于整个图的分类、生成一个新的图(比如VAE或GAN)等等。这些已经应用于化学,社交网络和推荐系统等各个领域。 在 计算机科学 中,图是一种抽象的数据类型,旨在实现数学图论领域中的无向图和 有向图 概念。图类型的 数据结构 由一组有限的(可能是可变的)顶点(也称为节点或点)组成,对于无向图,这些顶点在一组无序对内,对于有向图,这些顶点在一组有序对内。这些对被称为边(也称为链接或线),对于有向图,这些对也被称为边,但有时也称为箭头或圆弧。顶点可以是图形结构的一部分,也可以是由整数索引或引用表示的外部实体。 例如,我们使用图来表示社交网络,如下图所示,图中的每个节点代表一个人,每两个节点之间的边则代表了这两个人互相认识,比如Person A 分别和Person B和Person C是好朋友,B又和D是好朋友,但是C和D却互不认识。如果这条边是无向的,可以表示较为平等的关系,比如友谊,同学等;如果是有向的,可以用来表示上下级,或是师生等关系。 图神经网络 图神经网络是一类用于处理可以表示为图的数据的 人工神经网络 。在A Comprehensive Survey on Graph Neural Networks https://arxiv.org/pdf/1901.00596.pdf中提出了将图神经网络进一步地分为Recurrent  graph neural networks (RecGNNs) 递归图神经网络 、Convolutional graph neural networks (ConvGNNs) 卷积图神经网络 、Graph autoencoders (GAEs) 图自动编码器 和Spatial-temporal graph neural networks (STGNNs) 时空图神经网络 。 2.1 Recurrent graph neural networks (RecGNNs) 循环图神经网络 :  它是传统图神经网络的一种衍生,具有 循环结构 。\u0002",
+            "source_name": "知乎",
+            "source_record_id": "src_6a5d3d5e55174e6aab4c650d",
+            "title": "Graph Neural Network(GNN)图神经网络",
+            "url": "https://zhuanlan.zhihu.com/p/610036768"
+          },
+          {
+            "published_at": "2020-10-21T14:02:00",
+            "rank": 3,
+            "score": null,
+            "snippet": "1 Introduction 我们知道,CNNs、RNNs以及 autoencoders 等深度学习方法,可以取代手工的 特征提取 ,有效地捕获欧氏数据的隐含特征。但现实生活中,数据更普遍的形式是可以被构建为图的非欧数据。",
+            "source_name": "知乎",
+            "source_record_id": "src_610f21aae8353d9e701e0b1f",
+            "title": "【归纳综述】Graph Neural Network: An Introduction Ⅰ",
+            "url": "https://zhuanlan.zhihu.com/p/158984343"
+          },
+          {
+            "published_at": "2026-09-03T00:00:00",
+            "rank": 4,
+            "score": null,
+            "snippet": "We propose a single-document abstractive summarization system that integrates token relation into a traditional RNN-based encoder-decoder architecture. We employ pointer-wise mutual information to represent the token relation and adopt Graph Convolutional Networks (GCN) to extract token representation from the relation graph. In our experiment on Gigaword, we consider importing two kinds of structural information: token (node) representation from the relation graph. Also, we implement two kinds of GCNs, a spectral-based one and a spatial-based one, to extract structural information. The result shows that the spatial based GCN-enhanced model with node representation outperforms the classical RNN-based encoder-decoder model.",
+            "source_name": "无",
+            "source_record_id": "src_3a6f49f043a43d58892e20f7",
+            "title": "An Encoder-decoder Architecture with Graph Convolutional Networks for Abstractive Summarization",
+            "url": "http://ieeexplore.ieee.org/document/9515256/"
+          },
+          {
+            "published_at": "2022-04-30T03:33:46",
+            "rank": 5,
+            "score": null,
+            "snippet": "dynamic graph neural networks under spatio-temporal distribution shift zeyang zhang1∗, xin wang1†, ziwei zhang1, haoyang li1, zhou qin2, wenwu zhu1† 1tsinghua university, 2alibaba group zy-zhang20@mails.tsinghua.edu.cn, {xin_wang, zwzhang}@tsinghua.edu.cn, lihy18@mails.tsinghua.edu.cn, qinzhou.qinzhou@alibaba-inc.com, wwzhu@tsinghua.edu.cn abstract dynamic graph neural networks (dygnns) have demonstrated powerful predictive abilities by exploiting graph structural and temporal dynamics. however, the ex- isting dygnns fail to handle distribution shifts, which naturally exist in dynamic graphs, mainly because the patterns exploited by dygnns may be variant with respect to labels under distribution shifts. in this paper, we propose to handle spatio-temporal distribution shifts in dynamic graphs by discovering and utilizing invariant patterns, i.e., structures and features whose predictive abilities are stable across distribution shifts, which faces two key challenges: 1) how to discover the complex variant and invariant spatio-temporal patterns in dynamic graphs, which involve both time-varying graph structures and node features. 2) how to handle spatio-temporal distribution shifts with the discovered variant and invariant pat- terns. to tackle these challenges, we propose the disentangled intervention-based dynamic graph attention networks (dida). our proposed method can effectively handle spatio-temporal distribution shifts in dynamic graphs by discovering and fully utilizing invariant spatio-temporal patterns. specifically, we first propose a disentangled spatio-temporal attention network to capture the variant and invariant patterns. then, we design a spatio-temporal intervention mechanism to create multiple interventional distributions by sampling and reassembling variant patterns across neighborhoods and time stamps to eliminate the spurious impacts of variant patterns. lastly, we propose an invariance regularization term to minimize the variance of pred",
+            "source_name": "无",
+            "source_record_id": "src_fb38ee95f4979eefd5e27931",
+            "title": "Dynamic Graph Neural Networks Under Spatio-Temporal Distribution Shift",
+            "url": "https://mn.cs.tsinghua.edu.cn/xinwang/PDF/papers/2022_Dynamic%20Graph%20Neural%20Networks%20Under%20Spatio-Temporal%20Distribution%20Shift.pdf"
+          },
+          {
+            "published_at": "2026-05-21T16:27:48",
+            "rank": 6,
+            "score": null,
+            "snippet": "在探索大语言模型(LLM)内部工作机制的征途中,我们已经走过了漫长的路。从最初对输出结果的简单观察,到利用“思维链”(Chain-of-Thought, CoT)要求模型外显其推理步骤,再到通过“注意力流追踪”技术窥探其内部的聚焦点,我们的认知工具不断升级。 然而,这些方法大多提供的是静态的、离散的快照。它们能告诉我们模型在生成某个特定token时关注了什么,却难以描绘出整个推理过程是如何随时间演化、动态构建的。这就像只看到一幅幅静止的画面,而无法欣赏一部完整的电影。 动态注意力图谱分析(Dynamic Attention Graph Analysis)正是为了解决这一根本局限而诞生的革命性技术。它不再满足于孤立地观察单个时刻的注意力分布,而是将整个推理过程视为一个连续演化的信息网络。在这个网络中,输入序列的每个token是节点,而随时间变化的注意力权重则是连接这些节点的、具有方向和强度的动态边。 通过构建和分析这个动态图谱,我们得以以前所未有的粒度和深度,实时观测、量化并最终理解大模型是如何一步步构建其认知、形成其结论的。本文将系统性地、全方位地详解这项强大的技术,带你进入AI思考过程的核心腹地。 热门标签关联:#动态注意力图谱 #AI可解释性 #大模型原理 #注意力机制 #认知科学 #图神经网络 #实时推理分析 第一章:概念基石——什么是动态注意力图谱? 要掌握动态注意力图谱分析,我们必须首先清晰地定义其核心构成要素。 1.1 静态注意力 vs. 动态注意力 静态注意力:指在模型生成一个特定输出token时,其对输入序列所有token的注意力权重分布。这是一个瞬时的、固定的状态,通常用一个N维向量或一个N x N的热力图来表示(N为输入序列长度)。 动态注意力:指在整个自回归生成过程中(即从第一个输出token到最后一个),注意力权重如何随时间步t的变化而连续演变。它是一个时间序列,包含了T个(T为输出序列长度)静态注意力状态。 1.2 图谱(Graph)的构建 动态注意力图谱将上述动态注意力数据结构化为一个有向加权多图(Directed Weighted Multi-Graph): 节点(Nodes):代表输入序列中的每一个token(包括提示词和已生成的部分)。每个节点可以携带属性,如token本身的文本、其语义嵌入向量等。",
+            "source_name": "Tencent腾讯（腾讯官方网）",
+            "source_record_id": "src_6ae9a1d5678940af98426594",
+            "title": "详解动态注意力图谱分析:解构大模型实时认知轨迹的终极利器",
+            "url": "https://cloud.tencent.com/developer/article/2671990"
+          },
+          {
+            "published_at": "2022-06-28T09:13:59",
+            "rank": 7,
+            "score": null,
+            "snippet": "时间序列预测问题是根据一个序列的历史值预测未来值。当同时预测多个时间序列,并且各个时间序列之间存在空间上的关系时,就不能只将每个时间序列单独建模,而应该考虑不同时间序列之间的关系。 本节介绍几个图模型中的基础概念,感兴趣的同学可以深入其他图学习相关文章继续学习。N个节点组成的图可以由一个N*N的临接矩阵和一个N*N的度数矩阵表示。临接矩阵中第(i, j)个元素表示节点i和节点j之间在图上的距离,这个距离根据具体任务和图而定;度数矩阵是一个对角矩阵,第(i, i)个元素表示节点第i个节点和几个边相连。图的拉普拉斯矩阵由临接矩阵和度数矩阵计算得到,简单来说,拉普拉斯矩阵衡量了图中两两节点之间信息传递关系(具体来说,拉普拉斯矩阵是图上的拉普拉斯算子,拉普拉斯算子是高维空间二阶导数的推广)。通过拉普拉斯矩阵,我们可以将每个图中每个节点的特征进行扩散到其他节点,得到每个节点考虑了图中信息传播后新的特征。图卷积是图模型的一种实例。在将傅立叶变换拓展到图中时,发现傅立叶变换中的基就是图的拉普拉斯矩阵的特征向量。这样解决了Spatial卷积方法中,无法比较好的选择邻居节点、无向量化表示的问题。 拉普拉斯矩阵有不同的形式,例如最基础的拉普拉斯矩阵L=D-A,还有如下正则化拉普拉斯矩阵、随机游走拉普拉斯矩阵等,不同的拉普拉斯矩阵反应了图上信息流动方式的不同先验。 RNN是最基础的时间序列预测深度学习模型,RNN天然的序列建模能力可以很好的处理时间序列数据。在RNN的基础上,DIFFUSION CONVOLUTIONAL RECURRENT NEURAL NETWORK: DATA-DRIVEN TRAFFIC FORECASTING(ICLR 2018)提出DCRNN模型,通过将图的思想引入RNN,使RNN能够同时输入空间中多个节点的时间序列,在学习时间维度依赖的同时,学习不同节点的空间关系。 GRU是RNN模型的一种,DCRNN在GRU的基础上,将原来GRU中的全连接部分修改为diffusion convolutional layer(随机游走拉普拉斯矩阵+全连接),公式可以表示为如下形式: 不论是普通的GRU还是DCRNN,都可以将整个图上的所有节点序列同时输入到模型中(相当于一个batch)。",
+            "source_name": "北京智源人工智能研究院",
+            "source_record_id": "src_ae47cd33a84a9c9441c975f9",
+            "title": "Spatial-Temporal时间序列预测建模方法汇总",
+            "url": "https://hub.baai.ac.cn/view/18415"
+          },
+          {
+            "published_at": "2026-07-12T09:33:54",
+            "rank": 8,
+            "score": null,
+            "snippet": "GraphRNN的工作原理:从理论到实践 自回归图生成机制 GraphRNN的工作流程非常巧妙:首先将图转换为节点序列,然后使用两个循环神经网络(RNN)协同工作。第一个RNN(节点级RNN)负责生成节点,第二个RNN(边级RNN)负责为每个新节点生成与之前节点的连接关系。 在model.py中,您可以看到GraphRNN的核心实现。模型采用BFS(广度优先搜索)排序来确保生成过程的稳定性,这种排序方法使得相似的图结构在序列表示上也相似。",
+            "source_name": "CSDN软件开发网",
+            "source_record_id": "src_28e295c96ce4c102a38b7ecb",
+            "title": "GraphRNN完全指南:革命性深度自回归模型如何生成逼真图结构",
+            "url": "https://blog.csdn.net/gitblog_00093/article/details/154379921"
+          },
+          {
+            "published_at": "2022-11-11T17:55:29",
+            "rank": 9,
+            "score": null,
+            "snippet": "生成学习与对比学习 自监督学习从大量的无监督数据中挖掘出自己需要的的监督信息。与监督学习相比,它使用来自数据集本身的信息来构建伪标签。而在对比学习[9]方面,自监督学习作为监督学习的补充具有很大的潜力。 自MoCo和SimCLR引入以来,对比学习在图自监督学习领域占据主导地位,其在节点分类和图分类等任务上的表现远远超过生成式自监督学习方法。但是对比学习的成功往往取决于下面的两个因素: 高质量的数据扩充。GraphCL[5]探索了几种数据增强方法的有效性,如掩蔽属性、子图采样和随机添加和删除边。但是通过研究发现有效的图数据增强往往依赖于领域知识;例如,随机添加和删除边缘对社交网络中的训练是有利的,但它会会对分子图产生负面影响。所以到目前为止,在图对比学习中还没有普遍有效的数据增强方法。 复杂的策略来稳定训练。对比方法通过通用的训练技巧避免模型陷入繁琐的解决方案。GRACE[8]、DGI[7]和GraphCL[5]等方法在训练中使用负采样,而BGRL[6]利用了非对称网络结构和指数移动平均策略。 而生成式自监督学习可以避免上述依赖关系。生成式自监督学习能够重构数据本身的特征和信息。在自然语言处理(NLP)中,BERT[3]旨在恢复遮蔽词;在CV (Computer Vision)中,MAE[2]恢复图像的像素点(块)。 对于图,GAE (Graph Autoencoder)重建图的结构信息或节点特征。现有的图数据动编码器大多着眼于链接预测和图数据聚类目标,因此通常会选择重构图数据的结构信息,即邻接矩阵a。所以近年来图数据自编码器的进展远远落后于对比学习,在分类等任务上的表现并不令人满意。节点分类、图分类等任务的SOTA都是基于对比学习的方法。 与以前的图形自编码器不同,GraphMAE通过简单的重建被遮蔽的损坏节点特征,使图自编码器超越对比学习 GraphMAE的关键设计在于以下几个方面: 基于遮蔽的节点特征重构。现有的图数据自编码器通常以边缘作为重构目标,但其在下游分类任务中的表现通常较差。 以GNN为解码器进行以重建过程。现有的图自编码器通常选择MLP作为解码器,由于大多数图形节点特征是连续的向量,MLP的能力不足以从编码结果重建节点特征。",
+            "source_name": "Tencent腾讯（腾讯官方网）",
+            "source_record_id": "src_41e7baddd61d734e8bd4d859",
+            "title": "GraphMAE:将MAE的方法应用到图中使图的生成式自监督学习超越了对比学习",
+            "url": "https://cloud.tencent.com/developer/article/2160113"
+          },
+          {
+            "published_at": "2024-04-15T10:15:50",
+            "rank": 10,
+            "score": null,
+            "snippet": "在我们周围的各个领域,从分子结构到社交网络,再到城市设计结构,到处都有相互关联的图数据。图神经网络(GNN)作为一种强大的方法,正在用于建模和学习这类数据的空间和图结构。它已经被应用于蛋白质结构和其他分子应用,例如药物发现,以及模拟系统,如社交网络。标准的GNN可以结合来自其他机器学习模型的想法,比如将GNN与序列模型结合——时空图神经网络(Spatail-Temporal Graph),能够捕捉数据的时间和空间依赖性。 对于时空图神经网络Spatail-Temporal Graph来说,最简单的描述就是在原来的Graph基础上增加了时间这一个维度,也就是说我们的Graph的节点特征是会随着时间而变化的。 GNN模型和序列模型(如简单RNN、LSTM或GRU)本身就复杂。结合这些模型以处理空间和时间依赖性是强大的,但也很复杂:难以理解,也难以实现。所以在这篇文章中,我们将深入探讨这些模型的原理,并实现一个相对简单的示例,以更深入地理解它们的能力和应用。 图神经网络(GNN) 我们先介绍一些入门的知识简要讨论GNN。 图G可以定义为G = (V, E),其中V是节点集,E是它们之间的边。 一个包含n个节点的图的特征矩阵,每个节点具有f个特征,是所有特征的连接: GNN的关键问题是所有连接节点之间的消息传递,这种邻居特征转换和聚合可以写成: A是图的邻接矩阵,I是允许自连接的单位矩阵。虽然这不是完整的方程,但这已经可以说明可以学习不同节点之间空间依赖性的图卷积网络的基础。一个经典的图神经网络如下图所示: 时空图神经网络 (ST-GNN) ST-GNN中每个时间步都是一个图,并通过GCN/GAT网络传递,以获得嵌入数据空间相互依赖性的结果编码图。然后这些编码图可以像时间序列数据一样进行建模,只要保留每个时间步骤的数据的图结构的完整性。下图演示了这两个步骤,时间模型可以是从ARIMA或简单的循环神经网络或者是transformers的任何序列模型。 我们下面使用简单的循环神经网络来绘制ST-GNN的组件 上面就是ST-GNN的基本原理,将GNN和序列模型(如RNN、LSTM、GRU、Transformers 等)结合。如果你已经熟悉这些序列和GNN模型,那么理论来说是非常简单的,但是实际操作的时候就会有一些复杂,所以我们下面将直接使用Pytorch实现一个简单的ST-GNN。 ST-GNN的Pytorch实现 首先要说明:为了用于演示我将使用大型科技公司的股市数据。虽然这些数据本质上不是图数据,但这种网络可能会捕捉到这些公司之间的相互依赖性,例如一个公司的表现(好或坏)可能反过来影响市场中其他公司的价值。",
+            "source_name": "腾讯网",
+            "source_record_id": "src_eacc53f024e8154bcc934dc2",
+            "title": "https://new.qq.com/rain/a/20240415A01W6V00",
+            "url": "https://new.qq.com/rain/a/20240415A01W6V00"
+          }
+        ],
+        "warnings": []
+      },
+      "source_records": [
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "1",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://zhuanlan.zhihu.com/p/265931094",
+          "observed_at": "2026-09-16T12:57:59.742704Z",
+          "provenance": {
+            "query": "graph summarization temporal graph autoencoder RNN",
+            "rank": 1,
+            "run_id": "run-0bf59c704caa42338fa6c219d648e38f",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": " Wu, Zonghan , et al. \"A Comprehensive Survey on Graph Neural Networks.\" (2019).“”后的翻译与笔记,写下这篇文章后不久便意外地转换了研究方向,如今已不再研究深度学习,所以文中难免有纰漏之处,欢迎发现的知友在评论中指出并给予宝贵的修改意见。 一、什么是图神经网络 二、有哪些图神经网络 三、图神经网络的应用 一、什么是图神经网络? 在过去的几年中,神经网络的兴起与应用成功推动了模式识别和数据挖掘的研究。许多曾经严重依赖于手工提取特征的机器学习任务(如目标检测、机器翻译和语音识别),如今都已被各种端到端的深度学习范式(例如卷积神经网络(CNN)、长短期记忆(LSTM)和自动编码器)彻底改变了。曾有学者将本次人工智能浪潮的兴起归因于三个条件,分别是: 计算资源的快速发展(如GPU) 大量训练数据的可用性 深度学习从欧氏空间数据中提取潜在特征的有效性 尽管传统的深度学习方法被应用在提取欧氏空间数据的特征方面取得了巨大的成功,但许多实际应用场景中的数据是从非欧式空间生成的,传统的深度学习方法在处理非欧式空间数据上的表现却仍难以使人满意。例如,在电子商务中,一个基于图(Graph)的学习系统能够利用用户和产品之间的交互来做出非常准确的推荐,但图的复杂性使得现有的深度学习算法在处理时面临着巨大的挑战。这是因为图是不规则的,每个图都有一个大小可变的无序节点,图中的每个节点都有不同数量的相邻节点,导致一些重要的操作(例如卷积)在图像(Image)上很容易计算,但不再适合直接用于图。此外,现有深度学习算法的一个核心假设是数据样本之间彼此独立。然而,对于图来说,情况并非如此,图中的每个数据样本(节点)都会有边与图中其他实数据样本(节点)相关,这些信息可用于捕获实例之间的相互依赖关系。 近年来,人们对深度学习方法在图上的扩展越来越感兴趣。在多方因素的成功推动下,研究人员借鉴了卷积网络、循环网络和深度自动编码器的思想,定义和设计了用于处理图数据的神经网络结构,由此一个新的研究热点——“图神经网络(Graph Neural Networks,GNN)”应运而生,本篇文章主要对图神经网络的研究现状进行简单的概述。 需要注意的是,图神经网络的研究与图嵌入(对图嵌入不了解的读者可以参考我的这篇文章《图嵌入综述》)或网络嵌入密切相关,图嵌入或网络嵌入是数据挖掘和机器学习界日益关注的另一个课题。",
+            "published_at": "2020-10-15T14:26:23",
+            "request_id": "79487b00-6be5-40ca-a2c7-595370c6db24",
+            "search_score": null,
+            "search_snippet": "Wu, Zonghan , et al. \"A Comprehensive Survey on Graph Neural Networks.\" (2019).“”后的翻译与笔记,写下这篇文章后不久便意外地转换了研究方向,如今已不再研究深度学习,所以文中难免有纰漏之处,欢迎发现的知友在评论中指出并给予宝贵的修改意见。 一、什么是图神经网络 二、有哪些图神经网络 三、图神经网络的应用 一、什么是图神经网络? 在过去的几年中,神经网络的兴起与应用成功推动了模式识别和数据挖掘的研究。许多曾经严重依赖于手工提取特征的机器学习任务(如目标检测、机器翻译和语音识别),如今都已被各种端到端的深度学习范式(例如卷积神经网络(CNN)、长短期记忆(LSTM)和自动编码器)彻底改变了。曾有学者将本次人工智能浪潮的兴起归因于三个条件,分别是: 计算资源的快速发展(如GPU) 大量训练数据的可用性 深度学习从欧氏空间数据中提取潜在特征的有效性 尽管传统的深度学习方法被应用在提取欧氏空间数据的特征方面取得了巨大的成功,但许多实际应用场景中的数据是从非欧式空间生成的,传统的深度学习方法在处理非欧式空间数据上的表现却仍难以使人满意。例如,在电子商务中,一个基于图(Graph)的学习系统能够利用用户和产品之间的交互来做出非常准确的推荐,但图的复杂性使得现有的深度学习算法在处理时面临着巨大的挑战。这是因为图是不规则的,每个图都有一个大小可变的无序节点,图中的每个节点都有不同数量的相邻节点,导致一些重要的操作(例如卷积)在图像(Image)上很容易计算,但不再适合直接用于图。此外,现有深度学习算法的一个核心假设是数据样本之间彼此独立。然而,对于图来说,情况并非如此,图中的每个数据样本(节点)都会有边与图中其他实数据样本(节点)相关,这些信息可用于捕获实例之间的相互依赖关系。 近年来,人们对深度学习方法在图上的扩展越来越感兴趣。在多方因素的成功推动下,研究人员借鉴了卷积网络、循环网络和深度自动编码器的思想,定义和设计了用于处理图数据的神经网络结构,由此一个新的研究热点——“图神经网络(Graph Neural Networks,GNN)”应运而生,本篇文章主要对图神经网络的研究现状进行简单的概述。 需要注意的是,图神经网络的研究与图嵌入(对图嵌入不了解的读者可以参考我的这篇文章《图嵌入综述》)或网络嵌入密切相关,图嵌入或网络嵌入是数据挖掘和机器学习界日益关注的另一个课题。",
+            "source_name": "知乎",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web_supplement",
+          "source_record_id": "src_f280173bcf0395341c5ab8f7",
+          "title": "图神经网络(Graph Neural Networks,GNN)综述",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "2",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://zhuanlan.zhihu.com/p/610036768",
+          "observed_at": "2026-09-16T12:57:59.742704Z",
+          "provenance": {
+            "query": "graph summarization temporal graph autoencoder RNN",
+            "rank": 2,
+            "run_id": "run-0bf59c704caa42338fa6c219d648e38f",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": " 公众号:DataStrategy 分享代码及训练数据集 收录于 · 机器学习 Graph Neural Network (GNN)图神经网络,是一种旨在对图结构数据就行操作的深度学习算法。它可以很自然地表示现实世界中的很多问题,包括社交网络, 分子结构 和交通网络等。GNN旨在处理此类图结构数据,并对图中的节点和边进行预测或执行任务。 GNN中节点的信息 通过节点和节点之间连接的边 在节点之间传递。其中每个节点都可以从其和它相邻的节点中接收信息并相应地更新自己的信息,这个过程通常会重复多次以使信息充分地沿着边流动和在节点处聚合。然后这些更新的节点可以用于对节点的分类(node classification)、节点之间边的预测(两个节点之间是否存在边)、对于整个图的分类、生成一个新的图(比如VAE或GAN)等等。这些已经应用于化学,社交网络和推荐系统等各个领域。 在 计算机科学 中,图是一种抽象的数据类型,旨在实现数学图论领域中的无向图和 有向图 概念。图类型的 数据结构 由一组有限的(可能是可变的)顶点(也称为节点或点)组成,对于无向图,这些顶点在一组无序对内,对于有向图,这些顶点在一组有序对内。这些对被称为边(也称为链接或线),对于有向图,这些对也被称为边,但有时也称为箭头或圆弧。顶点可以是图形结构的一部分,也可以是由整数索引或引用表示的外部实体。 例如,我们使用图来表示社交网络,如下图所示,图中的每个节点代表一个人,每两个节点之间的边则代表了这两个人互相认识,比如Person A 分别和Person B和Person C是好朋友,B又和D是好朋友,但是C和D却互不认识。如果这条边是无向的,可以表示较为平等的关系,比如友谊,同学等;如果是有向的,可以用来表示上下级,或是师生等关系。 图神经网络 图神经网络是一类用于处理可以表示为图的数据的 人工神经网络 。在A Comprehensive Survey on Graph Neural Networks https://arxiv.org/pdf/1901.00596.pdf中提出了将图神经网络进一步地分为Recurrent  graph neural networks (RecGNNs) 递归图神经网络 、Convolutional graph neural networks (ConvGNNs) 卷积图神经网络 、Graph autoencoders (GAEs) 图自动编码器 和Spatial-temporal graph neural networks (STGNNs) 时空图神经网络 。 2.1 Recurrent graph neural networks (RecGNNs) 循环图神经网络 :  它是传统图神经网络的一种衍生,具有 循环结构 。\u0002",
+            "published_at": "2023-03-01T14:35:27",
+            "request_id": "79487b00-6be5-40ca-a2c7-595370c6db24",
+            "search_score": null,
+            "search_snippet": "公众号:DataStrategy 分享代码及训练数据集 收录于 · 机器学习 Graph Neural Network (GNN)图神经网络,是一种旨在对图结构数据就行操作的深度学习算法。它可以很自然地表示现实世界中的很多问题,包括社交网络, 分子结构 和交通网络等。GNN旨在处理此类图结构数据,并对图中的节点和边进行预测或执行任务。 GNN中节点的信息 通过节点和节点之间连接的边 在节点之间传递。其中每个节点都可以从其和它相邻的节点中接收信息并相应地更新自己的信息,这个过程通常会重复多次以使信息充分地沿着边流动和在节点处聚合。然后这些更新的节点可以用于对节点的分类(node classification)、节点之间边的预测(两个节点之间是否存在边)、对于整个图的分类、生成一个新的图(比如VAE或GAN)等等。这些已经应用于化学,社交网络和推荐系统等各个领域。 在 计算机科学 中,图是一种抽象的数据类型,旨在实现数学图论领域中的无向图和 有向图 概念。图类型的 数据结构 由一组有限的(可能是可变的)顶点(也称为节点或点)组成,对于无向图,这些顶点在一组无序对内,对于有向图,这些顶点在一组有序对内。这些对被称为边(也称为链接或线),对于有向图,这些对也被称为边,但有时也称为箭头或圆弧。顶点可以是图形结构的一部分,也可以是由整数索引或引用表示的外部实体。 例如,我们使用图来表示社交网络,如下图所示,图中的每个节点代表一个人,每两个节点之间的边则代表了这两个人互相认识,比如Person A 分别和Person B和Person C是好朋友,B又和D是好朋友,但是C和D却互不认识。如果这条边是无向的,可以表示较为平等的关系,比如友谊,同学等;如果是有向的,可以用来表示上下级,或是师生等关系。 图神经网络 图神经网络是一类用于处理可以表示为图的数据的 人工神经网络 。在A Comprehensive Survey on Graph Neural Networks https://arxiv.org/pdf/1901.00596.pdf中提出了将图神经网络进一步地分为Recurrent  graph neural networks (RecGNNs) 递归图神经网络 、Convolutional graph neural networks (ConvGNNs) 卷积图神经网络 、Graph autoencoders (GAEs) 图自动编码器 和Spatial-temporal graph neural networks (STGNNs) 时空图神经网络 。 2.1 Recurrent graph neural networks (RecGNNs) 循环图神经网络 :  它是传统图神经网络的一种衍生,具有 循环结构 。\u0002",
+            "source_name": "知乎",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web_supplement",
+          "source_record_id": "src_6a5d3d5e55174e6aab4c650d",
+          "title": "Graph Neural Network(GNN)图神经网络",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "3",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://zhuanlan.zhihu.com/p/158984343",
+          "observed_at": "2026-09-16T12:57:59.742704Z",
+          "provenance": {
+            "query": "graph summarization temporal graph autoencoder RNN",
+            "rank": 3,
+            "run_id": "run-0bf59c704caa42338fa6c219d648e38f",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": " 1 Introduction 我们知道,CNNs、RNNs以及 autoencoders 等深度学习方法,可以取代手工的 特征提取 ,有效地捕获欧氏数据的隐含特征。但现实生活中,数据更普遍的形式是可以被构建为图的非欧数据。",
+            "published_at": "2020-10-21T14:02:00",
+            "request_id": "79487b00-6be5-40ca-a2c7-595370c6db24",
+            "search_score": null,
+            "search_snippet": "1 Introduction 我们知道,CNNs、RNNs以及 autoencoders 等深度学习方法,可以取代手工的 特征提取 ,有效地捕获欧氏数据的隐含特征。但现实生活中,数据更普遍的形式是可以被构建为图的非欧数据。",
+            "source_name": "知乎",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web_supplement",
+          "source_record_id": "src_610f21aae8353d9e701e0b1f",
+          "title": "【归纳综述】Graph Neural Network: An Introduction Ⅰ",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "4",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "http://ieeexplore.ieee.org/document/9515256/",
+          "observed_at": "2026-09-16T12:57:59.742704Z",
+          "provenance": {
+            "query": "graph summarization temporal graph autoencoder RNN",
+            "rank": 4,
+            "run_id": "run-0bf59c704caa42338fa6c219d648e38f",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": "We propose a single-document abstractive summarization system that integrates token relation into a traditional RNN-based encoder-decoder architecture. We employ pointer-wise mutual information to represent the token relation and adopt Graph Convolutional Networks (GCN) to extract token representation from the relation graph. In our experiment on Gigaword, we consider importing two kinds of structural information: token (node) representation from the relation graph. Also, we implement two kinds of GCNs, a spectral-based one and a spatial-based one, to extract structural information. The result shows that the spatial based GCN-enhanced model with node representation outperforms the classical RNN-based encoder-decoder model.",
+            "published_at": "2026-09-03T00:00:00",
+            "request_id": "79487b00-6be5-40ca-a2c7-595370c6db24",
+            "search_score": null,
+            "search_snippet": "We propose a single-document abstractive summarization system that integrates token relation into a traditional RNN-based encoder-decoder architecture. We employ pointer-wise mutual information to represent the token relation and adopt Graph Convolutional Networks (GCN) to extract token representation from the relation graph. In our experiment on Gigaword, we consider importing two kinds of structural information: token (node) representation from the relation graph. Also, we implement two kinds of GCNs, a spectral-based one and a spatial-based one, to extract structural information. The result shows that the spatial based GCN-enhanced model with node representation outperforms the classical RNN-based encoder-decoder model.",
+            "source_name": "无",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web_supplement",
+          "source_record_id": "src_3a6f49f043a43d58892e20f7",
+          "title": "An Encoder-decoder Architecture with Graph Convolutional Networks for Abstractive Summarization",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "5",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://mn.cs.tsinghua.edu.cn/xinwang/PDF/papers/2022_Dynamic%20Graph%20Neural%20Networks%20Under%20Spatio-Temporal%20Distribution%20Shift.pdf",
+          "observed_at": "2026-09-16T12:57:59.742704Z",
+          "provenance": {
+            "query": "graph summarization temporal graph autoencoder RNN",
+            "rank": 5,
+            "run_id": "run-0bf59c704caa42338fa6c219d648e38f",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": "dynamic graph neural networks under spatio-temporal distribution shift zeyang zhang1∗, xin wang1†, ziwei zhang1, haoyang li1, zhou qin2, wenwu zhu1† 1tsinghua university, 2alibaba group zy-zhang20@mails.tsinghua.edu.cn, {xin_wang, zwzhang}@tsinghua.edu.cn, lihy18@mails.tsinghua.edu.cn, qinzhou.qinzhou@alibaba-inc.com, wwzhu@tsinghua.edu.cn abstract dynamic graph neural networks (dygnns) have demonstrated powerful predictive abilities by exploiting graph structural and temporal dynamics. however, the ex- isting dygnns fail to handle distribution shifts, which naturally exist in dynamic graphs, mainly because the patterns exploited by dygnns may be variant with respect to labels under distribution shifts. in this paper, we propose to handle spatio-temporal distribution shifts in dynamic graphs by discovering and utilizing invariant patterns, i.e., structures and features whose predictive abilities are stable across distribution shifts, which faces two key challenges: 1) how to discover the complex variant and invariant spatio-temporal patterns in dynamic graphs, which involve both time-varying graph structures and node features. 2) how to handle spatio-temporal distribution shifts with the discovered variant and invariant pat- terns. to tackle these challenges, we propose the disentangled intervention-based dynamic graph attention networks (dida). our proposed method can effectively handle spatio-temporal distribution shifts in dynamic graphs by discovering and fully utilizing invariant spatio-temporal patterns. specifically, we first propose a disentangled spatio-temporal attention network to capture the variant and invariant patterns. then, we design a spatio-temporal intervention mechanism to create multiple interventional distributions by sampling and reassembling variant patterns across neighborhoods and time stamps to eliminate the spurious impacts of variant patterns. lastly, we propose an invariance regularization term to minimize the variance of pred",
+            "published_at": "2022-04-30T03:33:46",
+            "request_id": "79487b00-6be5-40ca-a2c7-595370c6db24",
+            "search_score": null,
+            "search_snippet": "dynamic graph neural networks under spatio-temporal distribution shift zeyang zhang1∗, xin wang1†, ziwei zhang1, haoyang li1, zhou qin2, wenwu zhu1† 1tsinghua university, 2alibaba group zy-zhang20@mails.tsinghua.edu.cn, {xin_wang, zwzhang}@tsinghua.edu.cn, lihy18@mails.tsinghua.edu.cn, qinzhou.qinzhou@alibaba-inc.com, wwzhu@tsinghua.edu.cn abstract dynamic graph neural networks (dygnns) have demonstrated powerful predictive abilities by exploiting graph structural and temporal dynamics. however, the ex- isting dygnns fail to handle distribution shifts, which naturally exist in dynamic graphs, mainly because the patterns exploited by dygnns may be variant with respect to labels under distribution shifts. in this paper, we propose to handle spatio-temporal distribution shifts in dynamic graphs by discovering and utilizing invariant patterns, i.e., structures and features whose predictive abilities are stable across distribution shifts, which faces two key challenges: 1) how to discover the complex variant and invariant spatio-temporal patterns in dynamic graphs, which involve both time-varying graph structures and node features. 2) how to handle spatio-temporal distribution shifts with the discovered variant and invariant pat- terns. to tackle these challenges, we propose the disentangled intervention-based dynamic graph attention networks (dida). our proposed method can effectively handle spatio-temporal distribution shifts in dynamic graphs by discovering and fully utilizing invariant spatio-temporal patterns. specifically, we first propose a disentangled spatio-temporal attention network to capture the variant and invariant patterns. then, we design a spatio-temporal intervention mechanism to create multiple interventional distributions by sampling and reassembling variant patterns across neighborhoods and time stamps to eliminate the spurious impacts of variant patterns. lastly, we propose an invariance regularization term to minimize the variance of pred",
+            "source_name": "无",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web_supplement",
+          "source_record_id": "src_fb38ee95f4979eefd5e27931",
+          "title": "Dynamic Graph Neural Networks Under Spatio-Temporal Distribution Shift",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "6",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://cloud.tencent.com/developer/article/2671990",
+          "observed_at": "2026-09-16T12:57:59.742704Z",
+          "provenance": {
+            "query": "graph summarization temporal graph autoencoder RNN",
+            "rank": 6,
+            "run_id": "run-0bf59c704caa42338fa6c219d648e38f",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": " 在探索大语言模型(LLM)内部工作机制的征途中,我们已经走过了漫长的路。从最初对输出结果的简单观察,到利用“思维链”(Chain-of-Thought, CoT)要求模型外显其推理步骤,再到通过“注意力流追踪”技术窥探其内部的聚焦点,我们的认知工具不断升级。 然而,这些方法大多提供的是静态的、离散的快照。它们能告诉我们模型在生成某个特定token时关注了什么,却难以描绘出整个推理过程是如何随时间演化、动态构建的。这就像只看到一幅幅静止的画面,而无法欣赏一部完整的电影。 动态注意力图谱分析(Dynamic Attention Graph Analysis)正是为了解决这一根本局限而诞生的革命性技术。它不再满足于孤立地观察单个时刻的注意力分布,而是将整个推理过程视为一个连续演化的信息网络。在这个网络中,输入序列的每个token是节点,而随时间变化的注意力权重则是连接这些节点的、具有方向和强度的动态边。 通过构建和分析这个动态图谱,我们得以以前所未有的粒度和深度,实时观测、量化并最终理解大模型是如何一步步构建其认知、形成其结论的。本文将系统性地、全方位地详解这项强大的技术,带你进入AI思考过程的核心腹地。 热门标签关联:#动态注意力图谱 #AI可解释性 #大模型原理 #注意力机制 #认知科学 #图神经网络 #实时推理分析 第一章:概念基石——什么是动态注意力图谱? 要掌握动态注意力图谱分析,我们必须首先清晰地定义其核心构成要素。 1.1 静态注意力 vs. 动态注意力 静态注意力:指在模型生成一个特定输出token时,其对输入序列所有token的注意力权重分布。这是一个瞬时的、固定的状态,通常用一个N维向量或一个N x N的热力图来表示(N为输入序列长度)。 动态注意力:指在整个自回归生成过程中(即从第一个输出token到最后一个),注意力权重如何随时间步t的变化而连续演变。它是一个时间序列,包含了T个(T为输出序列长度)静态注意力状态。 1.2 图谱(Graph)的构建 动态注意力图谱将上述动态注意力数据结构化为一个有向加权多图(Directed Weighted Multi-Graph): 节点(Nodes):代表输入序列中的每一个token(包括提示词和已生成的部分)。每个节点可以携带属性,如token本身的文本、其语义嵌入向量等。",
+            "published_at": "2026-05-21T16:27:48",
+            "request_id": "79487b00-6be5-40ca-a2c7-595370c6db24",
+            "search_score": null,
+            "search_snippet": "在探索大语言模型(LLM)内部工作机制的征途中,我们已经走过了漫长的路。从最初对输出结果的简单观察,到利用“思维链”(Chain-of-Thought, CoT)要求模型外显其推理步骤,再到通过“注意力流追踪”技术窥探其内部的聚焦点,我们的认知工具不断升级。 然而,这些方法大多提供的是静态的、离散的快照。它们能告诉我们模型在生成某个特定token时关注了什么,却难以描绘出整个推理过程是如何随时间演化、动态构建的。这就像只看到一幅幅静止的画面,而无法欣赏一部完整的电影。 动态注意力图谱分析(Dynamic Attention Graph Analysis)正是为了解决这一根本局限而诞生的革命性技术。它不再满足于孤立地观察单个时刻的注意力分布,而是将整个推理过程视为一个连续演化的信息网络。在这个网络中,输入序列的每个token是节点,而随时间变化的注意力权重则是连接这些节点的、具有方向和强度的动态边。 通过构建和分析这个动态图谱,我们得以以前所未有的粒度和深度,实时观测、量化并最终理解大模型是如何一步步构建其认知、形成其结论的。本文将系统性地、全方位地详解这项强大的技术,带你进入AI思考过程的核心腹地。 热门标签关联:#动态注意力图谱 #AI可解释性 #大模型原理 #注意力机制 #认知科学 #图神经网络 #实时推理分析 第一章:概念基石——什么是动态注意力图谱? 要掌握动态注意力图谱分析,我们必须首先清晰地定义其核心构成要素。 1.1 静态注意力 vs. 动态注意力 静态注意力:指在模型生成一个特定输出token时,其对输入序列所有token的注意力权重分布。这是一个瞬时的、固定的状态,通常用一个N维向量或一个N x N的热力图来表示(N为输入序列长度)。 动态注意力:指在整个自回归生成过程中(即从第一个输出token到最后一个),注意力权重如何随时间步t的变化而连续演变。它是一个时间序列,包含了T个(T为输出序列长度)静态注意力状态。 1.2 图谱(Graph)的构建 动态注意力图谱将上述动态注意力数据结构化为一个有向加权多图(Directed Weighted Multi-Graph): 节点(Nodes):代表输入序列中的每一个token(包括提示词和已生成的部分)。每个节点可以携带属性,如token本身的文本、其语义嵌入向量等。",
+            "source_name": "Tencent腾讯（腾讯官方网）",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web_supplement",
+          "source_record_id": "src_6ae9a1d5678940af98426594",
+          "title": "详解动态注意力图谱分析:解构大模型实时认知轨迹的终极利器",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "7",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://hub.baai.ac.cn/view/18415",
+          "observed_at": "2026-09-16T12:57:59.742704Z",
+          "provenance": {
+            "query": "graph summarization temporal graph autoencoder RNN",
+            "rank": 7,
+            "run_id": "run-0bf59c704caa42338fa6c219d648e38f",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": " 时间序列预测问题是根据一个序列的历史值预测未来值。当同时预测多个时间序列,并且各个时间序列之间存在空间上的关系时,就不能只将每个时间序列单独建模,而应该考虑不同时间序列之间的关系。 本节介绍几个图模型中的基础概念,感兴趣的同学可以深入其他图学习相关文章继续学习。N个节点组成的图可以由一个N*N的临接矩阵和一个N*N的度数矩阵表示。临接矩阵中第(i, j)个元素表示节点i和节点j之间在图上的距离,这个距离根据具体任务和图而定;度数矩阵是一个对角矩阵,第(i, i)个元素表示节点第i个节点和几个边相连。图的拉普拉斯矩阵由临接矩阵和度数矩阵计算得到,简单来说,拉普拉斯矩阵衡量了图中两两节点之间信息传递关系(具体来说,拉普拉斯矩阵是图上的拉普拉斯算子,拉普拉斯算子是高维空间二阶导数的推广)。通过拉普拉斯矩阵,我们可以将每个图中每个节点的特征进行扩散到其他节点,得到每个节点考虑了图中信息传播后新的特征。图卷积是图模型的一种实例。在将傅立叶变换拓展到图中时,发现傅立叶变换中的基就是图的拉普拉斯矩阵的特征向量。这样解决了Spatial卷积方法中,无法比较好的选择邻居节点、无向量化表示的问题。 拉普拉斯矩阵有不同的形式,例如最基础的拉普拉斯矩阵L=D-A,还有如下正则化拉普拉斯矩阵、随机游走拉普拉斯矩阵等,不同的拉普拉斯矩阵反应了图上信息流动方式的不同先验。 RNN是最基础的时间序列预测深度学习模型,RNN天然的序列建模能力可以很好的处理时间序列数据。在RNN的基础上,DIFFUSION CONVOLUTIONAL RECURRENT NEURAL NETWORK: DATA-DRIVEN TRAFFIC FORECASTING(ICLR 2018)提出DCRNN模型,通过将图的思想引入RNN,使RNN能够同时输入空间中多个节点的时间序列,在学习时间维度依赖的同时,学习不同节点的空间关系。 GRU是RNN模型的一种,DCRNN在GRU的基础上,将原来GRU中的全连接部分修改为diffusion convolutional layer(随机游走拉普拉斯矩阵+全连接),公式可以表示为如下形式: 不论是普通的GRU还是DCRNN,都可以将整个图上的所有节点序列同时输入到模型中(相当于一个batch)。",
+            "published_at": "2022-06-28T09:13:59",
+            "request_id": "79487b00-6be5-40ca-a2c7-595370c6db24",
+            "search_score": null,
+            "search_snippet": "时间序列预测问题是根据一个序列的历史值预测未来值。当同时预测多个时间序列,并且各个时间序列之间存在空间上的关系时,就不能只将每个时间序列单独建模,而应该考虑不同时间序列之间的关系。 本节介绍几个图模型中的基础概念,感兴趣的同学可以深入其他图学习相关文章继续学习。N个节点组成的图可以由一个N*N的临接矩阵和一个N*N的度数矩阵表示。临接矩阵中第(i, j)个元素表示节点i和节点j之间在图上的距离,这个距离根据具体任务和图而定;度数矩阵是一个对角矩阵,第(i, i)个元素表示节点第i个节点和几个边相连。图的拉普拉斯矩阵由临接矩阵和度数矩阵计算得到,简单来说,拉普拉斯矩阵衡量了图中两两节点之间信息传递关系(具体来说,拉普拉斯矩阵是图上的拉普拉斯算子,拉普拉斯算子是高维空间二阶导数的推广)。通过拉普拉斯矩阵,我们可以将每个图中每个节点的特征进行扩散到其他节点,得到每个节点考虑了图中信息传播后新的特征。图卷积是图模型的一种实例。在将傅立叶变换拓展到图中时,发现傅立叶变换中的基就是图的拉普拉斯矩阵的特征向量。这样解决了Spatial卷积方法中,无法比较好的选择邻居节点、无向量化表示的问题。 拉普拉斯矩阵有不同的形式,例如最基础的拉普拉斯矩阵L=D-A,还有如下正则化拉普拉斯矩阵、随机游走拉普拉斯矩阵等,不同的拉普拉斯矩阵反应了图上信息流动方式的不同先验。 RNN是最基础的时间序列预测深度学习模型,RNN天然的序列建模能力可以很好的处理时间序列数据。在RNN的基础上,DIFFUSION CONVOLUTIONAL RECURRENT NEURAL NETWORK: DATA-DRIVEN TRAFFIC FORECASTING(ICLR 2018)提出DCRNN模型,通过将图的思想引入RNN,使RNN能够同时输入空间中多个节点的时间序列,在学习时间维度依赖的同时,学习不同节点的空间关系。 GRU是RNN模型的一种,DCRNN在GRU的基础上,将原来GRU中的全连接部分修改为diffusion convolutional layer(随机游走拉普拉斯矩阵+全连接),公式可以表示为如下形式: 不论是普通的GRU还是DCRNN,都可以将整个图上的所有节点序列同时输入到模型中(相当于一个batch)。",
+            "source_name": "北京智源人工智能研究院",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web_supplement",
+          "source_record_id": "src_ae47cd33a84a9c9441c975f9",
+          "title": "Spatial-Temporal时间序列预测建模方法汇总",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "8",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://blog.csdn.net/gitblog_00093/article/details/154379921",
+          "observed_at": "2026-09-16T12:57:59.742704Z",
+          "provenance": {
+            "query": "graph summarization temporal graph autoencoder RNN",
+            "rank": 8,
+            "run_id": "run-0bf59c704caa42338fa6c219d648e38f",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": " GraphRNN的工作原理:从理论到实践 自回归图生成机制 GraphRNN的工作流程非常巧妙:首先将图转换为节点序列,然后使用两个循环神经网络(RNN)协同工作。第一个RNN(节点级RNN)负责生成节点,第二个RNN(边级RNN)负责为每个新节点生成与之前节点的连接关系。 在model.py中,您可以看到GraphRNN的核心实现。模型采用BFS(广度优先搜索)排序来确保生成过程的稳定性,这种排序方法使得相似的图结构在序列表示上也相似。",
+            "published_at": "2026-07-12T09:33:54",
+            "request_id": "79487b00-6be5-40ca-a2c7-595370c6db24",
+            "search_score": null,
+            "search_snippet": "GraphRNN的工作原理:从理论到实践 自回归图生成机制 GraphRNN的工作流程非常巧妙:首先将图转换为节点序列,然后使用两个循环神经网络(RNN)协同工作。第一个RNN(节点级RNN)负责生成节点,第二个RNN(边级RNN)负责为每个新节点生成与之前节点的连接关系。 在model.py中,您可以看到GraphRNN的核心实现。模型采用BFS(广度优先搜索)排序来确保生成过程的稳定性,这种排序方法使得相似的图结构在序列表示上也相似。",
+            "source_name": "CSDN软件开发网",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web_supplement",
+          "source_record_id": "src_28e295c96ce4c102a38b7ecb",
+          "title": "GraphRNN完全指南:革命性深度自回归模型如何生成逼真图结构",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "9",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://cloud.tencent.com/developer/article/2160113",
+          "observed_at": "2026-09-16T12:57:59.742704Z",
+          "provenance": {
+            "query": "graph summarization temporal graph autoencoder RNN",
+            "rank": 9,
+            "run_id": "run-0bf59c704caa42338fa6c219d648e38f",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": " 生成学习与对比学习 自监督学习从大量的无监督数据中挖掘出自己需要的的监督信息。与监督学习相比,它使用来自数据集本身的信息来构建伪标签。而在对比学习[9]方面,自监督学习作为监督学习的补充具有很大的潜力。 自MoCo和SimCLR引入以来,对比学习在图自监督学习领域占据主导地位,其在节点分类和图分类等任务上的表现远远超过生成式自监督学习方法。但是对比学习的成功往往取决于下面的两个因素: 高质量的数据扩充。GraphCL[5]探索了几种数据增强方法的有效性,如掩蔽属性、子图采样和随机添加和删除边。但是通过研究发现有效的图数据增强往往依赖于领域知识;例如,随机添加和删除边缘对社交网络中的训练是有利的,但它会会对分子图产生负面影响。所以到目前为止,在图对比学习中还没有普遍有效的数据增强方法。 复杂的策略来稳定训练。对比方法通过通用的训练技巧避免模型陷入繁琐的解决方案。GRACE[8]、DGI[7]和GraphCL[5]等方法在训练中使用负采样,而BGRL[6]利用了非对称网络结构和指数移动平均策略。 而生成式自监督学习可以避免上述依赖关系。生成式自监督学习能够重构数据本身的特征和信息。在自然语言处理(NLP)中,BERT[3]旨在恢复遮蔽词;在CV (Computer Vision)中,MAE[2]恢复图像的像素点(块)。 对于图,GAE (Graph Autoencoder)重建图的结构信息或节点特征。现有的图数据动编码器大多着眼于链接预测和图数据聚类目标,因此通常会选择重构图数据的结构信息,即邻接矩阵a。所以近年来图数据自编码器的进展远远落后于对比学习,在分类等任务上的表现并不令人满意。节点分类、图分类等任务的SOTA都是基于对比学习的方法。 与以前的图形自编码器不同,GraphMAE通过简单的重建被遮蔽的损坏节点特征,使图自编码器超越对比学习 GraphMAE的关键设计在于以下几个方面: 基于遮蔽的节点特征重构。现有的图数据自编码器通常以边缘作为重构目标,但其在下游分类任务中的表现通常较差。 以GNN为解码器进行以重建过程。现有的图自编码器通常选择MLP作为解码器,由于大多数图形节点特征是连续的向量,MLP的能力不足以从编码结果重建节点特征。",
+            "published_at": "2022-11-11T17:55:29",
+            "request_id": "79487b00-6be5-40ca-a2c7-595370c6db24",
+            "search_score": null,
+            "search_snippet": "生成学习与对比学习 自监督学习从大量的无监督数据中挖掘出自己需要的的监督信息。与监督学习相比,它使用来自数据集本身的信息来构建伪标签。而在对比学习[9]方面,自监督学习作为监督学习的补充具有很大的潜力。 自MoCo和SimCLR引入以来,对比学习在图自监督学习领域占据主导地位,其在节点分类和图分类等任务上的表现远远超过生成式自监督学习方法。但是对比学习的成功往往取决于下面的两个因素: 高质量的数据扩充。GraphCL[5]探索了几种数据增强方法的有效性,如掩蔽属性、子图采样和随机添加和删除边。但是通过研究发现有效的图数据增强往往依赖于领域知识;例如,随机添加和删除边缘对社交网络中的训练是有利的,但它会会对分子图产生负面影响。所以到目前为止,在图对比学习中还没有普遍有效的数据增强方法。 复杂的策略来稳定训练。对比方法通过通用的训练技巧避免模型陷入繁琐的解决方案。GRACE[8]、DGI[7]和GraphCL[5]等方法在训练中使用负采样,而BGRL[6]利用了非对称网络结构和指数移动平均策略。 而生成式自监督学习可以避免上述依赖关系。生成式自监督学习能够重构数据本身的特征和信息。在自然语言处理(NLP)中,BERT[3]旨在恢复遮蔽词;在CV (Computer Vision)中,MAE[2]恢复图像的像素点(块)。 对于图,GAE (Graph Autoencoder)重建图的结构信息或节点特征。现有的图数据动编码器大多着眼于链接预测和图数据聚类目标,因此通常会选择重构图数据的结构信息,即邻接矩阵a。所以近年来图数据自编码器的进展远远落后于对比学习,在分类等任务上的表现并不令人满意。节点分类、图分类等任务的SOTA都是基于对比学习的方法。 与以前的图形自编码器不同,GraphMAE通过简单的重建被遮蔽的损坏节点特征,使图自编码器超越对比学习 GraphMAE的关键设计在于以下几个方面: 基于遮蔽的节点特征重构。现有的图数据自编码器通常以边缘作为重构目标,但其在下游分类任务中的表现通常较差。 以GNN为解码器进行以重建过程。现有的图自编码器通常选择MLP作为解码器,由于大多数图形节点特征是连续的向量,MLP的能力不足以从编码结果重建节点特征。",
+            "source_name": "Tencent腾讯（腾讯官方网）",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web_supplement",
+          "source_record_id": "src_41e7baddd61d734e8bd4d859",
+          "title": "GraphMAE:将MAE的方法应用到图中使图的生成式自监督学习超越了对比学习",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "10",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://new.qq.com/rain/a/20240415A01W6V00",
+          "observed_at": "2026-09-16T12:57:59.742704Z",
+          "provenance": {
+            "query": "graph summarization temporal graph autoencoder RNN",
+            "rank": 10,
+            "run_id": "run-0bf59c704caa42338fa6c219d648e38f",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": " 在我们周围的各个领域,从分子结构到社交网络,再到城市设计结构,到处都有相互关联的图数据。图神经网络(GNN)作为一种强大的方法,正在用于建模和学习这类数据的空间和图结构。它已经被应用于蛋白质结构和其他分子应用,例如药物发现,以及模拟系统,如社交网络。标准的GNN可以结合来自其他机器学习模型的想法,比如将GNN与序列模型结合——时空图神经网络(Spatail-Temporal Graph),能够捕捉数据的时间和空间依赖性。 对于时空图神经网络Spatail-Temporal Graph来说,最简单的描述就是在原来的Graph基础上增加了时间这一个维度,也就是说我们的Graph的节点特征是会随着时间而变化的。 GNN模型和序列模型(如简单RNN、LSTM或GRU)本身就复杂。结合这些模型以处理空间和时间依赖性是强大的,但也很复杂:难以理解,也难以实现。所以在这篇文章中,我们将深入探讨这些模型的原理,并实现一个相对简单的示例,以更深入地理解它们的能力和应用。 图神经网络(GNN) 我们先介绍一些入门的知识简要讨论GNN。 图G可以定义为G = (V, E),其中V是节点集,E是它们之间的边。 一个包含n个节点的图的特征矩阵,每个节点具有f个特征,是所有特征的连接: GNN的关键问题是所有连接节点之间的消息传递,这种邻居特征转换和聚合可以写成: A是图的邻接矩阵,I是允许自连接的单位矩阵。虽然这不是完整的方程,但这已经可以说明可以学习不同节点之间空间依赖性的图卷积网络的基础。一个经典的图神经网络如下图所示: 时空图神经网络 (ST-GNN) ST-GNN中每个时间步都是一个图,并通过GCN/GAT网络传递,以获得嵌入数据空间相互依赖性的结果编码图。然后这些编码图可以像时间序列数据一样进行建模,只要保留每个时间步骤的数据的图结构的完整性。下图演示了这两个步骤,时间模型可以是从ARIMA或简单的循环神经网络或者是transformers的任何序列模型。 我们下面使用简单的循环神经网络来绘制ST-GNN的组件 上面就是ST-GNN的基本原理,将GNN和序列模型(如RNN、LSTM、GRU、Transformers 等)结合。如果你已经熟悉这些序列和GNN模型,那么理论来说是非常简单的,但是实际操作的时候就会有一些复杂,所以我们下面将直接使用Pytorch实现一个简单的ST-GNN。 ST-GNN的Pytorch实现 首先要说明:为了用于演示我将使用大型科技公司的股市数据。虽然这些数据本质上不是图数据,但这种网络可能会捕捉到这些公司之间的相互依赖性,例如一个公司的表现(好或坏)可能反过来影响市场中其他公司的价值。",
+            "published_at": "2024-04-15T10:15:50",
+            "request_id": "79487b00-6be5-40ca-a2c7-595370c6db24",
+            "search_score": null,
+            "search_snippet": "在我们周围的各个领域,从分子结构到社交网络,再到城市设计结构,到处都有相互关联的图数据。图神经网络(GNN)作为一种强大的方法,正在用于建模和学习这类数据的空间和图结构。它已经被应用于蛋白质结构和其他分子应用,例如药物发现,以及模拟系统,如社交网络。标准的GNN可以结合来自其他机器学习模型的想法,比如将GNN与序列模型结合——时空图神经网络(Spatail-Temporal Graph),能够捕捉数据的时间和空间依赖性。 对于时空图神经网络Spatail-Temporal Graph来说,最简单的描述就是在原来的Graph基础上增加了时间这一个维度,也就是说我们的Graph的节点特征是会随着时间而变化的。 GNN模型和序列模型(如简单RNN、LSTM或GRU)本身就复杂。结合这些模型以处理空间和时间依赖性是强大的,但也很复杂:难以理解,也难以实现。所以在这篇文章中,我们将深入探讨这些模型的原理,并实现一个相对简单的示例,以更深入地理解它们的能力和应用。 图神经网络(GNN) 我们先介绍一些入门的知识简要讨论GNN。 图G可以定义为G = (V, E),其中V是节点集,E是它们之间的边。 一个包含n个节点的图的特征矩阵,每个节点具有f个特征,是所有特征的连接: GNN的关键问题是所有连接节点之间的消息传递,这种邻居特征转换和聚合可以写成: A是图的邻接矩阵,I是允许自连接的单位矩阵。虽然这不是完整的方程,但这已经可以说明可以学习不同节点之间空间依赖性的图卷积网络的基础。一个经典的图神经网络如下图所示: 时空图神经网络 (ST-GNN) ST-GNN中每个时间步都是一个图,并通过GCN/GAT网络传递,以获得嵌入数据空间相互依赖性的结果编码图。然后这些编码图可以像时间序列数据一样进行建模,只要保留每个时间步骤的数据的图结构的完整性。下图演示了这两个步骤,时间模型可以是从ARIMA或简单的循环神经网络或者是transformers的任何序列模型。 我们下面使用简单的循环神经网络来绘制ST-GNN的组件 上面就是ST-GNN的基本原理,将GNN和序列模型(如RNN、LSTM、GRU、Transformers 等)结合。如果你已经熟悉这些序列和GNN模型,那么理论来说是非常简单的,但是实际操作的时候就会有一些复杂,所以我们下面将直接使用Pytorch实现一个简单的ST-GNN。 ST-GNN的Pytorch实现 首先要说明:为了用于演示我将使用大型科技公司的股市数据。虽然这些数据本质上不是图数据,但这种网络可能会捕捉到这些公司之间的相互依赖性,例如一个公司的表现(好或坏)可能反过来影响市场中其他公司的价值。",
+            "source_name": "腾讯网",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web_supplement",
+          "source_record_id": "src_eacc53f024e8154bcc934dc2",
+          "title": "https://new.qq.com/rain/a/20240415A01W6V00",
+          "work_id": null
+        }
+      ]
+    },
+    "succeeded": true,
+    "summary": "发现并保存 10 个 Web 候选来源",
+    "tool_name": "web_search"
+  },
+  "resolved_arguments": {
+    "max_results": 10,
+    "query": "graph summarization temporal graph autoencoder RNN"
+  },
+  "result_count": 10,
+  "stage_name": "run_research_task",
+  "started_at": "2026-09-16T12:57:58.731855+00:00",
+  "tool_call_id": "tool_0013",
+  "tool_name": "web_search"
+}

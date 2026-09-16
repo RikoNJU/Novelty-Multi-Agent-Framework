@@ -1,0 +1,1706 @@
+Multiway Multislice PHATE: Visualizing Hidden Dynamics of RNNs through Training
+
+      Report GitHub Issue
+      ×
+
+      Title:
+
+Content selection saved. Describe the issue below:
+
+      Description:
+
+      Submit without GitHub
+      Submit in GitHub
+
+    arXiv is now an independent nonprofit!
+    Learn more
+    ×
+
+      Back to arXiv
+
+    Why HTML?
+
+      Report Issue
+
+      Back to Abstract
+
+      Download PDF
+
+Abstract
+
+1 Introduction
+
+2 Related Work
+
+3 Background
+
+PHATE:
+
+M-PHATE:
+
+4 Multiway Multislice PHATE
+
+5 Results
+
+5.1 Controlled Synthetic Benchmarks: Bifurcation Families and Smooth State-Space Warps
+
+Hopf anchor benchmark: validating geometric and entropy interpretations.
+
+5.1.1 Dynamics-family differences and smooth warp perturbations
+
+5.2 Neural activity
+
+5.2.1 Neighborhood preservation
+
+5.2.2 Intra-step entropy and time-resolved information analysis
+
+Linear probes, time-step ablations, and mutual information.
+
+Comparison with baseline embeddings.
+
+5.2.3 Inter-step entropy
+
+5.3 Analysis with Human Activity Recognition Model
+
+MM-PHATE resolves distinct training phases in within-sequence geometry.
+
+Intra-step entropy shows a plateau–drop regime aligned with performance gains.
+
+Inter-step entropy indicates increasing temporal specialization during the same regime.
+
+Relation to expansion–compression dynamics and comparison to Area2Bump.
+
+6 Conclusion
+
+Limitations and future directions.
+
+References
+
+A Appendix
+
+A.1 Datasets
+
+A.2 Model Training
+
+A.3 Implementation of visualization methods
+
+Common tensor and reshaping.
+
+Hopf bifurcation dataset.
+
+Area2Bump subsampling used for MM-PHATE and most baselines.
+
+HAR subsampling used for MM-PHATE.
+
+A.3.1 MM-PHATE
+
+A.3.2 PCA
+
+A.3.3 t-SNE
+
+A.3.4 Isomap
+
+A.3.5 Locally Linear Embedding (LLE)
+
+A.3.6 Uniform Manifold Approximation and Projection (UMAP)
+
+A.4 M-PHATE as a Qualitative Baseline on a single time-step
+
+Why M-PHATE is not an appropriate comparison.
+
+Hopf control experiment.
+
+Area2Bump LSTM.
+
+A.5 Controlled Synthetic Bifurcation Benchmarks with Smooth Warps
+
+Scope and motivation.
+
+A.5.1 Data Generation
+
+Latent dynamics.
+
+Epochs and time-steps.
+
+Optional smooth warps.
+
+Readout mapping (latent → hidden-unit activation).
+
+Hidden units and group structure.
+
+Samples.
+
+Tensor structure and default configuration.
+
+A.5.2 Scenario suite used in the main text
+
+A.5.3 Synthetic-suite results: bifurcation families and smooth state-space warps
+
+(1) Dynamics-family differences without warps.
+
+(2) Dynamics-family differences with smooth state-space warps applied to both groups.
+
+(3) Warp-only control (same latent dynamics, different coordinates).
+
+A.5.4 Hopf anchor benchmark and entropy validation
+
+Hopf anchor construction (dynamic vs. static Hopf groups).
+
+Epoch-colored embeddings (Figs. , ).
+
+Unit-colored embeddings (Figs. , ).
+
+Single–dynamic-unit zoom (Fig. ).
+
+Group-colored embeddings (Fig. ).
+
+Intra-step entropy (Fig. ).
+
+Inter-step entropy (Fig. ).
+
+A.6 Neighborhood Preservation Analysis
+
+Common evaluation grid.
+
+Intra-step neighborhood preservation.
+
+Inter-step neighborhood preservation.
+
+Reported results.
+
+A.7 Time-resolved linear probing analysis
+
+Per-time-step linear probes.
+
+Heatmap summaries over epoch and time.
+
+Early/late aggregation and train–test gap.
+
+A.8 Time-step ablation analysis
+
+A.9 Time-resolved mutual information analysis
+
+Per-time-step, per-unit MI.
+
+Heatmap summary across epochs and time steps.
+
+A.10 Random Label Analysis
+
+A.10.1 Experimental setup
+
+A.10.2 Metrics and analysis
+
+Intra-step entropy.
+
+Inter-step entropy.
+
+Distributional distances (JSD, TVD).
+
+A.10.3 Results
+
+MM-PHATE geometry.
+
+Intra-step and inter-step entropy trends.
+
+Distributional distances.
+
+A.11 Area2Bump with GRU
+
+A.12 Area2Bump with Vanilla RNN
+
+A.13 Area2Bump with LSTM of Various Sizes
+
+A.14 Quantitative temporal-geometric metrics for HAR MM-PHATE embeddings
+
+Epoch-wise temporal centroid trajectories (unit-balanced).
+
+Signed flow alignment centroid (direction of temporal progression).
+
+Epoch-to-epoch change magnitude (temporal-geometric reorganization).
+
+Quantitative support for the HAR transition.
+
+Alignment with training dynamics over the full trajectory.
+
+B Computing Infrastructure
+
+C Mathematical Notations
+
+    License: CC BY 4.0
+
+arXiv:2406.01969v2 [cs.LG] 24 Mar 2026
+
+Multiway Multislice PHATE:
+
+Visualizing Hidden Dynamics of RNNs through Training
+
+Jiancheng Xie  xiejc@bu.edu
+
+Affiliation: Department of Biomedical Engineering
+
+Affiliation: Boston University
+
+  
+Lou C. Kohler-Voinov  lou.kohlervoinov@epfl.ch
+
+Affiliation: Department of Life Sciences
+
+Affiliation: Ecole Polytechnique Fédérale de Lausanne
+
+  
+Noga Mudrik  nmudrik1@jhu.edu
+
+Affiliation: Department of Biomedical Engineering, Kavli NDI, Center for Imaging Science
+
+Affiliation: Johns Hopkins University
+
+  
+Gal Mishne  gmishne@ucsd.edu
+
+Affiliation: Halıcıoğlu Data Science Institute
+
+Affiliation: University of California San Diego
+
+  
+Adam S. Charles  adamsc@jhu.edu
+
+Affiliation: Department of Biomedical Engineering, The Mathematical Institute for Data Science, Center for Imaging Science
+
+Affiliation: Johns Hopkins University
+
+Abstract
+
+Recurrent neural networks (RNNs) are a widely used tool for sequential data analysis; however, they are still often seen as black boxes. Visualizing the internal dynamics of RNNs is a critical step toward understanding their functional principles and developing better architectures and optimization strategies. Prior studies typically emphasize network representations only after training, overlooking how those representations evolve during learning. Here, we present Multiway Multislice PHATE (MM-PHATE), a graph-based embedding method for visualizing the evolution of RNN hidden states across the multiple dimensions spanned by RNNs: time, training epoch, and units. Across controlled synthetic benchmarks and real RNN applications, MM-PHATE preserves hidden-representation community structure among units and reveals training-phase changes in representation geometry. In controlled synthetic systems spanning multiple bifurcation families and smooth state-space warps, MM-PHATE recovers qualitative dynamical progression while distinguishing family-level differences. In task-trained RNNs, the embedding identifies information-processing and compression-related phases during training, and time-resolved geometric and entropy-based summaries align with linear probes, time-step ablations, and label–state mutual information. These results show that MM-PHATE provides an intuitive and comprehensive way to inspect RNN hidden dynamics across training and to better understand how model architecture and learning dynamics relate to performance.
+
+1 Introduction
+
+Recurrent neural networks (RNNs) are designed to handle sequential data by modeling input sequences and retaining memory of past elements through recurrent connections or memory units (Lipton et al., 2015; Kaur and Mohta, 2019).
+Unlike feedforward neural networks (FNNs), which process each input independently, RNNs update their internal state dynamically, enabling them to capture contextual relationships across sequences. This makes RNNs particularly effective for tasks that rely on the order and relationships between elements, such as time-series analysis and action recognition (Hewamalage et al., 2021).
+
+Since gaining popularity in the 1990s, various RNN variants and training strategies have been developed to improve training stability and long-range dependency learning. Architectures such as Long Short-Term Memory (LSTM) networks (Hochreiter and Schmidhuber, 1996) and Structurally Constrained Recurrent Networks (SCRN)(Mikolov et al., 2014) were designed to address challenges like the vanishing gradient problem(Salehinejad et al., 2018). Additionally, RNNs excel at handling irregular or incomplete sequential data due to their flexibility with variable-length inputs. These properties, along with ongoing architectural improvements (Salehinejad et al., 2018), have enabled RNNs to achieve exceptional performance across domains such as natural language processing (NLP), neuroscience, and biomedical signal processing (Barak, 2017; Chen and Li, 2021; Khalifa et al., 2021). Notably, RNNs remain the state-of-the-art for neural decoding in intracortical brain-computer interfaces (Deo et al., 2024).
+
+Despite their extensive use, the learning dynamics and internal representations of RNNs remain difficult to interpret. This opacity complicates performance evaluation, model design, and parameter selection, hindering the development of more effective architectures. While significant progress has been made in interpreting FNNs (Wang et al., 2021; Yu et al., 2014), similar advances for RNNs have been limited. Most RNN analyses focus on either fixed-point analysis in dynamical systems (Sussillo and Barak, 2013) or performance evaluations across different architectures and components (Chung et al., 2014; Greff et al., 2017). Consequently, there is a clear need for new methods that facilitate the interpretation of RNNs’ latent representations during training.
+
+In explainable deep learning, dimensionality reduction is widely used to visualize high-dimensional data, helping researchers gain intuition about its structure and relationships (Karpathy et al., 2015; Hidaka and Kurita, 2017; Rauber et al., 2016; Gigante et al., 2019). However, existing techniques often have limitations. Methods like t-SNE emphasize local structure at the expense of global patterns (Maaten and Hinton, 2008), while methods such as PCA and Isomap focus on global structures and may miss important local details (Maćkiewicz and Ratajczak, 1993; Tenenbaum et al., 2000). These methods can also be sensitive to noise and outliers (Moon et al., 2019). Visualizing RNNs is particularly challenging since they require preserving structures across multiple dimensions, including time, epochs, and hidden units. Consequently, traditional dimensionality reduction techniques often fail to capture the complexity of RNN learning dynamics.
+
+To address these challenges, Gigante et al.(Gigante et al., 2019) introduced Multislice PHATE (M-PHATE), which visualizes FNN hidden states during training. M-PHATE constructs a multislice graph where each slice represents the network’s state at a particular training epoch, capturing both inter-epoch relationships and community structures through PHATE(Moon et al., 2019). This approach effectively captures performance-related features, such as task-related specialization, without requiring external validation data, making it particularly useful in data-limited settings.
+
+However, M-PHATE is designed for FNNs and does not account for the sequential nature of RNNs, where
+hidden states across all time-steps play a critical role in representation learning (Su and Shlizerman, 2020). To
+address this limitation, we propose Multiway Multislice PHATE (MM-PHATE), which extends M-PHATE
+by capturing RNN hidden states across both time-steps and epochs. MM-PHATE provides a comprehensive
+view of RNN learning dynamics, enabling us to track how hidden representations evolve during training and
+how they support task performance. These training dynamics are reminiscent of ideas from information
+bottleneck theory, where intermediate representations are encouraged to retain task-relevant information
+about the target while discarding irrelevant variability in the input
+(Fischer, 2020; Tishby and Zaslavsky, 2015; Cheng et al., 2019). In contrast to classical information bottleneck approaches,
+we do not optimize or estimate a formal bottleneck objective; instead, we empirically characterize
+“expansion” and “compression” phases via the geometry and entropy of hidden-state trajectories revealed
+by MM-PHATE. We evaluate MM-PHATE on controlled synthetic benchmarks and real RNN applications, including synthetic systems spanning multiple bifurcation families and smooth state-space warps, and compare against existing methods such as PCA (Wold et al., 1987), t-SNE (Maaten and Hinton, 2008), Isomap (Tenenbaum et al., 2000), Locally Linear
+Embedding (LLE) (Roweis and Saul, 2000), UMAP (McInnes et al., 2020), and M-PHATE.
+
+Our main contributions are as follows:
+
+•
+
+We introduce MM-PHATE, a multiway multislice visualization framework for RNN hidden dynamics across time-steps and training epochs, providing a unified view of representation evolution during learning.
+
+•
+
+We evaluate MM-PHATE on controlled synthetic benchmarks (Hopf and Pitchfork bifurcations, with and without smooth state-space warps), showing that it recovers qualitative dynamical progression and preserves family-level distinctions under the tested conditions.
+
+•
+
+We show on task-trained RNNs that MM-PHATE preserves hidden-unit community structure and reveals time-resolved representational changes whose geometric and entropy-based summaries align with linear probes, time-step ablations, and label–state mutual information.
+
+2 Related Work
+
+Existing methods for interpreting RNNs can be categorized into performance-oriented and application-oriented post-training analyses.
+Performance-oriented approaches focus on evaluating network-level performance by comparing architectural components and training parameters. For example, Chung et al. (2014) compared gated RNNs (e.g., GRUs and LSTMs), while Greff et al. (2017) conducted a detailed analysis of LSTM components. However, these studies primarily emphasize performance outcomes and provide limited insights into the hidden state dynamics and learned representations within RNNs.
+
+In contrast, application-oriented approaches focus on visualizing and interpreting hidden state activations after training, often in the context of specific tasks. In NLP, Karpathy et al. (2015) overlaid activation maps on texts, revealing interpretable unit behaviors such as tracking text structure. Li et al. (2016) used saliency heat maps to identify critical words in learned representations, while Strobelt et al. and Ming et al. developed interactive tools to correlate hidden state patterns with phrases (Strobelt et al., 2018; Ming et al., 2017). Similar techniques have been applied to domains such as speech recognition (Tang et al., 2017), earth sciences (Titos et al., 2022), and medical applications (Kwon et al., 2019). While these studies provide intuitive, task-specific insights, they often lack generalizability and do not capture training dynamics over time.
+
+Other works have explored general RNN behavior using techniques such as Proper Orthogonal Decomposition (POD) to analyze Seq2Seq internal states (Su and Shlizerman, 2020) and PCA to link recurrent activations to model generalization (Farrell et al., 2022). However, these approaches focus on post-training analysis and do not visualize how hidden states evolve across both time-steps and epochs during training. To our knowledge, no existing methods provide a unified view of RNN hidden dynamics over temporal and training dimensions.
+
+3 Background
+
+PHATE:
+
+PHATE is a data visualization technique that can capture both the local and global structure of data using diffusion processes (Moon et al., 2019).
+The PHATE algorithm optimizes the diffusion kernel (Coifman and Lafon, 2006) for the visualization of high-dimensional data. Let 𝒙i\bm{x}_{i} be a point in a high-dimensional dataset. PHATE begins by computing the Euclidean distance matrix 𝑬\bm{E} between all data points, where 𝑬i​j=‖𝒙i−𝒙j‖2\bm{E}_{ij}=\|\bm{x}_{i}-\bm{x}_{j}\|_{2}. These distances are then transformed into affinities using an adaptive α\alpha-decay kernel
+𝑲k,α​(𝒙i,𝒙j)=12​exp⁡(−(𝑬i​jϵk​(𝒙i))α)+12​exp⁡(−(𝑬i​jϵk​(𝒙j))α)\bm{K}_{k,\alpha}(\bm{x}_{i},\bm{x}_{j})=\frac{1}{2}\exp\left(-\left(\frac{\bm{E}_{ij}}{\epsilon_{k}(\bm{x}_{i})}\right)^{\alpha}\right)+\frac{1}{2}\exp\left(-\left(\frac{\bm{E}_{ij}}{\epsilon_{k}(\bm{x}_{j})}\right)^{\alpha}\right),
+which adapts to the data density around each point and captures local information. The parameters ϵk​(xi)\epsilon_{k}(x_{i}) and ϵk​(xj)\epsilon_{k}(x_{j}) are the kk-nearest-neighbor distance of xix_{i} and xjx_{j}, and α\alpha controls the decay rate. The affinities are then row-normalized to obtain the diffusion operator 𝑷=𝑫−1​𝑲k,α\bm{P}=\bm{D}^{-1}\bm{K}_{k,\alpha} that represents the single-step transition probabilities between data points, where 𝑫\bm{D} is a diagonal matrix whose entries are row sums of 𝑲k,α\bm{K}_{k,\alpha}.
+PHATE calculates the information distance between points based on their transition probabilities: disti​j=‖log⁡𝑷it−log⁡𝑷jt‖2\textrm{dist}_{ij}=\sqrt{\|\log{\bm{P}_{i}^{t}}-\log{\bm{P}_{j}^{t}}\|^{2}}, where 𝑷t\bm{P}^{t} captures the transition probabilities of a diffusion process on the data over tt steps and ii and jj are rows in the matrix.
+These distances are embedded into low dimensions using Multidimensional Scaling (MDS) (Ramsay, 1966) for visualization.
+Local and global distances within the data’s manifold are represented in PHATE by multistep diffusion probabilities. The diffusion probability of each point captures its local context, enabling pairwise comparisons between all points (both neighboring and distant points) that represent the entire global context.
+For further details, see (Moon et al., 2019).
+We will use PHATE to embed RNN training dynamics, however we alter the initial graph construction to emphasize certain structures in the data we wish to visualize.
+
+M-PHATE:
+
+Gigante et al. (2019) model the evolution of the hidden units in a feedforward neural network and their community structure using a multislice graph.
+Each slice corresponds to the network at an epoch during training, and the collection of graphs represents the dynamical system resulting from the evolution of the network’s hidden states.
+Let 𝑭\bm{F} be an FNN with a total of mm hidden units, and let 𝑭(τ)\bm{F}^{(\tau)} be the representation of the network after being trained for τ∈{1,…,n}\tau\in\{1,...,n\} epochs on the training data 𝑿\bm{X} sampled from a larger dataset 𝚷\bm{\Pi}. The algorithm first calculates a shared feature space using the normalized activations of all hidden units i∈{1,…,m}i\in\{1,\ldots,m\} on the input data, as a 3-dimensional tensor:
+
+𝑻⁡(τ,i,k)=𝑭i(τ)​(𝒀k)−1p​∑ℓ𝑭i(τ)​(𝒀ℓ)Varℓ​[𝑭i(τ)​(𝒀ℓ)],\bm{T}(\tau,i,k)=\frac{\bm{F}_{i}^{(\tau)}(\bm{Y}_{k})-\frac{1}{p}\sum_{\ell}\bm{F}_{i}^{(\tau)}(\bm{Y}_{\ell})}{\sqrt{\mathrm{Var}_{\ell}[\bm{F}_{i}^{(\tau)}(\bm{Y}_{\ell})]}},
+
+where 𝑭i(τ)​(𝒀k):ℝd→ℝ\bm{F}_{i}^{(\tau)}(\bm{Y}_{k}):\mathbb{R}^{d}\rightarrow\mathbb{R} denotes the activation of the ii-th hidden unit of 𝑭\bm{F} for the kt​hk^{th} sample from input data 𝒀\bm{Y}. Here, 𝒀\bm{Y} is a subset of pp samples from the dd-dimensional training data 𝑿\bm{X}, with an equal number of samples from each input class, and p≪|𝑿|p\ll|\bm{X}|. This activation tensor 𝑻\bm{T} is then used to calculate intraslice affinities between pairs of hidden units within an epoch τ\tau during the training, as well as the interslice affinities between a hidden unit ii and itself at different epochs:
+
+𝑲intraslice(τ)​(i,j)=exp⁡(−‖𝑻⁡(τ,i)−𝑻⁡(τ,j)‖2ασ(τ,i)α)\bm{K}_{\text{intraslice}}^{(\tau)}(i,j)=\exp\left(\frac{-\|\bm{T}(\tau,i)-\bm{T}(\tau,j)\|_{2}^{\alpha}}{\sigma^{\alpha}_{(\tau,i)}}\right)
+
+𝑲interslice(i)​(τ,υ)=exp⁡(−‖𝑻⁡(τ,i)−𝑻⁡(υ,i)‖22ϵ2)\bm{K}_{\text{interslice}}^{(i)}(\tau,\upsilon)=\exp\left(\frac{-\|\bm{T}(\tau,i)-\bm{T}(\upsilon,i)\|_{2}^{2}}{\epsilon^{2}}\right)
+
+where α\alpha is the α\alpha-decay parameter, σ(τ,i)\sigma_{(\tau,i)} is the intraslice bandwidth for unit ii in epoch τ\tau, and ϵ\epsilon is the fixed interslice bandwidth.
+These matrices are combined to form an n​m×n​mnm\times nm multislice kernel matrix 𝑲\bm{K}, which is then symmetrized, row-normalized, and visualized using PHATE in 2D or 3D.
+
+4 Multiway Multislice PHATE
+
+Figure 1: Example schematic of the multiway multislice graph used in MM-PHATE for RNNs. The intra-step kernels represent the similarities between the graph nodes at the same time-steps. The inter-step kernels represent the similarities between the nodes and themselves at different time-steps and epochs.
+
+M-PHATE was shown to be a powerful tool for visualizing FNNs. However, to effectively visualize the evolution of RNNs’ hidden representations, we need to consider hidden state dynamics across time-steps within the sequence and training epochs concurrently (Su and Shlizerman, 2020). In RNNs, the output from previous time-steps is fed as an input to current time-steps. This is useful in the treatment of sequences and building a memory of the previous inputs into the network. The network iteratively updates a hidden state hh. At each time-step tt, the next hidden state ht+1h_{t+1} is computed using the input xtx_{t} and the current hidden state hth_{t}. Importantly, the network uses the same weights WW and biases bb for each time-step. Thus the output yty_{t} at time-step tt is yt=f⁡(W⋅ht+b)y_{t}=f(W\cdot h_{t}+b), where ff is some activation function.
+
+Let 𝑹(τ)\bm{R}^{(\tau)} be the representation of an mm-unit RNN after being trained for τ∈{1,…,n}\tau\in\{1,\ldots,n\} epochs on the training data 𝑿⊂𝚷\bm{X}\subset\bm{\Pi}. We denote 𝑹i,w(τ)​(𝒀k):ℝd→ℝ\bm{R}_{i,w}^{(\tau)}(\bm{Y}_{k}):\mathbb{R}^{d}\rightarrow\mathbb{R} the activation of the ii-th hidden unit of 𝑹\bm{R} at time-step w∈{1,…,s}w\in\{1,\ldots,s\} in epoch τ\tau for the kt​hk^{th} sample of 𝒀\bm{Y}, where 𝒀\bm{Y} consists of pp samples from the training data 𝑿\bm{X}.
+We construct the 4-way tensor 𝑻\bm{T} using the hidden unit activations as a shared feature space, which we use to calculate unit affinities across all epochs and time-steps.
+The tensor 𝑻\bm{T} is an n×s×m×pn\times s\times m\times p tensor containing the activations at each epoch τ∈{1,…,n}\tau\in\{1,\dots,n\} and time-step w∈{1,…,s}w\in\{1,\dots,s\} of each hidden unit 𝑹i\bm{R}_{i} (i∈{1,…,m}i\in\{1,\dots,m\}) with respect to each sample 𝒀k⊂𝑿\bm{Y}_{k}\subset\bm{X}. To eliminate the variability in 𝑻\bm{T} due to the bias term bb, we zz-score the activation of each hidden unit at time-step ω\omega and epoch τ\tau:
+
+𝑻⁡(τ,ω,i,k)=𝑹i,ω(τ)​(𝒀k)−1p​∑ℓ𝑹i,ω(τ)​(𝒀ℓ)V​a​rℓ​[𝑹i,ω(τ)​(𝒀ℓ)].\bm{T}(\tau,\omega,i,k)=\frac{\bm{R}_{i,\omega}^{(\tau)}(\bm{Y}_{k})-\frac{1}{p}\sum_{\ell}\bm{R}_{i,\omega}^{(\tau)}(\bm{Y}_{\ell})}{\sqrt{Var_{\ell}[\bm{R}_{i,\omega}^{(\tau)}(\bm{Y}_{\ell})]}}.
+
+(1)
+
+We construct a kernel over 𝑻\bm{T} utilizing our prior knowledge of the temporal aspect of 𝑻\bm{T} to capture its dynamics over epochs and time-steps. This constructed kernel, denoted 𝑲\bm{K}, represents the weighted edges in the multislice graph of the hidden units (Fig. 1). In this representation, each unit has two types of connections: edges between the unit to itself across epochs and time-steps and, within a fixed epoch and time-step, edges between a unit and its community—the other units which have the most similar representation. The edges are weighted by the similarity in activation pattern.
+We define 𝑲\bm{K} as a n​s​m×n​s​mnsm\times nsm kernel matrix between all mm hidden units at all ss time-steps in all nn training epochs. The ((τ−1)​s​m+(ω−1)​m+j)t​h((\tau-1)sm+(\omega-1)m+j)_{th} row or column of 𝑲\bm{K} refers to the jt​hj_{th} unit at time-step ω\omega in epoch τ\tau. We henceforth refer to the row as 𝑲((τ,ω,j),:)\bm{K}((\tau,\omega,j),:) and the column as 𝑲(:,(τ,ω,j))\bm{K}(:,(\tau,\omega,j)).
+In order to capture the evolution of hidden units of RR across time-steps and epochs, while preserving the unit’s community structure, we construct a multiway multislice kernel matrix reflecting two types of connections simultaneously.
+Given the α\alpha-decay parameter α\alpha, the intra-step bandwidth for unit ii at time-step ω\omega and epoch τ\tau: σ(τ,ω,i)\sigma_{(\tau,\omega,i)}, and the fixed inter-step bandwidth ϵ\epsilon, we define:
+
+•
+
+Intra-step affinities between hidden units ii and jj at time-step ω\omega in epoch τ\tau:
+
+𝑲intra-step(τ,ω)​(i,j)=exp⁡(−∥𝑻(τ,ω,i)−𝑻(τ,ω,j)∥α2σ(τ,ω,i)α)\bm{K}_{\text{intra-step}}^{(\tau,\omega)}(i,j)=\exp\left(-\frac{\parallel\bm{T}(\tau,\omega,i)-\bm{T}(\tau,\omega,j)\parallel^{\alpha}_{2}}{\sigma^{\alpha}_{(\tau,\omega,i)}}\right)
+
+•
+
+Inter-step affinities between a hidden unit ii and itself at different time-steps and epochs:
+
+𝑲inter-step(i)​((τ,ω)CLOSE\displaystyle\bm{K}_{\text{inter-step}}^{(i)}((\tau,\omega)
+,(η,ν))=exp(−∥𝑻(τ,ω,i)−𝑻(η,ν,i)∥22ϵ2)\displaystyle,(\eta,\nu))=\exp\left(-\frac{\parallel\bm{T}(\tau,\omega,i)-\bm{T}(\eta,\nu,i)\parallel^{2}_{2}}{\epsilon^{2}}\right)
+
+The bandwidth σ(τ,ω,i)\sigma_{(\tau,\omega,i)} of the α\alpha-decay kernel is set to be the distance of unit ii at time-step ω\omega from epoch nn to its kt​hk^{th} nearest neighbor across units at that time-step and epoch: σ(τ,ω,i)=dk(𝑻(τ,ω,i),𝑻(τ,ω,:))\sigma_{(\tau,\omega,i)}=d_{k}(\bm{T}(\tau,\omega,i),\bm{T}(\tau,\omega,:)), where dk​(z,Z)d_{k}(z,Z) denotes the ℓ2\ell_{2} distance from zz to its kt​hk^{th} nearest neighbor in ZZ. We used k=5k=5 in all the results presented. The use of this adaptive bandwidth means the kernel is not symmetric and thus requires symmetrization. In the inter-step affinities 𝑲inter-step(i)\bm{K}^{(i)}_{\textrm{inter-step}}, we use a fixed-bandwidth Gaussian kernel ϵ=1n​s​m∑τ=1n∑ω=1s∑i=1mdk(𝑻(τ,ω,i),𝑻(:,:,i))\epsilon=\frac{1}{nsm}\sum_{\tau=1}^{n}\sum_{\omega=1}^{s}\sum_{i=1}^{m}d_{k}(\bm{T}(\tau,\omega,i),\bm{T}(:,:,i)), the average across all time-steps in all epochs and all units of the distance of unit ii at time-step tt to its kt​hk_{th} nearest neighbor among the set consisting of the same unit ii at all steps.
+
+The combined kernel matrix of these two matrices contains one row and column for each unit at each time-step in each epoch, such that the intra-step affinities form a block diagonal matrix and the inter-step affinities form off-diagonal blocks composed of diagonal matrices (Fig. A.1).
+
+𝑲⁡((τ,ω,i)CLOSE\displaystyle\bm{K}((\tau,\omega,i)
+,(η,ν,j))={𝑲intra-step(τ,ω)​(i,j)if ​(τ,ω)=(η,ν)𝑲inter-step(i)​((τ,ω),(η,ν))if ​i=j0otherwise\displaystyle,(\eta,\nu,j))=\begin{cases}\bm{K}^{(\tau,\omega)}_{\text{intra-step}}(i,j)&\text{if }(\tau,\omega)=(\eta,\nu)\\
+\bm{K}^{(i)}_{\text{inter-step}}((\tau,\omega),(\eta,\nu))&\text{if }i=j\\
+0&\text{otherwise}\end{cases}
+
+(2)
+
+We symmetrize this final kernel as 𝑲′=12​(𝑲+𝑲T)\bm{K}^{\prime}=\frac{1}{2}(\bm{K}+\bm{K}^{T}), and row-normalize it to obtain 𝑷=𝑫−1​𝑲′\bm{P}=\bm{D}^{-1}\bm{K}^{\prime}, where 𝑫\bm{D} is a diagonal matrix whose entries are row sums of 𝑲′\bm{K}^{\prime} and which 𝑷\bm{P} represents a random walk over all units at all time-steps in all epochs, where propagating from one state to another is conditional on the transition probabilities between time-step ω\omega in epoch τ\tau and time-step ν\nu in epoch η\eta. PHATE is applied to 𝑷\bm{P} to visualize the tensor 𝑻\bm{T} in two or three dimensions. This resulting visualization thus simultaneously captures information regarding the evolution of the units across both time-steps and epochs.
+
+5 Results
+
+We evaluate MM-PHATE in two stages.
+First, we use controlled synthetic benchmarks to test whether the embedding preserves known dynamical structure and remains informative under smooth state-space perturbations. This stage provides a ground-truth anchor for interpreting the geometry and entropy summaries used later.
+Second, we analyze task-trained RNNs (Area2Bump neural spiking Chowdhury et al. (2022) and HAR kinematics Reyes-Ortiz et al. (2012)) to assess whether MM-PHATE reveals learning-relevant representational changes across time-steps and training epochs.
+
+Throughout, we compare MM-PHATE against standard embeddings (PCA, t-SNE, Isomap, LLE, UMAP).
+We additionally report M-PHATE as a qualitative baseline in Appendix A.4. However, because M-PHATE operates on a single time-slice and does not model within-sequence dynamics, it embeds a different mathematical object (units ×\times epochs rather than units ×\times time ×\times epochs), making direct quantitative comparison inappropriate.
+
+5.1 Controlled Synthetic Benchmarks: Bifurcation Families and Smooth State-Space Warps
+
+Interpreting RNN training dynamics from a visualization is challenging because the latent geometry is typically unknown, and many embeddings are dominated by activation magnitude or coordinate parameterization rather than the underlying dynamics. To test whether an embedding preserves dynamically meaningful structure, we use controlled synthetic benchmarks built from low-dimensional bifurcation systems with known qualitative geometry.
+
+We use two-dimensional canonical systems (Hopf and Pitchfork) to generate noisy hidden-unit readouts across epochs and time-steps (Appendix A.5). These benchmarks are designed to address two complementary questions:
+
+1.
+
+whether the embedding distinguishes dynamical-family differences (Hopf vs. Pitchfork), and
+
+2.
+
+whether the resulting geometric organization remains interpretable under smooth state-space warps.
+
+We first use the Hopf bifurcation as an analytically interpretable anchor benchmark to validate geometric and entropy interpretations in a setting with known latent phases. We then use a broader synthetic suite to test family-level distinctions and warp perturbations.
+
+Hopf anchor benchmark: validating geometric and entropy interpretations.
+
+Figure 2:
+Visualization of supercritical Hopf bifurcation dynamics and their embeddings.
+The first column summarizes the synthetic construction used for the Hopf anchor benchmark:
+top—a representative latent Hopf trajectory for the swept-μ\mu (dynamic) group, plotted in (x,y,μ)(x,y,\mu) and colored by training epoch, illustrating the transition from a contracting fixed point (μ<0\mu<0) to a stable limit cycle (μ>0\mu>0) as μ\mu crosses 00;
+bottom—the corresponding latent phase portrait in (x,y)(x,y), showing representative trajectories from the static control group (μ≡−1\mu\equiv-1 across epochs) alongside the same representative dynamic trajectory, colored by unit group (static vs. dynamic). The latent trajectories are then mapped through a scalar hidden-unit readout to simulate the model activations used for visualization.
+Remaining columns show embeddings produced by MM-PHATE, PCA, t-SNE, and UMAP, applied to the full hidden-state tensor and colored by epoch (top row) or unit identity (bottom row).
+MM-PHATE recovers the underlying bifurcation geometry as a single coherent post-bifurcation orbit, whereas conventional methods primarily reflect changes in activation magnitude.
+
+In the supercritical Hopf system, the control parameter μ\mu governs a transition from a contracting fixed point (μ<0\mu<0) to loss of stability at μ=0\mu=0, followed by convergence to a stable limit cycle for μ>0\mu>0 with radius r∗​(μ)=μr^{*}(\mu)=\sqrt{\mu}. This gives a controlled analogue of training-phase motifs that often appear in RNNs: contraction, transition/expansion, and stabilization on a low-dimensional manifold. For this Hopf anchor benchmark, we use two groups generated from the same supercritical Hopf system but with different control-parameter schedules: a dynamic (swept-μ\mu) group with 6 units, for which μ\mu is linearly swept from −1-1 to 22 across epochs, and a static (fixed-μ\mu) control group with 4 units, for which μ≡−1\mu\equiv-1 at all epochs. Thus, only the dynamic group crosses the bifurcation, while the static group remains in the contracting fixed-point regime. This provides an internal control for distinguishing bifurcation-driven geometric reorganization from changes driven primarily by readout magnitude or coordinate effects.
+
+Figure 2 shows this Hopf dynamic-vs.-static anchor benchmark and compares embeddings produced by MM-PHATE and representative baselines. Each point corresponds to a hidden unit at a specific time-step and epoch. MM-PHATE recovers the qualitative dynamical progression: post-bifurcation epochs align onto a coherent periodic orbit, epochs remain globally ordered, and units follow parallel trajectories on a shared manifold. Importantly, MM-PHATE deemphasizes amplitude growth as a nuisance dimension and organizes points by geometry and temporal progression of the underlying dynamical system.
+
+By contrast, standard embeddings in the full comparison (PCA, t-SNE, Isomap, LLE, UMAP; see Appendix A.5.4) largely encode the increase in oscillation amplitude as μ\mu grows, yielding families of concentric or inflated loops across epochs. In this regime, the dominant embedding axis reflects readout magnitude rather than the shared periodic topology, obscuring the transition and mixing static and dynamic units. When a tanh\tanh nonlinearity is applied to the readout, these variance-driven distortions become more pronounced due to saturation, whereas MM-PHATE remains qualitatively stable (Fig. A.24).
+
+This Hopf benchmark provides controlled support for two claims used later in the paper. First, in this setting, MM-PHATE more faithfully reflects the latent contraction–transition–stabilization progression than the compared standard embeddings. Second, the embedding-space entropy summaries introduced below are interpretable as geometric markers of representational regime changes: in the Hopf experiment, MM-PHATE intra-step and inter-step entropy recover the expected phase transitions more clearly than the baselines (Figs. A.22–A.23). These synthetic validations motivate the use of the same summaries in task-trained RNNs.
+
+5.1.1 Dynamics-family differences and smooth warp perturbations
+
+We next test whether MM-PHATE can separate dynamical-family differences from smooth coordinate perturbations when both are present. To do so, we construct three controlled settings (Appendix A.5.2):
+(i) Hopf vs. Pitchfork with matched μ\mu sweeps and no warp,
+(ii) Hopf vs. Pitchfork with smooth state-space warps applied to both systems, and
+(iii) a warp-only control in which two groups share the same Hopf latent trajectories and μ\mu schedule and differ only by whether a smooth state-space warp is applied.
+
+Figure 3: MM-PHATE on controlled synthetic bifurcation–warp scenarios (first two embedding coordinates). Columns (left to right) show: (i) Hopf vs. Pitchfork with matched μ\mu sweeps and no warp, (ii) Hopf vs. Pitchfork with smooth state-space warps applied to both systems, and (iii) a warp-only control in which both groups share the same Hopf latent trajectories and μ\mu schedule and differ only by whether a smooth state-space warp is applied. Top row: points colored by epoch. Bottom row: points colored by unit index (legend indicates unit identity and group membership).
+
+Figure 3 summarizes the three scenarios (see also the per-scenario appendix visualization suites in Figs. A.6–A.17). In the unwarped Hopf-vs.-Pitchfork setting, MM-PHATE separates the two dynamical families while preserving their distinct progression structure across epochs and time-steps (Figs. A.6–A.9). When both systems are smoothly warped, the family-level distinction remains visible, indicating that the embedding is not driven solely by the raw coordinate representation of the latent trajectories in the tested construction (Figs. A.10–A.13).
+
+In the warp-only control, the two groups share the same Hopf latent trajectories and μ\mu schedule and differ only by the application of a smooth state-space warp. MM-PHATE separates the clean and warped groups, showing that it is not invariant to smooth warps in a strict sense. However, the post-bifurcation limit-cycle structure remains qualitatively preserved in the MM-PHATE embedding (including pre-/post-bifurcation progression), whereas the warp more strongly distorts the geometry recovered by PCA and t-SNE (Figs. A.14–A.17). This behavior is consistent with robustness of the qualitative geometric progression to smooth state-space warps under the tested conditions, while making clear that MM-PHATE does not satisfy strict warp invariance.
+
+Taken together, the synthetic benchmarks establish a coherent scope for the downstream analyses: MM-PHATE can recover meaningful geometric organization in controlled systems, can preserve qualitative progression under smooth perturbations, and can distinguish family-level dynamics from coordinate-warp effects in the tested settings. We now turn to task-trained RNNs to test whether these geometric signals align with learning-relevant changes in real models.
+
+5.2 Neural activity
+
+Figure 4: Area2Bump: Visualization of a 20-unit LSTM network trained for 200 epochs.
+Visualizations are generated using MM-PHATE, PCA, t-SNE, Isomap, Locally Linear Embedding (LLE), and UMAP (left to right).
+Points are colored by epoch (top row) or time-step (bottom row).
+
+We next apply MM-PHATE to RNNs trained on the Area2Bump dataset, which contains spiking activity recordings from macaques during a reaching task (Chowdhury et al., 2022).
+We trained a single-layer, 20-unit LSTM to classify reach direction and analyzed how its hidden representations evolve over training.
+In an example session, the model reached a validation accuracy of 74%.
+Let 𝑻\bm{T} denote the activation tensor across epochs, time-steps, and hidden units (with an activation vector for each unit obtained across trials; see Appendix A.3 for implementation details).
+Each point in the visualization corresponds to a specific unit–time-step–epoch triple (Fig. 4); in practice, we subsample epochs and time-steps to reduce memory load.
+
+We compare MM-PHATE to five standard embeddings—PCA, t-SNE, Isomap, LLE, and UMAP—and to M-PHATE (Appendix A.4), using the same set of points.
+For the baselines, we reshape 𝑻\bm{T} into a matrix whose rows are unit–time-step–epoch points and whose columns are trial-indexed activations, and then apply each method to this flattened representation.
+
+Qualitatively, MM-PHATE organizes the activity into a single manifold that simultaneously preserves progression across epochs (top row) and continuity across time-steps (bottom row).
+In particular, MM-PHATE reveals a clear reorganization that becomes pronounced at later time-steps and emerges over mid training (around epoch 40 to 90), roughly coinciding with the main rise and stabilization of validation performance (Fig. 4).
+By contrast, PCA and Isomap primarily capture a global drift dominated by high-variance directions and do not clearly separate training phases.
+t-SNE emphasizes local neighborhoods that are strongly driven by time-step variability and often yields discontinuous structure across epochs.
+LLE and UMAP preserve some within-unit trajectories but still do not clearly expose the mid-training transition visible in MM-PHATE.
+This motivates the quantitative evaluations below.
+
+5.2.1 Neighborhood preservation
+
+To quantitatively compare how well each embedding preserves the structure of the activation tensor, we compute neighborhood preservation between the original activation space and the low-dimensional embedding.
+For each point (unit–time-step–epoch triple), we identify its kk-nearest neighbors in the original space and in the embedding space, and measure the fraction of neighbors that are shared (Appendix A.6).
+We report the average overlap separately for:
+(i) intra-step neighborhoods (within a fixed epoch and time-step, comparing units), and
+(ii) inter-step neighborhoods (within a fixed epoch and unit, comparing time-steps).
+
+Table 1 summarizes results for the Area2Bump LSTM.
+MM-PHATE achieves the highest intra-step preservation at informative neighborhood sizes (e.g., k=5,10,15k=5,10,15), indicating that it best captures within-time-step unit communities.
+For inter-step neighborhoods, MM-PHATE yields the highest preservation for all but the smallest neighborhood size (k=5k=5), where LLE is marginally higher.
+We note that intra-step preservation necessarily saturates when k≥mk\geq m (here m=20m=20 units), explaining the ceiling at k=20k=20 and k=40k=40; those rows serve mainly as a sanity check.
+
+An additional variant omitting Isomap (due to memory constraints at larger sample sizes) is reported in Appendix Table 3; the relative ranking of methods remains unchanged.
+Overall, these results support the qualitative impression from Fig. 4: MM-PHATE preserves both within-time-step unit neighborhoods and across-time trajectories more faithfully than standard alternatives.
+
+Table 1: Neighborhood preservation of visualization methods applied to an RNN trained on Area2Bump.
+
+k
+
+MM-PHATE
+PCA
+t-SNE
+Isomap
+LLE
+UMAP
+
+5
+Intra-step
+0.621
+0.417
+0.440
+0.290
+0.293
+0.291
+
+5
+Inter-step
+0.794
+0.709
+0.685
+0.770
+0.812
+0.749
+
+10
+Intra-step
+0.757
+0.659
+0.669
+0.549
+0.550
+0.546
+
+10
+Inter-step
+0.820
+0.680
+0.684
+0.778
+0.798
+0.796
+
+15
+Intra-step
+0.852
+0.835
+0.834
+0.802
+0.806
+0.806
+
+15
+Inter-step
+0.834
+0.639
+0.657
+0.758
+0.769
+0.800
+
+20
+Intra-step
+1.000
+1.000
+1.000
+1.000
+1.000
+1.000
+
+20
+Inter-step
+0.853
+0.613
+0.640
+0.750
+0.755
+0.804
+
+40
+Intra-step
+1.000
+1.000
+1.000
+1.000
+1.000
+1.000
+
+40
+Inter-step
+0.826
+0.671
+0.675
+0.636
+0.626
+0.671
+
+5.2.2 Intra-step entropy and time-resolved information analysis
+
+To probe how representational geometry changes within an epoch, we measure how dispersed the hidden units are at each time-step in the embedding.
+For a fixed epoch ee and time-step ω\omega, we take the mm embedded points {𝐲e,ω,i}i=1m\{\mathbf{y}_{e,\omega,i}\}_{i=1}^{m} (one per unit) and estimate the differential entropy of this point cloud using a KDE-based estimator.
+We refer to this quantity as intra-step entropy.
+Importantly, this is an embedding-space measure of geometric dispersion (not a direct estimate of the Shannon entropy of the representation distribution in the information-theoretic sense); we use it as a proxy for how strongly units diversify vs. collapse at a given time-step, and we validate its interpretability in a controlled setting.
+In the Hopf bifurcation experiment (§A.5), MM-PHATE intra-step entropy accurately recovers known contraction/expansion/stabilization regimes of the latent dynamics, whereas variance-dominated baselines do not (Fig. A.22).
+
+On the Area2Bump LSTM, MM-PHATE reveals a structured temporal progression (Fig. 5).
+Entropy is relatively stable across time-steps until approximately epoch 30.
+Between epochs 30 and 50, entropy decreases for earlier time-steps while increasing for later ones, coinciding with the initial rise in training and validation accuracy.
+This pattern is consistent with the network compressing weakly informative early-sequence activity while expanding later representations that more strongly align with the task.
+From epochs 50 to 90, entropy rises across most time-steps, with later time-steps peaking near epoch 90.
+Around this point, validation accuracy plateaus and the train–test loss gap widens, indicating the onset of overfitting.
+Thereafter, entropy for early time-steps continues to increase while entropy for later time-steps declines, consistent with increasing representational variability in the early sequence that does not translate into generalization.
+
+Figure 5: Intra-step entropy of hidden units in embedding space at each time-step and epoch, compared to training/validation accuracy (top) and losses (bottom), for MM-PHATE and baseline embeddings.
+
+Linear probes, time-step ablations, and mutual information.
+
+The intra-step entropy trends in Fig. 5 suggest a systematic divergence between early and late time-steps: early states compress around epochs 30–50, later states expand and peak near epoch 90, and after overfitting onset the early sequence becomes increasingly high-entropy while late-step entropy declines. To test whether this early/late divergence reflects task-relevant structure (rather than embedding drift or variance scaling), we directly quantify label information in the recurrent state hth_{t} using three complementary diagnostics (Fig. 6; Appendix A.7–A.9): (i) time-resolved linear probes, (ii) time-step ablations of the trained classifier, and (iii) time-resolved mutual information (MI) between labels and hth_{t}.
+
+Linear probes measure how linearly decodable the label is from hth_{t} at each time-step throughout training. Probe accuracy changes little before epoch 30, consistent with the largely stable intra-step entropy over the same interval. Over epochs 30–50, probe performance begins to separate by time-step: later time-steps improve steadily and reach a higher, more stable test plateau, while early time-steps exhibit only a transient increase (peaking around epochs 50–60) before degrading as the train–test gap widens. Notably, the phase boundaries in probe behavior align with the intra-step entropy phases: after approximately epoch 90, the onset of pronounced early time-step overfitting coincides with a sharp rise in early-step entropy, whereas the late time-step test plateau occurs in the same interval in which late-step entropy begins to decline.
+
+Time-step ablations test which parts of the sequence the trained decision rule depends on. Masking late inputs (early-only) yields an early rise and a mid-training peak near the onset of overfitting, followed by a decline, consistent with reliance on brittle early-sequence shortcuts that do not generalize. In contrast, masking early inputs (late-only) improves gradually but remains below intact performance. After roughly epoch 80, early-only and late-only accuracies converge to a similar moderate level while the intact model remains substantially higher, indicating that strong final performance depends on the full recurrent trajectory: evidence accumulated over the sequence is expressed most reliably in later hidden states, but cannot be recovered from either segment alone.
+
+Time-resolved MI corroborates this picture by measuring total label information present in hth_{t}, independent of the readout. MI increases over training for both early and late segments, but remains consistently higher for later time-steps and reaches a larger final value. Crucially, the post-overfitting regime shows a decoupling for early time-steps: intra-step entropy continues to rise while probe accuracy and MI do not, indicating that the growing early-step dispersion reflects label-irrelevant variability rather than useful task information.
+
+Taken together, probes, ablations, and MI validate the interpretation of MM-PHATE intra-step entropy as a meaningful geometric proxy: later time-steps progressively concentrate stable, task-relevant information, whereas early time-steps ultimately accumulate high-entropy variability that does not support generalization.
+
+Figure 6:
+Combined analysis of time-resolved representations.
+Left: Linear probe accuracy for early and late time-steps on train and test sets.
+Middle: Time-step ablation accuracy for intact sequences, early-only sequences, and late-only sequences.
+Right: Time-resolved mutual information between labels and hidden states.
+All three diagnostics support the intra-step entropy interpretation: task-relevant information migrates toward later time-steps over training, while rising early-step dispersion after overfitting reflects label-irrelevant variability rather than improved generalization.
+
+Comparison with baseline embeddings.
+
+Repeating the intra-step entropy analysis using PCA, t-SNE, Isomap, LLE, and UMAP (Fig. 5) yields substantially weaker alignment with probes, ablations, and MI.
+In particular, the baselines do not clearly reproduce the early compression / late expansion regime or the later divergence between early vs. late time-steps; their entropy changes are delayed and/or dominated by global geometric effects.
+This mirrors the controlled Hopf bifurcation experiment, where standard embeddings fail to recover the known entropy transitions.
+In contrast, MM-PHATE provides a time-resolved view in which entropy trends, separability in the embedding, probe performance, ablation performance, and MI jointly track how different segments of the input sequence contribute to learning and overfitting.
+
+5.2.3 Inter-step entropy
+
+Figure 7: a) Inter-step entropy of each hidden unit across epochs, alongside model accuracy (left) and loss (right).
+b) Clusters of hidden units from inter-step entropy trajectories across epochs.
+Left: trajectories of units in cluster 0 (12 units) and cluster 1 (8 units).
+Right: cluster center trajectories across epochs.
+c–d) Confusion matrices of sub-networks constructed from each cluster on training and validation data.
+
+The analyses above characterize how representations evolve across units at a fixed time-step.
+We now ask a complementary question: how temporally selective is each unit across the sequence?
+Whereas intra-step entropy summarizes diversity across units at a given (τ,ω)(\tau,\omega), inter-step entropy measures (for each unit) how strongly its representation differentiates among time-steps within an epoch, revealing temporal sensitivity.
+
+Inter-step entropy reveals two robust groups of units (Fig. 7a).
+One subset maintains higher inter-step entropy throughout training, peaking around epoch 80, indicating sustained temporal differentiation.
+The other subset shows a pronounced decline in inter-step entropy later in training, indicating a collapse in temporal selectivity.
+To formalize this distinction, we apply time-series kk-means with Dynamic Time Warping (DTW) distance (Bringmann et al., 2023) to the inter-step entropy trajectories (Fig. 7b), so that units are grouped by their temporal pattern of entropy changes even when the precise epochs of increase or decrease are slightly shifted.
+We emphasize that this DTW-based clustering is used descriptively to summarize the heterogeneity already visible in Fig. 7a, and our main conclusions do not depend on a specific choice of cluster number or assignments.
+Sub-networks constructed from these clusters exhibit large performance differences (Fig. 7c–d): the model using only the high-temporal-selectivity cluster achieve substantially higher training and validation accuracy than the model using only the low-temporal-selectivity cluster, confirming that the temporally differentiating units carry the most task-relevant signal.
+
+This unit-level decomposition complements the intra-step entropy, probe, ablation, and MI results.
+Together they indicate that the example learning is accompanied by (i) increased task-relevant structure at later time-steps and (ii) an emerging specialization of hidden units, with a subset sustaining temporal selectivity while another subset becomes less informative later in training.
+Among baseline dimensionality reduction techniques, PCA, t-SNE, Isomap, LLE, and UMAP fail to recover this functional separation or the associated training-phase transitions (Fig. A.43).
+In contrast, MM-PHATE preserves temporal continuity while exposing distinct unit-level roles, yielding a coherent view of representational reorganization during learning.
+
+Results for additional architectures (GRU, Vanilla RNN) and LSTM sizes (10–50 units) are provided in the appendix and show similar qualitative trends.
+
+5.3 Analysis with Human Activity Recognition Model
+
+To test whether the training-phase structure observed in Area2Bump generalizes beyond neural spiking data, we trained a 30-unit LSTM for kinematics-based Human Activity Recognition (HAR) (Reyes-Ortiz et al., 2012).
+The model was trained for 1000 epochs and reached a final validation accuracy of 84%.
+We applied MM-PHATE to the full hidden-state activation tensor and repeated the intra-step and inter-step analyses from Section 5.2.
+
+Figure 8: a) MM-PHATE visualization of a 30-unit LSTM network trained on HAR data, colored by epoch (left) and time-step (right). b) Intra-step entropy, c) inter-step entropy.
+
+MM-PHATE resolves distinct training phases in within-sequence geometry.
+
+The HAR MM-PHATE embedding exhibits an ordered training trajectory (Fig. 8a, left): epochs progress smoothly along a coherent manifold rather than drifting arbitrarily.
+When colored by time-step (Fig. 8a, right), the within-sequence flow is not stationary across training, suggesting that the mapping from time-step progression to motion on the representation manifold changes with learning.
+To quantify this effect, we compute two epoch-wise metrics on the 3D embedding (Appendix A.14): signed flow alignment centroid (direction of within-sequence progression) and epoch-to-epoch change magnitude (magnitude of temporal-geometric reorganization between consecutive sampled epochs).
+Both metrics identify an early transition: the signed flow changes sign (negative to positive) around epoch ∼7\sim 7, coinciding with a spike in the change magnitude and a sharp increase in training/validation accuracy (Figs. A.47– A.49).
+This alignment supports that MM-PHATE captures a learning-relevant reorganization of within-sequence dynamics rather than a purely geometric artifact.
+
+Intra-step entropy shows a plateau–drop regime aligned with performance gains.
+
+We next measure intra-step entropy to summarize how dispersed hidden units are within each time-step and epoch in embedding space (Fig. 8b), in which we observed a transition around epoch 7 corresponding to the reorganization of within-sequence dynamics (Fig. A.50).
+Across training, later time-steps exhibit a characteristic plateau followed by a drop in entropy, while earlier time-steps tend to increase.
+Importantly, the entropy drop aligns with an increase in validation performance, suggesting that the late-step contraction reflects a useful compression of representations into a more task-aligned, stable geometry.
+This interpretation is consistent with our controlled Hopf benchmark, where MM-PHATE intra-step entropy tracks known contraction/expansion/stabilization regimes (Section A.5), providing a calibrated link between entropy transitions and underlying dynamical organization.
+
+Inter-step entropy indicates increasing temporal specialization during the same regime.
+
+Inter-step entropy (Fig. 8c) provides a complementary unit-level view by measuring how strongly each unit differentiates among time-steps within an epoch.
+During the interval in which late-step intra-step entropy drops and accuracy improves, many units show increased inter-step entropy, indicating stronger temporal selectivity.
+Together, the plateau–drop pattern in intra-step entropy and the concurrent rise in inter-step entropy support a coherent picture: as learning progresses, the network both (i) consolidates later-step representations into a more compact, task-relevant geometry and (ii) increases the temporal specialization of a subset of units, yielding a clearer division of roles across the sequence.
+
+Relation to expansion–compression dynamics and comparison to Area2Bump.
+
+The HAR results provide a time-resolved instantiation of the expansion–compression view of representation learning in trained RNNs (Farrell et al., 2022).
+Here, MM-PHATE makes the phases explicit: an early geometric reorientation in within-sequence flow (captured by embedding-defined metrics) is followed by an entropy regime in which later time-steps increase, exhibit a plateau, and then compress, and this compression aligns with improved generalization and increased temporal specialization.
+
+This behavior differs qualitatively from Area2Bump (Section 5.2).
+Area2Bump does not show a late-step plateau–drop in intra-step entropy that co-occurs with improved validation performance; instead, late training is dominated by rising early-step entropy that is decoupled from label information (probes/MI), consistent with label-irrelevant variability associated with overfitting rather than consolidation.
+A plausible contributor is intrinsic data complexity relative to model capacity: HAR is substantially lower-dimensional than Area2Bump (6 vs. 35 PCs to explain 95% variance; Fig. A.2), making it easier for a fixed-size LSTM to concentrate decision-relevant structure into a compact representation.
+Accordingly, the same MM-PHATE-based diagnostics highlight different regimes: HAR exhibits a performance-aligned late-step entropy drop together with increased inter-step entropy for many units, whereas Area2Bump shows weaker evidence of such consolidation and a late rise in early-step dispersion that does not translate into generalization.
+
+Overall, these results extend our findings from controlled dynamics (Hopf) and neural spiking data (Area2Bump) to a distinct kinematic domain, showing that MM-PHATE can resolve multiple learning-relevant phases of within-sequence organization and that these phases can be quantified directly from the embedding.
+
+6 Conclusion
+
+We introduced MM-PHATE, a visualization framework for RNNs that embeds hidden-state dynamics jointly across time-steps and training epochs via a multiway multislice graph. This construction preserves within-time-step unit communities and across-time trajectories in a single coherent manifold in the settings studied here, addressing common failure modes of standard embeddings that collapse or distort one or more of these axes.
+
+Across controlled synthetic benchmarks and real RNN applications, MM-PHATE produced geometry that aligned with known or independently measured structure. In synthetic bifurcation systems, MM-PHATE recovered the Hopf contraction/expansion/stabilization progression more faithfully than the compared standard embeddings and remained informative under smooth state-space warp perturbations, while preserving visible distinctions between dynamical families (Hopf vs. Pitchfork) when both dynamics-type and warp differences were present. These controlled results provide empirical support for the geometric interpretations used later in the paper, but do not constitute a formal invariance guarantee.
+
+On task-trained RNNs, MM-PHATE achieved the strongest neighborhood preservation on Area2Bump and revealed time-resolved training-phase changes that aligned with probes, ablations, and mutual information, while inter-step entropy identified functionally distinct unit groups with different temporal selectivity. On HAR, MM-PHATE generalized these observations and exposed a pronounced training-phase transition (including a reversal of within-sequence flow direction) with coordinated intra-/inter-step entropy changes that coincided with performance improvements, suggesting task-dependent consolidation consistent with dataset complexity differences.
+
+Limitations and future directions.
+
+MM-PHATE encodes continuity across time and epochs; highly non-smooth training dynamics (e.g., abrupt restarts or extreme learning rates) may reduce interpretability. While our synthetic benchmarks cover multiple bifurcation families and smooth state-space warps, extending these evaluations and developing theoretical guarantees (e.g., under classes of smooth equivalences or perturbations) remains an important direction. The n​s​m×n​s​mnsm\times nsm kernel can also limit scale, but PHATE is robust to subsampling and scalable approximations (e.g., subsampling, coarsening, partitioning) are practical routes forward. Extending the multiway multislice construction to richer architectures (e.g., deeper recurrent stacks or attention-based models) is an important direction for future work (Katharopoulos et al., ).
+
+Acknowledgments
+
+N.M. was funded as a fellow by the Kavli NeurData Discovery Institute. G.M. was supported by NSF grant numbers CCF 2217058 and 2403452. A.S.C. was supported in part by NSF CAREER award number 2340338.
+
+References
+
+Anguita et al. (2013)
+D. Anguita, A. Ghio, L. Oneto, X. Parra, and J. L. Reyes-Ortiz
+
+A public domain dataset for human activity recognition using smartphones.
+
+In The European Symposium on Artificial Neural Networks,
+
+External Links: Link
+
+Cited by: item 2.
+
+Barak (2017)
+O. Barak
+
+Recurrent neural networks as versatile tools of neuroscience research.
+
+Current Opinion in Neurobiology 46, pp. 1–6 (en).
+
+External Links: ISSN 09594388,
+Document
+
+Cited by: §1.
+
+Bringmann et al. (2023)
+K. Bringmann, N. Fischer, I. van der Hoog, E. Kipouridis, T. Kociumaka, and E. Rotenberg
+
+Dynamic dynamic time warping.
+
+External Links: 2310.18128,
+Link
+
+Cited by: §5.2.3.
+
+Chen et al. (2024)
+R. Chen, G. Vedovati, T. Braver, and S. Ching
+
+DFORM: diffeomorphic vector field alignment for assessing dynamics across learned models.
+
+(arXiv:2402.09735) (en).
+
+Note: arXiv:2402.09735 [cs]
+
+External Links: Link,
+Document
+
+Cited by: §A.5.
+
+Chen and Li (2021)
+Y. Chen and J. Li
+
+Recurrent neural networks algorithms and applications.
+
+In 2021 2nd International Conference on Big Data & Artificial Intelligence & Software Engineering (ICBASE),
+
+Zhuhai, China, pp. 38–43 (en).
+
+External Links: ISBN 978-1-66542-709-8,
+Link,
+Document
+
+Cited by: §1.
+
+Cheng et al. (2019)
+H. Cheng, D. Lian, S. Gao, and Y. Geng
+
+Utilizing information bottleneck to evaluate the capability of deep neural networks for image classification.
+
+Entropy 21 (5), pp. 456 (en).
+
+External Links: ISSN 1099-4300,
+Document
+
+Cited by: §1.
+
+Chowdhury et al. (2022)
+R. Chowdhury, J. Glaser, and L. Miller
+
+Data from: area 2 of primary somatosensory cortex encodes kinematics of the whole arm.
+
+ Dryad.
+
+Note: Dataset
+
+External Links: Document,
+Link
+
+Cited by: item 1,
+§5.2,
+§5.
+
+Chung et al. (2014)
+J. Chung, C. Gulcehre, K. Cho, and Y. Bengio
+
+Empirical evaluation of gated recurrent neural networks on sequence modeling.
+
+(en).
+
+Note: arXiv:1412.3555 [cs]
+
+External Links: 1412.3555,
+Link
+
+Cited by: §1,
+§2.
+
+Coifman and Lafon (2006)
+R. R. Coifman and S. Lafon
+
+Diffusion maps.
+
+Applied and Computational Harmonic Analysis 21 (1), pp. 5–30 (en).
+
+External Links: ISSN 10635203,
+Document
+
+Cited by: §3.
+
+Deo et al. (2024)
+D. R. Deo, F. R. Willett, D. T. Avansino, L. R. Hochberg, J. M. Henderson, and K. V. Shenoy
+
+Brain control of bimanual movement enabled by recurrent neural networks.
+
+Scientific Reports 14 (1), pp. 1598.
+
+External Links: ISSN 2045-2322,
+Link,
+Document
+
+Cited by: §1.
+
+Farrell et al. (2022)
+M. Farrell, S. Recanatesi, T. Moore, G. Lajoie, and E. Shea-Brown
+
+Gradient-based learning drives robust representations in recurrent neural networks by balancing compression and expansion.
+
+Nature Machine Intelligence 4 (6), pp. 564–573 (en).
+
+External Links: ISSN 2522-5839,
+Document
+
+Cited by: §2,
+§5.3.
+
+Fischer (2020)
+I. Fischer
+
+The conditional entropy bottleneck.
+
+Entropy 22 (9), pp. 999 (en).
+
+External Links: ISSN 1099-4300,
+Document
+
+Cited by: §A.10.1,
+§1.
+
+Friedman et al. (2025)
+R. Friedman, N. Moriel, M. Ricci, G. Pelc, Y. Weiss, and M. Nitzan
+
+Characterizing nonlinear dynamics via smooth prototype equivalences.
+
+(arXiv:2503.10336) (en).
+
+Note: arXiv:2503.10336 [cs]
+
+External Links: Link,
+Document
+
+Cited by: §A.5.
+
+Gigante et al. (2019)
+S. Gigante, A. S. Charles, S. Krishnaswamy, and G. Mishne
+
+Visualizing the PHATE of neural networks.
+
+(en).
+
+Note: arXiv:1908.02831 [cs, stat]
+
+External Links: 1908.02831,
+Link
+
+Cited by: §1,
+§1,
+§3.
+
+Greff et al. (2017)
+K. Greff, R. K. Srivastava, J. Koutník, B. R. Steunebrink, and J. Schmidhuber
+
+LSTM: a search space odyssey.
+
+IEEE Transactions on Neural Networks and Learning Systems 28 (10), pp. 2222–2232 (en).
+
+Note: arXiv:1503.04069 [cs]
+
+External Links: ISSN 2162-237X, 2162-2388,
+Document
+
+Cited by: §1,
+§2.
+
+Hewamalage et al. (2021)
+H. Hewamalage, C. Bergmeir, and K. Bandara
+
+Recurrent neural networks for time series forecasting: current status and future directions.
+
+International Journal of Forecasting 37 (1), pp. 388–427 (en).
+
+External Links: ISSN 01692070,
+Document
+
+Cited by: §1.
+
+Hidaka and Kurita (2017)
+A. Hidaka and T. Kurita
+
+Consecutive dimensionality reduction by canonical correlation analysis for visualization of convolutional neural networks.
+
+In Proceedings of the ISCIE international symposium on stochastic systems theory and its applications,
+
+Vol. 2017, pp. 160–167.
+
+Cited by: §1.
+
+Hochreiter and Schmidhuber (1996)
+S. Hochreiter and J. Schmidhuber
+
+LSTM can solve hard long time lag problems.
+
+Advances in neural information processing systems 9.
+
+Cited by: §1.
+
+Karpathy et al. (2015)
+A. Karpathy, J. Johnson, and L. Fei-Fei
+
+Visualizing and understanding recurrent networks.
+
+(en).
+
+Note: arXiv:1506.02078 [cs]
+
+External Links: 1506.02078,
+Link
+
+Cited by: §1,
+§2.
+
+[20]
+A. Katharopoulos, A. Vyas, N. Pappas, and F. Fleuret
+
+Transformers are rnns: fast autoregressive transformers with linear attention.
+
+(en).
+
+Cited by: §6.
+
+Kaur and Mohta (2019)
+M. Kaur and A. Mohta
+
+A review of deep learning with recurrent neural network.
+
+In 2019 International Conference on Smart Systems and Inventive Technology (ICSSIT),
+
+Tirunelveli, India, pp. 460–465 (en).
+
+External Links: ISBN 978-1-72812-119-2,
+Link,
+Document
+
+Cited by: §1.
+
+Khalifa et al. (2021)
+Y. Khalifa, D. Mandic, and E. Sejdić
+
+A review of hidden markov models and recurrent neural networks for event detection and localization in biomedical signals.
+
+Information Fusion 69, pp. 52–72 (en).
+
+External Links: ISSN 15662535,
+Document
+
+Cited by: §1.
+
+Kwon et al. (2019)
+B. C. Kwon, M. Choi, J. T. Kim, E. Choi, Y. B. Kim, S. Kwon, J. Sun, and J. Choo
+
+RetainVis: visual analytics with interpretable and interactive recurrent neural networks on electronic medical records.
+
+IEEE Transactions on Visualization and Computer Graphics 25 (1), pp. 299–309 (en).
+
+Note: arXiv:1805.10724 [cs, stat]
+
+External Links: ISSN 1077-2626, 1941-0506, 2160-9306,
+Document
+
+Cited by: §2.
+
+Li et al. (2016)
+J. Li, X. Chen, E. Hovy, and D. Jurafsky
+
+Visualizing and understanding neural models in NLP.
+
+(en).
+
+Note: arXiv:1506.01066 [cs]
+
+External Links: 1506.01066,
+Link
+
+Cited by: §2.
+
+Lipton et al. (2015)
+Z. C. Lipton, J. Berkowitz, and C. Elkan
+
+A critical review of recurrent neural networks for sequence learning.
+
+(en).
+
+Note: arXiv:1506.00019 [cs]
+
+External Links: 1506.00019,
+Link
+
+Cited by: §1.
+
+Maaten and Hinton (2008)
+L. v. d. Maaten and G. Hinton
+
+Visualizing data using t-SNE.
+
+Journal of Machine Learning Research 9 (86), pp. 2579–2605.
+
+Cited by: §1,
+§1.
+
+Maćkiewicz and Ratajczak (1993)
+A. Maćkiewicz and W. Ratajczak
+
+Principal components analysis (PCA).
+
+Computers & Geosciences 19 (3), pp. 303–342.
+
+External Links: ISSN 0098-3004,
+Document
+
+Cited by: §1.
+
+McInnes et al. (2020)
+L. McInnes, J. Healy, and J. Melville
+
+UMAP: uniform manifold approximation and projection for dimension reduction.
+
+(arXiv:1802.03426) (en).
+
+Note: arXiv:1802.03426 [stat]
+
+External Links: Link,
+Document
+
+Cited by: §1.
+
+Mikolov et al. (2014)
+T. Mikolov, A. Joulin, S. Chopra, M. Mathieu, and M. Ranzato
+
+Learning longer memory in recurrent neural networks.
+
+arXiv preprint arXiv:1412.7753.
+
+Cited by: §1.
+
+Ming et al. (2017)
+Y. Ming, S. Cao, R. Zhang, Z. Li, Y. Chen, Y. Song, and H. Qu
+
+Understanding hidden memories of recurrent neural networks.
+
+In 2017 IEEE Conference on Visual Analytics Science and Technology (VAST),
+
+Phoenix, AZ, pp. 13–24 (en).
+
+External Links: ISBN 978-1-5386-3163-8,
+Link,
+Document
+
+Cited by: §2.
+
+Moon et al. (2019)
+K. R. Moon, D. Van Dijk, Z. Wang, S. Gigante, D. B. Burkhardt, W. S. Chen, K. Yim, A. V. D. Elzen, M. J. Hirn, R. R. Coifman, N. B. Ivanova, G. Wolf, and S. Krishnaswamy
+
+Visualizing structure and transitions in high-dimensional biological data.
+
+Nature Biotechnology 37 (12), pp. 1482–1492 (en).
+
+External Links: ISSN 1087-0156, 1546-1696,
+Document
+
+Cited by: §1,
+§1,
+§3.
+
+Pei et al. (2021)
+F. Pei, J. Ye, D. Zoltowski, A. Wu, {. H. Chowdhury, H. Sohn, {. E. O’Doherty, {. V. Shenoy, {. T. Kaufman, M. Churchland, M. Jazayeri, {. E. Miller, J. Pillow, {. M. Park, {. L. Dyer, and C. Pandarinath
+
+Neural latents benchmark ‘21: evaluating latent variable models of neural population activity.
+
+Advances in Neural Information Processing Systems (English (US)).
+
+Note: Publisher Copyright: © 2021 Neural information processing systems foundation. All rights reserved.; 35th Conference on Neural Information Processing Systems - Track on Datasets and Benchmarks, NeurIPS Datasets and Benchmarks 2021 ; Conference date: 06-12-2021 Through 14-12-2021
+
+External Links: ISSN 1049-5258
+
+Cited by: item 1.
+
+Ramsay (1966)
+J. O. Ramsay
+
+SOME statistical considerations in multidimensional scaling.
+
+ETS Research Bulletin Series 1966 (1), pp. i–96.
+
+External Links: Document,
+Link,
+https://onlinelibrary.wiley.com/doi/pdf/10.1002/j.2333-8504.1966.tb00976.x
+
+Cited by: §3.
+
+Rauber et al. (2016)
+P. E. Rauber, S. G. Fadel, A. X. Falcao, and A. C. Telea
+
+Visualizing the hidden activity of artificial neural networks.
+
+IEEE transactions on visualization and computer graphics 23 (1), pp. 101–110.
+
+Cited by: §1.
+
+Reyes-Ortiz et al. (2012)
+J. Reyes-Ortiz, D. Anguita, A. Ghio, L. Oneto, and X. Parra
+
+Human Activity Recognition Using Smartphones.
+
+Note: UCI Machine Learning RepositoryDOI: https://doi.org/10.24432/C54S4K
+
+Cited by: item 2,
+§5.3,
+§5.
+
+Roweis and Saul (2000)
+S. T. Roweis and L. K. Saul
+
+Nonlinear dimensionality reduction by locally linear embedding.
+
+Science 290 (5500), pp. 2323–2326 (en).
+
+External Links: ISSN 0036-8075, 1095-9203,
+Document
+
+Cited by: §1.
+
+Sagodi and Park (2025)
+A. Sagodi and I. M. Park
+
+Dynamical archetype analysis: autonomous computation.
+
+(arXiv:2507.05505) (en).
+
+Note: arXiv:2507.05505 [math]
+
+External Links: Link,
+Document
+
+Cited by: §A.5.
+
+Salehinejad et al. (2018)
+H. Salehinejad, S. Sankar, J. Barfett, E. Colak, and S. Valaee
+
+Recent advances in recurrent neural networks.
+
+(en).
+
+Note: arXiv:1801.01078 [cs]
+
+External Links: 1801.01078,
+Link
+
+Cited by: §1.
+
+Strobelt et al. (2018)
+H. Strobelt, S. Gehrmann, H. Pfister, and A. M. Rush
+
+LSTMVis: a tool for visual analysis of hidden state dynamics in recurrent neural networks.
+
+IEEE Transactions on Visualization and Computer Graphics 24 (1), pp. 667–676 (en).
+
+External Links: ISSN 1077-2626,
+Document
+
+Cited by: §2.
+
+Su and Shlizerman (2020)
+K. Su and E. Shlizerman
+
+Clustering and recognition of spatiotemporal features through interpretable embedding of sequence to sequence recurrent neural networks.
+
+Frontiers in Artificial Intelligence 3, pp. 70 (en).
+
+External Links: ISSN 2624-8212,
+Document
+
+Cited by: §1,
+§2,
+§4.
+
+Sussillo and Barak (2013)
+D. Sussillo and O. Barak
+
+Opening the black box: low-dimensional dynamics in high-dimensional recurrent neural networks.
+
+Neural Computation 25 (3), pp. 626–649.
+
+External Links: ISSN 0899-7667,
+Document
+
+Cited by: §1.
+
+Tang et al. (2017)
+Z. Tang, Y. Shi, D. Wang, Y. Feng, and S. Zhang
+
+Memory visualization for gated recurrent neural networks in speech recognition.
+
+(en).
+
+Note: arXiv:1609.08789 [cs]
+
+External Links: 1609.08789,
+Link
+
+Cited by: §2.
+
+Tenenbaum et al. (2000)
+J. B. Tenenbaum, V. D. Silva, and J. C. Langford
+
+A global geometric framework for nonlinear dimensionality reduction.
+
+Science 290 (5500), pp. 2319–2323 (en).
+
+External Links: ISSN 0036-8075, 1095-9203,
+Document
+
+Cited by: §1,
+§1.
+
+Tishby and Zaslavsky (2015)
+N. Tishby and N. Zaslavsky
+
+Deep learning and the information bottleneck principle.
+
+(en).
+
+Note: arXiv:1503.02406 [cs]
+
+External Links: 1503.02406,
+Link
+
+Cited by: §1.
+
+Titos et al. (2022)
+M. Titos, L. Garcia, M. Kowsari, and C. Benitez
+
+Toward knowledge extraction in classification of volcano-seismic events: visualizing hidden states in recurrent neural networks.
+
+IEEE Journal of Selected Topics in Applied Earth Observations and Remote Sensing 15, pp. 2311–2325 (en).
+
+External Links: ISSN 1939-1404, 2151-1535,
+Document
+
+Cited by: §2.
+
+Wang et al. (2021)
+Z. J. Wang, R. Turko, O. Shaikh, H. Park, N. Das, F. Hohman, M. Kahng, and D. H. Polo Chau
+
+CNN explainer: learning convolutional neural networks with interactive visualization.
+
+IEEE Transactions on Visualization and Computer Graphics 27 (2), pp. 1396–1406 (en).
+
+External Links: ISSN 1077-2626, 1941-0506, 2160-9306,
+Document
+
+Cited by: §1.
+
+Wold et al. (1987)
+S. Wold, K. Esbensen, and P. Geladi
+
+Principal component analysis.
+
+Chemometrics and Intelligent Laboratory Systems 2 (1–3), pp. 37–52 (en).
+
+External Links: ISSN 01697439,
+Document
+
+Cited by: §1.
+
+Yu et al. (2014)
+W. Yu, K. Yang, Y. Bai, H. Yao, and Y. Rui
+
+Visualizing and comparing convolutional neural networks.
+
+(en).
+
+Note: arXiv:1412.6631 [cs]
+
+External Links: 1412.6631,
+Link
+
+Cited by: §1.
+
+Appendix A Appendix
+
+A.1 Datasets
+
+We employed two datasets (Area2Bump as a neuroscience-motivated benchmark of population dynamics; HAR as a real-world sequential classification dataset).
+
+1.
+
+Area2Bump is a part of the well-known “Neural Latents Benchmark” Challenge (Pei et al., 2021) in the neuroscience community. The Area2Bump dataset (Chowdhury et al., 2022) consists of neural activity recorded from Brodmann’s area 2 of the somatosensory cortex while macaque monkeys performed a slightly modified version of a standard center-out reaching task. Dataset license: CC0 1.0. According to the authors, data was collected consistently "with the guide for the care and use of laboratory animals and approved by the institutional animal care and use committee of Northwestern University under protocol #IS00000367". This dataset, collected from monkeys thus does not contain personally identifiable information. Since it is neural data, we do not consider it to be offensive content.
+
+Data Statistics: The dataset includes 193 samples, split into 115 training samples and 78 testing samples. Each sample consists of 600 time-steps with 65 features per time-step. For the training set, the mean values across features range from 0.0001 to 0.03, with standard deviations between 0.001 and 0.02, and maximum values ranging from 0.003 to 0.12. In the test set, the mean values range from 0.00008 to 0.03, standard deviations from 0.0007 to 0.018, and maximum values from 0.0007 to 0.13.
+
+2.
+
+The HAR dataset was originally introduced in Anguita et al. (2013) which has been cited 3k times, and is also part of the UCI ML repository (where it has been viewed  196k times). The Human Activity Recognition (HAR) Using Smartphones dataset (Reyes-Ortiz et al., 2012), kinematic recordings of 30 subjects performing daily living activities with a smartphone embedded with an inertial measurement unit. Dataset license: CC BY 4.0. Information relating to participant consent was not found relating to this dataset. This dataset does not reveal participant name or identifiable information. The kinematics contained in the dataset are not considered offensive content.
+
+Data Details: The dataset includes six activity classes (e.g., Walking, Sitting) based on accelerometer and gyroscope data sampled at 50 Hz. The sensor data has been pre-processed with noise filtering and separated into gravitational and body motion components. Data is windowed into 2.56-second segments (128 data points) with 50% overlap, resulting in 561-dimensional feature vectors per window. The dataset is split into 70% training (21 subjects, 7352 samples) and 30% testing (9 subjects, 2947 samples).
+
+Data Statistics: For the training set, mean values across features range from -0.0008 to 0.8, with standard deviations between 0.1 and 0.41, and values spanning from -5.97 to 5.75. For the test set, mean values range from -0.013 to 0.8, with standard deviations between 0.095 and 0.41, and values spanning from -3.43 to 3.47.
+
+A.2 Model Training
+
+We used TensorFlow’s Keras API for all model training and validation.
+
+The network in Section 5.2 was trained as follows. The Area2Bump dataset was randomly split into training and validation subsets containing an equal number of samples for each input class with an 8 to 2 ratio. Additional samples that would have made the training data uneven were added back to the validation subset to utilize all available samples. The network consists of an LSTM layer with 20 units. This is followed by a Flatten layer that converts the LSTM’s output into a one-dimensional vector. Finally, a Dense layer with 8 units and a softmax activation function produces the output for the 8-class classification tasks. The network was trained with a batch size of 64. We used an Adam optimizer with a learning rate of 1​e−4.1e^{-4}. During the training process, we recorded the activations from the LSTM layer into the activation tensor 𝑻\bm{T} for visualization.
+
+The network in Section 5.3 was trained as follows. The HAR dataset was preprocessed and split by the authors into training and validation subsets according to the subjects with a 7 to 3 ratio. The network consists of an LSTM layer with 30 units and a Dense layer with 6 units and a softmax activation function produces the output for the 6-class classification tasks. The network was trained with a batch size of 32. We used an Adam optimizer with a learning rate of 2​e−5.2e^{-5}. During the training process, we recorded the activations from the LSTM layer into the activation tensor 𝑻\bm{T} for visualization.
+
+A.3 Implementation of visualization methods
+
+Figure A.1: Example schematic of the multiway multislice kernel used in MM-PHATE for RNNs. The intra-step kernels represent the similarities between the graph nodes at the same time-steps. The inter-step kernels represent the similarities between the nodes and themselves at different time-steps and epochs.
+
+Common tensor and reshaping.
+
+For each trained network or dynamical system, we record hidden activations into a tensor
+with axes (epoch τ\tau) ×\times (unit ii) ×\times (time-step ω\omega) ×\times (trial/sample index).
+For baseline embeddings that operate on a matrix, we reshape the sampled tensor into
+
+𝑻mat∈ℝNpts×p,\bm{T}_{\text{mat}}\in\mathbb{R}^{N_{\text{pts}}\times p},
+
+where each row corresponds to one unit–time-step–epoch triple and the pp columns index trial-wise activations,
+as in the main text.
+
+Hopf bifurcation dataset.
+
+For the Hopf experiment, the main activation tensor is
+
+trace_data∈ℝ(E​T)×H×S,\texttt{trace\_data}\in\mathbb{R}^{(ET)\times H\times S},
+
+where EE is the number of epochs, TT the number of intrinsic time-steps per epoch,
+HH the number of hidden units, and SS the number of samples (trials) per unit.
+Unless otherwise noted, Hopf embeddings use all epochs and time-steps; we do not subsample τ\tau or ω\omega for MM-PHATE, PCA, t-SNE, or UMAP.
+LLE and Isomap operate on a random subset of points, but still draw from the full (τ,ω,i)(\tau,\omega,i) grid.
+
+Area2Bump subsampling used for MM-PHATE and most baselines.
+
+Due to memory constraints, for Area2Bump we compute MM-PHATE on a subsampled tensor 𝑻MM\bm{T}_{\text{MM}} defined by:
+(i) epochs τ\tau sampled as the first 29 epochs followed by every 5th epoch thereafter (up to 200 total epochs),
+and (ii) time-steps ω\omega sampled uniformly over the 600-step sequence using 100 evenly spaced indices.
+Unless stated otherwise below, t-SNE, LLE, UMAP are computed on this same sampled tensor 𝑻MM\bm{T}_{\text{MM}}.
+
+HAR subsampling used for MM-PHATE.
+
+For HAR, we sample epochs as the first 29 epochs followed by every 10th epoch thereafter (up to 1000 epochs)
+and compute MM-PHATE on the resulting tensor. For baseline embeddings we reshape the corresponding sampled tensor
+into 𝑻mat\bm{T}_{\text{mat}} in the same way.
+
+A.3.1 MM-PHATE
+
+For Area2Bump and HAR, MM-PHATE is applied to the sampled tensors described above
+(Area2Bump: 𝑻MM\bm{T}_{\text{MM}}; HAR: the sampled HAR tensor). We construct the multiway multislice kernel over
+units, time-steps, and epochs and then run PHATE via the M-PHATE package with n_components = 3.
+
+For the Hopf bifurcation dataset, we apply MM-PHATE directly to
+trace_data of shape (E​T,H,S)(ET,H,S) (no epoch or time-step subsampling),
+again with n_components = 3.
+
+A.3.2 PCA
+
+Due to PCA’s low computational demand, we did not subsample any data before applied PCA using sklearn.decomposition.PCA.
+
+Figure A.2 reports how many principal components are required to explain 95% of the variance for Area2Bump and HAR.
+
+Figure A.2: PCA on the two datasets. Area2Bump requires 35 PCs (left) to explain 95% of the variance, whereas HAR requires 6 PCs (right).
+
+For the Hopf dataset, we flatten trace_data to
+
+X∈ℝ(E​T​H)×SX\in\mathbb{R}^{(ETH)\times S}
+
+by stacking all (τ,ω,i)(\tau,\omega,i) combinations and treating the SS samples as features.
+We mean-center XX across samples and fit PCA with n_components = 3 to obtain a 3D embedding
+used in the Hopf figures (epoch-, time-, unit-, and group-colored views).
+
+A.3.3 t-SNE
+
+For Area2Bump, we first reduce 𝑻mat\bm{T}_{\text{mat}} to 15 principal components (explaining 99.93% of the variance)
+and then run Barnes–Hut t-SNE with n_components = 3, perplexity = 50,
+and n_iter = 2000 using sklearn.manifold.TSNE.
+
+For Hopf, we run the same t-SNE configuration on the centered matrix
+X∈ℝ(E​T​H)×SX\in\mathbb{R}^{(ETH)\times S} described above (no epoch or time-step subsampling).
+Because E​T​HETH is on the order of 8×1048\times 10^{4} in our configuration, this run is heavy but tractable on our cluster.
+
+A.3.4 Isomap
+
+Due to scalability constraints, Isomap is only applied on subsampled data.
+
+For Area2Bump, we build a more aggressively subsampled tensor 𝑻ISO\bm{T}_{\text{ISO}} by sampling
+(i) epochs as the first 29 epochs followed by every 10th epoch thereafter, and
+(ii) 50 evenly spaced time-steps from the 600-step sequence.
+We then reduce 𝑻ISO\bm{T}_{\text{ISO}} to 15 PCs and apply sklearn.manifold.Isomap
+with n_neighbors = 30 and n_components = 3.
+
+For Hopf, we do not subsample epochs or time-steps, but we do randomly subsample points across the
+flattened matrix X∈ℝ(E​T​H)×SX\in\mathbb{R}^{(ETH)\times S} to form
+
+Xsub∈ℝNsub×S,X_{\text{sub}}\in\mathbb{R}^{N_{\text{sub}}\times S},
+
+where Nsub=min⁡(10,000,E​T​H)N_{\text{sub}}=\min(10{,}000,ETH) (with a fixed random seed).
+We then run Isomap(n_neighbors = 30, n_components = 3) on XsubX_{\text{sub}}.
+The label vectors for epoch, time-step, unit, and group are restricted to the same subsample
+to produce unit-, epoch-, and group-colored Hopf panels.
+
+A.3.5 Locally Linear Embedding (LLE)
+
+For Area2Bump, LLE is computed on the same sampled tensor 𝑻MM\bm{T}_{\text{MM}} used for MM-PHATE.
+We reshape to 𝑻mat\bm{T}_{\text{mat}} and apply
+LocallyLinearEmbedding(n_neighbors = 100, n_components = 3, method = "modified").
+
+For Hopf, as with Isomap, we use the random subsample XsubX_{\text{sub}} of size NsubN_{\text{sub}} drawn from
+the full flattened matrix XX.
+We then run
+LocallyLinearEmbedding(n_neighbors = 20, n_components = 3, method = "modified")
+to obtain a 3D embedding on the subsampled points, and use the corresponding epoch/time/unit/group labels
+to generate the Hopf LLE panels.
+
+A.3.6 Uniform Manifold Approximation and Projection (UMAP)
+
+For Area2Bump, UMAP is applied to 𝑻mat\bm{T}_{\text{mat}} formed from 𝑻MM\bm{T}_{\text{MM}}.
+We use umap.UMAP with n_neighbors = 50, min_dist = 0.1,
+n_components = 3, Euclidean metric, and random_state = 24.
+
+For Hopf, UMAP is run on the full centered matrix X∈ℝ(E​T​H)×SX\in\mathbb{R}^{(ETH)\times S} with
+n_neighbors = 30, min_dist = 0.1, n_components = 3, and Euclidean metric.
+No epoch or time-step subsampling is used here; each (τ,ω,i)(\tau,\omega,i) point is included.
+
+A.4 M-PHATE as a Qualitative Baseline on a single time-step
+
+To provide a qualitative point of reference, we also apply M-PHATE to the Hopf bifurcation experiment and the Area2Bump LSTM. Importantly, M-PHATE operates on a single snapshot of network activity: it embeds units based solely on their activations at one time-step per epoch (typically the final step). We select the final intrinsic time-step ω=T−1\omega=T-1 for all epochs, yielding a tensor
+
+trace_last∈ℝE×H×S\texttt{trace\_last}\in\mathbb{R}^{E\times H\times S}
+
+and flatten it to
+
+Xlast∈ℝ(E​H)×S.X_{\text{last}}\in\mathbb{R}^{(EH)\times S}.
+
+After mean-centering across samples, we run phate.PHATE(n_components = 3, knn = 30)
+to obtain a 3D embedding of epoch–unit pairs at the final time-step. This differs fundamentally from MM-PHATE, which embeds the full multislice tensor (units ×\times time ×\times epoch) using a diffusion process that jointly couples temporal and epoch-wise transitions.
+
+Why M-PHATE is not an appropriate comparison.
+
+Because M-PHATE ignores all but a single snapshot of the time-steps, it discards the within-epoch temporal dynamics that are essential for understanding recurrent computation. RNNs process input sequences through evolving trajectories, and many of their representational transitions—including contraction, expansion, or bifurcation-like behavior—occur within an epoch’s trajectory rather than only at its final state. Consequently:
+
+•
+
+M-PHATE cannot represent how individual hidden units transition across time-steps.
+
+•
+
+It cannot reveal dynamical geometry such as pre-bifurcation collapse, transition structure near μ≈0\mu\approx 0, or post-bifurcation limit-cycle organization.
+
+•
+
+It embeds a different mathematical object (units ×\times epochs), whereas MM-PHATE embeds units ×\times time ×\times epochs; the two inhabit incompatible geometric spaces, making direct quantitative comparison inappropriate.
+
+Thus M-PHATE serves only as a qualitative baseline showing how standard diffusion-based embeddings behave when restricted to a single time-slice, rather than an algorithm targeting dynamical systems.
+
+Hopf control experiment.
+
+Figure A.3 shows M-PHATE applied to the last time-step of the Hopf dataset across epochs and units. While it captures a smooth trajectory as μ\mu increases, it misses the characteristic change in within-epoch flow geometry that differentiates pre- and post-bifurcation dynamics (e.g., noise-dominated collapse vs. growing limit cycles). This demonstrates that restricting to the final state obscures the dynamical phenomena MM-PHATE is designed to uncover (Fig. A.18).
+
+Figure A.3: M-PHATE applied to the Hopf bifurcation experiment (last time-step only). Each point corresponds to a hidden unit at the final time-step of an epoch. The embedding captures a smooth progression across epochs but fails to reveal the underlying bifurcation geometry, which manifests primarily in the temporal (within-epoch) dynamics that M-PHATE does not incorporate.
+
+Area2Bump LSTM.
+
+Figure A.4 shows the same M-PHATE procedure applied to the 20-unit LSTM trained on the Area2Bump dataset. The structure is smooth across epochs, and hidden units display modest differentiation; however, the embedding lacks any representation of the sequential processing dynamics that occur within each trial. As a result, M-PHATE provides a useful snapshot-level visualization, but it cannot address questions related to temporal geometry, representational flow, or information propagation that MM-PHATE is explicitly designed to capture.
+
+Figure A.4: M-PHATE applied to the Area2Bump LSTM (last time-step across epochs). Points represent hidden units at the final time-step of each epoch, colored by epoch (left) and by unit identity (right). The visualization captures smooth epoch progression but omits the temporal dynamics that are central to recurrent computation.
+
+A.5 Controlled Synthetic Bifurcation Benchmarks with Smooth Warps
+
+Scope and motivation.
+
+This appendix documents the controlled synthetic benchmark suite used to address reviewer concerns about (i) multiple bifurcation families, (ii) smooth state-space perturbations (warps), and (iii) settings in which dynamics-family differences and smooth warps are both present simultaneously. These experiments are intended as empirical stress tests of MM-PHATE’s geometric behavior in controlled settings, not as a formal guarantee of invariance or equivalence under smooth transformations. In particular, our state-warp experiments are motivated by recent work on dynamical comparisons under smooth transformations and alignment/equivalence viewpoints (Sagodi and Park, 2025; Chen et al., 2024; Friedman et al., 2025), but our evaluation remains qualitative/empirical and limited to the tested benchmark conditions.
+
+A.5.1 Data Generation
+
+We use controlled low-dimensional synthetic dynamical systems to test whether MM-PHATE recovers geometric organization associated with bifurcation structure, and whether these patterns remain interpretable under smooth perturbations of the latent coordinates. The benchmark suite is generated from canonical two-dimensional bifurcation systems (Hopf and Pitchfork), with optional smooth state-space warps before the latent-to-hidden readout.
+
+The benchmark design probes three complementary questions: (i) whether embeddings distinguish qualitatively different bifurcation families (Hopf vs. Pitchfork), (ii) whether this distinction remains visible under smooth state-space warps, and (iii) whether the method preserves the qualitative bifurcation progression in a warp-only control (Hopf clean vs. Hopf warped) where the two groups are identical before warping and readout. In the warp-only control, we simulate a single latent trajectory once, copy it to both groups, and apply the warp only to one group, so the pre-warp latent trajectories are exactly identical by construction. This removes latent-initialization and trajectory-generation confounds when assessing sensitivity to coordinate changes.
+
+Each synthetic dataset contains two latent groups (A and B), each governed by a two-dimensional ODE with control parameter μ\mu varying across training epochs. For epoch τ∈{0,…,n−1}\tau\in\{0,\dots,n-1\}, the control parameter for group g∈{A,B}g\in\{A,B\} follows a linear schedule
+
+μg​(τ)=μg,start+τn−1​(μg,end−μg,start),\mu_{g}(\tau)=\mu_{g,\mathrm{start}}+\frac{\tau}{n-1}\bigl(\mu_{g,\mathrm{end}}-\mu_{g,\mathrm{start}}\bigr),
+
+(3)
+
+so that different scenarios can implement matched sweeps (e.g., Hopf vs. Pitchfork with μ:−1→2\mu:-1\rightarrow 2), within-family parameter shifts (e.g., −1→2-1\rightarrow 2 vs. −1→3-1\rightarrow 3), or identical schedules for warp-only controls.
+
+Latent dynamics.
+
+We use two canonical supercritical bifurcation systems. For the Hopf benchmark, we use the supercritical Hopf normal form
+
+x˙\displaystyle\dot{x}
+=μ​x−ω​y−(x2+y2)​x,\displaystyle=\mu x-\omega y-(x^{2}+y^{2})x,
+
+(4)
+
+y˙\displaystyle\dot{y}
+=ω​x+μ​y−(x2+y2)​y,\displaystyle=\omega x+\mu y-(x^{2}+y^{2})y,
+
+(5)
+
+where ω\omega is the angular frequency (always 1 here for simplicity). For μ<0\mu<0, trajectories contract to the fixed point at the origin; for μ>0\mu>0, trajectories converge to a stable limit cycle.
+
+For the Pitchfork benchmark, we use a supercritical pitchfork in xx with a linearly stable auxiliary dimension yy:
+
+x˙\displaystyle\dot{x}
+=μ​x−x3,\displaystyle=\mu x-x^{3},
+
+(6)
+
+y˙\displaystyle\dot{y}
+=−λ​y,\displaystyle=-\lambda y,
+
+(7)
+
+with λ>0\lambda>0. This produces qualitatively different post-bifurcation organization from Hopf (branching in xx rather than rotational limit-cycle dynamics).
+
+Epochs and time-steps.
+
+Within each epoch τ\tau, the latent system is integrated for ss time-steps at fixed μg​(τ)\mu_{g}(\tau) using a fourth-order Runge–Kutta method with step size Δ​t\Delta t. Thus each epoch contributes a short trajectory segment under a constant control parameter, and the full dataset traces a progression across epochs as μ\mu sweeps through the bifurcation regime.
+
+Optional smooth warps.
+
+To test robustness to smooth perturbations of the latent coordinates, we apply an optional smooth state-space warp (a near-identity diffeomorphic transform in ℝ2\mathbb{R}^{2}) to each epoch trajectory before readout. In the implementation used here, the state warp is
+
+Φκ​(x,y)=(x+κ​x​y,y+κ​x2),\Phi_{\kappa}(x,y)=\bigl(x+\kappa xy,\;y+\kappa x^{2}\bigr),
+
+(8)
+
+with small κ\kappa (default κ=0.15\kappa=0.15), yielding a smooth coordinate deformation that preserves local continuity while changing the raw coordinate representation.
+
+Readout mapping (latent → hidden-unit activation).
+
+At each time-step ω\omega in epoch τ\tau, the latent state (x,y)(x,y) is mapped to a scalar activation by combining a shared linear projection and a radial component:
+
+hτ,w=α​𝒘⊤​[xτ,w,yτ,w]+γ​rτ,w,rτ,w=xτ,w2+yτ,w2,h_{\tau,w}=\alpha\,\bm{w}^{\top}[x_{\tau,w},y_{\tau,w}]\;+\;\gamma\,r_{\tau,w},\qquad r_{\tau,w}=\sqrt{x_{\tau,w}^{2}+y_{\tau,w}^{2}},
+
+(9)
+
+where 𝒘∈ℝ2\bm{w}\in\mathbb{R}^{2} is a shared random projection direction (sampled once per dataset and shared across both groups), and α,γ\alpha,\gamma control the relative contributions of signed projection and radius. Optionally, the scalar readout is passed through tanh⁡(⋅)\tanh(\cdot) to mimic an RNN nonlinearity.
+
+Hidden units and group structure.
+
+Each group contributes a fixed number of hidden units (typically 3 for group A and 3 for group B in the minimal benchmark suite). Within a group, units are generated by replicating the same group-level scalar readout and adding small i.i.d. noise, with optional per-unit gain and bias jitter. This produces tight but non-identical unit trajectories while preserving the underlying group-level latent dynamics.
+
+Samples.
+
+We generate pp independent samples (trials), each with its own initial condition and process noise realization. All samples within a scenario share the same ODE specification, parameter schedule(s), and warp settings, but produce distinct trajectories. In the warp-only control, the two groups share the same simulated latent trajectories before warping by construction, and differ only through the applied warp and downstream readout replication.
+
+Tensor structure and default configuration.
+
+The final activation tensor matches the notation of Table 4:
+
+T∈ℝ(n​s)×m×p,T\in\mathbb{R}^{(n\,s)\times m\times p},
+
+where the first dimension indexes flattened epoch–time-step pairs (τ,w)(\tau,w), mm is the total number of hidden units across both groups, and pp is the number of samples. In the benchmark configuration used throughout the synthetic suite unless otherwise stated, we use
+
+n=101,s=80,m=6(=3+3),p=10,n=101,\qquad s=80,\qquad m=6\;(=3+3),\qquad p=10,
+
+with Δ​t=0.1\Delta t=0.1 and a linear sweep in μ\mu across epochs (e.g., μ:−1→2\mu:-1\rightarrow 2). Figure A.5 illustrates the latent and readout construction for a Hopf-based example.
+
+The Hopf anchor benchmark (static vs. dynamic) used for entropy validation (Section A.5.4) uses a different unit split (6 dynamic + 4 static) and is described separately there.
+
+Figure A.5: Latent and readout dynamics of the Hopf bifurcation experiment.
+(Top left) Latent (x,y)(x,y) trajectories of the Hopf system as μ\mu moves from negative (stable focus) to positive (stable limit-cycle), illustrating the bifurcation.
+(Bottom left) Example hidden-unit-generating trajectories in the 2D latent plane, illustrating how latent dynamics across epochs are converted into group-wise readout trajectories.
+(Top right) The corresponding one-dimensional scalar readout obtained from h=α⁡(𝒘⊤​[x,y])+γ​rh=\alpha(\bm{w}^{\top}[x,y])+\gamma r before optional nonlinearity.
+(Bottom right) The scalar readout after applying a tanh\tanh nonlinearity, which compresses large-amplitude oscillations and highlights saturation in the post-bifurcation regime.
+
+A.5.2 Scenario suite used in the main text
+
+Table 2 summarizes the three core synthetic scenarios used in the main-text comparison (Section 5.1.1). These scenarios isolate (a) dynamical-family differences, (b) smooth state-warp perturbations, and (c) the combination of both factors. Unless otherwise stated, all scenarios use matched epoch/time-step settings, the same readout construction, and matched μ\mu schedules across groups.
+
+Table 2: Controlled synthetic scenarios used to test dynamics-family differences and smooth state-space warps. Main-text results focus on state-warp settings (no time warp).
+
+Scenario
+
+Group A
+
+Group B
+
+State warp
+
+What it tests
+
+Hopf vs. Pitchfork (clean)
+
+Hopf
+
+Pitchfork
+
+none / none
+
+Family-level dynamical differences without coordinate perturbation
+
+Hopf vs. Pitchfork (warped)
+
+Hopf
+
+Pitchfork
+
+yes / yes
+
+Whether family-level differences remain visible when both systems are smoothly warped
+
+Hopf clean vs. Hopf warped (warp-only control)
+
+Hopf
+
+Hopf (same latent trajectories before warp)
+
+no / yes
+
+Sensitivity to smooth coordinate perturbation when latent dynamics are otherwise identical
+
+A.5.3 Synthetic-suite results: bifurcation families and smooth state-space warps
+
+Figure 3 (main text) summarizes the three core synthetic scenarios listed in Table 2. In this appendix subsection, we provide the corresponding per-scenario visualization suites used to support that summary. For readability, we include the full 2-D/3-D embedding views colored by epoch, timestep, group identity, and unit index, together with latent phase portraits and readout traces.
+
+Across these settings, MM-PHATE exhibits three qualitative behaviors relevant to the reviewer concern: (i) sensitivity to differences in latent dynamical family, (ii) retention of a family-level distinction under smooth state-space warps, and (iii) preservation of progression structure even when the same latent dynamics are observed through different coordinates. In every composite embedding panel below, the three columns are MM-PHATE, PCA, and t-SNE (left-to-right).
+
+(1) Dynamics-family differences without warps.
+
+In the unwarped Hopf-vs.-Pitchfork setting, Group A is the Hopf bifurcation system and Group B is the Pitchfork bifurcation system (consistent with the scenario name hopf_bif__pitchfork_bif__no_warp). MM-PHATE separates the two groups while preserving distinct progression structure across epochs and time-steps (Figs. A.6–A.9). The latent phase portrait confirms that the two groups differ at the level of generating dynamics (rotational organization for Hopf versus branching organization for Pitchfork in this construction), while the readout traces help verify that the observed separation is not explained by a trivial monotonic scaling alone.
+
+Figure A.6: Hopf vs. Pitchfork without warps: 3-D embedding views (epoch, timestep, and group identity).
+From top to bottom: colorings by training epoch, within-epoch timestep, and group identity (A = Hopf bifurcation, B = Pitchfork bifurcation). Each image is a three-column composite (MM-PHATE, PCA, t-SNE). These views assess progression organization and family-level separation in 3-D.
+
+Figure A.7: Hopf vs. Pitchfork without warps: 3-D unit-level organization and latent phase portraits.
+Top: embeddings colored by unit index. Bottom: latent phase portraits for Group A (Hopf bifurcation; left panel) and Group B (Pitchfork bifurcation; right panel), i.e., the ground-truth latent dynamics used to generate the observations.
+
+Figure A.8: Hopf vs. Pitchfork without warps: 2-D embedding views (epoch, timestep, and group identity).
+These 2-D projections are the compact counterparts of Fig. A.6 and verify that the same qualitative progression and family-level separation patterns remain visible after projection to two dimensions.
+
+Figure A.9: Hopf vs. Pitchfork without warps: 2-D unit-level organization and average readout traces.
+Top: embeddings colored by unit index. Bottom: average readout traces for groups A and B across global training time. Together with the latent phase portraits in Fig. A.7, these panels support the interpretation that MM-PHATE is sensitive to qualitative dynamics-family differences rather than only generic amplitude growth.
+
+(2) Dynamics-family differences with smooth state-space warps applied to both groups.
+
+When both systems are subjected to smooth state-space warps prior to readout, Group A remains the warped Hopf bifurcation system and Group B remains the warped Pitchfork bifurcation system (consistent with hopf_bif__pitchfork_bif__warp). MM-PHATE still preserves a visible family-level distinction while retaining epoch/time-step progression structure (Figs. A.10–A.13). This indicates that, in the tested conditions, the embedding is not simply memorizing raw latent coordinates and remains informative under smooth coordinate perturbations. The latent phase portraits and readout traces again provide the mechanistic context for interpreting the embedding geometry.
+
+Figure A.10: Hopf vs. Pitchfork with smooth state-space warps: 3-D embedding views (epoch, timestep, and group identity).
+From top to bottom: colorings by training epoch, within-epoch timestep, and group identity (A = warped Hopf bifurcation, B = warped Pitchfork bifurcation). Each image is a three-column composite (MM-PHATE, PCA, t-SNE). Despite coordinate warps, MM-PHATE continues to display organized progression and a visible family-level distinctio

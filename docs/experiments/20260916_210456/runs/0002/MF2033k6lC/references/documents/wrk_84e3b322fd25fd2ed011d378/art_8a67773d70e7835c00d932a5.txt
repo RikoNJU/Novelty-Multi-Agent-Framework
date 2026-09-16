@@ -1,0 +1,1615 @@
+Multi-Behavior Hypergraph-Enhanced Transformer for Sequential Recommendation
+
+      Report GitHub Issue
+      ×
+
+      Title:
+
+Content selection saved. Describe the issue below:
+
+      Description:
+
+      Submit without GitHub
+      Submit in GitHub
+
+    arXiv is now an independent nonprofit!
+    Learn more
+    ×
+
+      Back to arXiv
+
+    Why HTML?
+
+      Report Issue
+
+      Back to Abstract
+
+      Download PDF
+
+Abstract.
+
+1 Introduction
+
+2 Problem Formulation
+
+3 METHODOLOGY
+
+3.1 Multi-Scale Modeling of Behavior-aware Sequential Patterns
+
+3.1.1 Behavior-aware Context Embedding Layer
+
+3.1.2 Multi-Scale Transformer Layer
+
+3.1.3 Multi-Scale Behaviour Pattern Fusion
+
+3.2 Customized Hypergraph Learning of Global Multi-Behavior Dependencies
+
+3.2.1 Item-wise Hypergraph Construction
+
+3.2.2 Hypergraph Convolution Module
+
+3.3 Cross-View Aggregation
+
+3.4 Model Learning And Analysis
+
+4 Experiments
+
+4.1 Experimental Settings
+
+4.1.1 Datasets.
+
+4.1.2 Evaluation Protocols.
+
+4.1.3 Baselines.
+
+4.1.4 Hyperparameter Settings.
+
+4.2 Performance Evaluation (RQ1)
+
+4.3 Ablation Study (RQ2)
+
+4.3.1 Effects of Key Components.
+
+4.3.2 Contribution of Learning Views.
+
+4.4 Model Benefit Study (RQ3)
+
+4.4.1 Performance w.r.t Sequence Length.
+
+4.4.2 Model Convergence Study.
+
+4.5 Case Study
+
+5 Related Work
+
+6 Conclusion
+
+References
+
+A Supplementary Material
+
+A.1 The Learning Process of MBHT
+
+A.2 Time Complexity Analysis
+
+A.3 Simplifying Hypergraph Message Passing
+
+A.4 Hyperparameter Study (RQ4)
+
+    License: arXiv.org perpetual non-exclusive license
+
+arXiv:2207.05584v2 [cs.IR] 20 Sep 2022
+
+Multi-Behavior Hypergraph-Enhanced Transformer
+
+for Sequential Recommendation
+
+Conference: Proceedings of the 28th ACM SIGKDD Conference on Knowledge Discovery and Data Mining; August 14–18, 2022; Washington, DC, USAProceedings of the 28th ACM SIGKDD Conference on Knowledge Discovery and Data Mining (KDD’22), August 14–18, 2022, Washington, DC, USAPrice: 15.00DOI: 10.1145/3534678.3539342ISBN: 978-1-4503-9385-0/22/08CCS: Information systems Recommender systems
+
+Yuhao Yang
+
+Affiliation: University of Hong Kong, Hong Kong, China
+
+email: yuhao-yang@outlook.com
+
+,
+Chao Huang
+
+Note: Chao Huang is the corresponding author.
+
+Affiliation: University of Hong Kong, Hong Kong, China
+
+email: chaohuang75@gmail.com
+
+,
+Lianghao Xia
+
+Affiliation: University of Hong Kong, Hong Kong, China
+
+email: aka_xia@foxmail.com
+
+,
+Yuxuan Liang
+
+Affiliation: National University of Singapore, Singapore, Singapore
+
+email: yuxliang@outlook.com
+
+,
+Yanwei Yu
+
+Affiliation: Ocean University of China, Qingdao, China
+
+email: yuyanwei@ouc.edu.cn
+
+ and
+Chenliang Li
+
+Affiliation: Wuhan University, Wuhan, China
+
+email: cllee@whu.edu.cn
+
+© acmcopyright
+
+Abstract.
+
+Learning dynamic user preference has become an increasingly important component for many online platforms (e.g., video-sharing sites, e-commerce systems) to make sequential recommendations. Previous works have made many efforts to model item-item transitions over user interaction sequences, based on various architectures, e.g., recurrent neural networks and self-attention mechanism. Recently emerged graph neural networks also serve as useful backbone models to capture item dependencies in sequential recommendation scenarios. Despite their effectiveness, existing methods have far focused on item sequence representation with singular type of interactions, and thus are limited to capture dynamic heterogeneous relational structures between users and items (e.g., page view, add-to-favorite, purchase). To tackle this challenge, we design a Multi-Behavior Hypergraph-enhanced Transformer framework (MBHT) to capture both short-term and long-term cross-type behavior dependencies. Specifically, a multi-scale Transformer is equipped with low-rank self-attention to jointly encode behavior-aware sequential patterns from fine-grained and coarse-grained levels. Additionally, we incorporate the global multi-behavior dependency into the hypergraph neural architecture to capture the hierarchical long-range item correlations in a customized manner. Experimental results demonstrate the superiority of our MBHT over various state-of-the-art recommendation solutions across different settings. Further ablation studies validate the effectiveness of our model design and benefits of the new MBHT framework. Our implementation code is released at: https://github.com/yuh-yang/MBHT-KDD22.
+
+Keywords: Sequential Recommendation, Graph Neural Networks, Hypergraph Learning, Multi-Behavior Recommendation
+
+1. Introduction
+
+Recommendation models have emerged as the core components of many online applications (Zhang
+et al., 2019), such as social media platforms (Zhou
+et al., 2019), video streaming services (Jiang
+et al., 2020) and online retail systems (Wu
+et al., 2018). Due to the highly practical value of sequential behavior modeling in various online platforms, sequential recommendation has been widely adopted in online platforms, with the aim of forecasting future users’ interacted item based on their past behavior sequences (Sun
+et al., 2019; Chang et al., 2021).
+
+Generally, in the sequential recommendation scenario, the systems rely on the item sequences to model time-evolving user preferences. Upon this learning paradigm, many sequential recommender systems have been proposed to encode the item dependencies based on various neural techniques and provided stronger performance, e.g., recurrent neural recommendation architecture-GRU4Rec (Hidasi et al., 2016) and convolution-based sequence encoder model-Caser (Tang and Wang, 2018). Inspired by the Transformer framework, self-attention has been utilized to capture the item-item pairwise correlations in SASRec (Kang and McAuley, 2018) and BERT4Rec (Sun
+et al., 2019). Recently, graph neural networks (GNNs) have shown effectiveness in sequential recommender systems. Owing to strength of graph convolutions, GNN-based methods (e.g., SR-GNN (Wu
+et al., 2019), GCSAN (Xu
+et al., 2019)) are developed to learn item transitions with message passing over the constructed item graph structures.
+
+Figure 1. (a) Illustration example of sequential recommendation with multi-behavior dynamics. (b) Learned behavior-aware dependency weights for short-term item correlations among neighboring {[4],[5],[6]}\{[4],[5],[6]\} and long-range dependencies among {[2],[13],[15]}\{[2],[13],[15]\} by BERT4Rec and our MBHT.
+
+Despite their effectiveness, most of existing works have thus far focused on sequential behavior pattern encoding for singular type of interactions (e.g., clicks or purchases), without taking multi-typed user-item relationships into consideration. However, in practical online platforms, user behaviors often exhibit both time-dependent and multi-typed, involving different types of user-item interactions, e.g.,, page view, add-to-favorite, purchase. As illustrated in Figure 1, customers may click and add their interested products to their favorite lists before purchasing them. Additionally, we also visualize the learned dependency weights by the baseline BERT4Rec and our MBHT method to capture behavior-aware short-term item correlations (among neighboring items {[4], [5], [6]}) and long-term item-wise dependencies (among {[2], [13], [15]}). We can observe that the global multi-behavior dependencies can be better distilled by our MBHT as compared to BERT4Rec. Hence, effectively enhancing the user preference learning with the exploration of heterogeneous user-item interactions in a dynamic environment, is also the key to making accurate sequential recommendations. Nevertheless, this task is not trivial due to the following challenges:
+
+•
+
+Dynamic Behavior-aware Item Transitions. How to explicitly capture the dynamic behavior-aware item transitions with multi-scale temporal dynamics remains a challenge. There exist different periodic behavior patterns (e.g., daily, weekly, monthly) for different categories of items (e.g., daily necessities, seasonal clothing) (Ren
+et al., 2019; Huang et al., 2019). Therefore, it is necessary to explicitly capture multi-scale sequential effects of behavior-aware item transitional patterns from fine-grained to coarse-grained temporal levels.
+
+•
+
+Personalized Global Multi-Behavior Dependencies. The implicit dependencies across different types of behaviors over time vary from user to user. For example, due to the personalized and diverse user interaction preferences, some people would like to add products to their favorite list if they show interested in the items. Others may prefer to generate their favorite item list with products they are very likely to buy. That is to say, for different users, multi-behaviors have various time-aware dependencies on their interests. Moreover, multi-behavior item-wise dependencies are beyond pairwise relations and may exhibit triadic or event higher-order. Hence, the designed model requires a tailored modeling of diverse users’ multi-behavior dependencies with a dynamic multi-order relation learning paradigm.
+
+Contribution. This work proposes a Multi-Behavior Hypergraph-enhanced Transformer (MBHT) to capture dynamic item dependencies with behavior type awareness. Our developed MBHT framework consitens of two key learning paradigms to address the aforementioned challenges correspondingly. (1) Behavior-aware Sequential Patterns. We propose a multi-scale Transformer module to comprehensively encode the multi-grained sequential patterns from fine-grained level to coarse-grained level for behavior-aware item transitions. To improve the efficiency of our sequential pattern encoder, we equip our multi-scale Transformer with the self-attentive projection based on low-rank factorization. To aggregate scale-specific temporal effects, a multi-scale behavior-aware pattern fusion is introduced to integrate multi-grained item transitional signals into a common latent representation space. (2) Global Modeling of Diverse Multi-Behavior Dependencies. We generalize the modeling of global and time-dependent cross-type behavior dependencies with a multi-behavior hypergraph learning paradigm. We construct the item hypergraph structures by unifying the latent item-wise semantic relateness and item-specific multi-behavior correlations. Technically, to capture the global item semantics, we design the item semantic dependence encoder with metric learning. Upon the hypergraph structures, we design the multi-behavior hyperedge-based message passing schema for refining item embeddings, which encourages the long-range dependency learning of different types of user-item relationships. Empirically, MBHT is able to provide better performance than state-of-the-art methods, e.g., BERT4Rec (Sun
+et al., 2019), HyperRec (Wang
+et al., 2020a), SURGE (Chang et al., 2021), MB-GMN (Xia
+et al., 2021).
+
+The main contributions are summarized as follows:
+
+•
+
+This work proposes a new framework named MBHT for sequential recommendation, which uncovers the underlying dynamic and multi-behavior user-item interaction patterns.
+
+•
+
+To model multi-grained item transitions with the behavior type awareness, we design a multi-scale Transformer which is empowered with the low-rank and multi-scale self-attention projection, to maintain the evolving relation-aware user interaction patterns.
+
+•
+
+In addition, to capture the diverse and long-range multi-behavior item dependencies, we propose a multi-behavior hypergraph learning paradigm to distill the item-specific multi-behavior correlations with global and customized sequential context injection.
+
+•
+
+We perform extensive experiments on three publicly available datasets, to validate the superiority of our proposed MBHT over various state-of-the-art recommender systems. Model ablation and case studies further show the benefits of our model.
+
+2. Problem Formulation
+
+In this section, we introduce the primary knowledge and formulates the task of multi-behavior sequential recommendation.
+
+Behavior-aware Interaction Sequence.
+Suppose we have a sequential recommender system with a set of II users ui∈𝒰u_{i}\in\mathcal{U} where |𝒰|=I|\mathcal{U}|=I. For an individual user uiu_{i}, we define the behavior-aware interaction sequence Si=[(vi,1,bi,1),…,(vi,j,bi,j),…,(vi,J,bi,J)]S_{i}=[(v_{i,1},b_{i,1}),...,(v_{i,j},b_{i,j}),...,(v_{i,J},b_{i,J})] with the consideration of item-specific interaction type, where JJ denotes the length of temporally-ordered item sequence. Here, we define bi,jb_{i,j} to represent the behavior type of the interaction between user uiu_{i} and jj-th item vjv_{j} in SiS_{i}, such as page view, add-to-favorite, add-to-cart and purchase in e-commerce platforms.
+
+Task Formulation. In our multi-behavior sequential recommender system, different types of interaction behaviors are partitioned into target behaviors and auxiliary behaviors. Specifically, we regard the interaction with the behavior type we aim to predict as target behaviors. Other types of user behaviors are defined as auxiliary behaviors to provide various behaviour contextual information about users’ diverse preference, so as to assist the recommendation task on the target type of user-item interactions. For example, in many online retail platforms, purchase behaviors can be considered as the prediction targets, due to their highly relevance to the Gross Merchandise Volume (GMV) in online retailing to indicate the total sales value for merchandise (Huang et al., 2019; Wu
+et al., 2018). We formally present our studied sequential recommendation problem as follows:
+
+•
+
+Input: The behavior-aware interaction sequence Si=[(vi,1,bi,1),…,(vi,j,bi,j),…,(vi,J,bi,J)]S_{i}=[(v_{i,1},b_{i,1})\\
+,...,(v_{i,j},b_{i,j}),...,(v_{i,J},b_{i,J})] of each user ui∈𝒰u_{i}\in\mathcal{U}.
+
+•
+
+Output: The learning function that estimates the probability of user uiu_{i} will interact with the item vJ+1v_{J+1} with the target behavior type at the future (J+1)(J+1)-th time step.
+
+3. METHODOLOGY
+
+Figure 2 presents the overall architecture of our proposed MBHT model which consists of three key modules: i) Multi-scale modeling of behavior-aware transitional patterns of user preference; ii) Global learning of multi-behavior dependencies of time-aware user interactions; iii) Cross-view aggregation with the encoded representations of sequential behavior-aware transitional patterns and hypergraph-enhanced multi-behavior dependencies.
+
+Figure 2. MBHT’s model flow. (a) We inject the behavior-aware interaction context into item embeddings hj=ej⊕pj⊕bj\textbf{h}_{j}=\textbf{e}_{j}\oplus\textbf{p}_{j}\oplus\textbf{b}_{j}. (b) Multi-scale transformer architecture to capture behavior-aware transitional patterns via low-rank self-attention and multi-scale sequence aggregation. Scale-specific behavior patterns are fused through the fusion function H~=f⁡(H^∥Hp1∥Hp2)\widetilde{\textbf{H}}=f(\widehat{\textbf{H}}\mathbin{\|}{\textbf{H}}^{p_{1}}\mathbin{\|}{\textbf{H}}^{p_{2}}). (c) We capture the global and personalized multi-behavior dependency learning with our hypergraph neural architecture over 𝒢\mathcal{G}.
+
+3.1. Multi-Scale Modeling of Behavior-aware Sequential Patterns
+
+In this section, we present the technical details of our MBHT in capturing the behavior-aware user interest with multi-scale dynamics.
+
+3.1.1. Behavior-aware Context Embedding Layer
+
+To inject the behavior-aware interaction context into our sequential learning framework, we design the behavior-aware context embedding layer to jointly encode the individual item information and the corresponding interaction behavior contextual signal. Towards this end, given an item vjv_{j}, we offer its behavior-aware latent representation hj∈ℝd\textbf{h}_{j}\in\mathbb{R}^{d} with the following operation:
+
+(1)
+
+hj=ej⊕pj⊕bj\displaystyle\textbf{h}_{j}=\textbf{e}_{j}\oplus\textbf{p}_{j}\oplus\textbf{b}_{j}
+
+where ej∈ℝd\textbf{e}_{j}\in\mathbb{R}^{d} represents the initialized item embedding. bj∈ℝd\textbf{b}_{j}\in\mathbb{R}^{d} is the behavior type embedding corresponding to the interaction type (e.g., page view, add-to-favorite) between user uiu_{i} and item vjv_{j}. Here, pj∈ℝd\textbf{p}_{j}\in\mathbb{R}^{d} represents the learnable positional embedding of item vjv_{j} which differentiates the temporally-ordered positional information of different interacted items. After this context embedding layer, we can obtain the item representation matrix H∈ℝJ×d\textbf{H}\in\mathbb{R}^{J\times d} for the behavior-aware interacted item sequence SiS_{i} of user uiu_{i}.
+
+3.1.2. Multi-Scale Transformer Layer
+
+In practical recommendation scenarios, user-item interaction preference may exhibit multi-scale transitional patterns over time. For instance, users often purchase different categories of products (e.g., daily necessities, clothes, digital devices) with different periodic trends, such as daily or weekly routines (Jiang
+et al., 2020). To tackle this challenge, we design a multi-scale sequential preference encoder based on the Transformer architecture to capture the multi-grained behavior dynamics in the behavior-aware interaction sequence SiS_{i} of users (ui∈𝒰u_{i}\in\mathcal{U}).
+
+Low-Rank Self-Attention Module. Transformer has shown its effectiveness in modeling relational data across various domains (e.g., language (Yao and Wan, 2020), vision (Liu
+et al., 2021)). In Transformer framework, self-attention serves as the key component to perform the relevance-aware information aggregation among attentive data points (e.g., words, pixels, items). However, the high computational cost (i.e., quadratic time complexity) of the self-attention mechanism limits the model scalability in practical settings (Kitaev
+et al., 2020). Motivated by the design of Transformer structure in (Wang
+et al., 2020b), we design a low-rank-based self-attention layer without the quadratic attentive operation, to approximate linear model complexity.
+
+In particular, different from the original scaled dot-product attention for pairwise relation encoding, we generate multiple smaller attention operations to approximate the original attention with low-rank factorization. We first define two trainable projection matrices 𝑬∈ℝJC×J\boldsymbol{E}\in\mathbb{R}^{\frac{J}{C}\times J} and 𝑭∈ℝJC×J\boldsymbol{F}\in\mathbb{R}^{\frac{J}{C}\times J} to perform the low-rank embedding transformation. Here, CC denotes the low-rank scale and JC\frac{J}{C} represents the number of low-rank latent representation spaces over the input behavior-aware interaction sequence SiS_{i}. Formally, we represent our low-rank self-attention as follows:
+
+(2)
+
+H^=softmax​(H⋅WQ​(E⋅H⋅WK)𝖳d)⋅F⋅H⋅WV\displaystyle\widehat{\textbf{H}}=\textsf{softmax}(\frac{\textbf{H}\cdot{W}^{Q}(\textbf{E}\cdot\textbf{H}\cdot{W}^{K})^{\mkern-1.5mu\mathsf{T}}}{\sqrt{d}})\cdot\textbf{F}\cdot\textbf{H}\cdot{W}^{V}
+
+where WQ{W}^{Q}, WK{W}^{K}, WV{W}^{V} are learnable transformation matrices for embedding projection. In our low-rank self-attention module, 𝑬\boldsymbol{E} and 𝑭\boldsymbol{F} are utilized to project the (ℝJ×d\mathbb{R}^{J\times d})-dimensional key and value transformed representations H⋅WK\textbf{H}\cdot{W}^{K} and H⋅WV\textbf{H}\cdot{W}^{V} into (ℝJC×d\mathbb{R}^{\frac{J}{C}\times d})-dimensional latent low-rank embeddings H^∈ℝJC×d\widehat{\textbf{H}}\in\mathbb{R}^{\frac{J}{C}\times d}. In summary, with the low-rank factor decomposition over the original attention operations, we calculate the context mapping matrix M=H⋅WQ​(H⋅WK)Td\textbf{M}=\frac{\textbf{H}\cdot{W}^{Q}(\textbf{H}\cdot{W}^{K})^{T}}{\sqrt{d}} with the dimension of ℝJ×JC\mathbb{R}^{J\times\frac{J}{C}} as compared to the original dimension ℝJ×J\mathbb{R}^{J\times J} in the vanilla self-attention mechanism. By doing so, the computational cost of our behavior sequence encoder can be significantly reduced from the O⁡(J×J)O(J\times J) to O⁡(J×JC)O(J\times\frac{J}{C}) given that the low-rank projected dimension J/CJ/C is often much smaller than JJ, i.e., J/C≪JJ/C\ll\ J.
+
+Multi-Scale Behavior Dynamics.
+To endow our MBHT model with the effective learning of multi-scale behaviour transitional patterns, we propose to enhance our low-rank-based transformer with a hierarchical structure, so as to capture granularity-specific behavior dynamics. To be specific, we develop a granularity-aware aggregator to generate granularity-specific representation gp\textbf{g}_{p} which preserves the short-term behavior dynamic. Here, we define pp as the length of sub-sequence for a certain granularity. We formally present our granularity-aware emebdding generation with the aggregated representation 𝚪p∈ℝJp×d\boldsymbol{\Gamma}^{p}\in\mathbb{R}^{\frac{J}{p}\times d} and 𝜸∈ℝd\boldsymbol{\gamma}\in\mathbb{R}^{d} as follows:
+
+(3)
+
+𝚪p={𝜸1,…,𝜸Jp}=[η⁡(h1,…,hp);…;η⁡(hJ−p+1,…,hJ)]\displaystyle\boldsymbol{\Gamma}^{p}=\{\boldsymbol{\gamma}_{1},...,\boldsymbol{\gamma}_{\frac{J}{p}}\}=[\eta(\textbf{h}_{1},...,\textbf{h}_{p});...;\eta(\textbf{h}_{J-p+1},...,\textbf{h}_{J})]
+
+where η⁡(⋅)\eta(\cdot) represents the aggregator to capture the short-term behavior-aware dynamics. Here, we utilize the mean pooling to perform the embedding aggregation. After that, we feed the granularity-aware behavior representations into a self-attention layer for encoding granularity-specific behavior pattern as shown below:
+
+(4)
+
+Hp=softmax​(𝚪p⋅WpQ​(𝚪p⋅WpK)𝖳d)⋅𝚪p⋅WpV\displaystyle{\textbf{H}}^{p}=\textsf{softmax}(\frac{\boldsymbol{\Gamma}^{p}\cdot{W}^{Q}_{p}(\boldsymbol{\Gamma}^{p}\cdot{W}^{K}_{p})^{\mkern-1.5mu\mathsf{T}}}{\sqrt{d}})\cdot\boldsymbol{\Gamma}^{p}\cdot{W}^{V}_{p}
+
+Hp∈ℝJp×d{\textbf{H}}^{p}\in\mathbb{R}^{\frac{J}{p}\times d} encodes the short-term transitional patterns over different item sub-sequences. In our MBHT framework, we design a hierarchical Transformer network with two different scale settings p1p_{1} and p2p_{2}. Accordingly, our multi-scale Transformer can produce three scale-specific sequential behavior embeddings H^∈ℝJ×d\widehat{\textbf{H}}\in\mathbb{R}^{J\times d}, Hp1∈ℝJp1×d{\textbf{H}}^{p_{1}}\in\mathbb{R}^{\frac{J}{p_{1}}\times d}, Hp2∈ℝJp2×d{\textbf{H}}^{p_{2}}\in\mathbb{R}^{\frac{J}{p_{2}}\times d}.
+
+3.1.3. Multi-Scale Behaviour Pattern Fusion
+
+To integrate the multi-scale dynamic behavior patterns into a common latent representation space, we propose to aggregate the above encoded scale-specific embeddings with a fusion layer presented as follows:
+
+(5)
+
+H~=f⁡(H^∥Hp1∥Hp2)\displaystyle\widetilde{\textbf{H}}=f(\widehat{\textbf{H}}\mathbin{\|}{\textbf{H}}^{p_{1}}\mathbin{\|}{\textbf{H}}^{p_{2}})
+
+Here f⁡(⋅)f(\cdot) represents the projection function which transforms ℝ(JC+Jp1+Jp2)×d\mathbb{R}^{(\frac{J}{C}+\frac{J}{p_{1}}+\frac{J}{p_{2}})\times d} dimensional embeddings into ℝJ×d\mathbb{R}^{J\times d} dimensional representations corresponding to different items (vj∈Siv_{j}\in S_{i}) in the behavior-aware interaction sequence SiS_{i} of user uiu_{i}. Here, ∥\parallel denotes the concatenation operation over different embedding vectors.
+
+Multi-Head-Enhanced Representation Spaces.
+In this part, we propose to endow our behavior-aware item sequence encoder with the capability of jointly attending multi-dimensional interaction semantics. In particular, our multi-head sequential pattern encoder projects the H into NN latent representation spaces and performs head-specific attentive operations in parallel.
+
+(6)
+
+H~\displaystyle\widetilde{\textbf{H}}
+=(head1∥head2∥⋯∥headN)𝑾D\displaystyle=(\text{head}_{1}\mathbin{\|}\text{head}_{2}\mathbin{\|}\cdots\mathbin{\|}\text{head}_{N})\boldsymbol{W}^{D}
+
+headn\displaystyle\text{head}_{n}
+=f⁡(H^n∥Hnp1∥Hnp2)\displaystyle=f(\widehat{\textbf{H}}_{n}\mathbin{\|}{\textbf{H}}_{n}^{p_{1}}\mathbin{\|}{\textbf{H}}_{n}^{p_{2}})
+
+where H^n,Hnp1\widehat{\textbf{H}}_{n},{\textbf{H}}_{n}^{p_{1}} and Hnp2{\textbf{H}}_{n}^{p_{2}} are computed with head-specific projection matrices WnQ,WnK,WnV∈ℝd×d/NW_{n}^{Q},W_{n}^{K},W_{n}^{V}\in\mathbb{R}^{d\times d/N}, and 𝑾D∈ℝd×d\boldsymbol{W}^{D}\in\mathbb{R}^{d\times d} is the output transformation matrix. The multiple attention heads allows our multi-scale Transformer architecture to encode multi-dimensional dependencies among items in SiS_{i}.
+
+Non-linearity Injection with Feed-forward Module.
+In our multi-scale Transformer, we use the point-wise feed-forward network to inject non-linearities into the new generated representations. The non-linear transformation layer is formally represented:
+
+(7)
+
+PFFN​(H~(l))\displaystyle\textsf{PFFN}(\widetilde{\textbf{H}}^{(l)})
+=[FFN​(h~1(l))𝖳,⋯,FFN​(h~t(l))𝖳]\displaystyle=[\textsf{FFN}(\tilde{\textbf{h}}_{1}^{(l)})^{\mkern-1.5mu\mathsf{T}},\cdots,\textsf{FFN}(\tilde{\textbf{h}}_{t}^{(l)})^{\mkern-1.5mu\mathsf{T}}]
+
+FFN​(x)\displaystyle\textsf{FFN}(\textbf{x})
+=GELU​(xW1(l)+b1(l))​W2(l)+b2(l),\displaystyle=\textsf{GELU}(\textbf{x}\textbf{W}_{1}^{(l)}+\textbf{b}_{1}^{(l)})\textbf{W}_{2}^{(l)}+\textbf{b}_{2}^{(l)},
+
+In our feed-forward module, we adopt two layers of non-linear transformation with the integration of intermediate non-linear activation GELU​(⋅)\textsf{GELU}(\cdot). In addition, W1(l)∈ℝd×dh,W2(l)∈ℝdh×d,b1(l)∈ℝd,b2(l)∈ℝd\textbf{W}_{1}^{(l)}\in\mathbb{R}^{d\times d_{h}},\textbf{W}_{2}^{(l)}\in\mathbb{R}^{d_{h}\times d},\textbf{b}_{1}^{(l)}\in\mathbb{R}^{d},\textbf{b}_{2}^{(l)}\in\mathbb{R}^{d} are learnable parameters of projection matrices and bias terms. Here, ll denotes the ll-th multi-scale Transformer layer.
+
+3.2. Customized Hypergraph Learning of Global Multi-Behavior Dependencies
+
+In our MBHT framework, we aim to incorporate long-range multi-behavior dependency into the learning paradigm of evolving user interests. However, it is non-trivial to effectively capture the personalized long-range multi-behavior dependencies. To achieve our goal, we propose to tackle two key challenges in our learning paradigm:
+
+•
+
+i) Multi-Order Behavior-wise Dependency. The item-wise multi-behavior dependencies are no longer dyadic with the consideration of comprehensive relationships among different types of user behaviors. For example, when deciding to recommend a specific item to users for their potential purchase preference, it would be useful to explore past multi-behavior interactions (e.g., page view, add-to-favorite) between users and this item. Customers are more likely to add their interested products into their favorite item list before making final purchases.
+
+•
+
+ii) Personalized Multi-Behavior Interaction Patterns. Multi-behavior patterns may vary by users with different correlations across multi-typed user-item interactions. In real-life e-commerce systems, some users like to add many items to their favorite list or cart, if they are interested in, but only a few of them will be purchased later. In contrast, another group of users only tag their interested products as favorite only if they show strong willingness to buy them. Hence, such complex and personalized multi-behavior patterns require our model to preserve the diverse cross-type behaviour dependencies.
+
+To address the above challenges, we build our global multi-behavior dependency encoder upon the hypergraph neural architecture. Inspired by the flexibility of hypergraphs in connecting multiple nodes through a single edge (Feng
+et al., 2019; Xia
+et al., 2022), we leverage the hyperedge structure to capture the tetradic or higher-order multi-behavior dependencies over time. Additionally, given the behavior-aware interaction sequence of different users, we construct different hypergraph structures over the sequence SiS_{i} (ui∈𝒰u_{i}\in\mathcal{U}), with the aim of encoding the multi-behavior dependency in a customized manner.
+
+3.2.1. Item-wise Hypergraph Construction
+
+In our hypergraph framework, we generate two types of item-wise hyperedge connections corresponding to i) long-range semantic correlations among items; ii) item-specific multi-behavior dependencies across time.
+
+Item Semantic Dependency Encoding with Metric Learning.
+To encode the time-evolving item semantics and the underlying long-range item dependencies based on the same user interest (e.g., food, outdoor activities), we introduce an item semantic encoder based on a metric learning framework. Specifically, we design the learnable metric β^j,j′n\hat{\beta}^{n}_{j,j^{\prime}} between items with a multi-channel weight function τ⁡(⋅)\tau({\cdot}) presented as follows:
+
+(8)
+
+βj,j′\displaystyle\beta_{j,j^{\prime}}
+=1N​∑n=1Nβ^j,j′n;vj=ej⊕bj\displaystyle=\frac{1}{N}\sum_{n=1}^{N}\hat{\beta}^{n}_{j,j^{\prime}};\textbf{v}_{j}=\textbf{e}_{j}\oplus\textbf{b}_{j}
+
+(9)
+
+β^j,j′n\displaystyle\hat{\beta}^{n}_{j,j^{\prime}}
+=τ⁡(𝒘n⊙vj,𝒘n⊙vj′)\displaystyle=\tau(\boldsymbol{w}^{n}\odot\textbf{v}_{j},\boldsymbol{w}^{n}\odot\textbf{v}_{j^{\prime}})
+
+where β^j,j′n\hat{\beta}^{n}_{j,j^{\prime}} represents the learnable channel-specific dependency weight between item vjv_{j} and vj′v_{j^{\prime}}. We define the weight function τ⁡(⋅)\tau({\cdot}) as the cosine similarity estimation based on the trainable 𝒘n\boldsymbol{w}^{n} of nn-th representation channel. (𝒘n⊙vj\boldsymbol{w}^{n}\odot\textbf{v}_{j}) represents the embedding projection operation. In our item-wise semantic dependency, we perform metric learning under NN representation channels (indexed by nn). The mean pooling operation is applied to all learned channel-specific item semantic dependency scores (e.g., β^j,j′n\hat{\beta}^{n}_{j,j^{\prime}}), to obtain the final relevance βj,j′\beta_{j,j^{\prime}} between item vjv_{j} and vj′v_{j^{\prime}}.
+
+Item-wise Semantic Dependency Hypergraph. With the encoded semantic dependencies among different items, we generate the item-wise semantic hypergraph by simultaneously connecting multiple highly dependent items with hyperedges. In particular, we construct a set of hyperedges ℰp\mathcal{E}^{p}, where |ℰp||\mathcal{E}^{p}| corresponds to the number of unique items in sequence SiS_{i}. In the hypergraph 𝒢p\mathcal{G}_{p} of item-wise semantic dependencies, each unique item will be assigned with a hyperedge in ϵ∈ℰp\epsilon\in\mathcal{E}^{p} to connect top-kk semantic dependent items according to the learned item-item semantic dependency score βj,j′\beta_{j,j^{\prime}} (encoded from the metric learning component). AjA_{j} represents the set of top-kk semantic correlated items of a specific item vjv_{j}. We define the connection matrix between items and hyperedges as ℳp∈ℝJ×|ℰp|\mathcal{M}^{p}\in\mathbb{R}^{J\times|\mathcal{E}^{p}|} in which each entry mp​(vj,ϵj′)m^{p}({v_{j},\epsilon_{j^{\prime}}}) is:
+
+(10)
+
+mp​(vj,ϵj′)\displaystyle m^{p}({v_{j},\epsilon_{j^{\prime}}})
+={βj,j′vj′∈Aj;0o​t​h​e​r​w​i​s​e;\displaystyle=\begin{cases}\beta_{j,j^{\prime}}&v_{j^{\prime}}\in A_{j};\\
+0&otherwise;\end{cases}
+
+where ϵj′\epsilon_{j^{\prime}} denotes the hyperedge which is assigned to item vj′v_{j^{\prime}}.
+
+Item-wise Multi-Behavior Dependency Hypergraph.
+To capture the personalized item-wise multi-behavior dependency in a time-aware environment, we further generate a hypergraph structure 𝒢q\mathcal{G}_{q} based on the observed multi-typed interactions (e.g., page view, add-to-cart) between user uiu_{i} and a specific item vjv_{j} at different timestamps. Here, we define ℰq\mathcal{E}^{q} to represent the set of items which have multi-typed interactions with user uiu_{i}. In hypergraph 𝒢q\mathcal{G}_{q}, the number of hyperedges is equal to |ℰq||\mathcal{E}^{q}|. Given that users have diverse multi-behaviour patterns with their interacted items, the constructed multi-behavior dependency hypergraphs vary by users. To be specific, we generate item-hyperedge connection matrix ℳq∈ℝJ×|ℰq|\mathcal{M}^{q}\in\mathbb{R}^{J\times|\mathcal{E}^{q}|} (mq∈ℳqm^{q}\in\mathcal{M}^{q}) for hypergraph 𝒢q\mathcal{G}_{q} as follow:
+
+(11)
+
+mq​(vjb,ϵjb′)\displaystyle m^{q}(v_{j}^{b},\epsilon_{j}^{b^{\prime}})
+={1vjb∈ℰjq;0o​t​h​e​r​w​i​s​e;\displaystyle=\begin{cases}1&v_{j}^{b}\in\mathcal{E}^{q}_{j};\\
+0&otherwise;\end{cases}
+
+vjbv_{j}^{b} represents that item vjv_{j} is interacted with user uiu_{i} under the bb-th behavior type. ℰjq\mathcal{E}^{q}_{j} denotes the set of multi-typed uiu_{i}-vjv_{j} interactions.
+
+We further integrate our constructed hypergraph structures 𝒢p\mathcal{G}_{p} and 𝒢q\mathcal{G}_{q} by concatenating connection matrices ℳp\mathcal{M}^{p} and ℳq\mathcal{M}^{q} along with the column side. As such, the integrated hypergraph 𝒢\mathcal{G} is constructed with the concatenated connection matrix ℳ∈ℝJ×(|ℰp|+|ℰq|)\mathcal{M}\in\mathbb{R}^{J\times(|\mathcal{E}^{p}|+|\mathcal{E}^{q}|)}, i.e., ℳ=ℳp∥ℳq\mathcal{M}=\mathcal{M}^{p}\mathbin{\|}\mathcal{M}^{q}. Different behavior-aware interaction sequences result in different hypergraph structures for different users, which allow our MBHT model to encode the personalized multi-behavior dependent patterns in a customized way.
+
+3.2.2. Hypergraph Convolution Module
+
+In this module, we introduce our hypergraph message passing paradigm with the convolutional layer, to capture the global multi-behavior dependencies over time. The hypergraph convolutional layer generally involves two-stage information passing (Feng
+et al., 2019), i.e., node-hyperedge and hyperedge-node embedding propagation along with the hypergraph connection matrix ℳ\mathcal{M} for refining item representations. Particularly, we design our hypergraph convolutional layer as:
+
+(12)
+
+X(l+1)=Dv−1⋅𝓜⋅De−1⋅𝓜𝖳⋅X(l)\displaystyle\textbf{X}^{(l+1)}=\textbf{D}_{v}^{-1}\cdot\boldsymbol{\mathcal{M}}\cdot\textbf{D}_{e}^{-1}\cdot\boldsymbol{\mathcal{M}}^{\mkern-1.5mu\mathsf{T}}\cdot\textbf{X}^{(l)}
+
+where X(l)\textbf{X}^{(l)} represents the item embeddings encoded from the ll-th layer of hypergraph convolution. Furthermore, Dv\textbf{D}_{v} and De\textbf{D}_{e} are diagonal matrices for normalization based on vertex and edge degrees, respectively. Note that the two-stage message passing by 𝓜⋅𝓜𝖳\boldsymbol{\mathcal{M}}\cdot\boldsymbol{\mathcal{M}}^{\mkern-1.5mu\mathsf{T}} takes O⁡((|ℰp|+|ℰq|)×J2)O((|\mathcal{E}^{p}|+|\mathcal{E}^{q}|)\times J^{2}) calculations, which is quite time-consuming. Inspired by the design in (Yu
+et al., 2021), we calculate a matrix 𝓜′\boldsymbol{\mathcal{M}}^{\prime} by leveraging pre-calculated βj,j′\beta_{j,j^{\prime}} to obtain a close approximation representation of 𝓜⋅𝓜𝖳\boldsymbol{\mathcal{M}}\cdot\boldsymbol{\mathcal{M}}^{\mkern-1.5mu\mathsf{T}} and thus boost the inference. The detailed process can be found in the supplementary material. We also remove the non-linear projection following (He
+et al., 2020) to simplify the message passing process. Each item embedding x(0)\textbf{x}^{(0)} in X(0)\textbf{X}^{(0)} is initialized with the behavior-aware self-gating operation as: x(0)=(vj⊕bj)⊙sigmoid​((vj⊕bj)⋅w+r)\textbf{x}^{(0)}=(\textbf{v}_{j}\oplus\textbf{b}_{j})\odot\text{sigmoid}((\textbf{v}_{j}\oplus\textbf{b}_{j})\cdot\textbf{w}+\textbf{r}).
+
+3.3. Cross-View Aggregation
+
+In the forecasting layer of MBHT framework, we propose to fuse the learned item representations from different views: 1) multi-scale behavior-aware sequential patterns with Transformer architecture; 2) personalized global multi-behavior dependencies with Hypergraph framework. To enable this cross-view aggregation in an adaptive way, we develop an attention layer to learn explicit importance for view-specific item embeddings. Formally, the aggregation procedure is presented as follows:
+
+(13)
+
+αi=Attn​(𝒆i)=exp⁡(𝒂𝖳⋅𝑾a​𝒆i)∑iexp⁡(𝒂𝖳⋅𝑾a​𝒆i)\displaystyle\alpha_{i}=\textsf{Attn}(\boldsymbol{e}_{i})=\frac{\exp(\boldsymbol{a}^{\mkern-1.5mu\mathsf{T}}\cdot\boldsymbol{W}_{a}\boldsymbol{e}_{i})}{\sum_{i}\exp(\boldsymbol{a}^{\mkern-1.5mu\mathsf{T}}\cdot\boldsymbol{W}_{a}\boldsymbol{e}_{i})}
+
+𝒆i∈{h~i,x~i};gi=α1⋅h~i⊕α2⋅x~i\displaystyle\boldsymbol{e}_{i}\in\{\tilde{\textbf{h}}_{i},\tilde{\textbf{x}}_{i}\};~~\textbf{g}_{i}=\alpha_{1}\cdot\tilde{\textbf{h}}_{i}\oplus\alpha_{2}\cdot\tilde{\textbf{x}}_{i}
+
+where h~i\tilde{\textbf{h}}_{i} and x~i\tilde{\textbf{x}}_{i} are embeddings from the two views separately for item at the ii-th position, and 𝒂∈ℝd\boldsymbol{a}\in\mathbb{R}^{d}, 𝑾a∈ℝd×d\boldsymbol{W}_{a}\in\mathbb{R}^{d\times d} are trainable parameters. Here, to eliminate the over-smooth effect of graph convolution, x~i\tilde{\textbf{x}}_{i} is the average of x(l)\textbf{x}^{(l)} across all convolutional layers. Finally, the probability of ii-th item in the sequence being item vjv_{j} is estimated as: y^i,j=gi𝖳​vj\hat{y}_{i,j}=\textbf{g}_{i}^{\mkern-1.5mu\mathsf{T}}\textbf{v}_{j}, where vj\textbf{v}_{j} represents item vjv_{j}’s embedding.
+
+3.4. Model Learning And Analysis
+
+To fit our multi-behavior sequential recommendation scenario, we utilize the Cloze task (Kang
+et al., 2021; Sun
+et al., 2019) as our training objective to model the bidirectional information of item sequence. We describe our Cloze task settings as follows: Considering the multi-behavior sequential recommender systems, we mask all items in the sequence with the target behavior type (e.g., purchase). To avoid the label leak issue, we replace the masked items as well as the corresponding behavior type embeddings with the special token [mask], and leave out masked items in the hypergraph construction in Section 3.2.1. Instead, for masked items, we generate its hypergraph embedding xi\textbf{x}_{i} in Equation 13 by adopting sliding-window average pooling function over hypergraph embeddings of the contextual neighbors surrounding the mask position (m−q1,m+q2)(m-q_{1},m+q_{2}). The details are presented in Algorithm 1 in the supplementary material. Hence, our model makes prediction on masked items based on the encoded surrounding context embeddings in the behavior interaction sequence. Given the probability estimation function y^i,j=gi𝖳​vj\hat{y}_{i,j}=\textbf{g}_{i}^{\mkern-1.5mu\mathsf{T}}\textbf{v}_{j}, we define our optimized objective loss with Cross-Entropy as below:
+
+(14)
+
+ℒ=1|T|∑t∈T,m∈M−log(exp⁡y^m,t∑j∈Vexp⁡y^m,j)\displaystyle\mathcal{L}=\frac{1}{|T|}\sum_{t\in T,m\in M}-\log(\frac{\exp\hat{y}_{m,t}}{\sum_{j\in V}\exp\hat{y}_{m,j}})
+
+where TT is the set of ground-truth ids for masked items in each batch, MM is the set of masked positions corresponding to TT, and VV is the item set. The time complexity is analyzed in supplementary material.
+
+4. Experiments
+
+Table 1. Statistical information of experimented datasets.
+
+Stats.
+Taobao
+Retailrocket
+IJCAI
+
+# Users
+147, 892
+11, 649
+200, 000
+
+# Items
+99, 038
+36, 223
+808, 354
+
+# Interactions
+7, 092, 362
+87, 822
+13, 072, 940
+
+# Average Length
+48.23
+14.55
+78.58
+
+# Density
+5×10−65\times 10^{-6}
+1×10−61\times 10^{-6}
+7×10−77\times 10^{-7}
+
+# Behavior Types
+[buy, cart, fav, pv]
+[buy, cart, pv]
+[buy, cart, fav, pv]
+
+This section aims to answer the following research questions:
+
+•
+
+RQ1: How does our MBHT perform as compared to various state-of-the-art recommendation methods with different settings?
+
+•
+
+RQ2: How effective are the key modules (e.g., multi-scale attention encoder, multi-behavior hypergraph learning) in MBHT?
+
+•
+
+RQ3: How does MBHT perform to alleviate the data scarcity issue of item sequences when competing with baselines?
+
+•
+
+RQ4: How do different hyperparameters affect the model performance? (Evaluation results are presented in Appendix A.4).
+
+Table 2. The performance of our method and the best performed baseline are presented with bold and underlined, respectively. Superscript ∗\ast indicates the significant improvement between our MBHT and the best performed baseline with pp value <0.01<0.01.
+
+Model
+Taobao
+Retailrocket
+IJCAI
+
+HR@5
+NDCG@5
+HR@10
+NDCG@10
+MRR
+HR@5
+NDCG@5
+HR@10
+NDCG@10
+MRR
+HR@5
+NDCG@5
+HR@10
+NDCG@10
+MRR
+
+General Sequential Recommendation Methods
+
+Caser
+0.082
+0.058
+0.123
+0.071
+0.070
+0.632
+0.539
+0.754
+0.578
+0.535
+0.134
+0.092
+0.167
+0.104
+0.109
+
+HPMN
+0.162
+0.130
+0.219
+0.141
+0.139
+0.664
+0.633
+0.711
+0.587
+0.602
+0.144
+0.085
+0.197
+0.124
+0.123
+
+GRU4Rec
+0.147
+0.105
+0.209
+0.125
+0.118
+0.640
+0.575
+0.708
+0.597
+0.572
+0.141
+0.100
+0.200
+0.119
+0.113
+
+SASRec
+0.150
+0.110
+0.206
+0.128
+0.123
+0.669
+0.644
+0.689
+0.650
+0.645
+0.146
+0.110
+0.191
+0.124
+0.122
+
+BERT4Rec
+0.198
+0.153
+0.254
+0.171
+0.163
+0.808
+0.670
+0.881
+0.694
+0.639
+0.297
+0.220
+0.402
+0.253
+0.227
+
+Graph-based Sequential Recommender Systems
+
+SR-GNN
+0.102
+0.071
+0.153
+0.087
+0.086
+0.848
+0.780
+0.891
+0.793
+0.767
+0.072
+0.048
+0.118
+0.062
+0.064
+
+GCSAN
+0.217
+0.160
+0.305
+0.188
+0.173
+0.872
+0.846
+0.890
+0.851
+0.842
+0.119
+0.086
+0.175
+0.104
+0.101
+
+HyperRec
+0.145
+0.130
+0.224
+0.133
+0.129
+0.860
+0.705
+0.833
+0.820
+0.816
+0.140
+0.109
+0.236
+0.144
+0.132
+
+SURGE
+0.122
+0.078
+0.193
+0.100
+0.093
+0.878
+0.879
+0.906
+0.887
+0.870
+0.226
+0.159
+0.322
+0.190
+0.171
+
+Multi-Behavior Recommendation Models
+
+BERT4Rec-MB
+0.211
+0.169
+0.263
+0.186
+0.178
+0.875
+0.858
+0.889
+0.863
+0.857
+0.257
+0.189
+0.342
+0.216
+0.197
+
+MB-GCN
+0.185
+0.103
+0.309
+0.143
+0.149
+0.844
+0.735
+0.878
+0.752
+0.739
+0.218
+0.145
+0.335
+0.182
+0.177
+
+NMTR
+0.125
+0.082
+0.174
+0.097
+0.103
+0.827
+0.697
+0.858
+0.724
+0.741
+0.109
+0.076
+0.184
+0.099
+0.106
+
+MB-GMN
+0.196
+0.115
+0.319
+0.154
+0.151
+0.853
+0.762
+0.901
+0.830
+0.822
+0.235
+0.161
+0.337
+0.193
+0.176
+
+MBHT
+0.323∗
+0.257∗
+0.405∗
+0.283∗
+0.262∗
+0.931∗
+0.933∗
+0.956∗
+0.950∗
+0.929∗
+0.346∗
+0.268∗
+0.437∗
+0.297∗
+0.272∗
+
+# Improve
+48.84%
+52.07%
+26.95%
+50.53%
+47.19%
+6.04%
+6.14%
+5.52%
+7.10%
+6.78%
+16.50%
+21.82%
+8.71%
+17.39%
+19.82%
+
+4.1. Experimental Settings
+
+4.1.1. Datasets.
+
+We utilize three recommendation datasets collected from real-world scenarios. i) Taobao. This dataset is collected from Taobao which is one of the largest e-commerce platforms in China. Four types of user-item interactions are included in this dataset, i.e., target behaviors-purchase; auxiliary behaviors-add-to-favorites, add-to-cart, page view. ii) Retailrocket. This dataset is generated from an online shopping site-Retailrocket over 4 months, to record three types of user behaviors, i.e., target behaviors-purchase; auxiliary behaviors-page view & add-to-cart. iii) IJCAI. This dataset is released by IJCAI Contest 2015 for the task of repeat buyers prediction. It shares the same types of interaction behaviors with the Taobao dataset. The detailed statistical information of these experimented datasets are summarized in Table 1. Note that different datasets vary by average sequence length and user-item interaction density, which provides diverse evaluation settings.
+
+4.1.2. Evaluation Protocols.
+
+In our experiments, closely following the settings in (Sun
+et al., 2019; Tang and Wang, 2018), we adopt the leave-one-out strategy for performance evaluation. For each user, we regard the temporally-ordered last purchase as the test samples, and the previous ones as validation samples. Additionally, we pair each positive sample with 100 negative instances based on item popularity (Sun
+et al., 2019). We utilize three evaluation metrics: Hit Ratio (HR@N), Normalized Discounted Cumulative Gain (NDCG@N) and Mean Reciprocal Rank (MRR) (Wang
+et al., 2020a; Yang
+et al., 2022; Wu
+et al., 2019). Note that larger HR, NDCG and MRR scores indicate better recommendation performance.
+
+4.1.3. Baselines.
+
+We compare our MBHT with a variety of recommendation baselines to validate the performance superiority.
+General Sequential Recommendation Methods.
+
+•
+
+GRU4Rec (Hidasi et al., 2016). It utilizes the gated recurrent unit as sequence encoder to learn dynamic preference with a ranking-based loss.
+
+•
+
+SASRec (Kang and McAuley, 2018). The self-attention mechanism is leveraged in this method to encode the item-wise sequential correlations.
+
+•
+
+Caser (Tang and Wang, 2018). This method integrates the convolutional neural layers from both vertical and horizontal views to encode time-evolving user preference of item sequence.
+
+•
+
+HPMN (Ren
+et al., 2019). It employs a hierarchically structured periodic memory network to model multi-scale transitional information of user sequential behaviors. The incremental updating mechanism is introduced to retain behaviour patterns over time.
+
+•
+
+BERT4Rec (Sun
+et al., 2019). It uses a bidirectional encoder for modeling sequential information with Transformer. The model is optimized with the Cloze objective, and has produced state-of-the-art performance among sequence learning-based baselines.
+
+Graph-based Sequential Recommender Systems.
+
+•
+
+SR-GNN (Wu
+et al., 2019). It generates graph structures based on item-item transitional relations in sequences, and conducts graph-based message passing to capture local and global user interests.
+
+•
+
+GCSAN (Xu
+et al., 2019). It empowers the self-attention mechanism with with a front-mounted GNN structure. The attentive aggregation is performed over the encoded graph embeddings.
+
+•
+
+HyperRec (Wang
+et al., 2020a). It designs sequential hypergraphs to capture evolving users’ interests and regards users as hyperedges to connect interacted items, so as to model dynamic user preferences.
+
+•
+
+SURGE (Chang et al., 2021). It adopts metric learning to build personalized graphs and uses hierarchical attention to capture multi-dimensional user interests in the graph.
+
+Multi-Behavior Recommendation Models.
+
+•
+
+BERT4Rec-MB (Sun
+et al., 2019). We enhance the BERT4Rec method to handle the dynamic multi-behavior context by injecting behavior type representations into the input embeddings for self-attention.
+
+•
+
+MB-GCN (Jin
+et al., 2020). This model is built upon the graph convolutional layer to refine user/item embeddings through the behavior-aware message passing on the user-item interaction graph.
+
+•
+
+NMTR (Gao
+et al., 2019). It defines the behavior-wise cascading relationships to model the dependency among different types of behaviors under a multi-task learning paradigm.
+
+•
+
+MB-GMN (Xia
+et al., 2021). It employs a graph meta network to capture personalized multi-behavior signals and model the diverse multi-behavior dependencies. It generates state-of-the-art performance among different multi-behavior recommendation methods.
+
+4.1.4. Hyperparameter Settings.
+
+In MBHT model, we search the number of hypergraph propagation layers from {1,2,3,4}. The number of multi-head channels is set as 2 for both self-attention and metric learning components. The value of kk for constructing item-wise semantic dependency hypergraph is tuned from [4,6,8,10,12,14][4,6,8,10,12,14]. Considering that datasets vary by average sequence length, the multi-scale setting parameters (C,p1,p2)(C,p_{1},p_{2}) are searched amongst the value range of ([20,4,20],[20,8,40],[40,4,20],[40,8,40]).
+
+4.2. Performance Evaluation (RQ1)
+
+We report the detailed performance comparison on different datasets in Table 2 and summarize the observations as followed:
+
+•
+
+The proposed MBHT consistently outperforms all types of baselines by a significant margin on different datasets. The performance improvements can be attributed from: i) Through the multi-scale behavior-aware Transformer, MBHT is able to capture the behavior-aware item transitional patterns from fine-grained to coarse-grained time granularities. ii) With the hypergraph neural network for multi-behavior dependency learning, we endow MBHT with the capability of capturing long-range item correlations across behavior types over time.
+
+•
+
+By jointly analyzing the results across different datasets, we can observe that our MBHT is robust to different recommendation scenarios with various data characteristics, such as average sequence length and user-item interaction density, reflecting various user behaviour patterns in many online platforms.
+
+•
+
+Graph-based sequential recommendation methods (e.g., SR-GNN, GCSAN, SURGE) perform worse than general sequential baselines (e.g., BERT4Rec, HPMN) on IJCAI dataset with longer item sequences. The possible reason is that passing message between items over the generated graph structures based on their directly transitional relations can hardly capture the long-term item dependencies. However, the performance superiority of GNN-based models can be observed on Retailrocket with shorter item sequences. In such cases, modeling of short-term item transitional regularities is sufficient for capturing item dependencies.
+
+•
+
+BERT4Rec-MB outperforms BERT4Rec in most evaluation cases. In addition, it can be found that multi-behavior recommendation models (e.g., MB-GCN, MB-GMN) achieve comparable performance to other baselines. These observations indicate the effectiveness of incorporating multi-behavior context into the learning process of user preference. With the effective modeling of dynamic multi-behaviour patterns from both short-term and long-term perspectives, our MBHT is more effective than those stationary multi-behavior recommendation approaches.
+
+Table 3. Ablation study with key modules.
+
+Model Variants
+Taobao
+Retailrocket
+IJCAI
+
+HR@5
+NDCG@5
+HR@5
+NDCG@5
+HR@5
+NDCG@5
+
+MBHT
+0.323
+0.257
+0.956
+0.950
+0.346
+0.268
+
+(-) MB-Hyper
+0.261
+0.206
+0.883
+0.861
+0.320
+0.249
+
+(-) ML-Hyper
+0.271
+0.212
+0.898
+0.874
+0.328
+0.256
+
+(-) Hypergraph
+0.246
+0.194
+0.813
+0.839
+0.301
+0.234
+
+(-) MS-Attention
+0.253
+0.200
+0.816
+0.832
+0.329
+0.256
+
+4.3. Ablation Study (RQ2)
+
+4.3.1. Effects of Key Components.
+
+We firstly investigate the effectiveness of different components of our MBHT from both Transformer and Hypergraph learning views. Specifically, we generate four variants and make comparison with our MBHT method:
+
+•
+
+(-) MB-Hyper. This variant does not include the hypergraph of item-wise multi-behavior dependency to capture the long-range cross-type behavior correlations.
+
+•
+
+(-) ML-Hyper. In this variant, we remove the hypergraph message passing over the hyperedges of item semantic dependence (encoded with the metric learning component).
+
+•
+
+(-) Hypergraph. This variant disables the entire hypergraph item-wise dependency learning, and only relies on the multi-scale Transformer to model the sequential behavior patterns.
+
+•
+
+(-) MS-Attention. For this variant, we replace our multi-scale attention layer with the original multi-head attentional operation.
+
+From the reported results in Table 3, we summarize the following observations to show the rationality of our model design. 1) With the incorporation of hypergraph-based dependency learning on either item-wise latent semantic ((-) MB-Hyper) or dynamic multi-behavior correlations ((-) ML-Hyper), MBHT can further boost the recommendation performance. 2) Comparing with the vanilla multi-head attention ((-) MS-Attention), the effectiveness of our multi-scale low-rank self-attention can be validated.
+
+(a) Taobao
+
+(b) IJCAI
+
+(c) Retailrocket
+
+Figure 3. Distributions of the learned attentive view-specific contributions. Green triangles and black line in the showed boxes denote the mean and median values, respectively.
+
+4.3.2. Contribution of Learning Views.
+
+We further investigate the contribution of sequential and hypergraph learning views, by presenting the distributions of our learned importance scores of hi\textbf{h}_{i} and xi\textbf{x}_{i} in Figure 3. In particular, hi\textbf{h}_{i} preserves multi-scale behavior dynamics of diverse user preference and xi\textbf{x}_{i} encodes the global multi-behavior dependencies. We can observe that hypergraph learning view contributes more to the effective modeling of dynamic multi-behavior patterns with longer item sequences (e.g., Taobao and IJCAI dataset). This further confirms the efficacy of our behavior-aware hypergraph learning component in capturing the long-range item dependencies in multi-relational sequential recommendation.
+
+(a) Taobao
+
+(b) IJCAI
+
+Figure 4. Performance w.r.t different sequence lengths.
+
+4.4. Model Benefit Study (RQ3)
+
+4.4.1. Performance w.r.t Sequence Length.
+
+To further study the robustness of our model, we evaluate MBHT on item sequences with different length. Specifically, we split users into five groups in terms of their item sequences and conduct the performance comparison on each group of users. From results presented in Figure 4, MBHT outperforms several representative baselines not only on the shorter item interaction sequences, but also on the longer item sequences. It indicates that our recommendation framework is enhanced by injecting the behavior-aware short-term and long-term dependencies (from locally to globally) into the sequence embeddings. Such data scarcity issue is hard to be alleviated purely from the general and GNN-based sequential recommender systems.
+
+(a) Taobao
+
+(b) IJCAI
+
+Figure 5. Training curves evaluated by testing Hit Rate.
+
+4.4.2. Model Convergence Study.
+
+We further investigate the convergence property of our MBHT and various sequential and graph-based temporal recommendation methods in Figure 5. Along the model training process, MBHT achieves faster convergence rate compared with most competitive methods. For example, MBHT obtains its best performance at epoch 2 and 8, while BERT4Rec and BERT4Rec-MB take 10 and 15 epochs to converge on Taobao and IJCAI datasets, respectively. This observation suggests that exploring the augmented multi-behavior information from both sequential and hypergraph views can provide better gradient to guide the model optimization in sequential recommendation.
+
+Figure 6. Case studies with cross-type behavior dependencies.
+
+4.5. Case Study
+
+In this section, we conduct further model analysis with case study to show the model interpretation for multi-behavior dependency modeling. In particular, we show user-specific cross-type behavior dependencies in Figure 6 (a)-(d). Each 4×44\times 4 dependency matrix is learned from our multi-scale Transformer. We compute the item-item correlations by considering their behavior-aware interactions in the specific sequence SiS_{i} of user uiu_{i}. Figure 6 (e)-(f) show the scale-specific multi-behavior dependencies with the scales of p1p_{1} and p2p_{2} in our multi-scale modeling of behavior-aware sequential patterns. In Figure 6 (g), we show the overall relevance scores among different types of behaviors in making final forecasting on target behaviors. Additionally, our hypergraph-based item dependencies (𝓜⋅𝓜𝖳\boldsymbol{\mathcal{M}}\cdot\boldsymbol{\mathcal{M}}^{\mkern-1.5mu\mathsf{T}}) are shown in Figure 6 (h), such as hypergraph-based i) behavior-aware item relevance; and ii) item-wise semantic dependence.
+
+5. Related Work
+
+Sequential Recommendation.
+Earlier studies solve the next-item recommendation using the Markov Chain-based approaches to model item-item transitions (Rendle
+et al., 2010; He and McAuley, 2016). In recent years, many efforts have been devoted to proposing neural network-enhanced sequential recommender systems to encode the complex dependencies among items from different perspectives. For example, recurrent neural network in GRU4Rec (Hidasi et al., 2016) and convolutional operations in Caser (Tang and Wang, 2018).
+Inspired by the strength of Transformer, SASRec (Kang and McAuley, 2018) and BERT4Rec (Sun
+et al., 2019) are built upon the self-attention mechanism for item-item relation modeling. Furthermore, recently emerged graph neural networks produce state-of-the-art performance by performing graph-based message passing among neighboring items, in order to capture sequential signals, e.g., SR-GNN (Wu
+et al., 2019), MTD (Huang et al., 2021), MA-GNN (Ma
+et al., 2020) and SURGE (Chang et al., 2021). However, most of those methods are specifically designed for singular type of interaction behaviors, and cannot handle diverse user-item relationships.
+
+Hypergraph Learning for Recommendation. Motivated by expressiveness of hypergraphs (Feng
+et al., 2019; Yi and Park, 2020), hypergraph neural networks are utilized in several recent recommender systems to model high-order relationships, such as multi-order item correlations in HyperRec (Wang
+et al., 2020a), global user dependencies in HCCF (Xia
+et al., 2022), high-order social relationships in MHCN (Yu
+et al., 2021), and item dependencies with multi-modal features in HyperCTR (He
+et al., 2021). Following this research line, this work integrates the hypergraph neural architecture with Transformer architecture to encode behavior-aware sequential patterns from local to global-level for comprehensive behavior modeling.
+
+Multi-Behavior Recommender Systems. There exist recently developed multi-behavior recommender systems for modeling user-item relation heterogeneity (Zhang
+et al., 2020; Gao
+et al., 2019; Jin
+et al., 2020; Yang
+et al., 2021; Wei
+et al., 2022). For example, NMTR (Gao
+et al., 2019) is a multi-task recommendation framework with the predefined behavior-wise cascading relationships. Motivated by the strength of GNNs, MBGCN (Jin
+et al., 2020), MBGMN (Xia
+et al., 2021), MGNN (Zhang
+et al., 2020) are developed based on the graph-structured message passing over the generated multi-relational user-item interaction graphs. Nevertheless, none of those approaches considers the time-evolving multi-behaviour user preference. To fill this gap, our MBHT model is able to capture both short-term and long-term multi-behavior dependencies with a hypergraph-enhanced transformer architecture.
+
+6. Conclusion
+
+In this paper, we present a new sequential recommendation framework MBHT which explicitly captures both short-term and long-term multi-behavior dependencies. MBHT designs a multi-scale Transformer to encode the behavior-aware sequential patterns at both fine-grained and coarse-grained levels. To capture the global cross-type behavior dependencies, we empower MBHT with a multi-behavior hypergraph learning component. Empirical results on several real-world datasets validate the strengths of our MBHT when competing with state-of-the-art recommendation methods.
+
+Acknowledgments
+
+This research is supported by the research grants from the Department of Computer Science & Musketeers Foundation Institute of Data Science at the University of Hong Kong.
+
+References
+
+Chang et al. (2021)
+
+Jianxin Chang, Chen Gao,
+Yu Zheng, Yiqun Hui,
+Yanan Niu, Yang Song, et al.
+2021.
+
+Sequential Recommendation with Graph Neural
+Networks. In SIGIR. 378–387.
+
+Feng
+et al. (2019)
+
+Yifan Feng, Haoxuan You,
+Zizhao Zhang, Rongrong Ji, and
+Yue Gao. 2019.
+
+Hypergraph neural networks. In
+AAAI, Vol. 33.
+3558–3565.
+
+Gao
+et al. (2019)
+
+Chen Gao, Xiangnan He,
+Dahua Gan, Xiangning Chen,
+et al. 2019.
+
+Neural multi-task recommendation from
+multi-behavior data. In ICDE. IEEE,
+1554–1557.
+
+He
+et al. (2021)
+
+Li He, Hongxu Chen,
+Dingxian Wang, Shoaib Jameel,
+Philip Yu, et al.
+2021.
+
+Click-Through Rate Prediction with Multi-Modal
+Hypergraphs. In CIKM. 690–699.
+
+He and McAuley (2016)
+
+Ruining He and Julian
+McAuley. 2016.
+
+Fusing similarity models with markov chains for
+sparse sequential recommendation. In ICDM. IEEE,
+191–200.
+
+He
+et al. (2020)
+
+Xiangnan He, Kuan Deng,
+Xiang Wang, et al.
+2020.
+
+Lightgcn: Simplifying and powering graph
+convolution network for recommendation. In
+SIGIR. 639–648.
+
+Hidasi et al. (2016)
+
+Balázs Hidasi,
+Alexandros Karatzoglou, Linas Baltrunas,
+and Domonkos Tikk. 2016.
+
+Session-based recommendations with recurrent neural
+networks. In ICLR.
+
+Huang et al. (2021)
+
+Chao Huang, Jiahui Chen,
+Lianghao Xia, Yong Xu,
+Peng Dai, Yanqing Chen,
+Liefeng Bo, Jiashu Zhao, and
+Jimmy Xiangji Huang. 2021.
+
+Graph-enhanced multi-task learning of multi-level
+transition dynamics for session-based recommendation. In
+AAAI.
+
+Huang et al. (2019)
+
+Chao Huang, Xian Wu,
+Xuchao Zhang, Chuxu Zhang,
+Jiashu Zhao, Dawei Yin, and
+Nitesh V Chawla. 2019.
+
+Online purchase prediction via multi-scale modeling
+of behavior dynamics. In KDD.
+2613–2622.
+
+Jiang
+et al. (2020)
+
+Hao Jiang et al.
+2020.
+
+What aspect do you like: Multi-scale time-aware
+user interest modeling for micro-video recommendation. In
+MM. 3487–3495.
+
+Jin
+et al. (2020)
+
+Bowen Jin, Chen Gao,
+Xiangnan He, Depeng Jin, et al.
+2020.
+
+Multi-behavior recommendation with graph
+convolutional networks. In SIGIR.
+659–668.
+
+Kang
+et al. (2021)
+
+Taegwan Kang, Hwanhee
+Lee, Byeongjin Choe, and Kyomin Jung.
+2021.
+
+Entangled bidirectional encoder to autoregressive
+decoder for sequential recommendation. In SIGIR.
+1657–1661.
+
+Kang and McAuley (2018)
+
+Wang-Cheng Kang and
+Julian McAuley. 2018.
+
+Self-attentive sequential recommendation. In
+ICDM. IEEE, 197–206.
+
+Kitaev
+et al. (2020)
+
+Nikita Kitaev et al.
+2020.
+
+Reformer: The efficient transformer. In
+ICLR.
+
+Liu
+et al. (2021)
+
+Ze Liu, Yutong Lin,
+Yue Cao, Han Hu, Yixuan
+Wei, et al. 2021.
+
+Swin transformer: Hierarchical vision transformer
+using shifted windows. In ICCV.
+10012–10022.
+
+Ma
+et al. (2020)
+
+Chen Ma, Liheng Ma,
+Yingxue Zhang, et al.
+2020.
+
+Memory augmented graph neural networks for
+sequential recommendation. In AAAI,
+Vol. 34. 5045–5052.
+
+Ren
+et al. (2019)
+
+Kan Ren, Jiarui Qin,
+et al. 2019.
+
+Lifelong sequential modeling with personalized
+memorization for user response prediction. In
+SIGIR. 565–574.
+
+Rendle
+et al. (2010)
+
+Steffen Rendle, Christoph
+Freudenthaler, et al. 2010.
+
+Factorizing personalized markov chains for
+next-basket recommendation. In WWW.
+811–820.
+
+Sun
+et al. (2019)
+
+Fei Sun, Jun Liu,
+et al. 2019.
+
+BERT4Rec: Sequential recommendation with
+bidirectional encoder representations from transformer. In
+CIKM. 1441–1450.
+
+Tang and Wang (2018)
+
+Jiaxi Tang and Ke
+Wang. 2018.
+
+Personalized top-n sequential recommendation via
+convolutional sequence embedding. In WSDM.
+565–573.
+
+Wang
+et al. (2020a)
+
+Jianling Wang, Kaize
+Ding, Liangjie Hong, Huan Liu, and
+James Caverlee. 2020a.
+
+Next-item recommendation with sequential
+hypergraphs. In SIGIR.
+1101–1110.
+
+Wang
+et al. (2020b)
+
+Sinong Wang, Belinda Z.
+Li, Madian Khabsa, Han Fang, and
+Hao Ma. 2020b.
+
+Linformer: Self-Attention with Linear Complexity.
+
+arXiv:2006.04768 [cs.LG]
+
+Wei
+et al. (2022)
+
+Wei Wei, Chao Huang,
+Lianghao Xia, Yong Xu,
+Jiashu Zhao, and Dawei Yin.
+2022.
+
+Contrastive Meta Learning with Behavior
+Multiplicity for Recommendation. In WSDM.
+1120–1128.
+
+Wu
+et al. (2018)
+
+Liang Wu, Diane Hu,
+Liangjie Hong, et al.
+2018.
+
+Turning clicks into purchases: Revenue optimization
+for product search in e-commerce. In SIGIR.
+365–374.
+
+Wu
+et al. (2019)
+
+Shu Wu, Yuyuan Tang,
+Yanqiao Zhu, et al.
+2019.
+
+Session-based recommendation with graph neural
+networks. In AAAI, Vol. 33.
+346–353.
+
+Xia
+et al. (2022)
+
+Lianghao Xia, Chao Huang,
+Yong Xu, Jiashu Zhao,
+Dawei Yin, and Jimmy Xiangji Huang.
+2022.
+
+Hypergraph Contrastive Collaborative Filtering.
+
+arXiv preprint arXiv:2204.12200.
+
+Xia
+et al. (2021)
+
+Lianghao Xia, Yong Xu,
+Chao Huang, Peng Dai, and
+Liefeng Bo. 2021.
+
+Graph meta network for multi-behavior
+recommendation. In SIGIR.
+757–766.
+
+Xu
+et al. (2019)
+
+Chengfeng Xu, Pengpeng
+Zhao, et al. 2019.
+
+Graph Contextualized Self-Attention Network for
+Session-based Recommendation.. In IJCAI,
+Vol. 19. 3940–3946.
+
+Yang
+et al. (2021)
+
+Haoran Yang, Hongxu Chen,
+Lin Li, S Yu Philip, and
+Guandong Xu. 2021.
+
+Hyper Meta-Path Contrastive Learning for
+Multi-Behavior Recommendation. In ICDM. IEEE,
+787–796.
+
+Yang
+et al. (2022)
+
+Yuhao Yang, Chao Huang,
+Lianghao Xia, and Chenliang Li.
+2022.
+
+Knowledge Graph Contrastive Learning for
+Recommendation.
+
+arXiv preprint arXiv:2205.00976
+(2022).
+
+Yao and Wan (2020)
+
+Shaowei Yao and Xiaojun
+Wan. 2020.
+
+Multimodal transformer for multimodal machine
+translation. In ACL.
+4346–4350.
+
+Yi and Park (2020)
+
+Jaehyuk Yi and Jinkyoo
+Park. 2020.
+
+Hypergraph convolutional recurrent neural network.
+In KDD. 3366–3376.
+
+Yu
+et al. (2021)
+
+Junliang Yu, Hongzhi Yin,
+et al. 2021.
+
+Self-Supervised Multi-Channel Hypergraph
+Convolutional Network for Social Recommendation. In
+WWW. 413–424.
+
+Zhang
+et al. (2019)
+
+Shuai Zhang, Lina Yao,
+Aixin Sun, and Yi Tay.
+2019.
+
+Deep learning based recommender system: A survey
+and new perspectives.
+
+ACM Computing Surveys (CSUR)
+52, 1 (2019),
+1–38.
+
+Zhang
+et al. (2020)
+
+Weifeng Zhang, Jingwen
+Mao, Yi Cao, and Congfu Xu.
+2020.
+
+Multiplex graph neural networks for multi-behavior
+recommendation. In CIKM.
+2313–2316.
+
+Zhou
+et al. (2019)
+
+Xiangmin Zhou, Dong Qin,
+Xiaolu Lu, Lei Chen, and
+Yanchun Zhang. 2019.
+
+Online social media recommendation over streams.
+In ICDE. IEEE, 938–949.
+
+Appendix A Supplementary Material
+
+In our supplemental material, we first summarize the learning process of our MBHT framework in Algorithm 1 and conduct the model time complexity analysis. Then, we present our strategy to simplify the implementation of our hypergraph-based embedding propagation, so as to improve the model efficiency.
+
+A.1. The Learning Process of MBHT
+
+Algorithm 1 The forward propagation flow of MBHT
+
+Input : The behavior-aware interaction sequence SiS_{i} for user uiu_{i} with mask tokens at positions MM and with true labels TT. Si=[(vi,1,bi,1),…,[mask],…,(vi,J,bi,J)]S_{i}=[(v_{i,1},b_{i,1}),...,\textsf{[mask]},...,(v_{i,J},b_{i,J})].
+
+Output : The estimated probability for user uiu_{i} interacting with ground-truth items TT at the time step positions MM.
+
+              1
+            Multi-Scale Transformer View;
+
+              2
+            Inject positional and behavior signals into Transformer inputs: H←[h1,…,hJ+1]\textbf{H}\leftarrow[\textbf{h}_{1},...,\textbf{h}_{J+1}], hj←ej⊕pj⊕bj\textbf{h}_{j}\leftarrow\textbf{e}_{j}\oplus\textbf{p}_{j}\oplus\textbf{b}_{j};
+
+              3
+            Perform multi-scale attention under multi-scale settings C,p1C,p_{1} and p2p_{2} according to Equation 2-4: H~←f⁡(H^∥Hp1∥Hp2)\widetilde{\textbf{H}}\leftarrow f(\widehat{\textbf{H}}\mathbin{\|}{\textbf{H}}^{p_{1}}\mathbin{\|}{\textbf{H}}^{p_{2}});
+
+              4
+            Perform point-wise feed-forward to inject non-linearity: H~(l)←[FFN​(h~1(l))𝖳,⋯,FFN​(h~t(l))𝖳]\widetilde{\textbf{H}}^{(l)}\leftarrow[\textsf{FFN}(\tilde{\textbf{h}}_{1}^{(l)})^{\mkern-1.5mu\mathsf{T}},\cdots,\textsf{FFN}(\tilde{\textbf{h}}_{t}^{(l)})^{\mkern-1.5mu\mathsf{T}}];
+
+              5
+            Hypergraph View;
+
+              6
+            Model item-wise semantic dependencies with multi-channel metric learning: βj,j′←1N​∑n=1Nβ^j,j′n\beta_{j,j^{\prime}}\leftarrow\frac{1}{N}\sum_{n=1}^{N}\hat{\beta}^{n}_{j,j^{\prime}};
+
+              7
+            Construct customized hyperedges according to Equation 10-11: ℳ←ℳp∥ℳq\mathcal{M}\leftarrow\mathcal{M}^{p}\mathbin{\|}\mathcal{M}^{q};
+
+              8
+            Apply hypergraph convolutional function to aggregate information from the graph: X(l+1)←Dv−1⋅𝓜⋅De−1⋅𝓜𝖳⋅X(l)\textbf{X}^{(l+1)}\leftarrow\textbf{D}_{v}^{-1}\cdot\boldsymbol{\mathcal{M}}\cdot\textbf{D}_{e}^{-1}\cdot\boldsymbol{\mathcal{M}}^{\mkern-1.5mu\mathsf{T}}\cdot\textbf{X}^{(l)};
+
+              9
+            Fusion and Prediction;
+
+              10
+            foreach m∈M,t∈Tm\in M,t\in T do
+
+   
+              11
+            Generate hypergraph-view embedding for mask position mm using sliding-window contextual pooling: x~m←mean​(x~m−q1,…,x~m+q2)\tilde{\textbf{x}}_{m}\leftarrow\textsf{mean}(\tilde{\textbf{x}}_{m-q_{1}},...,\tilde{\textbf{x}}_{m+q_{2}});
+
+   
+              12
+            Apply attentive cross-view aggregation to fuse the information according to Equation 13: gm←α1⋅h~m⊕α2⋅x~m\textbf{g}_{m}\leftarrow\alpha_{1}\cdot\tilde{\textbf{h}}_{m}\oplus\alpha_{2}\cdot\tilde{\textbf{x}}_{m};
+
+   
+              13
+            Calculate the probability of item at mm being vtv_{t}: y^m,t←gm𝖳​vt\hat{y}_{m,t}\leftarrow\textbf{g}_{m}^{\mkern-1.5mu\mathsf{T}}\textbf{v}_{t};
+
+              14
+            end foreach
+
+              15
+            return [y^m1,t1,y^m2,t2,…][\hat{y}_{m_{1},t_{1}},\hat{y}_{m_{2},t_{2}},...];
+
+A.2. Time Complexity Analysis
+
+This section conducts the time complexity analysis of our MBHT framework as follows. (1) For the multi-scale Transformer view, with our low-rank self-attention layer, we significantly reduce the computational cost from O⁡(L×d×((JC)2+(Jp1)2+(Jp2)2))O(L\times d\times((\frac{J}{C})^{2}+(\frac{J}{p_{1}})^{2}+(\frac{J}{p_{2}})^{2})) to approximate the linear time complexity O⁡(3​L​d​J)O(3LdJ), given that CC (low-rank scale), p1,p2p_{1},p_{2} (resolution scales) ≪J\ll J (Wang
+et al., 2020b). JJ denotes the length of item sequence. (2) For the hypergraph learning view, the semantic metric learning takes O⁡(J2​d)O(J^{2}d) complexity, and the hypergraph convolutional function takes O⁡(L​J​d2)O(LJd^{2}).
+Based on the above discussion, the overall time complexity of our MBHT is O⁡(3​L​J​d+L​J​d2+J2​d)O(3LJd+LJd^{2}+J^{2}d), which is comparable to state-of-the-art baselines.
+
+A.3. Simplifying Hypergraph Message Passing
+
+With the consideration of high computational cost during the message passing in our hypergraph learning framework, we propose to simplify the propagation scheme with the learnable embedding projection. Formally, we rewrite the two-stage (node-hyperedge-node) message propagation process 𝓜⋅𝓜𝖳\boldsymbol{\mathcal{M}}\cdot\boldsymbol{\mathcal{M}}^{\mkern-1.5mu\mathsf{T}} as follows:
+
+(15)
+
+(𝓜⋅𝓜𝖳)i​j=∑k=1n𝓜i​k​𝓜k​j𝖳=𝓜(i)​𝓜𝖳(j)=𝓜(i)​𝓜(j)\displaystyle(\boldsymbol{\mathcal{M}}\cdot\boldsymbol{\mathcal{M}}^{\mkern-1.5mu\mathsf{T}})_{ij}=\sum_{k=1}^{n}\boldsymbol{\mathcal{M}}_{ik}\boldsymbol{\mathcal{M}}^{\mkern-1.5mu\mathsf{T}}_{kj}=\boldsymbol{\mathcal{M}}_{(i)}\boldsymbol{\mathcal{M}}^{{{\mkern-1.5mu\mathsf{T}}}^{(j)}}=\boldsymbol{\mathcal{M}}_{(i)}\boldsymbol{\mathcal{M}}_{(j)}
+
+where 𝓜(i)\boldsymbol{\mathcal{M}}_{(i)} and 𝓜(𝒋)\boldsymbol{\mathcal{M}_{(j)}} denotes the ii-th row and jj-th column vector, respectively. Based on our item-wise semantic dependence and multi-behavior correlations, our hypergraph-guided information propagation can be presented as follows:
+
+(16)
+
+𝓜(i)​𝓜(j)=∑k=1|ℰq|𝓜i,k​𝓜j,k+∑m=1|ℰp|𝓜i,m​𝓜j,m\displaystyle\boldsymbol{\mathcal{M}}_{(i)}\boldsymbol{\mathcal{M}}_{(j)}=\sum_{k=1}^{|\mathcal{E}^{q}|}\boldsymbol{\mathcal{M}}_{i,k}\boldsymbol{\mathcal{M}}_{j,k}+\sum_{m=1}^{|\mathcal{E}^{p}|}\boldsymbol{\mathcal{M}}_{i,m}\boldsymbol{\mathcal{M}}_{j,m}
+
+where 𝓜i,k\boldsymbol{\mathcal{M}}_{i,k} and 𝓜i,m\boldsymbol{\mathcal{M}}_{i,m} denote the value of hypergraph connection matrix with item-wise semantic dependency and multi-behavior correlations of item viv_{i}, respectively. Here, we first simplify the multiplication operations with the multi-behavior dependency hyperedges. Specifically, the same item (vi=vjv_{i}=v_{j}) interacted with different behavior types over time will be connected to the same hyperedge ϵq\epsilon^{q}, i.e., 𝓜i,ϵq=𝓜j,ϵq=1\boldsymbol{\mathcal{M}}_{i,\epsilon^{q}}=\boldsymbol{\mathcal{M}}_{j,\epsilon^{q}}=1. Since each item can only be connected to one hyperedge, for ϵ′≠ϵq\epsilon^{\prime}\neq\epsilon^{q}, 𝓜i,ϵ′=𝓜j,ϵq=0\boldsymbol{\mathcal{M}}_{i,\epsilon^{\prime}}=\boldsymbol{\mathcal{M}}_{j,\epsilon^{q}}=0. This indicates that if vi≠vjv_{i}\neq v_{j}, there exists no multi-behavior dependency hyperedge ϵ′\epsilon^{\prime} such that 𝓜i,ϵ′​𝓜j,ϵ′=1\boldsymbol{\mathcal{M}}_{i,\epsilon^{\prime}}\boldsymbol{\mathcal{M}}_{j,\epsilon^{\prime}}=1, since different items cannot be connected to the same hyperedge. Hence, we can isolate the influence of the multi-behavior dependency hyperedges as follows:
+
+(17)
+
+∑ϵ′=1|ℰq|𝓜i,ϵ′​𝓜j,ϵ′={1if​vi=vj0otherwise\displaystyle\sum_{\epsilon^{\prime}=1}^{|\mathcal{E}^{q}|}\boldsymbol{\mathcal{M}}_{i,\epsilon^{\prime}}\boldsymbol{\mathcal{M}}_{j,\epsilon^{\prime}}=\begin{cases}1&\text{if}~~v_{i}=v_{j}\\
+0&\text{otherwise}\end{cases}
+
+We further investigate the item-wise semantic dependency hyperedges in Equation 16 for simplifying hypergraph convolutional operations. Note that, 𝓜i,m\boldsymbol{\mathcal{M}}_{i,m} denotes the cosine similarity between item viv_{i} and vmv_{m} that belong to the hyperedge mm. Generally, the computation ∑m=1|ℰp|𝓜i​m​𝓜j​m\sum_{m=1}^{|\mathcal{E}^{p}|}\boldsymbol{\mathcal{M}}_{im}\boldsymbol{\mathcal{M}}_{jm} can be divided into three cases depending on the hyperedge mm: i) behavior-aware self-connection, if vi=vjv_{i}=v_{j} and mm is the hyperedge assigned to this item; ii) first-order similarity, if vi≠vjv_{i}\neq v_{j} and mm is assigned to viv_{i} or vjv_{j}; iii) second-order similarity, if vi≠vjv_{i}\neq v_{j} and mm is not assigned to either viv_{i} or vjv_{j}.
+
+We leverage the pre-calculated behavior-aware semantic similarities βi,j\beta_{i,j} between items for the first and second cases. Here βi,j\beta_{i,j} is truncated from the top-kk value to be consistent with the semantic dependency hyperedges. We denote the values of the third case by wi,jw_{i,j}. Therefore, based on the above discussions, for the first case, we have: ∑m=1|ℰp|𝓜i​m​𝓜j​m=βi,j+wi,j\sum_{m=1}^{|\mathcal{E}^{p}|}\boldsymbol{\mathcal{M}}_{im}\boldsymbol{\mathcal{M}}_{jm}=\beta_{i,j}+w_{i,j}; for the second case, we have ∑m=1|ℰp|𝓜i​m​𝓜j​m=βi,j+βj,i+wi,j\sum_{m=1}^{|\mathcal{E}^{p}|}\boldsymbol{\mathcal{M}}_{im}\boldsymbol{\mathcal{M}}_{jm}=\beta_{i,j}+\beta_{j,i}+w_{i,j}. Since the computation of the second-order complexity is time-consuming, and a number of such values are slight due to the top-kk truncation, we
+replace wi,jw_{i,j} by a hyperparameter w0w_{0} to obtain a close approximation 𝓜′\boldsymbol{\mathcal{M}}^{\prime} for 𝓜​𝓜𝖳\boldsymbol{\mathcal{M}}\boldsymbol{\mathcal{M}}^{\mkern-1.5mu\mathsf{T}}. Formally, 𝓜′∈ℝJ×J\boldsymbol{\mathcal{M}}^{\prime}\in\mathbb{R}^{J\times J} is generated as follows:
+
+(18)
+
+𝓜′=C⊕A⊕W\displaystyle\boldsymbol{\mathcal{M}}^{\prime}=C\oplus A\oplus W
+
+where Ci,j=1C_{i,j}=1 if vi=vjv_{i}=v_{j}, otherwise Ci,j=0C_{i,j}=0, and Ai,j=βi,jA_{i,j}=\beta_{i,j} if vi=vjv_{i}=v_{j}, otherwise Ai,j=βi,j+βj,iA_{i,j}=\beta_{i,j}+\beta_{j,i}. Wi,j=w0W_{i,j}=w_{0}. In our experiments, w0w_{0} is searched among [0.05,0.1,0.15,0.2][0.05,0.1,0.15,0.2]. Finally, we express the light version of hypergraph convolution function below:
+
+(19)
+
+X(l+1)=D−1⋅𝓜′⋅X(l)\displaystyle\textbf{X}^{(l+1)}=\textbf{D}^{-1}\cdot\boldsymbol{\mathcal{M}}^{\prime}\cdot\textbf{X}^{(l)}
+
+Table 4. Comparison between two implementation of hypergraph message passing schemes, i.e., the original embedding propagation based on hypergraph connection matrices, and the simplified message passing schema. The recommendation accuracy is measured by Recall@5 and model computational cost is measured by the running time of each epoch.
+
+Taoabo
+Retailrocket
+IJCAI
+
+Recall@5
+Epoch Time
+Recall@5
+Epoch Time
+Recall@5
+Epoch Time
+
+Origin
+0.326
+86.43
+0.959
+4.58
+0.352
+133.28
+
+Simplified
+0.323
+38.05
+0.956
+2.11
+0.346
+65.2
+
+We conduct empirical experiments to further evaluate the model performance of our simplified hypergraph convolution mechanism. We report the evaluation results in Table 4. The model training is performed on a single GTX3090 GPU for running time evaluation. We can observe that our simplified hypergraph-based message passing scheme only lead to slightly performance degradation and improve the model efficiency with lower computational cost. The potential reasons are: i) a large number of second-order similarity are slight, since scores are truncated from top-kk and ii) the convolution process inherently takes into account high-order connectivity. At the same time, simplifying the convolutional function brings a lot enhancement on inference speed, since it eliminates the original O⁡((|ℰp|+|ℰq|)×J2)O((|\mathcal{E}^{p}|+|\mathcal{E}^{q}|)\times J^{2}) calculations and 𝓜′\boldsymbol{\mathcal{M}}^{\prime} can be easily built by leveraging pre-calculated values and data pre-processing.
+
+(a) Sensitivity to attention scales
+
+(b) Sensitivity to sim-group length
+
+Figure 7. Hyperparameter study of MBHT framework.
+
+A.4. Hyperparameter Study (RQ4)
+
+We conduct experiments to analyze the influence of key hyperparameters in our MBHT framework and report results in Figure 7.
+
+Impact of Multi-Scale Settings. We search multi-scale setting parameters (C,p1,p2)(C,p_{1},p_{2}) among the range {[20,4,20],[20,8,40],[40,4,20]\{[20,4,20],[20,8,40],[40,4,20] [40,8,40]}[40,8,40]\}. We present the observations as followed:
+
+•
+
+The best performance on Retailrocket and Taobao datasets can be achieved with (p1,p2)=(4,20)(p_{1},p_{2})=(4,20) and (p1,p2)=(8,40)(p_{1},p_{2})=(8,40) given the difference of average sequence length.
+
+•
+
+For the low-rank projection scale parameter CC, we can notice that projecting original self-attentive sequence embedding space into J20\frac{J}{20} channels can bring the best performance on IJCAI and Retailrocket datasets. For Taobao dataset, we can observe that J40\frac{J}{40} performs better than J20\frac{J}{20}, which indicates that dense user-item interaction data may need less low-rank projection channels for better sequential pattern encoding.
+
+Impact of Item-wise Semantic Dependency Set. Our hypergraph item dependency encoder investigates the latent semantic correlations among different items. We search the top-kk semantic dependent items from {4,6,8,10,12,14} for global message passing through the item-wise semantic hyperedges. Observations are:
+
+•
+
+The best settings of kk is proportionally to the average sequence length of different datasets. It indicates that larger hypergraph propagation scope is better for modeling longer item sequences.
+
+•
+
+Increasing the number of connected items through hyperedges may firstly boost the performance at the early stage, and then lead to performance degradation by involving noise during the hypergraph-based embedding propagation.
+
+    Experimental support, please
+    view the build logs
+    for errors. Generated by
+
+        L
+        A
+        T
+        E
+
+      xml
+
+    .
+
+Instructions for reporting errors
+
+We are continuing to improve HTML versions of papers, and your feedback helps enhance accessibility and mobile
+      support. To report errors in the HTML that will help us improve conversion and rendering, choose any of the
+      methods listed below:
+
+Click the "Report Issue" (
+
+          ) button, located in the page header.
+
+Tip: You can select the relevant text first, to include it in your report.
+
+Our team has already identified the following issues. We appreciate your time reviewing and reporting rendering errors we
+      may not have found yet. Your efforts will help us improve the HTML versions for all readers, because disability
+      should not be a barrier to accessing research. Thank you for your continued support in championing open access for
+      all.
+
+Have a free development cycle? Help support accessibility at arXiv! Our collaborators at LaTeXML maintain a list of packages that need conversion, and welcome developer contributions.
+
+        We gratefully acknowledge support from
+        our major funders,
+        member institutions, ,
+        and all contributors.
+
+        About
+        ·
+        Help
+        ·
+        Contact
+        ·
+        Subscribe
+        ·
+        Copyright
+        ·
+        Privacy
+        ·
+        Accessibility
+        ·
+        Operational Status (opens in new tab)
+
+Major funding support from

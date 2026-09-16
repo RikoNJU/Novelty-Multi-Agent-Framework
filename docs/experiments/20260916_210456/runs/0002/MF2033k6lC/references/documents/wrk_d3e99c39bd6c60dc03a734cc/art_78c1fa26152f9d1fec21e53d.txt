@@ -1,0 +1,2254 @@
+A Null Model for AssessingMapper-Based Subtype Claims
+
+      Report GitHub Issue
+      ×
+
+      Title:
+
+Content selection saved. Describe the issue below:
+
+      Description:
+
+      Submit without GitHub
+      Submit in GitHub
+
+    arXiv is now an independent nonprofit!
+    Learn more
+    ×
+
+      Back to arXiv
+
+    Why HTML?
+
+      Report Issue
+
+      Back to Abstract
+
+      Download PDF
+
+Abstract
+
+Funding
+
+1 Introduction
+
+2 Background
+
+3 A structured null model for Mapper
+
+3.1 A structured null preserving covariance geometry
+
+3.2 Test statistic: the dissociation metric
+
+3.3 Theoretical properties of the dissociation metric
+
+3.4 Community detection
+
+3.5 Monte Carlo testing procedure
+
+4 Simulation study
+
+4.1 Calibration under Gaussian nulls and sensitivity to misspecification
+
+4.2 Behavior under Gaussian mixture alternatives
+
+5 Empirical case studies
+
+5.1 Breast cancer gene expression
+
+5.2 U.S. Congressional voting
+
+5.3 NBA player performance
+
+5.4 Lower-grade glioma gene expression
+
+6 Discussion and conclusions
+
+A Null-model audit of published Mapper applications
+
+B Replication methodology
+
+B.1 Ayasdi-to-open-source Mapper translation
+
+B.2 Detailed replication methods
+
+C Simulation study details
+
+C.1 Data-generating process specifications
+
+D Robustness and parameter sensitivity
+
+D.1 Feature-split robustness
+
+D.2 Parameter sensitivity
+
+E Detailed empirical results
+
+E.1 DmaxD_{\max} analysis
+
+E.2 Null modularity distributions
+
+F Scope of replication
+
+G Statistical validation literature
+
+H Ridge regularization details
+
+I Proofs of theoretical results
+
+I.1 Proof of Theorem 3.1 (Covariance-driven dissociation)
+
+I.2 Genericity of the loading condition
+
+I.3 Proof of Theorem 3.2 (Label-permutation null)
+
+References
+
+    License: arXiv.org perpetual non-exclusive license
+
+arXiv:2604.17395v1 [stat.ME] 19 Apr 2026
+
+A Null Model for Assessing
+
+Mapper-Based Subtype ClaimsThanks: Submitted to the editors August 24, 2026.
+
+Chad M. Topaz
+††thanks: Williams College, Williamstown, MA, and University of Colorado Boulder, Boulder, CO
+().
+Email: cmt6@williams.edu
+
+Abstract
+
+The Mapper algorithm from topological data analysis constructs a graph
+summarizing the shape of a high-dimensional dataset, and groups of data
+points identified within this graph are widely interpreted as evidence
+of distinct subtypes. However, the covariance structure of the data
+alone can make such groups appear differentiated, even when no subtypes
+are present. Existing validation approaches do not account for this effect and thus cannot distinguish covariance
+artifacts from genuine subtypes. We propose a Gaussian null model that generates reference data matching
+the sample covariance matrix. We pair it with a test statistic that measures mean-level
+differentiation between communities. In an idealized setting, we prove that covariance geometry alone causes
+Mapper communities to differ in their average feature profiles, and we
+show that a simpler label-permutation baseline cannot detect this effect. Simulations confirm
+well-controlled Type I error under Gaussian data. We apply the
+framework to four published Mapper analyses spanning breast cancer gene
+expression, Congressional voting, NBA player performance, and lower-grade
+glioma genomics. In every case, once outlier singleton communities are accounted for,
+the observed differentiation does not exceed what the
+null produces at the α=0.05\alpha=0.05 level. This result does not rule out subtypes in these datasets, but it does indicate that the observed
+structure is consistent with what covariance geometry alone can produce. Stronger evidence would be needed to support a subtype claim.
+
+keywords
+topological data analysis, Mapper algorithm, null model, cluster validation, covariance geometry, subtype validation
+
+Funding.This work received no external funding.
+
+††runningheads: A Null Model for Mapper Subtype Claims / C. M. Topaz
+
+MSC
+62R40, 62H30, 62G10
+
+1 Introduction
+
+The Mapper algorithm [30] from topological data analysis
+(TDA) constructs a graph that summarizes the shape of a
+high-dimensional dataset. The algorithm projects the data onto a
+low-dimensional function, divides the range of that function into
+overlapping intervals, clusters the data points within each interval,
+and connects clusters that share points. The resulting graph can reveal
+branching, loops, and densely connected groups of nodes called
+communities, and these communities are routinely interpreted as evidence
+of distinct subgroups or subtypes. Since its introduction, Mapper has been applied to breast cancer
+genomics [24, 23], diabetes stratification
+[20, 37], cancer subtyping [26],
+neuroimaging [28, 16, 18], single-cell
+RNA-seq [27], Congressional voting [22], NBA player
+performance [23], and protein folding [38], among
+other domains.
+
+When Mapper produces a graph with nontrivial structure, a natural
+statistical question arises: does that structure reflect genuine
+subgroups in the data, or is it consistent with what the algorithm would
+produce from data with no subgroup structure but the same
+covariance geometry? By covariance geometry we mean the pattern of variances, correlations, and
+principal-component directions that characterize the data cloud’s shape.
+This question is important because Mapper requires the user to choose a
+projection function, a partition granularity, and a clustering method,
+and its output is sensitive to all of these
+[13, 2, 36]. Yet in a survey of ten published Mapper studies
+(Table 4), we find that null-model testing of graph structure is rare.
+
+To our knowledge, the only published null model for Mapper graph
+features in cross-sectional data is that of [23], which
+compares Mapper output against data drawn from independent Gaussians
+with common variance. This null does not preserve correlation
+structure, so it cannot distinguish community differentiation arising
+from the covariance geometry of the data from differentiation arising
+from additional structure such as distinct subpopulations. The principle that null
+models must preserve covariance geometry is well established in cluster
+validation. The gap statistic of [33] generates
+reference data aligned with the principal components of the observed
+data, and SigClust [21] tests cluster significance against a
+single Gaussian that matches the observed covariance structure. This covariance-aware logic has not previously been applied to testing
+Mapper graph structure.
+
+We propose a covariance-preserving Gaussian null for
+Mapper-based subtype claims. The idea is to generate synthetic data
+that matches the observed covariance structure, apply the identical
+Mapper pipeline, and ask whether the real data’s community
+differentiation exceeds what this benchmark produces. The null model is
+a general framework: any scalar summary of the Mapper graph can serve as
+the test statistic. We pair it here with a community-dissociation
+metric that measures whether Mapper communities differ in their average
+feature profiles (Section 3.2), and we study this
+combination’s strengths and limitations in detail.
+
+We prove that covariance geometry alone
+drives positive population dissociation: even when data come from a
+single multivariate Gaussian with no subtypes, filter-based partitions
+produce communities with detectably different average feature values
+(Theorem 1). This identifies the mechanism by which a null that does not preserve
+covariance structure, such as the null of [23], can yield
+significance that reflects covariance geometry rather than subtype
+structure. One might ask
+whether a simpler baseline—permuting community labels—would
+suffice, but Theorem 2 shows it does not: the permuted dissociation vanishes as sample size grows, so
+the baseline always rejects, declaring spurious significance whether or not genuine subtypes exist. The
+structured null we propose asks
+whether the observed community differentiation exceeds what a
+covariance-matched Gaussian benchmark can generate.
+
+We apply our framework to four case studies: three approximate
+replications of analyses from [23] covering breast cancer gene
+expression, U.S. Congressional voting records, and NBA player
+performance, and a fourth using The Cancer Genome Atlas (TCGA) lower-grade glioma data from
+[25]. In every case, the community differentiation
+reported as evidence of subtypes does not exceed what the
+covariance-preserving null produces at the α=0.05\alpha=0.05 level. Two
+analyses initially appear significant, but diagnostic examination
+reveals that their rejections are driven by outlier communities rather
+than systematic differentiation. Non-rejection does not rule out the
+existence of subtypes in these datasets, but it does indicate that the
+observed community structure is consistent with what covariance geometry
+alone can produce, and that stronger evidence would be needed to support
+a subtype claim. Conversely, rejection would mean that the community
+differentiation exceeds what the data’s variances and correlations can
+explain under a Gaussian assumption, providing evidence for structure
+beyond covariance geometry.
+
+Section 2 reviews the Mapper algorithm and the
+statistical literature on cluster validation.
+Section 3 formalizes the covariance-preserving null, the
+test statistic, and the testing procedure, and establishes the
+theoretical properties of the test statistic.
+Section 4 presents a simulation study characterizing
+Type I error and sensitivity to non-Gaussian distributions.
+Section 5 applies the framework to four empirical case
+studies, and Section 6 discusses limitations,
+extensions, and implications for practice.
+
+2 Background
+
+Mapper has been widely adopted for
+subtype discovery across many domains. We describe the algorithm here
+and then explain why its outputs require null-model testing.
+
+Mapper constructs a graph summarizing the shape of a dataset. The key
+input is a filter function f:ℝp→ℝf\colon\mathbb{R}^{p}\to\mathbb{R}, which reduces
+each high-dimensional data point to a single number. The choice of
+filter determines which aspect of the data the algorithm organizes
+around. A principal component projection, for instance, organizes points
+by the direction of greatest variance. A density estimate organizes
+them by how crowded each point’s neighborhood is, and an eccentricity
+function organizes them by how central or peripheral each point
+is [30, 23]. Given a point cloud
+X={x1,…,xn}⊂ℝpX=\{x_{1},\ldots,x_{n}\}\subset\mathbb{R}^{p} and a filter ff, the
+algorithm proceeds in four steps:
+
+1.
+
+Cover the filter range. Choose a collection
+𝒰={U1,…,UN}\mathcal{U}=\{U_{1},\ldots,U_{N}\} of NN overlapping intervals
+that together cover the range of ff on the data. The intervals
+typically have equal length and a fixed percentage of overlap, called
+the gain.
+
+2.
+
+Pull back to the data. For each interval UiU_{i},
+collect the preimage f−1​(Ui)∩Xf^{-1}(U_{i})\cap X: the subset of data
+points whose filter values fall in UiU_{i}.
+
+3.
+
+Cluster within each preimage. Apply a clustering
+algorithm independently to f−1​(Ui)∩Xf^{-1}(U_{i})\cap X. Each resulting
+cluster becomes a vertex (node) in the Mapper graph.
+
+4.
+
+Connect shared clusters. Draw an edge between two
+vertices whenever their corresponding clusters share at least one data
+point. Shared points arise because adjacent intervals overlap, so a
+single data point can appear in multiple preimages.
+
+The output is an undirected graph whose connected components, branching
+patterns, and loops encode topological features of the data as seen
+through the filter ff. Mapper can be viewed as a discrete,
+finite-sample approximation of the Reeb graph of ff, a construction
+from algebraic topology that collapses each level set of ff to a
+single point and retains only the connectivity between
+them [30]. Although we have described a scalar filter f:ℝp→ℝf\colon\mathbb{R}^{p}\to\mathbb{R}, the
+filter can map to ℝd\mathbb{R}^{d} for any d≥1d\geq 1; the cover then becomes a
+product of one-dimensional covers and the construction is otherwise
+identical. In practice, one- and two-dimensional filters are most
+common because higher-dimensional covers require exponentially more bins
+and more data to populate them. Three of our four case studies
+(Section 5) use two-dimensional filters.
+
+The construction depends on several additional user-specified choices.
+The resolution NN and gain gg control the
+granularity and overlap of the cover, and the clustering algorithm
+and its hyperparameters govern how each preimage is partitioned. The
+original implementation of [30] uses single-linkage
+hierarchical clustering—a method that successively merges the two
+closest clusters—and cuts the resulting tree (dendrogram) at the first
+gap in a histogram of merge heights. Alternative implementations use
+DBSCAN, kk-means, or agglomerative clustering with various linkages
+[35, 32]. Because of these many choices, the
+Mapper graph can change substantially under small parameter perturbations
+[13, 10].
+
+Ref. [2] proves that
+for any dataset and any target graph, there exist Mapper parameters that
+produce it. Ref. [36] shows that fixed-count
+clustering introduces topological distortions. Adaptive variants [1, 31] reduce parameter
+sensitivity, and under idealized conditions Mapper converges to the Reeb
+graph [9, 6, 8, 14]. None of these developments, however, addresses whether the structure Mapper
+finds exceeds what the algorithm would produce from a single continuous
+population with the same covariance geometry.
+
+Despite this sensitivity, nearly all published Mapper applications lack
+rigorous null-model testing.
+Table 4 surveys thirteen analyses across ten
+published Mapper studies and finds that only one [23]
+includes any form of null-model comparison for graph structure.
+Instead, researchers typically validate Mapper communities by checking
+whether they correlate with external labels or domain knowledge. In
+biomedical applications, for instance, this might mean asking whether
+the patients in one Mapper community share a clinical outcome or genetic
+marker. This approach can confirm that communities are meaningful, but
+it does not address a more fundamental question: could the graph
+structure itself arise from a single population with the same covariance
+geometry?
+
+Other areas of statistics have developed principled answers to this
+kind of question. In cluster validation, the gap
+statistic [33] and SigClust [21] both
+compare observed cluster structure against null models that preserve the
+data’s distributional properties. Within TDA, several frameworks test
+whether topological features such as loops and connected components are
+statistically significant rather than
+artifacts of noise [5, 8, 10]; appendix G discusses these in more detail.
+Separately, modularity optimization—the community-detection method we
+use—has a known resolution limit that can prevent
+detection of small communities [15].
+
+No analogous covariance-aware framework exists for Mapper. The only
+published null test for Mapper graph features is the
+independence-based null of [23], which compares Mapper output
+to data drawn from independent Gaussians with equal variance. As we
+argue in Section 3, this null destroys all correlation
+structure and is therefore too easy to beat.
+
+3 A structured null model for Mapper
+
+When Mapper produces a graph with nontrivial structure—multiple
+connected components, branches, or densely connected
+communities—a basic inferential question arises. Does the observed
+community differentiation exceed what the algorithm would produce from
+data with no subgroup structure but the same covariance geometry?
+Answering this question requires a null model: a probability
+distribution representing a single population with a specified
+covariance structure. The testing procedure is to generate many synthetic
+datasets from the null, run the full Mapper pipeline on each one,
+compute a summary statistic from each graph, and then ask whether the
+real data’s statistic is unusually large relative to the null
+distribution. The choice of null model matters. A null that is too
+easy to beat will declare every dataset significant, while a null that
+is too difficult will obscure real discoveries.
+
+The only null model used in the Mapper
+literature [23] generates reference data by drawing points
+independently from 𝒩⁡(0,σ2​Ip)\mathcal{N}(0,\sigma^{2}I_{p}). Here IpI_{p} is the
+p×pp\times p identity matrix, so every coordinate has the same variance
+σ2\sigma^{2} and every pair of coordinates is uncorrelated. The parameter
+σ2\sigma^{2} is chosen to match the average marginal variance of the
+observed data. This null therefore preserves only the overall amount of
+spread in the data, not how that spread is distributed across
+directions; the resulting reference clouds are spherical.
+
+In real data, however, the covariance structure already shapes the
+geometry of the point cloud. If variation is larger in some directions
+than in others, or if variables move together, the cloud becomes
+elongated, flattened, or tilted, even when the sample comes from a
+single population with no subtypes. Mapper responds to exactly this
+geometry. Consider an elongated cloud: data points near one end of the
+elongation live in a different local neighborhood than points near the
+other end. When Mapper divides the filter range into overlapping
+regions and clusters points within each region, these local differences
+produce distinct clusters, which become separate nodes in the graph.
+The result is a graph with nontrivial connectivity—not because the
+data contain subgroups, but because the cloud’s shape varies from one
+end to the other. A spherical null cloud, by contrast, looks roughly
+the same in every direction, so its Mapper graphs, though they vary
+from sample to sample due to finite-sample randomness, are simpler and
+more uniform. Comparing observed data to this null therefore
+confounds covariance-driven graph complexity with any additional
+structure in the data. To ask whether community differentiation exceeds
+what covariance geometry alone can produce, the null must preserve that
+geometry.
+
+3.1 A structured null preserving covariance geometry
+
+We propose to test Mapper output against a null model that preserves
+the covariance structure of the data. Given an observed data matrix
+X∈ℝn×pX\in\mathbb{R}^{n\times p}, where nn is the number of observations and
+pp is the number of variables, define the sample covariance matrix
+
+Σ^=1n−1​(X−X¯)⊤​(X−X¯).\hat{\Sigma}=\frac{1}{n-1}(X-\bar{X})^{\top}(X-\bar{X}).
+
+(1)
+
+The structured null generates reference data from
+
+X∗∼𝒩p​(0,Σ^).X^{*}\sim\mathcal{N}_{p}(0,\hat{\Sigma}).
+
+(2)
+
+That is, each row of X∗X^{*} is drawn independently from a pp-variate
+normal distribution with mean zero and the same covariance matrix as
+the observed data. The null hypothesis is that the data were generated
+by a single multivariate normal distribution; the alternative is that
+the data contain structure beyond what a single Gaussian with the
+observed covariance can explain.
+
+This null matches the observed covariance structure of the data: its
+generating covariance has the same variances, correlations, and
+principal-component directions as the sample covariance Σ^\hat{\Sigma}.
+A reference dataset drawn from 𝒩p​(0,Σ^)\mathcal{N}_{p}(0,\hat{\Sigma}) shares
+the same population eigenvalue spectrum, the same blocks of correlated
+variables, and the same effective dimensionality as the real
+data—though any finite sample will exhibit sampling fluctuations
+around these properties. The null reproduces the component of Mapper structure
+generated by covariance geometry alone. Community differentiation
+that substantially exceeds the null therefore cannot be explained by a
+single Gaussian with the observed covariance alone, and points toward
+additional structure such as multiple modes, distinct subpopulations, or
+non-Gaussian clustering.
+
+Why choose the multivariate normal rather than some other distribution
+with the same covariance? Among all distributions with a given mean and
+covariance, the multivariate normal has the highest
+entropy [11], meaning it carries the least additional
+structure beyond these two moments. It is therefore the most
+conservative choice: any non-Gaussian distribution with the same
+covariance would introduce extra structure that could make the null
+harder to beat. This is the same logic underlying
+SigClust [21], applied here to Mapper graph structures. The
+null is straightforward to simulate via Cholesky or eigenvalue
+decomposition of Σ^\hat{\Sigma}.
+
+We can now state the testing procedure formally. Let T⁡(⋅)T(\cdot)
+denote a scalar test statistic computed from a Mapper graph; we define
+our choice of TT in Section 3.2. The conceptual null
+hypothesis is:
+
+H0\displaystyle H_{0}
+:X1,…,Xn​ are drawn from a p-variate\displaystyle:X_{1},\ldots,X_{n}\text{ are drawn from a $p$-variate}
+
+Gaussian with covariance matrix ​Σ.\displaystyle\quad\text{Gaussian with covariance matrix }\Sigma.
+
+(3)
+
+After preprocessing, we center the data, so we work with the equivalent
+mean-zero form 𝒩p​(0,Σ)\mathcal{N}_{p}(0,\Sigma). Because Σ\Sigma is
+unknown, we implement the null as a plug-in benchmark test: we
+replace Σ\Sigma by the sample covariance matrix Σ^\hat{\Sigma} computed
+from the preprocessed data, generate null replicates from
+𝒩p​(0,Σ^)\mathcal{N}_{p}(0,\hat{\Sigma}), and reapply the full analysis pipeline
+to each replicate. This means recomputing the distances, filter
+function, Mapper graph, community detection, and test statistic each
+time.
+
+The inferential question is whether the observed test statistic is
+unusually large relative to this covariance-matched Gaussian benchmark.
+We define the zz-score and Monte Carlo pp-value formally in
+Section 3.5 after introducing the test statistic.
+The test is conditional: it conditions on the preprocessing pipeline,
+the analyst’s chosen Mapper parameters, and the estimated covariance
+Σ^\hat{\Sigma}. It asks whether the observed community differentiation
+exceeds what the estimated Gaussian null can produce under those same
+choices.
+
+Two important caveats apply. First, the null is potentially
+miscalibrated under non-Gaussian data: if the true data-generating
+distribution is not Gaussian but is unimodal with the same covariance,
+the Gaussian null could produce more or less Mapper structure than the
+true unimodal distribution. The result may be over- or under-rejection
+even when the data come from a single population. Second, the null is
+specific to covariance structure: it preserves the covariance
+matrix but not higher-order features of the distribution (skewness,
+kurtosis, tail behavior). Departures from normality that do not involve multiple
+subpopulations—such as heavy tails or skewness—could lead to false
+rejections. A rejection therefore indicates that community
+differentiation exceeds what the Gaussian benchmark produces, not
+necessarily that subtypes are present. We return to these limitations
+in Section 6.
+
+When pp is large relative to nn, the sample covariance matrix
+Σ^\hat{\Sigma} may be singular or ill-conditioned. In particular,
+after centering, Σ^\hat{\Sigma} has rank at most n−1n-1, so it is
+singular whenever p≥np\geq n. A singular or nearly singular covariance
+matrix has eigenvalues at or near zero and is not suitable for standard
+Cholesky-based simulation. We address the singularity via ridge regularization or
+eigendecomposition in Section 3.5.
+
+3.2 Test statistic: the dissociation metric
+
+Mapper produces a graph, but in subtype-discovery applications the
+scientific claim of interest is typically that distinct regions of that
+graph correspond to distinct subpopulations in the data. To study
+this, we partition the Mapper graph into
+communities—groups of densely connected vertices—using the
+algorithm described in Section 3.4. The
+null-model test then asks whether community differentiation exceeds
+what a covariance-matched Gaussian benchmark can produce. This
+requires a scalar test statistic that is large when communities are
+well separated in feature space and small when they are not. Our
+statistic measures whether any two communities differ in their average
+feature values, rather than whether the Mapper graph is topologically
+complex.
+
+Suppose the Mapper graph has been partitioned into KK communities
+C1,…,CKC_{1},\ldots,C_{K}. Because the cover intervals overlap, a single
+data point may belong to more than one Mapper vertex, and those
+vertices may fall in different communities. We assign each data point
+to exactly one community by a plurality vote over its vertices
+(details in Section 3.4). We divide the pp features into two fixed, disjoint blocks AA and BB
+of roughly equal size. We use two predetermined feature blocks rather than a single average
+over all pp features so that the statistic does not rest entirely on
+one global aggregation, while keeping each block large enough for
+reliable averages. Finer splits would provide more looks but with
+noisier per-block averages; two blocks are a simple compromise.
+Sections 5.1 and 5.3 confirm that results
+are stable across 50 independent random splits.
+
+For each community CkC_{k} and each feature block, we average the
+feature values across the community’s members and then across the
+features in the block:
+
+μk,A=1|A|​∑j∈A(1|Ck|​∑i∈Ckxi​j),μk,B=1|B|​∑j∈B(1|Ck|​∑i∈Ckxi​j).\mu_{k,A}=\frac{1}{|A|}\sum_{j\in A}\biggl(\frac{1}{|C_{k}|}\sum_{i\in C_{k}}x_{ij}\biggr),\qquad\mu_{k,B}=\frac{1}{|B|}\sum_{j\in B}\biggl(\frac{1}{|C_{k}|}\sum_{i\in C_{k}}x_{ij}\biggr).
+
+(4)
+
+Thus μk,A\mu_{k,A} is a single number summarizing how high or low
+community kk’s members score, on average, across the features in
+block AA, and likewise for μk,B\mu_{k,B}. We define the
+dissociation metric
+
+D=max1≤k<ℓ≤K⁡max⁡(|μk,A−μℓ,A|,|μk,B−μℓ,B|).D=\max_{1\leq k<\ell\leq K}\max\bigl(|\mu_{k,A}-\mu_{\ell,A}|,\;|\mu_{k,B}-\mu_{\ell,B}|\bigr).
+
+(5)
+
+When DD is large, at least one pair of communities differs
+substantially in average feature level on at least one block. When
+DD is small, no pair of communities is strongly separated in mean
+feature level, though the statistic may miss other forms of
+differentiation (see below). We set D=0D=0 if the graph has fewer
+than two communities.
+
+Taking the maximum over community pairs makes the statistic sensitive
+to the presence of even one well-separated pair of communities.
+Because the maximum can also be driven by a small or noisy community,
+we examine singleton sensitivity as a diagnostic in
+Section 5.3. Because μk,A\mu_{k,A} averages over |A||A|
+features, the metric is most sensitive to broad, coherent mean shifts.
+If community kk is elevated on half of block AA’s features and
+depressed on the other half, μk,A\mu_{k,A} may be near zero despite
+substantial feature-level differences. The statistic is therefore less
+sensitive to sparse or sign-mixed subtype signals; we discuss
+alternative statistics targeting feature-level maxima in
+Section 6. Alternative test statistics—such as the graph’s modularity score,
+the number of communities, or the first Betti number—could be
+substituted within the same Monte Carlo framework to target different
+aspects of Mapper output.
+
+3.3 Theoretical properties of the dissociation metric
+
+We now analyze an idealized version of the dissociation metric to
+isolate the covariance-driven mechanism that motivates the null.
+Sections 3.4–3.5 describe
+the full implemented procedure. The
+following results establish that, in this idealized setting, the
+dissociation metric is expected to be positive under a non-spherical
+Gaussian even when the data contain no subtypes, and that a simpler
+label-permutation baseline cannot detect this effect. All
+proofs are given in appendix I.
+
+We work with interval partitions: partitions of the data
+induced by dividing the filter range into non-overlapping intervals.
+We discuss how these relate to actual Mapper communities below.
+
+Let X∼𝒩p​(0,Σ)X\sim\mathcal{N}_{p}(0,\Sigma) with Σ\Sigma positive definite. Write the eigenvalues of Σ\Sigma in
+decreasing order as λ1≥λ2≥⋯≥λp>0\lambda_{1}\geq\lambda_{2}\geq\cdots\geq\lambda_{p}>0,
+and assume λ1>λ2\lambda_{1}>\lambda_{2} so that the unit top eigenvector u1u_{1} is
+uniquely defined up to sign. Let the filter be the projection onto the first
+principal component, f⁡(x)=u1⊤​xf(x)=u_{1}^{\top}x, which is the most common
+filter choice in practice. Let A,BA,B be a partition of
+{1,…,p}\{1,\ldots,p\} into two nonempty blocks of variables. Define the average loading of each block on u1u_{1}:
+
+u¯1,A=1|A|​∑j∈A(u1)j,u¯1,B=1|B|​∑j∈B(u1)j.\bar{u}_{1,A}=\frac{1}{|A|}\sum_{j\in A}(u_{1})_{j},\qquad\bar{u}_{1,B}=\frac{1}{|B|}\sum_{j\in B}(u_{1})_{j}.
+
+(6)
+
+Theorem 1 (Covariance-driven dissociation).
+
+Let {I1,…,IK}\{I_{1},\ldots,I_{K}\} be a finite interval partition of ℝ\mathbb{R}
+with K≥2K\geq 2 and each interval having positive probability
+under ff. Define the population block mean
+mk,A=1|A|​∑j∈AE⁡[Xj∣f∈Ik]m_{k,A}=\frac{1}{|A|}\sum_{j\in A}E[X_{j}\mid f\in I_{k}] and
+similarly mk,Bm_{k,B}, and set
+
+Dpop=maxk<ℓ⁡max⁡{|mk,A−mℓ,A|,|mk,B−mℓ,B|}.D_{\mathrm{pop}}\;=\;\max_{k<\ell}\;\max\bigl\{\,|m_{k,A}-m_{\ell,A}|,\;|m_{k,B}-m_{\ell,B}|\,\bigr\}.
+
+(7)
+
+If max⁡(|u¯1,A|,|u¯1,B|)>0\max\bigl(|\bar{u}_{1,A}|,\allowbreak|\bar{u}_{1,B}|\bigr)>0, then
+
+Dpop≥max⁡(|u¯1,A|,|u¯1,B|)⋅|E⁡[f∣f∈Imax]−E⁡[f∣f∈Imin]|> 0,D_{\mathrm{pop}}\;\geq\;\max\!\bigl(|\bar{u}_{1,A}|,\;|\bar{u}_{1,B}|\bigr)\cdot\bigl|E[f\mid f\in I_{\max}]-E[f\mid f\in I_{\min}]\bigr|\;>\;0,
+
+(8)
+
+where IminI_{\min} and ImaxI_{\max} are the leftmost and rightmost
+positive-probability intervals.
+
+The key identity behind Theorem 1 is the
+Gaussian regression formula
+
+E⁡[Xj∣f=c]=(u1)j⋅c.E[X_{j}\mid f=c]=(u_{1})_{j}\cdot c.
+
+(9)
+
+Points with different filter values have different conditional means,
+and averaging over a feature block produces a nonzero between-community
+difference whenever that block has a nonzero average loading on u1u_{1}. The bound is driven by
+two factors: the loading of the feature blocks on u1u_{1}, and the
+separation between conditional means of the filter in the extreme
+intervals. Since f∼N⁡(0,λ1)f\sim N(0,\lambda_{1}), larger λ1\lambda_{1} increases
+filter variance and widens this separation. The loading condition
+max⁡(|u¯1,A|,|u¯1,B|)>0\max(|\bar{u}_{1,A}|,|\bar{u}_{1,B}|)>0 holds for all but a
+measure-zero set of positive definite matrices Σ\Sigma
+(section I.2), so
+Theorem 1 applies generically.
+
+Theorem 1 identifies a covariance-driven
+dissociation mechanism tied to anisotropic variation along a preferred
+filter direction: a non-spherical Gaussian with no subtypes will
+produce positive population dissociation under a PC1 filter partition. A
+spherical null does not encode that anisotropy, which helps explain why
+comparison against a spherical null can yield spurious significance.
+A seemingly plausible alternative would be to test community labels by
+permutation: randomly reassign data points to communities of the same
+sizes and check whether the observed dissociation is unusually large.
+The next result shows that this baseline is uninformative.
+
+Theorem 2 (Label-permutation null).
+
+Suppose the number of communities KK is fixed and community sizes
+satisfy nk/n→πk∈(0,1)n_{k}/n\to\pi_{k}\in(0,1) as n→∞n\to\infty. Conditional on any observed
+data for which the finite-population variances SA2S_{A}^{2} and SB2S_{B}^{2}
+remain bounded, under a uniformly random reassignment of data points
+to communities, preserving the sizes nkn_{k}, the permuted dissociation
+converges to zero in probability at rate n−1/2n^{-1/2}.
+That is, as the sample size grows, the probability that
+DpermD^{\mathrm{perm}} exceeds any fixed threshold vanishes.
+
+Together, Theorems 1 and 2
+imply that the label-permutation baseline will pass for large nn:
+the observed dissociation is bounded away from zero while the permuted
+dissociation converges to zero, so in this idealized asymptotic regime
+the permutation null passes whether or not genuine subtypes are present. The permutation null confirms only that communities are spatially
+coherent along the filter axis, a tautological consequence of how
+Mapper constructs them, and does not test whether the observed
+community structure exceeds what covariance geometry alone can produce.
+
+Theorems 1 and 2 are stated
+for interval partitions defined by the filter. Mapper communities are
+not exactly interval partitions—they depend on clustering within
+preimages and on graph community detection—but they approximately
+respect filter order. Under a Gaussian, the data decompose as
+
+X=u1​f+Z,E⁡[X∣C]=u1⋅E⁡[f∣C]+E⁡[Z∣C],X=u_{1}f+Z,\qquad E[X\mid C]=u_{1}\cdot E[f\mid C]+E[Z\mid C],
+
+(10)
+
+where Z=X−u1​fZ=X-u_{1}f is the residual after removing the PC1
+component, independent of ff because uncorrelated Gaussian
+components are independent, and CC denotes a data point’s community
+membership. If community membership is primarily determined by the
+filter value, the average residual within each community is small
+and the interval-partition results carry over approximately. We do
+not claim a formal theorem for the full Mapper pipeline; rather, the
+interval-partition analysis isolates the mechanism that our empirical
+studies then assess in practice.
+
+3.4 Community detection
+
+The dissociation metric requires a partition of the
+Mapper graph into communities.
+We use the Louvain algorithm [4], which
+partitions a graph into densely connected groups by maximizing the
+modularity score QQ. Modularity compares the density of
+edges within each group to what would be expected in a random graph with
+the same degree sequence. Louvain is fast, widely used, and does not require the number of
+communities to be specified in advance. Its output can depend on
+internal tie-breaking; for each null replicate, we fix a random seed
+before the Louvain call so that stochasticity in community detection
+does not confound the null comparison (see section B.2).
+
+Each data point is assigned to a community as follows. A data point
+may belong to multiple Mapper vertices, since cover intervals overlap,
+and these vertices may belong to different communities in the
+Louvain partition. We assign each data point by plurality vote to the community that
+appears most frequently among its vertices; ties
+are broken by the lowest community index. This hard assignment
+discards the soft membership information that the overlapping cover
+provides. Existing Mapper-based subtype analyses typically assign
+points to subtypes informally, by visual inspection of the graph.
+A formal assignment rule is necessary here because the test statistic
+requires explicit community means (4). The same
+rule is applied to every null replicate, so the comparison remains
+valid. Points that do not
+appear in any Mapper vertex are left unassigned and excluded from the
+dissociation computation.
+
+Modularity optimization has a known resolution
+limit [15]: communities smaller than a scale that
+depends on the total number of edges in the graph may go undetected.
+Because this limit applies equally to the observed analysis and to
+every null replicate, it does not introduce an obvious directional bias
+into the hypothesis test, though we cannot rule out more subtle
+interactions between graph size and resolution. The test can detect
+community structure only at the resolution scale of the Louvain
+algorithm, and may miss finer-grained subgroups.
+
+3.5 Monte Carlo testing procedure
+
+The complete testing procedure is as follows.
+
+1.
+
+Compute the observed test statistic. Given the data
+matrix XX, compute the distance matrix, the filter function(s), and
+the Mapper graph using the analyst’s chosen parameters. Apply the
+Louvain algorithm to obtain communities. Assign each data point to a
+community and compute the observed dissociation metric DobsD_{\mathrm{obs}}.
+
+2.
+
+Estimate the sample covariance. Compute the sample
+covariance matrix Σ^\hat{\Sigma} from XX (after any preprocessing
+such as centering and scaling). If Σ^\hat{\Sigma} is singular or
+ill-conditioned, there are two options. Ridge regularization
+replaces Σ^\hat{\Sigma} by Σ^+ϵ​Ip\hat{\Sigma}+\epsilon I_{p} for a small
+ϵ>0\epsilon>0, shifting all eigenvalues upward and making the matrix
+positive definite; the choice of ϵ\epsilon is described in
+appendix H. Alternatively, the
+eigendecomposition approach decomposes Σ^\hat{\Sigma} into its
+eigenvectors and eigenvalues, discards the zero-eigenvalue directions,
+and generates null samples only in the subspace where the data actually
+vary. We use ridge regularization for the lower-grade glioma (LGG) analysis
+(Section 5.4), where p=4,500≫n=534p=4{,}500\gg n=534, and the
+eigendecomposition approach for the NKI
+(Section 5.1) and voting
+(Section 5.2) analyses.
+
+3.
+
+Generate null replicates. For b=1,…,Bb=1,\ldots,B:
+
+(a)
+
+Draw X∗(b)∼𝒩p​(0,Σ^)X^{*(b)}\sim\mathcal{N}_{p}(0,\hat{\Sigma}) with
+the same sample size nn as the observed data.
+
+(b)
+
+Compute the distance matrix for X∗(b)X^{*(b)} using the same
+metric as the observed analysis.
+
+(c)
+
+Compute the filter function(s) for X∗(b)X^{*(b)}. Filters
+that are derived from the data, such as L∞L^{\infty} centrality,
+principal components, or density, are recomputed from scratch on
+X∗(b)X^{*(b)}. Filters based on external variables not included in
+the covariance model require different treatment. For example, in
+the NKI breast cancer analysis (Section 5.1), one
+filter dimension is a clinical survival indicator that is not part
+of the gene expression matrix. Because the null cannot regenerate
+this variable, we reuse the observed survival values, keeping each
+value attached to its original data-point index, and add small
+independent jitter so that duplicated filter values do not
+artificially force points into the same Mapper interval. This holds the external variable
+fixed and tests only whether the feature data contain structure
+beyond covariance geometry.
+
+(d)
+
+Run Mapper on X∗(b)X^{*(b)} with identical parameters
+(resolution, gain, clustering algorithm and settings) to obtain a
+null Mapper graph.
+
+(e)
+
+Apply the Louvain algorithm to the null Mapper graph,
+assign data points to communities, and compute the null dissociation
+D∗(b)D^{*(b)}.
+
+4.
+
+Compute the zz-score. The standardized test
+statistic is
+
+z=Dobs−D¯∗sD∗,z=\frac{D_{\mathrm{obs}}-\bar{D}^{*}}{s_{D^{*}}},
+
+(11)
+
+where D¯∗=1B​∑b=1BD∗(b)\bar{D}^{*}=\frac{1}{B}\sum_{b=1}^{B}D^{*(b)} and
+sD∗s_{D^{*}} is the standard deviation of the null dissociation values.
+Large positive values of zz indicate that the observed community
+structure is more differentiated than what arises under the structured
+null.
+
+For the empirical analyses we use B=200B=200 null replicates, except
+for LGG where we use B=100B=100 due to computational cost; the
+simulations use B=50B=50. With B=200B=200, the standard error of the
+estimated null mean is sD∗/200s_{D^{*}}/\sqrt{200}, providing adequate
+precision for distinguishing significant from non-significant results. The Monte
+Carlo pp-value p^\hat{p} is valid regardless of the null distribution
+shape. When a null replicate produces a Mapper graph with fewer than
+two communities, we set D∗(b)=0D^{*(b)}=0. In all of our empirical
+and simulation analyses, every null replicate produces at least two
+communities, so this convention is never invoked.
+
+As a secondary diagnostic, we also compute the label-permutation null
+analyzed in Theorem 2: we keep the data and
+community sizes fixed, randomly reassign data points to communities,
+and recompute DD. As established above, this test confirms spatial
+coherence but cannot distinguish covariance-driven coherence from
+genuine subtypes. We report it alongside the structured null to make
+this contrast visible.
+
+4 Simulation study
+
+Before applying the structured null to real data, we characterize its
+operating properties with known data-generating processes. The goals are
+threefold. First, we verify that the test controls Type I error when data are
+drawn from a single multivariate normal
+(Section 4.1). Second, we quantify how much false
+rejection rates inflate under non-Gaussian unimodal structure, heavy
+tails, and skewness, where the Gaussian null is misspecified
+(Section 4.1). Third, we examine the test’s behavior against Gaussian mixtures with known
+separation, which reveals what the test
+actually measures (Section 4.2).
+
+Each scenario generates R=200R=200 independent datasets of n=300n=300
+data points and applies the full structured null test with B=50B=50
+null replicates per dataset. The Mapper pipeline uses two-dimensional
+equalized principal coordinates analysis (PCoA) filters, resolution 15,
+gain 2.0, and 10 histogram bins. We reject when z>1.645z>1.645,
+the one-sided α=0.05\alpha=0.05 threshold, because only unusually
+large dissociation counts as evidence against the null.
+
+The data-generating processes span three regimes. For Type I error
+calibration, we draw data from spherical and correlated Gaussians in
+p=10p=10, 5050, and 500500 dimensions. For misspecification, we use a
+multivariate tt distribution with df=5\mathrm{df}=5 and a skewed
+unimodal distribution. For power, we use all-feature and sparse
+mean-shift mixtures with separation δ∈{0.5,1.0,2.0}\delta\in\{0.5,1.0,2.0\}
+and heterogeneous-covariance mixtures with correlation ρ∈{0.5,0.8,0.9}\rho\in\{0.5,0.8,0.9\}. Full specifications are in section C.1.
+
+4.1 Calibration under Gaussian nulls and sensitivity to misspecification
+
+Table 1 reports the rejection rate at α=0.05\alpha=0.05
+for each null scenario. Under all Gaussian data-generating
+processes—spherical (p=10p=10), correlated (p=10p=10, 5050, and
+500500)—the rejection rates range from 4.0% to 6.0%, all within one
+Monte Carlo standard error of the nominal 5% level
+(0.05⋅0.95/200≈1.5%\sqrt{0.05\cdot 0.95/200}\approx 1.5\%). The p=500p=500
+scenario uses ridge regularization and directly validates the test in
+the p>np>n regime relevant to the genomic case studies. Doubling the
+number of null replicates from B=50B=50 to B=100B=100 does not change
+the rejection rate, so B=50B=50 provides adequate calibration.
+
+Because DD is a maximum over non-negative quantities, its null
+distribution is typically right-skewed, and the zz-score threshold
+z>1.645z>1.645 may be somewhat conservative. The Monte Carlo pp-value
+p^\hat{p}, which makes no distributional assumption, is more reliable;
+we report both throughout.
+
+Under non-Gaussian unimodal distributions, the Gaussian null is
+misspecified and overrejects. The multivariate tt with
+df=5\mathrm{df}=5 produces a rejection rate of 79.5%, because heavy
+tails generate extreme observations that Mapper resolves into
+communities with differentiated feature profiles, yielding dissociation
+values the Gaussian null cannot match. Skewness has a milder but
+still meaningful effect, with a rejection rate of 23.0%. Asymmetric
+marginals create directional density gradients that Mapper resolves
+into communities with systematically shifted means. Practitioners applying the test to
+data with non-Gaussian marginals should interpret rejections
+cautiously, as the test may detect departures from Gaussianity rather
+than genuine subtype structure. We return to this point in
+Section 6.
+
+Table 1: Type I error calibration and misspecification sensitivity.
+The test is well-calibrated under Gaussian data but can severely
+overreject under heavy tails or skewness.
+We generate RR independent datasets of n=300n=300 points in pp
+dimensions from each distribution, apply the structured null test with
+BB null replicates per dataset, and reject when z>1.645z>1.645
+(one-sided α=0.05\alpha=0.05). The first five rows test calibration
+under correctly specified Gaussian nulls; all rejection rates fall
+within one Monte Carlo standard error of the nominal 5% level
+(0.05⋅0.95/R≈1.5%\sqrt{0.05\cdot 0.95/R}\approx 1.5\%). The last two rows
+show overrejection when the Gaussian null is misspecified for
+non-Gaussian unimodal data.
+
+Distribution
+pp
+BB
+RR
+Mean zz
+Rejection rate
+
+Spherical Gaussian
+10
+50
+200
+−0.13-0.13
+0.0450.045
+
+Correlated Gaussian
+10
+50
+200
+0.00\phantom{-}0.00
+0.0600.060
+
+Correlated Gaussian
+50
+50
+200
+−0.00-0.00
+0.0400.040
+
+Correlated Gaussian
+500
+50
+200
+0.00\phantom{-}0.00
+0.0500.050
+
+Correlated Gaussian
+10
+100
+200
+0.00\phantom{-}0.00
+0.0500.050
+
+Multivariate tt (df=5\mathrm{df}=5)
+10
+50
+200
+4.08\phantom{-}4.08
+0.7950.795
+
+Skewed unimodal
+10
+50
+200
+0.59\phantom{-}0.59
+0.2300.230
+
+4.2 Behavior under Gaussian mixture alternatives
+
+Table 2 reports results for all mixture
+scenarios. For the all-feature mean-shift mixtures, the test does not reject
+the structured null for any separation, including the
+largest (δ=2.0\delta=2.0), where the mean zz-scores are in fact
+strongly negative (−2.52-2.52 at p=10p=10, −2.73-2.73 at p=50p=50).
+Rather than indicating a failure of the test, these results illuminate
+what the structured null test actually measures.
+
+Table 2: Behavior of the structured null test under Gaussian mixture
+alternatives. The test does not reliably detect any of these mixtures,
+because the mixture structure is already captured by the sample
+covariance matrix, so the Gaussian null generates data that look
+similar. For each mixture type, we generate R=200R=200 datasets of
+n=300n=300 points in pp dimensions and test with B=50B=50 null
+replicates, rejecting when z>1.645z>1.645 (one-sided α=0.05\alpha=0.05).
+Rows 1–4: all-feature mean-shift mixtures where every feature shifts by
+±δ/2\pm\delta/2. Rows 5–6: sparse mixtures where only k=5k=5 of
+5050 features shift. Rows 7–12: mixtures with no mean shift but
+different covariance structures in each component, where ρ\rho is the
+correlation among features within each component.
+
+Mixture type
+pp
+δ\delta
+ρ\rho
+RR
+Mean zz
+Rejection rate
+
+All-feature mixture
+10
+0.5
+0.5
+200
+−0.15-0.15
+0.0300.030
+
+All-feature mixture
+10
+1.0
+0.5
+200
+−0.85-0.85
+0.0050.005
+
+All-feature mixture
+10
+2.0
+0.5
+200
+−2.52-2.52
+0.0000.000
+
+All-feature mixture
+50
+2.0
+0.5
+200
+−2.73-2.73
+0.0000.000
+
+Sparse (k=5k=5)
+50
+1.0
+0.5
+200
+−0.02-0.02
+0.0350.035
+
+Sparse (k=5k=5)
+50
+2.0
+0.5
+200
+−0.06-0.06
+0.0650.065
+
+Hetero-covariance
+10
+—
+0.5
+200
+0.22\phantom{-}0.22
+0.1100.110
+
+Hetero-covariance
+50
+—
+0.5
+200
+−0.20-0.20
+0.0500.050
+
+Hetero-covariance
+10
+—
+0.8
+200
+0.11\phantom{-}0.11
+0.0700.070
+
+Hetero-covariance
+50
+—
+0.8
+200
+−0.39-0.39
+0.0300.030
+
+Hetero-covariance
+10
+—
+0.9
+200
+0.03\phantom{-}0.03
+0.0650.065
+
+Hetero-covariance
+50
+—
+0.9
+200
+−0.40-0.40
+0.0250.025
+
+The explanation lies in how the sample covariance relates to the
+mixture structure. The all-feature mixture shifts every feature by the same
+amount, so the two component means ±(δ/2)​𝟏\pm(\delta/2)\mathbf{1} lie along
+the all-ones direction. After centering and scaling, the sample
+covariance Σ^\hat{\Sigma} absorbs this between-component variance: it
+“sees” the mixture as additional spread along one axis. Draws from
+𝒩p​(0,Σ^)\mathcal{N}_{p}(0,\hat{\Sigma}) therefore produce an elongated data
+cloud with geometry similar to the mixture, and Mapper applied to
+these null draws generates community structure with comparable—or
+even larger—dissociation values. In short, the covariance null
+absorbs the mixture structure because that structure is encoded in the
+second-order statistics. At larger separations the between-component
+variance dominates Σ^\hat{\Sigma} even more, hence the increasingly
+negative zz-scores as δ\delta grows.
+
+The sparse mixtures (rows 5–6 of Table 2),
+where only 5 of 50 features shift, tell the same story: rejection
+rates of 3.5% (δ=1.0\delta=1.0) and 6.5% (δ=2.0\delta=2.0) are
+indistinguishable from the nominal level. Even when the mean shift is
+concentrated on a small subset of features, the corresponding entries of
+Σ^\hat{\Sigma} capture the between-component variance, and the covariance
+null absorbs the mixture signal. This extends the scope statement
+beyond uniform shifts: the structured null does not detect any
+mean-shift mixture whose signal is encoded in the sample covariance,
+regardless of how many features carry the shift.
+
+The heterogeneous-covariance mixtures (rows 7–12) probe whether the
+test can detect alternatives that differ from the null only in
+covariance structure. The two components share a common mean (zero) but
+have different within-component correlation structures, so the pooled
+sample covariance is a compromise between the two component covariances.
+A unimodal Gaussian drawn from this compromise should, in principle,
+differ from the two-component mixture. We test three correlation strengths
+(ρ=0.5,0.8,0.9\rho=0.5,0.8,0.9) at two dimensionalities (p=10,50p=10,50).
+Across all six scenarios, rejection rates range from 2.5% to 11.0%
+and show no increasing trend with ρ\rho; even at ρ=0.9\rho=0.9, the
+test does not detect the heterogeneous-covariance signal.
+
+The reason is that the dissociation metric measures differences in
+community means, and both components of the heterogeneous-covariance
+mixture have the same mean vector. The components differ only in
+their within-component correlation patterns, but Mapper communities
+formed from the mixture will not exhibit systematically different mean
+profiles. The null model could in principle generate different graph
+topology than the mixture, but the dissociation metric is blind to this
+because it summarizes community structure through average feature
+values, not through covariance or higher-order moments.
+
+This result clarifies the scope of the structured null test. The test
+does not detect subtype structure that is fully encoded in the sample
+covariance—including both all-feature and sparse mean-shift
+mixtures—and it does not detect mixtures whose components differ only
+in their covariance structure when the test statistic is mean-based.
+The structured null test is therefore not a general-purpose
+test for mixture structure or clustering. Researchers seeking a general test for multimodality should consider
+purpose-built alternatives such as the dip
+test [17], Silverman’s kernel-bandwidth
+test [29], or the SigClust procedure for
+high-dimensional data [21]. The structured null test
+answers a narrower but practically important question: does the Mapper
+graph reveal community differentiation that exceeds what a
+covariance-matched Gaussian benchmark produces under the same pipeline?
+A covariance-sensitive test statistic, such as one comparing
+within-community covariance matrices across communities, could in
+principle detect the heterogeneous-covariance signal, but we leave this
+to future work.
+
+5 Empirical case studies
+
+We apply the structured null model of Section 3 to four
+Mapper-based analyses. Three come from [23]—breast cancer
+gene expression, U.S. Congressional voting, and NBA player
+performance—and the fourth is a cancer genomics analysis
+from [25]. The [23] analyses were
+originally conducted in Ayasdi, a proprietary Mapper platform that
+was acquired by SymphonyAI in 2019 and is no longer available as a
+standalone product. Its internal parameters do not map directly to
+open-source implementations. We do not claim to reproduce the original results exactly. Instead,
+we build open-source Mapper pipelines and tune their parameters until
+the resulting graphs are qualitatively similar to those
+in [23] (see section B.1 for details). Because the
+structured null uses the same pipeline parameters for both observed
+and null data, imperfect replication does not bias the test: the
+comparison is always between the real data and null data processed
+identically.
+
+The fourth analysis, lower-grade glioma from [25],
+uses a methodologically distinct pipeline and a dataset with
+well-established molecular subtypes, providing an independent check on
+the framework’s generalizability.
+
+For each analysis, we describe the data and Mapper pipeline, then
+report the observed dissociation metric DobsD_{\mathrm{obs}}, the
+zz-score under the label-permutation null, and the zz-score under
+the structured null. Table 3 summarizes all results.
+We also report empirical one-sided Monte Carlo pp-values,
+
+p^=1+#{D∗(b)≥Dobs}1+B,\hat{p}=\frac{1+\#\{D^{*(b)}\geq D_{\mathrm{obs}}\}}{1+B},
+
+(12)
+
+where D∗(b)D^{*(b)} is the dissociation of the bbth null replicate and
+BB is the total number of replicates. The +1+1 terms in numerator
+and denominator follow [12]. They ensure that
+p^\hat{p} is never exactly zero and is uniformly distributed under
+the null.
+A complete replication package, including all code, intermediate
+results, and instructions for obtaining the data, is available at
+[URL to be added upon publication].
+
+Table 3: Summary of empirical results. No analysis exceeds the
+covariance-preserving null at α=0.05\alpha=0.05; the two initial
+rejections (NBA all, LGG all) are driven by singleton communities and
+disappear when singletons are excluded.
+NKI refers to the Netherlands Cancer Institute breast cancer gene
+expression dataset; LGG refers to lower-grade glioma gene expression
+data; “multi” excludes singleton communities from the dissociation
+computation. Source gives the original study replicated; Sec. gives
+the subsection of this paper containing the full analysis.
+For each analysis, we report the number of Louvain communities KK,
+observed dissociation DobsD_{\mathrm{obs}}, the label-permutation
+zz-score zpermz_{\mathrm{perm}}, the structured-null
+zz-score zstrz_{\mathrm{str}}, and the empirical one-sided Monte Carlo
+pp-value p^str\hat{p}_{\mathrm{str}} computed from BB null replicates
+via (12). The NBA analysis uses two Mapper parameter settings; rows here
+correspond to the first (resolution 30, gain 2.0), with consistent
+results for the second reported in Section 5.3.
+For the NBA rows, the label-permutation null was recomputed after
+singleton exclusion; the nearly identical zpermz_{\mathrm{perm}} values
+(3.30 vs. 3.29) reflect the dominance of the large communities in
+the permutation variance. For LGG (multi), the label-permutation null
+was not recomputed after singleton exclusion and is omitted.
+
+Analysis
+Source
+Sec.
+KK
+DobsD_{\mathrm{obs}}
+zpermz_{\mathrm{perm}}
+zstrz_{\mathrm{str}}
+p^str\hat{p}_{\mathrm{str}}
+Outcome
+
+NKI 1D
+[23]
+5.1
+6
+0.159
+4.40
+0.13
+0.24
+Not distinguished
+
+NKI 2D
+[23]
+5.1
+6
+0.159
+5.91
+0.91
+0.10
+Not distinguished
+
+Voting
+[23]
+5.2
+3
+0.630
+22.36
+−1.72-1.72
+0.95
+Not distinguished
+
+NBA (all)
+[23]
+5.3
+40
+5.343
+3.30
+5.51
+<0.005<0.005
+See text
+
+NBA (multi)
+[23]
+5.3
+14
+1.803
+3.29
+−2.31-2.31
+1.00
+Not distinguished
+
+LGG (all)
+[25]
+5.4
+13
+1.364
+6.08
+5.93
+<0.01<0.01
+See text
+
+LGG (multi)
+[25]
+5.4
+12
+0.595
+—
+0.81
+0.20
+Not distinguished
+
+5.1 Breast cancer gene expression
+
+The breast cancer analysis of [23] applies Mapper to the
+Netherlands Cancer Institute (NKI) gene expression
+dataset [34]. The resulting community structure
+is interpreted as evidence of clinically meaningful subtypes, including a
+subgroup with high survival rates that does not correspond to any
+standard clinical classification. We ask whether this community
+differentiation exceeds what the covariance structure alone can produce.
+
+We replicate this analysis (n=336n=336 samples, p=1,500p=1{,}500
+highest-variance genes, Pearson correlation distance) in two
+configurations. The first is a 1D Mapper with L∞L^{\infty} centrality filter
+(resolution 30, gain 3.0, 5 histogram bins; 6 communities, zero
+singletons). The second adds a clinical survival indicator as
+a second filter (resolution 30×530\times 5, gain 3.0; 6 communities,
+zero singletons). For each, B=200B=200 null replicates are drawn from
+𝒩1500​(0,Σ^)\mathcal{N}_{1500}(0,\hat{\Sigma}), and we also compute 1,000
+label-permutation replicates. Full data-preprocessing, parameter, and
+pipeline details are in section B.2.
+
+In the one-dimensional analysis,
+the Louvain algorithm detects 6 communities (sizes 109, 83, 50, 43, 27,
+and 24) with an observed dissociation of Dobs=0.159D_{\mathrm{obs}}=0.159.
+The label-permutation null yields zperm=4.40z_{\mathrm{perm}}=4.40
+(p<0.001p<0.001), indicating that the community assignments are far more
+differentiated than random label assignments would produce. Under the
+label-permutation null, the specific mapping of data points to
+communities carries significant information.
+
+Under the covariance-preserving null, however, the picture changes.
+The 200 null replicates drawn from 𝒩1500​(0,Σ^)\mathcal{N}_{1500}(0,\hat{\Sigma}) produce a null distribution of dissociation values with
+mean D¯∗=0.136\bar{D}^{*}=0.136 and standard deviation sD∗=0.173s_{D^{*}}=0.173.
+The observed dissociation of 0.159 falls well within this null
+distribution, yielding zstr=0.13z_{\mathrm{str}}=0.13
+(p^=0.24\hat{p}=0.24). Because the null dissociation distribution is
+right-skewed, the zz-score should be interpreted cautiously. The Monte Carlo pp-value
+p^=0.24\hat{p}=0.24, which makes no distributional assumption, is the
+primary inferential quantity. The Mapper community structure observed
+in the NKI data is not distinguishable from what arises from a single
+multivariate normal distribution with the same covariance matrix.
+
+The two-dimensional analysis tells a similar story: 6 communities,
+zperm=5.91z_{\mathrm{perm}}=5.91 (p<0.001p<0.001), but
+zstr=0.91z_{\mathrm{str}}=0.91 (p^=0.10\hat{p}=0.10). Because the null
+features are drawn independently of the fixed survival indicator, any
+correlation between gene expression and survival present in the real
+data is severed in the null; this could inflate the null zz-score, so
+the non-rejection is conservative in this respect. Two supplementary diagnostics agree qualitatively: replacing the
+dissociation metric with the maximum over individual feature differences
+(DmaxD_{\max}), and comparing the observed graph modularity against its
+null distribution, both support non-rejection (appendix E). The Mapper community structure is not
+distinguishable from the covariance-preserving Gaussian benchmark. This
+does not imply that breast cancer subtypes do not exist, but that Mapper
+has not provided evidence for their existence beyond what the
+second-order geometry explains. This non-rejection is stable across
+sensitivity checks: none of
+51 random feature splits rejects, and 11 of 12 Mapper parameter
+configurations fall below the critical value (appendix D).
+
+5.2 U.S. Congressional voting
+
+The voting analysis of [23] applies Mapper to U.S. House
+roll-call voting records and finds communities that align with political
+parties, including a small group of moderate “bridge” members
+connecting the two partisan clusters. We ask whether the observed
+community differentiation goes beyond what the correlation structure of
+the votes already explains.
+
+We replicate this analysis for the 110th Congress (2008). The data
+consist of n=438n=438 House members and p=688p=688 rollcall votes coded as
++1+1 (yea), −1-1 (nay), or 00 (absent/abstain), with Pearson
+correlation distance and PCoA filters (resolution 20, gain 4.5,
+5 histogram bins). The Mapper graph yields 3 Louvain communities with
+no singleton communities.
+
+Because p>np>n, the sample covariance matrix is singular. We generate
+null samples via the eigendecomposition of Σ^\hat{\Sigma}, drawing only
+in the 437-dimensional subspace where the data vary. This avoids the
+artificial isotropic component that ridge regularization would introduce
+for a matrix with 251 zero eigenvalues. We generate B=200B=200 structured
+null replicates and 1,000 label-permutation replicates. Full details
+are in section B.2.
+
+The three communities align closely with Democrats, Republicans, and a
+small moderate bridge group, with an observed dissociation of
+Dobs=0.630D_{\mathrm{obs}}=0.630. The label-permutation null yields an
+extremely high zperm=22.36z_{\mathrm{perm}}=22.36 (p<0.001p<0.001), reflecting
+the strong partisan structure in the data.
+
+Under the covariance-preserving null, the observed dissociation falls
+below the null mean, yielding zstr=−1.72z_{\mathrm{str}}=-1.72
+(p^=0.95\hat{p}=0.95). Synthetic data drawn from a
+single multivariate normal with the same covariance matrix produce
+more community differentiation in Mapper than the real voting
+data. Why? The real voting data are strongly bimodal (two parties),
+so Mapper produces a small number of internally homogeneous communities.
+The Gaussian null, which preserves the elongated covariance structure but
+has no bimodal gap, distributes points more smoothly along the dominant
+axis. Mapper then resolves a gradient of communities spanning the full
+range, and the most extreme pair can differ more than the two-party pair
+in the real data.
+
+This result illustrates an important distinction. The partisan
+communities are visually compelling and substantively meaningful—they
+really do correspond to parties—but the observed community
+differentiation does not exceed what the covariance-preserving null
+can generate. Therefore, the Mapper graph does not add inferential
+evidence for latent political subtype structure beyond the benchmark
+provided by the covariance-matched Gaussian null.
+
+5.3 NBA player performance
+
+The NBA analysis of [23] applies Mapper to per-minute
+statistics for NBA players and identifies communities interpreted as
+distinct player types, including groups of shooters, rebounders, and
+versatile “all-around” players. We ask whether this community
+structure reflects genuine player-type differentiation beyond what the
+joint distribution of statistics can produce.
+
+We replicate this analysis: n=452n=452 players from
+the 2010–2011 season, p=7p=7 per-minute statistics, Euclidean distance,
+PCoA filters. We analyze under two configurations:
+Configuration 1 (resolution 30, gain 2.0, 15 histogram bins;
+40 communities, 26 singletons) and Configuration 2 (resolution 20,
+gain 2.5, 3 bins; 7 communities, 1 singleton). The 7×77\times 7 covariance is well-conditioned. We
+report results both including and excluding singleton communities,
+because the dissociation metric’s maximum-over-pairs construction can be
+dominated by singletons with extreme statistics. For each
+configuration, B=200B=200 null replicates and 1,000 label-permutation
+replicates. Full details are in section B.2.
+
+The NBA analysis reveals an important methodological finding about the
+dissociation metric. Under Configuration 1,
+the Mapper graph produces 40 Louvain communities, of which 14 contain
+more than one player (sizes 106, 86, 43, 41, 39, 32, 31, 12, 10, 9,
+8, 4, 3, and 2; the remaining 26 are singletons; modularity 0.707).
+
+When all 40 communities are included in the dissociation computation,
+the observed dissociation is Dobs=5.343D_{\mathrm{obs}}=5.343, and the
+structured null yields zstr=5.51z_{\mathrm{str}}=5.51 (p^<0.005\hat{p}<0.005).
+However, when singleton communities are excluded, the observed
+dissociation drops to Dobs=1.803D_{\mathrm{obs}}=1.803, and the structured
+null yields zstr=−2.31z_{\mathrm{str}}=-2.31 (p^=1.00\hat{p}=1.00). The
+qualitative conclusion reverses: the community differentiation among
+multi-player communities is below the null mean.
+
+Configuration 2 (resolution 20, gain 2.5; 7 communities, 1 singleton)
+tells the same story: zstr=8.01z_{\mathrm{str}}=8.01 with all communities,
+zstr=−0.85z_{\mathrm{str}}=-0.85 (p^=0.80\hat{p}=0.80) without the singleton.
+
+The mechanism is straightforward. Singleton communities represent
+individual players with potentially extreme per-minute statistics.
+Because the dissociation metric takes the maximum over all community
+pairs, a single pair involving a singleton can dominate the test
+statistic. In the null replicates, such extreme singletons are less
+likely, so the null has lower dissociation. The rejection is driven by
+sensitivity to outlier communities, not by systematic differentiation.
+This pattern holds across all 20 Mapper parameter configurations and
+all 51 random feature splits: every configuration rejects with
+singletons and none rejects without them (appendix D).
+The DmaxD_{\max} and null modularity diagnostics described above also
+agree qualitatively (appendix E).
+
+5.4 Lower-grade glioma gene expression
+
+The lower-grade glioma (LGG) analysis of [25]
+applies Mapper to gene expression data from The Cancer Genome Atlas and
+identifies community structure related to well-established molecular
+subtypes, including mutations in the IDH gene and co-deletion of
+chromosome arms 1p and 19q. Unlike the preceding three analyses, this
+case comes from a separate study and uses a different Mapper pipeline,
+so it provides an additional check on the framework’s generalizability
+and scope. It is also a useful stress test, because many LGG subtype
+signals contribute to the pooled covariance and may therefore be
+absorbed by the covariance-preserving null rather than detected by it.
+
+The data consist of n=534n=534 tumor samples and p=4,500p=4{,}500
+highest-variance genes, with Pearson correlation distance. The filter
+functions differ from the [23] analyses: we build a
+kk-nearest-neighbor graph (k=30k=30), compute shortest-path distances,
+and apply multidimensional scaling (MDS) to obtain two filter
+coordinates. We run the TDAmapper software package with fixed-width
+binning (resolution 30, 75% overlap, 10 histogram bins).
+
+Because p≫np\gg n, the sample covariance is singular. We therefore
+apply the ridge regularization described in appendix H to obtain
+a positive-definite covariance for null sampling. We generate B=100B=100
+null replicates, reduced from 200 due to computational cost, and 200
+label-permutation replicates. Full details are in
+section B.2.
+
+The LGG analysis reveals the same singleton sensitivity observed in
+the NBA data. The Mapper graph produces 13 Louvain communities (sizes
+95, 89, 73, 60, 60, 48, 32, 27, 19, 10, 10, 9, and 1; these sum to
+533 because one sample does not appear in any Mapper vertex and is
+excluded from the dissociation computation) with modularity 0.738
+and an observed dissociation of Dobs=1.364D_{\mathrm{obs}}=1.364. One
+community is a singleton. The label-permutation null yields
+zperm=6.08z_{\mathrm{perm}}=6.08 (p<0.01p<0.01).
+
+Under the structured null, the 100 replicates from 𝒩4500​(0,Σ^+ϵ​I)\mathcal{N}_{4500}(0,\hat{\Sigma}+\epsilon I) produce a null distribution with mean
+D¯∗=0.565\bar{D}^{*}=0.565 and standard deviation sD∗=0.135s_{D^{*}}=0.135, yielding
+zstr=5.93z_{\mathrm{str}}=5.93 (p^<0.01\hat{p}<0.01; no null replicate
+exceeded the observed statistic). However, when the singleton community
+is excluded, the observed dissociation drops from 1.364 to 0.595, and
+the structured null yields zstr=0.81z_{\mathrm{str}}=0.81
+(p^=0.20\hat{p}=0.20). Thus, as in the NBA analysis, the apparent
+rejection is driven by a singleton community rather than by systematic
+differentiation among the multi-sample communities. The
+singleton-excluded p^=0.20\hat{p}=0.20 carries additional uncertainty from the
+smaller number of null replicates (B=100B=100 vs. 200 for the other
+analyses).
+
+Three points clarify how to interpret this non-rejection. First, ridge regularization adds small but nonzero variance in the
+4,500−533=3,9674{,}500-533=3{,}967 null directions where the sample covariance
+is zero, making the null data more isotropic and diluting the dominant
+covariance directions that drive community differentiation. The
+resulting null Mapper graphs tend to have lower dissociation, making
+the null easier to beat, so this bias works against the
+non-rejection finding.
+
+Second, gene expression data can exhibit heavy tails and skewness even
+after log-transformation, and our simulation study
+(Section 4.1) shows that such departures from normality
+can produce substantial overrejection (79.5% under a multivariate tt
+with df=5\mathrm{df}=5). This matters because the singleton-excluded
+LGG zz-score of 0.810.81 is positive, whereas the simulated mean-shift
+mixtures produce near-zero or negative zz-scores. A plausible
+explanation is non-Gaussianity rather than residual subtype signal:
+non-Gaussianity inflates zz-scores under the Gaussian null.
+
+Third, lower-grade gliomas have well-established molecular
+subtypes [7] with both distinct mean expression
+profiles and distinct covariance structures. Our simulation study
+(Section 4.2) shows, however, that the dissociation
+metric cannot detect mean-shift mixtures whose between-component
+structure is absorbed by the sample covariance, nor can it detect
+mixtures differing only in covariance structure. For real biological
+subtypes like those in LGG, between-subtype mean differences contribute
+to the pooled covariance estimate. The covariance-preserving null can
+therefore reproduce much of the variation associated with those
+subtypes. The singleton-excluded non-rejection is consistent with the
+scope limitations seen in the simulations.
+
+Despite the methodological differences from the preceding analyses, the
+structured null test produces an interpretable result and reveals the
+same singleton sensitivity as the NBA analysis, suggesting that both the
+framework and the singleton finding generalize beyond any single Mapper
+pipeline.
+
+6 Discussion and conclusions
+
+Across four empirical case studies spanning cancer genomics, political
+science, and sports analytics, no analysis produces community
+differentiation that exceeds the structured null at α=0.05\alpha=0.05
+once singleton communities are accounted for.
+The breast cancer and Congressional voting analyses are clearly not
+distinguished from the null. The NBA and LGG analyses initially appear
+to reject, but both rejections are driven by singleton communities;
+when these are excluded, the remaining community structure falls within
+the null distribution. Two results merit closer attention
+(NKI 2D: p^=0.10\hat{p}=0.10; LGG singleton-excluded:
+p^=0.20\hat{p}=0.20). For both NBA and NKI, the non-rejection findings
+are stable across alternative feature splits and Mapper parameter variation
+(appendix D). In every analysis, the label-permutation null
+is strongly significant (zpermz_{\mathrm{perm}} ranging from 3.29 to
+22.36) while the structured null is not, illustrating how much community
+differentiation covariance geometry alone can explain. Under the independence-based null of [23], all three of
+their analyses are significant; under the covariance-preserving null,
+none exceeds the benchmark once singletons are excluded.
+
+Non-rejection does not mean the identified communities are
+uninteresting. The voting communities, for example, correspond to real
+political parties. Non-rejection means that the community
+differentiation does not require subgroup structure beyond what the
+covariance geometry already provides. The singleton exclusion is a
+diagnostic decision motivated by the observed discrepancy, not
+pre-specified, and should be interpreted as a sensitivity analysis
+rather than a confirmatory result. More broadly, the framework not only
+provides a hypothesis test but also reveals where apparent signal
+originates, enabling practitioners to distinguish systematic community
+differentiation from artifacts of extreme observations.
+
+The framework has several limitations. The Gaussian null preserves
+only covariance structure, so it can overreject under non-Gaussian
+unimodal data: 79.5% under a multivariate tt with df=5\mathrm{df}=5,
+23.0% under skewed data (Section 4.1). This is
+particularly relevant to gene expression datasets with heavy-tailed or
+skewed marginals. The null also treats Σ^\hat{\Sigma} as known,
+ignoring estimation uncertainty; ridge regularization addresses
+singularity but adds isotropic variance, making the null easier to beat.
+For non-rejection findings this bias is conservative, but simulations
+confirm well-controlled Type I error only up to p/n≈1.67p/n\approx 1.67,
+while the empirical genomic analyses have higher ratios (NKI: 4.5; LGG:
+8.4). Shrinkage estimators [19] or factor models
+could improve the null in high-dimensional settings. The test also
+conditions on fixed Mapper parameters and does not control the
+family-wise error rate across the parameter space; adaptive
+covers [1, 31] could address this. Our
+replication of [23] is approximate: Ayasdi’s internal
+parameterization differs from our open-source implementation, and the
+NKI sample size differs (336 vs. 272). The consistency of
+non-rejection across configurations, feature splits, and the independent
+LGG analysis suggests that the conclusions are not sensitive to these choices
+(appendix F).
+
+The dissociation metric itself is a further limitation. It is not
+sensitive to all forms of topological structure; alternative statistics
+based on Betti numbers, modularity, or persistence could target
+different aspects of Mapper output. A robustness check using
+DmaxD_{\max}, which maximizes over individual feature differences rather
+than block averages, agrees qualitatively in every analysis
+(appendix E). We use a one-sided test (z>1.645z>1.645) because
+the scientific question is whether the data contain more structure than
+the null can explain. The voting result (z=−1.72z=-1.72) illustrates that
+bimodal data can produce less differentiation than the smooth
+Gaussian gradient. More fundamentally, the dissociation metric misses
+mean-shift mixtures absorbed by the covariance, is blind to
+covariance-only alternatives (Section 4.2), and is
+highly sensitive to singleton communities, as the NBA and LGG analyses
+show. Developing statistics that are robust to small communities and
+responsive to a broader range of alternatives would extend the
+framework’s practical reach.
+
+For practitioners, three recommendations follow. Mapper-based
+subtype claims should be accompanied by null-model tests that preserve
+the covariance structure of the data, since label-permutation baselines
+are uninformative (Theorem 2). Results should
+be reported both with and without singleton communities, since a large
+discrepancy signals statistic instability. Rejections in
+datasets with non-Gaussian marginals should be interpreted cautiously.
+Computational cost scales with pipeline complexity; for the LGG
+analysis, 100 null replicates are already expensive.
+
+Mapper remains a valuable exploratory tool whose ability to produce
+interpretable graph summaries of high-dimensional data is not diminished
+by our findings. What our results show is that Mapper’s exploratory
+output should not be interpreted as confirmatory evidence for the
+existence of subtypes without additional statistical testing. The
+general principle—testing observed combinatorial summaries against a
+covariance-matched null—could inform null-model development for other
+TDA methods such as Reeb graphs or simplicial complexes, though the
+appropriate test statistics and null distributions would need to be
+developed for each setting.
+
+Acknowledgments
+
+The author used Claude (Anthropic, Claude Opus 4) for manuscript editing
+assistance, including sentence-level revisions, style auditing, and
+checking for internal consistency. All output was verified by the
+author, who takes full responsibility for the content.
+All datasets used in this study are publicly available: the NKI breast
+cancer dataset via the breastCancerNKI Bioconductor package,
+Congressional voting data from VoteView (voteview.com), NBA
+player statistics from Basketball Reference
+(basketball-reference.com), and TCGA lower-grade glioma data
+from the CamaraLab GitHub repository. All code for replication is
+available at [URL to be added upon publication].
+
+Appendix A Null-model audit of published Mapper applications
+
+Table 4 summarizes a targeted but not exhaustive
+audit of null-model testing across published Mapper applications that
+claim to discover subtypes or structural groups. For each analysis, we record whether the Mapper graph
+structure was tested against a null model and, if so, what null was
+used. “Independence-based null” refers to a null that tests only
+against unstructured noise, destroying the covariance geometry of the
+data. Phase-randomization nulls preserve aspects of temporal dependence,
+such as the power spectrum and autocorrelation structure of each time
+series, making them analogous in spirit to the covariance-preserving
+logic proposed in the main text for cross-sectional data.
+
+Table 4: Null-model testing in published Mapper applications relevant
+to subtype discovery, structural group claims, or Mapper validation.
+
+Reference
+Domain
+Structure claimed
+Null?
+Null model & assessment
+
+[24]
+Breast cancer
+c-MYB+ subgroup
+No
+Biological validation only
+
+[23]
+Breast cancer
+Y-shape, flares
+Yes
+Indep. Gaussians, common σ2\sigma^{2}
+
+[23]
+Pol. science
+Partisan subcommunities
+Yes
+Same independence-based null
+
+[23]
+Sports
+13 player types
+Yes
+Same independence-based null
+
+[20]
+Type 2 diabetes
+3 diabetes subgroups
+No
+External genetic validation
+
+[38]
+Protein folding
+Two refolding pathways
+No
+Kinetic (Markov) validation
+
+[27]
+scRNA-seq
+Transient cell states
+Partial
+PH test for loops only
+
+[28]
+Neuroimaging
+Task communities
+Partial
+Phase-randomization null
+
+[16]
+Neuroimaging
+Replicates Saggar
+Partial
+Phase-randomization null
+
+[18]
+Neuroimaging
+Parameter sensitivity
+No
+GOF criteria, no null model
+
+[26]
+Cancer (TCGA)
+Cancer subtypes
+No
+Survival analysis only
+
+[22]
+Pol. science
+Voting fragmentation
+No
+Descriptive analysis only
+
+[37]
+Type 2 diabetes
+4 diabetes phenotypes
+No
+Survival analysis only
+
+Abbreviations and terms.
+Pol.: political.
+c-MYB+: subgroup defined by expression of the c-MYB oncogene.
+scRNA-seq: single-cell RNA sequencing.
+PH: persistent homology.
+GOF: goodness of fit.
+TCGA: The Cancer Genome Atlas.
+Phase-randomization null: a null that randomly permutes the Fourier
+phases of each time series, preserving its power spectrum and
+autocorrelation structure.
+
+Appendix B Replication methodology
+
+Our replications target four published Mapper analyses: three from
+[23] (breast cancer, congressional voting, and NBA player
+performance) and one from [25] (lower-grade glioma).
+Because the original [23] analyses used a proprietary platform
+whose parameterization differs from open-source tools, we first describe
+how we translated the Mapper pipeline, then give the full parameter
+specifications for each case study.
+
+B.1 Ayasdi-to-open-source Mapper translation
+
+The original analyses in [23] were conducted in Ayasdi, a
+proprietary platform whose internal parameterization differs from
+open-source Mapper implementations. Ayasdi’s “Resolution” and “Gain”
+parameters do not correspond directly to the number of intervals and
+overlap percentage in open-source tools such as TDAmapper
+[32] or KeplerMapper [35]. Moreover,
+Ayasdi’s “Equalized” mode uses quantile-based binning, in which each
+cover interval is chosen to contain approximately the same number of data
+points. Standard open-source implementations instead use equal-width
+intervals, which can produce nearly empty bins in the tails of the filter
+distribution and excessive fragmentation of the graph.
+
+To address this, we implement a custom equalized (quantile-based) Mapper
+that mimics Ayasdi’s binning strategy. Cover intervals are defined by
+equally spaced quantiles of the filter function, so that each interval
+contains roughly the same number of points regardless of the filter’s
+marginal distribution. Within each interval (or, in the two-dimensional
+case, each grid cell), we apply single-linkage hierarchical clustering
+and cut the dendrogram at the first gap (first empty bin) in a histogram
+of merge heights, following the original algorithm of [30].
+The number of histogram bins is a hyperparameter reported for each
+analysis in the main text. This matches the clustering method reported in
+[23].
+
+Because the parameter mapping between Ayasdi and open-source Mapper is
+not exact, we cannot simply use the parameter values reported in
+[23] (e.g., Resolution 70 for breast cancer, Resolution 120
+for voting). Applying these values to our equalized Mapper produces
+graphs dominated by singleton vertices—far more fragmented than the
+graphs shown in [23]. To find parameter settings that produce
+comparable graph structures, we conducted systematic parameter sweeps for
+each dataset, varying resolution, gain, and the number of histogram bins
+used in the clustering step. We selected parameters that produce graphs
+with community structure consistent with the results reported in
+[23]: similar numbers of communities, similar community size
+distributions, well-defined community structure, and minimal singleton
+vertices.
+The specific parameters for each analysis are reported in the main text.
+
+This parameter-selection step is an unavoidable consequence of
+replicating proprietary-software analyses with open-source tools. All null-model comparisons use identical Mapper parameters for the
+observed data and each null replicate, so the Monte Carlo comparison
+is valid conditional on the selected parameters. We interpret the
+resulting tests as conditional on this replication-oriented
+parameter-selection step.
+
+B.2 Detailed replication methods
+
+The parameter specifications and implementation details below
+supplement the methodological summaries in the main text, providing
+the complete recipes needed for reproduction.
+
+For each structured-null replicate, we recompute the distance matrix,
+filter coordinates, Mapper graph, Louvain communities, point-to-community
+assignments, and test statistic from the synthetic data, using the same
+pipeline and parameters as in the observed analysis. Exceptions (such as
+the NKI survival indicator being reused with fresh jitter) are noted
+in the relevant case study. Graph communities are detected using
+igraph::cluster_louvain, which is stochastic (Louvain
+optimization involves random tie-breaking). The same algorithm is
+applied to both observed and null Mapper graphs. For each null
+replicate, the random seed is set before the full pipeline call, so
+Louvain tie-breaking is determined by the replicate seed; the observed
+Mapper graph uses a single Louvain realization.
+
+Breast cancer gene expression (NKI)
+
+We obtained the NKI dataset from the breastCancerNKI
+Bioconductor package. After removing samples with more than 10%
+missing values across genes, our dataset contains n=336n=336 samples.
+[23] report n=272n=272. The original NKI cohort
+[34] contained 295 samples; the
+breastCancerNKI package provides an expanded aggregate dataset,
+which explains why our sample size exceeds both the original cohort and
+the subset used in [23]. We selected the
+p=1,500p=1{,}500 genes with the highest sample variance (computed with
+na.rm = TRUE to handle missing entries), matching the description
+in [23] of using the “top most varying genes.”
+Their Supplementary Figure S1 shows ≈\approx1,553 genes. Remaining missing
+values were imputed with column means, and the resulting
+336×1,500336\times 1{,}500 matrix was centered and scaled to unit variance.
+
+Following [23], we used Pearson correlation distance:
+d⁡(xi,xj)=1−cor⁡(xi,xj)d(x_{i},x_{j})=1-\mathrm{cor}(x_{i},x_{j}), computed across the 1,500
+gene expression values for each pair of samples.
+
+For the one-dimensional analysis, the filter function is the L∞L^{\infty}
+centrality of each sample: f⁡(xi)=maxj⁡d⁡(xi,xj)f(x_{i})=\max_{j}\,d(x_{i},x_{j}). For the
+two-dimensional analysis, the first filter is again L∞L^{\infty}
+centrality; the second filter is the clinical survival indicator
+(event_death: 1 if the patient died during follow-up, 0
+otherwise), as reported in Figure 2 of [23]. Because this
+variable is binary, we add independent Gaussian jitter with standard
+deviation 0.01 to avoid degenerate quantile bins.
+
+For the one-dimensional analysis, we use resolution N=30N=30, gain
+g=3.0g=3.0, and 5 histogram bins for the clustering step. This produces
+a comparable graph (6 communities with sizes 109, 83, 50, 43, 27,
+and 24; modularity 0.648; zero singleton vertices). For the
+two-dimensional analysis, the first filter uses resolution 30 and the
+second filter uses resolution 5; gain is 3.0 for both filters, and
+clustering uses 5 histogram bins. This produces 6 communities (sizes 86,
+71, 54, 50, 43, and 32; zero singletons).
+
+Because p=1,500>n=336p=1{,}500>n=336, the sample covariance matrix
+Σ^\hat{\Sigma} is singular, with rank at most n−1=335n-1=335. We
+generate null replicates via the eigendecomposition of
+Σ^\hat{\Sigma}: decompose Σ^=V​Λ​V⊤\hat{\Sigma}=V\Lambda V^{\top} with
+rr positive eigenvalues λ1,…,λr\lambda_{1},\ldots,\lambda_{r}, draw
+Z∈ℝn×rZ\in\mathbb{R}^{n\times r} with iid standard normal entries, and set
+X∗=Z​Λr1/2​Vr⊤X^{*}=Z\,\Lambda_{r}^{1/2}\,V_{r}^{\top}. This draws from the
+degenerate Gaussian supported on the column space of Σ^\hat{\Sigma}
+(in our implementation, MASS::mvrnorm performs this
+eigendecomposition internally). For both analyses, we generate
+B=200B=200 structured null replicates. In the two-dimensional
+analysis, the survival indicator is reused with fresh jitter for each
+null replicate. We also compute 1,000 label-permutation replicates.
+
+U.S. Congressional voting
+
+Rollcall voting data were obtained from VoteView
+(voteview.com). For the 110th Congress (2008), the dataset
+contains n=438n=438 House members and p=688p=688 rollcall votes after
+filtering to members who participated in at least 10% of votes. Each
+vote is coded as +1+1 (yea), −1-1 (nay), or 00 (absent or abstain).
+We centered and scaled all votes to unit variance.
+Because p>np>n, the sample covariance matrix is singular, with rank at
+most n−1=437n-1=437.
+
+We used Pearson correlation distance between members. The two filter
+functions are the first and second coordinates of a principal coordinate
+analysis (PCoA) applied to the correlation distance matrix.
+
+We use resolution 20 for both filters, gain 4.5, and 5 histogram bins.
+This produces a clean partisan structure (3 communities corresponding to
+Democrats, Republicans, and a moderate bridge group; zero singletons).
+
+Both the observed Mapper graph and every null replicate use the full set
+of p=688p=688 scaled votes. We generate null samples via the
+eigendecomposition of Σ^\hat{\Sigma}, drawing random variation only in
+the 437-dimensional subspace where the data actually vary, exactly as
+described for NKI above. We generate B=200B=200 structured null
+replicates and 1,000 label-permutation replicates.
+
+NBA player performance
+
+Player statistics for the 2010–2011 NBA season were obtained from
+Basketball Reference. Following [23], we compute per-minute
+rates for p=7p=7 statistics: total rebounds, assists, turnovers, steals,
+blocked shots, personal fouls, and points scored. Players with fewer
+than 1 total minute played are excluded, yielding n=452n=452 players.
+
+We use variance-normalized Euclidean distance and PCoA filters.
+Configuration 1 (paper-matching) uses resolution 30, gain 2.0, and 15
+histogram bins; Configuration 2 (sweep-recommended) uses resolution 20,
+gain 2.5, and 3 histogram bins.
+
+The 7×77\times 7 sample covariance matrix is well-conditioned. For each
+configuration, we compute B=200B=200 structured null replicates and 1,000
+label-permutation replicates.
+
+Lower-grade glioma (LGG)
+
+RNA-seq gene expression data for TCGA LGG samples were obtained from
+the CamaraLab GitHub repository. The repository provides
+log2-transformed expression values, which we used without additional
+transformation or centering/scaling in order to match the preprocessing
+used in the original pipeline. We applied no additional sample filtering
+beyond what the repository provides. We selected the
+p=4,500p=4{,}500 genes with the highest variance, yielding n=534n=534
+samples. We use Pearson correlation distance. The filter functions are
+the first two coordinates of classical MDS applied to shortest-path
+distances in a directed kk-nearest-neighbor graph (k=30k=30), built
+using cccd::nng following the original code
+of [25]. Any infinite shortest-path distances
+(from unreachable pairs in the directed graph) are replaced by twice the
+maximum finite distance. Following the original code
+of [25], we pass the directed shortest-path matrix
+directly to cmdscale. Classical MDS is defined for symmetric
+dissimilarity matrices; the directed shortest-path matrix is in general
+asymmetric. In practice, cmdscale operates on the double-centered matrix
+−12​H​D​H-\tfrac{1}{2}HDH where H=I−𝟏𝟏⊤/nH=I-\mathbf{1}\mathbf{1}^{\top}/n and
+DD is the input; when DD is asymmetric, this implicitly produces a
+symmetric kernel. We retain this step for faithful replication of the
+published pipeline rather than as a canonical MDS construction.
+
+We use TDAmapper with fixed-width binning, resolution 30 for both
+filters, 75% overlap, and 10 histogram bins. The sample covariance
+matrix is singular (p=4,500>n=534p=4{,}500>n=534); we apply ridge
+regularization with ϵ\epsilon chosen as in appendix H. We
+generate B=100B=100 structured null replicates and 200 label-permutation
+replicates.
+
+Appendix C Simulation study details
+
+The simulation study evaluates the structured null model’s Type I error
+calibration under the null hypothesis and its behavior under
+mean-shift and covariance-shift alternatives. All scenarios share a
+common Mapper pipeline; they differ only in the data-generating process.
+
+C.1 Data-generating process specifications
+
+Each simulation scenario generates R=200R=200 independent datasets of
+n=300n=300 observations. For the skewed and mixture DGPs, we center and scale each simulated
+dataset featurewise before computing distances,
+filters, Mapper graphs, and the covariance matrix used for null sampling.
+For the mixture DGPs, δ\delta denotes the component separation before
+this centering and scaling step.
+The spherical Gaussian, correlated Gaussian, and multivariate tt DGPs
+are already zero-mean and are not rescaled. The Mapper pipeline uses two-dimensional
+equalized Mapper with PCoA filters, resolution 15 per filter,
+gain 2.0, and 10 histogram bins for clustering. Each test uses
+B=50B=50 null replicates. As a Monte Carlo precision check, we also
+run the correlated Gaussian p=10p=10 scenario with B=100B=100; the
+rejection rate is essentially unchanged (5.0% vs. 6.0%), confirming
+that B=50B=50 provides adequate calibration.
+
+The data-generating processes are:
+
+1.
+
+Spherical Gaussian (p=10p=10). X∼𝒩10​(0,I10)X\sim\mathcal{N}_{10}(0,I_{10}).
+
+2.
+
+Correlated Gaussian (p∈{10,50,500}p\in\{10,50,500\}).
+X∼𝒩p​(0,Σ)X\sim\mathcal{N}_{p}(0,\Sigma) with block covariance: features are
+split into two equal-sized groups, features within the same group have
+pairwise correlation ρ=0.5\rho=0.5, and features in different groups are
+independent.
+
+3.
+
+Multivariate tt (p=10p=10, df=5\mathrm{df}=5).
+Z∼𝒩p​(0,Σ)Z\sim\mathcal{N}_{p}(0,\Sigma), V∼χν2V\sim\chi^{2}_{\nu} independent of ZZ,
+X=Z/V/νX=Z/\sqrt{V/\nu} with ν=5\nu=5. The marginal covariance is
+νν−2​Σ=53​Σ\frac{\nu}{\nu-2}\Sigma=\tfrac{5}{3}\Sigma; the structured null
+estimates this inflated covariance from the sample covariance, so the
+null matches the second-order scale of the data but not its heavy-tailed
+distribution.
+
+4.
+
+Skewed unimodal (p=10p=10). Z∼𝒩p​(0,Σ)Z\sim\mathcal{N}_{p}(0,\Sigma) followed by componentwise exp⁡(0.5​Zj)\exp(0.5\,Z_{j}), then re-centered
+and scaled.
+
+5.
+
+All-feature mean-shift mixture (p∈{10,50}p\in\{10,50\}).
+Equal-weight mixture: 𝒩p(+δ𝟏/2,Σ)\mathcal{N}_{p}(+\delta\mathbf{1}/2,\Sigma) and
+𝒩p(−δ𝟏/2,Σ)\mathcal{N}_{p}(-\delta\mathbf{1}/2,\Sigma) with
+δ∈{0.5,1.0,2.0}\delta\in\{0.5,1.0,2.0\}, where Σ\Sigma is the block covariance
+from item 2 with ρ=0.5\rho=0.5.
+
+6.
+
+Sparse mean-shift mixture (p=50p=50). Equal-weight
+mixture with Σ\Sigma as in item 2 (ρ=0.5\rho=0.5), but only the first
+k=5k=5 of 50 features are shifted by ±δ/2\pm\delta/2
+(δ∈{1.0,2.0}\delta\in\{1.0,2.0\}).
+
+7.
+
+Heterogeneous-covariance mixture (p∈{10,50}p\in\{10,50\}).
+Equal-weight, zero-mean mixture with different within-component
+correlation: component 1 has correlated features (ρ\rho) in the first
+half and independent in the second; component 2 has the reverse.
+ρ∈{0.5,0.8,0.9}\rho\in\{0.5,0.8,0.9\}.
+
+Appendix D Robustness and parameter sensitivity
+
+The main-text analyses each use a single set of Mapper parameters and a
+single deterministic feature split. Here we vary both to assess
+sensitivity: first across random feature splits, then across a grid of
+Mapper resolution and gain values.
+
+D.1 Feature-split robustness
+
+To assess whether results depend on the particular choice of feature
+split, we repeat the structured null test using 50 independent random
+50/50 feature splits in addition to
+the original odd/even split, for both the NBA and NKI breast cancer
+datasets.
+
+For the NBA dataset under Configuration 1 (resolution 30, gain 2.0),
+when all 40 communities (including 26 singletons) are included,
+zz-scores range from 0.48 to 9.60 with mean 5.60, and 50 of 51 splits
+reject at α=0.05\alpha=0.05. When singleton communities are excluded, all
+51 splits produce negative zz-scores (range −3.65-3.65 to −1.07-1.07, mean
+−2.48-2.48), and none rejects. Configuration 2 tells the same story: 51 of
+51 splits reject with all communities (mean z=6.22z=6.22); only 1 of 51
+rejects without singletons (mean z=−0.97z=-0.97). The singleton artifact
+is robust across feature splits.
+
+For the NKI breast cancer dataset (1D Mapper, resolution 30, gain 3.0),
+the 51 zz-scores range from −0.07-0.07 to 0.77 with mean 0.17. None of
+the 51 splits rejects at α=0.05\alpha=0.05.
+
+D.2 Parameter sensitivity
+
+For the NBA dataset, we test resolution ∈{10,15,20,25,30}\in\{10,15,20,25,30\} and
+gain ∈{1.5,2.0,2.5,3.0}\in\{1.5,2.0,2.5,3.0\} (20 configurations), with 3 histogram
+bins and B=100B=100 null replicates per configuration. When all
+communities are included, zz-scores range from 3.0 to 27.7, and all 20
+configurations reject. When singletons are excluded, all 20
+configurations produce negative zz-scores (range −3.54-3.54 to −0.39-0.39),
+and none rejects.
+
+For the NKI breast cancer dataset, we test resolution ∈{15,20,25,30}\in\{15,20,25,30\} and gain ∈{2.0,2.5,3.0}\in\{2.0,2.5,3.0\} (12 configurations). The
+zz-scores range from −0.19-0.19 to 3.343.34, with 11 of 12 below the
+critical value. One configuration (resolution 20, gain 3.0) produces z=3.34z=3.34.
+Because the grid was explored as a sensitivity analysis rather than a
+pre-specified confirmatory test, we do not interpret this isolated
+rejection as confirmatory. It does, however, identify a parameter
+setting where the conclusion differs.
+
+We did not vary the number of histogram bins; the bins control the
+granularity of within-preimage clustering and are less influential than
+resolution and gain.
+
+Appendix E Detailed empirical results
+
+We report two additional diagnostic analyses for the empirical case
+studies. The first replaces the block-averaged dissociation statistic
+with a single-feature maximum; the second examines the modularity
+distributions produced by the null model.
+
+E.1 DmaxD_{\max} analysis
+
+As a sensitivity check, we compute the largest absolute difference in
+community means across all features and community pairs:
+
+Dmax=maxk<ℓ⁡maxj​|x¯k​j−x¯ℓ​j|.D_{\max}=\max_{k<\ell}\max_{j}|\bar{x}_{kj}-\bar{x}_{\ell j}|.
+
+This statistic avoids the block-averaging step and is sensitive to
+single-feature differences. We use the same observed and null Mapper
+graphs; only the graph-level test statistic changes.
+
+For the NKI breast cancer 1D analysis: observed Dmax=2.44D_{\max}=2.44, null
+mean 1.66 (sd 1.47), z=0.53z=0.53, p^=0.29\hat{p}=0.29. The DmaxD_{\max}
+result agrees with the block-averaged dissociation.
+
+For the NBA analysis under Configuration 1: z=18.4z=18.4 with all
+communities, z=−3.6z=-3.6 without singletons. Under Configuration 2:
+z=15.1z=15.1 with all communities, z=−1.5z=-1.5 without. The
+singleton-driven pattern is robust to the choice of test statistic.
+
+E.2 Null modularity distributions
+
+The null modularity distribution provides context about the graph-level
+structure produced under the null.
+
+For NKI 1D: the observed graph has modularity Q=0.648Q=0.648; the null
+replicates have mean modularity 0.6550.655 (sd 0.0210.021, 95% interval
+[0.604,0.687][0.604,0.687]) and produce 5.65.6 communities on average. Both the
+observed modularity and the number of communities fall within the null
+range.
+
+For the NBA under Configuration 1: the null Mapper graphs have mean
+modularity 0.9380.938 (sd 0.0070.007) and produce 103103 communities on average,
+compared to the observed Q=0.707Q=0.707 with 40 communities. Under
+Configuration 2: null mean Q=0.732Q=0.732 (sd 0.0220.022) with 8.58.5
+communities versus the observed Q=0.452Q=0.452 with 7. In both cases, the
+null graphs are more modular than the observed graph, because Louvain
+partitions the diffuse null data into many small, tightly separated
+communities.
+
+Appendix F Scope of replication
+
+Our replication of [23] is approximate in several respects.
+The original analyses were conducted in Ayasdi, whose internal
+parameterization differs from open-source Mapper implementations
+(section B.1). We matched the graph structure as closely as
+possible through parameter sweeps and equalized binning, but we cannot
+guarantee that our Mapper graphs are identical to those of
+[23].
+
+The NKI dataset we use contains 336 samples rather than the 272 reported
+in [23], likely due to different filtering criteria that we
+were unable to determine from the published methods. These discrepancies
+introduce uncertainty about whether our replication faithfully represents
+the original analysis. However, the non-rejection finding is consistent
+across both the 1D and 2D configurations, with zz-scores near zero in
+both cases. The feature-split robustness analysis
+(section D.1), in which all 51 splits produce
+non-rejection, further suggests that the conclusion is stable.
+
+For the NBA analysis, the replication is more straightforward: the
+7-dimensional data are simple, the sample size matches exactly
+(n=452n=452), and the Mapper parameters translated well. Our open-source
+equalized Mapper produces 14 multi-player communities (40 total,
+including 26 singletons) under the paper-matching configuration,
+whereas [23] report 13 total clusters in Ayasdi; the
+difference reflects proprietary implementation details.
+
+The LGG analysis (25) serves a distinct role:
+rather than replicating [23], it provides an external
+validation of the structured null framework in a methodologically
+different setting. Our voting analysis uses a single Congress (2008);
+the temporal dynamics documented in [23]—particularly the
+shrinking of the moderate “Central Group” over time—might produce
+different results under the structured null in earlier, more bipartisan
+eras.
+
+Appendix G Statistical validation literature
+
+Within TDA, hypothesis testing has developed primarily for persistent
+homology, a technique that tracks the appearance and disappearance of
+topological features (connected components, loops, voids) as one sweeps
+through a sequence of increasingly coarse approximations to the data.
+[5] provided evidence for a universality law,
+suggesting that the distribution of persistence values—the ratio of the
+scale at which a feature disappears to the scale at which it
+appears—in standard persistence diagrams of random point clouds may
+converge to a left-skewed Gumbel distribution, independent of the
+underlying data-generating distribution.
+This suggests a parameter-free null for assessing individual persistent
+homology features. Complementary approaches include confidence regions
+via the bottleneck bootstrap [8] and
+permutation-based tests for persistence diagrams; see [10]
+for a survey.
+
+Appendix H Ridge regularization details
+
+For analyses where ridge regularization is used (here, only the LGG
+analysis; see the case-study descriptions above), we replace
+Σ^\hat{\Sigma} with Σ^+ϵ​Ip\hat{\Sigma}+\epsilon I_{p}. We compute the
+eigenvalues of Σ^\hat{\Sigma} and check the minimum eigenvalue
+λmin\lambda_{\min}. When λmin\lambda_{\min} falls below 10−1010^{-10}, we
+set
+
+ϵ=max⁡(0,−λmin)+10−6,\epsilon=\max(0,-\lambda_{\min})+10^{-6},
+
+(13)
+
+which shifts all eigenvalues upward and ensures that the smallest
+eigenvalue of the regularized matrix is at least 10−610^{-6}. The
+max⁡(0,−λmin)\max(0,-\lambda_{\min}) term accounts for the possibility that
+floating-point arithmetic produces a small negative eigenvalue; in
+exact arithmetic, covariance matrices are positive semidefinite and all
+eigenvalues are non-negative.
+
+Appendix I Proofs of theoretical results
+
+We restate each result from the main text and provide its proof.
+Theorem 3.1 establishes that covariance structure alone produces
+nonzero dissociation under a linear filter; Theorem 

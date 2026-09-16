@@ -1,0 +1,1659 @@
+Reinforcement Learning-enhanced Shared-account Cross-domain Sequential Recommendation
+
+      Report GitHub Issue
+      ×
+
+      Title:
+
+Content selection saved. Describe the issue below:
+
+      Description:
+
+      Submit without GitHub
+      Submit in GitHub
+
+    arXiv is now an independent nonprofit!
+    Learn more
+    ×
+
+      Back to arXiv
+
+    Why HTML?
+
+      Report Issue
+
+      Back to Abstract
+
+      Download PDF
+
+Abstract
+
+I Introduction
+
+II Related Work
+
+II-A Sequential Recommendation
+
+II-B Shared-account Recommendation
+
+II-C Cross-domain Recommendation
+
+II-D Reinforcement Learning-based Recommendation
+
+II-E Shared-account Cross-domain Sequential Recommendation
+
+III Methodologies
+
+III-A Preliminaries
+
+III-B Overview of RL-ISN
+
+III-C Basic Cross-domain Recommender
+
+III-C1 Embedding Layer
+
+III-C2 User Identification Network
+
+III-C3 Recommendation with Cross-domain Information
+
+III-C4 Objective Function
+
+III-D Reinforcement Learning-enhanced domain Filter
+
+III-D1 Learning Framework
+
+III-D2 Objective Function
+
+III-E Model Training
+
+IV Experimental Setup
+
+IV-A Research Questions
+
+IV-B Datasets
+
+IV-C Evaluation Protocols
+
+IV-D Baseline Methods
+
+IV-E Implementation Details
+
+V Experimental Results (RQ1 & RQ2)
+
+VI Model Analysis
+
+VI-A Ablation Studies (RQ3)
+
+VI-B Impact of Hyper-parameters (RQ4)
+
+VI-C Training Efficiency and Scalability (RQ5)
+
+VII Conclusions and Future Work
+
+References
+
+    License: arXiv.org perpetual non-exclusive license
+
+arXiv:2206.08088v1 [cs.IR] 16 Jun 2022
+
+Reinforcement Learning-enhanced Shared-account Cross-domain Sequential Recommendation
+
+Lei Guo
+
+  
+Jinyu Zhang
+
+  
+Tong Chen
+
+  
+Xinhua Wang
+
+  
+Hongzhi Yin
+††thanks: L. Guo, and J. Zhang are with the School of information science and Engineering, Shandong Normal University, Jinan 250014, China.
+
+E-mail: leiguo.cs@gmail.com, jinyuz1996@outlook.com
+T. Chen is with the School of Information Technology & Electric Engineering, The University of Queensland, St Lucia, QLD 4072, Australia.
+
+E-mail: tong.chen@uq.edu.au
+X. Wang is with the School of information science and Engineering, Shandong Normal University, Jinan 250014, China.
+
+E-mail: wangxinhua@sdnu.edu.cn
+H. Yin is with the School of Information Technology & Electric Engineering, The University of Queensland, St Lucia, QLD 4072, Australia.
+
+E-mail: h.yin1@uq.edu.au
+††thanks: Manuscript received XX XX, 2022; revised XX XX, 2022.
+
+(Corresponding author: Hongzhi Yin.)
+
+Abstract
+
+SCSR (SCSR) is an emerging yet challenging task that simultaneously considers the shared-account and cross-domain characteristics in the sequential recommendation. Existing works on SCSR are mainly based on  RNN (RNN) and  GNN (GNN) but they ignore the fact that although multiple users share a single account, it is mainly occupied by one user at a time. This observation motivates us to learn a more accurate user-specific account representation by attentively focusing on its recent behaviors. Furthermore, though existing works endow lower weights to irrelevant interactions, they may still dilute the domain information and impede the cross-domain recommendation.
+To address the above issues, we propose a reinforcement learning-based solution, namely RL-ISN, which consists of a basic cross-domain recommender and a reinforcement learning-based domain filter. Specifically, to model the account representation in the shared-account scenario, the basic recommender first clusters users’ mixed behaviors as latent users, and then leverages an attention model over them to conduct user identification. To reduce the impact of irrelevant domain information, we formulate the domain filter as a hierarchical reinforcement learning task, where a high-level task is utilized to decide whether to revise the whole transferred sequence or not, and if it does, a low-level task is further performed to determine whether to remove each interaction within it or not.
+To evaluate the performance of our solution, we conduct extensive experiments on two real-world datasets, and the experimental results demonstrate the superiority of our RL-ISN method compared with the state-of-the-art recommendation methods.
+
+Index Terms: cross-domain recommendation, sequential recommendation, reinforcement learning, shared-account recommendation
+
+I Introduction
+
+In many online systems (such as E-commerce and social media sites), user interactions are organized into sequences, i.e., organizing user behaviors in chronological order, making  SR (SR) a hot research topic. Moreover, as users tend to sign up for different platforms to access domain-specific services, e.g., news subscription and video watching,  CSR (CSR) that aims at making the next item recommendation via leveraging users’ historical sequential behaviors from multiple domains is gaining immense attention.
+In this work, we study CSR in an emerging yet challenging context, SCSR, in which multiple users share a single account, and their interactions are mixed in multiple domains.
+We consider the shared-account characteristic because account sharing has become pervasive in many Internet applications and services. For example, friends or family members tend to share one account in watching the smart TV or speaking to the smart speaker, e.g., Tmall Genie or Google Home Hub, and share one premium account to enjoy online streaming services provided by YouTube or Netflix.
+Another example is that all persons in a household tend to share one music-streaming account and one online-shopping account.
+Moreover, each member behind a shared-account may have different interests and recommendation demands, and it is impractical to view a shared-account as a single user, which further motivates us to design recommenders for shared-accounts.
+However, SCSR is a challenging task since the mixture of users’ behaviors and diverse interests not only makes generating accurate recommendations more difficult, but also amplifies the noise in the interaction data and impedes the cross-domain recommendation.
+Note that, sharing
+is an active behavior among close friends or family members, and our task is to make recommendations for these existing shared-accounts, rather than linking two or multiple accounts that potentially belong to the same person, i.e., leaking users’ privacy. In fact, shared-accounts can resist malicious attacks (for both attribute inference and membership inference attacks), as it mixes multiple users’ behaviors.
+
+Recently, several studies have been focused on conducting cross-domain or shared-account recommendations, but they rarely address the SCSR setting that considers both characteristics.
+Prior works on cross-domain recommendations mainly focus on aggregating information from both domains [1, 2, 3, 4] or transferring knowledge from the source domain to the target domain [5, 6, 7]. The main assumption behind CSR is that users might have similar interests in different domains, and the user behaviors in one domain have the potential to improve recommendations in another domain. However, as users have diverse preferences, and some of them are domain-specific, the effect of the behaviors that reflect the users’ interests in the target domain might be diluted by many irrelevant interactions from the source domain. More importantly, as there is no direct supervision, distinguishing the noisy information transferred from other domains is still a challenging task.
+In addition, existing methods cannot be directly applied to SCSR, since the important shared-account characteristic is largely ignored, and they can only make recommendations for single users.
+In previous studies on the shared-account recommendation [8, 9, 10], a common solution is to extract latent representations from high-dimensional feature spaces that describe users’ relationships under the same account. However, most of them are focused on a single domain, and hence are inapplicable to SCSR.
+
+One recent study that focuses on solving SCSR is π\pi-net [11], which is a parallel sequential recommender with RNN as its basic sequence encoder and a gated unit as its cross-domain transfer controller to share information between two domains. Another prior work that addresses SCSR is DA-GCN [12], which proposes a graph-based solution with a cross-domain sequential graph to explicitly link accounts and items from two domains. In their work, a domain-aware graph convolutional network is devised to learn expressive representations for items and account-sharing users.
+Though the above methods have improved the recommendation performance by exploring the cross-domain and shared-account characteristics, the SCSR task is still largely unexplored due to the following reasons. First, as users usually have diverse interests, their interactions in one domain may not reflect their interests in another domain. Instead, their interests might be diluted by irrelevant domain information. Despite existing models assign relatively high attention coefficients to the major contributing interactions, the effect of the domain information is still discounted by the irrelevant ones.
+Second, existing methods mainly divide the learned account representation evenly in a high-dimensional space to obtain the representation of each latent user, since the unavailability of the user identity information. We argue that the users’ representations can be possibly identified, as an account is mainly used by one user at a time, and current interaction behaviors of an account expose a user’s real interest.
+
+To address the above issues, we propose a  RL (RL)-based solution, namely  RL-ISN (RL-ISN), for SCSR. Our solution consists of two modules: a  BCR (BCR) and a  RL-DF (RL-DF). Specifically, to model accounts’ representations under the shared-account context, BCR first maps the mixed user behaviors into a high-dimensional feature space via a fully connected layer, where a hidden node is deemed as a latent user. Then, we learn the account representation by attentively aggregating the latent users within it, and then enhance target domain recommendation by transferring information from the source domain.
+Moreover, since the irrelevant domain information may hurt the cross-domain recommendation in particular without the explicit/supervised information about the domain knowledge, we formalize the knowledge transfer as a hierarchical reinforcement learning task (i.e., the RL-DF module). That is, a high-level task is performed to decide whether to revise the whole transferred sequence or not, and if it does, a low-level task is performed to determine whether to keep each interaction within the sequence.
+
+The main contributions of this work are listed as follows.
+
+•
+
+We propose a novel RL-ISN, which consists of a basic cross-domain recommender and a domain filter, to encode and share the domain information.
+
+•
+
+We devise an attention-based cross-domain sequence encoder as the basic recommender to model the information from multiple domains. To consider the shared-account characteristic, we further develop a user identification network by clustering and identifying the latent users sharing the same account.
+
+•
+
+We develop a RL-based domain filter to retain only the interactions that are helpful for cross-domain recommendations via considering the rewards brought by the transferred domain knowledge.
+
+•
+
+We conduct extensive experiments on two real-world datasets to demonstrate the advantage of our proposed RL-ISN method compared with several state-of-the-art recommendation methods.
+
+II Related Work
+
+II-A Sequential Recommendation
+
+The task of SR is to predict the next item that a user tends to interact with given her historical interactions. Traditional studies on SR are mainly Markov chain-based methods, which treat the recommendation generation as predicting the next action in a  MDP (MDP) [13, 14]. For example, Shani et al. [13] propose a MDP-based recommender by taking into account both the long-term effects and the expected
+value of each recommendation.
+Chen et al. [14] formulate the playlist generation problem as a regularized maximum-likelihood embedding of Markov chains in Euclidean space and solve it by devising a logistic Markov embedding algorithm.
+However, the above methods have limited ability in modeling sequences, since their state space becomes unmanageable when considering the whole sequence.
+To enhance the capability of capturing the high-dimensional expression of sequences, recent works are mainly focused on devising deep neural network-based methods [15, 16, 17, 18, 19, 20, 21]. For example, Hidasi et al. [15] apply RNN to session-based sequential recommendation, and achieve significant improvement over traditional methods.
+Hsu et al. [22] propose a temporal attentive graph neural network for SR, and can achieve the state-of-the-art performance under conventional, inductive, and transferable settings.
+However, these sequential recommenders are mainly focused on capturing the sequential characteristics for single users, and their performance on the shared-account and cross-domain scenarios are largely unexplored.
+
+II-B Shared-account Recommendation
+
+Previous studies on the shared-account recommendation are usually divided into two steps, that is, first perform user identification, and then make recommendations [8, 9, 23]. For example, Zhang et al. [24] first study user identification as a subspace clustering problem, and then show the possible improvement it brings to personalized recommendation. Jiang et al. [9] propose a session-based heterogeneous graph to embed different users under an account, where the items and their available metadata are both considered.
+Wang et al. [23] model users by utilizing their consumption logs with the assumption that different users are active in different times periods, and further leverage a standard KNN to make recommendations.
+Similar to [23], Yang et al. [25] judge whether the split historical behaviors belong to the same user or not by analyzing their similarity.
+However, the above methods can only conduct user identification and recommendation in two separate processes, and ignore the benefit brought by the end-to-end learning. Though Wen et al. [10] recently develop a unified multi-user identification network based on a self-attentive method, they ignore the cross-domain information, which may further improve the shared-account recommendation.
+
+II-C Cross-domain Recommendation
+
+CR (CR) that aims at improving recommendations by concerning data from multiple domains has been proven helpful for cold-start and sparsity issues [3, 4].
+Traditional methods for CR can be categorized into knowledge aggregation-based methods and knowledge transferring-based methods. In aggregation-based methods, the efforts are making at designing aggregating functions that can take into account both domains [1, 2]. In transferring-based methods, the studies are mainly focused on sharing or transferring domain information between two domains [5, 7].
+However, these two kinds of methods are all shallow methods, which hinders them to learn high-level abstractions from different domains.
+In light of this, deep neural network-based methods have gradually attracted the attention of researchers [26, 27, 28, 29, 4, 30].
+For example, Liu et al. [31] propose a distribution alignment-based method to make CR for the cold-start items in the target domain. But their method needs items’ auxiliary information as input and can only make recommendations for a single target.
+In light of the limitations of single-target CR, Zhu et al. [32] first propose a graphical and attentional framework for dual-target CR to improve the recommendation accuracy on both domains. Then, they extend [32] in [33], and further devise a unified framework for multi-types of CSRs via a personalized training strategy.
+However, the above methods all ignore the fact that irrelevant domain information, even if they are given lower attention weights, may still dilute the domain knowledge. Moreover, these methods do not consider the shared-account scenario, which may further amplify the noisy interactions and prevent the cross-domain recommendation.
+
+II-D Reinforcement Learning-based Recommendation
+
+Recently, reinforcement learning-based technique has been widely applied to solve the recommendation issues, such as the noisy items in sequential recommendation [34], dialog-based interactive recommendation [35], news recommendation  [36] and social recommendation [37, 38]. For example, Wu et al.  [35] develop a dialog-based recommendation model by leveraging an estimator to track and estimate users’ preferences, and a generator to match the estimated preferences with the candidate items to make recommendations. Zheng et al. [36] introduce a deep reinforcement learning framework for online personalized news recommendation by utilizing deep Q-learning to model both current and future reward.
+Zhang et al. [34] propose a hierarchical reinforcement learning-based algorithm for course recommendation by tackling the noises existed in users’ historical courses, where a user profile reviser is devised to remove the courses that cannot bring more rewards to recommender.
+However, although the existing reinforcement learning-based methods have achieved great success in many recommendation tasks, none of them have been focused on solving the cross-domain transfer issue and the shared-account characteristic. Due to the missing of the direct supervision for the domain information, we cast the process of domain transfer as a MDP, and further improve the cross-domain recommendation by a hierarchical reinforcement learning network.
+
+II-E Shared-account Cross-domain Sequential Recommendation
+
+To simultaneously explore the shared-account and cross-domain characteristics, recent studies have given more attention to the SCSR task. Ma et al. [11] are the first to study SCSR, and propose a parallel information sharing network, namely π\pi-net, which uses a RNN-based unit to learn user-specific representations for kk latent users, and a gating mechanism to filter out domain information. Ren et al. [39] further improves π\pi-net by first splitting the role-specific representations at each timestamp and then joining them to get cross-domain representations.
+Guo et al. [12] develop a graph-based solution to enhance the expressive ability of sequential patterns via capturing the structure of cross-domain information. However, none of the above methods take into account the fact that an account is mainly occupied by one user at a time, and the current user can be possibly identified by her recent behaviors. Moreover, existing methods that endow lower weights to irrelevant interactions may also dilute the effect of the domain information and hinder the cross-domain recommendation.
+
+Fig. 1: The System Architecture of RL-ISN, where SDI stands for the Shared Domain Information.
+
+III Methodologies
+
+III-A Preliminaries
+
+The task of SCSR is to predict the next items that a shared-account will consume in different domains. For simplicity, this work only considers two domains but the ideas can be easily generalized to multiple domains. SCSR is different from traditional SR task in two aspects. First, in SCSR, the sequential behaviors are generated by multiple users, while in the traditional SR they are usually generated by a single user. Second, SCSR considers the information from multiple domains for a particular recommendation, while SR only considers the information in a single domain.
+Here, we give a formulation of the SCSR task.
+
+Suppose there are CC shared-accounts 𝒢={G1,G2,…,Gc,…,GC}\mathcal{G}=\{G_{1},G_{2},...,G_{c},...,G_{C}\}, MM items 𝒱A={A1,A2,…,Am,…,AM}\mathcal{V}_{A}=\{A_{1},A_{2},...,A_{m},...,A_{M}\} in domain A and NN items 𝒱B={B1,B2,…,Bn,…,BN}\mathcal{V}_{B}=\{B_{1},B_{2},...,B_{n},...,B_{N}\} in domain B.
+We represent the behavior sequence generated by account GcG_{c} as 𝒮co={A1,B1,…,Am,…,Bn,…}\mathcal{S}^{o}_{c}=\{A_{1},B_{1},...,A_{m},...,B_{n},...\}, where Am∈𝒱AA_{m}\in\mathcal{V}_{A} is a consumed item in domain A, and Bn∈𝒱BB_{n}\in\mathcal{V}_{B} is a consumed item in domain B. Given 𝒮co\mathcal{S}^{o}_{c}, SCSR aims to recommend a ranked list of items that account GcG_{c} would like to consume next in domain A or B, which can be formally defined as:
+
+Input: A shared-account GcG_{c}, the item set 𝒱A\mathcal{V}_{A} and 𝒱B\mathcal{V}_{B}, the mixed historical behavior sequence 𝒮co\mathcal{S}^{o}_{c} generated by GcG_{c} in domain A and B.
+
+Output: 1) The probability P⁡(Am|𝒮co)P(A_{m}|\mathcal{S}^{o}_{c}) of recommending item AmA_{m} as the next item to be consumed in domain A, and
+2) the probability P⁡(Bn|𝒮co)P(B_{n}|\mathcal{S}^{o}_{c}) of recommending item BnB_{n} as the next item to be consumed in domain B.
+
+III-B Overview of RL-ISN
+
+The purpose of RL-ISN is to learn a cross-domain recommender that can transfer the refined domain knowledge under the shared-account scenario from domain A to B to improve the recommendation performance in B, and vice versa.
+Since there is no prior knowledge about user identities in an account, directly modeling users’ mixed sequential behaviors is not feasible. Hence, we leverage a fully connected layer to first conduct behavior clustering, and then identify users via the current target and an attention network.
+Moreover, as the recommendation process may be disturbed by irrelevant domain information, we need to learn an agent to filter out the irrelevant interactions from the transferred domain information, and then make recommendations based on the refined transferred knowledge.
+The key challenge here is how to determine which transferred interactions are the noises without direct supervision signal. To deal with this issue, we formalize the process of transferring knowledge across domains as a hierarchical MDP and resort to the hierarchical reinforcement learning technique, where a high-level and a low-level task are performed to fine-tune the transferred domain information.
+
+Fig. 1 shows the architecture of our RL-ISN, which consists of two components: a  BCR (BCR) and a  RL-DF (RL-DF).
+1) To encode users’ mixed behaviors, BCR (Fig. 2 shows an overview of BCR in domain A) first clusters the interactions as latent users and then identifies the currently active ones by their recent intents (i.e., the last interaction or the target item). After that, we can achieve the account representation by attentively aggregating the identified latent users in an attention network.
+To make cross-domain recommendations, the information from domain B (or A) is further combined with the original information in domain A (or B) (more details can be seen in Section III-C).
+2) The RL-DF component (or agent) aims to find out a policy that determines which interactions can be transferred across domains, i.e., filtering out the irrelevant user behaviors that may harm the cross-domain recommendation.
+Specifically, we decompose the overall MDP process into a high-level task to determine whether to revise the whole transferred sequence or not, and a low-level task to decide whether to remove an interaction within it.
+At the end of the revising process, the agent gets both immediate rewards and a delayed long-term reward from the environment, based on which it updates its policy.
+As desirable, the performance of BCR could be improved by the revised domain information. To simultaneously enhance BCR and RL-DF, we train the two components in a joint way (more details can be seen in Section III-D).
+
+Fig. 2: Overview of the basic cross-domain recommender in domain A. A similar basic recommender in domain B can also be easily achieved.
+
+III-C Basic Cross-domain Recommender
+
+The key function of our BCR module is to accurately characterize an account’s preference according to its historical behaviors. However, since each account is shared by multiple users and their behaviors are mixed together, it is not feasible to model them directly.
+Moreover, unlike linguistic sequences that are generated in a strictly-ordered way, user behavior may not be in such a strict-chronological order [40]. Strictly modeling the relative orders of items would probably make the recommendation models prone to overfitting.
+To overcome the above challenges, we devise a user identification network to model shared-accounts from a multi-user view, and encode accounts’ representations by attentively aggregating each latent user within them.
+
+As shown in Fig. 2, our basic recommender consists of three components, i.e., embedding layer, user identification network, and the prediction component.
+In the following, we will detail each of them.
+
+III-C1 Embedding Layer
+
+For all the items in domains A and B, we respectively create two item embedding matrices 𝑴∈ℝM×d\boldsymbol{M}\in\mathbb{R}^{M\times d} and 𝑵∈ℝN×d\boldsymbol{N}\in\mathbb{R}^{N\times d}, where dd is the embedding dimensionality. For each training sequence in A {A1,A2,…,Am,…,Ala}\{A_{1},A_{2},...,A_{m},...,A_{l_{a}}\} or B {B1,B2,…,Bn,…,Blb}\{B_{1},B_{2},...,B_{n},...,B_{l_{b}}\}, we transform it into a fixed-length sequence according to the maximum sequence length (denoted by lal_{a} or lbl_{b}) in the current batch. That is, if a sequence length is less than lal_{a} (or lbl_{b}), we repeatedly add a padding item to the left until its length is lal_{a} (or lbl_{b}). Then, we retrieve the input items from 𝑴\boldsymbol{M} (or 𝑵\boldsymbol{N}) as their initial embedding matrix 𝑯^∈ℝla×d\boldsymbol{\hat{H}}\in\mathbb{R}^{l_{a}\times d} (or 𝑯^∈ℝlb×d\boldsymbol{\hat{H}}\in\mathbb{R}^{l_{b}\times d}).
+We assign a constant zero vector to the padding item. To identify the current user who is using the account, we take the last item (or target item) of each sequence as the supervision signal.
+
+Positional Embedding. To consider items’ sequential orders, we first introduce a learnable embedding 𝑷∈ℝ(la+lb)×d\boldsymbol{P}\in\mathbb{R}^{(l_{a}+l_{b})\times d} [41] to encode all the positions of items in the mixed sequences, which is shared by all the items in both domains and invariant to different items in the same position. Then, we inject it into the initial embedding layer (take domain A as an example):
+
+𝑯𝑨=[𝑯^A1+𝑷A1𝑯^A2+𝑷A2...𝑯^Am+𝑷Am...𝑯^la−1+𝑷la−1],\displaystyle\boldsymbol{{H}_{A}}={\left[\begin{array}[]{c}\boldsymbol{\hat{H}}_{A_{1}}+\boldsymbol{P}_{A_{1}}\\
+\boldsymbol{\hat{H}}_{A_{2}}+\boldsymbol{P}_{A_{2}}\\
+...\\
+\boldsymbol{\hat{H}}_{A_{m}}+\boldsymbol{P}_{A_{m}}\\
+...\\
+\boldsymbol{\hat{H}}_{l_{a}-1}+\boldsymbol{P}_{l_{a}-1}\end{array}\right]},
+
+where 𝑯𝑨\boldsymbol{{H}_{A}} is the representation of the given sequence with position embedding, 𝑯^Am\boldsymbol{\hat{H}}_{A_{m}} is the initial embedding of item AmA_{m}, and 𝑷Am\boldsymbol{P}_{A_{m}} is the embedding of the position that item AmA_{m} lies in its original sequence.
+
+III-C2 User Identification Network
+
+As the interactions in a shared-account are generated by multiple users and each user has diverse interests, modeling an account by a single embedding vector is insufficient. To capture the shared-account characteristics, we first cluster the mixed behaviors as latent users, and represent a user via a cluster over all the historical interactions with different aggregation weights.
+Moreover, as an account is mainly occupied by one single user at a time, we then represent the account by attentively aggregating these latent users with the target item as the supervision signal.
+
+Latent User Representation. Through the embedding layer, we can obtain the embeddings of all the historical items generated by an account {𝑯A1,𝑯A2,…,𝑯Am,…,𝑯Ala−1}\{\boldsymbol{H}_{A_{1}},\boldsymbol{H}_{A_{2}},...,\boldsymbol{H}_{A_{m}},...,\boldsymbol{H}_{A_{l_{a}-1}}\} in domain A (take domain A as an example).
+In this work, we adopt a  MLP (MLP) network to generate user clusters (assuming there are KAK_{A} and KBK_{B} latent users in domain A and B, respectively).
+Due to there is no supervision signal indicating which user interacts which item, we represent the latent user by considering all the items within this sequence. More specifically, we utilize a fully connected feed-forward network (as shown in Fig. 2) to map the historical interactions into a high-dimensional user latent feature space to represent each user uiu_{i}, and denote the mapping function by a linear transformation with a ReLU activation:
+
+𝑼i=max​(0,∑m=1la−1wm​i​𝑯Am+b),\displaystyle\boldsymbol{U}_{i}=\text{max}(0,\sum_{m=1}^{l_{a}-1}w_{mi}\boldsymbol{H}_{A_{m}}+b),
+
+(7)
+
+where 𝑼i\boldsymbol{U}_{i} is the representation of user uiu_{i}, wm​iw_{mi} is the learned weight denoting the importance of the item AmA_{m}, and bb is the bias term.
+
+To obtain all latent users’ representations, we need to map all the interactions within the input sequence KAK_{A} (or KBK_{B}) times. Thus, we extend the weight wm​iw_{mi} into a matrix 𝑾KA×(la−1)\boldsymbol{W}^{{K_{A}}\times(l_{a}-1)}, and represent the final matrix of latent users as:
+
+𝑼=m​a​x​(0,𝑾​𝑯cA+𝒃),\displaystyle\boldsymbol{U}=max(0,\boldsymbol{W}\boldsymbol{H}_{c}^{A}+\boldsymbol{b}),
+
+(8)
+
+where 𝑯cA∈ℝ(la−1)×d\boldsymbol{H}_{c}^{A}\in\mathbb{R}^{(l_{a}-1)\times d} denotes the embedding matrix of the whole sequence.
+
+Current Account Representation.
+As an account is mainly occupied by one user at a time, its representation should be consistent with that of the user currently using it. In light of this, we take the last item in the current sequence as the supervision signal, and represent the account by attentively aggregating all the latent users under it, that is, an attention mechanism is adopted to estimate the attention weights of latent users in the account representation.
+
+For the ii-th latent user uiu_{i}, we compute how the target item AtA_{t} is consistent with uiu_{i} as:
+
+ai,t=f⁡(𝑯At,𝑼i),\displaystyle a_{i,t}=f(\boldsymbol{H}_{A_{t}},\boldsymbol{U}_{i}),
+
+(9)
+
+where ff is an attention function. Inspired by the recent success of modeling the attention weight with neural networks [42, 17], we similarly use a MLP to parameterize ff:
+
+f⁡(𝑯At,𝑼i)=𝒉T​ReLU​(𝑾𝟏​[𝑯At⊕𝑼i]+𝒃).\displaystyle f(\boldsymbol{H}_{A_{t}},\boldsymbol{U}_{i})=\boldsymbol{h}^{T}\text{ReLU}(\boldsymbol{W_{1}}[\boldsymbol{H}_{A_{t}}\oplus\boldsymbol{U}_{i}]+\boldsymbol{b}).
+
+(10)
+
+In this MLP, we first use the weight matrix 𝑾𝟏\boldsymbol{W_{1}} and bias vector 𝒃\boldsymbol{b} to map the input into a hidden layer, and then projects it into an attention weight via the weight vector 𝒉T\boldsymbol{h}^{T}.
+
+Then, we can get the account representation by the following attention network:
+
+𝑮cA=∑i=1KAαi,t​𝑼i,\displaystyle\boldsymbol{G}_{c}^{A}=\sum_{i=1}^{K_{A}}\alpha_{i,t}\boldsymbol{U}_{i},
+
+(11)
+
+αi,t=exp​(f⁡(𝑯At,𝑼i))∑i=1KA(exp​(f⁡(𝑯At,𝑼i))βCLOSE.\displaystyle\alpha_{i,t}=\frac{\text{exp}(f(\boldsymbol{H}_{A_{t}},\boldsymbol{U}_{i}))}{\sum_{i=1}^{K_{A}}(\text{exp}(f(\boldsymbol{H}_{A_{t}},\boldsymbol{U}_{i}))^{\beta}}.
+
+(12)
+
+Inspired by [18], we do not perform the standard softmax function on attention weights. Instead, we introduce the smoothing component β∈[0.1,1]\beta\in[0.1,1] to avoid overly punishing the weights of accounts with many shared users. Obviously, when setting β\beta to 1, it can recover the softmax function; otherwise, it can suppress the value of denominator to avoid over punishing.
+
+III-C3 Recommendation with Cross-domain Information
+
+Up to now, we only learn the account representation from one domain.
+To make cross-domain recommendations, we need to transfer users’ interactions from domain B to A (take A as the target domain), and then combine them with the original information in A to improve the recommendation in A. The transferred information from B to A is captured by another  UIN (UIN), which takes the whole transferred sequence as input, and outputs the corresponding account representation (denoted as 𝑮cB→A\boldsymbol{G}_{c}^{B\to A}) with the target item in A as the supervision signal.
+To integrate the information from both domains, we further combine (the concatenation operation is applied) 𝑮cA\boldsymbol{G}^{A}_{c} with the transferred knowledge (𝑮cB→A\boldsymbol{G}_{c}^{B\to A}) to get a comprehensive account representation.
+Finally, the probability of recommending item AmA_{m} is achieved by matching the account representation with the item embedding:
+
+P⁡(Am|Sco)=sigmoid​(𝑯Am⋅[𝑮cB→A;𝑮cA]T+𝒃),\displaystyle P(A_{m}|S^{o}_{c})=\text{sigmoid}(\boldsymbol{H}_{A_{m}}\cdot[\boldsymbol{G}_{c}^{B\to A};\boldsymbol{G}_{c}^{A}]^{T}+\boldsymbol{b}),
+
+(13)
+
+where ScoS^{o}_{c} is the mixed behavior sequence from account GcG_{c} in both domains,
+and 𝒃\boldsymbol{b} is the bias term.
+Similar to the prediction model in domain A, the prediction probability of item BnB_{n} in domain B can be formulated as:
+
+P⁡(Bn|Sco)=sigmoid​(𝑯Bn⋅[𝑮cA→B;𝑮cB]T+𝒃),\displaystyle P(B_{n}|S^{o}_{c})=\text{sigmoid}(\boldsymbol{H}_{B_{n}}\cdot[\boldsymbol{G}_{c}^{A\to B};\boldsymbol{G}_{c}^{B}]^{T}+\boldsymbol{b}),
+
+(14)
+
+where 𝑮cA→B\boldsymbol{G}_{c}^{A\to B} denotes the transferred information from A to B, and 𝑮cB\boldsymbol{G}_{c}^{B} is the original information in B.
+
+III-C4 Objective Function
+
+As each user interaction is a binary value 1 or 0, we deem the learning of a next item recommendation model as a binary classification task. That is, we treat the observed user-item interactions as positive instances and sample the negative instances from unobserved user-item pairs (we set the number of negative samples per positive as 4 in experiments).
+Then, we formulate our objective function as a regularized log loss:
+
+LA​(Θ)=−1T​(∑s∈𝒮+∑Am∈slog​P​(Am+1|s)CLOSE\displaystyle L_{A}(\Theta)=-\frac{1}{T}(\sum_{s\in\mathcal{S}^{+}}\sum_{A_{m}\in s}\text{log}P(A_{m+1}|s)
+
++∑s∈𝒮−∑Am∈slog(1−P(Am+1|s)))+λ||Θ||2,\displaystyle\qquad\qquad+\sum_{s\in\mathcal{S}^{-}}\sum_{A_{m}\in s}\text{log}(1-P(A_{m+1}|s)))+\lambda||\Theta||^{2},
+
+(15)
+
+LB​(Θ)=−1T​(∑s∈𝒮+∑Bn∈slog​P​(Bn+1|s)CLOSE\displaystyle L_{B}(\Theta)=-\frac{1}{T}(\sum_{s\in\mathcal{S}^{+}}\sum_{B_{n}\in s}\text{log}P(B_{n+1}|s)
+
++∑s∈𝒮−∑Bn∈slog(1−P(Bn+1|s)))+λ||Θ||2,\displaystyle\qquad\qquad+\sum_{s\in\mathcal{S}^{-}}\sum_{B_{n}\in s}\text{log}(1-P(B_{n+1}|s)))+\lambda||\Theta||^{2},
+
+(16)
+
+where TT denotes the total number of training instances, Θ\Theta represents all the trainable parameters, 𝒮+\mathcal{S}^{+} and 𝒮−\mathcal{S}^{-} denote the set of positive and negative instances, respectively.
+
+All the parameters in LA​(Θ)L_{A}(\Theta) and LB​(Θ)L_{B}(\Theta) are learned by a variant stochastic gradient descent method Adagrad [43] that applies an adaptive learning rate for each parameter and adopts the mini-batch to speedup the training process.
+Note that, to avoid the seesaw phenomenon leading by a joint loss function that the approach often improves a domain at the sacrifice of another domain’s performance, we exploit a separated objective function with a separated optimizer for each domain.
+
+III-D Reinforcement Learning-enhanced domain Filter
+
+Though the cross-domain information can help us capture users’ domain-specific preferences, the recommender might be disturbed if the transferred information is irrelevant or event opposite, which may happen when an account is used by users with different interests in two domains. For example, in a TV family account, children like the animation channel, while parents prefer the movie channel. Taking all the cartoons into account will not improve the performance of predicting the next movie for a parent. Instead, the irrelevant interactions dilute the main intent of the current behavior sequence. To deal with this issue, we develop a reinforcement learning-enhanced domain filter to refine the transferred interactions from the source domain to improve the recommendation performance in the target domain. Rather than assigning attention coefficients to each of the transferred behaviors, we propose to enhance the cross-domain recommender by removing the noisy ones. In the following, we will present its design and objective function.
+
+III-D1 Learning Framework
+
+Due to the unavailability of direct supervision information, it is hard to leverage traditional methods to directly distinguish noisy interactions. Inspired by [34, 44], we cast the task of domain filtering as a hierarchical MDP, and decompose the overall task into two sub-tasks ThT^{h} and TlT^{l}, where ThT^{h} is a high-level task with one binary action determining
+whether to revise the whole transferred sequence, and TlT^{l} is a low-level task with multiple actions deciding the necessity of removing each transferred interaction within it.
+Each kind of task is defined as a 4-tuple MDP (𝒮,𝒜,𝒯,ℛ)(\mathcal{S},\mathcal{A},\mathcal{T},\mathcal{R}), where
+
+•
+
+𝒮\mathcal{S}: is a set of states defined in a continuous feature space;
+
+•
+
+𝒜\mathcal{A}: is a set of actions that can be adopted by a whole sequence or every transferred interaction;
+
+•
+
+𝒯\mathcal{T}: 𝒮×𝒜×𝒮→[0,1]\mathcal{S}\times\mathcal{A}\times\mathcal{S}\to[0,1] is the state transition probability mapping 𝒮×𝒜×𝒮\mathcal{S}\times\mathcal{A}\times\mathcal{S} into [0,1][0,1];
+
+•
+
+ℛ\mathcal{R}: 𝒮×𝒜→ℝ\mathcal{S}\times\mathcal{A}\to\mathbb{R} is the reward function mapping 𝒮×𝒜\mathcal{S}\times\mathcal{A} into a real value.
+
+Take the recommendation scenario in domain B as an example. Given an account GcG_{c}, an interaction sequence transferred from domain A to B (𝒮cA→B:=(A1A→B,A2A→B,…,AmA→B,…)\mathcal{S}_{c}^{A\to B}:=({A_{1}}^{A\to B},{A_{2}}^{A\to B},...,{A_{m}}^{A\to B},...)), and the target item BtB_{t} in B, the agent (i.e., domain filter) performs a high-level task to decide whether to revise 𝒮cA→B\mathcal{S}_{c}^{A\to B} or not. If it does, the agent further conducts a low-level task to decide whether to remove each interaction AmA→B∈𝒮cA→BA_{m}^{A\to B}\in\mathcal{S}_{c}^{A\to B} or not.
+Otherwise the overall task will be directly finished.
+Then, the refined sequences are further fed into BCR. To describe the framework of our agent (as shown in Fig. 1) more clearly, we follow the common terminologies in reinforcement learning [45]:
+
+Environment: In our design, the environment consists of the account set 𝒢\mathcal{G}, the item set 𝒱\mathcal{V}, the basic cross-domain recommender, and the cross-domain interactions to be refined.
+
+States:
+In the high-level task, the agent takes an action according to the state of the whole transferred sequence. Motivated by [34], we define the state 𝑺h\boldsymbol{S}^{h} as: 1) the average cosine similarity between the embeddings of each transferred interaction 𝑯AmA→B∈𝑯cA→B\boldsymbol{H}_{A_{m}}^{A\to B}\in\boldsymbol{H}_{c}^{A\to B} and the target item in domain B (𝑯Bt\boldsymbol{H}_{B_{t}}), 2) the average element-wise product between the embeddings of 𝑯AmA→B\boldsymbol{H}_{A_{m}}^{A\to B} and 𝑯Bt\boldsymbol{H}_{B_{t}}, and 3) the probability of recommending BtB_{t} to account GcG_{c} by the basic recommender based on 𝑯cA→B\boldsymbol{H}_{c}^{A\to B}, where a lower recommendation probability indicates that we should take more efforts to revise 𝒮cA→B\mathcal{S}_{c}^{A\to B}.
+
+In the low-level task, the agent takes a sequence of actions according to the state 𝑺ml\boldsymbol{S}_{m}^{l} of each transferred interaction/item. Similar to 𝑺h\boldsymbol{S}^{h}, the state 𝑺ml\boldsymbol{S}_{m}^{l} is defined as: 1) the cosine similarity between the representation of the current item 𝑯AmA→B\boldsymbol{H}_{A_{m}}^{A\to B} and the target 𝑯Bt\boldsymbol{H}_{B_{t}}, 2) the average value of 1) on all the reserved interactions, 3) the absolute value of the difference
+between 𝑯AmA→B\boldsymbol{H}_{A_{m}}^{A\to B} and 𝑯Bt\boldsymbol{H}_{B_{t}}, and 4) the average value of 3).
+The representation of an item or a transferred interaction is learned by BCR.
+
+Action and policy: We define the high-level action as a binary value ah∈{0,1}a^{h}\in\{0,1\} to indicate whether the transferred sequence should be revised, and a low-level action as a binary indicator to decide whether the current transferred item should be removed, which are instructed by the following policy functions.
+
+The high-level policy function for a given sequence 𝒮cA→B\mathcal{S}_{c}^{A\to B} is defined as:
+
+π⁡(𝑺h,ah)=P⁡(ah|𝑺h,Φh)\displaystyle\pi(\boldsymbol{S}^{h},a^{h})=P(a^{h}|\boldsymbol{S}^{h},\Phi^{h})
+
+=ah​σ​(𝑾1h​𝑬h)+(1−ah)​(1−σ⁡(𝑾1h​𝑬h)),\displaystyle\qquad=a^{h}\sigma(\boldsymbol{W}_{1}^{h}\boldsymbol{E}^{h})+(1-a^{h})(1-\sigma(\boldsymbol{W}_{1}^{h}\boldsymbol{E}^{h})),
+
+(17)
+
+where 𝑾1h∈ℝd1×d2\boldsymbol{W}_{1}^{h}\in\mathbb{R}^{d_{1}\times d_{2}} is the parameter to be learned with dimension d1d_{1} (the number of the state features) and d2d_{2} (the dimension of the hidden layer). σ⁡(x)\sigma(x) is the sigmoid function used to transform the input into a probability. 𝑬h\boldsymbol{E}^{h} represents the embedding of the input state, which is defined as:
+
+𝑬h=ReLU​(𝑾2h​𝑺h+𝒃h),\displaystyle\boldsymbol{E}^{h}=\text{ReLU}(\boldsymbol{W}_{2}^{h}\boldsymbol{S}^{h}+\boldsymbol{b}^{h}),
+
+(18)
+
+where 𝑾2h∈ℝd2×1\boldsymbol{W}_{2}^{h}\in\mathbb{R}^{d_{2}\times 1} and 𝒃h∈ℝd2\boldsymbol{b}^{h}\in\mathbb{R}^{d_{2}} are the weight and bias of a neural network. We use Φh\Phi^{h} to denote the parameter set Φl={𝑾1h,𝑾2h,𝒃h}\Phi^{l}=\{\boldsymbol{W}_{1}^{h},\boldsymbol{W}_{2}^{h},\boldsymbol{b}^{h}\} used in high-level policy function.
+
+The low-level policy function that instructs how we perform action amla_{m}^{l} is defined as:
+
+π⁡(𝑺ml,aml)=P⁡(aml|𝑺ml,Φl)\displaystyle\pi(\boldsymbol{S}_{m}^{l},a_{m}^{l})=P(a_{m}^{l}|\boldsymbol{S}_{m}^{l},\Phi^{l})
+
+=aml​σ​(𝑾1l​𝑬ml)+(1−aml)​(1−σ⁡(𝑾1l​𝑬ml)),\displaystyle\quad\quad\quad=a_{m}^{l}\sigma(\boldsymbol{W}_{1}^{l}\boldsymbol{E}_{m}^{l})+(1-a_{m}^{l})(1-\sigma(\boldsymbol{W}_{1}^{l}\boldsymbol{E}_{m}^{l})),
+
+(19)
+
+𝑬ml=ReLU​(𝑾2l​𝑺ml+𝒃l),\displaystyle\quad\boldsymbol{E}_{m}^{l}=\text{ReLU}(\boldsymbol{W}_{2}^{l}\boldsymbol{S}_{m}^{l}+\boldsymbol{b}^{l}),
+
+(20)
+
+where Φl={𝑾1l,𝑾2l,𝒃l}\Phi^{l}=\{\boldsymbol{W}_{1}^{l},\boldsymbol{W}_{2}^{l},\boldsymbol{b}^{l}\} is the parameter set in the low-level policy function, 𝑬ml\boldsymbol{E}_{m}^{l} represents the embedding of the input state 𝑺ml\boldsymbol{S}_{m}^{l}, 𝑾1l∈ℝd1×d2,𝑾2l∈ℝd2×1\boldsymbol{W}_{1}^{l}\in\mathbb{R}^{d_{1}\times d_{2}},\boldsymbol{W}_{2}^{l}\in\mathbb{R}^{d_{2}\times 1} and 𝒃l∈ℝd2\boldsymbol{b}^{l}\in\mathbb{R}^{d_{2}} are the weights and bias of a neural network.
+
+Reward: The reward is a signal indicating the reasonableness of the performed actions. For a low-level task, we assume every performed low-level action has two kinds of rewards, i.e., the immediate reward and the delayed long-term reward. We exploit a combined reward mainly because the immediate reward can speed up the agent’s training process for the low-level action by giving every performed action an immediate feedback. Without the immediate reward, the low-level actions will only receive the same delayed long-term reward after the last low-level action is performed, which will
+lead to slow local convergence. The detailed definitions of the rewards are shown as follows.
+
+The immediate reward measures the difference brought by considering the
+transferred interaction in the target domain, which is measured by the changes in the average
+cosine similarity between the reserved items and the target item in B after
+the transferred item AmA→BA_{m}^{A\to B} is saved. The calculation for each performed action is formulated as:
+
+RI​(aml,𝑺ml)=1|𝒮cA→B|​∑Ai∈𝒮cA→Bcosine​(𝑯AiA→B,𝑯Bt)\displaystyle R^{I}(a_{m}^{l},\boldsymbol{S}_{m}^{l})=\frac{1}{|\mathcal{S}_{c}^{A\to B}|}\sum_{A_{i}\in\mathcal{S}_{c}^{A\to B}}\text{cosine}(\boldsymbol{H}_{A_{i}}^{A\to B},\boldsymbol{H}_{B_{t}})
+
+−1|𝒮^cA→B|∑Ai∈𝒮^cA→Bcosine(𝑯AiA→B,𝑯Bt),\displaystyle\quad\quad\quad\quad-\frac{1}{|\hat{\mathcal{S}}_{c}^{A\to B}|}\sum_{A_{i}\in\hat{\mathcal{S}}_{c}^{A\to B}}\text{cosine}(\boldsymbol{H}_{A_{i}}^{A\to B},\boldsymbol{H}_{B_{t}}),
+
+(21)
+
+where RI​(aml,𝒔ml)R^{I}(a_{m}^{l},\boldsymbol{s}_{m}^{l}) is the immediate reward of performing amla_{m}^{l} given 𝒔ml\boldsymbol{s}_{m}^{l}, 𝑯Bt\boldsymbol{H}_{B_{t}} is the representation of the target item in domain B, 𝑯cA→B\boldsymbol{H}_{c}^{A\to B} is the embeddings of the transferred interactions, and 𝒮^cA→B\hat{\mathcal{S}}_{c}^{A\to B} is the revised behavior sequence, which is a subset of 𝒮cA→B\mathcal{S}_{c}^{A\to B} excludes item AmA→BA_{m}^{A\to B}. The immediate reward encourages the agent to keep the transferred items that are relevant to the target.
+
+The delayed long-term reward measures the long-term gain of transferring the cross-domain knowledge after the last action ala−1a_{l_{a}-1} is performed for the last item. In other cases, its value is set to 0.
+The formulation of the delayed long-term reward RD​(aml,𝑺ml)R^{D}(a_{m}^{l},\boldsymbol{S}_{m}^{l}) is shown as follows:
+
+RD(aml,𝑺ml)={logp(𝒮^,Am)−logp(𝒮c,Am),if m=la−1;0    , otherwise,R^{D}(a_{m}^{l},\boldsymbol{S}_{m}^{l})\!=\!\left\{\begin{aligned} \text{log}p(\hat{\mathcal{S}}_{,}A_{m})\!-\!\text{log}p(\mathcal{S}_{c},A_{m}),\text{if }m=l_{a}-1;\\
+\text{0\qquad\qquad,\qquad}\text{otherwise},\end{aligned}\right.
+
+where p⁡(𝒮c,Am)p(\mathcal{S}_{c},A_{m}) is an abbreviation of p⁡(y=1|𝒮cA→B,AmA→B)p(y=1|\mathcal{S}_{c}^{A\to B},A_{m}^{A\to B}) denoting the positive instance of recommending item AmA→BA_{m}^{A\to B}. We omit the superscript A→BA\to B due to space constraints. A positive reward of the above function indicates a positive utility gained by the revised profile. For the special case that all the transferred items are removed, we just set RD​(aml,𝑺ml)=0R^{D}(a_{m}^{l},\boldsymbol{S}_{m}^{l})=0, and only use the original information in domain B for recommendation.
+
+To consider both the immediate and the delayed long-term reward, we sum RIR^{I} and RDR^{D} as the final reward function for the low-level action:
+
+R⁡(aml,𝑺ml)=RI​(aml,𝑺ml)+RD​(aml,𝑺ml).\displaystyle R(a_{m}^{l},\boldsymbol{S}_{m}^{l})=R^{I}(a_{m}^{l},\boldsymbol{S}_{m}^{l})+R^{D}(a_{m}^{l},\boldsymbol{S}_{m}^{l}).
+
+(22)
+
+For the high-level action, it obtains the same delayed long-term reward as the low-level action, if the high-level task chooses to revise the transferred domain information. Otherwise, it keeps the original domain knowledge and receives a zero reward.
+
+Algorithm 1  The Overall Training Process of RL-ISN.\textnormal{The Overall Training Process of
+\acs{RL-ISN}}.
+
+                1:
+
+               Pre-train the basic cross-domain recommendation model;
+
+                2:
+
+               Pre-train the domain filter by running Algorithm 2 with the basic recommender fixed;
+
+                3:
+
+               Jointly train the basic recommender and domain filter by running Algorithm
+2;
+
+Algorithm 2  The training process of RL-DF.\textnormal{The training process of \acs{RL-DF}}.
+
+                0:
+
+               Training data 𝒮:={𝒮1o,𝒮2o,…,𝒮co,…}\mathcal{S}:=\{\mathcal{S}_{1}^{o},\mathcal{S}_{2}^{o},...,\mathcal{S}_{c}^{o},...\}, a pre-trained basic cross-domain recommender and a domain filter parameterized by Θ\Theta and Φ\Phi, respectively;
+
+                0:
+
+               Model parameters Θ\Theta and Φ\Phi;
+
+                1:
+
+               Initialize Θ\Theta and Φ\Phi;
+
+                2:
+
+               for episode i=1i=1 to II do
+
+                3:
+
+                for 𝒮co\mathcal{S}_{c}^{o} in 𝒮\mathcal{S} do
+
+                3:
+
+                 Sample a high-level action aha^{h} with Φh\Phi^{h};
+
+                4:
+
+                 if ah=0a^{h}=0 then
+
+                4:
+
+                  R⁡(ah,𝑺h)=0R(a^{h},\boldsymbol{S}^{h})=0;
+
+                5:
+
+                 else
+
+                5:
+
+                  Sample a sequence of low-level actions {a1l,a2l,…,atsl}\{a_{1}^{l},a_{2}^{l},...,a_{t_{s}}^{l}\} with Φl\Phi^{l} for the cross-domain sequence;
+
+                5:
+
+                  Compute R⁡(aml,𝑺ml)R(a_{m}^{l},\boldsymbol{S}_{m}^{l}) by Eq. (22);
+
+                5:
+
+                  Compute gradients by Eq. (24) and Eq. (25);
+
+                6:
+
+                 end if
+
+                7:
+
+                end for
+
+                7:
+
+                Update Φ\Phi by gradients;
+
+                7:
+
+                Update Θ\Theta in the basic cross-domain recommender;
+
+                8:
+
+               end for
+
+III-D2 Objective Function
+
+To find out the optimal parameters of policy functions, we maximize the following expected reward:
+
+Φ∗=argmaxΦ​∑τPΦ​(τ,Φ)​R​(τ),\displaystyle\Phi^{*}=\text{argmax}_{\Phi}\sum_{\tau}P_{\Phi}(\tau;\Phi)R(\tau),
+
+(23)
+
+where Φ={Φl,Φh}\Phi=\{\Phi^{l},\Phi^{h}\} represents the parameter set defined in policy functions, τ\tau is a sequence of the sampled actions and the transited states, which can be denoted as {𝑺h,ah}\{\boldsymbol{S}^{h},a^{h}\} for the high-level task, and {𝑺11,a1l,𝑺2l,a2l,…,𝑺ml,aml,…,𝑺tsl,atsl}\{\boldsymbol{S}_{1}^{1},a_{1}^{l},\boldsymbol{S}_{2}^{l},a_{2}^{l},...,\boldsymbol{S}_{m}^{l},a_{m}^{l},...,\boldsymbol{S}_{t_{s}}^{l},a_{t_{s}}^{l}\} for the low-level task. R⁡(τ)R(\tau) is the reward for the sampled sequence τ\tau, and PΦ​(τ,Φ)P_{\Phi}(\tau;\Phi) denotes the probability of sampling τ\tau with Φ\Phi. Since the sequences of these two tasks have too many possible action-state trajectories, we exploit the policy gradient theorem [46] and monto-carlo based policy gradient method [45] to sample JJ action-state trajectories, and calculate the gradients of the parameters based on that.
+
+The corresponding gradient of the parameters for the high-level task is calculated as:
+
+▽Φh=1J∑j=1J▽ΦhlogπΦh(𝑺jh,ajh)R(ajh,𝑺jh),\displaystyle\bigtriangledown_{\Phi^{h}}=\frac{1}{J}\sum_{j=1}^{J}\bigtriangledown_{\Phi^{h}}\text{log}\pi_{\Phi^{h}}(\boldsymbol{S}_{j}^{h},a_{j}^{h})R(a_{j}^{h},\boldsymbol{S}_{j}^{h}),
+
+(24)
+
+where the reward R⁡(ajh,𝑺jh)R(a_{j}^{h},\boldsymbol{S}_{j}^{h}) is assigned as the low-level reward of the last action R⁡(ats,jh,𝑺ts,jh)R(a_{t_{s},j}^{h},\boldsymbol{S}_{t_{s},j}^{h}), and 0 otherwise.
+
+The gradient of the parameters for the low-level task is presented as:
+
+▽Φl=1J∑j=1J∑m=1ts▽ΦllogπΦl(𝑺m,jl,am,jl)R(am,jl,𝑺m,jl),\displaystyle\bigtriangledown_{\Phi^{l}}\!=\!\frac{1}{J}\!\sum_{j=1}^{J}\!\sum_{m=1}^{t_{s}}\bigtriangledown_{\Phi^{l}}\text{log}\pi_{\Phi^{l}}(\boldsymbol{S}_{m,j}^{l},a_{m,j}^{l})R(a_{m,j}^{l},\boldsymbol{S}_{m,j}^{l}),
+
+(25)
+
+where R⁡(am,jl,𝑺m,jl)R(a_{m,j}^{l},\boldsymbol{S}_{m,j}^{l}) is the reward of each action-state pair in sequence τ(j)\tau^{(j)}.
+
+III-E Model Training
+
+As the domain filter and the cross-domain recommender are interleaved together, we need to train them jointly. The training process is shown in Algorithms 1 and 2, where we first pre-train the basic cross-domain recommender based on the original dataset. Then, we fix the parameters of BCR and pre-train the domain filter to automatically revise the transferred interactions. Finally, we jointly train the two models together. To have a stable update, we follow the method in [34, 47], and update each parameter by a linear combination of its old version and the new version, i.e., Φn​e​w=λ​Φn​e​w+(1−λ)​Φo​l​d\Phi_{new}=\lambda\Phi_{new}+(1-\lambda)\Phi_{old}, where λ≪1\lambda\ll 1.
+
+IV Experimental Setup
+
+IV-A Research Questions
+
+Our proposals are fully evaluated by answering the following research questions.
+
+RQ1
+
+How does our proposed RL-ISN perform compared with other state-of-the-art cross-domain recommenders?
+
+RQ2
+
+What are the performances of RL-ISN on different domains? Is it helpful to leverage the cross-domain information?
+
+RQ3
+
+How do the key components of RL-ISN, i.e., User Identification Network (UIN), RL-based Domain Filter (DF), and positional encoding contribute to the recommendation performance?
+
+RQ4
+
+How do the hyper-parameters affect the performance of RL-ISN?
+
+RQ5
+
+How is the training efficiency and scalability of RL-ISN when processing large-scale data?
+
+TABLE I: Statistics of the datasets, where V, E, M and B represent the domains in the two datasets.
+
+Details
+HVIDEO
+HAMAZON
+
+V
+E
+M
+B
+
+#Items
+16,431
+3,389
+67,161
+126,547
+
+#Interactions
+1,970,378
+2,052,966
+4,406,924
+4,287,240
+
+#Accounts
+13,714
+13,724
+
+#Sequences
+125,943
+196,297
+
+#Training-targets
+3,868
+51,316
+
+#Test-targets
+3,753
+50,800
+
+IV-B Datasets
+
+We evaluate RL-ISN on two real-world datasets HVIDEO [11] and HAMAZON [39].
+
+HVIDEO is a smart TV dataset that records the watching logs of family accounts (shared-account) on two platforms, i.e., the V-domain and E-domain, from October 2016 to June 2017. The V-domain is a video watching platform containing TV series, movies, cartoons, etc. The E-domain includes the educational videos from elementary to high school, as well as instructional videos on sports, food, etc. As these records are generated by shared family accounts on two domains, they are suitable for investigating the SCSR task. With further filtering out accounts that have less than 10 watching videos and those records with watching time less than 300 seconds, our resulting dataset contains 13,714 overlapped accounts and 125,943 sequences.
+
+HAMAZON is a product review dataset released by Sun et al. [39], which contains users’ review behaviors on two Amazon platforms, i.e., M-domain and B-domain, from May 1996 to July 2014. The M-domain refers to Amazon users’ watching and rating interactions on movies. The B-domain refers to users’ reading and rating behaviors on books. This dataset satisfies the cross-domain characteristic via only keeping users who have interactions in both Amazon movie and book domains.
+To simulates the shared-account characteristic, this dataset first splits the time schedule into 6 intervals, which are 1996-2000, 2001-2003, 2004-2006, 2007-2009, 2010-2012, 2013-2015. Then, it randomly merges 2-4 users and their review records in each interval as one shared-account. After splitting each sequence into small fragments within one year, and filtering out the sequences with less than 5 items from M-domain and 2 items from B-domain, the resulted dataset is finally reached, which contains 13,724 accounts and 196,297 sequences. The statistics of these two datasets are summarized in Table I.
+
+TABLE II: Comparison results (%) on HVIDEO and HAMAZON. We do not report VUI-KNN on HAMAZON, as it needs specific time in a day which is not available in this dataset.
+
+Methods
+HVIDEO
+HAMAZON
+
+E-domain
+V-domain
+M-domain
+B-domain
+
+HR
+NDCG
+HR
+NDCG
+HR
+NDCG
+HR
+NDCG
+
+@5
+@10
+@5
+@10
+@5
+@10
+@5
+@10
+@5
+@10
+@5
+@10
+@5
+@10
+@5
+@10
+
+Item-KNN
+10.99
+15.72
+9.97
+13.41
+33.77
+36.21
+32.88
+35.19
+5.55
+6.32
+5.08
+5.80
+6.84
+7.52
+6.30
+6.98
+
+BPR-MF
+7.62
+10.02
+7.30
+9.41
+29.58
+31.11
+29.55
+30.31
+5.88
+6.94
+5.72
+6.57
+5.43
+5.88
+5.12
+5.24
+
+NCF
+22.54
+26.62
+15.67
+19.88
+70.12
+70.84
+66.28
+67.50
+25.57
+31.03
+19.88
+24.92
+11.39
+14.62
+9.48
+13.22
+
+Light-GCN
+66.16
+77.79
+51.42
+55.20
+92.33
+93.41
+90.68
+91.03
+41.04
+53.38
+29.79
+33.78
+56.31
+66.57
+19.09
+28.88
+
+VUI-KNN
+15.77
+18.92
+13.32
+15.48
+47.42
+51.54
+43.21
+46.78
+-
+-
+-
+-
+-
+-
+-
+-
+
+NCF-MLP++
+25.44
+30.47
+21.43
+23.52
+70.15
+72.40
+66.44
+68.52
+29.08
+37.30
+27.03
+30.67
+16.70
+21.55
+13.33
+15.13
+
+Conet
+32.83
+48.99
+26.51
+32.83
+70.23
+73.28
+70.09
+73.27
+34.43
+49.15
+32.44
+43.72
+18.12
+27.20
+12.14
+15.06
+
+GRU4REC
+71.92
+83.28
+57.16
+60.85
+92.88
+94.06
+92.18
+92.56
+39.99
+53.11
+28.80
+33.03
+81.87
+85.20
+79.79
+80.86
+
+HGRU4REC
+73.60
+84.43
+59.09
+62.61
+93.18
+94.17
+92.46
+92.77
+40.02
+53.19
+28.64
+32.89
+80.58
+83.50
+79.05
+79.99
+
+NAIS
+62.16
+67.43
+54.44
+56.52
+90.40
+91.43
+88.55
+90.23
+38.11
+46.86
+31.62
+33.80
+77.80
+80.44
+72.22
+73.10
+
+π\pi-net
+73.92
+84.57
+59.58
+63.04
+93.74
+94.69
+92.71
+93.02
+43.85
+56.77
+31.76
+35.94
+83.87
+86.16
+81.21
+81.95
+
+PSJ-net
+74.35
+84.96
+59.97
+63.43
+93.82
+94.72
+92.76
+93.05
+42.66
+54.70
+31.21
+35.07
+82.45
+85.67
+81.32
+82.11
+
+DA-GCN
+75.64
+84.67
+63.47
+66.40
+93.17
+94.23
+92.04
+92.38
+43.16
+55.93
+31.42
+35.54
+81.94
+85.02
+80.17
+81.16
+
+ISN-RL
+78.82
+89.03
+62.17
+66.32
+94.35
+94.53
+88.44
+89.01
+55.07
+70.76
+41.23
+46.29
+84.06
+86.35
+81.21
+82.76
+
+RL-ISN
+83.97
+90.91
+79.22
+79.86
+94.55
+97.30
+93.12
+94.15
+56.71
+73.28
+42.08
+47.44
+89.48
+94.61
+83.31
+84.97
+
+We take HAMAZON as a supplement to the real-life dataset mainly because: 1) We cannot find other datasets that contain shared-account information.
+Though the CAMRa 2011 dataset [48] also contains real-life shared-account information, the owner does not wish to distribute the dataset anymore.
+2) The HAMAZON dataset has been commonly used for SCSR in recent publications [12, 39] as a supplement to the real-life dataset. In this work, we follow their experimental settings, and utilize the synthetic HAMAZON data to evaluate our method. Moreover, we also notice that using synthetic accounts is a common practice in studying the shared-account recommendation problem [48, 24, 9]. For example, Verstrepen et al. [48] study the top-n recommendation for shared-account with synthetic accounts that are manually created by randomly merging several users’ histories together. Jiang et al. [9] follow the account creation strategy in [48], and study a user identification task based on that.
+
+IV-C Evaluation Protocols
+
+We hold out the last two items in each sequence as the training and test target [34], respectively. And, we formulate each data sample as a sequence of historical interacted items paired with a target item. For example, for the training data, we leverage the last second item as the target, and the rest (excluding the last item) as historical items. To accelerate our training process, we further construct nn negative samples (we will fine tune this hyperparameter later) for each positive instance by replacing the target item with each of nn randomly sampled items [34]. For the test data, we treat the last item in each sequence as the test target, and the corresponding items of the same data sample in the training set as the historical items. Our task is to predict the exact target from the possible candidate items.
+
+We take the widely used Hit Ratio (HR@NN) and Normalized Discounted Cumulative Gain (NDCG@NN) [49] as our evaluation metrics to evaluate the ability of our method in recommending Top-NN items for each test instance. Specifically, if a ground-truth item appears in the recommended list, we have a hit; otherwise, we have a miss. Then, we define HR as the ratio of hits over ground-truth items in the Top-NN list.
+However, as HR is not position aware, it can not reflect the performance of our method in getting top ranks correct. Hence, we adopt NDCG to address this, which assigns higher scores to correct recommendations at top ranks. For both metrics, a higher value denotes a higher recommendation performance. In experiments, we evaluate each test instance with both metrics, and report their average values.
+
+IV-D Baseline Methods
+
+We compare RL-ISN with the following baseline methods from five categories: traditional, shared-account, cross-domain, sequential, and shared-account cross-domain sequential recommendations.
+
+1) Traditional recommendations:
+
+•
+
+Item-KNN [15]: This method recommends the items that are similar to the actual item, and defines the item-to-item similarity as the cosine similarity between the vector of their sequences.
+
+•
+
+BPR-MF [15]: This is a traditional matrix factorization-based method. We apply it for SR via representing the sequence feature vector by averaging the feature vectors of items that had occurred in the sequence so far.
+
+•
+
+NCF [50]: This method treats users as sequences, and learns their embeddings by a MLP-based collaborative filtering mechanism.
+
+•
+
+Light-GCN [51]: This is a GCN-based collaborative filtering method, which learns sequence and item ebmeddings through aggregating the representations of their neighbors.
+
+TABLE III: Ablation studies (%) on HVIDEO and HAMAZON.
+
+Methods
+HVIDEO
+HAMAZON
+
+E-domain
+V-domain
+M-domain
+B-domain
+
+HR
+NDCG
+HR
+NDCG
+HR
+NDCG
+HR
+NDCG
+
+@5
+@10
+@5
+@10
+@5
+@10
+@5
+@10
+@5
+@10
+@5
+@10
+@5
+@10
+@5
+@10
+
+ISN-P
+83.87
+90.84
+79.18
+79.94
+94.43
+97.08
+93.80
+94.11
+55.27
+69.13
+43.24
+46.25
+88.94
+94.51
+82.84
+84.94
+
+ISN-RL
+78.82
+89.03
+62.17
+66.32
+94.35
+94.53
+88.44
+89.01
+55.07
+70.76
+41.23
+46.29
+84.06
+86.35
+81.21
+82.76
+
+ISN-UI
+66.22
+79.45
+57.32
+63.28
+91.45
+92.07
+83.86
+86.90
+44.13
+55.95
+33.22
+34.91
+79.80
+82.33
+76.72
+75.97
+
+ISN
+62.45
+75.03
+49.80
+55.13
+91.42
+92.65
+85.92
+86.94
+41.04
+49.53
+28.22
+30.12
+72.44
+79.51
+71.18
+72.02
+
+RL-ISN
+83.97
+90.91
+79.22
+79.86
+94.55
+97.30
+93.12
+94.15
+56.71
+73.28
+42.08
+47.44
+89.48
+94.61
+83.31
+84.97
+
+2) Shared-account recommendations:
+
+•
+
+VUI-KNN [23]: This method is proposed for IP-TV recommendation task that first cuts the logs of each account into slices via dividing a day into three time periods; each log slice is assumed to be generated by a virtual user. Then, latent users are further formed by merging virtual users according to their cosine similarities. After that, the User-KNN method is applied to make recommendations for the latent users.
+
+Note that, we do not compare with the shared-account recommendation methods [52, 48, 53] that need extra information, such as explicit ratings or textual descriptions for items, which are not available in our datasets.
+
+3) Cross-domain recommendations:
+
+•
+
+NCF-MLP++ [50]: This method is based on the traditional NCF, which makes recommendations on a single domain. We use it for CR by sharing the collaborative filtering in different domains.
+
+•
+
+Conet [5]: This is a neural transfer model for CR, which proposes a neural collaborative filtering network for information sharing.
+
+4) Sequential recommendations:
+
+•
+
+GRU4REC [15]: This is one of the most representative sequential recommenders that exploits GRU to encode sequence and optimizes a ranking-based loss function.
+
+•
+
+HGRU4REC [16]: This method further improves GRU4REC via taking user’s identity and auxiliary features into sequential recommendation.
+
+•
+
+NAIS [18]: This is an item-to-item collaborative filtering algorithm that uses an attention mechanism to distinguish the importance of different historical courses. But it is proposed for traditional SR, and has limited ability to deal with the cross-domain and shared-account challenges.
+
+5) Shared-account cross-domain sequential recommendations:
+
+•
+
+π\pi-net [11]: This is a state-of-the-art recommendation method for SCSR, which devises a gating mechanism to transfer the information to other domains and addresses the shared-account challenge via learning user-specific representations.
+
+•
+
+PSJ-net [39]: This method further improves π\pi-net by changing the splitting and joining methods of learning the cross-domain representations.
+
+•
+
+DA-GCN [12]: This is another recent state-of-the-art recommendation method for SCSR, which leverages a domain-aware graph convolutional network to model the cross-domain knowledge. For the shared-account challenge, this work also learns user-specific node representations as its solution.
+
+•
+
+ISN-RL: This is a variant of RL-ISN that removes the fine tuning process within it, that is, removing the RL-based domain filter component. This is to demonstrate the effectiveness of our RL-based knowledge transfer process.
+
+IV-E Implementation Details
+
+We implement RL-ISN using Tensorflow accelerated by NVIDIA RTX 2080 Ti GPU. We initialize model parameters via the Xavier method [54] and exploit Adam [55] to optimize our loss function. For the hyper-parameters in basic recommender, we set the item embedding as 16, the batch-size as 256, the number of negative samples per positive as 4, the learning rate as 0.01, the dropout rate as 0.1 at pre-training stage on both domains. In the joint-training stage, we set the learning rate as 0.0001, the delayed coefficient λ\lambda as 0.0005. For the domain filtering agent, we set the sampling time MM as 3, the learning rate as 0.05 and 0.0001 at the pre-training state and joint stage, respectively. We set the delayed coefficient λ\lambda as 0.0005. For the policy function, we set the dimensions of both hidden layers (d1d_{1} and d2d_{2}) as 8. We search the number of users (KAK_{A} and KBK_{B}) within {1,2,3,4,5}\{1,2,3,4,5\} per shared-account for both datasets.
+For the hyper-parameter settings in comparative methods, we set their number of negative samples to 4 for the sake of fairness. For other parameters, we refer to the settings in their papers and also fine tune them on different datasets.
+We conduct the one sample paired t-tests to verify that all improvements are statistically significant for p<0.01p<0.01.
+
+Fig. 3: Impact of the hyper-parameters KAK_{A}, KBK_{B} and β\beta on HVIDEO.
+
+V Experimental Results (RQ1 & RQ2)
+
+The comparison results on HVIDEO and HAMAZON are reported in Table II, from which we have the following observations:
+1) Our RL-ISN method outperforms all the baselines on both datasets, demonstrating the advantage of RL-ISN in modeling the shared-account representation and the cross-domain information, which leads to a better recommendation performance. Moreover, RL-ISN achieves the best performance on both domains, demonstrating the capability of our solution in transferring the domain knowledge.
+2) RL-ISN outperforms the sequential recommendation methods that do not consider the cross-domain information (i.e, GRU4REC, HGRU4REC and NAIS) on both datasets, which again demonstrates the importance of the domain knowledge. The gap between RL-ISN and traditional cross-domain recommendation methods (i.e., Conet and NCF-MLP++), indicating the effectiveness of solution in transferring the domain information.
+3) RL-ISN performs better than the methods that do not consider the shared-account characteristic (e.g., NAIS, Conet, and BPR-MF), showing the benefit of modeling an account from a shared-account view. Treating an account as a virtual user can not get better results than identifying them in advance.
+4) The methods developed for SCSR (i.e., π\pi-net, PSJ-net, DA-GCN, ISN-RL and RL-ISN) significantly outperform other baselines, denoting the benefit of simultaneously modeling the shared-account and cross-domain characteristics. Furthermore, the improvement of RL-ISN over ISN-RL shows the necessity of fine tuning the cross-domain information, and the effectiveness of our RL-based method.
+
+VI Model Analysis
+
+VI-A Ablation Studies (RQ3)
+
+To explore the importance of different components in RL-ISN, we compare it with its following variants:
+
+•
+
+ISN-P (no Position): This is a variant of RL-ISN that removes the positional encoding in the input layer.
+This is to demonstrate the necessity of considering the position information in sequence modeling.
+
+•
+
+ISN-RL (no RL): As shown in Section IV-D, this is a variant of RL-ISN that removes the RL-DF module within it.
+This is to demonstrate the effectiveness of our RL-based fine tuning process. Note that, this method actually detergents to our basic recommender (i.e., BCR).
+
+•
+
+ISN-UI (no UI): This variant removes the user identification network form RL-ISN. This is to evaluate the effectiveness of our attention-based user clustering process in modeling the shared-account characteristic.
+
+•
+
+ISN (no RL, no UI, and no Position): This variant simultaneously removes the domain filter, user identification, and positional encoding components. This is to evaluate the performance improvement caused by incorporating them in RL-ISN.
+
+From the comparison results reported in Table III, we have the following observations: 1) RL-ISN outperforms ISN-RL on both datasets, demonstrating the importance of the RL-DF component and the effectiveness of our RL-based fine tuning method. That is, treating the domain filtering as a hierarchical MDP can help us find a more relevant domain information to the target domain. 2) RL-ISN achieves a better result than ISN-UI, showing the benefit of modeling the shared-account characteristic and the utility of our user identification module. This result demonstrates that our model can learn a more expressive account representation via the attention mechanism over the latent users. 3) RL-ISN outperforms ISN-P in terms of almost all metrics on both datasets, demonstrating the benefit of considering the position information in sequence modeling, and the effectiveness of our modeling method. 4) RL-ISN performs better than ISN, indicating the importance of simultaneously consider the shared-account and cross-domain characteristics. And the attention-based user identification method as well as the RL-based domain transferring process let us develop a more effectiveness recommendation model for SCSR.
+
+VI-B Impact of Hyper-parameters (RQ4)
+
+This section investigates the impact of the parameters that are important to RL-ISN. As we have similar results on HVIDEO and HAMAZON, we only report the experimental results on HVIDEO as an example.
+
+Impact of Hyper-parameters KAK_{A} and KBK_{B}. In RL-ISN, we devise a user identification module to model the shared-account characteristic via attentively aggregating the latent users sharing an account, and the numbers of the latent users are introduced as two hyper-parameters KAK_{A} and KBK_{B}. To investigate how KAK_{A} and KBK_{B} affect the recommendation performance, we search them within {1,2,3,4,5}\{1,2,3,4,5\}, and report the experimental results in Fig. 3.
+From the results, we can observe that the best performance of RL-ISN is achieved when KAK_{A} = 2 for domain A, and KBK_{B} = 4 for domain B, which are consistent with the typical family sizes.
+In other cases, RL-ISN cannot reach a better performance, which further supports our motivation in modeling the shared-account characteristic.
+
+Impact of Hyper-parameter β\beta. To avoid too much punishment on the weights of accounts with many shared users, we introduced a smoothing hyper-parameter β\beta. Fig. 3 shows the performance of RL-ISN with different β∈[0.1,1]\beta\in[0.1,1]. When setting β\beta to 1, it means we use a standard softmax to normalize the weights of RL-ISN. From Fig. 3, we find that when β\beta = 0.5, RL-ISN can achieve its best performance, and it reaches worse performance when β\beta has bigger values,
+proving the importance of our punishment strategy.
+
+To further explore the utility of the RL-based domain filter, we compare RL-ISN with the following variants:
+
+•
+
+Compared with One-level RLs: We compare RL-ISN with two variants of it, i.e., Low-RL and High-RL, where Low-RL denotes the method that only exploits the low-level RL to remove the noisy items from the transferred sequences, and High-RL is the method that only uses the high-level RL to decide whether to keep the transferred sequence or not. The comparison results are shown in Fig. 4, from which we observe that RL-ISN outperforms Low-RL and High-RL on both domains, indicating the effectiveness of our hierarchical RL strategy, and having only leverage one-level RL is insufficient to get satisfactory results.
+
+•
+
+Compared with Greedy Revision: We further compare RL-ISN with a greedy revision method, which decides to revise whole sequence if log​p​(𝑺cA→B)<μ1\text{log}p(\boldsymbol{S}_{c}^{A\to B})<\mu_{1} (suppose B is the target domain), and decides to remove an interaction AmA→BA_{m}^{A\to B} within the sequence if its cosine similarity is less than μ2\mu_{2}. The experimental results are shown in Fig. 4, from which we can observe that the best performance (HR@10 = 87.45%) is achieved on E-domain when μ1=1\mu_{1}=1 and μ2=0.1\mu_{2}=0.1, which is 3.46% less than RL-ISN (1.41% less than RL-ISN on V-domain). This result demonstrates the importance of an appropriate revising strategy and the effectiveness of our RL-based domain filter.
+
+Fig. 4: Model performance with one-level RLs and greedy revision algorithm on HVIDEO.
+
+VI-C Training Efficiency and Scalability (RQ5)
+
+To investigate the training efficiency and scalability of RL-ISN, we validate them by measuring the time consumption of the training process with different data proportions on HVIDEO and HAMAZON.
+Fig. 5 shows the training cost with splitting the training data into {0.2,0.4,0.6,0.8,1.0}\{0.2,0.4,0.6,0.8,1.0\} while keeping all the hyper-parameters fixed.
+To make our results comparable, we also report the expected ideal training time, i.e., the training cost is linearly associated with the training ratios, in Fig. 5, from which we can find that the training cost almost linearly grows (from 0.102×1030.102\times 10^{3} to 0.396×1030.396\times 10^{3} on HVIDEO and from 0.294×1030.294\times 10^{3} to 1.126×1031.126\times 10^{3} on HAMAZON) with the increase of the training ratio on both datasets. This result provides us a positive answer to RQ5, that is, RL-ISN is scalable to large-scale datasets.
+
+Fig. 5: Training efficiency and scalability of RL-ISN.
+
+VII Conclusions and Future Work
+
+In this work, we investigate the SCSR task, and propose a novel reinforcement learning-based solution, namely RL-ISN. To simultaneously consider the shared-account and cross-domain characteristics, RL-ISN develops an attention-based user identification network and a reinforcement learning-based domain filter, respectively. Then, to show the effectiveness of RL-ISN, we conduct extensive experiments on two real-world datasets (i.e., HVIDEO and HAMAZON), and the experimental results demonstrate that our RL-ISN solution is capable to well address the issues in SCSR and can achieve better results than other state-of-the-art methods.
+
+A limitation of RL-ISN is that it assumes all accounts are shared by the same number of latent users, because in real-world scenarios, the number and identity of users under a shared-account are both unknown. That is, we can only know the origin of a behavior at the account-level, but not at the user-level.
+We let the study of improving RL-ISN via automatically detecting the number of latent users under a shared-account as our future work.
+
+Acknowledgments
+
+This work was supported by the National Natural Science Foundation of China (Nos. 61602282, 62072279), and Australian Research Council
+(Nos. DP190101985, FT210100624).
+
+References
+
+[1]
+
+F. Zhuang, P. Luo, H. Xiong, Y. Xiong, Q. He, and Z. Shi, “Cross-domain
+learning from multiple sources: A consensus regularization perspective,”
+TKDE, pp. 1664–1678, 2010.
+
+[2]
+
+B. Cao, N. N. Liu, and Q. Yang, “Transfer learning for collective link
+prediction in multiple heterogenous domains,” in ICML, 2010, pp.
+159–166.
+
+[3]
+
+F. Abel, E. Herder, G. Houben, N. Henze, and D. Krause, “Cross-system user
+modeling and personalization on the social web,” UMUAI, pp. 169–209,
+2013.
+
+[4]
+
+F. Zhu, Y. Wang, C. Chen, J. Zhou, L. Li, and G. Liu, “Cross-domain
+recommendation: Challenges, progress, and prospects,” in AAAI, 2021,
+pp. 4721–4728.
+
+[5]
+
+G. Hu, Y. Zhang, and Q. Yang, “Conet: Collaborative cross networks for
+cross-domain recommendation,” in CIKM, 2018, pp. 667–676.
+
+[6]
+
+W. Fan, T. Derr, X. Zhao, Y. Ma, H. Liu, J. Wang, J. Tang, and Q. Li,
+“Attacking black-box recommendations via copying cross-domain user
+profiles,” in ICDE, 2021, pp. 1583–1594.
+
+[7]
+
+A. Salah, T. B. Tran, and H. Lauw, “Towards source-aligned variational models
+for cross-domain recommendation,” in RecSys, 2021, p. 176–186.
+
+[8]
+
+Y. Zhao, J. Cao, and Y. Tan, “Passenger prediction in shared accounts for
+flight service recommendation,” in the 10th Conf. Asia-Pacific Serv.
+Comput., 2016, pp. 159–172.
+
+[9]
+
+J.-Y. Jiang, C.-T. Li, Y. Chen, and W. Wang, “Identifying users behind shared
+accounts in online streaming services,” in SIGIR, 2018, pp. 65–74.
+
+[10]
+
+X. Wen, Z. Peng, S. Huang, S. Wang, and P. S. Yu, “MISS: A multi-user
+identification network for shared-account session-aware recommendation,” in
+DSFAA, 2021, pp. 228–243.
+
+[11]
+
+M. Ma, P. Ren, Y. Lin, Z. Chen, J. Ma, and M. d. Rijke, “π\pi-net: A parallel
+information-sharing network for shared-account cross-domain sequential
+recommendations,” in SIGIR, 2019, pp. 685–694.
+
+[12]
+
+L. Guo, L. Tang, T. Chen, L. Zhu, Q. V. H. Nguyen, and H. Yin, “DA-GCN: A
+domain-aware attentive graph convolution network for shared-account
+cross-domain sequential recommendation,” in IJCAI, 2021, pp.
+2483–2489.
+
+[13]
+
+G. Shani, D. Heckerman, and R. I. Brafman, “An mdp-based recommender system,”
+JMLR, pp. 1265–1295, 2005.
+
+[14]
+
+S. Chen, J. L. Moore, D. Turnbull, and T. Joachims, “Playlist prediction via
+metric embedding,” in SIGKDD, 2012, pp. 714–722.
+
+[15]
+
+B. Hidasi, A. Karatzoglou, L. Baltrunas, and D. Tikk, “Session-based
+recommendations with recurrent neural networks,” in ICLR, 2016, pp.
+1–10.
+
+[16]
+
+M. Quadrana, A. Karatzoglou, B. Hidasi, and P. Cremonesi, “Personalizing
+session-based recommendations with hierarchical recurrent neural networks,”
+in RecSys, 2017, pp. 130–137.
+
+[17]
+
+J. Li, P. Ren, Z. Chen, Z. Ren, T. Lian, and J. Ma, “Neural attentive
+session-based recommendation,” in CIKM, 2017, pp. 1419–1428.
+
+[18]
+
+X. He, Z. He, J. Song, Z. Liu, Y. Jiang, and T. Chua, “NAIS: neural
+attentive item similarity model for recommendation,” TKDE, pp.
+2354–2366, 2018.
+
+[19]
+
+T. Xie, Y. XU, L. Chen, Y. Liu, and Z. Zheng, “Sequential recommendation on
+dynamic heterogeneous information network,” in ICDE, 2021, pp.
+2105–2110.
+
+[20]
+
+R. Qiu, Z. Huang, J. Li, and H. Yin, “Exploiting cross-session information for
+session-based recommendation with graph neural networks,” TOIS, pp.
+22:1–22:23, 2020.
+
+[21]
+
+H. Chen, H. Yin, T. Chen, Q. V. H. Nguyen, W. Peng, and X. Li, “Exploiting
+centrality information with graph convolutions for network representation
+learning,” in ICDE, 2019, pp. 590–601.
+
+[22]
+
+C. Hsu and C.-T. Li, “Retagnn: Relational temporal attentive graph neural
+networks for holistic sequential recommendation,” in WWW, 2021, pp.
+2968–2979.
+
+[23]
+
+Z. Wang, Y. Yang, L. He, and J. Gu, “User identification within a shared
+account: Improving ip-tv recommender performance,” in ADBIS, 2014,
+pp. 219–233.
+
+[24]
+
+A. Zhang, N. Fawaz, S. Ioannidis, and A. Montanari, “Guess who rated this
+movie: Identifying users through subspace clustering,” in UAI, 2012,
+pp. 944–953.
+
+[25]
+
+Y. Yang, Q. Hu, L. He, M. Ni, and Z. Wang, “Adaptive temporal model for iptv
+recommendation,” in WAIM, 2015, pp. 260–271.
+
+[26]
+
+C. Zhao, C. Li, and C. Fu, “Cross-domain recommendation via preference
+propagation graphnet,” in CIKM, 2019, pp. 2165–2168.
+
+[27]
+
+H. Chen, H. Yin, X. Sun, T. Chen, B. Gabrys, and K. Musial, “Multi-level graph
+convolutional networks for cross-platform anchor link prediction,” in
+SIGKDD, 2020, pp. 1503–1511.
+
+[28]
+
+M. Liu, J. Li, G. Li, and P. Pan, “Cross domain recommendation via
+bi-directional transfer graph collaborative filtering networks,” in
+CIKM, 2020, pp. 885–894.
+
+[29]
+
+J. Lian, F. Zhang, X. Xie, and G. Sun, “Cccfnet: A content-boosted
+collaborative filtering neural network for cross domain recommender
+systems,” in WWW, 2017, pp. 817–818.
+
+[30]
+
+S. Li, L. Yao, S. Mu, W. X. Zhao, Y. Li, T. Guo, B. Ding, and J. Wen,
+“Debiasing learning based cross-domain recommendation,” in SIGKDD,
+2021, pp. 3190–3199.
+
+[31]
+
+W. Liu, J. Su, C. Chen, and X. Zheng, “Leveraging distribution alignment via
+stein path for cross-domain cold-start recommendation,” in NeurIPS,
+2021, pp. 19 223–19 234.
+
+[32]
+
+F. Zhu, Y. Wang, C. Chen, G. Liu, and X. Zheng, “A graphical and attentional
+framework for dual-target cross-domain recommendation,” in IJCAI,
+2020, pp. 3001–3008.
+
+[33]
+
+F. Zhu, Y. Wang, J. Zhou, C. Chen, L. Li, and G. Liu, “A unified framework for
+cross-domain and cross-system recommendations,” TKDE, pp. 0–14,
+2021.
+
+[34]
+
+J. Zhang, B. Hao, B. Chen, C. Li, H. Chen, and J. Sun, “Hierarchical
+reinforcement learning for course recommendation in moocs,” in AAAI,
+2019, pp. 435–442.
+
+[35]
+
+Y. Wu and I. O. Craig Macdonald, “Partially observable reinforcement learning
+for dialog-based interactive recommendation,” in RecSys, 2021, pp.
+241–251.
+
+[36]
+
+G. Zheng, F. Zhang, Z. Zheng, Y. Xiang, N. J. Yuan, X. Xie, and Z. Li, “DRN:
+A deep reinforcement learning framework for news recommendation,” in
+WWW, 2018, pp. 167–176.
+
+[37]
+
+W. Zhang, H. Liu, F. Wang, T. Xu, H. Xin, D. Dou, and H. Xiong, “Intelligent
+electric vehicle charging recommendation based on multi-agent reinforcement
+learning,” in WWW, 2021, pp. 1856–1867.
+
+[38]
+
+Y. Sun, F. Zhuang, H. Zhu, Q. He, and H. Xiong, “Cost-effective and
+interpretable job skill recommendation with deep reinforcement learning,” in
+WWW, 2021, pp. 3827–3838.
+
+[39]
+
+W. Sun, M. Ma, P. Ren, Y. Lin, Z. Chen, Z. Ren, J. Ma, and M. De Rijke,
+“Parallel split-join networks for shared account cross-domain sequential
+recommendations,” TKDE, pp. 1–20, 2021.
+
+[40]
+
+X. Xia, H. Yin, J. Yu, Q. Wang, L. Cui, and X. Zhang, “Self-supervised
+hypergraph convolutional networks for session-based recommendation,” in
+AAAI, 2021, pp. 4503–4511.
+
+[41]
+
+W.-C. Kang and J. McAuley, “Self-attentive sequential recommendation,” in
+2018 IEEE International Conference on Data Mining, 2018, pp. 197–206.
+
+[42]
+
+L. Guo, H. Yin, Q. Wang, B. Cui, Z. Huang, and L. Cui, “Group recommendation
+with latent voting mechanism,” in ICDE, 2020, pp. 121–132.
+
+[43]
+
+J. C. Duchi, E. Hazan, and Y. Singer, “Adaptive subgradient methods for online
+learning and stochastic optimization,” JMLR, pp. 2121–2159, 2011.
+
+[44]
+
+X. Wang, Y. Chen, J. Yang, L. Wu, Z. Wu, and X. Xie, “A reinforcement learning
+framework for explainable recommendation,” in ICDM, 2018, pp.
+587–596.
+
+[45]
+
+R. J. Williams, “Simple statistical gradient-following algorithms for
+connectionist reinforcement learning,” Machine Learning, pp.
+229–256, 1992.
+
+[46]
+
+R. S. Sutton, D. A. McAllester, S. P. Singh, and Y. Mansour, “Policy gradient
+methods for reinforcement learning with function approximation,” in
+NeuralIPS, 1999, pp. 1057–1063.
+
+[47]
+
+J. Feng, M. Huang, L. Zhao, Y. Yang, and X. Zhu, “Reinforcement learning for
+relation classification from noisy data,” in AAAI, 2018, pp.
+5779–5786.
+
+[48]
+
+K. Verstrepen and B. Goethals, “Top-n recommendation for shared accounts,” in
+RecSys, 2015, pp. 59–66.
+
+[49]
+
+X. He, T. Chen, M.-Y. Kan, and X. Chen, “Trirank: Review-aware explainable
+recommendation by modeling aspects,” in CIKM, 2015, pp. 1661–1670.
+
+[50]
+
+X. He, L. Liao, H. Zhang, L. Nie, X. Hu, and T.-S. Chua, “Neural collaborative
+filtering,” in WWW, 2017, pp. 173–182.
+
+[51]
+
+X. He, K. Deng, X. Wang, Y. Li, Y. Zhang, and M. Wang, “Lightgcn: Simplifying
+and powering graph convolution network for recommendation,” in SIGIR,
+2020, pp. 639–648.
+
+[52]
+
+B. Li, Q. Yang, and X. Xue, “Can movies and books collaborate? cross-domain
+collaborative filtering for sparsity reduction,” in IJCAI, 2009, pp.
+2052–2057.
+
+[53]
+
+S. Yang, S. Sarkhel, S. Mitra, and V. Swaminathan, “Personalized video
+recommendations for shared accounts,” in MM, 2017, pp. 256–259.
+
+[54]
+
+X. Glorot and Y. Bengio, “Understanding the difficulty of training deep
+feedforward neural networks,” in AISTATS, 2010, pp. 249–256.
+
+[55]
+
+D. P. Kingma and J. Ba, “Adam: A method for stochastic optimization,” in
+ICLR, 2015.
+
+Lei Guo
+received his Ph.D. degree in computer science from Shandong University, China, in 2015. He is currently an Associate Professor and a Master Supervisor with Shandong Normal University, China. He is a Director of Shandong Artificial Intelligence Society and a member of the Social Media Processing Committee of the Chinese Information Society. His research interests include information retrieval, social networks, and recommender systems.
+
+Jinyu Zhang
+is currently a computer science Master’s candidate at the School of information science and Engineering, Shandong Normal University, China.
+His research interests include sequential recommendation and cross-domain recommendation.
+
+Tong Chen
+received his Ph.D. degree in computer science from The University of Queensland in 2020.
+He is currently a Lecturer with the Data Science research
+group, School of Information Technology and Electrical Engineering, The University of Queensland. His research interests include data mining, recommender systems, user behavior modelling and predictive analytics.
+
+Xinhua Wang
+received the Ph.D. degree in management science and engineering from Shandong Normal University, China, in 2008. He was a Senior Visiting Scholar with Peking University, from 2008 to 2009. He is currently a Professor and a Master Supervisor with the School of Information Science and Engineering, Shandong Normal University. His research interests include distributed networks and recommender systems.
+
+Hongzhi Yin
+received his Ph.D. degree in computer science from Peking University in 2014. He is an
+Associate Professor and Future Fellow with the University
+of Queensland. He received the Australian Research Council Future Fellowship and Discovery
+Early-Career Researcher Award in 2016 and 2021, respectively. His research interests include recommendation system, user profiling, topic models, deep
+learning, social media mining, and location-based services.
+
+    Experimental support, please
+    view the build logs
+    for errors. Generated by
+
+        L
+        A
+        T
+        E
+
+      xml
+
+    .
+
+Instructions for reporting errors
+
+We are continuing to improve HTML versions of papers, and your feedback helps enhance accessibility and mobile
+      support. To report errors in the HTML that will help us improve conversion and rendering, choose any of the
+      methods listed below:
+
+Click the "Report Issue" (
+
+          ) button, located in the page header.
+
+Tip: You can select the relevant text first, to include it in your report.
+
+Our team has already identified the following issues. We appreciate your time reviewing and reporting rendering errors we
+      may not have found yet. Your efforts will help us improve the HTML versions for all readers, because disability
+      should not be a barrier to accessing research. Thank you for your continued support in championing open access for
+      all.
+
+Have a free development cycle? Help support accessibility at arXiv! Our collaborators at LaTeXML maintain a list of packages that need conversion, and welcome developer contributions.
+
+        We gratefully acknowledge support from
+        our major funders,
+        member institutions, ,
+        and all contributors.
+
+        About
+        ·
+        Help
+        ·
+        Contact
+        ·
+        Subscribe
+        ·
+        Copyright
+        ·
+        Privacy
+        ·
+        Accessibility
+        ·
+        Operational Status (opens in new tab)
+
+Major funding support from

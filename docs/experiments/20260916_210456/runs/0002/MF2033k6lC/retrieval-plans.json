@@ -1,0 +1,965 @@
+{
+  "paper_id": "MF2033k6lC",
+  "rounds": 2,
+  "novelty_point_plans": [
+    {
+      "sequence": 1,
+      "novelty_point_id": "NP-1",
+      "research_tasks": [
+        {
+          "task_id": "T-1",
+          "novelty_point_id": "NP-1",
+          "task_type": "literature_search",
+          "language": "en",
+          "description": "针对该查新点执行英文文献检索。",
+          "attempt": 1
+        }
+      ],
+      "search_plans": [
+        {
+          "task_id": "T-1",
+          "novelty_point_id": "NP-1",
+          "concepts": [
+            {
+              "concept_id": "C1",
+              "name": "large-scale dynamic graphs",
+              "terms": [
+                "large-scale dynamic graphs",
+                "sequential graphs",
+                "temporal graphs"
+              ],
+              "role": "object",
+              "alias": [
+                "dynamic network",
+                "time-evolving graph"
+              ],
+              "exclude": [],
+              "importance": 3
+            },
+            {
+              "concept_id": "C2",
+              "name": "graph summarization",
+              "terms": [
+                "graph summarization",
+                "graph compression"
+              ],
+              "role": "method",
+              "alias": [
+                "graph summary",
+                "graph coarsening"
+              ],
+              "exclude": [],
+              "importance": 3
+            },
+            {
+              "concept_id": "C3",
+              "name": "graph autoencoder",
+              "terms": [
+                "graph autoencoder",
+                "graph representation learning"
+              ],
+              "role": "method",
+              "alias": [
+                "graph neural network",
+                "GNN"
+              ],
+              "exclude": [],
+              "importance": 3
+            },
+            {
+              "concept_id": "C4",
+              "name": "recurrent neural network",
+              "terms": [
+                "recurrent neural network",
+                "temporal dependency learning"
+              ],
+              "role": "method",
+              "alias": [
+                "RNN",
+                "sequence learning"
+              ],
+              "exclude": [],
+              "importance": 2
+            },
+            {
+              "concept_id": "C5",
+              "name": "node representation",
+              "terms": [
+                "node representation",
+                "graph embedding"
+              ],
+              "role": "feature",
+              "alias": [
+                "node embedding",
+                "graph representation"
+              ],
+              "exclude": [],
+              "importance": 2
+            },
+            {
+              "concept_id": "C6",
+              "name": "large-scale",
+              "terms": [
+                "large-scale",
+                "scalability"
+              ],
+              "role": "setting",
+              "alias": [
+                "efficient"
+              ],
+              "exclude": [],
+              "importance": 1
+            }
+          ],
+          "strategies": [
+            {
+              "strategy_id": "S1",
+              "level": "strict",
+              "expression": "C1 AND C2 AND C3 AND C4",
+              "description": "large-scale dynamic graphs AND graph summarization AND graph autoencoder AND recurrent neural network",
+              "use_alias": false,
+              "use_exclude": true
+            },
+            {
+              "strategy_id": "S2",
+              "level": "medium",
+              "expression": "C1 AND C2 AND C3 AND C4 AND C5",
+              "description": "large-scale dynamic graphs AND graph summarization AND graph autoencoder AND recurrent neural network AND node representation",
+              "use_alias": true,
+              "use_exclude": true
+            },
+            {
+              "strategy_id": "S3",
+              "level": "broad",
+              "expression": "C1 OR C2 OR C3 OR C4 OR C5 OR C6",
+              "description": "large-scale dynamic graphs OR graph summarization OR graph autoencoder OR recurrent neural network OR node representation OR large-scale",
+              "use_alias": true,
+              "use_exclude": true
+            }
+          ]
+        }
+      ],
+      "executed_queries": [
+        {
+          "database": "arxiv",
+          "task_id": "T-1",
+          "novelty_point_id": "NP-1",
+          "strategy_id": "S1",
+          "level": "strict",
+          "query": "(ti:\"large-scale dynamic graphs\" OR ti:\"sequential graphs\" OR ti:\"temporal graphs\") AND (abs:\"graph summarization\" OR abs:\"graph compression\") AND (abs:\"graph autoencoder\" OR abs:\"graph representation learning\") AND (abs:\"recurrent neural network\" OR abs:\"temporal dependency learning\")",
+          "status": "succeeded",
+          "result_marker": "zero_hits",
+          "error": null,
+          "results": []
+        },
+        {
+          "database": "arxiv",
+          "task_id": "T-1",
+          "novelty_point_id": "NP-1",
+          "strategy_id": "S1-fb1",
+          "level": "strict",
+          "query": "(ti:\"large-scale dynamic graphs\" OR ti:\"sequential graphs\" OR ti:\"temporal graphs\") AND (abs:\"graph summarization\" OR abs:\"graph compression\") AND (abs:\"graph autoencoder\" OR abs:\"graph representation learning\")",
+          "status": "succeeded",
+          "result_marker": "zero_hits",
+          "error": null,
+          "results": []
+        },
+        {
+          "database": "arxiv",
+          "task_id": "T-1",
+          "novelty_point_id": "NP-1",
+          "strategy_id": "S2",
+          "level": "medium",
+          "query": "(ti:\"large-scale dynamic graphs\" OR ti:\"sequential graphs\" OR ti:\"temporal graphs\" OR ti:\"dynamic network\" OR ti:\"time-evolving graph\") AND (abs:\"graph summarization\" OR abs:\"graph compression\" OR abs:\"graph summary\" OR abs:\"graph coarsening\") AND (abs:\"graph autoencoder\" OR abs:\"graph representation learning\" OR abs:\"graph neural network\" OR abs:\"GNN\") AND (abs:\"recurrent neural network\" OR abs:\"temporal dependency learning\" OR abs:\"RNN\" OR abs:\"sequence learning\") AND (abs:\"node representation\" OR abs:\"graph embedding\" OR abs:\"node embedding\" OR abs:\"graph representation\")",
+          "status": "succeeded",
+          "result_marker": "zero_hits",
+          "error": null,
+          "results": []
+        },
+        {
+          "database": "arxiv",
+          "task_id": "T-1",
+          "novelty_point_id": "NP-1",
+          "strategy_id": "S2-fb1",
+          "level": "medium",
+          "query": "(ti:\"large-scale dynamic graphs\" OR ti:\"sequential graphs\" OR ti:\"temporal graphs\" OR ti:\"dynamic network\" OR ti:\"time-evolving graph\") AND (abs:\"graph summarization\" OR abs:\"graph compression\" OR abs:\"graph summary\" OR abs:\"graph coarsening\") AND (abs:\"graph autoencoder\" OR abs:\"graph representation learning\" OR abs:\"graph neural network\" OR abs:\"GNN\") AND (abs:\"node representation\" OR abs:\"graph embedding\" OR abs:\"node embedding\" OR abs:\"graph representation\")",
+          "status": "succeeded",
+          "result_marker": "zero_hits",
+          "error": null,
+          "results": []
+        },
+        {
+          "database": "arxiv",
+          "task_id": "T-1",
+          "novelty_point_id": "NP-1",
+          "strategy_id": "S3",
+          "level": "broad",
+          "query": "(ti:\"large-scale dynamic graphs\" OR ti:\"sequential graphs\" OR ti:\"temporal graphs\" OR ti:\"dynamic network\" OR ti:\"time-evolving graph\") OR (abs:\"graph summarization\" OR abs:\"graph compression\" OR abs:\"graph summary\" OR abs:\"graph coarsening\") OR (abs:\"graph autoencoder\" OR abs:\"graph representation learning\" OR abs:\"graph neural network\" OR abs:\"GNN\") OR (abs:\"recurrent neural network\" OR abs:\"temporal dependency learning\" OR abs:\"RNN\" OR abs:\"sequence learning\") OR (abs:\"node representation\" OR abs:\"graph embedding\" OR abs:\"node embedding\" OR abs:\"graph representation\") OR (abs:\"large-scale\" OR abs:\"scalability\" OR abs:\"efficient\")",
+          "status": "succeeded",
+          "result_marker": "has_hits",
+          "error": null,
+          "results": [
+            {
+              "source_record_id": "src_e23832292ece42ed902b3049",
+              "rank": 1,
+              "score": null,
+              "snippet": null
+            },
+            {
+              "source_record_id": "src_e8877dcea4b8a0c13de640ed",
+              "rank": 2,
+              "score": null,
+              "snippet": null
+            },
+            {
+              "source_record_id": "src_58de6f35406ed56c5dc4979d",
+              "rank": 3,
+              "score": null,
+              "snippet": null
+            },
+            {
+              "source_record_id": "src_115644866aa0a74b4f351b17",
+              "rank": 4,
+              "score": null,
+              "snippet": null
+            },
+            {
+              "source_record_id": "src_fc95258261ce46e488e0e7f2",
+              "rank": 5,
+              "score": null,
+              "snippet": null
+            },
+            {
+              "source_record_id": "src_a86cf93bb3055ad6568804f3",
+              "rank": 6,
+              "score": null,
+              "snippet": null
+            },
+            {
+              "source_record_id": "src_9509e06c3278cfa9db98a660",
+              "rank": 7,
+              "score": null,
+              "snippet": null
+            },
+            {
+              "source_record_id": "src_7045f3a2714fe26b3f1f67bd",
+              "rank": 8,
+              "score": null,
+              "snippet": null
+            }
+          ]
+        },
+        {
+          "database": "springer",
+          "task_id": "T-1",
+          "novelty_point_id": "NP-1",
+          "strategy_id": "S1",
+          "level": "strict",
+          "query": "(\"large-scale dynamic graphs\" OR \"sequential graphs\" OR \"temporal graphs\") AND (\"graph summarization\" OR \"graph compression\") AND (\"graph autoencoder\" OR \"graph representation learning\") AND (\"recurrent neural network\" OR \"temporal dependency learning\")",
+          "status": "succeeded",
+          "result_marker": "has_hits",
+          "error": null,
+          "results": [
+            {
+              "source_record_id": "src_0d30d91f02e2ff457ea3a280",
+              "rank": 1,
+              "score": null,
+              "snippet": null
+            },
+            {
+              "source_record_id": "src_c665eb240c709cdaccf784f4",
+              "rank": 2,
+              "score": null,
+              "snippet": null
+            },
+            {
+              "source_record_id": "src_758fdc3a6123b1d3c4f7a893",
+              "rank": 3,
+              "score": null,
+              "snippet": null
+            },
+            {
+              "source_record_id": "src_25087773bda7ba044cdec636",
+              "rank": 4,
+              "score": null,
+              "snippet": null
+            },
+            {
+              "source_record_id": "src_f501033f4dedbee328ea1167",
+              "rank": 5,
+              "score": null,
+              "snippet": null
+            },
+            {
+              "source_record_id": "src_fc850a2e6c749218f0bc85b1",
+              "rank": 6,
+              "score": null,
+              "snippet": null
+            },
+            {
+              "source_record_id": "src_0f1477b5f2444186b9eddb77",
+              "rank": 7,
+              "score": null,
+              "snippet": null
+            },
+            {
+              "source_record_id": "src_f488638f4bdf74526c0380c3",
+              "rank": 8,
+              "score": null,
+              "snippet": null
+            }
+          ]
+        }
+      ],
+      "query_plan": {
+        "queries": [
+          "(ti:\"large-scale dynamic graphs\" OR ti:\"sequential graphs\" OR ti:\"temporal graphs\") AND (abs:\"graph summarization\" OR abs:\"graph compression\") AND (abs:\"graph autoencoder\" OR abs:\"graph representation learning\") AND (abs:\"recurrent neural network\" OR abs:\"temporal dependency learning\")",
+          "(ti:\"large-scale dynamic graphs\" OR ti:\"sequential graphs\" OR ti:\"temporal graphs\") AND (abs:\"graph summarization\" OR abs:\"graph compression\") AND (abs:\"graph autoencoder\" OR abs:\"graph representation learning\")",
+          "(ti:\"large-scale dynamic graphs\" OR ti:\"sequential graphs\" OR ti:\"temporal graphs\" OR ti:\"dynamic network\" OR ti:\"time-evolving graph\") AND (abs:\"graph summarization\" OR abs:\"graph compression\" OR abs:\"graph summary\" OR abs:\"graph coarsening\") AND (abs:\"graph autoencoder\" OR abs:\"graph representation learning\" OR abs:\"graph neural network\" OR abs:\"GNN\") AND (abs:\"recurrent neural network\" OR abs:\"temporal dependency learning\" OR abs:\"RNN\" OR abs:\"sequence learning\") AND (abs:\"node representation\" OR abs:\"graph embedding\" OR abs:\"node embedding\" OR abs:\"graph representation\")",
+          "(ti:\"large-scale dynamic graphs\" OR ti:\"sequential graphs\" OR ti:\"temporal graphs\" OR ti:\"dynamic network\" OR ti:\"time-evolving graph\") AND (abs:\"graph summarization\" OR abs:\"graph compression\" OR abs:\"graph summary\" OR abs:\"graph coarsening\") AND (abs:\"graph autoencoder\" OR abs:\"graph representation learning\" OR abs:\"graph neural network\" OR abs:\"GNN\") AND (abs:\"node representation\" OR abs:\"graph embedding\" OR abs:\"node embedding\" OR abs:\"graph representation\")",
+          "(ti:\"large-scale dynamic graphs\" OR ti:\"sequential graphs\" OR ti:\"temporal graphs\" OR ti:\"dynamic network\" OR ti:\"time-evolving graph\") OR (abs:\"graph summarization\" OR abs:\"graph compression\" OR abs:\"graph summary\" OR abs:\"graph coarsening\") OR (abs:\"graph autoencoder\" OR abs:\"graph representation learning\" OR abs:\"graph neural network\" OR abs:\"GNN\") OR (abs:\"recurrent neural network\" OR abs:\"temporal dependency learning\" OR abs:\"RNN\" OR abs:\"sequence learning\") OR (abs:\"node representation\" OR abs:\"graph embedding\" OR abs:\"node embedding\" OR abs:\"graph representation\") OR (abs:\"large-scale\" OR abs:\"scalability\" OR abs:\"efficient\")",
+          "(\"large-scale dynamic graphs\" OR \"sequential graphs\" OR \"temporal graphs\") AND (\"graph summarization\" OR \"graph compression\") AND (\"graph autoencoder\" OR \"graph representation learning\") AND (\"recurrent neural network\" OR \"temporal dependency learning\")"
+        ],
+        "attempts": [
+          1
+        ]
+      }
+    },
+    {
+      "sequence": 2,
+      "novelty_point_id": "NP-2",
+      "research_tasks": [
+        {
+          "task_id": "T-1",
+          "novelty_point_id": "NP-2",
+          "task_type": "literature_search",
+          "language": "en",
+          "description": "针对该查新点执行英文文献检索。",
+          "attempt": 1
+        }
+      ],
+      "search_plans": [
+        {
+          "task_id": "T-1",
+          "novelty_point_id": "NP-2",
+          "concepts": [
+            {
+              "concept_id": "C1",
+              "name": "distributed graph neural network training",
+              "terms": [
+                "distributed graph neural network training"
+              ],
+              "role": "object",
+              "alias": [
+                "distributed GNN training",
+                "distributed graph learning"
+              ],
+              "exclude": [],
+              "importance": 3
+            },
+            {
+              "concept_id": "C2",
+              "name": "graph summarization",
+              "terms": [
+                "graph summarization"
+              ],
+              "role": "method",
+              "alias": [
+                "graph summary",
+                "graph condensation"
+              ],
+              "exclude": [],
+              "importance": 3
+            },
+            {
+              "concept_id": "C3",
+              "name": "leader-worker mode",
+              "terms": [
+                "leader-worker mode"
+              ],
+              "role": "feature",
+              "alias": [
+                "leader-follower",
+                "master-worker"
+              ],
+              "exclude": [],
+              "importance": 2
+            },
+            {
+              "concept_id": "C4",
+              "name": "edge segmentation graph partition",
+              "terms": [
+                "edge segmentation graph partition"
+              ],
+              "role": "feature",
+              "alias": [
+                "edge-based partitioning",
+                "edge-cut partitioning"
+              ],
+              "exclude": [],
+              "importance": 2
+            },
+            {
+              "concept_id": "C5",
+              "name": "mini-batch training",
+              "terms": [
+                "mini-batch training"
+              ],
+              "role": "feature",
+              "alias": [
+                "mini-batch",
+                "small-batch"
+              ],
+              "exclude": [],
+              "importance": 2
+            },
+            {
+              "concept_id": "C6",
+              "name": "graph streaming data",
+              "terms": [
+                "graph streaming data"
+              ],
+              "role": "setting",
+              "alias": [
+                "streaming graphs",
+                "dynamic graphs"
+              ],
+              "exclude": [],
+              "importance": 1
+            }
+          ],
+          "strategies": [
+            {
+              "strategy_id": "S1",
+              "level": "strict",
+              "expression": "C1 AND C2",
+              "description": "distributed graph neural network training AND graph summarization",
+              "use_alias": false,
+              "use_exclude": true
+            },
+            {
+              "strategy_id": "S2",
+              "level": "medium",
+              "expression": "C1 AND C2",
+              "description": "distributed graph neural network training AND graph summarization",
+              "use_alias": true,
+              "use_exclude": true
+            },
+            {
+              "strategy_id": "S3",
+              "level": "broad",
+              "expression": "C1 OR C2 OR C3 OR C4",
+              "description": "distributed graph neural network training OR graph summarization OR leader-worker mode OR edge segmentation graph partition",
+              "use_alias": true,
+              "use_exclude": true
+            }
+          ]
+        }
+      ],
+      "executed_queries": [
+        {
+          "database": "arxiv",
+          "task_id": "T-1",
+          "novelty_point_id": "NP-2",
+          "strategy_id": "S1",
+          "level": "strict",
+          "query": "ti:distributed AND ti:graph AND ti:neural AND ti:network AND ti:training AND abs:\"graph summarization\"",
+          "status": "succeeded",
+          "result_marker": "zero_hits",
+          "error": null,
+          "results": []
+        },
+        {
+          "database": "arxiv",
+          "task_id": "T-1",
+          "novelty_point_id": "NP-2",
+          "strategy_id": "S1-fb1",
+          "level": "strict",
+          "query": "abs:\"graph summarization\"",
+          "status": "succeeded",
+          "result_marker": "has_hits",
+          "error": null,
+          "results": [
+            {
+              "source_record_id": "src_ebcf75569d273cf7019ebe0e",
+              "rank": 1,
+              "score": null,
+              "snippet": null
+            },
+            {
+              "source_record_id": "src_d1ed0e4edebb5682bb529bec",
+              "rank": 2,
+              "score": null,
+              "snippet": null
+            },
+            {
+              "source_record_id": "src_4c69e5f864f0fc87ae69b052",
+              "rank": 3,
+              "score": null,
+              "snippet": null
+            },
+            {
+              "source_record_id": "src_f812e9cfeecd4db61ffb4729",
+              "rank": 4,
+              "score": null,
+              "snippet": null
+            },
+            {
+              "source_record_id": "src_9b2126283a8dd56d934db8ef",
+              "rank": 5,
+              "score": null,
+              "snippet": null
+            },
+            {
+              "source_record_id": "src_38eca161a19c8e6fe1eea5ca",
+              "rank": 6,
+              "score": null,
+              "snippet": null
+            },
+            {
+              "source_record_id": "src_11143ab702ba3af908ee3f02",
+              "rank": 7,
+              "score": null,
+              "snippet": null
+            },
+            {
+              "source_record_id": "src_5d99174f9e000ba0611dffbc",
+              "rank": 8,
+              "score": null,
+              "snippet": null
+            }
+          ]
+        },
+        {
+          "database": "springer",
+          "task_id": "T-1",
+          "novelty_point_id": "NP-2",
+          "strategy_id": "S1",
+          "level": "strict",
+          "query": "\"distributed graph neural network training\" AND \"graph summarization\"",
+          "status": "failed",
+          "result_marker": "failed",
+          "error": "ProviderRequestError: Springer Nature API returned HTTP 404",
+          "results": []
+        }
+      ],
+      "query_plan": {
+        "queries": [
+          "ti:distributed AND ti:graph AND ti:neural AND ti:network AND ti:training AND abs:\"graph summarization\"",
+          "abs:\"graph summarization\"",
+          "\"distributed graph neural network training\" AND \"graph summarization\""
+        ],
+        "attempts": [
+          1
+        ]
+      }
+    },
+    {
+      "sequence": 3,
+      "novelty_point_id": "NP-3",
+      "research_tasks": [
+        {
+          "task_id": "T-1",
+          "novelty_point_id": "NP-3",
+          "task_type": "literature_search",
+          "language": "en",
+          "description": "针对该查新点执行英文文献检索。",
+          "attempt": 1
+        },
+        {
+          "task_id": "T-R2-1",
+          "novelty_point_id": "NP-3",
+          "task_type": "literature_search",
+          "language": "en",
+          "description": "Insufficient final evidence for NP-3. This round searches for English literature to substantiate the claimed experimental performance metrics (average memory consumption 9.86%, training time 13.27%, and performance gap within 3.5% on most metrics compared with the best-performing algorithm) of graph-summarization-based temporal graph representation learning approaches on large-scale datasets.",
+          "attempt": 2
+        }
+      ],
+      "search_plans": [
+        {
+          "task_id": "T-1",
+          "novelty_point_id": "NP-3",
+          "concepts": [
+            {
+              "concept_id": "C1",
+              "name": "graph summarization",
+              "terms": [
+                "graph summarization",
+                "sequential graph representation learning"
+              ],
+              "role": "method",
+              "alias": [
+                "graph summary",
+                "graph compression"
+              ],
+              "exclude": [],
+              "importance": 3
+            },
+            {
+              "concept_id": "C2",
+              "name": "graph autoencoder",
+              "terms": [
+                "graph autoencoder",
+                "recurrent neural network"
+              ],
+              "role": "method",
+              "alias": [
+                "GAE",
+                "RNN"
+              ],
+              "exclude": [],
+              "importance": 3
+            },
+            {
+              "concept_id": "C3",
+              "name": "dynamic graph",
+              "terms": [
+                "dynamic graph",
+                "temporal graph",
+                "snapshot sequence"
+              ],
+              "role": "object",
+              "alias": [
+                "time-evolving graph",
+                "dynamic network"
+              ],
+              "exclude": [],
+              "importance": 2
+            },
+            {
+              "concept_id": "C4",
+              "name": "memory consumption",
+              "terms": [
+                "memory consumption",
+                "training time"
+              ],
+              "role": "feature",
+              "alias": [
+                "resource efficiency",
+                "computational cost"
+              ],
+              "exclude": [],
+              "importance": 2
+            },
+            {
+              "concept_id": "C5",
+              "name": "large-scale graph datasets",
+              "terms": [
+                "large-scale graph datasets",
+                "real-world graph datasets"
+              ],
+              "role": "setting",
+              "alias": [
+                "benchmark datasets"
+              ],
+              "exclude": [],
+              "importance": 1
+            }
+          ],
+          "strategies": [
+            {
+              "strategy_id": "S1",
+              "level": "strict",
+              "expression": "C1 AND C2 AND C3",
+              "description": "graph summarization AND graph autoencoder AND dynamic graph",
+              "use_alias": false,
+              "use_exclude": true
+            },
+            {
+              "strategy_id": "S2",
+              "level": "medium",
+              "expression": "C1 AND C2 AND C3 AND C4",
+              "description": "graph summarization AND graph autoencoder AND dynamic graph AND memory consumption",
+              "use_alias": true,
+              "use_exclude": true
+            },
+            {
+              "strategy_id": "S3",
+              "level": "broad",
+              "expression": "C1 OR C2 OR C3 OR C4 OR C5",
+              "description": "graph summarization OR graph autoencoder OR dynamic graph OR memory consumption OR large-scale graph datasets",
+              "use_alias": true,
+              "use_exclude": true
+            }
+          ]
+        },
+        {
+          "task_id": "T-R2-1",
+          "novelty_point_id": "NP-3",
+          "concepts": [
+            {
+              "concept_id": "C1",
+              "name": "temporal graph representation learning",
+              "terms": [
+                "temporal graph representation learning"
+              ],
+              "role": "object",
+              "alias": [
+                "dynamic graph embedding",
+                "dynamic graph representation learning"
+              ],
+              "exclude": [],
+              "importance": 3
+            },
+            {
+              "concept_id": "C2",
+              "name": "graph summarization",
+              "terms": [
+                "graph summarization"
+              ],
+              "role": "method",
+              "alias": [
+                "graph summary",
+                "graph compression"
+              ],
+              "exclude": [],
+              "importance": 3
+            },
+            {
+              "concept_id": "C3",
+              "name": "graph autoencoder",
+              "terms": [
+                "graph autoencoder"
+              ],
+              "role": "method",
+              "alias": [
+                "graph auto-encoder",
+                "GAE"
+              ],
+              "exclude": [],
+              "importance": 2
+            },
+            {
+              "concept_id": "C4",
+              "name": "recurrent neural network",
+              "terms": [
+                "recurrent neural network"
+              ],
+              "role": "method",
+              "alias": [
+                "RNN",
+                "recurrent network"
+              ],
+              "exclude": [],
+              "importance": 2
+            },
+            {
+              "concept_id": "C5",
+              "name": "memory consumption",
+              "terms": [
+                "memory consumption"
+              ],
+              "role": "feature",
+              "alias": [
+                "memory usage",
+                "memory footprint"
+              ],
+              "exclude": [],
+              "importance": 2
+            },
+            {
+              "concept_id": "C6",
+              "name": "large-scale graph datasets",
+              "terms": [
+                "large-scale graph datasets"
+              ],
+              "role": "setting",
+              "alias": [
+                "large-scale graphs",
+                "real-world graphs"
+              ],
+              "exclude": [],
+              "importance": 1
+            }
+          ],
+          "strategies": [
+            {
+              "strategy_id": "S1",
+              "level": "strict",
+              "expression": "C1 AND C2",
+              "description": "temporal graph representation learning AND graph summarization",
+              "use_alias": false,
+              "use_exclude": true
+            },
+            {
+              "strategy_id": "S2",
+              "level": "medium",
+              "expression": "C1 AND C2",
+              "description": "temporal graph representation learning AND graph summarization",
+              "use_alias": true,
+              "use_exclude": true
+            },
+            {
+              "strategy_id": "S3",
+              "level": "broad",
+              "expression": "C1 OR C2 OR C3 OR C4",
+              "description": "temporal graph representation learning OR graph summarization OR graph autoencoder OR recurrent neural network",
+              "use_alias": true,
+              "use_exclude": true
+            }
+          ]
+        }
+      ],
+      "executed_queries": [
+        {
+          "database": "arxiv",
+          "task_id": "T-1",
+          "novelty_point_id": "NP-3",
+          "strategy_id": "S1",
+          "level": "strict",
+          "query": "(abs:\"graph summarization\" OR abs:sequential AND abs:graph AND abs:representation AND abs:learning) AND (abs:\"graph autoencoder\" OR abs:\"recurrent neural network\") AND (ti:\"dynamic graph\" OR ti:\"temporal graph\" OR ti:\"snapshot sequence\")",
+          "status": "succeeded",
+          "result_marker": "zero_hits",
+          "error": null,
+          "results": []
+        },
+        {
+          "database": "arxiv",
+          "task_id": "T-1",
+          "novelty_point_id": "NP-3",
+          "strategy_id": "S1-fb1",
+          "level": "strict",
+          "query": "(abs:\"graph summarization\" OR abs:sequential AND abs:graph AND abs:representation AND abs:learning) AND (abs:\"graph autoencoder\" OR abs:\"recurrent neural network\")",
+          "status": "succeeded",
+          "result_marker": "has_hits",
+          "error": null,
+          "results": [
+            {
+              "source_record_id": "src_e4be702917010a88fb180c57",
+              "rank": 1,
+              "score": null,
+              "snippet": null
+            },
+            {
+              "source_record_id": "src_08e8e72bf495247196453952",
+              "rank": 2,
+              "score": null,
+              "snippet": null
+            },
+            {
+              "source_record_id": "src_6eaf9a1253569be8dba44e2d",
+              "rank": 3,
+              "score": null,
+              "snippet": null
+            },
+            {
+              "source_record_id": "src_f62aafa5c637f7c2869a0a67",
+              "rank": 4,
+              "score": null,
+              "snippet": null
+            },
+            {
+              "source_record_id": "src_d34cdc7c4f4d98aec698389b",
+              "rank": 5,
+              "score": null,
+              "snippet": null
+            },
+            {
+              "source_record_id": "src_ec31944186827dbc8d8793c5",
+              "rank": 6,
+              "score": null,
+              "snippet": null
+            },
+            {
+              "source_record_id": "src_b679f514f706bfb4d20fb4a3",
+              "rank": 7,
+              "score": null,
+              "snippet": null
+            },
+            {
+              "source_record_id": "src_7e5cd942551852d6ccb3e09e",
+              "rank": 8,
+              "score": null,
+              "snippet": null
+            }
+          ]
+        },
+        {
+          "database": "arxiv",
+          "task_id": "T-R2-1",
+          "novelty_point_id": "NP-3",
+          "strategy_id": "S1",
+          "level": "strict",
+          "query": "ti:temporal AND ti:graph AND ti:representation AND ti:learning AND abs:\"graph summarization\"",
+          "status": "succeeded",
+          "result_marker": "zero_hits",
+          "error": null,
+          "results": []
+        },
+        {
+          "database": "arxiv",
+          "task_id": "T-R2-1",
+          "novelty_point_id": "NP-3",
+          "strategy_id": "S1-fb1",
+          "level": "strict",
+          "query": "abs:\"graph summarization\"",
+          "status": "succeeded",
+          "result_marker": "has_hits",
+          "error": null,
+          "results": [
+            {
+              "source_record_id": "src_ebcf75569d273cf7019ebe0e",
+              "rank": 1,
+              "score": null,
+              "snippet": null
+            },
+            {
+              "source_record_id": "src_d1ed0e4edebb5682bb529bec",
+              "rank": 2,
+              "score": null,
+              "snippet": null
+            },
+            {
+              "source_record_id": "src_4c69e5f864f0fc87ae69b052",
+              "rank": 3,
+              "score": null,
+              "snippet": null
+            },
+            {
+              "source_record_id": "src_f812e9cfeecd4db61ffb4729",
+              "rank": 4,
+              "score": null,
+              "snippet": null
+            },
+            {
+              "source_record_id": "src_9b2126283a8dd56d934db8ef",
+              "rank": 5,
+              "score": null,
+              "snippet": null
+            },
+            {
+              "source_record_id": "src_38eca161a19c8e6fe1eea5ca",
+              "rank": 6,
+              "score": null,
+              "snippet": null
+            },
+            {
+              "source_record_id": "src_11143ab702ba3af908ee3f02",
+              "rank": 7,
+              "score": null,
+              "snippet": null
+            },
+            {
+              "source_record_id": "src_5d99174f9e000ba0611dffbc",
+              "rank": 8,
+              "score": null,
+              "snippet": null
+            }
+          ]
+        }
+      ],
+      "query_plan": {
+        "queries": [
+          "(abs:\"graph summarization\" OR abs:sequential AND abs:graph AND abs:representation AND abs:learning) AND (abs:\"graph autoencoder\" OR abs:\"recurrent neural network\") AND (ti:\"dynamic graph\" OR ti:\"temporal graph\" OR ti:\"snapshot sequence\")",
+          "(abs:\"graph summarization\" OR abs:sequential AND abs:graph AND abs:representation AND abs:learning) AND (abs:\"graph autoencoder\" OR abs:\"recurrent neural network\")",
+          "ti:temporal AND ti:graph AND ti:representation AND ti:learning AND abs:\"graph summarization\"",
+          "abs:\"graph summarization\""
+        ],
+        "attempts": [
+          1,
+          2
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,346 @@
+{
+  "brief": {
+    "paper_summary": "由于现实世界中的大多数数据都可以用图表示，因此近年来针对图表示学\n习的研究越来越受到关注。通过将高维图数据转化成低维的表征向量，图表示\n学习可以有效地对图的信息进行存储并快捷地访问图中实体的关键知识。利用\n学习到的图表征数据可以为社交网络行为分析、节点分类、链路预测和聚类等\n下游任务提供帮助。随着深度学习的快速发展，研究人员提出了基于图神经网\n络的图表示学习方法，其使图中的节点能够同时学习图的结构信息以及邻域节\n点的特征信息，从而得到高质量的低维表征。针对图神经网络上的图表示学\n习，本文主要关注两个问题：大规模时序图场景下的图表示学习方法和分布式\n场景下的大规模图的图神经网络优化训练方法。\n真实世界中的图数据规模往往十分庞大且处于动态变化的状态，而现有的\n图神经网络要么无法处理动态时序图上的图表征学习，要么面对大规模图数据\n集时训练效率低下。为了解决大规模动态图上的图表征学习问题，本文提出了\n一种基于图摘要的大规模时序图表示学习方法——GSAERU 模型。GSAERU 模\n型由“图表征学习模块”和“时序学习模块”两部分构成。首先将动态时序图\n建模为各时刻上原图快照的序列，接着在单时间步上将图快照输入图表征学习\n模块。该模块通过图摘要技术对原图进行压缩，并将压缩后的新图输入图自编\n码器，利用和原图的重构误差训练原图节点的表征。在获得单时间步上的图表\n征后将其输入时序学习模块，并通过一个循环神经网络学习原图在时间维度上\n的特征信息与依赖关系，从而得到大规模时序图的高质量表征。基于在四个真\n实世界的大规模图数据集上的大量实验表明，GSAERU 模型能够高效生成时序\n图的表征。与传统的图神经网络算法相比，其平均内存消耗和平均训练时长只\n有其9.86% 与13.27%，且与性能最好的算法在大部分指标下的差距都不超过\n3.5%。\n\nii\n使用分布式技术加速神经网络训练也是如今热门的研究课题，因为在处理\n大规模数据时，单个设备（如CPU，GPU）有限的内存和计算资源往往会成为\n训练瓶颈。而分布式技术可以提供更多的计算资源来提高训练效率。然而由于\n图数据的不规则性，传统分布式机器学习方法中的子任务划分和模型训练方法\n难以直接应用于图神经网络。针对大规模图流数据场景下的分布式图神经网络\n训练优化问题，本文提出了基于图摘要的分布式图神经网络优化训练算法——\nDSGNN 模型。DSGNN 模型采用“领导——工作者”工作模式，首先由领导节\n点利用一个基于边分割的图流划分算法对原图进行划分并将划分子图分配给各\n个工作节点。工作节点随后执行一个基于图摘要技术的小批量训练并将训练结\n果通过一个注意力层返回给领导节点，最后由领导节点汇总结果并计算梯度，\n并根据梯度同步更新所有计算节点上的模型。基于四个真实世界的大规模图数\n据集上的大量实验，结果表明DSGNN 模型可以大大加速GNN 模型的训练，\n并且在链路预测任务上的F1 分数显著高于其它分布式图神经网络模型。",
+    "research_problem": "面向大规模动态图的图神经网络优化机制研究",
+    "novelty_points": [
+      {
+        "point_id": "NP-1",
+        "claim": "提出一种基于图摘要的大规模时序图表示学习方法GSAERU，通过图摘要压缩原图并利用图自编码器与循环神经网络学习时序依赖，实现大规模动态图的高效表征学习。",
+        "claim_en": "Propose a large-scale sequential graph representation learning method GSAERU based on graph summarization, which compresses the original graph via graph summarization and learns temporal dependencies using a graph autoencoder and a recurrent neural network, enabling efficient representation learning on large-scale dynamic graphs.",
+        "technical_features": [
+          "将动态时序图建模为各时刻上原图快照的序列",
+          "通过图摘要技术对原图进行压缩，并将压缩后的新图输入图自编码器",
+          "利用原图的重构误差训练原图节点的表征",
+          "将单时间步上的图表征输入时序学习模块，通过循环神经网络学习时间维度上的特征信息与依赖关系"
+        ],
+        "technical_features_en": [
+          "Model the dynamic sequential graph as a sequence of snapshots of the original graph at each moment",
+          "Compress the original graph through graph summarization technology and input the compressed new graph into the graph autoencoder",
+          "Train the representation of the nodes of the original graph using the reconstruction error with the original graph",
+          "Input the graph representation on a single time step into the time sequence learning module and learn the feature information and dependencies of the original graph in the time dimension through a recurrent neural network"
+        ],
+        "source_locations": [
+          "abstract",
+          "full_text_excerpt"
+        ]
+      },
+      {
+        "point_id": "NP-2",
+        "claim": "提出一种基于图摘要的分布式图神经网络优化训练算法DSGNN，采用领导-工作者模式，通过基于边分割的图流划分算法和基于图摘要的小批量训练，实现大规模图流数据场景下的高效分布式GNN训练。",
+        "claim_en": "Propose a distributed graph neural network optimization training algorithm DSGNN based on graph summarization, which adopts a leader-worker mode, uses an edge-segmentation-based graph flow partition algorithm and graph-summarization-based mini-batch training to achieve efficient distributed GNN training in large-scale graph streaming data scenarios.",
+        "technical_features": [
+          "采用领导-工作者工作模式，由领导节点利用基于边分割的图流划分算法对原图进行划分",
+          "将划分子图分配给各工作节点，工作节点执行基于图摘要技术的小批量训练",
+          "训练结果通过注意力层返回给领导节点，由领导节点汇总结果并计算梯度",
+          "根据梯度同步更新所有计算节点上的模型"
+        ],
+        "technical_features_en": [
+          "Adopt a leader-worker mode, where the leader node partitions the original graph using an edge-segmentation-based graph flow partition algorithm",
+          "Assign the divided subgraphs to each worker, and the workers perform mini-batch training based on graph summarization technology",
+          "Return the training results to the leader through an attention layer, and the leader summarizes the results and calculates the gradient",
+          "Synchronously update the models on all computing nodes according to the gradient"
+        ],
+        "source_locations": [
+          "abstract",
+          "full_text_excerpt"
+        ]
+      },
+      {
+        "point_id": "NP-3",
+        "claim": "提出一种基于图摘要的时序图表示学习方法，通过将动态时序图建模为快照序列并结合图自编码器与循环神经网络，在四个真实世界大规模图数据集上实现平均内存消耗仅为传统图神经网络算法的9.86%、平均训练时长仅为13.27%，且与性能最优算法在大部分指标上的差距不超过3.5%。",
+        "claim_en": "Propose a sequential graph representation learning method based on graph summarization, which models dynamic sequential graphs as snapshot sequences and combines a graph autoencoder with a recurrent neural network, achieving average memory consumption of only 9.86% and average training time of only 13.27% compared to traditional graph neural network algorithms on four real-world large-scale graph datasets, with performance gaps not exceeding 3.5% on most metrics against the best-performing algorithm.",
+        "technical_features": [
+          "在四个真实世界的大规模图数据集上进行实验验证",
+          "平均内存消耗仅为传统图神经网络算法的9.86%",
+          "平均训练时长仅为传统图神经网络算法的13.27%",
+          "与性能最好的算法在大部分指标下的差距不超过3.5%"
+        ],
+        "technical_features_en": [
+          "Conduct experiments on four real-world large-scale graph datasets",
+          "Average memory consumption is only 9.86% of traditional graph neural network algorithms",
+          "Average training time is only 13.27% of traditional graph neural network algorithms",
+          "The gap with the best-performing algorithm on most metrics does not exceed 3.5%"
+        ],
+        "source_locations": [
+          "abstract",
+          "full_text_excerpt"
+        ]
+      }
+    ],
+    "keywords_zh": [
+      "图表示学习",
+      "深度学习",
+      "图神经网络",
+      "分布式技术"
+    ],
+    "keywords_en": [
+      "graph representation learning",
+      "deep learning",
+      "graph neural network",
+      "distributed"
+    ],
+    "research_tasks": [
+      {
+        "task_id": "T-R2-1",
+        "novelty_point_id": "NP-3",
+        "task_type": "literature_search",
+        "language": "en",
+        "description": "Insufficient final evidence for NP-3. This round searches for English literature to substantiate the claimed experimental performance metrics (average memory consumption 9.86%, training time 13.27%, and performance gap within 3.5% on most metrics compared with the best-performing algorithm) of graph-summarization-based temporal graph representation learning approaches on large-scale datasets.",
+        "attempt": 2
+      }
+    ]
+  },
+  "evidence_cards": [
+    {
+      "card_id": "card_a97fedc0057857de88015883",
+      "task_id": "T-1",
+      "novelty_point_id": "NP-1",
+      "document_title": "A Survey of Link Prediction in Temporal Networks",
+      "main_contribution": "A comprehensive survey of temporal link prediction (TLP) that introduces a taxonomy distinguishing representation and inference units, covering snapshot-based (discrete-time dynamic graphs), autoencoder-based, RNN-based, and graph summarisation (DGS) approaches for temporal network representation learning.",
+      "overlaps": [
+        "Snapshot-based modeling of temporal networks as sequences of static graph snapshots (feature 1)",
+        "RNN-based temporal dependency learning over discrete snapshots, as in EvolveGCN (feature 4)",
+        "Dynamic Graph Summarisation (DGS) as a representation method for temporal networks (feature 2)",
+        "Autoencoder-based dynamic network embedding methods (Dyn-VGAE, DynGEM, SDNE) for node representation (feature 3)"
+      ],
+      "differences": [
+        "The survey is a taxonomy/review of existing TLP methods, not a novel method combining graph summarization with autoencoder and RNN",
+        "The survey does not propose a specific pipeline that compresses the original graph via graph summarization before feeding into a graph autoencoder",
+        "The survey does not describe training original-graph node representations via reconstruction error against the original graph",
+        "The survey does not present a unified framework (like GSAERU) integrating graph summarization, graph autoencoder, and RNN for large-scale dynamic graph representation learning"
+      ],
+      "sources": [
+        {
+          "title": "A Survey of Link Prediction in Temporal Networks",
+          "quote": "A DTDG simplifies a temporal network into a sequence of timestamped snapshots, converting the continuous temporal space into discrete timestamps.",
+          "location": "artifact art_6e0128f41ad58fd336741908 chars:12344-12489",
+          "doi": "10.1007/s42979-025-04639-1",
+          "url": "http://link.springer.com/openurl/pdf?id=doi:10.1007/s42979-025-04639-1"
+        },
+        {
+          "title": "A Survey of Link Prediction in Temporal Networks",
+          "quote": "EvolveGCN adopts a sequence of discrete snapshots with RNN-based updates of GCN parameters, which is more suitable for gradually evolving networks.",
+          "location": "artifact art_6e0128f41ad58fd336741908 chars:4484-4631",
+          "doi": "10.1007/s42979-025-04639-1",
+          "url": "http://link.springer.com/openurl/pdf?id=doi:10.1007/s42979-025-04639-1"
+        },
+        {
+          "title": "A Survey of Link Prediction in Temporal Networks",
+          "quote": "GNN Graph Neural Network, DGS Dynamic Graph Summarisation, MF Matrix Factorisation, RBM Restricted Boltzmann Machine",
+          "location": "artifact art_6e0128f41ad58fd336741908 chars:48139-48255",
+          "doi": "10.1007/s42979-025-04639-1",
+          "url": "http://link.springer.com/openurl/pdf?id=doi:10.1007/s42979-025-04639-1"
+        }
+      ],
+      "cited_by_paper": null,
+      "possible_baseline": true,
+      "relevance": 0.75,
+      "confidence": 0.85,
+      "evidence_ids": [
+        "ev_247ff4ff8f1f0fa0c517a936",
+        "ev_72265effc1e5744e3f3d8581",
+        "ev_a0113914b3f102ccde1f16f7"
+      ]
+    },
+    {
+      "card_id": "card_b3631b654e6dc98339a9f88e",
+      "task_id": "T-1",
+      "novelty_point_id": "NP-2",
+      "document_title": "AliGraph: A Comprehensive Graph Neural Network Platform",
+      "main_contribution": "AliGraph is a comprehensive distributed graph neural network system that provides distributed graph storage, optimized sampling operators, and a runtime to efficiently support existing and in-house developed GNNs.",
+      "overlaps": [
+        "Both involve distributed GNN training.",
+        "Both aim to support GNN models at scale."
+      ],
+      "differences": [
+        "AliGraph does not mention leader-worker mode.",
+        "AliGraph does not mention edge-segmentation graph flow partition.",
+        "AliGraph does not mention graph summarization-based mini-batch training.",
+        "AliGraph does not mention an attention layer for returning results or synchronous model updates."
+      ],
+      "sources": [
+        {
+          "title": "AliGraph: A Comprehensive Graph Neural Network Platform",
+          "quote": "we present a comprehensive graph neural network system, namely AliGraph, which consists of distributed graph storage, optimized sampling operators and runtime to efficiently support not only existing popular GNNs but also a series of in-house developed ones for different scenarios.",
+          "location": "artifact art_d88778158223021b818fdd97 chars:649-931",
+          "doi": null,
+          "url": "https://arxiv.org/pdf/1902.08730"
+        }
+      ],
+      "cited_by_paper": null,
+      "possible_baseline": false,
+      "relevance": 0.3,
+      "confidence": 0.7,
+      "evidence_ids": [
+        "ev_b97fa696770150c9d0862060"
+      ]
+    }
+  ],
+  "rejected_evidence": [],
+  "novelty_reviews": [
+    {
+      "novelty_point_id": "NP-1",
+      "status": "reviewed",
+      "verdict": "partially_novel",
+      "verdict_reason": "单篇综述文献（wrk_c0bef0d51bf986df927dc3e6）仅覆盖部分单项特征：快照式时序图建模（特征1）、RNN时序依赖学习（特征4）和动态图摘要DGS（特征2），但未披露将图摘要压缩→图自编码器→RNN整合的统一框架，也未描述以原图重构误差训练原图节点表征（特征3）。因此该文献为部分相关基线，未预见完整组合，支持部分新颖判定。",
+      "confidence": 0.7,
+      "highly_relevant_works": [
+        {
+          "work_id": "wrk_c0bef0d51bf986df927dc3e6",
+          "card_ids": [
+            "card_a97fedc0057857de88015883"
+          ],
+          "evidence_ids": [
+            "ev_247ff4ff8f1f0fa0c517a936",
+            "ev_72265effc1e5744e3f3d8581"
+          ],
+          "relevance_reason": "综述覆盖快照式建模（特征1）、RNN时序学习（特征4）与动态图摘要DGS（特征2）等单项技术，作为背景基线相关；但未提出图摘要+图自编码器+RNN的统一方法，未覆盖以原图重构误差训练节点表征（特征3），故为部分相关基线而非完整预见。"
+        }
+      ],
+      "supplement_request": {
+        "reason": "单篇综述仅覆盖部分单项特征，未披露GSAERU的完整组合管线（图摘要压缩→图自编码器→RNN时序学习→原图重构误差训练）。需补充检索是否已有文献提出该具体组合方法，以确认完整组合的新颖性。",
+        "missing_aspects": [
+          "以原图重构误差训练原图节点表征（特征3）的具体方法",
+          "图摘要压缩后输入图自编码器的完整管线",
+          "图摘要+图自编码器+RNN统一框架的现有方法"
+        ],
+        "suggested_focus": [
+          "GSAERU或类似图摘要+自编码器+RNN组合的动态图表示学习方法",
+          "基于图摘要压缩的动态图嵌入方法",
+          "以重构误差训练节点表征的图自编码器时序方法"
+        ]
+      }
+    },
+    {
+      "novelty_point_id": "NP-2",
+      "status": "reviewed",
+      "verdict": "partially_novel",
+      "verdict_reason": "现有证据仅包含 AliGraph 一篇文献，其覆盖分布式 GNN 训练平台这一通用领域，但未公开 DSGNN 的核心特征组合（领导-工作者模式、基于边分割的图流划分、基于图摘要的小批量训练、注意力层返回结果、同步模型更新）。因此，该文献仅部分相关，不能证明完整组合已被公开。由于仅有一篇部分相关文献，且未发现任何单篇公开完整组合或组合证据，故判定为部分新颖，但需注意证据覆盖不足。",
+      "confidence": 0.6,
+      "highly_relevant_works": [
+        {
+          "work_id": "wrk_e59b8b7248dcc080455b8690",
+          "card_ids": [
+            "card_b3631b654e6dc98339a9f88e"
+          ],
+          "evidence_ids": [
+            "ev_b97fa696770150c9d0862060"
+          ],
+          "relevance_reason": "AliGraph 是分布式 GNN 训练平台，与 NP-2 在分布式 GNN 训练领域部分重叠，但未覆盖领导-工作者模式、边分割图流划分、图摘要小批量训练、注意力层及同步更新等具体特征，属部分相关文献。"
+        }
+      ],
+      "supplement_request": {
+        "reason": "当前仅有一篇部分相关文献，且未覆盖查新点的具体特征组合。为更准确评估新颖性，需补充检索可能公开完整组合或部分特征的文献。",
+        "missing_aspects": [
+          "领导-工作者模式在分布式GNN训练中的应用",
+          "基于边分割的图流划分算法",
+          "基于图摘要的小批量训练方法",
+          "注意力层用于结果汇总和梯度计算",
+          "同步更新所有计算节点模型"
+        ],
+        "suggested_focus": [
+          "分布式图神经网络训练",
+          "图流划分算法",
+          "图摘要技术",
+          "领导-工作者模式"
+        ]
+      }
+    },
+    {
+      "novelty_point_id": "NP-3",
+      "status": "insufficient_evidence",
+      "verdict": null,
+      "verdict_reason": null,
+      "confidence": null,
+      "highly_relevant_works": [],
+      "supplement_request": {
+        "reason": "当前查新点没有可供可靠判定的已绑定证据。",
+        "missing_aspects": [],
+        "suggested_focus": []
+      }
+    }
+  ],
+  "insufficient_final_evidence_points": [
+    {
+      "novelty_point_id": "NP-3",
+      "valid_card_count": 0,
+      "required_card_count": 1,
+      "reason": "insufficient_final_evidence"
+    }
+  ],
+  "issues": [],
+  "rounds": 2,
+  "report": {
+    "paper_id": "MF2033k6lC",
+    "conclusions": [
+      {
+        "novelty_point_id": "NP-1",
+        "review_status": "reviewed",
+        "verdict": "partially_novel",
+        "verdict_reason": "单篇综述文献（wrk_c0bef0d51bf986df927dc3e6）仅覆盖部分单项特征：快照式时序图建模（特征1）、RNN时序依赖学习（特征4）和动态图摘要DGS（特征2），但未披露将图摘要压缩→图自编码器→RNN整合的统一框架，也未描述以原图重构误差训练原图节点表征（特征3）。因此该文献为部分相关基线，未预见完整组合，支持部分新颖判定。",
+        "confidence": 0.7,
+        "summary": "现有证据为一篇时序网络链路预测综述，覆盖了快照式时序图建模、RNN时序学习以及动态图摘要等单项技术，但未提出图摘要压缩结合图自编码器与RNN的统一框架，也未覆盖以原图重构误差训练节点表征这一关键特征。基于现有证据，该查新点未被完整预见，判定为部分新颖。",
+        "supporting_card_ids": [
+          "card_a97fedc0057857de88015883"
+        ],
+        "counter_card_ids": [],
+        "highly_relevant_works": [
+          {
+            "work_id": "wrk_c0bef0d51bf986df927dc3e6",
+            "card_ids": [
+              "card_a97fedc0057857de88015883"
+            ],
+            "evidence_ids": [
+              "ev_247ff4ff8f1f0fa0c517a936",
+              "ev_72265effc1e5744e3f3d8581"
+            ],
+            "relevance_reason": "综述覆盖快照式建模（特征1）、RNN时序学习（特征4）与动态图摘要DGS（特征2）等单项技术，作为背景基线相关；但未提出图摘要+图自编码器+RNN的统一方法，未覆盖以原图重构误差训练节点表征（特征3），故为部分相关基线而非完整预见。"
+          }
+        ]
+      },
+      {
+        "novelty_point_id": "NP-2",
+        "review_status": "reviewed",
+        "verdict": "partially_novel",
+        "verdict_reason": "现有证据仅包含 AliGraph 一篇文献，其覆盖分布式 GNN 训练平台这一通用领域，但未公开 DSGNN 的核心特征组合（领导-工作者模式、基于边分割的图流划分、基于图摘要的小批量训练、注意力层返回结果、同步模型更新）。因此，该文献仅部分相关，不能证明完整组合已被公开。由于仅有一篇部分相关文献，且未发现任何单篇公开完整组合或组合证据，故判定为部分新颖，但需注意证据覆盖不足。",
+        "confidence": 0.6,
+        "summary": "现有证据仅有一篇分布式GNN训练平台文献（AliGraph），其覆盖了通用分布式GNN训练领域，但未涉及领导-工作者模式、边分割图流划分、图摘要小批量训练、注意力层返回及同步更新等具体特征。证据覆盖不足，但现有文献未能预见完整组合，判定为部分新颖。",
+        "supporting_card_ids": [
+          "card_b3631b654e6dc98339a9f88e"
+        ],
+        "counter_card_ids": [],
+        "highly_relevant_works": [
+          {
+            "work_id": "wrk_e59b8b7248dcc080455b8690",
+            "card_ids": [
+              "card_b3631b654e6dc98339a9f88e"
+            ],
+            "evidence_ids": [
+              "ev_b97fa696770150c9d0862060"
+            ],
+            "relevance_reason": "AliGraph 是分布式 GNN 训练平台，与 NP-2 在分布式 GNN 训练领域部分重叠，但未覆盖领导-工作者模式、边分割图流划分、图摘要小批量训练、注意力层及同步更新等具体特征，属部分相关文献。"
+          }
+        ]
+      },
+      {
+        "novelty_point_id": "NP-3",
+        "review_status": "insufficient_evidence",
+        "verdict": null,
+        "verdict_reason": null,
+        "confidence": null,
+        "summary": "该查新点（NP-3）缺乏足够的有效证据支持。当前已绑定证据中没有任何通过证据门控的有效EvidenceCard，无法对新颖性作出可靠判定。",
+        "supporting_card_ids": [],
+        "counter_card_ids": [],
+        "highly_relevant_works": []
+      }
+    ],
+    "missing_references": [],
+    "missing_baselines": [],
+    "citation_issues": [],
+    "limitations": [
+      "本次查新未提供各检索来源的执行覆盖事实，因此无法区分检索失败与检索成功零命中；检索覆盖状态未知，不应由证据卡数量推断来源执行成功。",
+      "查新点 NP-3 命中了候选文献（论文本身及其参考文献列表中存在相关文献），但未形成任何有效 EvidenceCard。因此既不属于检索失败，也不属于检索成功但零命中，而是属于“有命中但未形成有效证据”的情形。被拒绝证据列表为空，未发现因技术性质疑或格式性拒绝而被排除的证据；该查新点最终因有效证据卡数量为0（低于所需1张门槛）而无法作出判定。",
+      "查新点 NP-1 和 NP-2 各有少量有效证据，但均仅覆盖部分单项特征或通用领域，未发现完整组合的相同方案；受限于检索覆盖未知，结论应在相应置信度范围内解读，不代表全局穷尽性确认。"
+    ]
+  }
+}

@@ -1,0 +1,1552 @@
+Explainable Mapper: Charting LLM Embedding Spaces Using Perturbation-Based Explanation and Verification Agents
+
+      Report GitHub Issue
+      ×
+
+      Title:
+
+Content selection saved. Describe the issue below:
+
+      Description:
+
+      Submit without GitHub
+      Submit in GitHub
+
+    arXiv is now an independent nonprofit!
+    Learn more
+    ×
+
+      Back to arXiv
+
+    Why HTML?
+
+      Report Issue
+
+      Back to Abstract
+
+      Download PDF
+
+Abstract
+
+1 Technical Background
+
+1.1 Word Embeddings
+
+1.2 Taxonomy of Mapper Graphs
+
+2 Related Work
+
+2.1 Embedding Visualization
+
+2.2 Text Perturbation and Summarization
+
+2.3 Mapper-Based Visualization of High-Dimensional Data
+
+3 Task Analysis
+
+3.1 User Tasks
+
+3.2 Workspace Requirements
+
+4 Mapper Agents
+
+4.1 Operations
+
+4.2 Agent Types
+
+4.2.1 Explanation Agents
+
+4.2.2 Verification Agents
+
+5 Mapper Workspace
+
+5.1 Control Panel and Settings Panel
+
+5.2 Mapper Graph
+
+5.3 Projection
+
+5.4 Explanation and Verification Panel
+
+6 Case Studies
+
+6.1 Models and Data
+
+6.2 Prior Insights on BERT’s Embeddings
+
+6.3 Replication Study
+
+7 Discussion and Future Work
+
+8 Conclusion
+
+References
+
+A Additional Use Cases for the Classical mapper
+
+B Examples for the ball mapper
+
+C Groningen Meaning Bank Dataset
+
+D Prompt Templates and Engineering
+
+    License: CC BY-NC-ND 4.0
+
+arXiv:2507.18607v1 [cs.CG] 24 Jul 2025
+
+\vgtccategory
+
+Research
+\vgtcpapertypesystem
+
+\authorfooterXinyuan Yan and Bei Wang are with the University of Utah.
+E-mails: xinyuan.yan@sci.utah.edu, beiwang@sci.utah.edu.
+Rita Sevastjanova, Sinie van der Ben, and Mennatallah El-Assady are with ETH Zürich.
+E-mails: rita.sevastjanova@inf.ethz.ch, vandersi@ethz.ch, menna.elassady@ai.ethz.ch.
+The first two authors contributed equally to this work.
+
+\teaser
+We apply mapper graphs—a widely used tool in topological data analysis and visualization—to investigate the topological structures of LLM embedding spaces. The mapper’s taxonomy includes elements such as nodes, edges, paths, components, and trajectories. We introduce the Explainable Mapper workspace and two mapper agents to support embedding investigation. These agents utilize summarization, comparison, and perturbation operations to generate and verify explanations of mapper elements such as the linguistic aspect of clusters, connectivity, and transitions.
+
+Introduction
+
+Explainable Mapper: Charting LLM Embedding Spaces
+Using Perturbation-Based Explanation and Verification Agents
+
+Xinyuan Yan
+
+  
+Rita Sevastjanova
+
+  
+Sinie van der Ben
+
+  
+Mennatallah El-Assady
+
+  
+and
+Bei Wang
+
+Abstract
+
+Large language models (LLMs) produce high-dimensional embeddings that capture rich semantic and syntactic relationships between words, sentences, and concepts. Investigating the topological structures of LLM embedding spaces via mapper graphs enables us to understand their underlying structures. Specifically, a mapper graph summarizes the topological structure of the embedding space, where each node represents a topological neighborhood (containing a cluster of embeddings), and an edge connects two nodes if their corresponding neighborhoods overlap. However, manually exploring these embedding spaces to uncover encoded linguistic properties requires considerable human effort. To address this challenge, we introduce a framework for semi-automatic annotation of these embedding properties. To organize the exploration process, we first define a taxonomy of explorable elements within a mapper graph such as nodes, edges, paths, components, and trajectories. The annotation of these elements is executed through two types of customizable LLM-based agents that employ perturbation techniques for scalable and automated analysis. These agents help to explore and explain the characteristics of mapper elements and verify the robustness of the generated explanations. We instantiate the framework within a visual analytics workspace and demonstrate its effectiveness through case studies. In particular, we replicate findings from prior research on BERT’s embedding properties across various layers of its architecture and provide further observations into the linguistic properties of topological neighborhoods.
+
+keywordsLarge Language Models, Topological Data Analysis, Transformers, BERT, Visualization, Explainable AI
+
+Large language models (LLMs) acquire linguistic properties by learning from vast text corpora and have demonstrated remarkable performance across a wide range of natural language processing (NLP) and understanding (NLU) tasks.
+Since their development, researchers have extensively analyzed their learning mechanisms to uncover both their strengths and limitations [65, 12, 48].
+One key area of investigation has been the study of contextual word embeddings, which dynamically evolve across different layers of the model’s architecture [16, 55].
+Model developers, computational linguists, and NLP experts are especially interested in analyzing such embedding learning behaviors [6].
+
+A common approach to exploring contextual word embeddings involves computational methods combined with visualizations [24].
+One widely used technique is dimensionality reduction, which projects embeddings into a lower-dimensional space while preserving key structural relationships.
+These reduced representations are often visualized using scatter plots [24], allowing for a closer examination of word neighborhoods [6] and their semantic or syntactic similarities [56].
+Furthermore, they facilitate tracking shifts in word meanings across various contexts [54] and uncovering potential biases in the model’s learned representations [53, 46].
+Beyond traditional projection-based visualizations, researchers have recently leveraged mapper graphs [57]—a popular tool from topological data analysis and visualization—to investigate the topological structure of word embeddings [45, 47].
+By constructing a graph representation of the embedding space, mapper graphs reveal clusters, transitions, and connectivity patterns [63, 45, 47, 42, 64].
+In this paper, we explore mapper graphs to gain insight into the linguistic properties of contextual word embeddings.
+
+To interpret the embedding properties represented in a mapper graph, it is essential to analyze its various structural elements.
+As shown in previous work [45, 47], each element of the mapper graph, such as nodes, edges, and overall connectivity patterns, carries insights into how embeddings are organized and evolve across different contexts.
+For instance, nodes represent topological neighborhoods—clusters of embeddings with shared characteristics—and summarizing their properties has revealed dominant linguistic features, such as common semantic themes or syntactic roles.
+Edges, which indicate overlapping data points between neighboring nodes, help to understand gradual transitions and semantic shifts within the embedding space.
+
+The explorable space of a mapper graph representing word embeddings is typically vast, as it often visualizes thousands of tokens simultaneously to provide meaningful insights [45, 47].
+The insights that can be drawn from the data depend on the dataset’s coverage of various linguistic properties and functionalities.
+Moreover, as shown by prior work, word embeddings encode multiple linguistic properties simultaneously, some of them being more prominent than others [48].
+As a result, there is usually more than one observation that can summarize the properties of a mapper element.
+Since the embedding properties are not yet fully understood, users typically generate new hypotheses while exploring the embedding space and strive to verify their validity.
+The hypothesis generation process thus can diverge to have a large set of possible explanations. At the same time, the verification step aims to converge the space to those hypotheses that can be verified.
+
+To assist users in analyzing the structural elements of the mapper graph while initially diverging in the explanation space and thereafter converging the produced explanations to the reliable ones, we introduce the concept of mapper agents.
+In particular, we introduce two types of agents, i.e., an Explanation Agent that can be used to create explanation candidates of a selected mapper element and a Verification Agent that is used to verify the generated explanations against their robustness.
+These two agent classes support distinct operations, i.e., summarization, comparison, and perturbation, to support explanation generation and verification.
+In this paper, we propose a set of LLM-based agent instances, i.e., explainers and verifiers, to explain and verify each mapper element.
+We instantiate this concept within a visual analytics workspace called Explainable Mapper, which enables users to explore the embedding space, interact with mapper elements, and produce reliable and robust insights into embedding properties.
+
+To summarize, our contributions are: (1) a mapper agent framework that introduces two types of agents for explanation generation and verification, (2) the instantiation of the framework into an Explainable Mapper workspace, and (3) the evaluation of the proposed approach through replication studies.
+
+1 Technical Background
+
+In this section, we review technical background surrounding word embeddings and mapper graphs, which serve as the key ingredients behind Explainable Mapper.
+
+1.1 Word Embeddings
+
+Word embeddings represent words as dense vectors in a continuous vector space, capturing semantic and syntactic relationships through their geometric properties. Before words were represented as embeddings via word embedding model or LLMs, one-hot encoding was often used to transform words into numbers. Unlike one-hot encoding that treats words as independent entities, embeddings that represent words with similar meanings are closer together in a vector space.
+
+Given a large vocabulary 𝒲{\mathcal{W}}, an embedding model learns a function h:𝒲→ℝdh:{\mathcal{W}}\to{\mathbb{R}}^{d} that maps each word in 𝒲{\mathcal{W}} to a dd-dimensional vector. Early models such as Word2Vec [36] and GloVe [41] were the first in NLP to learn word representations from large text datasets, producing static embeddings where each word has a fixed representation regardless of its context. Their static nature, which does not take context into account, creates the problem of polysemy. BERT (Bidirectional Encoder Representations from Transformers) [13] addressed this limitation by introducing contextual embeddings. These embeddings dynamically adjust the vector for a word based on the context.
+
+Contextual embeddings improved performance across NLP tasks where semantic understanding is important, such as question answering or named entity recognition. In addition to improving various NLP tasks, the embeddings themselves can reveal new information about the linguistic structures encoded by the language models. Kurita [30] showed through a case study on gender pronoun resolution, that BERT’s performance is influenced by gender stereotypes.
+Furthermore, Jawahar [26] found that different layers of BERT are responsible for the encoding of different types of linguistic information. The lower layers tend to encode surface and lexical features, such as part-of-speech (POS) tags and word order. The middle layers capture syntactic properties while the upper layers encode semantic and contextual information, allowing the formation of complex semantic relations.
+
+1.2 Taxonomy of Mapper Graphs
+
+Given a high-dimensional point cloud 𝕏{\mathbb{X}} equipped with a real-valued function f:𝕏→ℝf:{\mathbb{X}}\to{\mathbb{R}}, a (classical) mapper graph [57] summarizes the topological structure of 𝕏{\mathbb{X}} induced by the function ff. A node in the mapper graph represents a topological neighborhood, whereas an edge connects two nodes if their corresponding neighborhoods overlap. In the context of this paper, 𝕏{\mathbb{X}} is a set of word embeddings obtained from an LLM.
+
+Figure 1: A simple example of computing a mapper graph.
+A point cloud 𝕏{\mathbb{X}} in (a) is equipped with a height function ff. The cover 𝒰={U1,U2,…}{\mathcal{U}}=\{U_{1},U_{2},\dots\} of 𝕏{\mathbb{X}} is induced by a cover 𝒱={V1,V2,…}{\mathcal{V}}=\{V_{1},V_{2},\dots\} of f⁡(𝕏)f({\mathbb{X}}) that contains 6 intervals with 1/41/4 overlap in (b). The 1-dimensional nerve of 𝒰{\mathcal{U}} is the mapper graph in (c). Elements derived from the mapper graphs are shown in (d).
+
+For simplicity, we illustrate the construction of a mapper graph from a 2D point cloud 𝕏{\mathbb{X}} sampled from a toy dataset in the shape of a letter ‘a’.
+As shown in Fig. 1(a), 𝕏{\mathbb{X}} is equipped with a height function ff.
+To obtain a topological summary of 𝕏{\mathbb{X}}, we start with a finite cover 𝒱={V1,V2,…}{\mathcal{V}}=\{V_{1},V_{2},\dots\} of f⁡(𝕏)⊂ℝf({\mathbb{X}})\subset{\mathbb{R}} formed by a set of partially-overlapping intervals, such that f⁡(𝕏)⊆⋃jVjf({\mathbb{X}})\subseteq\bigcup_{j}{V_{j}}, as shown in Fig. 1(b).
+In other words, the function value f⁡(x)f(x) of each point x∈𝕏x\in{\mathbb{X}} lies within some interval VjV_{j}. We then consider the clusters induced by points in f−1​(Vj)f^{-1}(V_{j}) (for each jj) that are enclosed by rectangles.
+These clusters are denoted as 𝒰={U1,U2,…}{\mathcal{U}}=\{U_{1},U_{2},\dots\}. For instance, the points in f−1​(V1)f^{-1}(V_{1}) form a single cluster U1U_{1}, while those in f−1​(V2)f^{-1}(V_{2}) give rise to two clusters, U2U_{2} and U3U_{3}, as illustrated in Fig. 1(a).
+
+We then construct the 1D nerve of 𝒰{\mathcal{U}} as the mapper graph: each cluster UiU_{i} is represented as a node ii, and there is an edge between node ii and node jj if UiU_{i} and UjU_{j} have nonempty intersection.
+
+The function ff is referred to as the lens, as it provides a perspective through which we examine the data. Different lens choices, such as density and eccentricity, offer distinct insights [5, 57]. In this work, we adopt the L2L_{2}-norm as the lens function. The L2L_{2}-norm of a word embedding captures how strongly an LLM is activated by the input token, and has been shown to yield meaningful results when analyzing hidden representations from deep learning [45, 47].
+
+A mapper graph is constructed with additional parameters in mind. The cover 𝒱{\mathcal{V}} is controlled by the number of intervals nn and the overlap pp. While these values are typically hand-tuned by users, studies have explored automatic parameter selection [8, 9]. We use DBSCAN [15] as the clustering method, which requires two parameters: minPts (minimum points in a neighborhood to form a core point) and ε\varepsilon (maximum radius/distance for points to be considered neighbors). Explainable Mapper estimates ε\varepsilon automatically using the elbow method [15, 63] and allows users to set minPts (defaulting to 33).
+
+In this work, we apply mapper graphs to explore the LLM embedding spaces. We introduce terminology below used by Explainable Mapper to support its exploratory workspace; see Fig. 1(d) for an illustration.
+We use the word “point” and “embedding” interchangeably.
+We introduce mapper nodes, edges, paths, components, and trajectories, all of which are types of mapper elements.
+
+In a mapper graph, a  node represents a set of word embeddings that belong to the same topological neighborhood.
+An  edge captures the connectivity between two neighborhoods with nonempty intersection.
+A  path between a source node and a target node is the shortest path that connects them in the mapper graph.
+A  component in a mapper graph is a maximal set of nodes in which each pair of nodes is reachable from one another via edges.
+
+As described in Section 4, exploring a node helps summarizing and annotating a local neighborhood in the embedding space, whereas exploring an edge helps differentiating adjacent neighborhoods. Exploring a path helps capture evolution in the embedding space. For instance, Nicolau et al. [39] showed that exploring different “arms” in a mapper graph formed by high-throughput microarray data—-a form of paths—help understand tumor progression.
+
+Furthermore, we define a 1-token perturbation of an embedding as the embedding generated by altering a single token in the sentence while preserving the original token; the resulting embedding is referred to as a perturbed embedding.
+A  trajectory between an embedding in a source node and a embedding in the target node is formed by a sequence of 1-token perturbations in the embedding space, and visualized by its projection onto the nearest nodes in the mapper graph. Formally, let x0∈Sx_{0}\in S be an embedding in a source node, and xkx_{k} be an embedding in a target node, {x0,x1,…,xk}\{x_{0},x_{1},\dots,x_{k}\} is the sequence of 1-token perturbations forming a trajectory connecting the source with the target. Each perturbed embedding xix_{i} (0<i<k0<i<k) along the trajectory is projected onto its nearest node in the mapper graph. In short, a trajectory represents a random walk within the embedding space, and visualizing its projection onto the mapper graph reveals an exploratory route among topological neighborhoods of the space.
+
+An alternative to the classical mapper construction is the ball mapper [14]. It constructs a covering of 𝕏{\mathbb{X}} with balls of radius ε\varepsilon (the same radius parameter in DBSCAN), thus getting rid of the dependency on the lens ff. The 1D nerve of such a cover is the ball mapper graph. Intuitively, a node in the ball mapper represents a geometric neighborhood based on the metric structure on 𝕏{\mathbb{X}} (as opposed to the topological neighborhood defined by the classical mapper). The same mapper taxonomy applies. In this paper, Explainable Mapper enables the exploration of LLM embedding spaces through both classical and ball mapper graphs, with a primary focus on the former due to its favorable theoretical properties and well-established applications in embedding space analysis (see Section 5).
+
+2 Related Work
+
+In the following, we review related work on embedding visualization, text perturbation and summarization, as well as mapper-based visualization of high-dimensional data.
+
+2.1 Embedding Visualization
+
+Ever since the introduction of static word embedding models, such as Word2Vec [36] and Glove [41], various visualization techniques have been created to help examine embedding properties. The early tools primarily focused on enabling the exploration of analogies [33] and investigating the local neighborhoods of words [20].
+With the emergence of contextual language models, new aspects of word embeddings, such as contextual variability, became relevant. Consequently, visualization methods evolved to incorporate these aspects, allowing for a more detailed exploration of word meanings in different contexts.
+Currently, many approaches focus on exploring contextual word neighborhoods by visualizing them in a scatter plot after applying a dimensionality reduction technique [6, 58, 53, 54, 55].
+A broad overview of these methods is given in the recent STAR paper by Huang et al. [24].
+The different approaches aim to understand the embedding changes between models [6] and layers [53, 56, 54], explore the encoded linguistic properties and word semantic meanings [56, 4, 54], and different forms of bias [53].
+Others have introduced new visualization designs that use local metrics on embeddings to provide a global overview of similarities and differences between embedding vectors [21].
+
+2.2 Text Perturbation and Summarization
+
+Text perturbation methods are often used to improve the robustness and interpretability of a model in NLP. These methods can be applied at various levels of linguistic granularity, from character-level to sentence-level transformations, with different perturbation methods [11, 37, 49].
+
+In terms of perturbation generation methods, early approaches often relied on rule-based transformations [37], while others have moved toward automated generation [28, 17]. These methods avoid the limitations of manual rules by relying on the LLM’s understanding of context. More recent methods utilize LLMs’ generation capabilities. For instance, Qiang et al. [44] used an LLM to generate paraphrased sentences that were used to improve performance of a different model. Varbench [43] addressed data contamination problem of LLMs by dynamically perturbing variables within test cases.
+
+Perturbation methods are now widely used to assess the stability of explanations and interpretability mechanisms [22]. Marjanovic et al. [34] evaluated the output and explanation of different LLMs after a perturbation is made to the input. They showed that the robustness per model and per explanation method differs for each perturbation. Instead of random perturbations, SyntaxShap [2] perturbs text by removing words while preserving grammatical coherence. Additionally, perturbations are used in evaluating explanations by comparing attribution scores before and after, where a robust explanation should show minimal score changes.
+
+In our study, we are interested not only in perturbations, but also in summaries created by LLMs, as these are used in tasks that support experts to extract information from the embedding vectors. Prior research has shown that LLMs can create summaries that align with those written by humans. Large-scale benchmarks, such as those introduced by Zhang et al.[62] and Basyal and Sanghvi[3], have demonstrated that instruction-tuned LLMs outperform traditional abstractive summarization models, particularly in zero-shot and few-shot settings.
+
+Summarizations can integrate human-like structured reasoning into the LLM generation process, as done by Wang et al. [61]. They propose an element-aware summarization method where LLMs generate summaries using a structured Chain-of-Thought approach. While the summary generation itself is automated, human experts play a role in designing the evaluation framework and assessment of the alignment between generated summaries and reference texts. This structured approach bridges the gap between fully automated summarization and human-guided summary refinement.
+A recent relevant work for our paper is the work by Mozannar et al. [38], where LLMs are utilized to describe image or sentence clusters by contrasting in-cluster and out-of-cluster examples in a human-AI collaborative setting. While our work could also be considered as a human-AI collaboration for text summarization, we propose a different approach via the interplay between the mapper workspace and mapper agents.
+
+2.3 Mapper-Based Visualization of High-Dimensional Data
+
+In this paper, we use the mapper graph to explore the embedding spaces of LLMs.
+Mapper graph is a 1D skeleton of the mapper construction [57], which has been widely applied in data science, including cancer research [39, 35], sports analytics [1], gene expression analysis [27], micro-epidemiology [29], genomic profiling [10], and neuroscience [18, 51], among others; a comprehensive overview can be found in [40].
+Mapper graph has also been applied for graph skeletonization [50]. In the field of deep learning, mapper graphs have been used to capture the topology of hidden representations obtained from image classifiers and LLMs [45, 47], and to study their evolution across layers [42] and during fine-turning [47]. They have also been used to capture characteristics of adversarial attacks [64].
+
+3 Task Analysis
+
+Boggust et al. [6] demonstrated that expert users, including data analysts, model developers, and computational linguists, explore embeddings for diverse purposes. Common tasks include assessing the model’s strengths and weaknesses, and evaluating the information it captures across different layers.
+Their work indicated that model-driven users—such as model developers—analyze and compare embedding spaces to gain insights into model performance and behavior. In contrast, data-driven users—like computational linguists—examine embedded representations to reveal characteristics of the underlying data.
+However, both groups of users aim to generate and verify hypotheses about specific subjects.
+
+In this section, we present key investigation tasks of expert users such as linguists, NLP experts, and model developers.
+These tasks are essential for enabling expert users to explore and interpret embeddings effectively, providing insights into structural patterns, relationships, and underlying data distributions and should be facilitated by a workspace that utilizes a mapper graph for embedding analysis.
+
+3.1 User Tasks
+
+Interpreting the mapper graph is essential to gain insights into the properties encoded in the LLM embedding spaces.
+Its unique structure—nodes as clusters and edges as overlaps—distinguishes its analysis tasks from those of general graphs [31] and introduces interpretive implications.
+In the following, we outline five key user tasks and their implications for interpreting mapper graphs.
+
+T1. Investigating  Node Characteristics. As described in Section 1.2, a mapper node represents a cluster of contextual word embeddings.
+A node can be analyzed to identify common semantic or syntactic features of the clustered tokens and their surrounding contexts.
+This approach is commonly employed in related work, where embeddings are analyzed in relation to the shared characteristics of their surrounding neighborhoods [56, 6].
+Furthermore, analyzing the differences of two nodes can reveal how the LLM distinguishes different linguistic properties.
+
+T2. Investigating  Edge Characteristics. As shown in Section 1.2, an edge in a mapper graph connects two neighboring nodes and represents overlapping data points between these two nodes.
+Analyzing the similarities and differences between neighboring nodes allows the users to understand how the encoded linguistic properties transition from one node to another.
+In the case of word embeddings, these differences may reflect subtle linguistic variations, such as the use of specific function words and their placement within a sentence (e.g., the token “for” used at the beginning vs. in the middle of a sentence).
+
+T3. Investigating  Path Characteristics. We can extend the exploration of the edges to a path connecting multiple nodes to understand how the encoded linguistic properties evolve over a larger data sample.
+
+T4. Investigating  Component Characteristics. Disconnected components may correspond to distinct semantic topics within the LLM’s embedding space that are more abstract than the node-level characteristics. They could reveal a higher-level information such as shared reference tokens across embeddings within a component.
+
+T5. Investigating  Trajectory Characteristics. Understanding potential connections between any two nodes—even if they are not directly connected in the mapper graph—can reveal latent transitions or semantic pathways in the embedding space.
+Exploring such trajectories can help uncover how concepts evolve through intermediate regions.
+
+3.2 Workspace Requirements
+
+In Section 3.1, we introduce user tasks that are informed by the underlying structure of a mapper graph.
+The prior work has shown that word embeddings encode various linguistic properties, such as part-of-speech, syntactic function, and semantic similarity. Moreover, multiple properties are encoded in the embeddings simultaneously [48, 55, 56].
+Thus, the explorable space for gaining insights about the LLM learning capabilities is large.
+In addition to offering tailored methods for embedding explanation, we must also help users generate insights in a way that is both effective and efficient.
+Thus, a visual analytics workspace that supports the previously listed user tasks has multiple requirements.
+
+R1. Support Rapid Identification of Regions of Interest.
+A visual analytics workspace for embedding analysis should provide an overview of high-level mapper properties.
+This can be achieved through automated data annotations that can help users navigate in the space and detect regions for more detailed inspection.
+
+R2. Support Interactive Element Selection and Inspection.
+To get insights into properties of mapper elements, users should be able to select each element within the workspace and access detailed information about its specific characteristics.
+
+R3. Support Evaluation of Explanation Robustness.
+To gain insights that reflect the embedding space’s true characteristics, the workspace should support users in assessing the robustness of the gained insights.
+
+R4. Support User-driven Annotations.
+To facilitate interaction provenance and trace the development of insights, users should be able to create annotations linked to the mapper elements they explore.
+
+4 Mapper Agents
+
+Interpreting a mapper graph that abstracts an embedding space can be both time-consuming and mentally demanding.
+Therefore, computational assistance is essential for uncovering the underlying embedding properties.
+We first identify three main operations that can be used to support the identified user tasks from Section 3.1, i.e., the summarization, comparison, and perturbation operations.
+To enable executing them on the mapper’s elements, we introduce two types of mapper agents: an Explanation Agent and a Verification Agent.
+
+4.1 Operations
+
+We define three operations an agent can perform, which are summarization, comparison, and perturbations. They are explained as follows.
+
+Summarization. The goal of this operation is to generate an understanding of a mapper element, such as the contextual embeddings of a node, an edge, a path, or a component. For example, for a node summarization operation, this entails the summarization of common characteristics and linguistic properties of the node’s embeddings.
+
+Comparison. The goal of this operation is to understand the similarities and differences between two mapper elements. The input for this operation differs from the summarization operation (i.e., a bi-variate vs. a uni-variate input): the comparison operation requires two elements of the same type as input, whereas the summarization operation requires only one. The output of a comparison encompasses the similarities and differences between two elements. For example, a comparison applied to a pair of nodes can provide the similarities and differences between contextual embeddings in two different neighborhoods.
+
+Perturbation. The input for this operation can vary, as it can be one or two mapper elements. The aim is to examine and confirm information obtained from previous operations or observations in the mapper graph. For example, with a node, 1-token perturbations could be applied to its enclosing embeddings to access the robustness of the node explanation. The position of the perturbed embeddings can be examined in relation with earlier operations, such as summarization or comparison. In case of summarization, the similarities with and without the inclusion of the perturbed embeddings can be examined.
+With two elements as input, a perturbation operation can support in the exploration between the two. As an example, the trajectory between a source and a target node can be explored through 1-token perturbations from one sentence in the source node to another sentence in the target node (see Section 1.2).
+
+4.2 Agent Types
+
+Our main goal is to facilitate the generation and verification of hypotheses about word embedding properties, i.e., to support users to discover possible reasons for the resulting mapper structure (i.e., the unique properties of embeddings within nodes and the characteristics of the transitions between them).
+Thus, we first aim to diverge the exploration space, i.e., to create many possible explanation candidates.
+In the consecutive step, we aim to converge these explanations to those that are robust and, thus, more likely to faithfully explain the underlying embedding space.
+Our main rationale is described in Fig. 2 using an encoder-decoder model implemented as two types of agents, i.e., an Explanation Agent for hypotheses generation and a Verification Agent for explanation (and hypotheses) verification.
+
+Figure 2: We use the analogy of a decoder-encoder model, where the main purpose of explainers is a divergence (creation of hypotheses) and of verifiers is a convergence (confirmation of hypotheses).
+
+4.2.1 Explanation Agents
+
+The Explanation Agent class is designed as a set of dedicated explainers that utilize the summarization, comparison, and perturbation operations to explain the properties of nodes, edges, paths, components, and trajectories (T1–T5) of a mapper graph.
+Our goal is to facilitate hypothesis generation, enabling users to explore diverse insights by generating a wide range of explanations—specifically, identifying potential embedding properties that influence the resulting mapper element structures.
+The Explanation Agent class can be implemented in various ways, e.g., utilizing precomputed features and rules as used in previous work [54].
+In this paper, we explore the potential of leveraging LLMs to design explainers implemented as tailored prompts for each specific task.
+We provide full prompts in the supplement.
+
+Node Explainer.
+The Node Explainer operates on individual nodes to support user task T1 (Section 3.1). The following table displays the operations together with the input and output that the agent requires to perform the operations. The summarization operation analyzes the common linguistic properties of a node’s data points, providing insight into the neighborhood of embeddings. The second operation is comparison, which shares the input with the summarization operation.
+The comparison operation presents insights in the embedding neighborhood with a focus on the differences between the data points.
+
+Name
+
+ Node Explainer
+
+ Node Explainer
+
+Operation
+
+Summarization
+
+Comparison
+
+Task
+
+T1
+
+T1
+
+Input
+
+A node and its data points
+
+Two non-adjacent nodes and their data points
+
+Output
+
+Common properties of the input data points
+
+Similar and dissimilar properties of the two input node data points
+
+Table 1:
+
+Edge Explainer.
+An Edge Explainer has two nodes as input, which are adjacent and connected by an edge. This edge denotes the word embeddings that are shared between the two input nodes. The Edge Explainer supports user task T2 in Section 3.1.
+The summarization operation analyzes shared and unique word instances between the two nodes to identify patterns of similarity and divergence, highlighting how one node (neighborhood) shifts into another. In contrast, the comparison operation examines differences between two edges to reveal variations in their transition patterns.
+
+Name
+
+ Edge Explainer
+
+ Edge Explainer
+
+Operation
+
+Summarization
+
+Comparison
+
+Task
+
+T2
+
+T2
+
+Input
+
+Unique and common data points of two adjacent nodes
+
+A pair of unique and common data points of two adjacent nodes
+
+Output
+
+Linguistic patterns that illustrate how one node shifts into its adjacent node
+
+Similarities and differences of properties of the two edge transitions
+
+Table 2:
+
+Path Explainer.
+Unlike the Edge Explainer, the Path Explainer operates on two nodes that do not have to share overlapping embeddings.
+It takes the shortest path between two non-adjacent nodes as input and analyze the data points within each node along the path.
+The summarization operations examine how word usage patterns shift, develop, or stabilize as they propagate through the path.
+The comparison operations compare the evolution patterns between two different paths.
+The output in both cases supports the user in task T3.
+
+Name
+
+ Path Explainer
+
+ Path Explainer
+
+Operation
+
+Summarization
+
+Comparison
+
+Task
+
+T3
+
+T3
+
+Input
+
+Data points along the shortest path between two non-adjacent nodes
+
+Data points of a pair of path.
+
+Output
+
+A summary of progression of properties over the path
+
+Similarities and differences of properties of two paths
+
+Table 3:
+
+Component Explainer.
+The Component Explainer operates on connected components of a mapper graph, supporting user task T4 as described in Section 3.1.
+The summarization operations analyze the points within a component to identify their common linguistic characteristics, uncovering higher-level patterns beyond the individual node level.
+The comparison operations reveal the similarities and differences between two components.
+
+Name
+
+ Component Explainer
+
+ Component Explainer
+
+Operation
+
+Summarization
+
+Comparison
+
+Task
+
+T4
+
+T4
+
+Input
+
+One component
+
+Two components
+
+Output
+
+Common properties of nodes within the component
+
+Similarities and differences between nodes of two components
+
+Table 4:
+
+Trajectory Explainer.
+The Trajectory Explainer uses the perturbation operation before the summarization. It displays the trajectory that results when applying a sequence of minor (e.g., 1-token) perturbations to convert one sentence belonging to the source node to a sentence belonging to the target node. The trajectory is created by connecting the perturbed embeddings that are attached to their nearest mapper nodes (i.e., the most similar cluster of embeddings, see Section 1.2).
+
+Name
+
+ Trajectory Explainer
+
+Operation
+
+Perturbation + Summarization
+
+Task
+
+T5
+
+Input
+
+Two data points, one from each of the two selected nodes
+
+Output
+
+A trajectory that connects the two data points and the perturbed intermediate sentences attached to their most similar node/edge
+
+Table 5:
+
+4.2.2 Verification Agents
+
+After creating a set of explanation candidates for the different mapper elements, we utilize Verification Agents to inspect which of the explanations are robust and thus more likely to faithfully explain the embedding properties.
+In other words, our goal is to converge the explanation space to the most reliable candidates.
+Since an Explanation Agent is implemented using LLM prompts, this verification step addresses an important challenge of LLMs being prone to hallucinations.
+Similarly to the Explanation Agent class, this class utilizes the three operations, i.e., summarization, comparison, and perturbation and is implemented using an LLM and tailored prompts, provided in the supplement.
+
+Node,  Edge,  Path,  Component Verifier.
+A Verification Agent uses the perturbation operation to verify earlier obtained outputs from the Explanation Agents.
+The following table shows how a Verification Agent can be applicable to verify the explanations of the Node Explainer, but similar procedure is used for the Edge, Path, and Component Verifier.
+The input for the Verification Agent is determined by the scope of the Explainer to which the verification is applied (e.g., a node and its summary for the Node Verifier, and an edge and its summary for the Edge Verifier).
+We then utilize the perturbation operation to generate perturbed sentences for the input data points, which rephrase the original sentence or introduce a 1-token change while preserving the target token.
+By default, five perturbed sentences are created for each input data point utilizing an LLM.
+The particular prompt used is provided in the supplement.
+We then select one perturbed sentence for each original sentence in a node that still remains within the same node, by computing the average distance between its word embedding and all word embeddings in the node. If this distance is smaller than the average pairwise distance within the node, we retain this perturbed sentence.
+A new explanation is created on the perturbed examples using the same method as for the original Explainer.
+We then evaluate the similarity between the original and the new explanation applying a cosine similarity on the sentence embedding vectors extracted using the MiniLM model [60].
+The similarity is used as an indicator of the explanation’s robustness.
+
+Name
+
+ Node Verifier
+
+ Node Verifier
+
+Operation
+
+Perturbation + Summarization
+
+Perturbation + Comparison
+
+Task
+
+T1
+
+T1
+
+Input
+
+Perturbed data points of a target node, the initial summary
+
+Perturbed data points of two target nodes, the initial comparison
+
+Output
+
+Summary of the perturbed elements and its similarity to the initial summary
+
+Comparison of the perturbed elements and its comparison to the initial comparison
+
+Table 6:
+
+Figure 3: The Explainable Mapper workspace consists of two main visualizations, i.e., the Mapper Graph and Projection visualized as a scatter plot. Properties associated with the mapper graph and its underlying embeddings are displayed in the Settings Panel. The user can specify mapper parameters in the Control Panel. To explore the visualized embedding properties, the users can select the mapper elements to explain, where explanations are followed by verifications, in the Explanation and Verification Panel.
+
+For instance, consider a Node Verifier that employs the summarization operation. This agent receives a node along with its summary as input. We introduce perturbations (i.e., 1-token substitutions and rephrasings) to the original sentences of the node, identify which of the perturbed sentences fall within the same neighborhood as the original ones, and generate a new summary based on these perturbed sentences, as showcased in Fig. 4. The similarity between the original and perturbed summaries reflects the robustness of the explanation.
+
+Figure 4: A Node Verifier takes a node (with its data points) and the initial explanation created by a Node Explainer as input. It creates perturbations of the input data points, and creates a new explanation of the perturbations that fall inside the input node’s neighborhood. The Verifier measures the similarity between the initial and the new explanations.
+
+Trajectory Verifier.
+The verification of the Trajectory Explainer is an exceptional case.
+Due to its unique implementation which utilizes perturbations to connect two nodes in the space, it is challenging to verify its robustness automatically, thus, the verification of this explainer is done by the user.
+
+5 Mapper Workspace
+
+To assist users in generating and verifying hypotheses about embedding properties using the agents introduced in Section 4, we present the Explainable Mapper workspace, as shown in Fig. 3.
+The workspace supports the tasks introduced in Section 3.1 and addresses the identified requirements in Section 3.2.
+In particular, the proposed workspace enables an iterative embedding exploration by combining different agents to generate insights, as exemplified in Fig. 5.
+When starting with the analysis, the users can gain an overview of the explorable space through precomputed mapper component annotations (R1), select mapper elements for closer investigation (R2), create their explanations (T1-T5), and verify the explanation robustness (R3).
+The workspace supports note-taking and interaction provenance (R4).
+
+Data Preprocessing.
+The data preprocessing steps involve extracting token embeddings layer-by-layer from an LLM on a sufficiently large text corpus (e.g., 12 layers of a BERT-base model) and associating each token with various linguistic features, such as its semantic role and part-of-speech (POS) tag. In addition, each data point in the mapper graph is equipped with its L2L_{2}-norm.
+
+Figure 5: We support an iterative process involving numerous combinations of Explainers and Verifiers to generate insights regarding linguistic properties of contextual word embeddings.
+
+Figure 6: Exploring occurrences of the token ‘my.’ In layer 1, embeddings remain noncontextualized and all tokens are clustered into a single component. In layer 12, the embeddings are contextualized to the specific classification task for which the model has been fine-tuned. The node annotations emphasize the token common characteristic, i.e., that they are possessive pronouns. The Path Explainer provides more insight into the property transition along the path, i.e., the tokens are used in contexts ranging from “personal experience” to a “collective subject.”
+
+5.1 Control Panel and Settings Panel
+
+In the control panel, the users specify the parameters for the mapper algorithm, introduced in Section 1.2.
+They can create the classical mapper or the ball mapper. For the classical one, the users specify the parameters for the DBSCAN clustering algorithm (i.e., the minPts and ε\varepsilon). Other parameters for the mapper are cover number and cover overlap.
+For the ball mapper, only the ε\varepsilon parameter needs to be specified by the user. We compute the mapper graph as described in Section 1.2 on embeddings extracted from a single layer at a time, as specified by the user.
+
+In the settings panel, the users can specify the features for designing the mapper graph, e.g., an attribute to be mapped to the color/size of a node, or the width of an edge; see Section 5.2 for details.
+After computing the graph, we generate explanations for the components and nodes as representative keywords and their verification scores. These keywords and scores are used as default annotations in the interface, specified by users in the settings panel.
+Additionally, the panel allows users to filter specific tokens for more detailed exploration.
+
+5.2 Mapper Graph
+
+The mapper visualization utilizes the design from the original Mapper Interactive [63] work that introduced the toolbox for visual exploration of mapper graphs .
+The nodes in the graph represent embedding clusters and the edges the overlapping data points between two connected nodes.
+The default graph layout is created using a force-directed layout.
+The users can change the layout to an anchored version where nodes are positioned based on their centroids in a projected 2D space.
+A node is visualized either as a circle that displays the L2L_{2} norm of the cluster, or as a pie chart, where the slices represent one of the associated linguistic properties (e.g., the semantic roles or POS tags).
+The size of a node can scale with the number of data points it encloses, or it can remain constant.
+The width of an edge can encode the Jaccard similarity between adjacent nodes, or it can stay constant.
+
+Interaction Methods.
+Similar to Mapper Interactive, the workspace enables basic interactive operations such as zooming, dragging, and panning.
+The users can enable keyword-based annotations by specifying it in the settings panel.
+The precomputed explanation keywords are attached to the mapper elements, whereby their opacity represents the verification scores (the higher the score, the higher the opacity).
+By default, the keywords are attached to the components.
+To reduce keyword overlap, we prioritize those with higher verification scores while hiding overlapping ones.
+When zoomed in, the annotations adjust to the keywords associated with various nodes and more keywords appear.
+
+The selection panel beneath the mapper graph allows users to select different types of mapper elements (i.e., nodes, edges, paths, and components) and their underlying data points through four data selection modes. Users can make a direct selection by interacting with elements in the mapper graph view. Once a selection is made, users can apply an Explainer to generate a summary of an element or compare explanations of two elements of the same type. Additionally, users can generate a trajectory explanation by selecting a sentence from the source node and target node and specifying the number of 1-token perturbations connecting them.
+
+5.3 Projection
+
+In addition to the mapper graph, we display embeddings in a scatter plot utilizing a projection method (e.g., PCA, MDS, t-SNE, or UMAP) specified by the user in the interface.
+The projection can be used for navigation, i.e., the users can select clusters in the projection to locate them in the mapper graph as well as for designing an anchored layout for the mapper graph.
+Data points (i.e., embeddings) are displayed as dots and colored according to the selected (linguistic) property (i.e., semantic role, POS tag, or L2L_{2}-norm).
+
+Interaction Methods.
+The users can select a data point by clicking on the corresponding dot in the visualization or select a group of data points using the lasso or brushing functionality. We use a linking and brushing method, i.e., the clusters of the selected data points are highlighted in the mapper graph and vice versa.
+
+5.4 Explanation and Verification Panel
+
+When the user selects one or two mapper elements from the selection panel below the mapper graph, a bar chart is displayed showing the token or label frequencies within the selected elements.
+Additionally, the tokens and their corresponding sentences are displayed in a table format within the explanation and verification panel. Moreover, an explanation is generated, and its verification is automatically performed using the mapper agents introduced in Section 4.
+
+Explanation Design.
+A single explanation consists of a natural language description and a list of three descriptive keywords that summarize the selected element(s).
+The user can change the Explainer’s operation from summarization to comparison by clicking on the compare button on top of the respective panel.
+For comparison, the user needs to select another element of the same type in the mapper graph to serve as the reference.
+Once the second element is selected, the explanation is recomputed and displayed in the particular panel.
+Every time an explanation is created (either utilizing the summarization or comparison operator), the explanation keywords are attached to the particular element in the mapper graph.
+
+Verification Design. An explanation’s robustness is highlighted through a consistency score displayed underneath the explanation, whereby it is executed automatically every time a new explanation is created.
+Users can explore the reason for the particular score by clicking on the perturbed explanation button.
+Then, the panel displays the explanation generated for the perturbed examples, and the table shows these examples for a closer inspection.
+
+Note Taking and Visual Annotations.
+To help users gain an overview of the explained elements and the corresponding insights, the workspace allows for note-taking.
+Specifically, when an explanation is generated, users can modify it by adding additional observations or removing irrelevant parts of the auto-generated explanations.
+
+Furthermore, when a Trajectory Explainer is applied, the system projects the trajectory onto nearest nodes or edges of the mapper graph.
+For each perturbed example, we compute its embedding and locate the nearest data point (within the ε\varepsilon threshold) in the graph sharing the same L2L_{2}-norm interval (see Section 1).
+The perturbed example is then assigned to a node or edge based on the location of its nearest neighbor.
+We visualize the trajectory by placing points on the corresponding nodes or edges and connecting them in order, see Fig. 10 for an example.
+Users can also refine the trajectory by inserting or deleting perturbed examples.
+
+Figure 7: Layer 5 of the fine-tuned BERT captures the two functions of the token ‘as’, i.e., its role of conjunction (connecting clauses or phrases) and preposition (by showing a relationship between that noun/pronoun and another word in the sentence). The two functional roles get separated into two distinct connected components.
+
+6 Case Studies
+
+In the following, our goal is to evaluate the effectiveness of the proposed methodology. Specifically, the Explanation and Verification Agents integrated into the Explainable Mapper workspace, in supporting the generation of reliable insights into embedding properties. To achieve this, we present replication studies aimed at reproducing insights from previous work regarding the embedding properties encoded in different layers of the BERT-base model.
+
+6.1 Models and Data
+
+The authors of TopoBERT fine-tuned multiple versions of the BERT model on three NLP tasks, generating word embeddings across various layers and fine-tuning steps [47].
+They then applied the mapper algorithm to these embeddings to examine and compare the fine-tuning processes.
+Following the approach in TopoBERT, we fine-tune the BERT-base model on a NLP task called preposition supersense disambiguation, that classifies prepositions into their semantic categories. Specifically, we use the Supersense Role annotations from the STREUSLE v4.2 dataset [52], which provides 41 labels across 4,282 preposition tokens.
+We fine-tune the BERT-base model for 7 epochs and then extract 768-dimensional word embeddings from each of its 12 layers.
+Finally, mapper is applied to the embeddings of each layer.
+GPT-4o [25] serves as the underlying model for the agents.
+
+6.2 Prior Insights on BERT’s Embeddings
+
+Extensive research has focused on understanding the embedding properties of BERT, with the majority of studies examining its pre-trained version.
+Rogers et al. [48] showed that BERT captures linguistic information (e.g. parts of speech, syntactic chunks, and semantic roles) at different layers of the model’s architecture.
+The early layers of BERT encode surface features such as word lexical similarity [56] as well as sentence length and presence of words  [26].
+The early to middle layers encode the syntactic properties of the word, in particular, the basic syntactic information, i.e. POS tags  [59, 32].
+Semantic information seems to be encoded throughout the whole model [59], whereby the upper layers encode task-specific information [32].
+Moreover, TopoBERT [47] has shown embedding patterns in the fine-tuned model through two examples: a shift from fronted to non-fronted token usage along a path, and the grouping of identical tokens despite differing semantics.
+
+Next, we demonstrate that our agent-based approach replicates both well-known patterns of the pre-trained model and previously explored patterns in the TopoBERT.
+More cases are offered in the supplement.
+
+6.3 Replication Study
+
+Possessive Pronouns. Using the Node Explainer, we investigate how the fine-tuned BERT learns possessive pronouns. We first filter the pronoun ‘my’ and display its occurrence in the mapper graph in layers 1 and 12.
+In layer 1, where embedding vectors remain noncontextualized, all tokens are clustered into a single component (see Fig. 6).
+In layer 12, the embeddings are contextualized to the specific classification task for which the model has been fine-tuned.
+In this layer, tokens are distributed across multiple components, grouped together with other related tokens.
+By using a different explainer, the Path Explainer, on the two nodes at the opposite ends of the component, we can gain insights into the transition of the encoded properties.
+In particular, the explanation says: focus words ‘my,’ ‘your,’ ‘their,’ ‘his,’ and ‘our’ consistently appear across clusters, showing personal possession and belonging in diverse contexts. Initially concentrated on personal items or experiences, usage shifts towards more collective or communal subjects in later clusters, indicating a broadening of focus and inclusivity.
+The Path Verifier produces a high consistency score (0.83) that indicates that the explanation of the perturbed examples of the path’s underlying data points produces a similar explanation to the initial one.
+
+Figure 8: BERT embeddings for pronouns in layer 4.
+
+It has been shown that the middle layers (3-6) of BERT encode token syntactic functionality while also being semantically contextualized [48].
+To verify this hypothesis, we explore the properties of possessive pronouns (e.g., ‘my’, ‘her’, ‘his’) in layer 4.
+As shown in Fig. 8, all of them are part of a single component.
+By iteratively applying the Node Explainer, we generate explanations for the terminal nodes of the resulting branches within the component.
+We observe that each branch corresponds to a unique possessive pronoun, indicating that the hypothesis is valid, i.e., in middle layers, tokens encode their function while being semantically contextualized.
+
+Figure 9: We use the Component Explainer to compare the two components of temporal preposition tokens. The summary, that can be verified by the Component Verifier, states that the two components have in common that they both highlight temporal sequences but differ in focus: the source component focuses on initiation and continuity in time, while the target component on culmination and time limits.
+
+As in Conjunction and Preposition.
+The token ‘as’ can function as either a conjunction or a preposition, depending on its usage in a sentence.
+As a conjunction, it connects clauses or phrases, showing a relationship between them.
+As a preposition, it introduces a noun or pronoun, showing a relationship between that noun/pronoun and another word in the sentence.
+In Fig. 7, we show how the fine-tuned BERT captures these syntactic properties in its middle layers.
+In particular, in layer 5, the tokens get separated into two distinct components.
+We examine their linguistic properties by annotating component nodes with descriptive keywords. These annotations suggest two distinct embedding patterns: one component primarily represents conjunctions, while the other relates to “role-identification.” To explore this distinction further, we use the Component Explainer to compare the two components.
+The explanation provides insight into the main differences. One component primarily uses ‘as’ in comparative structures to indicate equal degree, frequency, or quantity (e.g., “twice [as] much”), while the other employs ‘as’ to denote identity or role, often at the beginning of a sentence (e.g., “[As] a nurse”), emphasizing status or on-boarding.
+This distinction is in accordance with the functional role of prepositions.
+The Component Verifier produces a high consistency score, which is shown by the resemblance of the explanations of the perturbed components to the initial explanations.
+
+Temporal Prepositions and Trajectory Exploration.
+Different temporal prepositions (e.g., ‘since’, ‘from’, ‘until’) exist that can be used to indicate when an action or event takes place.
+In layer 12, we observe that these prepositions are contextualized such that tokens indicating the start of an action form a distinct component, separate from those representing the end time.
+We use the Component Explainer to compare the two components.
+The summary, which can be verified by the Component Verifier with a high consistency score, states that the two components share the common trait of highlighting temporal sequences but differ in focus: the source component focuses on initiation and continuity in time, while the target component focuses on culmination and time limits.
+The components, corresponding token sentences, and explanations are provided in Fig. 9.
+
+Figure 10: Trajectory exploration from node A to node B in layer 12 of the fine-tuned BERT. A source and a target sentence are selected from each node, and 13 intermediate sentences are generated by LLM and projected onto the graph.
+
+As shown in Fig. 10, tokens labeled Endtime form two disconnected components, with one containing only a single node (B). To investigate this separation, we construct a perturbation trajectory connecting the two components. Specifically, we select nodes A and B as endpoints, as both contain only the focus word ‘until.’ From each node, we manually choose a representative sentence as the source and target, respectively. By specifying the number of perturbations, LLM generates 13 intermediate sentences that gradually transform from the source to the target. These sentences are then projected onto the mapper nodes or edges based on their word embeddings and arranged sequentially along the trajectory path.
+We observe that the transition between nodes A and B occurs between sentences 8 and 9. Notably, in sentences 1–8, ‘until’ appears earlier in the sentence (e.g., “We waited until…”), while in sentences 9–13, it appears toward the end (e.g., “…waited until…”). This suggests that word position may influence the separation in embedding space.
+Furthermore, while the LLM suggests that the key difference between nodes A and B lies in the use of “precise times,” we observe that sentences 9 and 10 also contain precise times yet remain associated with node B, indicating that this hypothesis does not hold.
+
+7 Discussion and Future Work
+
+Our study introduces Explainable Mapper, a framework that aims to assist users in exploring and verifying explanations for elements in mapper graphs using different agents. Through our evaluation, we demonstrated how the Explanation and Verification Agents facilitate the understanding of complex embedding structures by guiding users through a process of divergent explanation generation and convergent verification. With this approach, we encourage the user to move toward an interactive AI-assisted exploration. By enabling users to systematically assess linguistic properties within embeddings, our method offers a structured way to generate and validate hypotheses about word embeddings.
+
+LLM Hallucinations.
+A known problem of LLMs is the potential risk of hallucinations [23], where the model generates credible-sounding but incorrect answers. Although we try to mitigate this risk with the Verification Agent, its effectiveness is constrained by the inherent limitations of the LLMs. The Verification Agent assesses the robustness [19] of the explanation through perturbations, providing insight into its stability, though it does not guarantee absolute correctness.
+
+To reduce the impact of hallucinations in the future, an approach could be an explanation ensemble, where multiple LLMs or different prompting strategies are used to cross-check and validate explanations, highlighting inconsistencies that may indicate hallucinations. Confidence scores can be assigned to the explanations, or the variance between the different explanation outputs can be assessed.
+
+Another direction of future work to mitigate the risk of hallucinations is the incorporation of human feedback. The LLM can be requested to display its Chain-of-Thought for a generated explanation, where humans can rate or modify the result. This refines the process of the Explanation Agent, asking humans to correct the wrong explanations.
+
+Explanation Verification.
+In addition to the limitations of LLMs, there are limitations related to the perturbation methods.
+The perturbation strategy primarily relies on 1-token modifications, assuming that minor changes have minimal impact on embeddings and, consequently, on the explanations.
+However, depending on the sentence and the position or type of perturbation, small changes can have a large impact on the sentence embedding. In contrast, in other cases, large changes only have a small impact on the embedding. This can lead to wrong assumptions about the robustness of the explanation in both directions. Investigation of the perturbation strategy by incorporating multi-token modifications or context-aware substitutions could refine verification and better capture the nuances of embedding behavior.
+
+Additionally, the trajectory is verified by the user, which deviates from the intended scalable and automated approach. Future work could investigate a way to automate the Trajectory Verification process. One such way, which is in line with the current verification strategies, is to generate multiple trajectories between nodes with different perturbations while maintaining semantic coherence. A similarity score can be computed between these trajectories, and if multiple perturbed trajectories lead to similar transitions between nodes, this increases the confidence in the validity of the trajectory.
+
+Another way that does not include the generation of new trajectories could be the incorporation of graph-based validation strategies. The trajectory is analyzed to ensure that perturbations follow the expected path between two nodes of interest.
+
+8 Conclusion
+
+In this paper, we utilize mapper graphs to explore the topological structures of LLM embedding spaces. To facilitate the analysis of mapper elements, we introduce Explainable Mapper workspace, accompanied by two types of mapper agents, i.e., Explainers and Verifiers. These agents employ summarization, comparison, and perturbation operations to generate and validate explanations of element properties, including linguistic aspects of clusters, transitions, and connectivity.
+We first diverge the exploration space, i.e., to create explanation candidates.
+In the consecutive step, we converge these explanations to those that are robust and, thus, more likely to faithfully explain the underlying data.
+Through multiple case studies, we show how the Explainable Mapper workspace can be used to replicate findings from prior work.
+The workspace will be made publicly available under acceptance.
+
+Acknowledgment
+
+This work was partially supported by grants from the U.S. National Science Foundation (projects IIS-2145499, IIS-2205418, and DMS-2134223) and the Swiss National Science Foundation (project 10003068).
+
+References
+
+[1]
+
+M. Alagappan.
+
+From 5 to 13: Redefining the positions in basketball.
+
+MIT Sloan Sports Analytics Conference, 2012.
+
+[2]
+
+K. Amara, R. Sevastjanova, and M. El-Assady.
+
+SyntaxShap: Syntax-aware explainability method for text
+generation.
+
+In Findings of the Association for Computational Linguistics:
+ACL 2024, pp. 4551–4566. Association for Computational Linguistics,
+Bangkok, Thailand, Aug. 2024.
+doi: 10.18653/v1/2024.findings-acl.270
+
+[3]
+
+L. Basyal and M. Sanghvi.
+
+Text summarization using large language models: a comparative study
+of mpt-7b-instruct, falcon-7b-instruct, and openai chat-gpt models.
+
+arXiv preprint arXiv:2310.10449, 2023.
+
+[4]
+
+M. Berger.
+
+Visually analyzing contextualized embeddings.
+
+In IEEE Visualization Conference (VIS), pp. 276–280, 2020.
+
+[5]
+
+S. Biasotti, D. Giorgi, M. Spagnuolo, and B. Falcidieno.
+
+Reeb graphs for shape analysis and applications.
+
+Theoretical Computer Science, 392:5–22, 2008.
+
+[6]
+
+A. Boggust, B. Carter, and A. Satyanarayan.
+
+Embedding Comparator: Visualizing Differences in Global Structure
+and Local Neighborhoods via Small Multiples.
+
+In 27th Int. Conf. on Intelligent User Interfaces, pp.
+746–766, 2022.
+
+[7]
+
+J. Bos, V. Basile, K. Evang, N. J. Venhuizen, and J. Bjerva.
+
+The groningen meaning bank.
+
+In N. Ide and J. Pustejovsky, eds., Handbook of Linguistic
+Annotation, pp. 463–496. Springer Netherlands, Dordrecht, 2017.
+doi: 10.1007/978-94-024-0881-2_18
+
+[8]
+
+M. Carrière, B. Michel, and S. Oudot.
+
+Statistical analysis and parameter selection for mapper.
+
+Journal of Machine Learning Research, 19(12):1–39, 2018.
+
+[9]
+
+N. Chalapathi, Y. Zhou, and B. Wang.
+
+Adaptive covers for mapper graphs using information criteria.
+
+In IEEE International Conference on Big Data (Big Data), 2021.
+
+[10]
+
+H. J. Cho, J. Zhao, S. W. Jung, E. Ladewig, D.-S. Kong, Y.-L. Suh, Y. Lee,
+D. Kim, S. H. Ahn, M. Bordyuh, H. J. Kang, J. K. Sa, Y. J. Seo, S. T. Kim,
+D. H. Lim, Y.-S. Dho, J.-I. Lee, H. J. Seol, J. W. Choi, W.-Y. Park, C.-K.
+Park, R. Rabadan, and D.-H. Nam.
+
+Distinct genomic profile and specific targeted drug responses in
+adult cerebellar glioblastoma.
+
+Neuro-Oncology, 21(1):47–58, 2019.
+
+[11]
+
+L. Clouatre, P. Parthasarathi, A. Zouaq, and S. Chandar.
+
+Local structure matters most: Perturbation study in NLU.
+
+In Findings of the Association for Computational Linguistics:
+ACL 2022, pp. 3712–3731. Association for Computational Linguistics, Dublin,
+Ireland, May 2022. doi: 10.18653/v1/2022.findings-acl.293
+
+[12]
+
+M. Danilevsky, K. Qian, R. Aharonov, Y. Katsis, B. Kawas, and P. Sen.
+
+A survey of the state of explainable AI for natural language
+processing.
+
+In Proc. of the 1st Conf. of the Asia-Pacific Chapter of the
+Association for Computational Linguistics and the 10th Int. Joint Conf. on
+Natural Language Processing, pp. 447–459. Association for Computational
+Linguistics, Suzhou, China, Dec. 2020.
+
+[13]
+
+J. Devlin, M.-W. Chang, K. Lee, and K. Toutanova.
+
+BERT: Pre-training of deep bidirectional transformers for language
+understanding.
+
+In Proceedings of the Conference of the North American Chapter
+of the Association for Computational Linguistics: Human Language
+Technologies, pp. 4171–4186, 2019.
+
+[14]
+
+P. Dlotko.
+
+Ball mapper: a shape summary for topological data analysis.
+
+arXiv preprint arXiv:1901.07410, 2019.
+
+[15]
+
+M. Ester, H.-P. Kriegel, J. Sander, and X. Xu.
+
+A density-based algorithm for discovering clusters in large spatial
+databases with noise.
+
+In Proceedings of the 2nd International Conference on Knowledge
+Discovery and Data Mining, pp. 226–231, 1996.
+
+[16]
+
+K. Ethayarajh.
+
+How contextual are contextualized word representations? Comparing
+the geometry of BERT, ELMo, and GPT-2 embeddings.
+
+In Proceedings of the 2019 Conference on Empirical Methods in
+Natural Language Processing and the 9th International Joint Conference on
+Natural Language Processing (EMNLP-IJCNLP), pp. 55–65. Association for
+Computational Linguistics, 2019.
+
+[17]
+
+S. Garg and G. Ramakrishnan.
+
+Bae: Bert-based adversarial examples for text classification.
+
+In Proceedings of the 2020 Conference on Empirical Methods in
+Natural Language Processing (EMNLP), pp. 6174–6181, 2020.
+
+[18]
+
+C. Geniesse, O. Sporns, G. Petri, and M. Saggar.
+
+Generating dynamical neuroimaging spatiotemporal representations
+(DyNeuSR) using topological data analysis.
+
+Network Neuroscience, 3(3), 2019.
+
+[19]
+
+A. Hedström, L. Weber, D. Krakowczyk, D. Bareeva, F. Motzkus, W. Samek,
+S. Lapuschkin, and M. M.-C. Höhne.
+
+Quantus: An explainable ai toolkit for responsible evaluation of
+neural network explanations and beyond.
+
+Journal of Machine Learning Research, 24(34):1–11, 2023.
+
+[20]
+
+F. Heimerl and M. Gleicher.
+
+Interactive analysis of word vector embeddings.
+
+Computer Graphics Forum, 37(3):253–265, 2018.
+
+[21]
+
+F. Heimerl, C. Kralj, T. Moller, and M. Gleicher.
+
+embComp: Visual interactive comparison of vector embeddings.
+
+IEEE Transactions on Visualization and Computer Graphics,
+2020.
+
+[22]
+
+C.-Y. Hsieh, C.-K. Yeh, X. Liu, P. Ravikumar, S. Kim, S. Kumar, and C.-J.
+Hsieh.
+
+Evaluations and methods for explanation through robustness analysis.
+
+In International Conference on Learning Representation (ICLR),
+2021.
+
+[23]
+
+L. Huang, W. Yu, W. Ma, W. Zhong, Z. Feng, H. Wang, Q. Chen, W. Peng, X. Feng,
+B. Qin, and T. Liu.
+
+A survey on hallucination in large language models: Principles,
+taxonomy, challenges, and open questions.
+
+ACM Trans. Inf. Syst., 43(2), article no. 42, 55 pages, Jan.
+2025. doi: 10.1145/3703155
+
+[24]
+
+Z. Huang, D. Witschard, K. Kucher, and A. Kerren.
+
+VA + Embeddings STAR: A State-of-the-Art Report on the Use of
+Embeddings in Visual Analytics.
+
+Computer Graphics Forum, 2023.
+doi: 10.1111/cgf.14859
+
+[25]
+
+A. Hurst, A. Lerer, A. P. Goucher, A. Perelman, A. Ramesh, A. Clark, A. Ostrow,
+A. Welihinda, A. Hayes, A. Radford, et al.
+
+Gpt-4o system card.
+
+arXiv preprint arXiv:2410.21276, 2024.
+
+[26]
+
+G. Jawahar, B. Sagot, and D. Seddah.
+
+What does BERT learn about the structure of language?
+
+In Proc. of the Annual Meeting of the Association for
+Computational Linguistics, pp. 3651–3657. ACL, Florence, Italy, July 2019.
+doi: 10.18653/v1/P19-1356
+
+[27]
+
+R. Jeitziner, M. Carriére, J. Rougemont, S. Oudot, K. Hess, and C. Brisken.
+
+Two-tier mapper, an unbiased topology-based clustering method for
+enhanced global gene expression analysis.
+
+Bioinformatics, 35(18):3339–3347, 2019.
+
+[28]
+
+D. Jin, Z. Jin, J. T. Zhou, and P. Szolovits.
+
+Is bert really robust? a strong baseline for natural language attack
+on text classification and entailment.
+
+Proceedings of the AAAI conference on artificial intelligence,
+34(05):8018–8025, 2020.
+
+[29]
+
+A. Knudson, F. González-Casabianca, A. Feged-Rivadeneira, M. F. Pedreros,
+S. Aponte, A. Olaya, C. F. Castillo, E. Mancilla, A. Piamba-Dorado,
+R. Sanchez-Pedraza, M. J. Salazar-Terreros, N. Lucchi, V. Udhayakumar,
+C. Jacob, A. Pance, M. Carrasquilla, G. Apráez, J. A. Angel, J. C.
+Rayner, and V. Corredor.
+
+Spatio-temporal dynamics of plasmodium falciparum transmission within
+a spatial unit on the colombian pacific coast.
+
+Scientific Reports, 10(3756), 2020.
+
+[30]
+
+K. Kurita, N. Vyas, A. Pareek, A. W. Black, and Y. Tsvetkov.
+
+Measuring bias in contextualized word representations.
+
+In Proceedings of the First Workshop on Gender Bias in Natural
+Language Processing, pp. 166–172, 2019.
+
+[31]
+
+B. Lee, C. Plaisant, C. S. Parr, J.-D. Fekete, and N. Henry.
+
+Task taxonomy for graph visualization.
+
+In Proceedings of the 2006 AVI workshop on BEyond time and
+errors: novel evaluation methods for information visualization, pp. 1–5,
+2006.
+
+[32]
+
+N. F. Liu, M. Gardner, Y. Belinkov, M. E. Peters, and N. A. Smith.
+
+Linguistic knowledge and transferability of contextual
+representations.
+
+In Proceedings of the 2019 Conference of the North American
+Chapter of the Association for Computational Linguistics: Human Language
+Technologies, Volume 1 (Long and Short Papers), pp. 1073–1094. Association
+for Computational Linguistics, Minneapolis, Minnesota, 2019.
+
+[33]
+
+S. Liu, P.-T. Bremer, J. J. Thiagarajan, V. Srikumar, B. Wang, Y. Livnat, and
+V. Pascucci.
+
+Visual exploration of semantic relationships in neural word
+embeddings.
+
+IEEE Transactions on Visualization and Computer Graphics,
+24(1):553–562, 2017.
+
+[34]
+
+S. Marjanovic, I. Augenstein, and C. Lioma.
+
+Investigating the impact of model instability on explanations and
+uncertainty.
+
+In Findings of the Association for Computational Linguistics:
+ACL 2024, pp. 11854–11879. Association for Computational Linguistics,
+Bangkok, Thailand, Aug. 2024.
+doi: 10.18653/v1/2024.findings-acl.705
+
+[35]
+
+J. C. Mathews, S. Nadeem, A. J. Levine, M. Pouryahya, J. O. Deasy, and
+A. Tannenbaum.
+
+Robust and interpretable PAM50 reclassification exhibits survival
+advantage for myoepithelial and immune phenotypes.
+
+NPJ Breast Cancer, 5(30), 2019.
+
+[36]
+
+T. Mikolov, I. Sutskever, K. Chen, G. S. Corrado, and J. Dean.
+
+Distributed representations of words and phrases and their
+compositionality.
+
+In Advances in Neural Information Processing Systems, pp.
+3111–3119, 2013.
+
+[37]
+
+M. Moradi and M. Samwald.
+
+Evaluating the robustness of neural language models to input
+perturbations.
+
+In Proceedings of the 2021 Conference on Empirical Methods in
+Natural Language Processing, pp. 1558–1570, 2021.
+
+[38]
+
+H. Mozannar, J. Lee, D. Wei, P. Sattigeri, S. Das, and D. Sontag.
+
+Effective human-ai teams via learned natural language rules and
+onboarding.
+
+Advances in Neural Information Processing Systems,
+36:30466–30498, 2023.
+
+[39]
+
+M. Nicolau, A. J. Levine, and G. Carlsson.
+
+Topology based data analysis identifies a subgroup of breast cancers
+with a unique mutational profile and excellent survival.
+
+Proceedings of the National Academy of Sciences,
+108(17):7265–7270, 2011.
+
+[40]
+
+A. Patania, F. Vaccarino, and G. Petri.
+
+Topological analysis of data.
+
+EPJ Data Science, 6(7), 2017.
+
+[41]
+
+J. Pennington, R. Socher, and C. D. Manning.
+
+GloVe: Global vectors for word representation.
+
+Proceedings of the Conference on Empirical Methods in Natural
+Language Processing (EMNLP), pp. 1532–1543, 2014.
+
+[42]
+
+E. Purvine, D. Brown, B. Jefferson, C. Joslyn, B. Praggastis, A. Rathore,
+M. Shapiro, B. Wang, and Y. Zhou.
+
+Experimental observations of the topology of convolutional neural
+network activations.
+
+In Proceedings of the 37th AAAI Conference on Artificial
+Intelligence (AAAI), 2023.
+
+[43]
+
+K. Qian, S. Wan, C. Tang, Y. Wang, X. Zhang, M. Chen, and Z. Yu.
+
+Varbench: Robust language model benchmarking through dynamic variable
+perturbation.
+
+In Findings of the Association for Computational Linguistics:
+EMNLP 2024, pp. 16131–16161, 2024.
+
+[44]
+
+Y. Qiang, S. Nandi, N. Mehrabi, G. Ver Steeg, A. Kumar, A. Rumshisky, and
+A. Galstyan.
+
+Prompt perturbation consistency learning for robust language models.
+
+In Findings of the Association for Computational Linguistics:
+EACL 2024, pp. 1357–1370. Association for Computational Linguistics, St.
+Julian’s, Malta, Mar. 2024.
+
+[45]
+
+A. Rathore, N. Chalapathi, S. Palande, and B. Wang.
+
+TopoAct: Exploring the shape of activations in deep learning.
+
+Computer Graphics Forum, 40(1):382–397, 2021.
+
+[46]
+
+A. Rathore, S. Dev, J. M. Phillips, V. Srikumar, Y. Zheng, C.-C. M. Yeh,
+J. Wang, W. Zhang, and B. Wang.
+
+VERB: Visualizing and interpreting bias mitigation techniques for
+word representations.
+
+ACM Transactions on Interactive Intelligent Systems,
+14(1):1–34, 2023.
+
+[47]
+
+A. Rathore, Y. Zhou, V. Srikumar, and B. Wang.
+
+TopoBERT: Exploring the topology of fine-tuned word
+representations.
+
+Information Visualization, 22(3):186–208, 2023.
+
+[48]
+
+A. Rogers, O. Kovaleva, and A. Rumshisky.
+
+A primer in BERTology: What we know about how BERT works.
+
+Transactions of the Association for Computational Linguistics,
+8:842–866, 2020. doi: 10.1162/tacl_a_00349
+
+[49]
+
+D. Romero-Alvarado, J. Hernández-Orallo, and F. Martínez-Plumed.
+
+How resilient are language models to text perturbations?
+
+In International Conference on Intelligent Data Engineering and
+Automated Learning, pp. 85–96, 2024.
+
+[50]
+
+P. Rosen, M. Hajij, and B. Wang.
+
+Homology-preserving multi-scale graph skeletonization using mapper on
+graphs.
+
+IEEE Workshop on Topological Data Analysis and Visualization
+(TopoInVis), pp. 10–20, 2023.
+
+[51]
+
+M. Saggar, O. Sporns, J. Gonzalez-Castillo, P. A. Bandettini, G. Carlsson,
+G. Glover, and A. L. Reiss.
+
+Towards a new approach to reveal dynamical organization of the brain
+using topological data analysis.
+
+Nature Communications, 9(1399), 2018.
+
+[52]
+
+N. Schneider and N. A. Smith.
+
+A corpus and model integrating multiword expressions and supersenses.
+
+In R. Mihalcea, J. Chai, and A. Sarkar, eds., Proceedings of the
+2015 Conference of the North American Chapter of the Association for
+Computational Linguistics: Human Language Technologies, pp. 1537–1547.
+Association for Computational Linguistics, Denver, Colorado, May–June 2015.
+doi: 10.3115/v1/N15-1177
+
+[53]
+
+R. Sevastjanova, E. Cakmak, S. Ravfogel, R. Cotterell, and M. El-Assady.
+
+Visual comparison of language model adaptation.
+
+IEEE Transactions on Visualization and Computer Graphics,
+29(1):1178–1188, 2022. doi: 10.1109/TVCG.2022.3209458
+
+[54]
+
+R. Sevastjanova, R. Gerling, T. Spinner, , and M. El-Assady.
+
+Layerflow: Layer-wise exploration of llm embeddings using
+uncertainty-aware interlinked projections.
+
+Computer Graphics Forum, 2025.
+
+[55]
+
+R. Sevastjanova, A.-L. Kalouli, C. Beck, H. Hauptmann, and M. El-Assady.
+
+Explaining Contextualization in Language Models using Visual
+Analytics.
+
+In Proc. of the Association for Computational Linguistics, ACL.
+ACL, 2021. doi: 10.48448/1bf4-bg31
+
+[56]
+
+R. Sevastjanova, A.-L. Kalouli, C. Beck, H. Hauptmann, and M. El-Assady.
+
+Lmfingerprints: Visual explanations of language model embedding
+spaces through layerwise contextualization scores.
+
+Computer Graphics Forum, 41(3):295–307, 2022.
+doi: 10.1111/cgf.14541
+
+[57]
+
+G. Singh, F. Mémoli, and G. E. Carlsson.
+
+Topological methods for the analysis of high dimensional data sets
+and 3D object recognition.
+
+Eurographics Symposium on Point-Based Graphics, pp. 91–100,
+2007.
+
+[58]
+
+V. Sivaraman, Y. Wu, and A. Perer.
+
+Emblaze: Illuminating machine learning representations through
+interactive comparison of embedding spaces.
+
+In 27th Int. Conf. on Intelligent User Interfaces, pp.
+418–432, 2022.
+
+[59]
+
+I. Tenney, D. Das, and E. Pavlick.
+
+BERT rediscovers the classical NLP pipeline.
+
+In Proc. of the Annual Meeting of the Association for
+Computational Linguistics, pp. 4593–4601. ACL, Florence, Italy, July 2019.
+doi: 10.18653/v1/P19-1452
+
+[60]
+
+W. Wang, F. Wei, L. Dong, H. Bao, N. Yang, and M. Zhou.
+
+Minilm: Deep self-attention distillation for task-agnostic
+compression of pre-trained transformers.
+
+Advances in neural information processing systems,
+33:5776–5788, 2020.
+
+[61]
+
+Y. Wang, Z. Zhang, and R. Wang.
+
+Element-aware summarization with large language models:
+Expert-aligned evaluation and chain-of-thought method.
+
+In Proceedings of the 61st Annual Meeting of the Association for
+Computational Linguistics (Volume 1: Long Papers), pp. 8640–8665.
+Association for Computational Linguistics, Toronto, Canada, July 2023.
+doi: 10.18653/v1/2023.acl-long.482
+
+[62]
+
+T. Zhang, F. Ladhak, E. Durmus, P. Liang, K. McKeown, and T. B. Hashimoto.
+
+Benchmarking large language models for news summarization.
+
+Transactions of the Association for Computational Linguistics,
+12:39–57, 2024. doi: 10.1162/tacl_a_00632
+
+[63]
+
+Y. Zhou, N. Chalapathi, A. Rathore, Y. Zhao, and B. Wang.
+
+Mapper Interactive: A scalable, extendable, and interactive toolbox
+for the visual exploration of high-dimensional data.
+
+In Proceedings of the IEEE 14th Pacific Visualization Symposium
+(PacificVis), pp. 101–110, 2021.
+
+[64]
+
+Y. Zhou, Y. Zhou, J. Ding, and B. Wang.
+
+Visualizing and analyzing the topology of neuron activations in deep
+adversarial training.
+
+Topology, Algebra, and Geometry in Machine Learning (TAGML)
+Workshop at ICML, 2023.
+
+[65]
+
+J. E. Zini and M. Awad.
+
+On the explainability of natural language processing deep models.
+
+ACM Computing Surveys, 55(5), article no. 103, 31 pages, dec
+2022. doi: 10.1145/3529755
+
+Supplement
+
+In this supplement, we first present additional use cases for the classical mapper (Appendix A) and several examples using ball mapper (Appendix B). We then provide examples from the Groningen Meaning Bank dataset [7] (Appendix C).
+Finally, for reproducibility, we provide a complete list of the prompt templates used in the paper, along with examples of prompt engineering (Appendix D).
+
+Appendix A Additional Use Cases for the Classical mapper
+
+Using Explainable Mapper, we present additional use cases for the classical mapper applied to the fine-tuned BERT model, as described in the main paper.
+
+Model Confusion about Supersense-Role Label.
+In the final layer of a BERT model fine-tuned on the supersense-role task, most components in the Mapper graph cluster by supersense-role labels. However, some nodes exhibit a mix of labels, indicating instances where the model is confused or uncertain. For example, along the path shown in Fig. 11, node 1 labeled “Goal” gradually transitions to node 4 labeled “Organization.” We utilize the Path Explainer and obtain an explanation with a high consistency score of 0.86. The explanation reveals that the path focuses on the token ‘to’, which initially appears in diverse contexts, then narrows to educational settings, and eventually stabilizes around academic institutions. This my suggest that the model struggles to differentiate ‘to’ between labels “Goal” and “Organization” in educational contexts.
+
+Figure 11: A path in the final layer of the fine-tuned BERT model, where supersense-role labels evolve from “Goal” (purple) to “Organization” (green). The path explanation and example instances for each node are provided.
+
+Another example is shown in Fig. 12, where a node with mixed labels—“Agent” (green) and “SocialRel” (yellow)—is separated into two pure nodes. We apply the Edge Explainer to the two edges and obtain two edge explanations with high consistency scores. The edge from node 1 to node 2 reflects a shift from personal experiences to professional services within social interaction contexts. In contrast, the edge from node 1 to node 3 captures a transition from customer interactions and services to professional collaborations (e.g., “work with…”). This suggests that the model is learning to differentiate between social and professional contexts in nuanced ways.
+
+Figure 12: Two edges originating from the same mapper node in the final layer of a fine-tuned BERT model, the edge explanations, and instances in edges.
+
+Since in Temporal and Causal Contexts.
+The word ‘since’ can represent temporal information or causality.
+We examine how the usage of ‘since’ evolves across layers.
+By searching for the token, as shown in Fig. 13, we observe that ‘since’ instances with different labels are mixed together in layer 1.
+These instances form a path that transitions from temporal labels to the “Explanation” label in layer 6.
+By layer 12, they are separated into three distinct components, aligning with their respective labels.
+
+Figure 13: The word ‘since’ across layers 1, 6, and 12, along with its path explanation in layer 6.
+
+Figure 14: The trajectory between two end nodes of the ‘since’ path formed in layer 6.
+
+We then examine the path evolution in layer 6 using the Path Explainer, which reveals that ‘since’ is initially used in temporal contexts to indicate actions or events following a point in time.
+As the path progresses, its usage shifts toward causal and conditional meanings.
+
+To further analyze this transition, we apply the Trajectory Explainer by constructing a trajectory between the two end nodes of the path.
+As shown in Fig. 14, the trajectory generally follows the path, where ‘since’ expresses a causal meaning in sentences 1–9 and shifts to a temporal information in sentences 10 and 11. The attachment positions of sentences 9 and 10 reflect a shift from a mixed mapper node to a mapper node with pure temporal labels, strengthening the hypothesis of path evolution.
+
+Appendix B Examples for the ball mapper
+
+In this section, we present several examples of Explainable Mapper based on the ball mapper. Fig. 15 provides an overview of the ball mapper applied to the final layer of a fine-tuned BERT model, where we use the same ε\varepsilon value as in the classical mapper to define the geometric neighborhood.
+
+Figure 15: Ball mapper of the final layer of the fine-tuned BERT model, with component annotations overlaid.
+
+Component Investigation.
+In the ball mapper, we observe that tokens are generally grouped into components based on their supersense-role labels, with more complex inner connections compared to the classical mapper.
+For example, Fig. 16 (left) shows a component composed of tokens labeled “Time.”
+The Component Explainer produces a highly consistent explanation, indicating that words such as ‘in,’ ‘after,‘ and ‘before’ often precede makers of time events to convey temporal information.
+Similarly, as shown in Fig. 16 (right), the words labeled “EndTime” form a single component composed of two nodes.
+To examine its internal structure, we apply the Edge Explainer to characterize the transition between the nodes.
+The explanation reveals a lexical shift from ‘until’, which denotes temporal boundaries (e.g., “until I went home”), to ‘to’, which indicates a time sequence (e.g., “8 AM to 10 AM”).
+
+Figure 16: A component (left) and a path (right) in the ball mapper.
+
+Model Confusion.
+In addition, we identify a component mixed with three labels of “Originator”, “Agent”, and “SocialRel” as illustrated in Fig. 17, suggesting that the model has difficulty in distinguishing among these categories. To investigate this, we apply the Path Explainer to analyze the shortest path connecting nodes on opposite sides of the component. The explanation indicates a progression in word usage: from possessive pronouns like ‘their’ and ‘my’, which signal ownership, to prepositions like ‘from’ and ‘by’, which suggest interaction, and finally to ‘with’, which conveys collaboration. This linguistic transition aligns with the label shift from “Originator” to “Agent” to “SocialRel” along the path, indicating scenarios where the model exhibits confusion.
+
+Figure 17: A path in the ball mapper.
+
+Appendix C Groningen Meaning Bank Dataset
+
+In the following, we use the Groningen Meaning Bank [7] dataset. This dataset provides a large collection of semantically annotated English texts with deep semantic representations.
+The dataset contains 795,935 tokens (31,175 unique tokens) and 38,405 sentences.
+We use this dataset to extract layer-wise token embeddings from the pre-trained BERT-base model and generate their (classical) mapper graphs.
+
+Synonyms Encoded in Early Layers.
+The early layers of BERT encode the lexical properties of words and word synonymity, that is, words that have a similar semantic meaning have similar embeddings [56].
+In Fig. 18, we replicate these insights using the mapper graph. In particular, we explore a component that has mixed nodes, i.e., one cluster consists of words that have various POS tags. By utilizing the Component Explainer, it becomes apparent that the different nodes encompass words related to ‘awareness’, ‘realization’, and ‘development’, and have the meaning of creation of new information. The Component Verifier produces a high consistency score for this explanation. Using the Path Explainer, we notice that focus words transition from observable actions (e.g., ‘noticed’) to published work and findings (e.g., ‘released’, ‘published’).
+
+Figure 18: A component of concepts related to discovering information in layer 1. The Component Explainer and Path Explainer are used to get insight into common characteristics among nodes and the transition between the encoded concepts along a path.
+
+POS Tags Encoded in Middle Layers.
+Prior work [48] has shown that the middle layers of BERT encode the information on the POS tags of the words. We can replicate this insight using the mapper graph. In particular, when computing the mapper graph for different layers and representing POS tag information in nodes’ color, we can observe that the purest nodes (i.e., a single color which stands for a single POS tag) are visible in the middle layers (e.g., layer 4 as shown in Fig. 19) while other layers (e.g., layer 1 and 12) produce nodes of mixed nature.
+
+Figure 19: Layer comparison. Node colors represent token POS tags. Prior work has shown that BERT encodes POS tag information in the middle layers (e.g., layer 4). The mapper graph in layer 4 produces pure nodes, i.e., most of the components consist of words with the same POS tag.
+
+Appendix D Prompt Templates and Engineering
+
+Prompt Templates. For the Node and Component Explainers, Fig. 20 and Fig. 21 present the prompt templates used to summarize a node/component and to compare two nodes/components.
+For the Edge Explainer, Fig. 22 shows the prompt template to summarize an edge. For the Path Explainer, Fig. 23 show the prompt templates for summarizing a path.
+For the Trajectory Explainer, Fig. 24 shows the prompt template used to generate a sequence of 1-token perturbations, given the source and target sentences along with an approximate trajectory length.
+In addition, Fig. 25 presents the prompt template used to generate perturbed sentences of a given sentence through 1-token replacement and rephrasing. This template is used by the Node, Edge, Path, and Component Verifier.
+
+Prompt Engineering. To fully unleash the capabilities of LLMs, we employ established prompt engineering techniques in our initial prompts, such as role-playing and explicit input-output definitions.
+We then iteratively refine these prompts through qualitative experimentation, initially focusing on the mapper node summary.
+Once validated, the refined strategies are extended to prompts used in other explanation tasks.
+As shown in Fig. 26, the node summary prompt undergoes three main iterations, each introducing an additional guiding statement (1–3).
+For example, Statement 1 explicitly highlights linguistic properties, encouraging the LLM to produce more linguistically grounded responses.
+Statement 2 prompts LLMs to consider a cluster of words as a whole rather than treating them based on lexicon; Statement 3 prompts LLMs to provide concrete examples to support its output, making the explanation more comprehensible and relatable.
+
+Figure 20: Prompt template for summarizing a mapper node/component.
+
+Figure 21: Prompt template for comparing two mapper nodes/components.
+
+Figure 22: Prompt template for summarizing a mapper edge.
+
+Figure 23: Prompt template for summarizing a mapper path.
+
+Figure 24: Prompt template for creating a perturbation trajectory between two sentences.
+
+Figure 25: Prompt template for generating the perturbed sentences of a given sentence.
+
+Figure 26: An example of prompt engineering for the mapper node summary. Left: the final prompt, with Statements 1–3 added incrementally. Top right: node summaries generated with and without Statement 1. Bottom right: node summaries generated as Statements 2 and 3 are gradually added.
+
+    Experimental support, please
+    view the build logs
+    for errors. Generated by
+
+        L
+        A
+        T
+        E
+
+      xml
+
+    .
+
+Instructions for reporting errors
+
+We are continuing to improve HTML versions of papers, and your feedback helps enhance accessibility and mobile
+      support. To report errors in the HTML that will help us improve conversion and rendering, choose any of the
+      methods listed below:
+
+Click the "Report Issue" (
+
+          ) button, located in the page header.
+
+Tip: You can select the relevant text first, to include it in your report.
+
+Our team has already identified the following issues. We appreciate your time reviewing and reporting rendering errors we
+      may not have found yet. Your efforts will help us improve the HTML versions for all readers, because disability
+      should not be a barrier to accessing research. Thank you for your continued support in championing open access for
+      all.
+
+Have a free development cycle? Help support accessibility at arXiv! Our collaborators at LaTeXML maintain a list of packages that need conversion, and welcome developer contributions.
+
+        We gratefully acknowledge support from
+        our major funders,
+        member institutions, ,
+        and all contributors.
+
+        About
+        ·
+        Help
+        ·
+        Contact
+        ·
+        Subscribe
+        ·
+        Copyright
+        ·
+        Privacy
+        ·
+        Accessibility
+        ·
+        Operational Status (opens in new tab)
+
+Major funding support from

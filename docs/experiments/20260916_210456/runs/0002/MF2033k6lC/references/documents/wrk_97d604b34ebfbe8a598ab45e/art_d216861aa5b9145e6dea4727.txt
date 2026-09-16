@@ -1,0 +1,1411 @@
+Structure Embedded Nucleus Classification for Histopathology Images
+
+      Report GitHub Issue
+      ×
+
+      Title:
+
+Content selection saved. Describe the issue below:
+
+      Description:
+
+      Submit without GitHub
+      Submit in GitHub
+
+    arXiv is now an independent nonprofit!
+    Learn more
+    ×
+
+      Back to arXiv
+
+    Why HTML?
+
+      Report Issue
+
+      Back to Abstract
+
+      Download PDF
+
+Abstract
+
+I Introduction
+
+II Related Work
+
+II-A Nuclei Classification for Histopathology Images
+
+II-B Graph Models in Computational Pathology
+
+II-C Contour and Polygon Representation Learning
+
+III Methodology
+
+III-A Structure Embedded Nucleus Classification Framework
+
+III-B Inter-Nuclei Graph Structure Learning
+
+III-C Intra-Nucleus Polygon Structure Learning
+
+III-D Graph Neural Network Architecture
+
+III-E Training Scheme
+
+IV Experiments
+
+IV-A Datasets
+
+IV-B Implementation Details
+
+IV-C Evaluation
+
+IV-D Comparison with the state-of-the-arts
+
+IV-E Ablation study
+
+IV-F Investigation of Hyper-parameters
+
+V Conclusion
+
+References
+
+    License: arXiv.org perpetual non-exclusive license
+
+arXiv:2302.11416v1 [cs.CV] 22 Feb 2023
+
+Structure Embedded Nucleus Classification for Histopathology ImagesThanks: Corresponding author: Haofeng Li.Thanks: Wei Lou and Haofeng Li are with Shenzhen Research Institute of Big Data, Guangdong Provincial Key Laboratory of Big Data Computing, The Chinese University of Hong Kong at Shenzhen, Shenzhen 518172, China (e-mail: weilou@link.cuhk.edu.cn; lhaof@sribd.cn).Thanks: Xiang Wan is with Shenzhen Research Institute of Big Data, Guangdong Provincial Key Laboratory of Big Data Computing, The Chinese University of Hong Kong at Shenzhen, Shenzhen 518172, China, and also with Pazhou Lab, Guangzhou 510330, China (wanxiang@sribd.cn).Thanks: Guanbin Li is with the School of Computer Science and Engineering, Sun Yat-sen University, Guangzhou 510006, China (e-mail: liguanbin@mail.sysu.edu.cn).Thanks: Xiaoying Lou is with Department of Pathology, Guangdong Provincial Key Laboratory of Colorectal and Pelvic Floor Diseases, the Sixth Affiliated Hospital of Sun Yat-sen University, Guangzhou, China (e-mail: louxy3@mail.sysu.edu.cn).Thanks: Chenghang Li is with Artificial Intelligence Thrust, The Hong Kong University of Science and Technology at Guangzhou, Guangzhou 510030, China (e-mail: cli136@connect.hkust-gz.edu.cn).Thanks: Feng Gao is with Department of Colorectal Surgery, Department of General Surgery, Guangdong Provincial Key Laboratory of Colorectal and Pelvic Floor Diseases, The Sixth Affiliated Hospital, Sun Yat-sen University, Guangzhou 510655, China, and also with Shanghai Artificial Intelligence Laboratory, Shanghai, China (e-mail: gaof57@mail.sysu.edu.cn).Thanks: This work was supported in part by Chinese Key-Area Research and Development Program of Guangdong Province (2020B0101350001), in part by the Natural Science Foundation of Guangdong Province of China (2023A1515011464), in part by the National Natural Science Foundation of China (No.62102267), the Guangdong Provincial Key Laboratory of Big Data Computing, The Chinese University of Hong Kong, Shenzhen, and National Key Clinical Discipline.
+
+Wei Lou
+
+  
+Xiang Wan
+
+  
+Guanbin Li
+
+  
+Xiaoying Lou
+
+  
+Chenghang Li
+
+  
+Feng Gao
+
+  
+and
+
+Affiliation: Haofeng Li,
+
+Abstract
+
+Nuclei classification provides valuable information for histopathology image analysis. However, the large variations in the appearance of different nuclei types cause difficulties in identifying nuclei. Most neural network based methods are affected by the local receptive field of convolutions, and pay less attention to the spatial distribution of nuclei or the irregular contour shape of a nucleus.
+In this paper, we first propose a novel polygon-structure feature learning mechanism that transforms a nucleus contour into a sequence of points sampled in order, and employ a recurrent neural network that aggregates the sequential change in distance between key points to obtain learnable shape features.
+Next, we convert a histopathology image into a graph structure with nuclei as nodes, and build a graph neural network to embed the spatial distribution of nuclei into their representations. To capture the correlations between the categories of nuclei and their surrounding tissue patterns, we further introduce edge features that are defined as the background textures between adjacent nuclei. Lastly, we integrate both polygon and graph structure learning mechanisms into a whole framework that can extract intra and inter-nucleus structural characteristics for nuclei classification. Experimental results show that the proposed framework achieves significant improvements compared to the state-of-the-art methods.
+
+Index Terms: Nuclei classification, Recurrent neural network, Graph neural network
+
+Fig. 1: Overview of the proposed nucleus classification framework that consists of (a) a polygon structure learning module, (b) a multi-layer GNN for graph structure learning, and (c) an instance-level classifier.
+
+I Introduction
+
+Recently, computer-aided diagnosis (CAD) systems have achieved great success in histological examination tasks for their efficient, accurate and reproducible diagnosis performance. In a CAD system, nuclei segmentation and classification are critical steps for analyzing histopathology images.
+Segmenting a nucleus is to label all its pixels while nuclei classification is to identify the category of a nucleus. Solving these tasks not only obtains the size, texture and shape of each nucleus, but also provides the distribution among different nuclei types.
+The spatial relationships among different types of nuclei can effectively guide the CAD system in computational pathology tasks such as survival prediction [1, 2], cancer subtype classification and grading [3, 4].
+
+Nowadays, nuclei classification for histopathology images remains a challenge. Two nuclei of different types could have similar shapes and textures, and it is hard to distinguish between them. Meanwhile, for the nuclei of the same category, their appearances could have a wide variation during the different periods of their life cycle [5, 6]. It is difficult for CAD systems or inexperienced pathologists to classify every single nucleus in an image accurately. Thus, we aim at solving the nuclei classification task.
+
+Most deep learning (DL) based methods [7, 5, 6, 8] adopt Convolutional Neural Networks (CNNs) to detect and classify a nucleus based on its own convolutional features. However, these approaches seldom consider the relationship between different nuclei in an image. Such inter-nucleus information is crucial and widely used by experts in manual classification.
+Moreover, existing DL-based models rely on pixel-level representations. These approaches do not explicitly model the shape of a nucleus boundary, and ignore the structural information inside a nucleus. Recently, Graph Neural Networks (GNNs) based methods have grown rapidly in computational pathology [9, 10, 11, 12]. Previous GNN models employ tissue patches or nuclei objects as graph nodes to construct a graph. However, most of them focus on classifying Whole Slide Images (WSIs) instead of nuclei.
+
+Inspired by the above observations, we propose to improve the nuclei classification by considering not only the correlations among different nuclei, but also the polygon structure of a nucleus shape.
+First, to exploit the shape characteristics of a nucleus, we model a nucleus contour as a polygon, which can be described as an ordered sequence of points sampled from the contour (as shown in Fig. 1(a)). A recurrent neural network (RNN) is utilized to learn structural representations for the polygon from the point sequence, by aggregating the continuous changes in relative positions of sampled contour points. Such a polygon feature can well describe the irregular contour of a nucleus, and will act as a part of the nucleus representation.
+Second, to harvest the spatial distribution among nuclei, we model a histopathology image as a graph by defining a node as a nucleus and an edge as the background between two adjacent nuclei. A graph neural network is exploited to capture inter-nuclei contexts via iteratively propagating each node information to its neighbors and updating each nucleus feature with its background and adjacent nodes.
+The structural information of the whole histopathology graph is embedded into the enhanced representation of each nucleus.
+Lastly, we combine the above ideas of graph structure learning and polygon shape learning to develop a nuclei classification framework in which the pixel-level feature extraction and the nuclei-level classification are end-to-end trained.
+
+Our main contributions are as follows:
+
+•
+
+A novel intra-nucleus polygon structure learning (PSL) module that learns the shape feature of a nucleus.
+
+•
+
+A novel structure embedded nuclei classification framework based on an inter-nucleus graph structure learning (GSL) module and the proposed PSL module.
+
+•
+
+The proposed framework significantly outperforms the state-of-the-art by 4.7%-9.8% average F-score on an in-house dataset and three public benchmarks. The experimental results show that both the proposed PSL and GSL modules can effectively improve the classification performance.
+
+II Related Work
+
+II-A Nuclei Classification for Histopathology Images
+
+In the early stage, handcrafted features of texture, morphology and color are extracted and sent into an SVM/AdaBoost classifier for nuclei classification [13, 14].
+These methods explicitly model the intra-nucleus structure but are limited by the non-learnable representations.
+Nowadays, most nuclei classifiers adopt CNNs with two stages, detecting nuclei instances and then labeling them [15, 16, 17, 5, 18].
+Sirinukunwattana [19] propose a CNN to detect nuclei centers and another CNN to classify the image patches containing a nucleus.
+Graham [7] proposes a CNN of three branches, two for segmentation, and one for classification. Doan [6] predicts a weight map to highlight hard pixel samples for classification.
+However, these approaches are limited by the receptive field of CNNs, and fail to harvest long-range contexts and spatial distributions of nuclei instances.
+
+II-B Graph Models in Computational Pathology
+
+GNNs have become popular in computational pathology [20, 21, 22, 23]. Most GNN methods are to classify a whole image [24] or tissue patches [25]. In these works, graph nodes are defined as tissue patches  [26], nuclei objects [12] or superpixels  [11]. The node embeddings can be hand-crafted [27, 20] or extracted from pre-trained models [12, 24].
+Different from these works, we design a finer node representation including a shape feature of polygon-structure learning.
+Some existing work is based on GNN but it works by refining the nuclei classification results from existing models [23]. Instead, the GNN in our framework does not rely on nuclei types predicted in advance but directly performs the classification.
+
+II-C Contour and Polygon Representation Learning
+
+Predicting polygons for object segmentation [28, 29, 30] and contour detection [31] have been widely studied, while the feature extraction and classification for contours and polygons have been less discussed. Contour-aware nuclei segmentation methods [32] predict if a pixel is at a contour to improve the segmentation, but do not aggregate the pixel-level contour features to classify nuclei. PBC [33] is a polygon-based classifier that pools the texture features of each point in a polygon, but it does not consider the irregularity and smoothness of a polygon contour. Sharma[14] computes morphological statistics (such as Area and Convexity of Contour) as the shape feature of a nucleus. Differently, we model a nucleus contour in a fine-grained way, using a sequence of relative positions between the centroid and vertices.
+
+Fig. 2: Structure Embedded Nucleus Classification (SENC) framework. It consists of a pixel-wise feature extraction branch (upper) and an instance-level classification branch (lower) using the inter-nucleus Graph Structure Learning module (GSL).
+In the GSL module, an intra-nucleus Polygon Structure Learning module (PSL) computes the shape features for nuclei. Then the input image is transformed into a graph and a GNN enhances the features of the graph nodes for nuclei classification.
+
+III Methodology
+
+III-A Structure Embedded Nucleus Classification Framework
+
+The Structure Embedded Nuclei Classification (SENC) framework is illustrated in Fig. 2. The proposed framework consists of a pixel-wise feature extraction branch and an instance-level classification branch that adopts the modules of Inter-nucleus Graph Structure Learning (GSL) and Intra-nucleus Polygon Structure Learning (PSL). In the pixel-wise feature extraction branch, we utilize an existing CNN [34] as the encoder and a feature pyramid network (FPN) [35] as the decoder. The branch uses a histopathology image as input, and produces a pixel-level feature map from the second last decoder layer. In Fig 2, the semantic prediction map is the output of the decoder, when the encoder-decoder is pre-trained on a semantic segmentation task using DICE loss and cross-entropy loss.
+
+The inter-nucleus GSL module takes a feature map and an instance map as inputs. The instance map is the result of nuclei instance segmentation. Since we focus on solving the classification task, we simply use an existing nuclei segmentation model [7] to predict the instance map. The inter-nucleus GSL module first transforms a histopathology image into a graph structure, and then learns nuclei representation as graph nodes and background features as edges. In particular, we use a novel polygon structure learning module to obtain shape features for the nuclei nodes. After enhancing the node features with a graph neural network, all the nuclei are classified with a fully-connected (FC) layer and a Softmax layer.
+
+III-B Inter-Nuclei Graph Structure Learning
+
+To capture the spatial relationship among nuclei, we develop an inter-nucleus graph structure learning module, which includes the construction of a histopathology graph topology, and the feature extraction of graph nodes and edges.
+
+Histopathology Graph Topology Suppose a histopathology image contains NN nuclei. We construct a graph topology corresponding to the image by defining a graph node as a nucleus. The graph is undirected and can be defined as G=(V,E){G}=\left({V},{E}\right). VV denotes the set of nodes in the graph, namely, all the nuclei entities in the histopathology image. EE is the set of edges which represent the inner relationships between adjacent nuclei. To build an efficient and sparsely-connected graph, we first calculate the Euclidean distance between the centroid coordinates of any two nuclei. For each nucleus, KK undirected edges are linked between the nucleus and its KK nearest neighbors.
+The connection of nodes can be defined as a symmetric adjacency matrix A∈RN×NA\in R^{N\times N}, where Au,v=1A_{u,v}=1 if the edge between the ut​hu^{th} and vt​hv^{th} nodes exists (eu,v∈Ee_{u,v}\in E). After computing the adjacency matrix, the original representations of nodes and edges, we use a GNN to update the node features and to harvest the structural embedded nuclei representation. The updated node features are exploited to predict the nuclei types.
+
+Fig. 3: Node feature extraction process for each nucleus. It consists of two parts: an intra-nucleus Polygon Structure Learning module (PSL) and a Nuclei Texture feature extraction module (NuTef). The PSL module uses a shape RNN to extract the feature ZZ for a sequence of sampled contour points. i/γi/L​P​Eii/{\gamma_{i}}/LPE_{i} denotes a point index, the Euclidean distances between pip_{i} and the centroid p0p_{0}, the position encoding of pip_{i} in a local coordinate system.
+The NuTef module computes the textures feature with the bounding box and centroid of a nucleus.
+The feature map uu is produced by the pixel-wise feature extraction branch as shown in Fig. 2.
+
+Node feature extraction
+To obtain original node representations, we propose a node feature extraction process. The process takes the feature map from the pixel-weise feature extraction branch (Fig. 2) and a nucleus mask as inputs, and outputs a feature vector for the nucleus. The mask is extracted from an instance map predicted by a trained nuclei segmentation model. The shape of the feature map is h4×w4×c\frac{h}{4}\times\frac{w}{4}\times c.
+The node feature extraction includes an intra-nucleus Polygon Structure Learning module (PSL) and a Nucleus Texture feature extraction module (NuTef). The PSL module is to calculate the shape feature ZZ for a nucleus, using a recurrent neural network (RNN). The PSL details are in the next subsection. The NuTef module is to learn the texture feature of a nucleus. As Fig. 3 shows, ROI Align [36] is used with the input feature map to compute the representation B∈R1×cB\in R^{1\times c} of the nucleus bounding box. The centroid coordinate (h′,w′h^{\prime},w^{\prime}) of the nucleus is adopted to sample a feature vector C∈R1×cC\in R^{1\times c} from the input feature map (of size h4×w4×c\frac{h}{4}\times\frac{w}{4}\times c). In details, we locate the four pairs of integer coordinates nearest to (h′,w′h^{\prime},w^{\prime}) and sample the centroid feature as the weighted combination of these four feature vectors, using the bilinear interpolation method.
+To introduce the information of the nucleus location in the original histopathology image, we compute a positional encoding vector P​E∈R1×cPE\in R^{1\times c} for the nucleus centroid, using the Sinusoidal Position Encoding method [37]. To obtain the final texture representation, the above three feature vectors are concatenated into a vector T∈R1×3​cT\in R^{1\times 3c} as Eq. (1) shows:
+
+T=c​o​n​c​a​t​({B,C,P​E}).\displaystyle T=concat(\left\{B,C,PE\right\}).
+
+(1)
+
+After computing the shape feature ZZ with the PSL module, the feature vector of a node can be obtained by joining the texture and shape features as: X=c​o​n​c​a​t​(T,Z)X=concat\left(T,Z\right).
+
+Edge feature extraction
+Edge features are widely used in GNNs to enhance the relationship reasoning between two neighboring nodes. In histopathology images, the category of a nucleus has correlations with its surrounding tissue backgrounds. Thus, we define a graph edge as the background regions between the two nuclei nodes of the edge. To extract an edge feature, we draw a line between two edge-connected nodes, and define an edge point as the middle point (see the red crosses in Fig. 4) of the line. The edge feature is sampled from the pixel-wise feature map, using the coordinates of the edge point and the bilinear interpolation.
+
+Fig. 4: Visualization of edge points for the feature extraction of edges. An edge point of two connected nuclei nodes is defined as the middle point (red cross) between the position of their centroids.
+
+III-C Intra-Nucleus Polygon Structure Learning
+
+The intra-nucleus polygon structure learning module (PSL) is to model a nucleus contour as a polygon, and to learn the shape representation of the nucleus. For a nucleus, we compute its centroid position p0p_{0} and sample nn points p1,…,pn{p_{1},...,p_{n}} at the nucleus contour. To better describe the irregular shape, nn rays are emitted from the centroid with the same angle interval α=2​πn\alpha=\frac{2\pi}{n}, and intersect the boundary at nn points that are collected in clockwise order to form a point sequence. To model the positions of contour points relative to the centroid, we insert the centroid at the head of the sequence.
+
+We employ a multi-layer recurrent neural network (RNN) to harvest the shape feature with the point sequence. The input of the RNN is a feature sequence corresponding to the point sequence. The it​hi^{th} element of the feature sequence is defined as Si=(i,γi,L​P​Ei)S_{i}=\left(i,\gamma_{i},LPE_{i}\right) to represent the initial feature of each sampled point pip_{i}. ii denotes the index of the point sequence, γi\gamma_{i} is the Euclidean distance between a sampled point pip_{i} and the centroid p0p_{0}. L​P​ELPE means the Local Position Encoding. L​P​EiLPE_{i} denotes the position encoding vector of pip_{i}, and is calculated in a local rectangular coordinate system, which is centered at the bottom-left corner of the bounding box of the nucleus. To run the RNN with the input sequence SS, we set the hidden (input) states before the 1s​t1^{st} layer of the RNN as hi0=Si​(0≤i≤n)h_{i}^{0}={S}_{i}(0\leq i\leq n). Then the hidden state of the lt​hl^{th} layer and it​hi^{th} input position can be computed as Eq. (2):
+
+hil=ϕ⁡(h(i−1)l​Wsl+hil−1​Whl),\displaystyle h_{i}^{l}=\phi\left(h_{(i-1)}^{l}W^{l}_{s}+h_{i}^{l-1}W^{l}_{h}\right),
+
+(2)
+
+where WslW^{l}_{s} and WhlW^{l}_{h} are the weights of the input and recurrent neurons at the lt​hl^{th} hidden layer, hi−1lh_{i-1}^{l} is the hidden state of the (i−1)t​h(i-1)^{th} input position and the (l)t​h(l)^{th} layer. ++ denotes the elementwise addition. ϕ\phi denotes the ReLU function.
+If i−1i-1 is unavailable (<0<0), then h(i−1)l​Wslh_{(i-1)}^{l}W^{l}_{s} is ignored in Eq. (2).
+The RNN output is based on the hidden state of the final layer:
+
+Z=hnM​WZ,\displaystyle Z=h_{n}^{M}W_{Z},
+
+(3)
+
+where MM is the layer number of the RNN. WZW_{Z} is the weights in the output layer and Z∈R1×cZ\in R^{1\times c} is the output shape feature for the input nucleus node.
+
+III-D Graph Neural Network Architecture
+
+Given a histopathology graph G=(V,E)G=\left({V},{E}\right), its initial node features and edge features, we employ a GNN to harvest structure guided representations and to identify types for these nuclei nodes. A GNN usually consists of multiple layers. Each GNN layer aggregates and updates the node features from the previous layer or GNN input. In the aggregating step, the node features in a neighborhood are aggregated into a single feature via a differentiable operator. In the update step, each node feature is updated as the combination of its aggregated neighboring feature and itself.
+
+We implement the GNN using GENeralized Graph Convolution (GENConv) [38] with the DeepGCN [39] structure. GENConv is a graph convolution operator that can deal with edge features. Its key idea is to apply generalized mean-max aggregation functions by keeping the message features positive [38]. The message aggregation and update processes can be formulated as Eq. (4) and Eq. (5), respectively:
+
+ai=σ⁡(R​e​L​U​(Xj+Ai​j⋅Yi​j)+ϵ),j∈Ψ⁡(i),\displaystyle a_{i}=\sigma\left(ReLU\left(X_{j}+A_{ij}\cdot Y_{ij}\right)+\epsilon\right),j\in\Psi(i),
+
+(4)
+
+Xi=ζ⁡(Xi,ai),\displaystyle X_{i}=\zeta\left(X_{i},a_{i}\right),
+
+(5)
+
+where σ\sigma is the Softmax aggregations function [38], Xi/XjX_{i}/X_{j} denotes the representation of the it​h/jt​hi^{th}/j^{th} node, Ψ⁡(i)\Psi(i) is the set of the neighbor indices of the it​hi^{th} node and ϵ\epsilon is a small positive constant set to 1e-7. Ai​jA_{ij} is 1 if the it​hi^{th} and jt​hj^{th} nodes are connected by an edge otherwise 0. Yi​jY_{ij} is the feature of the edge between the it​hi^{th} and jt​hj^{th} nodes. In the update function Eq. (5), ζ\zeta is a two-layer perceptron using ReLU as the activation functions, and is to enhance XiX_{i} with the aggregated feature aia_{i}.
+To alleviate the vanishing gradient problem, we further utilize the residual connection following DeepGCN as shown in Eq. (6):
+
+Xl+1=ℱ⁡(Xl)+Xl,\displaystyle X^{l+1}=\mathcal{F}\left(X^{l}\right)+X^{l},
+
+(6)
+
+where ℱ⁡(⋅)\mathcal{F}(\cdot) contains a GENConv layer, a batch normalization layer and a ReLU activation function. XlX^{l} denotes all the node features XilX_{i}^{l} produced by the lt​hl^{th} GNN layer. Finally, with XLX^{L} the node representations updated by the last GNN layer, all the nodes are predicted through a classifier described in Eq. (7):
+
+t=S​o​f​t​m​a​x​(F​C​(XL)).\displaystyle t=Softmax\left(FC\left(X^{L}\right)\right).
+
+(7)
+
+III-E Training Scheme
+
+In the proposed framework, the pixel-wise feature extraction branch and the instance-level classification branch are trained simultaneously in an end-to-end manner. The feature extraction branch aims to learn rich texture features by solving a semantic segmentation task with the Dice loss in Eq. (8) and the Cross-entropy loss in Eq. (9):
+
+ℒCE=−1H×W∑i=1H×W∑q=1Qyi,qslogxi,qs,\displaystyle\mathcal{L}_{\text{CE}}=-\frac{1}{H\times W}\sum_{i=1}^{H\times W}\sum_{q=1}^{Q}y_{i,q}^{s}\log x_{i,q}^{s},
+
+(8)
+
+ℒDice=1−2×∑i=1H×W∑q=1Q(yi,qs×xi,qs)+ε∑i=1H×W∑q=1Q(yi,qs+xi,qs)+ε,\displaystyle\mathcal{L}_{\text{Dice}}=1-\frac{2\times\sum_{i=1}^{H\times W}\sum_{q=1}^{Q}\left(y_{i,q}^{s}\times x_{i,q}^{s}\right)+\varepsilon}{\sum_{i=1}^{H\times W}\sum_{q=1}^{Q}(y_{i,q}^{s}+x_{i,q}^{s})+\varepsilon},
+
+(9)
+
+where xsx^{s} is a H​W×QHW\times Q predicted map of the semantic segmentation task and ysy^{s} is the ground truth map. QQ is the number of nuclei types, H/WH/W denotes the height/width of a GT or predicted map. ε\varepsilon is a smoothness constant set to 1e-8.
+
+In the instance-level classification branch using the PSL & GSL modules, the classifier predicts category-wise probabilities for each nucleus entity. Cross-entropy loss is widely used in multi-class classification tasks.
+However, in the nuclei classification task, the distribution of different categories is usually unbalanced and easy samples (such as the nuclei of some tumor cells) could be too dominant to train a robust model.
+Therefore, we utilize a Focal loss [40] to pay more attentions to hard samples as Eq. (10) shows:
+
+ℒFocal=−1N∑i=1N∑q=1Qτq(1−ti,q)γyi,qologti,q,\displaystyle\mathcal{L}_{\text{Focal}}=-\frac{1}{N}\sum_{i=1}^{N}\sum_{q=1}^{Q}\tau_{q}(1-t_{i,q})^{\gamma}y_{i,q}^{o}\log t_{i,q},
+
+(10)
+
+where tt (∈RN×Q\in R^{N\times Q}) contains the predicted probabilities for NN nuclei objects, yoy^{o} is the true labels. γ\gamma is a hyper-parameter to make the network concentrate on hard samples. The higher the value of γ\gamma, the lower the loss for well-classified examples. τq\tau_{q} is the weight for each category and is set to the reciprocal of the proportion of the qt​hq^{th} class in the training set.
+The overall objective to train the network is described as Eq. (11):
+
+ℒ⁡(xs,t)=ℒDice​(xs)+ℒCE​(xs)+ℒFocal​(t),\displaystyle\mathcal{L}\left(x^{s},t\right)=\mathcal{L}_{\text{Dice}}\left(x^{s}\right)+\mathcal{L}_{\text{CE}}\left(x^{s}\right)+\mathcal{L}_{\text{Focal}}\left(t\right),
+
+(11)
+
+which is composed of two semantic segmentation losses (Dice & Cross-entropy loss) and a classification loss (Focal loss). All three losses are equally weighted.
+
+TABLE I: Quantitative comparison between existing nuclei segmentation & classification models without and with our method (+Ours) on the CoNSeP, MoNuSAC, CRC-FFPE and PanNuke datasets. ‘Net+Ours’ means our classification method taking the segmentation results of the Net as input.
+FcmF^{m}_{c},FciF^{i}_{c},FceF^{e}_{c},FcsF^{s}_{c}, FclF^{l}_{c}, Fcm​aF^{ma}_{c}, FcnF^{n}_{c}, FctF^{t}_{c}, Fcs​tF^{st}_{c},Fci​mF^{im}_{c},Fcn​eF^{ne}_{c},FcoF^{o}_{c},FccF^{c}_{c},FcdF^{d}_{c},Fcn​eF^{ne}_{c} represent the F-score for the nuclei types of miscellaneous, inflammatory, epithelial, spindle-shaped, lymphocytes, macrophages, neutrophils, tumor, stroma, immune, necrosis, other, connective, dead, neoplastic, respectively. Fa​v​gF_{avg} is the average F-score of the categories in a dataset. ‘Imp.’ is the classification improvement when using our framework.
+
+Method
+CoNSeP
+CRC-FFPE
+
+A​J​IAJI
+P​QPQ
+FdF_{d}
+Fa​v​gF_{avg}
+I​m​pImp
+FcmF^{m}_{c}
+FciF^{i}_{c}
+FceF^{e}_{c}
+FcsF^{s}_{c}
+A​J​IAJI
+P​QPQ
+FdF_{d}
+Fa​v​gF_{avg}
+I​m​p.Imp.
+FciF^{i}_{c}
+FccF^{c}_{c}
+FcdF^{d}_{c}
+Fce​pF^{ep}_{c}
+Fcn​eF^{ne}_{c}
+
+MCSpatNet [5]
+-
+-
+0.733
+0.514
+-
+0.400
+0.537
+0.582
+0.540
+-
+-
+0.752
+0.278
+-
+0.547
+0.196
+0.307
+0.126
+0.212
+
+Triple U-net [41]
+0.453
+0.412
+0.663
+0.383
+-
+0.102
+0.570
+0.423
+0.438
+0.510
+0.547
+0.684
+0.196
+-
+0.458
+0.101
+0.212
+0.079
+0.129
+
++Ours
+0.453
+0.412
+0.663
+0.421
++3.8%
+0.231
+0.632
+0.476
+0.478
+0.510
+0.547
+0.684
+0.255
++5.9%
+0.479
+0.134
+0.320
+0.111
+0.231
+
+Mask2former [42]
+0.464
+0.482
+0.659
+0.414
+-
+0.325
+0.461
+0.462
+0.408
+0.451
+0.491
+0.581
+0.212
+-
+0.299
+0.164
+0.278
+0.101
+0.218
+
++Ours
+0.464
+0.482
+0.659
+0.536
++12.2%
+0.501
+0.548
+0.561
+0.532
+0.451
+0.491
+0.581
+0.252
++4%
+0.399
+0.168
+0.312
+0.121
+0.263
+
+TSFD-net [8]
+0.458
+0.415
+0.680
+0.439
+-
+0.120
+0.567
+0.558
+0.513
+0.478
+0.503
+0.549
+0.182
+-
+0.308
+0.110
+0.201
+0.098
+0.194
+
++Ours
+0.458
+0.415
+0.680
+0.548
++10.9%
+0.462
+0.603
+0.575
+0.554
+0.478
+0.503
+0.549
+0.217
++2.5%
+0.341
+0.145
+0.278
+0.101
+0.223
+
+HoVer-Net [7]
+0.544
+0.510
+0.740
+0.549
+-
+0.430
+0.601
+0.612
+0.552
+0.603
+0.636
+0.743
+0.245
+-
+0.512
+0.180
+0.290
+0.096
+0.148
+
++Ours
+0.544
+0.510
+0.740
+0.595
++4.6%
+0.510
+0.632
+0.646
+0.592
+0.603
+0.636
+0.743
+0.353
++10.8%
+0.548
+0.196
+0.418
+0.159
+0.446
+
+Method
+MoNuSAC
+PanNuke
+
+A​J​IAJI
+P​QPQ
+FdF_{d}
+Fa​v​gF_{avg}
+I​m​pImp
+FceF^{e}_{c}
+FclF^{l}_{c}
+Fcm​aF^{ma}_{c}
+FcnF^{n}_{c}
+A​J​IAJI
+P​QPQ
+FdF_{d}
+Fa​v​gF_{avg}
+I​m​p.Imp.
+FciF^{i}_{c}
+FccF^{c}_{c}
+FcdF^{d}_{c}
+Fce​pF^{ep}_{c}
+Fcn​eF^{ne}_{c}
+
+MCSpatNet [5]
+-
+-
+0.828
+0.651
+-
+0.698
+0.753
+0.517
+0.636
+-
+-
+0.786
+0.483
+-
+0.484
+0.473
+0.220
+0.612
+0.629
+
+Triple U-net [41]
+0.408
+0.543
+0.638
+0.464
+-
+0.557
+0.637
+0.276
+0.386
+0.583
+0.464
+0.698
+0.381
+-
+0.392
+0.298
+0.297
+0.508
+0.412
+
++Ours
+0.408
+0.543
+0.638
+0.536
++7.2%
+0.599
+0.768
+0.302
+0.477
+0.583
+0.464
+0.698
+0.428
++4.7%
+0.436
+0.361
+0.324
+0.564
+0.457
+
+TSFD-net [8]
+0.461
+0.499
+0.735
+0.350
+-
+0.544
+0.738
+0.091
+0.027
+0.621
+0.513
+0.748
+0.413
+-
+0.441
+0.453
+0.102
+0.505
+0.565
+
++Ours
+0.461
+0.499
+0.735
+0.435
++8.5%
+0.621
+0.788
+0.210
+0.124
+0.621
+0.513
+0.748
+0.445
++3.2%
+0.482
+0.477
+0.122
+0.545
+0.601
+
+Mask2former [42]
+0.577
+0.568
+0.746
+0.559
+-
+0.682
+0.762
+0.349
+0.446
+0.616
+0.666
+0.792
+0.480
+-
+0.400
+0.426
+0.289
+0.668
+0.617
+
++Ours
+0.577
+0.568
+0.746
+0.603
++4.4%
+0.747
+0.786
+0.377
+0.502
+0.616
+0.666
+0.792
+0.519
++3.9%
+0.514
+0.497
+0.256
+0.688
+0.642
+
+HoVer-Net [7]
+0.599
+0.613
+0.748
+0.604
+-
+0.754
+0.806
+0.394
+0.463
+0.653
+0.621
+0.787
+0.503
+-
+0.530
+0.474
+0.260
+0.618
+0.632
+
++Ours
+0.599
+0.613
+0.748
+0.692
++8.8%
+0.799
+0.846
+0.383
+0.742
+0.653
+0.621
+0.787
+0.528
++2.5%
+0.541
+0.507
+0.263
+0.684
+0.643
+
+IV Experiments
+
+IV-A Datasets
+
+The proposed framework is evaluated on four nuclei classification datasets: CRC-FFPE, CoNSeP [7], PanNuke [43], MoNuSAC [44]. The CRC-FFPE dataset is an in-house colorectal cancer dataset that consists of 16 patients with 59 H&E stained histopathology tiles of size 1000×10001000\times 1000. The images are extracted from the WSIs collected from TCGA [45] and annotated by the pathologists in a local hospital. The nuclei types of the CRC-FFPE dataset include Tumor, Stroma, Immune, Necrosis, and Other. These images are divided into a training set (45 tiles) and a testing set (14 tiles).
+The CoNSep dataset is a colorectal adenocarcinoma dataset that contains 41 H&E stained images of size 1000×10001000\times 1000. The dataset includes 24139 annotated nuclei that are grouped into four categories: Miscellaneous, Inflammatory, Epithelial, and Spindle-shaped. We split the CoNSeP dataset into a training set with 27 images and a testing set with 14 images. The MoNuSAC dataset is a multi-organ dataset, comprising 310 images (209 for training, 101 for testing) of 71 patients. The size of images ranges from 81×11381\times 113 pixels to 1422×21621422\times 2162 pixels. The dataset contains four types of organs (breast, kidney, lung, and prostate). The nuclei types of the dataset are: Epithelial, Lymphocytes, Macrophages, and Neutrophils. The PanNuke dataset contains 7899 image tiles of size 256×256256\times 256 of 19 different organs. The images were digitized at 20×\times or 40×\times magnification. The nuclei types of the dataset are Inflammatory, Connective, Dead, Epithelial and Neoplastic.
+
+IV-B Implementation Details
+
+For the CRC-FFPE and CoNSeP datasets, all the training images are resized to 1024×10241024\times 1024. For the MoNuSAC dataset, we crop image patches of size 512×512512\times 512. For the PanNuke dataset, we set the original image size to 256×256256\times 256. We implement the proposed framework with PyTorch [46] and PyTorch Geometric library [47]. The encoder in the pixel-wise extraction branch consists of 4 layers with kernel sizes [3,3,12,3] and channel sizes [64,128,320,512], following the previous work [34]. The encoder is pre-trained on ImageNet [48]. For the GSL module, the GCN model comprises two GENConv [38] layers (LL=2) of 64 hidden channels. The neighbor number KK is set to 4 for building edges of a graph.
+For the proposed PSL module, the channel number cc of each feature vector for the bounding box, centroid, and positional embedding is 64. The number of hidden layers MM of the RNN model is 2 and each layer has 128 hidden units. The number of sampled contour points nn in PSL is set to 18. The proposed framework is trained for 100 epochs with an Adam optimizer, an initial learning rate of 1×10−41\times 10^{-4}, and a momentum of 0.9 and 0.99. For all four datasets, γ\gamma in the Focal loss is set to 2.
+
+TABLE II: Quantitative comparison between existing methods and ours for nuclei classification on the CoNSeP, MoNuSAC, CRC-FFPE and PanNuke datasets in the ‘Inst-gt’ setting. The ground truth of nuclei instance segmentation is accessible for all the methods in the inference stage.
+
+Method
+CoNSeP
+CRC-FFPE
+
+Fa​v​gF_{avg}
+FcmF^{m}_{c}
+FciF^{i}_{c}
+FceF^{e}_{c}
+FcsF^{s}_{c}
+Fa​v​gF_{avg}
+FctF^{t}_{c}
+Fcs​tF^{st}_{c}
+Fci​mF^{im}_{c}
+Fcn​eF^{ne}_{c}
+FcoF^{o}_{c}
+
+HoVer-Net [7]
+0.711
+0.585
+0.656
+0.872
+0.730
+0.350
+0.737
+0.240
+0.290
+0.153
+0.327
+
+Triple U-net [41]
+0.438
+0.170
+0.399
+0.684
+0.501
+0.289
+0.599
+0.202
+0.344
+0.099
+0.202
+
+TSFD-net [8]
+0.632
+0.502
+0.635
+0.822
+0.570
+0.221
+0.378
+0.176
+0.222
+0.100
+0.233
+
+MCSpatNet [5]
+0.695
+0.562
+0.624
+0.863
+0.730
+0.341
+0.772
+0.190
+0.372
+0.071
+0.301
+
+Ours
+0.777
+0.726
+0.685
+0.890
+0.807
+0.448
+0.804
+0.271
+0.449
+0.184
+0.534
+
+Method
+MoNuSAC
+PanNuke
+
+Fa​v​gF_{avg}
+FceF^{e}_{c}
+FclF^{l}_{c}
+Fcm​aF^{ma}_{c}
+FcnF^{n}_{c}
+Fa​v​gF_{avg}
+FciF^{i}_{c}
+FccF^{c}_{c}
+FcdF^{d}_{c}
+Fce​pF^{ep}_{c}
+Fcn​eF^{ne}_{c}
+
+HoVer-Net [7]
+0.701
+0.794
+0.910
+0.612
+0.486
+0.529
+0.525
+0.610
+0.278
+0.636
+0.598
+
+Triple U-net [41]
+0.530
+0.629
+0.747
+0.331
+0.412
+0.396
+0.412
+0.278
+0.304
+0.555
+0.432
+
+TSFD-net [8]
+0.605
+0.695
+0.902
+0.435
+0.388
+0.418
+0.423
+0.210
+0.378
+0.602
+0.478
+
+MCSpatNet [5]
+0.828
+0.955
+0.963
+0.683
+0.712
+0.574
+0.549
+0.576
+0.269
+0.702
+0.772
+
+Ours
+0.919
+0.967
+0.972
+0.862
+0.873
+0.621
+0.607
+0.622
+0.253
+0.823
+0.799
+
+Fig. 5: Visualized classification results on the CRC-FFPE dataset and the ’Inst-gt’ setting where the GTs of nuclei instance segmentation are accessible. We compare the classification performance between our framework and the existing methods.
+
+IV-C Evaluation
+
+Following the previous works [7, 5, 6], we use an F-score FcF_{c} to evaluate the nuclei classification methods. The F-score considers the performance of both detection and classification.
+Given a set of predicted nuclei and a set of ground truth (GT) nuclei, we assign each GT nucleus with its nearest predicted nucleus if their centroids are within 12 pixels, and ensure that no two GT nuclei are assigned to the same predicted nucleus. The predicted nuclei then can be split into the detected, undetected, and wrongly detected ones, whose numbers are denoted as T​Pd{TP}_{d}, F​Nd{FN}_{d}, F​Pd{FP}_{d}, respectively.
+The classification performance is measured based on T​Pd{TP}_{d}. For one of the categories (for example, the type qq), the number of correctly classified nuclei, wrongly classified nuclei, correctly classified nuclei of types other than qq, and wrongly classified nuclei instances of types other than type qq are denoted as T​PcTP_{c}, F​PcFP_{c}, T​NcTN_{c} and F​NcFN_{c}, respectively.
+The F-score of type qq is computed as Eq. (IV-C):
+
+Fcq=2​(T​Pc+T​Nc)[2​(T​Pc+T​Nc)+α0​F​Pc+α1​F​Nc+α2​F​Pd+α3​F​Nd],\displaystyle F_{c}^{q}=\frac{2\left(TP_{c}+TN_{c}\right)}{\left[\begin{array}[]{c}2\left(TP_{c}+TN_{c}\right)+\alpha_{0}FP_{c}+\alpha_{1}FN_{c}\\
++\alpha_{2}FP_{d}+\alpha_{3}FN_{d}\end{array}\right]},
+
+where α1=2\alpha_{1}=2, α2=2\alpha_{2}=2, α3=1\alpha_{3}=1 and α4=1\alpha_{4}=1. The average F-score of all categories in a dataset is reported as Fa​v​gF_{avg} and can be viewed as a general metric of classification performance.
+
+To show the detection and segmentation results of previous works, we evaluate the nuclei segmentation metrics: Aggregated Jaccard Index
+(AJI) [49], Panoptic Quality (PQ) [50], Detection Quality FdF_{d} [7]. AJI is an extension of the global Jaccard index and measures the overlapping areas of multiple objects and is recognized as an object-level criterion for segmentation evaluation. PQ is another metric for accurate quantification of detection and segmentation. It is defined as 𝒫​𝒬=|T​P||T​P​|+12|​F​P​|+12|​F​N|×∑(x,y)∈T​PIoU⁡(x,y)|T​P|\mathcal{P}\mathcal{Q}=\frac{|TP|}{|TP|+\frac{1}{2}|FP|+\frac{1}{2}|FN|}\times\frac{\sum_{(x,y)\in TP}\operatorname{IoU}(x,y)}{|TP|}. The first part of PQ is the detection quality FdF_{d}. Each prediction-GT pairs are matched to be unique if their IoU(x,y) is larger than 0.5. The predictions and GT are split into matched pairs (TP), unmatched GT (FN) and unmatched predictions (FP). The detection quality FdF_{d} then is defined as the F1F_{1} score for instance detection. The second part of PQ is the segmentation quality which can be interpreted as how close each correctly detected instance is to its matched GT.
+
+IV-D Comparison with the state-of-the-arts
+
+We compare our proposed approach with the state-of-the-art nuclei classification methods HoVer-Net [7], Triple U-net [41], MCSpatNet [5], TSFD-net [8], and Mask2former [42]. Among them, HoVer-Net, MCSpatNet, and Mask2former support nuclei classification, TSFD-net is a semantic segmentation method and Triple U-net is an instance segmentation method. For HoVer-Net, MCSpatNet and Mask2former, we directly compare the instance classification performance using their original settings. For TSFD-net, we extract the instance classification results using its semantic segmentation outputs and instance segmentation outputs. For Triple U-net, an extra 1×11\times 1 convolution is added as the classification layer.
+Note that we aim at solving the classification task in this paper. To fairly compare the classification performance among existing methods and ours, we propose an evaluation setting ‘Inst-gt’ where the GT maps of nuclei instance segmentation are accessible to all these methods during the testing stage. In this setting, these methods use the GT segmentation maps to replace their own predicted segmentation results for classifying nuclei. Since each method adopts the segmentation results of the same quality, the ‘Inst-gt’ setting provides a fair comparison of nuclei classification. We also report the results on a typical setting ‘Inst-pred’ where the segmentation GTs are not accessible and each method needs to predict its own segmentation results.
+
+As TABLE I shows, in the ’Inst-pred’ setting the proposed framework outperforms the state-of-the-art methods on all 4 types in the CoNSeP dataset, all 5 types in the CRC-FFPE dataset, 3 types in the MoNuSAC dataset and 4 types in the PanNuke dataset.
+‘Model + Ours’ denotes our proposed framework taking the segmentation predictions of the Model as input.
+‘Imp.’ is the classification F1-score improvement over each previous method when using our classification framework. The results display that our method can significantly improve the previous nuclei classification methods by 3.8%-12.2%, 4.48.8%, 2.5%-10.8%, 2.5%-3.9%
+average F-score on the CoNSeP, MoNuSAC, CRC-FFPE and PanNuke datasets, respectively. In TABLE II, on the ’Inst-gt’ setting, our proposed framework achieves the highest F-score on all 4 types in the CoNSeP dataset, all 4 types in the MoNuSAC dataset , all 5 types in the CRC-FFPE dataset and 4 types in the PanNuke dataset. The proposed method outperforms the second-best model by 6.6%, 9.1%, 9.8%, and 4.7% average F-score on the four datasets. The results indicate that our proposed framework has achieved the state-of-the-art performance for nuclei classification in histopathology images.
+
+Fig. 5 visualizes the nuclei classification results of some existing methods and ours on the CRC-FFPE dataset. The visual results are obtained on the ’Inst-gt’ setting to compare only the classification performance among these approaches. In Fig. 5(a), our method can accurately identify sparsely-distributed nuclei, since a GCN is utilized to propagate contextual information among even remote nuclei. In Fig. 5(b), the proposed framework shows its advantage of classifying densely-distributed nuclei of the same type. Most of these nuclei are surrounded by similar background regions, which can be well described by the edge representations and guide the nuclei classification in our proposed method.
+
+TABLE III: Ablation study on the Consep dataset and using the ground truth as segmentation map in the inference stage.
+
+Method
+CoNSeP
+
+Fa​v​gF_{avg}
+FcmF^{m}_{c}
+FciF^{i}_{c}
+FceF^{e}_{c}
+FcsF^{s}_{c}
+
+(a) Baseline
+0.437
+0.187
+0.416
+0.721
+0.422
+
+(b) +GCN
+0.651
+0.437
+0.575
+0.869
+0.714
+
+(c) +EdgeFeat
+0.690
+0.580
+0.592
+0.879
+0.704
+
+(d) Ours
+0.777
+0.726
+0.685
+0.890
+0.807
+
+TABLE IV: Hyper-parameters investigation of the neighbor number KK and the number of sampled contour points nn on the CoNSeP dataset.
+
+n=18
+Fa​v​gF_{avg}
+FcmF^{m}_{c}
+FciF^{i}_{c}
+FceF^{e}_{c}
+FcsF^{s}_{c}
+
+K=3
+0.752
+0.785
+0.577
+0.915
+0.734
+
+K=4
+0.777
+0.726
+0.685
+0.890
+0.807
+
+K=6
+0.727
+0.721
+0.591
+0.895
+0.704
+
+K=4
+Fa​v​gF_{avg}
+FcmF^{m}_{c}
+FciF^{i}_{c}
+FceF^{e}_{c}
+FcsF^{s}_{c}
+
+n=9
+0.727
+0.741
+0.577
+0.912
+0.681
+
+n=18
+0.777
+0.726
+0.685
+0.890
+0.807
+
+n=36
+0.739
+0.762
+0.576
+0.914
+0.705
+
+IV-E Ablation study
+
+We perform the ablation study on the CoNSeP dataset and the ’Inst-gt’ setting. In TABLE III, (a)‘Baseline’ consists of the pixel-wise feature extraction branch and a simple nuclei feature extraction module without PSL and GSL. (b)‘+GCN’ is the baseline using a GCN without edge features. (c)‘+EdgeFeat’ denotes the baseline using a GCN with edge features. (d)‘Ours’ is the proposed framework with the PSL & GSL modules.
+Comparing (a) to (b), using the GCN significantly improves the classification performance by around 21.4% average F-score. That shows the powerful ability of the graph network in modeling relationships. Comparing (c) to (b) shows that the proposed edge features improve the average F-score by 3.9%. It indicates that the background information provided by the proposed edge feature helps better identify the nuclei types. Comparing (d) to (c) suggests that our proposed PSL module leads to a great increase of 8.7% average F-score. Overall, the proposed framework surpasses the baseline by 34.0% average F-score when the segmentation GT is available.
+
+Computational efficiency
+We evaluate our proposed classification framework on a machine with Ubuntu 20.04, a NVIDIA-A6000 GPU with 48 GB memory, and Intel(R) Xeon(R) W-2235 CPU with 64 GB memory. Training our proposed method cost 8 hours to 2 days for these four datasets. The GPU memory cost and inference time for an image patch of size 1000×10001000\times 1000 are about 6 GB and 1.97s. The size of the classification model is around 300 MB.
+
+IV-F Investigation of Hyper-parameters
+
+In TABLE IV, we study the selection of two hyper-parameters on the CoNSep dataset. One is the neighbor number KK, which determines how many neighbors are connected to a nucleus in the graph. The other one is the number of sampled contour points nn, which determines how fine-grained the nucleus shape is in the PSL module. All the experiments are on the ‘Inst-gt’ setting.
+As TABLE IV shows, setting KK to 4 achieves the highest Fa​v​gF_{avg} while setting KK to 3/6 results in a drop of 2.5%/5.0% F-score. Larger KK means more connected neighbors and larger weights for the contextual features. It may be due to that too much context information makes the model pay less attention to the original texture or shape features of predicted nuclei. Thus, setting KK to a moderate value mostly benefits our method. Setting nn to 18 obtains the best Fa​v​gF_{avg} while setting nn to 36 causes a drop of 3.8% Fa​v​gF_{avg}. It may because the newly sampled points are not distinct enough and could act as noises to cause overfitting.
+
+V Conclusion
+
+In this paper, we aim to solve a challenging task of automatic nuclei classification for H&E stained multi-organ histopathology images. First, we propose a novel structure-embedded nuclei classification framework. Second, we build an inter-nuclei graph structure learning module to capture rich contextual information and short-long range correlations among nuclei. Third, we develop an intra-nuclei polygon structure learning module for harvesting better shape representations of a nucleus using a recurrent neural network. The experimental results suggest that both our overall framework and the proposed modules can significantly surpass the existing methods. In the future, it would be meaningful to extend our framework to a unified graph-based nuclei detection and classification model and apply the model to more cancer types of various organs.
+
+References
+
+[1]
+
+C. Lu, D. Romo-Bucheli, X. Wang, A. Janowczyk, S. Ganesan, H. Gilmore, D. Rimm,
+and A. Madabhushi, “Nuclear shape and orientation features from h&e images
+predict survival in early-stage estrogen receptor-positive breast cancers,”
+Laboratory investigation, vol. 98, no. 11, pp. 1438–1448, 2018.
+
+[2]
+
+S. Tabibu, P. Vinod, and C. Jawahar, “Pan-renal cell carcinoma classification
+and survival prediction from histopathology images using deep learning,”
+Scientific reports, vol. 9, no. 1, pp. 1–9, 2019.
+
+[3]
+
+M. G. Ertosun and D. L. Rubin, “Automated grading of gliomas using deep
+learning in digital pathology images: a modular approach with ensemble of
+convolutional neural networks,” in AMIA annual symposium proceedings,
+vol. 2015. American Medical
+Informatics Association, 2015, p. 1899.
+
+[4]
+
+H. D. Couture, L. A. Williams, J. Geradts, S. J. Nyante, E. N. Butler,
+J. Marron, C. M. Perou, M. A. Troester, and M. Niethammer, “Image analysis
+with deep learning to predict breast cancer grade, er status, histologic
+subtype, and intrinsic subtype,” NPJ breast cancer, vol. 4, no. 1,
+pp. 1–8, 2018.
+
+[5]
+
+S. Abousamra, D. Belinsky, J. Van Arnam, F. Allard, E. Yee, R. Gupta, T. Kurc,
+D. Samaras, J. Saltz, and C. Chen, “Multi-class cell detection using spatial
+context representation,” in Proceedings of the IEEE/CVF International
+Conference on Computer Vision, 2021, pp. 4005–4014.
+
+[6]
+
+T. N. N. Doan, B. Song, T. T. Le Vuong, K. Kim, and J. T. Kwak, “Sonnet: A
+self-guided ordinal regression neural network for segmentation and
+classification of nuclei in large-scale multi-tissue histology images,”
+IEEE Journal of Biomedical and Health Informatics, 2022.
+
+[7]
+
+S. Graham, Q. D. Vu, S. E. A. Raza, A. Azam, Y. W. Tsang, J. T. Kwak, and
+N. Rajpoot, “Hover-net: Simultaneous segmentation and classification of
+nuclei in multi-tissue histology images,” Medical Image Analysis,
+vol. 58, p. 101563, 2019.
+
+[8]
+
+T. Ilyas, Z. I. Mannan, A. Khan, S. Azam, H. Kim, and F. De Boer, “Tsfd-net:
+Tissue specific feature distillation network for nuclei segmentation and
+classification,” Neural Networks, vol. 151, pp. 1–15, 2022.
+
+[9]
+
+M. Sureka, A. Patil, D. Anand, and A. Sethi, “Visualization for histopathology
+images using graph convolutional neural networks,” in IEEE 20th
+International Conference on Bioinformatics and Bioengineering (BIBE). IEEE, 2020, pp. 331–335.
+
+[10]
+
+Y. Zhao, F. Yang, Y. Fang, H. Liu, N. Zhou, J. Zhang, J. Sun, S. Yang,
+B. Menze, X. Fan et al., “Predicting lymph node metastasis using
+histopathological images based on multiple instance learning with deep graph
+convolution,” in Proceedings of the IEEE/CVF Conference on Computer
+Vision and Pattern Recognition, 2020, pp. 4837–4846.
+
+[11]
+
+V. Anklin, P. Pati, G. Jaume, B. Bozorgtabar, A. Foncubierta-Rodriguez, J.-P.
+Thiran, M. Sibony, M. Gabrani, and O. Goksel, “Learning whole-slide
+segmentation from inexact and incomplete labels using tissue graphs,” in
+International Conference on Medical Image Computing and
+Computer-Assisted Intervention. Springer, 2021, pp. 636–646.
+
+[12]
+
+G. Jaume, P. Pati, B. Bozorgtabar, A. Foncubierta, A. M. Anniciello, F. Feroce,
+T. Rau, J.-P. Thiran, M. Gabrani, and O. Goksel, “Quantifying explainers of
+graph neural networks in computational pathology,” in Proceedings of
+the IEEE/CVF Conference on Computer Vision and Pattern Recognition, 2021,
+pp. 8106–8116.
+
+[13]
+
+S. Liu, P. A. Mundra, and J. C. Rajapakse, “Features for cells and nuclei
+classification,” in Annual International Conference of the IEEE
+Engineering in Medicine and Biology Society. IEEE, 2011, pp. 6601–6604.
+
+[14]
+
+H. Sharma, N. Zerbe, D. Heim, S. Wienert, H.-M. Behrens, O. Hellwich, and
+P. Hufnagl, “A multi-resolution approach for combining visual information
+using nuclei segmentation and classification in histopathological images.”
+in VISAPP (3), 2015, pp. 37–46.
+
+[15]
+
+L. Zhang, L. Lu, I. Nogues, R. M. Summers, S. Liu, and J. Yao, “Deeppap: deep
+convolutional networks for cervical cell classification,” IEEE journal
+of biomedical and health informatics, vol. 21, no. 6, pp. 1633–1643, 2017.
+
+[16]
+
+S. S. Basha, S. Ghosh, K. K. Babu, S. R. Dubey, V. Pulabaigari, and
+S. Mukherjee, “Rccnet: An efficient convolutional neural network for
+histological routine colon cancer nuclei classification,” in 15th
+International Conference on Control, Automation, Robotics and Vision
+(ICARCV). IEEE, 2018, pp. 1222–1227.
+
+[17]
+
+K. Zormpas-Petridis, H. Failmezger, S. E. A. Raza, I. Roxanis, Y. Jamin, and
+Y. Yuan, “Superpixel-based conditional random fields (supercrf):
+Incorporating global and local context for enhanced deep learning in melanoma
+histopathology,” Frontiers in oncology, vol. 9, p. 1045, 2019.
+
+[18]
+
+S. Graham, Q. D. Vu, M. Jahanifar, S. E. A. Raza, F. Minhas, D. Snead, and
+N. Rajpoot, “One model is all you need: multi-task learning enables
+simultaneous histology image segmentation and classification,” Medical
+Image Analysis, vol. 83, p. 102685, 2023.
+
+[19]
+
+K. Sirinukunwattana, S. E. A. Raza, Y.-W. Tsang, D. R. Snead, I. A. Cree, and
+N. M. Rajpoot, “Locality sensitive deep learning for detection and
+classification of nuclei in routine colon cancer histology images,”
+IEEE transactions on medical imaging, vol. 35, no. 5, pp. 1196–1206,
+2016.
+
+[20]
+
+Y. Zhou, S. Graham, N. Alemi Koohbanani, M. Shaban, P.-A. Heng, and N. Rajpoot,
+“Cgc-net: Cell graph convolutional network for grading of colorectal cancer
+histology images,” in Proceedings of the IEEE/CVF International
+Conference on Computer Vision Workshops, 2019, pp. 0–0.
+
+[21]
+
+K. Ding, Q. Liu, E. Lee, M. Zhou, A. Lu, and S. Zhang, “Feature-enhanced graph
+networks for genetic mutational prediction using histopathological images in
+colon cancer,” in International Conference on Medical Image Computing
+and Computer-Assisted Intervention. Springer, 2020, pp. 294–304.
+
+[22]
+
+L. Studer, J. Wallau, H. Dawson, I. Zlobec, and A. Fischer, “Classification of
+intestinal gland cell-graphs using graph neural networks,” in 25th
+International Conference on Pattern Recognition (ICPR). IEEE, 2021, pp. 3636–3643.
+
+[23]
+
+T. Hassan, S. Javed, A. Mahmood, T. Qaiser, N. Werghi, and N. Rajpoot,
+“Nucleus classification in histology images using message passing network,”
+Medical Image Analysis, p. 102480, 2022.
+
+[24]
+
+P. Pati, G. Jaume, A. Foncubierta-Rodríguez, F. Feroce, A. M. Anniciello,
+G. Scognamiglio, N. Brancati, M. Fiche, E. Dubruc, D. Riccio et al.,
+“Hierarchical graph representations in digital pathology,” Medical
+image analysis, vol. 75, p. 102264, 2022.
+
+[25]
+
+S. Javed, A. Mahmood, M. M. Fraz, N. A. Koohbanani, K. Benes, Y.-W. Tsang,
+K. Hewitt, D. Epstein, D. Snead, and N. Rajpoot, “Cellular community
+detection for tissue phenotyping in colorectal cancer histology images,”
+Medical image analysis, vol. 63, p. 101696, 2020.
+
+[26]
+
+B. Aygüneş, S. Aksoy, R. G. Cinbiş,
+K. Kösemehmetoğlu, S. Önder, and A. Üner, “Graph
+convolutional networks for region of interest classification in breast
+histopathology,” in Medical Imaging: Digital Pathology, vol.
+11320. SPIE, 2020, pp. 134–141.
+
+[27]
+
+C. Gunduz, B. Yener, and S. H. Gultekin, “The cell graphs of cancer,”
+Bioinformatics, vol. 20, no. suppl_1, pp. i145–i151, 2004.
+
+[28]
+
+L. Castrejon, K. Kundu, R. Urtasun, and S. Fidler, “Annotating object
+instances with a polygon-rnn,” in Proceedings of the IEEE conference
+on computer vision and pattern recognition, 2017, pp. 5230–5238.
+
+[29]
+
+U. Schmidt, M. Weigert, C. Broaddus, and G. Myers, “Cell detection with
+star-convex polygons,” in International Conference on Medical Image
+Computing and Computer-Assisted Intervention. Springer, 2018, pp. 265–273.
+
+[30]
+
+S. Chen, C. Ding, M. Liu, J. Cheng, and D. Tao, “Cpp-net: Context-aware
+polygon proposal network for nucleus segmentation,” IEEE Transactions
+on Image Processing, 2023.
+
+[31]
+
+W. Shen, X. Wang, Y. Wang, X. Bai, and Z. Zhang, “Deepcontour: A deep
+convolutional feature learned by positive-sharing loss for contour
+detection,” in Proceedings of the IEEE conference on computer vision
+and pattern recognition, 2015, pp. 3982–3991.
+
+[32]
+
+H. Chen, X. Qi, L. Yu, and P.-A. Heng, “Dcan: deep contour-aware networks for
+accurate gland segmentation,” in Proceedings of the IEEE conference on
+Computer Vision and Pattern Recognition, 2016, pp. 2487–2496.
+
+[33]
+
+C. Huang, H. Li, Y. Xie, Q. Wu, and B. Luo, “Pbc: Polygon-based classifier for
+fine-grained categorization,” IEEE Transactions on Multimedia,
+vol. 19, no. 4, pp. 673–684, 2016.
+
+[34]
+
+M.-H. Guo, C.-Z. Lu, Z.-N. Liu, M.-M. Cheng, and S.-M. Hu, “Visual attention
+network,” arXiv preprint arXiv:2202.09741, 2022.
+
+[35]
+
+T.-Y. Lin, P. Dollár, R. Girshick, K. He, B. Hariharan, and S. Belongie,
+“Feature pyramid networks for object detection,” in Proceedings of
+the IEEE conference on computer vision and pattern recognition, 2017, pp.
+2117–2125.
+
+[36]
+
+K. He, G. Gkioxari, P. Dollár, and R. Girshick, “Mask r-cnn,” in
+Proceedings of the IEEE international conference on computer vision,
+2017, pp. 2961–2969.
+
+[37]
+
+A. Vaswani, N. Shazeer, N. Parmar, J. Uszkoreit, L. Jones, A. N. Gomez,
+Ł. Kaiser, and I. Polosukhin, “Attention is all you need,”
+Advances in neural information processing systems, vol. 30, 2017.
+
+[38]
+
+G. Li, C. Xiong, A. Thabet, and B. Ghanem, “Deepergcn: All you need to train
+deeper gcns,” arXiv preprint arXiv:2006.07739, 2020.
+
+[39]
+
+G. Li, M. Müller, G. Qian, I. C. D. Perez, A. Abualshour, A. K. Thabet, and
+B. Ghanem, “Deepgcns: Making gcns go as deep as cnns,” IEEE
+Transactions on Pattern Analysis and Machine Intelligence, 2021.
+
+[40]
+
+T.-Y. Lin, P. Goyal, R. Girshick, K. He, and P. Dollár, “Focal loss for
+dense object detection,” in Proceedings of the IEEE international
+conference on computer vision, 2017, pp. 2980–2988.
+
+[41]
+
+B. Zhao, X. Chen, Z. Li, Z. Yu, S. Yao, L. Yan, Y. Wang, Z. Liu, C. Liang, and
+C. Han, “Triple u-net: Hematoxylin-aware nuclei segmentation with
+progressive dense feature aggregation,” Medical Image Analysis,
+vol. 65, p. 101786, 2020.
+
+[42]
+
+B. Cheng, I. Misra, A. G. Schwing, A. Kirillov, and R. Girdhar,
+“Masked-attention mask transformer for universal image segmentation,” in
+Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern
+Recognition, 2022, pp. 1290–1299.
+
+[43]
+
+J. Gamper, N. A. Koohbanani, K. Benes, S. Graham, M. Jahanifar, S. A. Khurram,
+A. Azam, K. Hewitt, and N. Rajpoot, “Pannuke dataset extension, insights and
+baselines,” arXiv preprint arXiv:2003.10778, 2020.
+
+[44]
+
+R. Verma, N. Kumar, A. Patil, N. C. Kurian, S. Rane, S. Graham, Q. D. Vu,
+M. Zwager, S. E. A. Raza, N. Rajpoot et al., “Monusac2020: A
+multi-organ nuclei segmentation and classification challenge,” IEEE
+Transactions on Medical Imaging, vol. 40, no. 12, pp. 3413–3423, 2021.
+
+[45]
+
+J. N. Weinstein, E. A. Collisson, G. B. Mills, K. R. Shaw, B. A. Ozenberger,
+K. Ellrott, I. Shmulevich, C. Sander, and J. M. Stuart, “The cancer genome
+atlas pan-cancer analysis project,” Nature genetics, vol. 45, no. 10,
+pp. 1113–1120, 2013.
+
+[46]
+
+A. Paszke, S. Gross, S. Chintala, G. Chanan, E. Yang, Z. DeVito, Z. Lin,
+A. Desmaison, L. Antiga, and A. Lerer, “Automatic differentiation in
+pytorch,” Advances in neural information processing systems workshop,
+2017.
+
+[47]
+
+M. Fey and J. E. Lenssen, “Fast graph representation learning with pytorch
+geometric,” ICLR Workshop on Representation Learning on Graphs and
+Manifolds, 2019.
+
+[48]
+
+J. Deng, W. Dong, R. Socher, L.-J. Li, K. Li, and L. Fei-Fei, “Imagenet: A
+large-scale hierarchical image database,” in IEEE conference on
+computer vision and pattern recognition. Ieee, 2009, pp. 248–255.
+
+[49]
+
+F. Mahmood et al., “Deep adversarial training for multi-organ nuclei
+segmentation in histopathology images,” IEEE Transactions on Medical
+Imaging, vol. 39, no. 11, pp. 3257–3267, 2019.
+
+[50]
+
+A. Kirillov, K. He, R. Girshick, C. Rother, and P. Dollár, “Panoptic
+segmentation,” in Proceedings of the IEEE/CVF Conference on Computer
+Vision and Pattern Recognition, 2019, pp. 9404–9413.
+
+    Experimental support, please
+    view the build logs
+    for errors. Generated by
+
+        L
+        A
+        T
+        E
+
+      xml
+
+    .
+
+Instructions for reporting errors
+
+We are continuing to improve HTML versions of papers, and your feedback helps enhance accessibility and mobile
+      support. To report errors in the HTML that will help us improve conversion and rendering, choose any of the
+      methods listed below:
+
+Click the "Report Issue" (
+
+          ) button, located in the page header.
+
+Tip: You can select the relevant text first, to include it in your report.
+
+Our team has already identified the following issues. We appreciate your time reviewing and reporting rendering errors we
+      may not have found yet. Your efforts will help us improve the HTML versions for all readers, because disability
+      should not be a barrier to accessing research. Thank you for your continued support in championing open access for
+      all.
+
+Have a free development cycle? Help support accessibility at arXiv! Our collaborators at LaTeXML maintain a list of packages that need conversion, and welcome developer contributions.
+
+        We gratefully acknowledge support from
+        our major funders,
+        member institutions, ,
+        and all contributors.
+
+        About
+        ·
+        Help
+        ·
+        Contact
+        ·
+        Subscribe
+        ·
+        Copyright
+        ·
+        Privacy
+        ·
+        Accessibility
+        ·
+        Operational Status (opens in new tab)
+
+Major funding support from

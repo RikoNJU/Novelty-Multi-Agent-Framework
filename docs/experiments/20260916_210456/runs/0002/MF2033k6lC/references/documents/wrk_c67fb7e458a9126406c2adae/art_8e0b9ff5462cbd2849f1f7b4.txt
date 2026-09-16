@@ -1,0 +1,1112 @@
+COREKG: Coreset-Guided Personalized Summarization of Knowledge Graphs
+
+      Report GitHub Issue
+      ×
+
+      Title:
+
+Content selection saved. Describe the issue below:
+
+      Description:
+
+      Submit without GitHub
+      Submit in GitHub
+
+    arXiv is now an independent nonprofit!
+    Learn more
+    ×
+
+      Back to arXiv
+
+    Why HTML?
+
+      Report Issue
+
+      Back to Abstract
+
+      Download PDF
+
+Abstract
+
+1 Introduction
+
+2 Related Work
+
+3 Preliminaries
+
+4 Methodology
+
+4.1 Preprocessing Pipeline
+
+4.2 Sensitivity Score
+
+4.3 Coreset Construction
+
+5 Evaluation
+
+5.1 Experimental Design and Personalization
+
+5.2 Datasets
+
+5.3 Evaluation Metrics
+
+5.4 Baseline Comparison
+
+5.5 Time & Space Complexity Analysis
+
+6 Ablation Study
+
+7 Limitations
+
+8 Conclusion
+
+A Theoretical Analysis
+
+References
+
+    License: CC BY 4.0
+
+arXiv:2605.14900v1 [cs.AI] 14 May 2026
+
+COREKG: Coreset-Guided Personalized Summarization of Knowledge Graphs
+
+Sohel Aman Khan
+
+Affiliation: Department of CSE, IIIT-Delhi, India
+
+Email: {sohelk
+
+  
+Raghava Mutharaju
+††thanks: Raghava Mutharaju is currently affiliated with the Mehta Family School of Data Science and AI, IIT Palakkad, India, and can be contacted at raghava@iitpkd.ac.in.
+Email: raghava.mutharaju
+
+  
+Supratim Shit
+
+Email: supratim}@iiitd.ac.in
+
+Abstract
+
+Knowledge Graphs (KGs) are extensively used across different domains and in several applications. Often, these KGs are very large in size. Such KGs become unwieldy for tasks such as question answering and visualization. Summarization of KGs offers a viable alternative in such cases. Furthermore, personalized KG summarization is crucial in the current data-driven world as it captures the specific requirements of users based on their query patterns. Since it only maintains relevant information, the personalized summaries of KG are small, resulting in significantly smaller storage requirements and query runtime. In this work, we adapt the coreset theory to create personalized KG summaries. For a given dataset and a user-specific query workload, we present an approach that samples a relevant subset of triples using sensitivity-based importance sampling. We ensure that the subset approximates the characteristics of the full dataset with bounded approximation error. We define sensitivity scores that measure the importance of a triple with respect to a user’s query workload, which are then used by our coreset construction algorithm. We explicitly focus on personalized knowledge graph summarization by constructing summaries independently for each user based on their query behaviour.
+Our evaluation on Freebase, WikiData, and DBpedia shows that COREKG delivers higher query-answering accuracy and structural coverage than the state-of-the-art methods, such as GLIMPSE, PPR, iSummary, PEGASUS and APEX2 while requiring only a tiny fraction of the original graph.
+
+1 Introduction
+
+In the digital age, numerous sources of information are readily available. Knowledge Graphs (KGs) Peng et al. (2023) are an effective way to represent and reason over interconnected data. Large-scale KGs such as Wikidata, DBpedia, and Freebase Bollacker et al. (2008); Mendes et al. (2012) have become central to numerous real-world applications, including search engines, recommendation systems, question-answering (QA), and biomedical informatics. However, the vast size and high connectivity of these KGs introduce challenges for efficient querying, visualization, and reasoning. QA systems often struggle with slow query execution, and visualization tools become cluttered and less interpretable at scale Wang and Cheng (2024). Knowledge graph summarization addresses these issues by helping users understand and utilize the data while preserving key structural and semantic information. However, most summarization methods are focused on capturing the general pattern of the original KG Jalota et al. (2021); Wang and Cheng (2024). As a result, the generated summaries tend to be overly generalized and often fail to accommodate the specific information needs of individual users.
+
+Query-based knowledge graph summarization addresses this issue by constructing compact summaries optimized for a given query workload rather than the global graph structure. It improves query efficiency and answer completeness under reduced graph sizes Song et al. (2018); Niazmand et al. (2022). However, such workloads are typically defined at an aggregate level. These summaries do not capture individual user preferences, motivating the need for personalized knowledge graph summarization Jalota et al. (2021).
+
+Considering the above limitation, personalized summarization of KGs has massive potential because it focuses on user interest. It is also efficient in terms of storage and time. Early research like GLIMPSE Safavi et al. (2019) uses submodular maximization to retrieve user-specific KG summaries using query logs, which enable device-level KG summaries with theoretical guarantees. However, GLIMPSE assumes full access to each user’s query history, which has less explicit control over summary sparsity. ISummary Vassiliou (2023) creates efficient, personalized Knowledge Graph summaries by analyzing SPARQL query logs to capture collective user interests, reducing computation while improving scalability and relevance. However, the summarization quality in iSummary depends heavily on workload coverage.
+Furthermore, the sample size of COREKG ensures controlled budget–risk tradeoffs.
+We present a coreset-based framework named COREKG for personalized Knowledge Graph summarization that addresses the limitations of existing personalized approaches Feldman et al. (2017); Safavi et al. (2019). By adapting coreset theory to the KG domain, our method provides theoretical guarantees while maintaining computational efficiency Braverman et al. (2021). Our approach generates compact, user-centric KG summaries by sampling triples based on sensitivity scores that capture their importance across user queries Safavi et al. (2019). In constructing personalized KG summaries, we focus on queries that contain seed nodes (entities of direct user interest) Safavi et al. (2019) and we provide theoretical bounds that preserve the original query semantics. A high-level overview of the COREKG pipeline, including preprocessing, sensitivity computation, and sampling, is illustrated in the Figure 1.
+
+Coresets are a form of weighted summarization of a dataset with provable guarantees  Feldman and Langberg (2011). In the past couple of decades, coresets have been studied for various problems and applications, including clustering  Feldman et al. (2013); Bachem et al. (2018); Shit et al. (2022), regression  He et al. (2021); Chhaya et al. (2020b); Boutsidis et al. (2013), multilinear algebra  Dasgupta et al. (2009); Chhaya et al. (2020a), non-decomposable functions Malaviya et al. (2024), federated learning Huang et al. (2022); Shit et al. (2025) etc. The most popular method for constructing a coreset is importance sampling via a sensitivity framework, which assigns an importance score to data points (triples) commensurate with their contribution to a particular query workload, thereby supporting efficient importance-based sampling. Some works Feldman et al. (2017); Braverman et al. (2021) prove these ideas yield strong approximation bounds. COREKG extends these ideas to graph triples, and its coreset summary approximates the utility of a complete graph for personalized queries.
+
+To fulfill our objective, we construct a coreset—a smaller, weighted subgraph—from the original knowledge graph, tailored specifically to a user’s query workload. Instead of evaluating every possible query association across the complete graph, we sample a subset of relevant triples and assign them statistical weights to correct for sampling probability. This ensures our coreset provides a provable approximation guarantee; it preserves the query-answering semantics of the full graph up to a small, bounded relative error while drastically reducing the data footprint. Our empirical evaluation further demonstrates superior performance in query coverage over real-world KG datasets Vassiliou (2023); Safavi et al. (2019), and the method is effective even with limited computational resources Safavi et al. (2019).
+
+To explicitly capture per-user preferences, COREKG constructs user-centric workloads based on seed entities that represent an individual user’s interests. These seed entities are extracted from the query workload, and the summary is generated only from queries that mention at least one of these seeds. By repeating this procedure for different seed sets, COREKG naturally adapts to multiple users, enabling personalized knowledge graph summarization rather than relying on a single global workload. Our main contributions are as follows.
+
+•
+
+We propose COREKG, a coreset-guided framework for personalized knowledge graph summarization that adapts coreset theory to graph data and provides provable approximation guarantees (Theorem 4.1) with practical scalability.
+
+•
+
+We introduce a sensitivity-based importance sampling formulation that quantifies the relevance of triples with respect to user-specific query workloads, ensuring robustness across diverse personalization.
+
+•
+
+Our coreset construction provides a worst-case approximation guarantee on the user-specific workload cost. It is independent of the size of the full graph. All query evaluation on the summary is performed on the coreset.
+
+•
+
+We conduct extensive experiments on Freebase, DBpedia, and Wikidata, showing that COREKG consistently achieves higher coverage and F1 Score than baseline methods such as APEX2, GLIMPSE, PEGASUS, iSummary, and PPR.
+
+2 Related Work
+
+In this section, we review prior studies and approaches that are closely related to our work. We highlight existing methods for knowledge graph summarization, query-driven graph reduction and discuss how COREKG builds upon and differs from these efforts.
+
+Summarization refers to generalizing KGs by removing unnecessary information by merging similar nodes and edges into supernodes and superspecs to generalize the information in the graph. This process removes unnecessary information while preserving the generalization of the information in the graph  Jalota et al. (2021); Kumar and Efstathopoulos (2018). Most existing summarization approaches primarily emphasize capturing the overall structure of the original KG Jalota et al. (2021); Wang and Cheng (2024).
+
+To fix these limitations, Query-based summarization of knowledge graphs aims to construct compact summaries that maximize response completeness and relevance for a workload of specified target queries. Early research demonstrated that lossy summaries can improve query processing time performance, and enable efficient KG search capacity through summaries, especially relevant to query task needs  Song et al. (2018). Approaches, such as Grouping-Based and Query-Based Summarization, utilize formal methods that enable the significant compression of graph size while retaining complete query performance  Niazmand et al. (2022). Lastly, a few relatively recent works are looking at attention, or sampling methods to approach scale issues and maintain query workload performance improvements  Shabani et al. (2024). Other lines of work explore the structure of the KG, with works on incremental summarization, such as RDFQuotient, enabling the dynamic generation of summaries without the need to resummarize static RDF datasets  Goasdoué et al. (2019). Summarization oriented towards queries has similarly been explicitly positioned for downstream tasks like question answering (QA). For example, in QA, summarization can be used as either a filtering method for relevance or to rank KG summaries while achieving comparable QA efficacy  Jalota et al. (2021). More generally, summarization has been positioned as an enabler for efficient graph mining and querying  Koutra (2021). Complementary frameworks also speak to how graph-based summarization techniques could be helpful in support of an abstractive summarization or knowledge extraction pipeline beyond query efficiency  Moro et al. (2023). All of these studies contribute evidence that query-aware graph summarization is a unique area in KG summarization in which both compactness and completeness can be evaluated. But, this summarization can’t fulfill user-specific needs. To fix this problem, KGs are summarized by considering user-specific needs. This summarization is known as personalized KG summarization.
+
+GLIMPSE  Safavi et al. (2019) develops a submodular optimization theory for the personalized KG summarization for data from query logs. iSummary  Vassiliou (2023) proposed summarization through workloads that generalize across aggregate user behaviours. Yet, limitation exist for both studies. GLIMPSE assumes each individual has a dense set of histories for generating results, and iSummary relies on the conclusive coverage of SPARQL workloads. The PEGASUS  Kang et al. (2022) method generates summary graphs for individuals in linear time and uses a personalized cost function to generate summaries through greedily combining supernodes to act as underlying groups that allows for expected query answering under a high compression, however it is still a heuristic, which lacks slight approximation, and it assumes the target set of nodes are static, reducing its applicability in rapidly changing and dynamic environments, where direction and interests are constantly evolving. The APEX2  Li et al. (2025) method modulates personalized assistance in Knowledge Graphs incrementally while modeling a more diverse set of evolving query workloads. It generates summaries in real time based on modeled heat diffusion, while adhering to tight constraints that ensure provable guarantees. This is achieved under the circumstance where the adaptive current workload generated by the querying node provides for the activity of interactions. However, APEX2  Li et al. (2025) includes complete reliance on representative query workloads, and can fail on queries that are sparse or extremely skewed. APEX2 also assumes that modeling heat diffusion behaves as expected between the workload nodes based on topological proximity, and does not expect semantic relationships as captured in modeling KGs. COREKG circumvents both challenges and gaps by utilizing coreset sampling to provide theoretical guarantees while accommodating sparse or skewed query logs.
+
+Recommendation systems usually personalize suggestions based on user preferences that can be inferred from query histories. For example, model behaviour studies, such as  Čebirić et al. (2015); Cheng et al. (2011); Gunaratna et al. (2015), are designed to characterize user interests using SPARQL queries to extract relevant entities and paths to create personalized summaries. Additionally, some diversity-aware methods, including FACES  Gunaratna et al. (2015), are designed to balance informative against representation diversity in entity-centric summaries.
+
+Personalized PageRank (PPR) Haveliwala et al. (2003) presents a method for designing the ranking method for user-centered exploration utilizing the graph. However, these methods often do not provide any explicit controls for summary size or utility. The COREKG includes an advancement over these approaches by introducing a generalized sampling framework that incorporates user-specific queries to lay the groundwork for explicit personalizability capabilities.
+
+3 Preliminaries
+
+The preliminaries here provide the foundation for understanding our methodology and analysis.
+
+Knowledge Graph (KG): A Knowledge Graph (KG) Peng et al. (2023) is a structured representation of data, where entities are modeled as nodes and their relationships as labeled edges. Formally, a KG is defined as G=(V,E,T)G=(V,E,T), where VV is the set of nodes (entities), EE is the set of edge labels (relations), and T⊆V×E×VT\subseteq V\times E\times V is the set of RDF triples representing relational facts. SPARQL is commonly used to access and manipulate these triples, enabling complex pattern matching and information retrieval. The query workload on a KG consists of sets of SPARQL queries that reflect typical information needs, varying in complexity, frequency, and the types of operations they perform.
+
+Seed node: A seed node is an entity that represents a user’s interest and is used to guide personalization. In this paper, Seed nodes are used to filter the global query log to construct a user-specific query workload.
+
+Personalized KG summarization: A Personalized Knowledge Graph summary Safavi et al. (2019); Vassiliou (2023); Kang et al. (2022); Li et al. (2025) refers to a summary extracted from a knowledge graph that is tailored to a user’s interests and preferences.
+
+In this setting, seed nodes represent a user’s interests by identifying the entities around which personalization is performed. In our work, seed entities define user-specific query workloads that guide the selection of relevant triples. As a result, the generated KG summary focuses on the parts of the graph that are most important to the user’s information needs Vassiliou (2023). Example: If a user frequently queries about workplaces and industries, the chosen seeds may include entities such as Bob and XCorp. A personalized summary will then prioritize triples related to these seeds, such as: (Bob, worksAt, XCorp) and (XCorp, industry, Tech)
+
+Coreset: A Coreset Bachem et al. (2017) is a small, weighted subset of data that approximates a cost function with provable error bounds. We adapt this concept to Knowledge Graphs. Given a KG G=(V,E,T)G=(V,E,T) with triples TT, and a query workload QQ, we define the cost of answering QQ on the full graph as cost​(G,Q)=∑t∈T∑q∈Qfq​(t)\text{cost}(G,Q)=\sum_{t\in T}\sum_{q\in Q}f_{q}(t), where fq​(t)∈0,1f_{q}(t)\in{0,1} indicates whether triple tt is relevant to query qq.
+
+A coreset C=(V′,E′,T′)C=(V^{\prime},E^{\prime},T^{\prime}), where V′⊆VV^{\prime}\subseteq V, E′⊆EE^{\prime}\subseteq E, and T′⊆TT^{\prime}\subseteq T, is a weighted subset of triples. The coreset is constructed by sampling triples according to their importance and then assigning them appropriate weights. Each triple t∈Ct\in C receives a weight w⁡(t)w(t) that compensates for its sampling probability, ensuring unbiased estimation of the full cost. The weighted cost over the coreset is defined as cost​(C,Q)=∑t∈C∑q∈Qw⁡(t)⋅fq​(t).\text{cost}(C,Q)=\sum_{t\in C}\sum_{q\in Q}w(t)\cdot f_{q}(t). Formally, if each triple tt is sampled with probability p⁡(t)p(t) and the total number of samples is mm, the weight is w⁡(t)=1m⋅p⁡(t).w(t)=\frac{1}{m\cdot p(t)}. This weight w⁡(t)w(t) ensures that the expected contribution of each triple in CC matches its true contribution in GG, thereby removing sampling bias. Intuitively, triples that are sampled with lower probability receive higher weights, since they represent a larger portion of the original graph, whereas frequently sampled triples receive smaller weights. The coreset satisfies |cost​(G,Q)−cost​(C,Q)|≤ε⋅cost​(G,Q)\big|\text{cost}(G,Q)-\text{cost}(C,Q)\big|\leq\varepsilon\cdot\text{cost}(G,Q) with this weighting and high probability. This definition is generic and applies to any query workload QQ. In the COREKG framework, it is applied to personalized query workloads derived from individual users, resulting in a user-specific coreset.
+
+4 Methodology
+
+We present COREKG (Figure 1), a coreset-based importance sampling approach for personalized knowledge graph summarization. The method produces compact, query-relevant subgraphs that approximate the behaviour of the full graph with respect to a user’s query workload while guaranteeing bounded approximation error. Here, triples are scored based on how frequently or critically they contribute to a user-specific query workload, where more relevant triples are assigned higher sampling probabilities to preserve informative structure. COREKG employs sensitivity-based sampling to prioritize triples by their explicit contribution to query answering, ensuring preservation of user-relevant structural and semantic information. It operates as a per-user summarization framework, where user modeling, workload construction, sensitivity estimation, and coreset sampling are performed independently for each user and conditioned on their personalized query workload.
+
+Figure 1: COREKG Framework
+
+4.1 Preprocessing Pipeline
+
+In COREKG, preprocessing provides user modeling by representing each user through a small set of seed entities extracted from query history. These seeds define a personalized query workload that filters relevant queries from the global log and enables user-specific knowledge graph summarization. The preprocessing pipeline comprises four stages: query normalization and expansion, seed extraction, query filtering, and SPARQL execution.
+
+Query Normalization and Expansion: In order to maintain semantic consistency within the query workload, we need to first normalize all SPARQL queries. Normalization consists of two stages: First, we take the original SPARQL query and eliminate duplicate PREFIX declarations to remove unnecessary repeated boilerplate in the process. Second, we expand all prefixed terms to complete URIs using a fixed prefix map via regular expression matching and replacement. This ensures that all relations and entities are consistently and unambiguously represented across the query set. We keep fully expanded queries for future processing.
+
+Seed Node Extraction: After we have normalized the query workload, we extract the unique entities from the triple patterns that we can use as the seed nodes that can facilitate personalized summaries. For every unique query, we parse the triple patterns and locate URIs and useful tokens while omitting variables and literals. We use regular expressions in order to extract the URIs while filtering the SPARQL syntax.
+
+Query Filtering: We apply final filtering to the expanded query set to keep only the queries that mention one of the sampled seed nodes. This filtering step enables the summary construction to begin from the most appropriate and well-requested sections of the knowledge graph based on actual user queries. The filtered queries can be used to execute SPARQL queries against the KG and guide the development of the personalized summaries.
+
+SPARQL Query Execution: Preprocessed SPARQL queries are executed using Apache Jena Fuseki11
+              1
+
+            https://jena.apache.org/documentation/fuseki2/, an open-source SPARQL server, with knowledge graphs stored in the TDB2 backend for disk-based indexing and query optimization. Filtered queries are evaluated through Fuseki’s SPARQL endpoint using the ARQ engine, which performs internal indexing and query rewriting for efficient retrieval. Result sets are streamed and parsed to extract relevant triples for sensitivity computation in COREKG. This deployment supports concurrent execution, persistent endpoints, and low-latency access for large graphs such as Freebase, DBpedia, and Wikidata. This provides a scalable and reproducible integration between query preprocessing and coreset.
+
+Each distinct seed set uniquely identifies a user, and all subsequent stages of the framework operate exclusively on the corresponding user-specific workload.
+
+Algorithm 1  COREKG
+
+              1:
+
+            KG G=(V,E,T)G=(V,E,T); Query set QQ; #samples mm
+
+              2:
+
+            Weighted summary C⊆TC\subseteq T with weights w⁡(t)w(t)
+
+              3:
+
+            for all q∈Qq\in Q do
+
+              4:
+
+              Tq←{t∣∀t​ relevant to query ​q}T_{q}\leftarrow\{t\mid\forall t\mbox{ relevant to query }q\}
+
+              5:
+
+            end for
+
+              6:
+
+            for all t∈Tt\in T do
+
+              7:
+
+              s(t)←∑q∈Q1|Tq|⋅𝕀[t∈Tq]s(t)\leftarrow\sum_{q\in Q}\frac{1}{|T_{q}|}\cdot\mathbb{I}[t\in T_{q}] ⊳\triangleright Triple sensitivity
+
+              8:
+
+            end for
+
+              9:
+
+            S←∑t∈Ts⁡(t)=|Q|S\leftarrow\sum_{t\in T}s(t)=|Q|
+
+              10:
+
+            for all t∈Tt\in T do
+
+              11:
+
+              p⁡(t)←s⁡(t)Sp(t)\leftarrow\frac{s(t)}{S} ⊳\triangleright Sampling probability
+
+              12:
+
+            end for
+
+              13:
+
+            Sample mm triples iid from TT using distribution pp
+
+              14:
+
+            Let CC be the sampled triples
+
+              15:
+
+            for all t∈Ct\in C do
+
+              16:
+
+              w⁡(t)←Sm⋅s⁡(t)=|Q|m⋅s⁡(t)w(t)\leftarrow\frac{S}{m\cdot s(t)}=\frac{|Q|}{m\cdot s(t)}
+
+              17:
+
+            end for
+
+              18:
+
+            return subset CC and weight function ww
+
+4.2 Sensitivity Score
+
+As shown in Algorithm 1 (Lines 4–6), COREKG computes a user-specific sensitivity score for each triple based on its contribution to the queries issued by an individual user. Let uu denote a user characterized by a seed entity set extracted from a query set. All sensitivity computations are then performed with respect to filtered user-specific (i.e., personalized) workload QQ. Formally, the sensitivity of a triple tt for a given user uu is defined as:
+
+s(t)=∑q∈Q1|Tq|⋅𝕀[t∈Tq],s(t)=\sum_{q\in Q}\frac{1}{|T_{q}|}\cdot\mathbb{I}[t\in T_{q}],
+
+where TqT_{q} denotes the set of triples relevant to query q∈Qq\in Q, and 𝕀[t∈Tq]\mathbb{I}[t\in T_{q}] is an indicator function that returns 1 if tt contributes to the answer of qq, and 0 otherwise. TqT_{q} denotes the set of triples matched by the triple patterns of query qq under standard SPARQL evaluation. This definition ensures that the sensitivity of a triple is explicitly conditioned on the interests of user uu, as encoded by their personalized query workload.
+Intuitively, triples that appear frequently in a given user’s queries receive higher sensitivity scores. Similarly, triples that occur in queries with small answer supports are emphasized and are therefore more likely to be included in the user’s summary. As a result, different users induce different sensitivity distributions over the same underlying graph, leading to distinct personalized summaries. The total sensitivity for user uu is defined as S=∑t∈Ts⁡(t)S=\sum_{t\in T}s(t).
+
+The total sensitivity SS with respect to a fixed user workload QQ, is bounded on |Q||Q|.
+This result simplifies normalization and guarantees that sensitivity-based sampling remains unbiased at the user level. Once sensitivities are computed, they are normalized into a user-specific sampling distribution. For each triple t∈Tt\in T, the probability of sampling it for user uu is given by p⁡(t)=s⁡(t)Sp(t)=\frac{s(t)}{S}.
+This normalization ensures that the summary construction process is directly aligned with the query behaviour of each individual user rather than with the global query log.
+
+We emphasize that sensitivity is not a universal measure of importance, but rather a quantity that varies depending on the user. Consequently, the same triple may be assigned different sensitivity values across users, depending on their respective query workloads. This user-conditioned notion of sensitivity constitutes the core mechanism through which personalization is realized in COREKG.
+
+4.3 Coreset Construction
+
+Given a user uu and the corresponding personalized query workload QQ, we construct a coreset via sensitivity-based sampling, as detailed in Algorithm 1 (Lines 11–15). Each sampled triple is assigned a weight to correct for sampling bias and ensure unbiased cost estimation. Algorithm 1 is executed independently for each user using their respective workload QQ, resulting in a separate, user-specific coreset.
+
+To correct for the sampling bias introduced by preferential selection, each sampled triple is assigned a weight:
+w⁡(t)=1m⋅p⁡(t)=Sm⋅s⁡(t)w(t)=\frac{1}{m\cdot p(t)}=\frac{S}{m\cdot s(t)}
+where mm is the sample size. This weighting guarantees that the cost computed from the coreset is unbiased, i.e., the expected cost equals the true cost of the full data. The weights also ensure bounded variance,
+
+COREKG conditions the sampling process on a user-specific query workload. For each user, the integration of filtered workload QQ enables COREKG to generate truly personalized summaries. This construction is repeated independently for each user, producing user-specific summaries with independent approximation guarantees.
+
+Theorem 4.1 (Coreset Size).
+
+Let CC and ww be the subset and weight function returned from the algorithm 1 over query workload QQ, and let X=cost⁡(G,Q)X=\mathrm{cost}(G,Q) be the true cost on the full graph. Then, with probability at least 1−δ1-\delta we have, |cost⁡(C,Q)−cost⁡(G,Q)|≤ϵ⋅cost⁡(G,Q)\left|\mathrm{cost}(C,Q)-\mathrm{cost}(G,Q)\right|\leq\epsilon\cdot\mathrm{cost}(G,Q)
+provided the number of samples mm satisfies:
+
+m≥8​|Q|ϵ2⋅log⁡(1δ).m\geq\frac{8|Q|}{\epsilon^{2}}\cdot\log\left(\frac{1}{\delta}\right).
+
+The above theorem can be proved by applying Bernstein’s inequality and sensitivity analysis.
+
+5 Evaluation
+
+We do an extensive empirical evaluation of real-world datasets to assess the quality of our summarization method. The evaluation is performed on real-world KGs with SPARQL queries. For evaluation, we divide queries into train and test with a ratio of 80:20. Our focus is to test the generality and scalability of our proposed approach. Query coverage is used as the evaluation metric. The implementation of this methodology is available at https://github.com/SohelKResearch/COREKG.
+
+5.1 Experimental Design and Personalization
+
+All experiments are conducted in a personalized knowledge graph summarization setting. Each user is modeled by a profile defined as a set of seed entities. Each seed entity is extracted from the train query workload, which represents user interests. For each dataset, we construct 15 user profiles. Each user profile consists of 5 seed entities sampled uniformly at random from non-variable entities appearing in training queries. These seeds define a personalized workload by retaining only queries that mention at least one seed entity.
+To ensure fair comparison, all baseline methods are constrained to produce summaries with the same size budget, measured as the number of retained triples. Our coreset sampling size is determined by theoretical bounds from coreset theory, guaranteeing approximation quality independent of the original KG size. This design ensures that observed performance differences stem from summarization quality rather than summary size. Reported results are averaged across users. COREKG performs user-specific preprocessing, including query filtering and workload construction, prior to sensitivity computation and coreset generation, ensuring fully personalized summaries. To ensure fair comparison, all models are evaluated exclusively on the same test queries associated with each user profile.
+
+While COREKG is evaluated under static workload settings, the sensitivity formulation is additive over queries. This allows incremental updates as new queries arrive without recomputing from scratch. This shows that COREKG naturally supports streaming coresets. We focus on static workloads for fair comparison with prior methods such as GLIMPSE and iSummary.
+
+5.2 Datasets
+
+We evaluate COREKG on three widely used real-world knowledge graphs: Freebase, DBpedia, and Wikidata. These datasets differ substantially in scale, schema richness, and domain coverage. These datasets allow us to assess the robustness of personalized knowledge graph summarization under diverse and realistic query workloads.
+
+Freebase Bollacker et al. (2008)22
+                2
+
+              https://developers.google.com/freebase:
+It is a large-scale knowledge base developed by Metaweb, containing a large number of RDF triples describing entities and their relationships across diverse domains. The KG Size is 1.9 billion with a query size of 4,737. For query workloads, we use SPARQL queries from the WebQSP dataset Yih et al. (2016), which consists of natural language questions paired with corresponding SPARQL queries over Freebase. In our experiments, we retain only the SPARQL queries. These queries exhibit non-trivial structures, including multiple triple patterns and joins, making them suitable for evaluating query-driven summarization methods.
+
+DBpedia Mendes et al. (2012)33
+                3
+
+              https://databus.dbpedia.org/dbpedia/collections/latest-core:
+It is a large-scale knowledge graph extracted from structured content in Wikipedia. We use the latest DBpedia core dataset, which contains a large number of RDF triples spanning a wide range of entity types and relations. The KG Size is 0.53 billion with a query size of 82,519. We use SPARQL query logs from the Linked SPARQL Queries (LSQ) dataset Stadler et al. (2024)44
+              4
+
+            http://lsq.aksw.org/. The raw LSQ logs are processed using the lsq-clean toolkit55
+              5
+
+            https://github.com/sparqeology/lsq-clean?tab=readme-ov-file to remove malformed, duplicated, and template-generated queries. The resulting workload contains diverse query shapes, including star-shaped and multi-join patterns, reflecting realistic usage of DBpedia in practice.
+
+Wikidata66
+                6
+
+              https://dumps.wikimedia.org/wikidatawiki/entities/:
+It is a large, collaboratively maintained knowledge graph curated by the Wikimedia community. The KG Size is 25.33 billion with a query size of 30,154. We use the latest full RDF dump, which contains a large number of triples describing entities, properties, and statements across a wide range of domains. For Wikidata query workloads, we use SPARQL queries from the LC-QuAD dataset 2.0, obtained from the publicly available release77
+              7
+
+            https://huggingface.co/datasets/mohnish/lc_quad/blob/main/data.zip. LC-QuAD provides complex question–query pairs designed to test reasoning over Wikidata.
+
+5.3 Evaluation Metrics
+
+We assess summarization methods using two key metrics: structural coverage reflecting how well the summary preserves query patterns, and the F1 score evaluating answer‐retrieval accuracy.
+
+Coverage: Given a personalized summary SS for a user ss, a query workload QQ, and two weights wnw_{n} and wpw_{p} for nodes and edges, respectively, we define the coverage as:
+
+Coverage​(Q,S,s)=1n​∑s∈qi(wn​snodes​(S,qi)nodes​(qi)+CLOSE\displaystyle\text{Coverage}(Q,S,s)=\frac{1}{n}\sum_{s\in q_{i}}\bigg(w_{n}\frac{\text{snodes}(S,q_{i})}{\text{nodes}(q_{i})}+
+
+OPENwp​sedges​(S,qi)edges​(qi))\displaystyle w_{p}\frac{\text{sedges}(S,q_{i})}{\text{edges}(q_{i})}\bigg)
+
+Here, nodes​(qi)\text{nodes}(q_{i}) and edges​(qi)\text{edges}(q_{i}) represent the total number of nodes and edges in query qiq_{i}, while snodes​(S,qi)\text{snodes}(S,q_{i}) and sedges​(S,qi)\text{sedges}(S,q_{i}) denote the number of those nodes and edges that are also included in the summary SS. In our setup, we assign equal importance to nodes and edges by setting wn=0.5w_{n}=0.5 and wp=0.5w_{p}=0.5.
+
+F1 Score:
+The F1 score measures the query-answering accuracy of a summary SS by comparing its retrieved answers to the ground-truth answers obtained from the full knowledge graph. For each query, we compute true positives (TP) as answers returned by both SS and the full KG, false positives (FP) as answers returned by SS but not found in the full KG, and false negatives (FN) as answers present in the full KG but missing from SS. From these, we calculate precision P=TPTP+FPP=\tfrac{\mathrm{TP}}{\mathrm{TP}+\mathrm{FP}} and recall R=TPTP+FNR=\tfrac{\mathrm{TP}}{\mathrm{TP}+\mathrm{FN}}, and use them to derive the F1 score as F1=2​P​RP+R\mathrm{F1}=2\,\frac{P\,R}{P+R}.
+
+Coverage and F1 Score are computed independently for each user-specific workload and then averaged across users.
+
+5.4 Baseline Comparison
+
+We compare COREKG with several baseline methods that vary in personalization strategies and their ability to preserve query-relevant information. Table 1 reports F1 scores reflecting query-answering accuracy and workload coverage. Graph-proximity-based methods such as PPR and GLIMPSE rely on random walks or submodular selection over query logs; although they achieve moderate coverage in some cases, their low F1 scores indicate loss of essential relational structure, particularly for complex SPARQL queries under small summary budgets or sparse histories. iSummary improves scalability by learning from aggregate workloads but limits personalization, resulting in consistently low coverage and F1 scores. PEGASUS and APEX2 improve coverage using heuristic node merging and adaptive heat diffusion. However, PEGASUS lacks formal guarantees and may lose fine-grained semantics, leading to inconsistent F1 scores on complex datasets such as Wikidata. APEX2 assumes dense query activity and alignment between semantic relevance and graph proximity, which does not always hold in practice. In contrast, COREKG consistently achieves the highest F1 scores while maintaining strong coverage. It avoids reliance on structural heuristics and instead provides explicit approximation guarantees through sensitivity-based coreset sampling that selects triples according to their contribution to user-specific query workloads. As a result, COREKG delivers robust and controllable performance even under sparse, skewed, or evolving workloads.
+
+F1(%)
+Coverage(%)
+
+Method
+Freebase
+DBpedia
+WikiData
+Freebase
+DBpedia
+WikiData
+
+COREKG
+56.35
+58.64
+52.10
+66.92
+68.07
+67.46
+
+APEX2
+49.76
+47.52
+45.29
+56.21
+42.06
+65.18
+
+iSummary
+21.83
+19.38
+30.64
+23.16
+12.55
+39.72
+
+PEGASUS
+3.18
+2.46
+2.90
+63.03
+66.32
+33.84
+
+GLIMPSE
+16.21
+32.68
+28.94
+31.39
+34.62
+11.93
+
+PPR
+8.64
+11.39
+9.75
+10.93
+5.04
+4.61
+
+Table 1: F1 and Coverage scores.
+
+To further analyse the behaviour of different methods under varying summary budgets, we report performance across multiple budget settings. COREKG consistently outperforms all baselines across the entire budget range. At a budget of 1000 triples (DBpedia), COREKG achieves 30.76% coverage, and 30.12% F1 and APEX2 achieves 11.72% coverage and 18.26% F1. PEGASUS achieves 32.80% coverage but only 1.72% F1, indicating poor query relevance. At a budget of 30000 triples (DBpedia), COREKG achieves 66.72% coverage and 57.83% F1, while APEX2 reaches 44.48% coverage and 47.12% F1. PEGASUS achieves 65.32% coverage and 2.68% F1 and shows negligible improvement beyond this point, indicating early convergence. In the table 1 we use a budget of 60000. Finally, at a budget of 100000 triples (DBpedia), COREKG achieves 74.8% coverage and 60.72% F1, while APEX2 reaches 50.83% coverage and 49.82% F1, and PEGASUS has already converged earlier and does not improve further. Methods such as iSummary and GLIMPSE also show minimal gains beyond earlier budgets.
+
+Overall, COREKG consistently outperforms all baselines across budgets, demonstrating its ability to preserve query-relevant structure.
+
+5.5 Time & Space Complexity Analysis
+
+The COREKG framework includes preprocessing stages such as query normalization, seed node extraction, and query filtering. Let LL denote the average characters in a query and QQ denote the number of queries. Query normalization and seed node extraction require scanning each query using regular expressions, resulting in O⁡(Q​L)O(QL) time. The query filtering operates in O⁡(Q​L)O(QL) time through URI token extraction and set-based intersection with the seed set, and the corresponding space complexity is O⁡(Q​L)O(QL). SPARQL query execution is independent of COREKG and is externally handled using Apache Jena Fuseki. Thus, its time and space complexity depend on the underlying SPARQL engine, indexing strategy, and query structure. Sensitivity computation requires O⁡(T​Q)O(TQ) with O⁡(T)O(T) space, where TT is the total number of triples. Probability normalization, sampling, and weight assignment require O⁡(T)O(T) time and O⁡(m)O(m) space, where mm is the coreset sample size.
+
+6 Ablation Study
+
+To evaluate the role of each component of COREKG, we perform an Ablation study in which we investigate the effect of each component on the overall performance while maintaining the same size summary.
+
+First, COREKG-Uniform, which replaces sensitivity-based sampling with uniform sampling, collapses to near-zero performance, achieving almost 0%0\% F1 across all datasets and negligible coverage. This confirms that uniform random sampling is ineffective for identifying relevant triples. This indicates the need to use query-based sensitivity to preserve meaningful query structure.
+
+Second, COREKG-Global, which removes user-specific conditioning and constructs summaries using a global workload, performs significantly worse than the full model. It achieves F1 scores of 39.78%39.78\% (Freebase), 44.06%44.06\% (DBpedia), and 37.63%37.63\% (Wikidata), with corresponding coverage scores of 47.34%47.34\% (Freebase), 51.24%51.24\% (DBpedia), and 49.17%49.17\% (Wikidata). COREKG-Global performed worse than the full COREKG model, demonstrating that to provide personalized query handling, we must include user-specific query behaviours as a fundamental component.
+
+Finally, COREKG-Unweighted treated each sample from the coreset equally and assigned each sample an equal weight. It shows a substantial degradation in performance. COREKG-Unweighted achieving F1 scores of 10.82%10.82\% (Freebase), 11.53%11.53\% (DBpedia), and 19.38%19.38\% (Wikidata), and coverage scores of 14.06%14.06\% (Freebase), 16.68%16.68\% (DBpedia), and 14.72%14.72\% (Wikidata). This means that it could not adequately handle sampling and thus produce an overall very low coverage. It has been demonstrated through the ablation study that Weighted Coreset Sampling is effective in reducing sampling bias and preserving query semantics across workloads.
+
+Based on our ablation analysis, we conclude that all elements of COREKG are important and complementary to its success.
+
+7 Limitations
+
+While COREKG demonstrates strong performance across datasets, several limitations remain. First, the effectiveness of sensitivity-based sampling depends on the representativeness of the user-specific query workload. When workloads are sparse, highly skewed, or dominated by a narrow set of seed entities, the resulting summaries may overfit to observed queries and fail to capture emerging or under-represented structural patterns via sensitivity analysis.
+
+The theoretical analysis in this work guarantees preservation of the aggregate workload cost across the query set. It does not provide guarantees for per-query answers. These properties depend on correlations among triples and are outside the scope of the current coreset formulation. Extending the framework to per-query or structure-aware guarantees is an important direction for future work.
+
+8 Conclusion
+
+COREKG generates high-quality personalized knowledge graph summaries using sensitivity-based sampling over user-specific query workloads. The summary preserves query-relevant structure while achieving high coverage and F1 scores. Overall, COREKG is a strong approach for personalized KG summarization.
+
+Ethics and Genereative AI Statement
+
+This work uses publicly available knowledge graphs and SPARQL query workloads for research purposes. The proposed method performs personalized knowledge graph summarization and does not generate autonomous decisions. No generative AI tools were used in the development of the methodology, experiments, or analysis. Generative AI tools were used only for language refinement.
+
+Acknowledgments
+
+The authors would like to acknowledge the partial support of the Infosys Center for Artificial Intelligence (CAI), IIIT-Delhi in this work. Supratim acknowledges the kind support from Anusandhan National Research Foundation (ECRG/2024/000959). The work was partly supported by their generous fund.
+
+Appendix A Theoretical Analysis
+
+In the theoretical analysis, personalization is captured by fixing a single user and defining all variables with respect to that user’s query workload QQ. The sensitivity scores s⁡(t)s(t), sampling probabilities p⁡(t)p(t), total sensitivity SS, and the coreset cost functions are all computed solely with respect to this user-specific workload, rather than a global query set. As a result, the approximation guarantees, variance bounds, and coreset size results are derived on a per-user basis and hold independently for each personalized summary. This ensures that the user-specific construction of COREKG is fully aligned with the theoretical analysis.
+
+Let the graph G=(V,E,T)G=(V,E,T) be a knowledge graph, where VV is the set of nodes, EE is the set of edges, and T⊆V×E×VT\subseteq V\times E\times V is the set of triples. Let QQ denote a user-specific query workload. For each query q∈Qq\in Q, let fq​(t)∈{0,1}f_{q}(t)\in\{0,1\} indicate whether a triple t∈Tt\in T is relevant to query qq by calculating the sensitivity score. Using this, we define the total cost of the graph GG concerning the query set QQ as:
+
+cost​(G,Q)=∑q∈Qcost​(G,q)=∑t∈T∑q∈Qfq​(t)\text{cost}(G,Q)=\sum_{q\in Q}\text{cost}(G,q)=\sum_{t\in T}\sum_{q\in Q}f_{q}(t)
+
+(1)
+
+This cost function measures the total number of associations between triples in TT and queries in QQ, which effectively counts the number of triples that are relevant to at least one query. A uniform weight w⁡(t)=1w(t)=1 is assigned to every triple in the full graph GG.
+
+To reduce computational or storage overhead, our goal is to approximate cost​(G,Q)\text{cost}(G,Q) using a compact, weighted subset of the original graph. We define this subset as a coreset, denoted C=(V′,E′,T′)C=(V^{\prime},E^{\prime},T^{\prime}), where V′⊆VV^{\prime}\subseteq V, E′⊆EE^{\prime}\subseteq E, and T′⊆TT^{\prime}\subseteq T is a weighted subset of triples. Each triple t∈T′t\in T^{\prime} is assigned a non-negative weight w⁡(t)w(t), representing its importance. The total cost of the coreset CC with respect to the query set QQ is defined as:
+
+cost​(C,Q)=∑t∈T′∑q∈Qw⁡(t)⋅fq​(t)\text{cost}(C,Q)=\sum_{t\in T^{\prime}}\sum_{q\in Q}w(t)\cdot f_{q}(t)
+
+(2)
+
+Definition 1 (Coreset).
+
+Let G=(V,E,T)G=(V,E,T) be a knowledge graph and let ε∈(0,1)\varepsilon\in(0,1) be an approximation parameter. A weighted subset C=(V′,E′,T′)C=(V^{\prime},E^{\prime},T^{\prime}) where V′⊆VV^{\prime}\subseteq V and E′⊆EE^{\prime}\subseteq E and T′⊆TT^{\prime}\subseteq T, is called an ε\varepsilon-coreset of GG with respect to a query workload QQ if, with probability at least 1−δ1-\delta, the following inequality holds:
+
+|cost​(G,Q)−cost​(C,Q)|≤ε⋅cost​(G,Q)\left|\text{cost}(G,Q)-\text{cost}(C,Q)\right|\leq\varepsilon\cdot\text{cost}(G,Q)
+
+(3)
+
+In other words, the coreset CC provides a (1±ε)(1\pm\varepsilon) multiplicative approximation to the total cost of the full graph GG, ensuring that query-relevant information is preserved up to a small relative error.
+
+Instead of assigning a new function to model this, we interpret the existing cost formulation as inherently reflecting the weighted influence of each triple through its frequency and relevance across the query set. This perspective allows us to approximate cost​(G,Q)\text{cost}(G,Q) using a compact, weighted subset of triples selected via sensitivity-based sampling. The objective is to construct a coreset CC such that.
+
+cost​(C,Q)≈cost​(G,Q),\text{cost}(C,Q)\approx\text{cost}(G,Q),
+
+Thereby enabling accurate and efficient summarization while preserving user-specific query semantics.
+
+Now, we formally define the sensitivity score for every triple t∈Tt\in T that quantifies its importance with respect to the query workload QQ.
+
+Lemma A.1 (Bound on Total Sensitivity).
+
+Let G=(V,E,T)G=(V,E,T) be a knowledge graph and QQ a query workload.
+For each triple t∈Tt\in T, we define its sensitivity score with respect to QQ as
+
+s(t)=∑q∈Qfq​(t)cost⁡(G,q)=∑q∈Q1|Tq|⋅𝕀[t∈Tq],s(t)=\sum_{q\in Q}\frac{f_{q}(t)}{\mathrm{cost}(G,q)}=\sum_{q\in Q}\frac{1}{|T_{q}|}\cdot\mathbb{I}[t\in T_{q}],
+
+where fq​(t)∈{0,1}f_{q}(t)\in\{0,1\} is an indicator of whether triple tt is relevant to query qq. Then, the total sensitivity across all triples is exactly the number of queries:
+
+S=∑t∈Ts⁡(t)=|Q|.S=\sum_{t\in T}s(t)=|Q|.
+
+Proof.
+
+Let,
+
+s⁡(t)=∑q∈Qfq​(t)cost⁡(G,q)=∑q∈Q𝕀[t∈Tq]cost⁡(G,q).s(t)=\sum_{q\in Q}\frac{f_{q}(t)}{\mathrm{cost}(G,q)}=\sum_{q\in Q}\frac{\mathbb{I}[t\in T_{q}]}{\mathrm{cost}(G,q)}.
+
+By expanding cost⁡(G,q)\mathrm{cost}(G,q):
+
+=∑q∈Q𝕀[t∈Tq]∑t′∈T𝕀[t′∈Tq]=∑q∈Q𝕀[t∈Tq]|Tq|=\sum_{q\in Q}\frac{\mathbb{I}[t\in T_{q}]}{\displaystyle\sum_{t^{\prime}\in T}\mathbb{I}[t^{\prime}\in T_{q}]}=\sum_{q\in Q}\frac{\mathbb{I}[t\in T_{q}]}{|T_{q}|}
+
+Therefore,
+
+S=∑t∈Ts(t)=∑t∈T∑q∈Q1|Tq|⋅𝕀[t∈Tq].S=\sum_{t\in T}s(t)=\sum_{t\in T}\sum_{q\in Q}\frac{1}{|T_{q}|}\cdot\mathbb{I}[t\in T_{q}].
+
+We can exchange the order of summation:
+
+=∑q∈Q∑t∈T1|Tq|⋅𝕀[t∈Tq].=\sum_{q\in Q}\sum_{t\in T}\frac{1}{|T_{q}|}\cdot\mathbb{I}[t\in T_{q}].
+
+For each query qq, the inner sum over t∈Tt\in T counts exactly |Tq||T_{q}| terms, each contributing 1|Tq|\frac{1}{|T_{q}|}:
+
+∑t∈T1|Tq|⋅𝕀[t∈Tq]=|Tq||Tq|=1.\sum_{t\in T}\frac{1}{|T_{q}|}\cdot\mathbb{I}[t\in T_{q}]=\frac{|T_{q}|}{|T_{q}|}=1.
+
+Thus, summing over all q∈Qq\in Q gives:
+
+∑t∈Ts⁡(t)=∑q∈Q1=|Q|.\sum_{t\in T}s(t)=\sum_{q\in Q}1=|Q|.
+
+∎
+
+Lemma A.2 (Expectation and Variance of Coreset Cost).
+
+Let G=(V,E,T)G=(V,E,T) be a knowledge graph and QQ a query workload.
+For each triple t∈Tt\in T, let p⁡(t)p(t) be its sampling probability,
+XtX_{t} the number of times tt is sampled in mm independent rounds,
+and w⁡(t)=1m⋅p⁡(t)w(t)=\tfrac{1}{m\cdot p(t)} its assigned weight.
+Define the cost contribution of tt as
+
+|Tq|=∑t∈Tfq​(t),|T_{q}|=\sum_{t\in T}f_{q}(t),
+
+where fq​(t)∈{0,1}f_{q}(t)\in\{0,1\} denotes whether tt is relevant to query qq.
+Then, the following hold:
+
+1. The expected cost of the coreset equals the cost of the full graph:
+
+𝔼⁡[cost⁡(C,Q)]=cost⁡(G,Q).\mathbb{E}[\mathrm{cost}(C,Q)]=\mathrm{cost}(G,Q).
+
+2. The variance of the coreset cost is bounded as:
+
+Var⁡[cost⁡(C,Q)]≤|Q|m⋅cost​(G,Q)2,\operatorname{Var}[\mathrm{cost}(C,Q)]\leq\frac{|Q|}{m}\cdot\mathrm{cost}(G,Q)^{2},
+
+Proof.
+
+Expectation.
+The coreset is formed by sampling mm triples with replacement, where each triple t∈Tt\in T is chosen with probability p⁡(t)p(t). Thus
+Xt∼Binomial​(m,p⁡(t))X_{t}\sim\text{Binomial}(m,p(t)). The coreset cost is
+
+cost⁡(C,Q)=∑t∈T∑q∈QXt⋅w⁡(t)​fq​(t)=∑t∈TXt⋅1m⋅p⁡(t)⋅∑q∈Qfq​(t).\displaystyle\mathrm{cost}(C,Q)=\sum_{t\in T}\sum_{q\in Q}X_{t}\cdot w(t)f_{q}(t)=\sum_{t\in T}X_{t}\cdot\frac{1}{m\cdot p(t)}\cdot\sum_{q\in Q}f_{q}(t).
+
+Taking expectation and applying linearity:
+
+𝔼⁡[cost⁡(C,Q)]=∑t∈T1m⋅p⁡(t)⋅∑q∈Qfq​(t)⋅𝔼⁡[Xt].\mathbb{E}[\mathrm{cost}(C,Q)]=\sum_{t\in T}\frac{1}{m\cdot p(t)}\cdot\sum_{q\in Q}f_{q}(t)\cdot\mathbb{E}[X_{t}].
+
+we have 𝔼⁡[Xt]=m⋅p⁡(t)\mathbb{E}[X_{t}]=m\cdot p(t). Substituting:
+
+𝔼⁡[cost⁡(C,Q)]=∑t∈T∑q∈Qfq​(t)=cost⁡(G,Q).\mathbb{E}[\mathrm{cost}(C,Q)]=\sum_{t\in T}\sum_{q\in Q}f_{q}(t)=\mathrm{cost}(G,Q).
+
+Variance.
+
+Lets consider c​o​s​t​(G,Q)=∑t∈Tctcost(G,Q)=\sum_{t\in T}c_{t} is the total query cost for a triple and ri=∑t∈Tyt​i⋅ctm⋅p⁡(t)r_{i}=\sum_{t\in T}y_{ti}\cdot\frac{c_{t}}{m\cdot p(t)} be the per-round cost contribution, where yt​i∈{0,1}y_{ti}\in\{0,1\} indicates selection of triple tt in round ii. The total coreset cost is:
+
+cost⁡(C,Q)=∑i=1mri\mathrm{cost}(C,Q)=\sum_{i=1}^{m}r_{i}
+
+The expectation of each rir_{i} is:
+
+𝔼⁡[ri]=𝔼⁡[∑t∈Tyt​i⋅ctm​p​(t)]=∑t∈T𝔼⁡[yt​i⋅ctm​p​(t)]=∑t∈Tctm​p​(t)⋅𝔼⁡[yt​i]=∑t∈Tctm​p​(t)⋅p⁡(t)=∑t∈Tctm=cost⁡(G,Q)m.\displaystyle\mathbb{E}[r_{i}]=\mathbb{E}\left[\sum_{t\in T}y_{ti}\cdot\frac{c_{t}}{m\,p(t)}\right]=\sum_{t\in T}\mathbb{E}\left[y_{ti}\cdot\frac{c_{t}}{m\,p(t)}\right]=\sum_{t\in T}\frac{c_{t}}{m\,p(t)}\cdot\mathbb{E}[y_{ti}]=\sum_{t\in T}\frac{c_{t}}{m\,p(t)}\cdot p(t)=\sum_{t\in T}\frac{c_{t}}{m}=\frac{\mathrm{cost}(G,Q)}{m}.
+
+For the variance decomposition:
+
+Var⁡[ri]=𝔼⁡[ri2]−(𝔼⁡[ri])2=1m2​∑t∈Tct2p⁡(t)−cost​(G,Q)2m2\displaystyle\operatorname{Var}[r_{i}]=\mathbb{E}[r_{i}^{2}]-(\mathbb{E}[r_{i}])^{2}=\frac{1}{m^{2}}\sum_{t\in T}\frac{c_{t}^{2}}{p(t)}-\frac{\text{cost}(G,Q)^{2}}{m^{2}}
+
+The total variance becomes:
+
+Var⁡[cost⁡(C,Q)]=m⋅Var⁡[ri]≤1m​∑t∈Tct2p⁡(t)\operatorname{Var}[\mathrm{cost}(C,Q)]=m\cdot\operatorname{Var}[r_{i}]\leq\frac{1}{m}\sum_{t\in T}\frac{c_{t}^{2}}{p(t)}
+
+Substituting the sensitivity-based sampling probability p⁡(t)=s⁡(t)Sp(t)=\frac{s(t)}{S}:
+
+Var⁡[cost⁡(C,Q)]≤Sm​∑t∈Tct2s⁡(t)\operatorname{Var}[\mathrm{cost}(C,Q)]\leq\frac{S}{m}\sum_{t\in T}\frac{c_{t}^{2}}{s(t)}
+
+Let Lmax=maxq∈Q⁡|Tq|L_{\max}=\max_{q\in Q}|T_{q}| denote the maximum number of relevant triples associated with any query in the workload.
+
+Since |Tq|≤Lmax|T_{q}|\leq L_{\max} for every query q∈Qq\in Q, we have 1|Tq|≥1Lmax\frac{1}{|T_{q}|}\geq\frac{1}{L_{\max}} Substituting this inequality into the definition of s⁡(t)s(t) gives
+
+s⁡(t)=∑q∈Q1|Tq|​fq​(t)≥∑q∈Q1Lmax​fq​(t)=1Lmax​∑q∈Qfq​(t)=ctLmax.\displaystyle s(t)=\sum_{q\in Q}\frac{1}{|T_{q}|}f_{q}(t)\geq\sum_{q\in Q}\frac{1}{L_{\max}}f_{q}(t)=\frac{1}{L_{\max}}\sum_{q\in Q}f_{q}(t)=\frac{c_{t}}{L_{\max}}.
+
+Rearranging,
+
+1s⁡(t)≤Lmaxct.\frac{1}{s(t)}\leq\frac{L_{\max}}{c_{t}}.
+
+Multiplying both sides by ct2c_{t}^{2} yields
+
+ct2s⁡(t)≤Lmax​ct.\frac{c_{t}^{2}}{s(t)}\leq L_{\max}c_{t}.
+
+Summing over all triples t∈Tt\in T,
+
+∑t∈Tct2s⁡(t)≤Lmax​∑t∈Tct≤(cost⁡(G,Q))2.\displaystyle\sum_{t\in T}\frac{c_{t}^{2}}{s(t)}\leq L_{\max}\sum_{t\in T}c_{t}\leq(\mathrm{cost}(G,Q))^{2}.
+
+Since, Lmax=maxq∈Q⁡|Tq|≤∑q∈Q|Tq|=cost⁡(G,Q)L_{\max}=\max_{q\in Q}|T_{q}|\leq\sum_{q\in Q}|T_{q}|=\mathrm{cost}(G,Q). Now substituting this bound into the variance expression,
+
+Var⁡[cost⁡(C,Q)]≤Sm​cost​(G,Q)2\displaystyle\operatorname{Var}[\mathrm{cost}(C,Q)]\leq\frac{S}{m}\mathrm{cost}(G,Q)^{2}
+
+∎
+
+Theorem A.1 (Coreset Size).
+
+Let CC and ww be the subset and weight function returned from the algorithm 1 over query workload QQ, and let X=cost⁡(G,Q)X=\mathrm{cost}(G,Q) be the true cost on the full graph. Then, with probability at least 1−δ1-\delta we have, |cost⁡(C,Q)−cost⁡(G,Q)|≤ϵ⋅cost⁡(G,Q)\left|\mathrm{cost}(C,Q)-\mathrm{cost}(G,Q)\right|\leq\epsilon\cdot\mathrm{cost}(G,Q)
+provided the number of samples mm satisfies:
+
+m≥8​|Q|ϵ2⋅log⁡(1δ).m\geq\frac{8|Q|}{\epsilon^{2}}\cdot\log\left(\frac{1}{\delta}\right).
+
+Proof.
+
+We express the total coreset cost as a sum of independent contributions:
+
+cost⁡(C,Q)=∑i=1mri\mathrm{cost}(C,Q)=\sum_{i=1}^{m}r_{i}
+
+where each ri=ctm​p​(t)r_{i}=\frac{c_{t}}{mp(t)} represents the contribution of it​hi^{th} sample which samples the triple tt.
+
+We first bound the deviation of the random variables |ri−𝔼⁡[ri]||r_{i}-\mathbb{E}[r_{i}]|. From the Lemma A.2 we have,
+
+𝔼⁡[ri]=1m​∑t∈Tct=cost⁡(G,Q)m.\mathbb{E}[r_{i}]=\frac{1}{m}\sum_{t\in T}c_{t}=\frac{\mathrm{cost}(G,Q)}{m}.
+
+Therefore,
+
+|ri−𝔼⁡[ri]|=|ctm⋅p⁡(t)−cost⁡(G,Q)m|=1m​|ctp⁡(t)−cost⁡(G,Q)|≤1m⋅ctp⁡(t)=Sm⋅cts⁡(t)\displaystyle\left|r_{i}-\mathbb{E}[r_{i}]\right|=\left|\frac{c_{t}}{m\cdot p(t)}-\frac{\mathrm{cost}(G,Q)}{m}\right|=\frac{1}{m}\left|\frac{c_{t}}{p(t)}-\mathrm{cost}(G,Q)\right|\leq\frac{1}{m}\cdot\frac{c_{t}}{p(t)}=\frac{S}{m}\cdot\frac{c_{t}}{s(t)}
+
+Since fq​(t)f_{q}(t) and cost⁡(G,Q)\mathrm{cost}(G,Q) are non-negatives, so we have the following,
+
+s⁡(t)=∑q∈Qfq​(t)cost⁡(G,q)≥∑q∈Qfq​(t)∑q∈Qcost⁡(G,q)=ctcost⁡(G,Q).s(t)=\sum_{q\in Q}\frac{f_{q}(t)}{\mathrm{cost}(G,q)}\geq\frac{\sum_{q\in Q}f_{q}(t)}{\sum_{q\in Q}\mathrm{cost}(G,q)}=\frac{c_{t}}{\mathrm{cost}(G,Q)}.
+
+So, we get, |ri−𝔼⁡[ri]|≤b|r_{i}-\mathbb{E}[r_{i}]|\leq b where b=Sm​cost​(G,Q)b=\frac{S}{m}\mathrm{cost}(G,Q). Furthermore, we know that, Var⁡[cost⁡(C,Q)]≤Sm​cost​(G,Q)2\operatorname{Var}[\mathrm{cost}(C,Q)]\leq\frac{S}{m}\text{cost}(G,Q)^{2}.
+
+Now, applying Bernstein’s inequality:
+
+Pr⁡(|cost⁡(C,Q)−cost⁡(G,Q)|>ϵ​cost​(G,Q))\displaystyle\Pr\left(\left|\mathrm{cost}(C,Q)-\mathrm{cost}(G,Q)\right|>\epsilon\mathrm{cost}(G,Q)\right)
+≤\displaystyle\leq
+exp⁡(−ϵ2​cost​(G,Q)22⋅Var⁡[cost⁡(C,Q)]+23​b​ϵ​cost​(G,Q))\displaystyle\exp\left(\frac{-\epsilon^{2}\mathrm{cost}(G,Q)^{2}}{2\cdot\operatorname{Var}[\mathrm{cost}(C,Q)]+\frac{2}{3}b\epsilon\mathrm{cost}(G,Q)}\right)
+
+=\displaystyle=
+exp⁡(−ϵ2​cost​(G,Q)22​S​cost​(G,Q)2m+2​S​ϵ​cost​(G,Q)23​m)\displaystyle\exp\Bigg(\frac{-\epsilon^{2}\,\mathrm{cost}(G,Q)^{2}}{\frac{2S\,\mathrm{cost}(G,Q)^{2}}{m}+\frac{2S\epsilon\,\mathrm{cost}(G,Q)^{2}}{3m}}\Bigg)
+
+=\displaystyle=
+exp⁡(−ϵ2​m2​S+23​ϵ​S)\displaystyle\exp\left(\frac{-\epsilon^{2}m}{2S+\frac{2}{3}\epsilon S}\right)
+
+To ensure this probability is at most δ\delta, we require:
+
+exp⁡(−ϵ2​m2​S+23​ϵ​S)≤δ⇒m≥2​S+23​ϵ​Sϵ2⋅log⁡(1δ)\exp\left(\frac{-\epsilon^{2}m}{2S+\frac{2}{3}\epsilon S}\right)\leq\delta\Rightarrow m\geq\frac{2S+\frac{2}{3}\epsilon S}{\epsilon^{2}}\cdot\log\left(\frac{1}{\delta}\right)
+
+Finally, noting that 2+23​ϵ≤82+\frac{2}{3}\epsilon\leq 8 for ϵ∈(0,1)\epsilon\in(0,1), we conclude:
+
+m≥8​Sϵ2⋅log⁡(1δ)m\geq\frac{8S}{\epsilon^{2}}\cdot\log\left(\frac{1}{\delta}\right)
+
+Substituting S=|Q|S=|Q|, we get:
+
+m≥8​|Q|ϵ2⋅log⁡(1δ).m\geq\frac{8|Q|}{\epsilon^{2}}\cdot\log\left(\frac{1}{\delta}\right).
+
+∎
+
+This follows from Bernstein’s inequality since for any ε∈(0,1)\varepsilon\in(0,1) and δ∈(0,1)\delta\in(0,1) choosing m=O⁡(Sε2​log⁡1δ)m=O\!\left(\tfrac{S}{\varepsilon^{2}}\log\tfrac{1}{\delta}\right) guarantees with probability at least 1−δ1-\delta that the weighted coreset is a (1±ε)(1\pm\varepsilon) approximation to the workload and hence the summary size depends on SS (or equivalently |Q||Q|) rather than |T||T|.
+
+References
+
+Bachem et al. (2017)
+O. Bachem, M. Lucic, and A. Krause
+
+Practical coreset constructions for machine learning.
+
+arXiv preprint arXiv:1703.06476.
+
+Cited by: §3.
+
+Bachem et al. (2018)
+O. Bachem, M. Lucic, and A. Krause
+
+Scalable k-means clustering via lightweight coresets.
+
+In Proceedings of the 24th ACM SIGKDD International Conference on Knowledge Discovery & Data Mining,
+
+pp. 1119–1127.
+
+Cited by: §1.
+
+Bollacker et al. (2008)
+K. Bollacker, C. Evans, P. Paritosh, T. Sturge, and J. Taylor
+
+Freebase: a collaboratively created graph database for structuring human knowledge.
+
+In Proceedings of the 2008 ACM SIGMOD international conference on Management of data,
+
+pp. 1247–1250.
+
+Cited by: §1,
+§5.2.
+
+Boutsidis et al. (2013)
+C. Boutsidis, P. Drineas, and M. Magdon-Ismail
+
+Near-optimal coresets for least-squares regression.
+
+IEEE transactions on information theory 59 (10), pp. 6880–6892.
+
+Cited by: §1.
+
+Braverman et al. (2021)
+V. Braverman, D. Feldman, H. Lang, A. Statman, and S. Zhou
+
+Efficient coreset constructions via sensitivity sampling.
+
+In Asian Conference on Machine Learning,
+
+pp. 948–963.
+
+Cited by: §1,
+§1.
+
+Čebirić et al. (2015)
+Š. Čebirić, F. Goasdoué, and I. Manolescu
+
+Query-oriented summarization of rdf graphs.
+
+In British International Conference on Databases,
+
+pp. 87–91.
+
+Cited by: §2.
+
+Cheng et al. (2011)
+G. Cheng, T. Tran, and Y. Qu
+
+Relin: relatedness and informativeness-based centrality for entity summarization.
+
+In International semantic web conference,
+
+pp. 114–129.
+
+Cited by: §2.
+
+Chhaya et al. (2020a)
+R. Chhaya, J. Choudhari, A. Dasgupta, and S. Shit
+
+Streaming coresets for symmetric tensor factorization.
+
+In International Conference on Machine Learning,
+
+pp. 1855–1865.
+
+Cited by: §1.
+
+Chhaya et al. (2020b)
+R. Chhaya, A. Dasgupta, and S. Shit
+
+On coresets for regularized regression.
+
+In International conference on machine learning,
+
+pp. 1866–1876.
+
+Cited by: §1.
+
+Dasgupta et al. (2009)
+A. Dasgupta, P. Drineas, B. Harb, R. Kumar, and M. W. Mahoney
+
+Sampling algorithms and coresets for lp regression.
+
+SIAM Journal on Computing 38 (5), pp. 2060–2078.
+
+Cited by: §1.
+
+Feldman and Langberg (2011)
+D. Feldman and M. Langberg
+
+A unified framework for approximating and clustering data.
+
+In Proceedings of the forty-third annual ACM symposium on Theory of computing,
+
+pp. 569–578.
+
+Cited by: §1.
+
+Feldman et al. (2017)
+D. Feldman, S. Ozer, and D. Rus
+
+Coresets for vector summarization with applications to network graphs.
+
+In International Conference on Machine Learning,
+
+pp. 1117–1125.
+
+Cited by: §1,
+§1.
+
+Feldman et al. (2013)
+D. Feldman, M. Schmidt, and C. Sohler
+
+Turning big data into tiny data: constant-size coresets for kk-means, pca and projective clustering.
+
+In Proceedings of the Twenty-Fourth Annual ACM-SIAM Symposium on Discrete Algorithms,
+
+pp. 1434–1453.
+
+Cited by: §1.
+
+Goasdoué et al. (2019)
+F. Goasdoué, P. Guzewicz, and I. Manolescu
+
+Incremental structural summarization of rdf graphs.
+
+In EDBT 2019-22nd International Conference on Extending Database Technology,
+
+Cited by: §2.
+
+Gunaratna et al. (2015)
+K. Gunaratna, K. Thirunarayan, and A. Sheth
+
+FACES: diversity-aware entity summarization using incremental hierarchical conceptual clustering.
+
+In Proceedings of the AAAI Conference on Artificial Intelligence,
+
+Cited by: §2.
+
+Haveliwala et al. (2003)
+T. Haveliwala, S. Kamvar, and G. Jeh
+
+An analytical comparison of approaches to personalizing pagerank.
+
+Technical report
+
+ Stanford.
+
+Cited by: §2.
+
+He et al. (2021)
+D. He, R. Du, S. Zhu, M. Zhang, K. Liang, and S. Chan
+
+Secure logistic regression for vertical federated learning.
+
+IEEE Internet Computing.
+
+Cited by: §1.
+
+Huang et al. (2022)
+L. Huang, Z. Li, J. Sun, and H. Zhao
+
+Coresets for vertical federated learning: regularized linear regression and KK-means clustering.
+
+Advances in Neural Information Processing Systems 35, pp. 29566–29581.
+
+Cited by: §1.
+
+Jalota et al. (2021)
+R. Jalota, D. Vollmers, D. Moussallem, and A. N. Ngomo
+
+LAUREN-knowledge graph summarization for question answering.
+
+In 2021 IEEE 15th International Conference on Semantic Computing (ICSC),
+
+pp. 221–226.
+
+Cited by: §1,
+§1,
+§2,
+§2.
+
+Kang et al. (2022)
+S. Kang, K. Lee, and K. Shin
+
+Personalized graph summarization: formulation, scalable algorithms, and applications.
+
+In 2022 IEEE 38th International Conference on Data Engineering (ICDE),
+
+pp. 2319–2332.
+
+Cited by: §2,
+§3.
+
+Koutra (2021)
+D. Koutra
+
+The power of summarization in graph mining and learning: smaller data, faster methods, more interpretability.
+
+Proceedings of the VLDB Endowment 14 (13), pp. 3416–3416.
+
+Cited by: §2.
+
+Kumar and Efstathopoulos (2018)
+K. A. Kumar and P. Efstathopoulos
+
+Utility-driven graph summarization.
+
+Proceedings of the VLDB Endowment 12 (4), pp. 335–347.
+
+Cited by: §2.
+
+Li et al. (2025)
+Z. Li, D. Fu, M. Ai, and J. He
+
+Apex2: adaptive and extreme summarization for personalized knowledge graphs.
+
+In Proceedings of the 31st ACM SIGKDD Conference on Knowledge Discovery and Data Mining V. 1,
+
+pp. 741–752.
+
+Cited by: §2,
+§3.
+
+Malaviya et al. (2024)
+J. Malaviya, A. Dasgupta, and R. Chhaya
+
+Simple weak coresets for non-decomposable classification measures.
+
+In Proceedings of the AAAI Conference on Artificial Intelligence,
+
+Vol. 38, pp. 14289–14296.
+
+Cited by: §1.
+
+Mendes et al. (2012)
+P. N. Mendes, M. Jakob, and C. Bizer
+
+DBpedia: a multilingual cross-domain knowledge base.
+
+ European Language Resources Association (ELRA).
+
+Cited by: §1,
+§5.2.
+
+Moro et al. (2023)
+G. Moro, L. Ragazzi, L. Valgimigli, et al.
+
+Graph-based abstractive summarization of extracted essential knowledge for low-resource scenarios.
+
+FRONTIERS IN ARTIFICIAL INTELLIGENCE AND APPLICATIONS 372, pp. 1747–1754.
+
+Cited by: §2.
+
+Niazmand et al. (2022)
+E. Niazmand, G. Sejdiu, D. Graux, and M. Vidal
+
+Efficient semantic summary graphs for querying large knowledge graphs.
+
+International Journal of Information Management Data Insights 2 (1), pp. 100082.
+
+Cited by: §1,
+§2.
+
+Peng et al. (2023)
+C. Peng, F. Xia, M. Naseriparsa, and F. Osborne
+
+Knowledge graphs: opportunities and challenges.
+
+Artificial Intelligence Review 56 (11), pp. 13071–13102.
+
+Cited by: §1,
+§3.
+
+Safavi et al. (2019)
+T. Safavi, C. Belth, L. Faber, D. Mottin, E. Müller, and D. Koutra
+
+Personalized knowledge graph summarization: from the cloud to your pocket.
+
+In 2019 IEEE International Conference on Data Mining (ICDM),
+
+pp. 528–537.
+
+Cited by: §1,
+§1,
+§2,
+§3.
+
+Shabani et al. (2024)
+N. Shabani, A. Beheshti, J. Wu, M. K. Najafabadi, J. Foo, and A. Jolfaei
+
+GraphSUM: scalable graph summarization for efficient question answering.
+
+In 27th International Conference on Extending Database Technology, EDBT 2024,
+
+pp. 794–797.
+
+Cited by: §2.
+
+Shit et al. (2025)
+S. Shit, G. K. Chadha, S. Kumar, and B. Chatterjee
+
+Improved coresets for vertical federated learning: regularized linear and logistic regressions.
+
+In International Conference on Machine Learning,
+
+pp. 55303–55324.
+
+Cited by: §1.
+
+Shit et al. (2022)
+S. Shit, A. Dasgupta, R. Chhaya, and J. Choudhari
+
+Online coresets for parameteric and non-parametric bregman clustering.
+
+Transactions on Machine Learning Research.
+
+Cited by: §1.
+
+Song et al. (2018)
+Q. Song, Y. Wu, P. Lin, L. X. Dong, and H. Sun
+
+Mining summaries for knowledge graph search.
+
+IEEE Transactions on Knowledge and Data Engineering 30 (10), pp. 1887–1900.
+
+Cited by: §1,
+§2.
+
+Stadler et al. (2024)
+C. Stadler, M. Saleem, Q. Mehmood, C. Buil-Aranda, M. Dumontier, A. Hogan, and A. Ngonga Ngomo
+
+LSQ 2.0: a linked dataset of sparql query logs.
+
+Semantic Web 15 (1), pp. 167–189.
+
+Cited by: §5.2.
+
+Vassiliou (2023)
+G. e. al. Vassiliou
+
+ISummary: workload-based, personalized summaries for knowledge graphs.
+
+In ESWC,
+
+Cited by: §1,
+§1,
+§2,
+§3,
+§3.
+
+Wang and Cheng (2024)
+X. Wang and G. Cheng
+
+A survey on extractive knowledge graph summarization: applications, approaches, evaluation, and future directions.
+
+In Proceedings of the Thirty-Third International Joint Conference on Artificial Intelligence,
+
+pp. 8290–8298.
+
+Cited by: §1,
+§2.
+
+Yih et al. (2016)
+W. Yih, M. Richardson, C. Meek, M. Chang, and J. Suh
+
+The value of semantic parse labeling for knowledge base question answering.
+
+In Proceedings of the 54th Annual Meeting of the Association for Computational Linguistics (Volume 2: Short Papers),
+
+pp. 201–206.
+
+Cited by: §5.2.
+
+    Experimental support, please
+    view the build logs
+    for errors. Generated by
+
+        L
+        A
+        T
+        E
+
+      xml
+
+    .
+
+Instructions for reporting errors
+
+We are continuing to improve HTML versions of papers, and your feedback helps enhance accessibility and mobile
+      support. To report errors in the HTML that will help us improve conversion and rendering, choose any of the
+      methods listed below:
+
+Click the "Report Issue" (
+
+          ) button, located in the page header.
+
+Tip: You can select the relevant text first, to include it in your report.
+
+Our team has already identified the following issues. We appreciate your time reviewing and reporting rendering errors we
+      may not have found yet. Your efforts will help us improve the HTML versions for all readers, because disability
+      should not be a barrier to accessing research. Thank you for your continued support in championing open access for
+      all.
+
+Have a free development cycle? Help support accessibility at arXiv! Our collaborators at LaTeXML maintain a list of packages that need conversion, and welcome developer contributions.
+
+        We gratefully acknowledge support from
+        our major funders,
+        member institutions, ,
+        and all contributors.
+
+        About
+        ·
+        Help
+        ·
+        Contact
+        ·
+        Subscribe
+        ·
+        Copyright
+        ·
+        Privacy
+        ·
+        Accessibility
+        ·
+        Operational Status (opens in new tab)
+
+Major funding support from

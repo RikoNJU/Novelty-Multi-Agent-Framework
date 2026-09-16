@@ -1,0 +1,35 @@
+Traceback (most recent call last):
+  File "/tmp/novelty-fulltext-trial/scripts/run_full_workflow_live.py", line 214, in <module>
+    main()
+  File "/tmp/novelty-fulltext-trial/scripts/run_full_workflow_live.py", line 107, in main
+    workflow = build_standard_full_workflow(config, output_root=run_dir)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/novelty-fulltext-trial/backend/src/novelty_agent_framework/config/factory.py", line 495, in build_standard_full_workflow
+    workflow = build_workflow(
+               ^^^^^^^^^^^^^^^
+  File "/tmp/novelty-fulltext-trial/backend/src/novelty_agent_framework/config/factory.py", line 247, in build_workflow
+    return _build_workflow_from_application_config(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/novelty-fulltext-trial/backend/src/novelty_agent_framework/config/factory.py", line 604, in _build_workflow_from_application_config
+    build_database_search_tool(
+  File "/tmp/novelty-fulltext-trial/backend/src/novelty_agent_framework/tools/database_search/factory.py", line 114, in build_database_search_tool
+    tools[source_id] = build_structured_source_retrieval_tool(
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/novelty-fulltext-trial/backend/src/novelty_agent_framework/tools/database_search/factory.py", line 82, in build_structured_source_retrieval_tool
+    source = build_retrieval_source(
+             ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/novelty-fulltext-trial/backend/src/novelty_agent_framework/tools/database_search/factory.py", line 69, in build_retrieval_source
+    return (source_registry or build_source_registry()).build(selected, source_config)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/novelty-fulltext-trial/backend/src/novelty_agent_framework/tools/database_search/retrieval_sources.py", line 69, in build
+    source = builder(config)
+             ^^^^^^^^^^^^^^^
+  File "/tmp/novelty-fulltext-trial/backend/src/novelty_agent_framework/tools/database_search/factory.py", line 43, in _build_springer_source_lazily
+    return build_springer_source(config)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/novelty-fulltext-trial/backend/src/novelty_agent_framework/tools/database_search/providers/springer.py", line 248, in build_springer_source
+    meta_api_key = resolve_env_credential(
+                   ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/novelty-fulltext-trial/backend/src/novelty_agent_framework/tools/database_search/providers/common.py", line 63, in resolve_env_credential
+    raise MissingProviderCredentialError(
+novelty_agent_framework.tools.database_search.providers.common.MissingProviderCredentialError: required provider credential environment variable 'SPRINGER_NATURE_META_API_KEY' is not set

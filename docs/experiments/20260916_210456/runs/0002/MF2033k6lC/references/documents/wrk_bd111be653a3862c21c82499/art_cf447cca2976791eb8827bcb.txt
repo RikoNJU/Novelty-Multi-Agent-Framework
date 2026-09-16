@@ -1,0 +1,1057 @@
+Code-Craft: Hierarchical Graph-Based Code Summarization for Enhanced Context Retrieval
+
+      Report GitHub Issue
+      ×
+
+      Title:
+
+Content selection saved. Describe the issue below:
+
+      Description:
+
+      Submit without GitHub
+      Submit in GitHub
+
+    arXiv is now an independent nonprofit!
+    Learn more
+    ×
+
+      Back to arXiv
+
+    Why HTML?
+
+      Report Issue
+
+      Back to Abstract
+
+      Download PDF
+
+Abstract
+
+1 Introduction
+
+2 Related Work
+
+3 System Architecture
+
+3.1 Code Graph Generator
+
+3.2 Summary Generator
+
+3.2.1 Level Order Traversal Construction
+
+3.2.2 Parallel Level Processing
+
+3.2.3 Node Summary Generation
+
+3.2.4 Module Summary Generation
+
+3.3 Storage and Retrieval
+
+4 Technical Innovations
+
+5 Methodology
+
+5.1 Limitations of Existing Benchmarks
+
+5.2 Evaluation Approach and Query Generation
+
+5.3 Benchmark Dataset Construction
+
+5.4 Evaluation Process and Metrics
+
+5.5 Results
+
+6 Limitations
+
+7 Conclusion
+
+References
+
+    License: arXiv.org perpetual non-exclusive license
+
+arXiv:2504.08975v1 [cs.SE] 11 Apr 2025
+
+Code-Craft: Hierarchical Graph-Based Code Summarization for Enhanced Context Retrieval
+
+David Sounthiraraj, Jared Hancock, Yassin Kortam
+
+Affiliation: Ashok Javvaji, Prabhat Singh, Shaila Shankar
+
+Affiliation: Cisco Systems
+
+Affiliation: dsounthi, jarhanco, ykortam
+
+Affiliation: javvaji, prabhat7, shailas
+
+Abstract
+
+Understanding and navigating large-scale codebases remains a significant challenge in software engineering.
+Existing methods often treat code as flat text or focus primarily on local structural relationships, limiting their ability to
+provide holistic, context-aware information retrieval. We present Hierarchical Code Graph Summarization (HCGS), a novel
+approach that constructs a multi-layered representation of a codebase by generating structured summaries in a bottom-up fashion
+from a code graph. HCGS leverages the Language Server Protocol for language-agnostic code analysis and employs a parallel level-based
+algorithm for efficient summary generation. Through extensive evaluation on five diverse codebases totaling 7,531 functions,
+HCGS demonstrates significant improvements in code retrieval accuracy, achieving up to 82% relative improvement in top-1 retrieval
+precision for large codebases like libsignal (27.15 percentage points), and perfect Pass@3 scores for smaller repositories.
+The system’s hierarchical approach consistently outperforms traditional code-only retrieval across all metrics, with particularly
+substantial gains in larger, more complex codebases where understanding function relationships is crucial.
+
+     
+     
+
+1 Introduction
+
+Understanding and navigating large-scale codebases remains a significant challenge in software engineering. A comprehensive systematic review by Liu et al. [16] reveals that despite decades of research, effective code search and comprehension tools remain elusive. While Large Language Models (LLMs) have shown proficiency in understanding localized code snippets, they struggle to grasp the full scope of entire codebases due to their limited context windows, which hinders their ability to navigate the complex interdependencies inherent in large software systems. Ma et al. [19] emphasizes that comprehensive repository-level understanding is critical for effective automated software engineering, identifying key challenges including the impracticality of including thousands of files in LLM context windows and the difficulty of identifying code relevant to specific issues within extensive contexts.
+
+Code graphs have emerged as a promising approach to represent structural relationships between code elements [4, 13], providing valuable architectural insights and enhancing visualization of code relationships. Liu et al. [16] notes that while 51% of contemporary code search tools focus on text-based approaches, only a small fraction effectively leverage structural information. Recent work by Liu et al. [17] demonstrated the effectiveness of structured code representations through their GraphCoder framework, which uses a Code Context Graph combining control flow and dependency relationships to enhance repository-level code completion. Despite these advances, existing graph-based approaches often lack the capability to abstract details at varying levels of granularity, impeding high-level codebase understanding.
+
+The integration of structural insights from code graphs with the summarization capabilities of language models presents a promising avenue for addressing the limitations inherent in each approach when used independently. This aligns with the emerging trend identified by Liu et al. [16], where deep learning has become the most popular modeling technique for code understanding. Jain et al. [12] demonstrated how agentic LLMs combined with Retrieval Augmented Generation (RAG) can significantly improve semantic code search by addressing the "vocabulary mismatch problem," achieving a 78.2% success rate at retrieving relevant code snippets within the top 10 results. Similarly, Ma et al. [19] introduced RepoUnderstander, employing a top-down approach to condense repository information into a knowledge graph and using Monte Carlo Tree Search to efficiently explore repositories, achieving a 21.33
+
+Systematic analysis reveals several persistent challenges in code understanding and retrieval [16], including limited codebase diversity, query limitations, model construction issues, and evaluation challenges, with 55% of tools still relying on subjective manual evaluation methods. The vocabulary mismatch problem [12] and information asymmetry in benchmark datasets [19] further complicate effective code search and understanding. These challenges highlight the need for more robust, multi-language approaches with improved evaluation methodologies and context-aware search capabilities.
+
+We introduce Hierarchical Code Graph Summarization (HCGS), a system that addresses these limitations by constructing a structured, hierarchical representation of a codebase. HCGS employs a bottom-up traversal strategy on a code graph, generating structured summaries at each level. This approach ensures that higher-level summaries are informed by the summaries of their constituent components, creating a rich, multi-layered understanding of the code. Our key contributions are: (1) A novel hierarchical summarization approach based on bottom-up traversal of code graphs; (2) A structured summary schema that captures both implementation details and dependencies; and (3) Vector-based retrieval on the structured summaries.
+
+2 Related Work
+
+Research on code understanding and retrieval spans multiple interconnected domains. Traditional code search tools rely on keyword matching and regular expressions, while more advanced techniques leverage abstract syntax trees [7] or code graphs [21]. Liu et al.’s systematic review [16] reveals that 74% of code search tools employ natural language queries, highlighting the importance of bridging the semantic gap between natural language and code structure, though 55% still rely on subjective manual evaluation methods. Deep learning has emerged as the dominant approach in recent years [8, 9], particularly for addressing the semantic gap between queries and code.
+
+Recent advancements have leveraged agentic LLMs and Retrieval Augmented Generation to enhance search accuracy. Jain et al. [12] introduced RepoRift, which uses specialized LLM agents to recursively augment user queries with relevant context, addressing the "vocabulary mismatch problem" by injecting technical details into queries. Their multi-stream ensemble approach achieved a 78.2% success rate at Success@10 on the CodeSearchNet dataset, significantly outperforming previous methods. Traditional code summarization techniques [5, 11, 2, 14] typically focus on individual functions rather than entire codebases, often treating code elements in isolation and missing broader contextual relationships.
+
+Static analysis techniques like control flow and data flow analysis [6] provide valuable structural information but often produce low-level details that are difficult to interpret in large codebases and lack mechanisms for higher-level abstraction. Liu et al. [16] notes that heuristic models based on program analysis techniques require substantial domain knowledge to design effective matching algorithms.
+
+More recent approaches represent codebases as multi-level graphs. CodexGraph [18] and RepoHyper [22] use code graphs to represent entire repositories with multiple levels of abstraction. Ma et al. [19] introduced RepoUnderstander, which constructs a repository knowledge graph in a top-down manner and employs Monte Carlo Tree Search to efficiently explore it, prioritizing critical information discovery. Liu et al. [17] developed GraphCoder, leveraging a statement-level Code Context Graph that combines control flow and dependency relationships, employing a coarse-to-fine retrieval process that significantly improved code completion accuracy while reducing retrieval time and storage requirements.
+
+HCGS builds upon these prior works by combining code graphs, structured summarization, and efficient search techniques to create a hierarchical representation that facilitates both high-level understanding and detailed analysis. Unlike previous approaches, HCGS employs a bottom-up traversal strategy ensuring higher-level summaries inherit context from their constituent components, contrasting with RepoUnderstander’s top-down approach. While RepoRift focuses on enhancing query context through LLM agents, RepoUnderstander emphasizes efficient repository exploration, and GraphCoder focuses on statement-level structural representation for code completion, HCGS complements these approaches by enhancing the code representation itself through hierarchical summarization. These complementary strategies address different aspects of repository-level understanding: HCGS focuses on rich contextual representation while RepoUnderstander emphasizes efficient exploration and information discovery. This approach directly addresses key challenges identified in the systematic review [16], including the need for better code representations, improved learning models, and more effective evaluation methodologies.
+
+3 System Architecture
+
+HCGS consists of several primary components: a Code Graph Generator, a Summary Generator, a Storage layer, and a Query Engine. Figure 1 illustrates the system architecture.
+
+Figure 1: HCGS System Architecture
+
+The Hierarchical Code Graph Summarization (HCGS) system addresses a fundamental limitation in traditional code embedding approaches. Conventional methods that generate embeddings for individual functions in isolation fail to capture the broader context in which these functions operate. This isolation leads to embeddings that lack critical information about the function’s role within the larger system architecture.
+
+Figure 2: Function Calls with Context
+
+As illustrated in Figure 2, when considering a function in isolation, we miss the rich contextual information provided by its relationships with other functions. The hierarchical summarization approach captures this context by propagating information from called functions upward through the call graph. This results in embeddings with significantly higher information density and semantic accuracy compared to isolated function embeddings.
+
+The HCGS approach leverages this contextual information to create a more comprehensive understanding of the codebase. By analyzing the relationships between functions and propagating information upward through the call graph, we can generate more accurate and informative embeddings that capture the true semantic meaning of the code.
+
+Figure 3: HCGS Approach
+
+Figure 3 illustrates how our approach leverages advanced Large Language Models (LLMs) to generate hierarchical summaries that capture not only the syntactic structure of the code but also its semantic meaning and relationships. This approach is superior to traditional embedding methods that rely primarily on code structure, naming conventions, and comments, as it can understand and represent the deeper functional purpose and relationships within the codebase. The multi-level nature of these summaries enables a more comprehensive understanding of the code at different levels of abstraction.
+
+3.1 Code Graph Generator
+
+The Code Graph Generator takes the source code of a project as input and generates a directed graph where nodes represent code elements (e.g., files, classes, functions, methods) and edges represent relationships between them (e.g., calls, inheritance, imports). The graph is constructed using static analysis techniques. To achieve broad language support and robust parsing, we leverage the Language Server Protocol (LSP). The LSP provides a standardized way to interact with language servers, which offer deep understanding of code structure and semantics for various programming languages.
+
+For our LSP integration, we use a modified version of multilspy [20, 1], a cross-platform library designed to simplify the process of creating language server clients. Multilspy was originally developed as part of research for Monitor-Guided Decoding of code language models [1]. The library enhances our system by handling automated server management for language-specific binaries, abstracting the JSON-RPC communication protocol, providing a unified interface for multiple language servers, and enabling essential static analysis operations such as finding definitions, references, and symbol information.
+
+By utilizing the LSP through multilspy, the HCGS system gains several key capabilities. It provides Abstract Syntax Trees (ASTs) for a given file from the language server, which forms the foundation for our code graph, providing a structured representation of the code that preserves syntactic relationships.
+
+We’re able to accurately identify and resolve dependencies between code elements (e.g., function calls, class inheritance) by requesting information about symbols, definitions, and references from the LSP. This dependency information is crucial for constructing the hierarchical relationships in the code graph.
+
+The ability to support multiple languages is simple, as it is only a matter of invoking the appropriate language server for each language. This eliminates the need for language-specific parsers and allows HCGS to be deployed across heterogeneous codebases that combine multiple programming languages.
+
+Language servers are typically maintained by language experts and are constantly updated to handle language changes and edge cases, leading to more accurate and robust code graph construction compared to custom parsing solutions that may not stay current with language evolution.
+In this regard, the LSP acts as a powerful abstraction layer that insulates HCGS from the complexities of individual programming languages, allowing it to focus on higher-level code understanding tasks.
+
+For graph storage, HCGS employs a structured summary schema to represent the information extracted from each code element. This schema facilitates consistent and comprehensive documentation while enabling efficient, targeted querying.
+
+Figure 4: Structured Summary Schema
+
+As shown in Figure 4, this structured schema is crucial for enabling the hierarchical summarization process and efficient retrieval, as it organizes code information into well-defined categories including implementation details and dependencies.
+
+3.2 Summary Generator
+
+The Summary Generator is responsible for creating structured summaries of code elements based on the information extracted from the code graph. For each node in the graph, HCGS issues a prompt
+to an LLM to generate the summaries. For this paper, we used the Claude Haiku 3.5 model11
+              1
+
+            https://www.anthropic.com/claude/haiku.
+
+Figure 5 shows the actual prompt template used by our system to generate code summaries. This carefully engineered prompt instructs the LLM to analyze both the function’s source code and the summaries of any called functions, then generate a structured summary following our schema.
+The hierarchical nature of our approach is evident in how the template incorporates child function summaries via the child_context parameter, ensuring that higher-level summaries are contextually aware of their dependencies.
+
+Figure 5: Summarization Prompt Template
+
+Two distinct algorithms for generating hierarchical summaries: a sequential DFS-based approach and a parallel level-based approach.
+The level-based algorithm represents a significant advancement over the traditional DFS-based approach, offering improved scalability and performance for large codebases.
+
+The key innovation of the level-based approach is the organization of the code graph into dependency levels, where each level contains functions that can be processed
+independently once all functions in lower levels have been processed. This enables efficient parallel processing while maintaining deterministic behavior.
+
+3.2.1 Level Order Traversal Construction
+
+The first step is organizing the function dependency graph into levels, as shown in Algorithm 1:
+
+Algorithm 1  Level Construction
+
+                1:
+
+              function BuildLevels(n​o​d​e​s,g​r​a​p​hnodes,graph)
+
+                2:
+
+                d​e​p​s←{}deps\leftarrow\{\} ⊳\triangleright Dependency map
+
+                3:
+
+                l​e​v​e​l​s←[]levels\leftarrow[] ⊳\triangleright List of levels
+
+                4:
+
+                for i​d​ in ​n​o​d​e​sid\text{ in }nodes do
+
+                5:
+
+                 d​e​p​s​[i​d]←g​r​a​p​h.g​e​t​_​e​d​g​e​s​(i​d)deps[id]\leftarrow graph.get\_edges(id)
+
+                6:
+
+                end for
+
+                7:
+
+                r​e​m​a​i​n​i​n​g←S​e​t​(n​o​d​e​s)remaining\leftarrow Set(nodes)
+
+                8:
+
+                while r​e​m​a​i​n​i​n​g≠∅remaining\neq\emptyset do
+
+                9:
+
+                 l​e​v​e​l←[]level\leftarrow[]
+
+                10:
+
+                 t​o​_​r​e​m​o​v​e←[]to\_remove\leftarrow[]
+
+                11:
+
+                 for i​d​ in ​r​e​m​a​i​n​i​n​gid\text{ in }remaining do
+
+                12:
+
+                   if A​l​l​D​e​p​s​P​r​o​c​e​s​s​e​d​(i​d,d​e​p​s,r​e​m​a​i​n​i​n​g)AllDepsProcessed(id,deps,remaining) then
+
+                13:
+
+                    l​e​v​e​l.a​p​p​e​n​d​(i​d)level.append(id)
+
+                14:
+
+                    t​o​_​r​e​m​o​v​e.a​p​p​e​n​d​(i​d)to\_remove.append(id)
+
+                15:
+
+                   end if
+
+                16:
+
+                 end for
+
+                17:
+
+                 if t​o​_​r​e​m​o​v​e.i​s​E​m​p​t​y​()to\_remove.isEmpty() then
+
+                18:
+
+                   i​d←B​r​e​a​k​C​y​c​l​e​(r​e​m​a​i​n​i​n​g,d​e​p​s)id\leftarrow BreakCycle(remaining,deps)
+
+                19:
+
+                   l​e​v​e​l.a​p​p​e​n​d​(i​d)level.append(id)
+
+                20:
+
+                   t​o​_​r​e​m​o​v​e.a​p​p​e​n​d​(i​d)to\_remove.append(id)
+
+                21:
+
+                 end if
+
+                22:
+
+                 for i​d​ in ​t​o​_​r​e​m​o​v​eid\text{ in }to\_remove do
+
+                23:
+
+                   r​e​m​a​i​n​i​n​g.r​e​m​o​v​e​(i​d)remaining.remove(id)
+
+                24:
+
+                 end for
+
+                25:
+
+                 l​e​v​e​l​s.a​p​p​e​n​d​(l​e​v​e​l)levels.append(level)
+
+                26:
+
+                end while
+
+                27:
+
+                return l​e​v​e​l​slevels
+
+                28:
+
+              end function
+
+This algorithm transforms the function dependency graph into levels where each level contains functions that only depend on functions in lower levels. It handles cyclic dependencies by strategically breaking cycles when necessary.
+
+3.2.2 Parallel Level Processing
+
+Once the levels are constructed, each level is processed in parallel as shown in Algorithm 2:
+
+Algorithm 2  Parallel Processing
+
+                1:
+
+              procedure ProcessLevels(l​e​v​e​l​s,g​r​a​p​hlevels,graph)
+
+                2:
+
+                c​a​c​h​e←{}cache\leftarrow\{\} ⊳\triangleright Summary cache
+
+                3:
+
+                m​o​d​u​l​e​s←{}modules\leftarrow\{\} ⊳\triangleright Affected modules
+
+                4:
+
+                for l​e​v​e​l​ in ​l​e​v​e​l​slevel\text{ in }levels do
+
+                5:
+
+                 r​e​s​u​l​t​s←{}results\leftarrow\{\}
+
+                6:
+
+                 f​u​t​u​r​e​s←{}futures\leftarrow\{\}
+
+                7:
+
+                 for i​d​ in ​l​e​v​e​lid\text{ in }level do
+
+                8:
+
+                   f​u​t​u​r​e​s​[i​d]←T​h​r​e​a​d​P​o​o​l.s​u​b​m​i​t​(S​u​m​m​a​r​i​z​e​N​o​d​e,i​d,c​a​c​h​e)futures[id]\leftarrow ThreadPool.submit(SummarizeNode,id,cache)
+
+                9:
+
+                 end for
+
+                10:
+
+                 for i​d,f​u​t​u​r​e​ in ​f​u​t​u​r​e​s.i​t​e​m​s​()id,future\text{ in }futures.items() do
+
+                11:
+
+                   s​u​m​m​a​r​y←f​u​t​u​r​e.r​e​s​u​l​t​()summary\leftarrow future.result()
+
+                12:
+
+                   if s​u​m​m​a​r​y≠n​u​l​lsummary\neq null then
+
+                13:
+
+                    r​e​s​u​l​t​s​[i​d]←s​u​m​m​a​r​yresults[id]\leftarrow summary
+
+                14:
+
+                    c​a​c​h​e​[i​d]←s​u​m​m​a​r​ycache[id]\leftarrow summary
+
+                15:
+
+                    n​o​d​e←g​r​a​p​h.g​e​t​_​n​o​d​e​(i​d)node\leftarrow graph.get\_node(id)
+
+                16:
+
+                    f​i​l​e←n​o​d​e.f​i​l​e​_​p​a​t​hfile\leftarrow node.file\_path
+
+                17:
+
+                    if f​i​l​e∉m​o​d​u​l​e​sfile\notin modules then ⊳\triangleright Track Module
+
+                18:
+
+                      m​o​d​u​l​e​s​[f​i​l​e]←[]modules[file]\leftarrow[]
+
+                19:
+
+                    end if
+
+                20:
+
+                    m​o​d​u​l​e​s​[f​i​l​e].a​p​p​e​n​d​(n​o​d​e)modules[file].append(node)
+
+                21:
+
+                   end if
+
+                22:
+
+                 end for
+
+                23:
+
+                 for i​d,s​u​m​m​a​r​y​ in ​r​e​s​u​l​t​s.i​t​e​m​s​()id,summary\text{ in }results.items() do
+
+                24:
+
+                   S​t​o​r​e​(i​d,s​u​m​m​a​r​y)Store(id,summary)
+
+                25:
+
+                 end for
+
+                26:
+
+                end for
+
+                27:
+
+                return m​o​d​u​l​e​smodules
+
+                28:
+
+              end procedure
+
+This algorithm processes each level sequentially, but within each level, it processes all nodes in parallel using a thread pool. The cache ensures that child summaries are available when processing parent nodes.
+
+3.2.3 Node Summary Generation
+
+The core of the summary generation process:
+
+Algorithm 3  Node Summary
+
+                1:
+
+              function SummarizeNode(i​d,c​a​c​h​e,g​r​a​p​hid,cache,graph)
+
+                2:
+
+                n​o​d​e←g​r​a​p​h.g​e​t​_​n​o​d​e​(i​d)node\leftarrow graph.get\_node(id)
+
+                3:
+
+                c​h​i​l​d​_​s​u​m​m​a​r​i​e​s←[]child\_summaries\leftarrow[]
+
+                4:
+
+                for c​h​i​l​d​_​i​d​ in ​g​r​a​p​h.g​e​t​_​e​d​g​e​s​(i​d)child\_id\text{ in }graph.get\_edges(id) do
+
+                5:
+
+                 if c​h​i​l​d​_​i​d​ in ​c​a​c​h​echild\_id\text{ in }cache then
+
+                6:
+
+                   c​h​i​l​d​_​s​u​m​m​a​r​i​e​s.a​p​p​e​n​d​(c​a​c​h​e​[c​h​i​l​d​_​i​d])child\_summaries.append(cache[child\_id])
+
+                7:
+
+                 end if
+
+                8:
+
+                end for
+
+                9:
+
+                summary←LLM.generate(node.code,child_summaries)summary\leftarrow LLM.generate(node.code,child\_summaries)
+
+                10:
+
+                return s​u​m​m​a​r​ysummary
+
+                11:
+
+              end function
+
+This function collects summaries of child nodes and uses an LLM to generate a structured summary that incorporates both the node’s code and the context from its dependencies.
+
+3.2.4 Module Summary Generation
+
+The final step aggregates function summaries into module summaries:
+
+Algorithm 4  Module Summary
+
+                1:
+
+              procedure SummarizeModules(m​o​d​u​l​e​s,g​r​a​p​hmodules,graph)
+
+                2:
+
+                for f​i​l​e,n​o​d​e​s​ in ​m​o​d​u​l​e​s.i​t​e​m​s​()file,nodes\text{ in }modules.items() do
+
+                3:
+
+                 f​u​n​c​_​s​u​m​m​a​r​i​e​s←[]func\_summaries\leftarrow[]
+
+                4:
+
+                 for n​o​d​e​ in ​n​o​d​e​snode\text{ in }nodes do
+
+                5:
+
+                   func_summaries.append({func\_summaries.append(\{
+
+                6:
+
+                    n′​a​m​e′:n​o​d​e.n​a​m​e,{}^{\prime}name^{\prime}:node.name,
+
+                7:
+
+                    s′​u​m​m​a​r​y′:n​o​d​e.s​u​m​m​a​r​y.d​e​t​a​i​l​s{}^{\prime}summary^{\prime}:node.summary.details
+
+                8:
+
+                   })\})
+
+                9:
+
+                 end for
+
+                10:
+
+                 m​o​d​u​l​e​_​s​u​m​m​a​r​y←L​L​M.g​e​n​e​r​a​t​e​(f​u​n​c​_​s​u​m​m​a​r​i​e​s)module\_summary\leftarrow LLM.generate(func\_summaries)
+
+                11:
+
+                 m​o​d​u​l​e​_​i​d←g​r​a​p​h.g​e​t​_​m​o​d​u​l​e​_​i​d​(f​i​l​e)module\_id\leftarrow graph.get\_module\_id(file)
+
+                12:
+
+                 S​t​o​r​e​(m​o​d​u​l​e​_​i​d,m​o​d​u​l​e​_​s​u​m​m​a​r​y)Store(module\_id,module\_summary)
+
+                13:
+
+                end for
+
+                14:
+
+              end procedure
+
+This step completes the hierarchical representation by creating module-level summaries from function summaries.
+
+The level-based approach offers several advantages over the traditional DFS-based method:
+
+•
+
+Improved Parallelism: By organizing functions into levels, the algorithm can process independent functions concurrently, significantly improving performance for large codebases.
+
+•
+
+Deterministic Behavior: The level-based approach ensures that all dependencies are processed before a function, eliminating the need for complex cycle detection and backtracking.
+
+•
+
+Efficient Resource Utilization: The algorithm processes one level at a time, leading to more predictable memory usage patterns and efficient resource utilization.
+
+•
+
+Enhanced Scalability: The combination of parallelism and deterministic processing makes the algorithm highly scalable, capable of handling codebases with millions of lines of code.
+
+This multi-stage approach creates a comprehensive hierarchical representation of the codebase, where each summary incorporates the context of its dependencies. The resulting summaries capture not only the syntactic structure of the code but also its semantic meaning and relationships, providing a rich foundation for subsequent retrieval and analysis tasks.
+
+3.3 Storage and Retrieval
+
+While other RAG methods may prioritize explicit code structure[18], the hierarchical summaries provide a rich semantic meaning in addition to a graph-like expression of relationships to
+other code elements inside and outside of its repository. HCGS generates Dense Vector Embeddings from the structured summaries and persists them in a vector database22
+              2
+
+            ChromaDB https://github.com/chroma-core/chroma.
+The embeddings are generated from a smaller, pre-trained model33
+              3
+
+            all-MiniLM-L6-v2 model with SentenceTransformaters https://sbert.net/ for better speed at a lower cost. When a query is issued, the system
+retrieves the top kk most relevant embeddings from the vector database.
+
+Once the query results are rendered, they can optionally be processed further by the Context Graph Engine. This component can rehydrate the retrieved nodes into a larger subgraph, analyze the relationships between them,
+and apply importance scoring to highlight key elements within the relevant context.
+
+4 Technical Innovations
+
+HCGS incorporates several key technical innovations that advance the state of the art in code understanding and retrieval. These innovations span three primary areas: representation enhancements, processing improvements, and retrieval advancements.
+
+•
+
+Language-Agnostic Code Analysis: The use of the Language Server Protocol (LSP) enables robust, multi-language code analysis without requiring language-specific parsers. This makes HCGS applicable to a wide range of programming languages and environments.
+
+•
+
+Hierarchical Context Propagation: The bottom-up traversal strategy in Section 3.2 ensures that higher-level summaries incorporate context from all their dependencies, creating a rich, multi-layered understanding of code relationships that captures both low-level implementation details and high-level architectural patterns.
+
+•
+
+Context-Aware Embeddings: Unlike traditional approaches that generate embeddings for functions in isolation, HCGS generates embeddings that incorporate contextual information from called functions. This results in significantly higher information density and semantic accuracy, addressing a fundamental limitation in code representation by capturing a function’s role within the broader system architecture.
+
+•
+
+Structured Summary Schema: The schema shown in Figure 4 organizes code information into well-defined categories, including implementation details and dependencies. This structured approach facilitates consistent documentation and enables sophisticated, targeted queries.
+
+•
+
+Context Graph Engine: The innovative approach to result composition through the Context Graph Engine creates coherent subgraphs that represent relevant portions of the codebase. These subgraphs provide comprehensive context, including both directly relevant code elements and their important relationships.
+
+Together, these innovations create a system that advances code understanding and retrieval capabilities.
+
+5 Methodology
+
+In this section, we present our methodology for evaluating the effectiveness of Hierarchical Code Graph Summarization (HCGS) in code retrieval tasks, addressing fundamental limitations in existing benchmarks while providing a rigorous framework for assessing the impact of hierarchical context on retrieval performance.
+
+5.1 Limitations of Existing Benchmarks
+
+Contemporary code retrieval benchmarks such as COIR [15] and CodeSearchNet [10] exhibit several critical limitations that constrain their real-world applicability. As noted by Voyage AI [3], an estimated 51% of labels in widely-used benchmarks like CoSQA are incorrect, with queries and code snippets being mismatched. Furthermore, existing benchmarks evaluate retrieval performance on isolated functions, failing to capture the intricate relationships between functions in real-world codebases. Current approaches typically comprise individual function definitions void of project structure, constrained only by programming language. Such search spaces omit essential contextual information present in most software engineering scenarios, neglecting the crucial relationships between code elements that are essential for comprehensive code comprehension.
+
+5.2 Evaluation Approach and Query Generation
+
+Our evaluation methodology compares two fundamental retrieval approaches: code-only retrieval using embeddings from raw code without hierarchical context, and summary-enhanced retrieval utilizing embeddings from hierarchical summaries that incorporate function dependency context. Unlike existing benchmarks, our approach includes complete codebases in the search space with multiple programming languages, preserving structural and contextual information typically lost in traditional benchmarks.
+
+We developed a synthetic query generation pipeline leveraging Large Language Models to create realistic search queries based on function summaries. The process begins with generating structured summaries for each function using our hierarchical approach described in Section 3.2, followed by condensing these summaries while preserving critical technical details. Using these condensed summaries, we generate multiple search queries (limited to 10 words) that focus on the function’s purpose and behavior, producing queries that mirror how developers might search for code.
+
+5.3 Benchmark Dataset Construction
+
+To ensure comprehensive evaluation across diverse scenarios, we selected five codebases of varying sizes and domains from trending GitHub repositories, collectively including functions written in multiple programming languages. Table 1 presents the characteristics of these repositories, ranging from large codebases like libsignal (5,128 functions) to smaller ones like DeepSeek-V3 (44 functions). For each codebase, we generated a code graph capturing function dependencies, created hierarchical summaries, generated synthetic queries, and created relevance annotations. In total, our benchmark includes 6,594 queries across all five codebases with 7,531 functions, providing statistically significant evaluation across different scales and complexities.
+
+Table 1: Benchmark Dataset Characteristics: Five diverse codebases spanning multiple programming languages, domains, and sizes, providing a comprehensive test bed for evaluating code retrieval approaches.
+
+Repository
+Domain
+Primary Languages
+Functions
+Queries
+
+libsignal
+Cryptography
+C++, Java, Rust
+5,128
+3,916
+
+ingress-nginx
+Infrastructure
+Go, Python
+1,773
+1,965
+
+awesome-llm-apps
+AI Applications
+Python, JavaScript
+330
+373
+
+newsnow
+News Aggregation
+TypeScript, JavaScript
+256
+306
+
+DeepSeek-V3
+Deep Learning
+Python
+44
+34
+
+Total
+
+7,531
+6,594
+
+5.4 Evaluation Process and Metrics
+
+For each codebase, we created two vector database collections: one containing embeddings of raw function code and another with embeddings of hierarchical function summaries. For each query, we generated vector embeddings and performed retrieval against both databases, recording the top-k results (k = 1, 3, 5, 10). We calculated Pass@k (percentage of queries with a relevant function in top-k results), Coverage (percentage of annotated functions appearing in results), and NDCG (Normalized Discounted Cumulative Gain for ranking quality). The Pass@k metric reflects practical utility from a developer’s perspective, with higher Pass@1 values indicating the system is more likely to return the most relevant function first. To ensure fair comparison, we used identical query processing and embedding generation techniques for both approaches, isolating the specific impact of hierarchical summarization.
+
+5.5 Results
+
+Tables 2 and 3 present the comparative performance of summary-based and code-only retrieval across all codebases, demonstrating significant advantages of hierarchical code summarization for code retrieval.
+
+Table 2: Comparison of Hierarchical Code Summary vs Code Only Metrics
+
+Pass@1
+Pass@3
+Pass@10
+
+Codebase
+Queries
+Functions
+Abs.Imp
+Rel.Imp
+Abs.Imp
+Rel.Imp
+Abs.Imp
+Rel.Imp
+
+libsignal
+3916
+5128
++27.15
++82%
++29.16
++56%
++22.63
++33%
+
+ingress-nginx
+1965
+1773
++25.55
++76%
++29.38
++57%
++25.09
++37%
+
+awesome-llm-apps
+373
+330
++8.99
++13%
++5.45
++6%
++0.82
++1%
+
+newsnow
+306
+256
++11.44
++19%
++7.19
++8%
++2.61
++3%
+
+DeepSeek-V3
+34
+44
++8.82
++12%
++5.88
++6%
++2.94
++3%
+
+Table 3: Absolute Values for Hierarchical Code Summary vs Code Only Metrics
+
+Pass@1
+Pass@3
+Pass@10
+
+Codebase
+Code
+Summary
+Code
+Summary
+Code
+Summary
+
+libsignal
+33.07
+60.21
+51.63
+80.80
+69.41
+92.03
+
+ingress-nginx
+33.73
+59.27
+51.66
+81.04
+67.50
+92.59
+
+awesome-llm-apps
+68.12
+77.11
+89.10
+94.55
+98.64
+99.46
+
+newsnow
+60.78
+72.22
+85.62
+92.81
+95.42
+98.04
+
+DeepSeek-V3
+73.53
+82.35
+94.12
+100.00
+97.06
+100.00
+
+Our evaluation reveals that hierarchical summarization consistently outperforms code-only retrieval across all codebases and metrics, with both substantial absolute and relative improvements.
+
+The improvement is most pronounced for larger, more complex codebases such as libsignal and ingress-nginx. For libsignal, the Pass@1 metric improved by 27.15 percentage points, representing an 82% relative improvement over the baseline (from 33.07% to 60.21%). Similarly, ingress-nginx showed a 25.55 percentage point improvement in Pass@1, corresponding to a 76% relative gain (from 33.73% to 59.27%). These substantial improvements in Pass@1 are particularly valuable in practical scenarios where developers typically focus on the top result.
+
+The gains extend to Pass@3 metrics, where both large codebases showed improvements exceeding 29 percentage points (56-57% relative improvement), suggesting that hierarchical context significantly enhances the quality of top results. Even at Pass@10, the improvements remain substantial, with absolute gains of 22-25 percentage points (33-37% relative improvement) for these larger codebases.
+
+For smaller codebases, while the absolute improvements are more modest, they still show consistent gains. The awesome-llm-apps repository demonstrated improvements of 8.99 percentage points in Pass@1 (13% relative improvement), while newsnow showed an 11.44 percentage point gain (19% relative improvement). The smallest codebase, DeepSeek-V3, achieved perfect Pass@3 and Pass@10 scores with the summary-based approach, representing improvements of 5.88 and 2.94 percentage points respectively (6% and 3% relative gains).
+
+These results align with our hypothesis that hierarchical context provides greater benefits in larger, more interconnected codebases where understanding function relationships is crucial for accurate retrieval. The consistent pattern of improvements across all metrics and codebases, particularly the substantial relative gains in Pass@1 performance for larger codebases, demonstrates the effectiveness of our hierarchical summarization approach in enhancing code retrieval accuracy.
+
+6 Limitations
+
+While HCGS advances code understanding and retrieval, several inherent limitations warrant consideration. The system’s reliance on static analysis techniques constrains its ability to capture dynamic behaviors resolved only during execution. Reflection-based invocations, dynamic dispatch patterns, and runtime-determined control flows remain challenging to incorporate, particularly in languages with extensive metaprogramming capabilities where execution paths may diverge significantly from static analysis predictions.
+
+The hierarchical summaries’ quality depends on the underlying Large Language Model’s capabilities. Despite using state-of-the-art models, the summarization process remains susceptible to misinterpretations of complex code patterns, inconsistent abstraction levels, and occasional hallucinations with unfamiliar programming paradigms. These limitations can propagate through the hierarchy, affecting higher-level summaries that incorporate information from lower levels.
+
+Although the Language Server Protocol enhances language coverage, integration challenges persist for new programming languages. Each language requires a robust LSP server supporting the necessary static analysis operations. Languages with less mature tooling ecosystems or specialized semantics may present difficulties, potentially limiting applicability in certain domains. Variations in LSP implementations can also lead to inconsistencies in code graph quality across languages.
+
+A significant operational limitation is HCGS’s approach to codebase updates, requiring complete re-parsing when changes occur. This process becomes computationally intensive for large projects, particularly problematic in dynamic development environments with frequent changes. Developing efficient incremental update mechanisms that selectively reprocess only affected portions of the code graph represents an important area for future research to improve responsiveness in real-world scenarios.
+
+7 Conclusion
+
+We presented Hierarchical Code Graph Summarization (HCGS), a novel system that enhances code retrieval through bottom-up analysis of code relationships. By leveraging the Language Server Protocol and structured summarization, HCGS achieves significant improvements in retrieval accuracy, demonstrating up to 82% relative improvement in top-1 precision for large codebases and perfect Pass@3 scores for smaller repositories. The system’s language-agnostic approach and context-aware embeddings address fundamental limitations in existing code retrieval systems, while future work will focus on incremental graph updates and enhanced runtime analysis. These advancements position HCGS as a significant step toward more effective code comprehension tools.
+
+References
+
+[1]
+
+Lakshya A Agrawal, Aditya Kanade, Navin Goyal, Shuvendu K. Lahiri, and
+Sriram K. Rajamani.
+
+Guiding language models of code with global context using monitors,
+2023.
+
+[2]
+
+Wasi Uddin Ahmad, Saikat Chakraborty, Baishakhi Ray, and Kai-Wei Chang.
+
+A transformer-based approach for source code summarization, 2020.
+
+[3]
+
+Voyage AI.
+
+Code retrieval evaluation, 12 2024.
+
+Blog post.
+
+[4]
+
+Miltiadis Allamanis, Marc Brockschmidt, and Mahmoud Khademi.
+
+Learning to represent programs with graphs.
+
+International Conference on Learning Representations (ICLR),
+2018.
+
+[5]
+
+Miltiadis Allamanis, Hao Peng, and Charles Sutton.
+
+Convolutional attention networks for multimodal neural machine
+translation.
+
+In Proceedings of the 34th International Conference on Machine
+Learning, pages 409–418. PMLR, 2016.
+
+[6]
+
+Frances E Allen.
+
+Control flow analysis.
+
+ACM Sigplan Notices, 5(7):1–19, 1970.
+
+[7]
+
+Andrew P Black, Stéphane Ducasse, Oscar Nierstrasz, and Damien Pollet.
+
+Abstract syntax trees as a tool for program understanding.
+
+Journal of Software Maintenance and Evolution: Research and
+Practice, 14(5):323–343, 2002.
+
+[8]
+
+Xiaodong Gu, Hongyu Zhang, and Sunghun Kim.
+
+Deep code search.
+
+In Proceedings of the 40th International Conference on Software
+Engineering, pages 933–944. IEEE, 2018.
+
+[9]
+
+Rajeev Haldar, Lingfei Wu, Jimeng Xiong, and Julia Hockenmaier.
+
+A self-supervised approach to code search using contextual
+embeddings.
+
+arXiv preprint arXiv:2006.00311, 2020.
+
+[10]
+
+Hamel Husain, Ho-Hsiang Wu, Tiferet Gazit, Miltiadis Allamanis, and Marc
+Brockschmidt.
+
+Codesearchnet challenge: Evaluating the state of semantic code
+search, 2020.
+
+[11]
+
+Srinivasan Iyer, Ioannis Konstas, Alvin Cheung, and Luke Zettlemoyer.
+
+Summarizing source code using a neural attention model.
+
+In Proceedings of the 54th Annual Meeting of the Association for
+Computational Linguistics, pages 2073–2083, 2016.
+
+[12]
+
+Sarthak Jain, Aditya Dora, Ka Seng Sam, and Prabhat Singh.
+
+Llm agents improve semantic code search, 2024.
+
+[13]
+
+Daniel Johnson, Robert Smith, and Thomas Williams.
+
+Code graphs: Examining the structure of software systems.
+
+In Proceedings of the International Conference on Software
+Engineering, pages 245–256. IEEE, 2021.
+
+[14]
+
+Alexander LeClair, Sakib Haque, Lingfei Wu, and Collin McMillan.
+
+Improved code summarization via a graph neural network.
+
+In Proceedings of the 27th International Conference on Program
+Comprehension, pages 184–195. IEEE, 2019.
+
+[15]
+
+Xiangyang Li, Kuicai Dong, Yi Quan Lee, Wei Xia, Hao Zhang, Xinyi Dai, Yasheng
+Wang, and Ruiming Tang.
+
+Coir: A comprehensive benchmark for code information retrieval
+models, 2025.
+
+[16]
+
+Chao Liu, Xin Xia, David Lo, Cuiyun Gao, Xiaohu Yang, and John Grundy.
+
+Opportunities and challenges in code search tools.
+
+ACM Computing Surveys, 54(9):1–40, October 2021.
+
+[17]
+
+Wei Liu, Ailun Yu, Daoguang Zan, Bo Shen, Wei Zhang, Haiyan Zhao, Zhi Jin, and
+Qianxiang Wang.
+
+Graphcoder: Enhancing repository-level code completion via code
+context graph-based retrieval and language model, 2024.
+
+[18]
+
+Xiangyan Liu, Bo Lan, Zhiyuan Hu, Yang Liu, Zhicheng Zhang, Fei Wang, Michael
+Shieh, and Wenmeng Zhou.
+
+Codexgraph: Bridging large language models and code repositories via
+code graph databases, 2024.
+
+[19]
+
+Yingwei Ma, Qingping Yang, Rongyu Cao, Binhua Li, Fei Huang, and Yongbin Li.
+
+How to understand whole software repository?
+
+arXiv preprint arXiv:2406.01422, 2024.
+
+[20]
+
+Microsoft.
+
+Multilspy: Lsp client library in python to build applications around
+language servers.
+
+https://github.com/microsoft/multilspy, 2023.
+
+GitHub repository.
+
+[21]
+
+Oscar Waddell, Dipanwita Sarkar, and R Kent Dybvig.
+
+Practical and effective higher-order optimizations.
+
+In Proceedings of the 12th ACM SIGPLAN international conference
+on Functional programming, pages 81–92. ACM, 2007.
+
+[22]
+
+Wei Yang, Jian Li, Tao Zhang, and Tao Xie.
+
+Repohyper: A hierarchical representation of software repositories for
+enhanced code understanding.
+
+arXiv preprint arXiv:2301.04404, 2023.
+
+    Experimental support, please
+    view the build logs
+    for errors. Generated by
+
+        L
+        A
+        T
+        E
+
+      xml
+
+    .
+
+Instructions for reporting errors
+
+We are continuing to improve HTML versions of papers, and your feedback helps enhance accessibility and mobile
+      support. To report errors in the HTML that will help us improve conversion and rendering, choose any of the
+      methods listed below:
+
+Click the "Report Issue" (
+
+          ) button, located in the page header.
+
+Tip: You can select the relevant text first, to include it in your report.
+
+Our team has already identified the following issues. We appreciate your time reviewing and reporting rendering errors we
+      may not have found yet. Your efforts will help us improve the HTML versions for all readers, because disability
+      should not be a barrier to accessing research. Thank you for your continued support in championing open access for
+      all.
+
+Have a free development cycle? Help support accessibility at arXiv! Our collaborators at LaTeXML maintain a list of packages that need conversion, and welcome developer contributions.
+
+        We gratefully acknowledge support from
+        our major funders,
+        member institutions, ,
+        and all contributors.
+
+        About
+        ·
+        Help
+        ·
+        Contact
+        ·
+        Subscribe
+        ·
+        Copyright
+        ·
+        Privacy
+        ·
+        Accessibility
+        ·
+        Operational Status (opens in new tab)
+
+Major funding support from
