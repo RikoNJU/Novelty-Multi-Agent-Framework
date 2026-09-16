@@ -1,0 +1,411 @@
+{
+  "brief": {
+    "paper_summary": "由于现实世界中的大多数数据都可以用图表示，因此近年来针对图表示学\n习的研究越来越受到关注。通过将高维图数据转化成低维的表征向量，图表示\n学习可以有效地对图的信息进行存储并快捷地访问图中实体的关键知识。利用\n学习到的图表征数据可以为社交网络行为分析、节点分类、链路预测和聚类等\n下游任务提供帮助。随着深度学习的快速发展，研究人员提出了基于图神经网\n络的图表示学习方法，其使图中的节点能够同时学习图的结构信息以及邻域节\n点的特征信息，从而得到高质量的低维表征。针对图神经网络上的图表示学\n习，本文主要关注两个问题：大规模时序图场景下的图表示学习方法和分布式\n场景下的大规模图的图神经网络优化训练方法。\n真实世界中的图数据规模往往十分庞大且处于动态变化的状态，而现有的\n图神经网络要么无法处理动态时序图上的图表征学习，要么面对大规模图数据\n集时训练效率低下。为了解决大规模动态图上的图表征学习问题，本文提出了\n一种基于图摘要的大规模时序图表示学习方法——GSAERU 模型。GSAERU 模\n型由“图表征学习模块”和“时序学习模块”两部分构成。首先将动态时序图\n建模为各时刻上原图快照的序列，接着在单时间步上将图快照输入图表征学习\n模块。该模块通过图摘要技术对原图进行压缩，并将压缩后的新图输入图自编\n码器，利用和原图的重构误差训练原图节点的表征。在获得单时间步上的图表\n征后将其输入时序学习模块，并通过一个循环神经网络学习原图在时间维度上\n的特征信息与依赖关系，从而得到大规模时序图的高质量表征。基于在四个真\n实世界的大规模图数据集上的大量实验表明，GSAERU 模型能够高效生成时序\n图的表征。与传统的图神经网络算法相比，其平均内存消耗和平均训练时长只\n有其9.86% 与13.27%，且与性能最好的算法在大部分指标下的差距都不超过\n3.5%。\n\nii\n使用分布式技术加速神经网络训练也是如今热门的研究课题，因为在处理\n大规模数据时，单个设备（如CPU，GPU）有限的内存和计算资源往往会成为\n训练瓶颈。而分布式技术可以提供更多的计算资源来提高训练效率。然而由于\n图数据的不规则性，传统分布式机器学习方法中的子任务划分和模型训练方法\n难以直接应用于图神经网络。针对大规模图流数据场景下的分布式图神经网络\n训练优化问题，本文提出了基于图摘要的分布式图神经网络优化训练算法——\nDSGNN 模型。DSGNN 模型采用“领导——工作者”工作模式，首先由领导节\n点利用一个基于边分割的图流划分算法对原图进行划分并将划分子图分配给各\n个工作节点。工作节点随后执行一个基于图摘要技术的小批量训练并将训练结\n果通过一个注意力层返回给领导节点，最后由领导节点汇总结果并计算梯度，\n并根据梯度同步更新所有计算节点上的模型。基于四个真实世界的大规模图数\n据集上的大量实验，结果表明DSGNN 模型可以大大加速GNN 模型的训练，\n并且在链路预测任务上的F1 分数显著高于其它分布式图神经网络模型。",
+    "research_problem": "面向大规模动态图的图神经网络优化机制研究",
+    "novelty_points": [
+      {
+        "point_id": "NP-1",
+        "claim": "提出了一种基于图摘要的大规模时序图表示学习方法GSAERU，通过图摘要技术将动态时序图映射到固定规模的新图，解决了GNN输出无法直接输入RNN训练的问题。",
+        "claim_en": "Proposed a large-scale sequential graph representation learning method GSAERU based on graph summarization, which maps dynamic sequential graphs to fixed-size new graphs via graph summarization, solving the problem that GNN outputs cannot be directly fed into RNN for training.",
+        "technical_features": [
+          "将动态时序图建模为各时刻原图快照的序列",
+          "在单时间步上通过图摘要技术压缩原图，将压缩后的新图输入图自编码器，利用与原图的重构误差训练原图节点的表征",
+          "将单时间步图表征输入循环神经网络学习时间维度上的特征信息与依赖关系"
+        ],
+        "technical_features_en": [
+          "Modeling dynamic sequential graphs as a sequence of snapshots of the original graph at each time step",
+          "Compressing the original graph via graph summarization at a single time step, feeding the compressed new graph into a graph autoencoder, and training node representations using reconstruction error with the original graph",
+          "Feeding single-time-step graph representations into a recurrent neural network to learn temporal feature information and dependencies"
+        ],
+        "source_locations": [
+          "摘要",
+          "作者贡献段1"
+        ]
+      },
+      {
+        "point_id": "NP-2",
+        "claim": "提出了一种基于图摘要的分布式图神经网络优化训练框架DSGNN，采用领导-工作者模式，在工作节点上基于图摘要技术进行小批量训练，并通过注意力层返回结果给领导节点。",
+        "claim_en": "Proposed a distributed graph neural network optimization training framework DSGNN based on graph summarization, adopting a leader-worker mode, where workers perform mini-batch training based on graph summarization and return results to the leader through an attention layer.",
+        "technical_features": [
+          "采用领导-工作者工作模式，领导节点负责划分原图并分配子图，同时同步更新模型参数",
+          "工作节点基于图摘要技术进行小批量训练，并将训练结果通过注意力层返回给领导节点",
+          "领导节点汇总结果并计算梯度，根据梯度同步更新所有计算节点上的模型"
+        ],
+        "technical_features_en": [
+          "Adopting a leader-worker mode, where the leader partitions the original graph and assigns subgraphs, and synchronously updates model parameters",
+          "Workers perform mini-batch training based on graph summarization and return training results to the leader through an attention layer",
+          "The leader summarizes results, computes gradients, and synchronously updates models on all computing nodes according to the gradients"
+        ],
+        "source_locations": [
+          "摘要",
+          "作者贡献段2"
+        ]
+      },
+      {
+        "point_id": "NP-3",
+        "claim": "提出了一种基于边分割的图流划分算法Sketch-DBH，利用Count-Min Sketch存储节点度数信息并使用最小堆维护高频节点信息，实现常数时间内返回查询结果并生成子图编号。",
+        "claim_en": "Proposed a graph stream partitioning algorithm Sketch-DBH based on edge partitioning, which uses Count-Min Sketch to store node degree information and a min-heap to maintain high-frequency node information, enabling constant-time query results and generating subgraph IDs.",
+        "technical_features": [
+          "使用Count-Min Sketch概率数据结构存储每个节点的度数信息",
+          "使用最小堆维护图流数据中的高频节点信息",
+          "在常数时间内返回查询结果，并根据节点度数信息生成单条图流数据即将被分配到的子图编号",
+          "高效完成大规模图流数据的划分且确保负载均衡"
+        ],
+        "technical_features_en": [
+          "Using Count-Min Sketch probabilistic data structure to store degree information of each node",
+          "Using a min-heap to maintain high-frequency node information in graph stream data",
+          "Returning query results in constant time and generating subgraph IDs for each graph stream edge based on node degree information",
+          "Efficiently partitioning large-scale graph stream data while ensuring load balance"
+        ],
+        "source_locations": [
+          "作者贡献段2"
+        ]
+      }
+    ],
+    "keywords_zh": [
+      "图表示学习",
+      "深度学习",
+      "图神经网络",
+      "分布式技术"
+    ],
+    "keywords_en": [
+      "graph representation learning",
+      "deep learning",
+      "graph neural network",
+      "distributed"
+    ],
+    "research_tasks": [
+      {
+        "task_id": "T-1",
+        "novelty_point_id": "NP-1",
+        "task_type": "literature_search",
+        "language": "en",
+        "description": "针对该查新点执行英文文献检索。",
+        "attempt": 1
+      },
+      {
+        "task_id": "T-1",
+        "novelty_point_id": "NP-2",
+        "task_type": "literature_search",
+        "language": "en",
+        "description": "针对该查新点执行英文文献检索。",
+        "attempt": 1
+      },
+      {
+        "task_id": "T-1",
+        "novelty_point_id": "NP-3",
+        "task_type": "literature_search",
+        "language": "en",
+        "description": "针对该查新点执行英文文献检索。",
+        "attempt": 1
+      }
+    ]
+  },
+  "evidence_cards": [
+    {
+      "card_id": "card_fc5433010f3a4c0f77b19d8c",
+      "task_id": "T-1",
+      "novelty_point_id": "NP-1",
+      "document_title": "Balancing Summarization and Change Detection in Graph Streams",
+      "main_contribution": "Proposes a quantitative methodology to balance graph summarization and graph change detection in graph streams, using a hierarchical latent variable model and minimum description length principle to design parameterized summary graphs for detecting statistically significant changes in streaming graphs.",
+      "overlaps": [
+        "Applies graph summarization to compress large-scale graphs into smaller scale graphs, similar to GSAERU's use of graph summarization to compress dynamic sequential graphs",
+        "Deals with graph streams (temporal/dynamic graphs), overlapping with GSAERU's modeling of dynamic sequential graphs as a sequence of snapshots"
+      ],
+      "differences": [
+        "Focuses on change detection rather than representation learning; does not train node representations",
+        "Does not use graph autoencoders or reconstruction error for representation learning",
+        "Does not use recurrent neural networks (RNN) to learn temporal dependencies in graph representations",
+        "Does not address the problem of GNN outputs being fed into RNN for training"
+      ],
+      "sources": [
+        {
+          "title": "Balancing Summarization and Change Detection in Graph Streams",
+          "quote": "Graph summarization compresses large-scale graphs into a smaller scale. However, the question remains: To what extent should the original graph be compressed? This problem is solved from the perspective of graph change detection, aiming to detect statistically significant changes using a stream of summary graphs.",
+          "location": "artifact art_a4b03ccff6df4518c3399802 chars:92-406",
+          "doi": null,
+          "url": "https://arxiv.org/pdf/2311.18694"
+        }
+      ],
+      "cited_by_paper": null,
+      "possible_baseline": false,
+      "relevance": 0.5,
+      "confidence": 0.8,
+      "evidence_ids": [
+        "ev_f515449bb44a917f35a40153"
+      ]
+    },
+    {
+      "card_id": "card_76436aaa84bd83613d169b2a",
+      "task_id": "T-1",
+      "novelty_point_id": "NP-2",
+      "document_title": "SDT-GNN: Streaming-based Distributed Training Framework for Graph Neural Networks",
+      "main_contribution": "Proposes SDT-GNN, a streaming-based distributed GNN training framework that takes a stream of edges as input for graph partitioning to reduce memory requirements, enabling distributed GNN training on large graphs.",
+      "overlaps": [
+        "Proposes a distributed GNN training framework leveraging multiple GPUs/computing nodes",
+        "Addresses memory reduction for GNN training on large graphs"
+      ],
+      "differences": [
+        "Uses streaming-based graph partitioning (SPRING algorithm), not graph summarization, to reduce memory",
+        "No leader-worker mode; no leader partitioning the original graph and assigning subgraphs with synchronous model updates",
+        "No attention layer returning training results to a leader node",
+        "No mini-batch training on workers based on graph summarization"
+      ],
+      "sources": [
+        {
+          "title": "SDT-GNN: Streaming-based Distributed Training Framework for Graph Neural Networks",
+          "quote": "we propose SDT-GNN, a streaming-based distributed GNN training framework. Unlike the existing frameworks that load the entire graph in memory, it takes a stream of edges as input for graph partitioning to reduce the memory requirement for partitioning.",
+          "location": "artifact art_54da6e025cc0ed386d08e5d1 chars:361-613",
+          "doi": null,
+          "url": "https://arxiv.org/pdf/2404.02300"
+        }
+      ],
+      "cited_by_paper": null,
+      "possible_baseline": false,
+      "relevance": 0.5,
+      "confidence": 0.85,
+      "evidence_ids": [
+        "ev_b17f39fbcfb12fe1d8214499"
+      ]
+    },
+    {
+      "card_id": "card_430dca87eee8908e02934852",
+      "task_id": "T-1",
+      "novelty_point_id": "NP-2",
+      "document_title": "Scaling R-GCN Training with Graph Summarization",
+      "main_contribution": "Proposes using graph summarization techniques to compress graphs for training Relational Graph Convolutional Networks (R-GCN), reducing memory requirements, then transferring weights back to the original graph for inference.",
+      "overlaps": [
+        "Uses graph summarization to compress the graph for GNN training, reducing memory/computational overhead",
+        "Trains a GNN (R-GCN) on the graph summary and transfers learned weights back to the original graph"
+      ],
+      "differences": [
+        "Not a distributed training framework; operates on a single machine/GPU memory context rather than multiple computing nodes",
+        "No leader-worker mode; no leader partitioning the original graph and assigning subgraphs to workers",
+        "No attention layer returning training results to a leader node",
+        "No mini-batch training on worker nodes based on graph summarization",
+        "Weights are transferred back to the original graph for inference, not synchronized across computing nodes via gradients"
+      ],
+      "sources": [
+        {
+          "title": "Scaling R-GCN Training with Graph Summarization",
+          "quote": "we experiment with the use of graph summarization techniques to compress the graph and hence reduce the amount of memory needed. After training the R-GCN on the graph summary, we transfer the weights back to the original graph and attempt to perform inference on it.",
+          "location": "artifact art_5a95e23353233acf80dfb52a chars:265-531",
+          "doi": "10.1145/3487553.3524719",
+          "url": "https://arxiv.org/pdf/2203.02622"
+        }
+      ],
+      "cited_by_paper": null,
+      "possible_baseline": false,
+      "relevance": 0.55,
+      "confidence": 0.85,
+      "evidence_ids": [
+        "ev_1598b6c5df6dcc2e02caa241"
+      ]
+    },
+    {
+      "card_id": "card_3d7e93f223ec9a0008567f35",
+      "task_id": "T-1",
+      "novelty_point_id": "NP-3",
+      "document_title": "A distributed skewed stream processing system based on scoring high-frequency key perception",
+      "main_contribution": "SH-Stream: a distributed skewed stream processing system that identifies high-frequency keys in streams via a scoring probabilistic prediction algorithm and achieves load balancing by splitting identified high-frequency keys.",
+      "overlaps": [
+        "Identifies and maintains high-frequency keys in streams (analogous to the claim's high-frequency node maintenance)",
+        "Achieves load balancing by splitting high-frequency keys (overlaps with the claim's load-balance objective)"
+      ],
+      "differences": [
+        "Targets general distributed stream processing systems (DSPS), not graph stream partitioning",
+        "Does not use Count-Min Sketch probabilistic data structure for storing node degree information",
+        "Does not use a min-heap to maintain high-frequency node information",
+        "Does not generate subgraph IDs for graph stream edges based on node degree information"
+      ],
+      "sources": [
+        {
+          "title": "A distributed skewed stream processing system based on scoring high-frequency key perception",
+          "quote": "To accurately identify high-frequency keys in streams, we introduce a scoring probabilistic prediction algorithm and establish effective maintenance mechanisms for these high-frequency keys. Load balancing is achieved through the judicious splitting of identified high-frequency keys.",
+          "location": "artifact art_a20357a3ccfdaf942021e0a5 chars:706-990",
+          "doi": "10.1007/s11227-025-07465-7",
+          "url": "http://link.springer.com/openurl/fulltext?id=doi:10.1007/s11227-025-07465-7"
+        }
+      ],
+      "cited_by_paper": null,
+      "possible_baseline": false,
+      "relevance": 0.3,
+      "confidence": 0.6,
+      "evidence_ids": [
+        "ev_0c5a253dc585c0fa13ec4701"
+      ]
+    }
+  ],
+  "rejected_evidence": [],
+  "novelty_reviews": [
+    {
+      "novelty_point_id": "NP-1",
+      "status": "reviewed",
+      "verdict": "partially_novel",
+      "verdict_reason": "单卡核验显示该文献与查新点存在部分重合：均使用图摘要压缩大规模图并处理图流/动态时序图，对应特征1和特征2的图摘要压缩部分。但该文献核心目标是图流中的变化检测，不涉及表示学习；摘要中未提及图自编码器、重构误差训练节点表征（特征2核心）或RNN学习时间依赖（特征3），也未涉及GNN输出输入RNN的问题。该文献研究目标与查新点完全不同，仅构成宽泛概念层面的部分重合，不足以否定查新点的新颖性。",
+      "confidence": 0.8,
+      "highly_relevant_works": [
+        {
+          "work_id": "wrk_07b78e912a5c299d4357e161",
+          "card_ids": [
+            "card_fc5433010f3a4c0f77b19d8c"
+          ],
+          "evidence_ids": [
+            "ev_f515449bb44a917f35a40153"
+          ],
+          "relevance_reason": "该文献使用图摘要压缩大规模图并处理图流，与查新点的图摘要压缩和时序图快照建模存在部分重合，但聚焦变化检测而非表示学习，不涉及图自编码器、重构误差或RNN，属于部分相关文献。"
+        }
+      ],
+      "supplement_request": null
+    },
+    {
+      "novelty_point_id": "NP-2",
+      "status": "reviewed",
+      "verdict": "partially_novel",
+      "verdict_reason": "综合两张单卡核验结果：SDT-GNN（card_76436aaa84bd83613d169b2a）与查新点仅在'分布式GNN训练框架'宽泛层面重合，其核心为流式图划分（SPRING），与'基于图摘要'明确不同；Scaling R-GCN（card_430dca87eee8908e02934852）与查新点共享'基于图摘要进行GNN训练'特征，但明确为单机内存优化方案，未涉及分布式领导-工作者模式、注意力层返回结果或梯度同步。两篇文献均未完整公开查新点的核心组合特征（领导-工作者模式+图摘要小批量训练+注意力层返回+梯度同步更新），故判定为部分新颖。",
+      "confidence": 0.8,
+      "highly_relevant_works": [
+        {
+          "work_id": "wrk_0c0af5018413ad476ba2d09d",
+          "card_ids": [
+            "card_76436aaa84bd83613d169b2a"
+          ],
+          "evidence_ids": [
+            "ev_b17f39fbcfb12fe1d8214499"
+          ],
+          "relevance_reason": "同为分布式GNN训练框架，在'多计算节点分布式训练大图'层面与查新点重合；但采用流式图划分而非图摘要，且无领导-工作者模式与注意力层，未覆盖查新点核心特征。"
+        },
+        {
+          "work_id": "wrk_69b3cecda02343b983f9dbc2",
+          "card_ids": [
+            "card_430dca87eee8908e02934852"
+          ],
+          "evidence_ids": [
+            "ev_1598b6c5df6dcc2e02caa241"
+          ],
+          "relevance_reason": "该文献与查新点共享'基于图摘要进行GNN训练'特征，但明确为单机内存优化方案，未涉及分布式领导-工作者架构、注意力层或梯度同步，是判定部分新颖的关键对比文献。"
+        }
+      ],
+      "supplement_request": null
+    },
+    {
+      "novelty_point_id": "NP-3",
+      "status": "reviewed",
+      "verdict": "partially_novel",
+      "verdict_reason": "单卡核验显示，SH-Stream（wrk_5ec4827aaf45a178e54f3b64）与查新点存在部分重合：均涉及流数据中高频键/节点的识别维护及通过拆分实现负载均衡。但该文献面向通用分布式流处理系统，而非基于边分割的图流划分；其采用评分概率预测算法识别高频键，未使用Count-Min Sketch存储节点度数，未使用最小堆维护高频节点，也未基于节点度数生成子图编号。摘要明确证实这些差异，故该文献未公开查新点所主张的技术组合（Count-Min Sketch+最小堆+常数时间子图编号生成）。",
+      "confidence": 0.7,
+      "highly_relevant_works": [
+        {
+          "work_id": "wrk_5ec4827aaf45a178e54f3b64",
+          "card_ids": [
+            "card_3d7e93f223ec9a0008567f35"
+          ],
+          "evidence_ids": [
+            "ev_0c5a253dc585c0fa13ec4701"
+          ],
+          "relevance_reason": "部分相关：该文献在流数据高频键维护与负载均衡目标上与查新点重合，但领域（通用DSPS而非图流划分）及核心技术（评分概率预测，非Count-Min Sketch+最小堆+子图编号生成）均不同，未公开查新点主张的组合。"
+        }
+      ],
+      "supplement_request": null
+    }
+  ],
+  "insufficient_final_evidence_points": [],
+  "issues": [],
+  "rounds": 1,
+  "report": {
+    "paper_id": "MF2033k6lC",
+    "conclusions": [
+      {
+        "novelty_point_id": "NP-1",
+        "review_status": "reviewed",
+        "verdict": "partially_novel",
+        "verdict_reason": "单卡核验显示该文献与查新点存在部分重合：均使用图摘要压缩大规模图并处理图流/动态时序图，对应特征1和特征2的图摘要压缩部分。但该文献核心目标是图流中的变化检测，不涉及表示学习；摘要中未提及图自编码器、重构误差训练节点表征（特征2核心）或RNN学习时间依赖（特征3），也未涉及GNN输出输入RNN的问题。该文献研究目标与查新点完全不同，仅构成宽泛概念层面的部分重合，不足以否定查新点的新颖性。",
+        "confidence": 0.8,
+        "summary": "查新点提出GSAERU模型，结合图摘要压缩与图自编码器、RNN实现大规模时序图表征学习。经检证据卡片揭示，现有文献中存在使用图摘要处理图流/动态图的工作（card_fc5433010f3a4c0f77b19d8c），但与查新点在目标（变化检测vs表示学习）和核心机制（未使用图自编码器重构误差及RNN时序依赖学习）上存在显著差异，部分重合仅限于宽泛的图摘要压缩概念层面。因此，查新点主张的技术组合在已有证据下未见完整公开，判定为部分新颖。",
+        "supporting_card_ids": [
+          "card_fc5433010f3a4c0f77b19d8c"
+        ],
+        "counter_card_ids": [],
+        "highly_relevant_works": [
+          {
+            "work_id": "wrk_07b78e912a5c299d4357e161",
+            "card_ids": [
+              "card_fc5433010f3a4c0f77b19d8c"
+            ],
+            "evidence_ids": [
+              "ev_f515449bb44a917f35a40153"
+            ],
+            "relevance_reason": "该文献使用图摘要压缩大规模图并处理图流，与查新点的图摘要压缩和时序图快照建模存在部分重合，但聚焦变化检测而非表示学习，不涉及图自编码器、重构误差或RNN，属于部分相关文献。"
+          }
+        ]
+      },
+      {
+        "novelty_point_id": "NP-2",
+        "review_status": "reviewed",
+        "verdict": "partially_novel",
+        "verdict_reason": "综合两张单卡核验结果：SDT-GNN（card_76436aaa84bd83613d169b2a）与查新点仅在'分布式GNN训练框架'宽泛层面重合，其核心为流式图划分（SPRING），与'基于图摘要'明确不同；Scaling R-GCN（card_430dca87eee8908e02934852）与查新点共享'基于图摘要进行GNN训练'特征，但明确为单机内存优化方案，未涉及分布式领导-工作者模式、注意力层返回结果或梯度同步。两篇文献均未完整公开查新点的核心组合特征（领导-工作者模式+图摘要小批量训练+注意力层返回+梯度同步更新），故判定为部分新颖。",
+        "confidence": 0.8,
+        "summary": "查新点提出DSGNN分布式GNN训练框架，采用领导-工作者模式，结合图摘要小批量训练与注意力层返回结果。检索发现的现有工作中，SDT-GNN（card_76436aaa84bd83613d169b2a）同为分布式GNN框架但采用流式图划分而非图摘要，且无领导-工作者模式与注意力层；Scaling R-GCN（card_430dca87eee8908e02934852）使用图摘要压缩训练GNN，但仅限单机内存优化，未涉及分布式架构和注意力层。两文献皆未覆盖查新点的核心组合特征，因此判定为部分新颖。",
+        "supporting_card_ids": [
+          "card_76436aaa84bd83613d169b2a",
+          "card_430dca87eee8908e02934852"
+        ],
+        "counter_card_ids": [],
+        "highly_relevant_works": [
+          {
+            "work_id": "wrk_0c0af5018413ad476ba2d09d",
+            "card_ids": [
+              "card_76436aaa84bd83613d169b2a"
+            ],
+            "evidence_ids": [
+              "ev_b17f39fbcfb12fe1d8214499"
+            ],
+            "relevance_reason": "同为分布式GNN训练框架，在'多计算节点分布式训练大图'层面与查新点重合；但采用流式图划分而非图摘要，且无领导-工作者模式与注意力层，未覆盖查新点核心特征。"
+          },
+          {
+            "work_id": "wrk_69b3cecda02343b983f9dbc2",
+            "card_ids": [
+              "card_430dca87eee8908e02934852"
+            ],
+            "evidence_ids": [
+              "ev_1598b6c5df6dcc2e02caa241"
+            ],
+            "relevance_reason": "该文献与查新点共享'基于图摘要进行GNN训练'特征，但明确为单机内存优化方案，未涉及分布式领导-工作者架构、注意力层或梯度同步，是判定部分新颖的关键对比文献。"
+          }
+        ]
+      },
+      {
+        "novelty_point_id": "NP-3",
+        "review_status": "reviewed",
+        "verdict": "partially_novel",
+        "verdict_reason": "单卡核验显示，SH-Stream（wrk_5ec4827aaf45a178e54f3b64）与查新点存在部分重合：均涉及流数据中高频键/节点的识别维护及通过拆分实现负载均衡。但该文献面向通用分布式流处理系统，而非基于边分割的图流划分；其采用评分概率预测算法识别高频键，未使用Count-Min Sketch存储节点度数，未使用最小堆维护高频节点，也未基于节点度数生成子图编号。摘要明确证实这些差异，故该文献未公开查新点所主张的技术组合（Count-Min Sketch+最小堆+常数时间子图编号生成）。",
+        "confidence": 0.7,
+        "summary": "查新点提出基于边分割的图流划分算法Sketch-DBH，采用Count-Min Sketch存储节点度数、最小堆维护高频节点。检索发现的SH-Stream（card_3d7e93f223ec9a0008567f35）面向通用流处理系统，采用评分概率预测识别高频键，未使用Count-Min Sketch、最小堆或子图编号生成，仅在负载均衡目标及高频键维护概念上有所重合，未公开查新点的技术组合，故判定为部分新颖。",
+        "supporting_card_ids": [
+          "card_3d7e93f223ec9a0008567f35"
+        ],
+        "counter_card_ids": [],
+        "highly_relevant_works": [
+          {
+            "work_id": "wrk_5ec4827aaf45a178e54f3b64",
+            "card_ids": [
+              "card_3d7e93f223ec9a0008567f35"
+            ],
+            "evidence_ids": [
+              "ev_0c5a253dc585c0fa13ec4701"
+            ],
+            "relevance_reason": "部分相关：该文献在流数据高频键维护与负载均衡目标上与查新点重合，但领域（通用DSPS而非图流划分）及核心技术（评分概率预测，非Count-Min Sketch+最小堆+子图编号生成）均不同，未公开查新点主张的组合。"
+          }
+        ]
+      }
+    ],
+    "missing_references": [],
+    "missing_baselines": [],
+    "citation_issues": [],
+    "limitations": [
+      "检索覆盖范围：本次查新基于英文文献检索，每个查新点仅执行了一轮检索（attempt=1），且仅通过单卡核验（每点一张或两张证据卡）进行新颖性判断。未补充中文数据库、专利、学位论文等来源，也未执行多轮迭代检索，覆盖范围有限。",
+      "有效证据卡数量：每个查新点均获得了有效证据卡，但数量较少（NP-1有1张，NP-2有2张，NP-3有1张）。这些卡片足以支撑Reviewer的部分新颖判断，但不足以构成全面的否定性检索结论。",
+      "检索成功率：输入中未提供各来源检索执行的具体成功/失败信息，因此无法区分检索失败与成功零命中。本次报告仅能基于已有证据卡和Retriever返回的内容进行陈述，检索覆盖的实际完整性未知。"
+    ]
+  }
+}

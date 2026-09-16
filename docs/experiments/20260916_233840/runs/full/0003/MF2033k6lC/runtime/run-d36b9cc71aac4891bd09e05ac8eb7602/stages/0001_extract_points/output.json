@@ -1,0 +1,69 @@
+{
+  "issues": [],
+  "novelty_points": [
+    {
+      "claim": "提出了一种基于图摘要的大规模时序图表示学习方法GSAERU，通过图摘要技术将动态时序图映射为固定规模的新图，解决了GNN输出无法直接输入RNN训练的问题，并利用图自编码器与循环神经网络学习时序特征。",
+      "claim_en": "Proposed a large-scale sequential graph representation learning method GSAERU based on graph summarization, which maps dynamic sequential graphs to fixed-size new graphs via graph summarization, solving the problem that GNN outputs cannot be directly fed into RNN, and uses graph autoencoder and recurrent neural network to learn temporal features.",
+      "point_id": "NP-1",
+      "source_locations": [
+        "abstract: GSAERU模型由“图表征学习模块”和“时序学习模块”两部分构成...",
+        "作者贡献段1: 提出了一种新的图表示学习模型——GSAERU...通过引入图摘要技术将原图映射到固定规模的新图，解决了GNN模型输出无法直接输入到RNN模型中进行训练的问题"
+      ],
+      "technical_features": [
+        "将动态时序图建模为各时刻原图快照的序列",
+        "在单时间步上，通过图摘要技术压缩原图，将压缩后的新图输入图自编码器，利用与原图的重构误差训练原图节点表征",
+        "将单时间步图表征输入循环神经网络，学习时间维度上的特征信息与依赖关系"
+      ],
+      "technical_features_en": [
+        "Model dynamic sequential graphs as a sequence of snapshots of the original graph at each time step",
+        "At each time step, compress the original graph via graph summarization, feed the compressed new graph into a graph autoencoder, and train node representations using reconstruction error with the original graph",
+        "Feed the per-time-step graph representations into a recurrent neural network to learn temporal features and dependencies"
+      ]
+    },
+    {
+      "claim": "提出了一种基于图摘要的分布式图神经网络训练框架DSGNN，采用“领导-工作者”模式，领导节点负责图划分和模型同步更新，工作者节点基于图摘要技术进行小批量训练，并通过注意力层返回结果。",
+      "claim_en": "Proposed a distributed graph neural network training framework DSGNN based on graph summarization, adopting a leader-worker mode where the leader performs graph partitioning and synchronous model updates, and workers perform mini-batch training based on graph summarization and return results via an attention layer.",
+      "point_id": "NP-2",
+      "source_locations": [
+        "abstract: DSGNN模型采用“领导——工作者”工作模式...",
+        "作者贡献段2: 提出了一种新的基于图摘要的分布式图神经网络训练框架，称为DSGNN..."
+      ],
+      "technical_features": [
+        "采用“领导-工作者”工作模式",
+        "领导节点利用基于边分割的图流划分算法对原图进行划分，并将子图分配给工作节点",
+        "工作节点执行基于图摘要技术的小批量训练",
+        "训练结果通过注意力层返回给领导节点",
+        "领导节点汇总结果并计算梯度，同步更新所有计算节点上的模型"
+      ],
+      "technical_features_en": [
+        "Adopt a leader-worker mode",
+        "The leader partitions the original graph using an edge-segmentation-based graph stream partitioning algorithm and assigns subgraphs to workers",
+        "Workers perform mini-batch training based on graph summarization",
+        "Training results are returned to the leader through an attention layer",
+        "The leader aggregates results, computes gradients, and synchronously updates models on all computing nodes"
+      ]
+    },
+    {
+      "claim": "提出了一种基于边分割的图流划分算法Sketch-DBH，利用Count-Min Sketch存储节点度数信息，并使用最小堆维护高频节点信息，实现常数时间内返回查询结果并生成子图编号，确保负载均衡。",
+      "claim_en": "Proposed an edge-segmentation-based graph stream partitioning algorithm Sketch-DBH, which uses Count-Min Sketch to store node degree information and a min-heap to maintain high-frequency node information, enabling constant-time query results and generating subgraph IDs, ensuring load balancing.",
+      "point_id": "NP-3",
+      "source_locations": [
+        "作者贡献段2: 提出了一种新的基于边分割的图流划分算法——Sketch-DBH...通过Count-Min Sketch这一概率数据结构存储每个节点的度数信息，并使用一个最小堆维护图流数据中的高频节点信息，使其可以在常数时间内返回查询结果并以此根据节点度数信息生成单条图流数据即将被分配到的子图编号"
+      ],
+      "technical_features": [
+        "使用Count-Min Sketch概率数据结构存储每个节点的度数信息",
+        "使用最小堆维护图流数据中的高频节点信息",
+        "在常数时间内返回查询结果",
+        "根据节点度数信息生成单条图流数据即将被分配到的子图编号",
+        "高效完成大规模图流数据的划分且确保负载均衡"
+      ],
+      "technical_features_en": [
+        "Use Count-Min Sketch probabilistic data structure to store degree information of each node",
+        "Use a min-heap to maintain high-frequency node information in graph streams",
+        "Return query results in constant time",
+        "Generate the subgraph ID to which each graph stream item will be assigned based on node degree information",
+        "Efficiently partition large-scale graph stream data while ensuring load balancing"
+      ]
+    }
+  ]
+}

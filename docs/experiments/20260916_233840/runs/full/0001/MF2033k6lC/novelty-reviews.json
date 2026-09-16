@@ -1,0 +1,182 @@
+{
+  "paper_id": "MF2033k6lC",
+  "reviews": [
+    {
+      "novelty_point_id": "NP-1",
+      "status": "reviewed",
+      "verdict": "partially_novel",
+      "verdict_reason": "单卡核验显示该文献与查新点存在部分重合：均使用图摘要压缩大规模图并处理图流/动态时序图，对应特征1和特征2的图摘要压缩部分。但该文献核心目标是图流中的变化检测，不涉及表示学习；摘要中未提及图自编码器、重构误差训练节点表征（特征2核心）或RNN学习时间依赖（特征3），也未涉及GNN输出输入RNN的问题。该文献研究目标与查新点完全不同，仅构成宽泛概念层面的部分重合，不足以否定查新点的新颖性。",
+      "confidence": 0.8,
+      "highly_relevant_works": [
+        {
+          "work_id": "wrk_07b78e912a5c299d4357e161",
+          "card_ids": [
+            "card_fc5433010f3a4c0f77b19d8c"
+          ],
+          "evidence_ids": [
+            "ev_f515449bb44a917f35a40153"
+          ],
+          "relevance_reason": "该文献使用图摘要压缩大规模图并处理图流，与查新点的图摘要压缩和时序图快照建模存在部分重合，但聚焦变化检测而非表示学习，不涉及图自编码器、重构误差或RNN，属于部分相关文献。"
+        }
+      ],
+      "supplement_request": null
+    },
+    {
+      "novelty_point_id": "NP-2",
+      "status": "reviewed",
+      "verdict": "partially_novel",
+      "verdict_reason": "综合两张单卡核验结果：SDT-GNN（card_76436aaa84bd83613d169b2a）与查新点仅在'分布式GNN训练框架'宽泛层面重合，其核心为流式图划分（SPRING），与'基于图摘要'明确不同；Scaling R-GCN（card_430dca87eee8908e02934852）与查新点共享'基于图摘要进行GNN训练'特征，但明确为单机内存优化方案，未涉及分布式领导-工作者模式、注意力层返回结果或梯度同步。两篇文献均未完整公开查新点的核心组合特征（领导-工作者模式+图摘要小批量训练+注意力层返回+梯度同步更新），故判定为部分新颖。",
+      "confidence": 0.8,
+      "highly_relevant_works": [
+        {
+          "work_id": "wrk_0c0af5018413ad476ba2d09d",
+          "card_ids": [
+            "card_76436aaa84bd83613d169b2a"
+          ],
+          "evidence_ids": [
+            "ev_b17f39fbcfb12fe1d8214499"
+          ],
+          "relevance_reason": "同为分布式GNN训练框架，在'多计算节点分布式训练大图'层面与查新点重合；但采用流式图划分而非图摘要，且无领导-工作者模式与注意力层，未覆盖查新点核心特征。"
+        },
+        {
+          "work_id": "wrk_69b3cecda02343b983f9dbc2",
+          "card_ids": [
+            "card_430dca87eee8908e02934852"
+          ],
+          "evidence_ids": [
+            "ev_1598b6c5df6dcc2e02caa241"
+          ],
+          "relevance_reason": "该文献与查新点共享'基于图摘要进行GNN训练'特征，但明确为单机内存优化方案，未涉及分布式领导-工作者架构、注意力层或梯度同步，是判定部分新颖的关键对比文献。"
+        }
+      ],
+      "supplement_request": null
+    },
+    {
+      "novelty_point_id": "NP-3",
+      "status": "reviewed",
+      "verdict": "partially_novel",
+      "verdict_reason": "单卡核验显示，SH-Stream（wrk_5ec4827aaf45a178e54f3b64）与查新点存在部分重合：均涉及流数据中高频键/节点的识别维护及通过拆分实现负载均衡。但该文献面向通用分布式流处理系统，而非基于边分割的图流划分；其采用评分概率预测算法识别高频键，未使用Count-Min Sketch存储节点度数，未使用最小堆维护高频节点，也未基于节点度数生成子图编号。摘要明确证实这些差异，故该文献未公开查新点所主张的技术组合（Count-Min Sketch+最小堆+常数时间子图编号生成）。",
+      "confidence": 0.7,
+      "highly_relevant_works": [
+        {
+          "work_id": "wrk_5ec4827aaf45a178e54f3b64",
+          "card_ids": [
+            "card_3d7e93f223ec9a0008567f35"
+          ],
+          "evidence_ids": [
+            "ev_0c5a253dc585c0fa13ec4701"
+          ],
+          "relevance_reason": "部分相关：该文献在流数据高频键维护与负载均衡目标上与查新点重合，但领域（通用DSPS而非图流划分）及核心技术（评分概率预测，非Count-Min Sketch+最小堆+子图编号生成）均不同，未公开查新点主张的组合。"
+        }
+      ],
+      "supplement_request": null
+    }
+  ],
+  "phase": "complete",
+  "card_reviews": [
+    {
+      "index": 1,
+      "card_id": "card_fc5433010f3a4c0f77b19d8c",
+      "novelty_point_id": "NP-1",
+      "status": "completed",
+      "review": {
+        "novelty_point_id": "NP-1",
+        "status": "reviewed",
+        "verdict": "partially_novel",
+        "verdict_reason": "该文献与查新点存在部分重合：均使用图摘要压缩大规模图，且均处理图流/动态时序图（对应特征1和特征2的图摘要压缩部分）。但该文献核心目标是图流中的变化检测，不涉及表示学习；摘要中未提及图自编码器、重构误差训练节点表征（特征2核心）或RNN学习时间依赖（特征3），也未涉及GNN输出输入RNN的问题。该文献研究目标与查新点完全不同，仅构成宽泛概念层面的部分重合，不足以否定查新点的新颖性。",
+        "confidence": 0.8,
+        "highly_relevant_works": [
+          {
+            "work_id": "wrk_07b78e912a5c299d4357e161",
+            "card_ids": [
+              "card_fc5433010f3a4c0f77b19d8c"
+            ],
+            "evidence_ids": [
+              "ev_f515449bb44a917f35a40153"
+            ],
+            "relevance_reason": "该文献使用图摘要压缩大规模图并处理图流，与查新点的图摘要压缩和时序图快照建模存在部分重合，但聚焦变化检测而非表示学习，不涉及图自编码器、重构误差或RNN，属于部分相关文献。"
+          }
+        ],
+        "supplement_request": null
+      }
+    },
+    {
+      "index": 2,
+      "card_id": "card_76436aaa84bd83613d169b2a",
+      "novelty_point_id": "NP-2",
+      "status": "completed",
+      "review": {
+        "novelty_point_id": "NP-2",
+        "status": "reviewed",
+        "verdict": "partially_novel",
+        "verdict_reason": "SDT-GNN 与查新点仅在'分布式GNN训练框架'这一宽泛层面重合。其核心方法为基于边流的流式图划分（SPRING算法）以降低内存，与查新点的'基于图摘要'技术明确不同（摘要原文直接支持）。摘要完整描述了框架设计，未提及领导-工作者模式、注意力层返回结果、基于图摘要的小批量训练等查新点区分特征，故该文献未覆盖查新点的核心组合特征，不构成对DSGNN的预期。",
+        "confidence": 0.8,
+        "highly_relevant_works": [
+          {
+            "work_id": "wrk_0c0af5018413ad476ba2d09d",
+            "card_ids": [
+              "card_76436aaa84bd83613d169b2a"
+            ],
+            "evidence_ids": [
+              "ev_b17f39fbcfb12fe1d8214499"
+            ],
+            "relevance_reason": "同为分布式GNN训练框架，在'多计算节点分布式训练大图'层面与查新点重合；但采用流式图划分而非图摘要，且无领导-工作者模式与注意力层，未覆盖查新点核心特征。"
+          }
+        ],
+        "supplement_request": null
+      }
+    },
+    {
+      "index": 3,
+      "card_id": "card_430dca87eee8908e02934852",
+      "novelty_point_id": "NP-2",
+      "status": "completed",
+      "review": {
+        "novelty_point_id": "NP-2",
+        "status": "reviewed",
+        "verdict": "partially_novel",
+        "verdict_reason": "该文献与查新点存在部分重合：均采用图摘要技术压缩图以用于GNN训练。但该文献明确以单机/单GPU内存约束为问题背景（摘要明示'too large for the amount of memory available on most GPUs'），训练R-GCN于图摘要后直接将权重转移回原图进行推理，未涉及分布式领导-工作者模式、领导节点划分子图并分配、工作节点小批量训练、注意力层返回结果或梯度同步更新多节点模型。摘要完整覆盖全文贡献，单机框架与分布式架构在问题设定上互斥，差异特征得到充分支持。该文献覆盖了查新点中'基于图摘要进行GNN训练'这一特征，但未覆盖分布式优化训练框架的核心特征，故判定为部分新颖。",
+        "confidence": 0.85,
+        "highly_relevant_works": [
+          {
+            "work_id": "wrk_69b3cecda02343b983f9dbc2",
+            "card_ids": [
+              "card_430dca87eee8908e02934852"
+            ],
+            "evidence_ids": [
+              "ev_1598b6c5df6dcc2e02caa241"
+            ],
+            "relevance_reason": "该文献与查新点共享'基于图摘要进行GNN训练'特征，但明确为单机内存优化方案，未涉及分布式领导-工作者架构、注意力层或梯度同步，是判定部分新颖的关键对比文献。"
+          }
+        ],
+        "supplement_request": null
+      }
+    },
+    {
+      "index": 4,
+      "card_id": "card_3d7e93f223ec9a0008567f35",
+      "novelty_point_id": "NP-3",
+      "status": "completed",
+      "review": {
+        "novelty_point_id": "NP-3",
+        "status": "reviewed",
+        "verdict": "partially_novel",
+        "verdict_reason": "该文献（SH-Stream）与查新点存在部分重合：均涉及流数据中高频键/节点的识别维护及通过拆分实现负载均衡。但该文献面向通用分布式流处理系统（DSPS），而非基于边分割的图流划分；其采用'评分概率预测算法'识别高频键，未使用Count-Min Sketch存储节点度数，未使用最小堆维护高频节点，也未基于节点度数生成子图编号。摘要明确证实这些差异，故该文献未公开查新点所主张的技术组合（Count-Min Sketch+最小堆+常数时间子图编号生成）。",
+        "confidence": 0.7,
+        "highly_relevant_works": [
+          {
+            "work_id": "wrk_5ec4827aaf45a178e54f3b64",
+            "card_ids": [
+              "card_3d7e93f223ec9a0008567f35"
+            ],
+            "evidence_ids": [
+              "ev_0c5a253dc585c0fa13ec4701"
+            ],
+            "relevance_reason": "部分相关：该文献在流数据高频键维护与负载均衡目标上与查新点重合，但领域（通用DSPS而非图流划分）及核心技术（评分概率预测，非Count-Min Sketch+最小堆+子图编号生成）均不同，未公开查新点主张的组合。"
+          }
+        ],
+        "supplement_request": null
+      }
+    }
+  ]
+}

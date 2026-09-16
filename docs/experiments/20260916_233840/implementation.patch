@@ -1,0 +1,242 @@
+diff --git a/backend/src/novelty_agent_framework/agents/evidence_reviewer.py b/backend/src/novelty_agent_framework/agents/evidence_reviewer.py
+index 8294a54..6c79d9e 100644
+--- a/backend/src/novelty_agent_framework/agents/evidence_reviewer.py
++++ b/backend/src/novelty_agent_framework/agents/evidence_reviewer.py
+@@ -222,7 +222,7 @@ class NoveltyEvidenceReviewer(EvidenceReviewer):
+                 repaired = await repair_json(client, result.final_content,
+                                              NoveltyPointReview.model_json_schema(), self.model_options)
+                 review = NoveltyPointReview.model_validate_json(_extract_json(repaired))
+-            return _validate_review_references(review, request)
++            return _guard_unsupported_absence(_validate_review_references(review, request), request)
+         except Exception as exc:
+             if not self.config.fail_closed:
+                 raise
+@@ -265,7 +265,7 @@ class NoveltyEvidenceReviewer(EvidenceReviewer):
+             if any(evidence_id not in validated_ids for work in review.highly_relevant_works
+                    for evidence_id in work.evidence_ids):
+                 raise ValueError("summary cites evidence not verified by a card review")
+-            return _validate_review_references(review, request)
++            return _guard_unsupported_absence(_validate_review_references(review, request), request)
+         except Exception as exc:
+             if not self.config.fail_closed:
+                 raise
+@@ -562,6 +562,51 @@ def _insufficient_review(point_id: str, reason: str) -> NoveltyPointReview:
+     )
+ 
+ 
++_STRONG_ABSENCE = re.compile(
++    r"未(?:使用|采用|涉及|包含|公开|披露|用)|不涉及|没有(?:使用|采用|包含)|"
++    r"\b(?:does not use|doesn't use|does not include|does not involve|without)\b",
++    re.IGNORECASE,
++)
++_NOVEL_ABSENCE = re.compile(r"未(?:覆盖|见|报告|呈现)|不包含|\b(?:not disclosed|not reported)\b", re.IGNORECASE)
++_EXPLICIT_NEGATION = re.compile(
++    r"未(?:使用|采用|包含|涉及)|不(?:使用|采用|包含|涉及)|"
++    r"\b(?:not|without|no)\b", re.IGNORECASE,
++)
++
++
++def _guard_unsupported_absence(
++    review: NoveltyPointReview, request: NoveltyPointReviewRequest
++) -> NoveltyPointReview:
++    """Fail closed on absence claims when no supplied quotation states an absence.
++
++    This is a narrow syntactic guard, not a substitute for semantic review. It
++    deliberately preserves the relevant works so partial overlap remains visible.
++    """
++    if review.status is not ReviewStatus.REVIEWED:
++        return review
++    assertions = "\n".join([
++        review.verdict_reason or "",
++        *(work.relevance_reason for work in review.highly_relevant_works),
++    ])
++    if not (_STRONG_ABSENCE.search(assertions) or
++            (review.verdict is not None and review.verdict.value == "novel" and
++             _NOVEL_ABSENCE.search(assertions))):
++        return review
++    if any(_EXPLICIT_NEGATION.search(item.quote) for item in request.evidence):
++        return review
++    return NoveltyPointReview(
++        novelty_point_id=review.novelty_point_id,
++        status=ReviewStatus.INSUFFICIENT_EVIDENCE,
++        highly_relevant_works=[work.model_copy(update={
++            "relevance_reason": "该文献与查新点存在局部相关性；具体技术差异尚待原文核验。",
++        }) for work in review.highly_relevant_works],
++        supplement_request=SupplementRequest(
++            reason="裁定依赖文献未采用特征的断言，但输入引文没有直接支持该否定；需核验原文。",
++            missing_aspects=["核验被声称未采用的关键特征"],
++        ),
++    )
++
++
+ def _compact_summary_rows(request, card_reviews):
+     """Project existing indexed results; never serialize full Card/Evidence objects.
+ 
+diff --git a/backend/src/novelty_agent_framework/agents/point_extractor.py b/backend/src/novelty_agent_framework/agents/point_extractor.py
+index fd48085..bfae7d1 100644
+--- a/backend/src/novelty_agent_framework/agents/point_extractor.py
++++ b/backend/src/novelty_agent_framework/agents/point_extractor.py
+@@ -239,15 +239,18 @@ class NoveltyPointExtractorAgent(NoveltyPointExtractor):
+              "source_locations": point.source_locations}
+             for index, point in enumerate(candidates, start=1)
+         ]
++        contribution_context = [part[:CONTRIBUTION_EXCERPT_LIMIT]
++                                for part in digest.full_text_excerpt.split("[作者贡献段 ")[1:4]]
+         data = self._complete_json(
+             prompt_name="reviewer/review_points",
+             variables={
+                 "points_json": json.dumps(numbered, ensure_ascii=False),
++                "contribution_context_json": json.dumps(contribution_context, ensure_ascii=False),
+                 "delete_schema": json.dumps(
+                     DELETE_SCHEMA, ensure_ascii=False
+                 ),
+             },
+-            payload={"points": numbered},
++            payload={"points": numbered, "contribution_context": contribution_context},
+             fallback_user_prompt=(
+                 "请判断候选查新点中哪些是重复条目，输出 {\"delete_indices\": [编号列表]}；"
+                 "只有技术目标、核心机制和适用范围等价且仅为复述时才删除；"
+@@ -270,6 +273,7 @@ class NoveltyPointExtractorAgent(NoveltyPointExtractor):
+             delete_indices.clear()
+         self.last_trace["deduplication"] = {
+             "input": numbered,
++            "contribution_context": contribution_context,
+             "raw_delete_indices": data,
+             "invalid_entries": invalid_entries,
+             "invalid_indices": invalid_indices,
+diff --git a/backend/src/novelty_agent_framework/prompts/extractor/extract_points.md b/backend/src/novelty_agent_framework/prompts/extractor/extract_points.md
+index 7fe5f54..37c5035 100644
+--- a/backend/src/novelty_agent_framework/prompts/extractor/extract_points.md
++++ b/backend/src/novelty_agent_framework/prompts/extractor/extract_points.md
+@@ -1,12 +1,15 @@
+ ---
+ name: extractor.extract_points
+-version: 3
++version: 4
+ system: |
+   ## 规则:
+   你是论文查新系统的查新点提取 Agent。从论文摘要、作者声明贡献和正文片段中
+   提取作者提出、具有原文依据且可独立检索比较的技术声明；不要提前判定其新颖性。
+   每点聚焦一个技术目标和核心机制。整体框架中的子算法若有独立目标、处理规则或
+   优化机制，应保留独立比较机会；不能仅因框架使用它就视为重复。
++  子模块要单列，还须有作者明确提出的独立算法或独立贡献依据，且其处理目标与
++  框架整体不同；仅把框架中的常规步骤展开描述、或换一种说法重复框架机制，
++  应并入框架的 technical_features，不能另立查新点。请据 source_locations 核对。
+   速度、内存和准确率等指标通常是效果验证，不得为凑点拆成独立技术贡献。
+   普通现有组件不能自动称为作者原创。拆分或概括不能改变作者声明范围。
+   所有 claim 与 technical_features 使用中文表述，并同时输出对应的英文表述
+diff --git a/backend/src/novelty_agent_framework/prompts/reviewer/review_points.md b/backend/src/novelty_agent_framework/prompts/reviewer/review_points.md
+index be197b0..598b3ac 100644
+--- a/backend/src/novelty_agent_framework/prompts/reviewer/review_points.md
++++ b/backend/src/novelty_agent_framework/prompts/reviewer/review_points.md
+@@ -1,12 +1,19 @@
+ ---
+ name: reviewer.review_points
+-version: 3
++version: 5
+ system: |
+   ## 规则
+   你是论文查新系统的查新点审查 Agent。你的任务只是判断候选查新点中哪些是重复条目：
+   只在技术目标、核心机制和适用范围实质等价，且一条仅为另一条复述时删除。
+   框架和有独立处理机制的子算法不因包含关系自动重复。只变换速度、内存、
+   准确率等效果数字的同一方法不是新机制。无法确认等价时不要删除。
++  若候选只把框架内的普通实现步骤展开，既无作者声明的独立算法依据，
++  也无区别于整体框架的技术目标，则它是框架查新点的复述，应删除该子条目。
++  保留原文单列提出、具有独立目标和处理规则的算法。
++  即使作者把同一操作及其速度、内存效果列成不同贡献句，也应按一个机制处理；
++  不能仅因 source_locations 指向不同条目就视为独立技术。
++  请结合有界作者贡献原文核验：不同编号段落可能只是同一机制的实现与效果，
++  另有明确独立名称、目标和处理规则的算法仍应保留。
+   审查候选的 claim、technical_features、source_locations，而非只看标题。
+   禁止重写、合并或新增任何查新点。
+   你的输出必须严格符合要求的 JSON schema。
+@@ -20,5 +27,8 @@ system: |
+ 候选查新点（编号从 1 开始）：
+ {points_json}
+ 
++作者贡献原文片段（仅用于判断机制是否重复，不得新增候选）：
++{contribution_context_json}
++
+ 输出 schema：
+ {delete_schema}
+diff --git a/tests/test_novelty_point_reviewer.py b/tests/test_novelty_point_reviewer.py
+index a68cf5d..23b50db 100644
+--- a/tests/test_novelty_point_reviewer.py
++++ b/tests/test_novelty_point_reviewer.py
+@@ -258,6 +258,49 @@ def test_review_card_and_summary_receive_evidence_boundary_templates():
+     assert client.calls[1][1].tool_choice == "none"
+ 
+ 
++@pytest.mark.parametrize("card_only", [True, False])
++def test_reviewer_rejects_absence_claim_unsupported_by_positive_quote(card_only):
++    output = json.loads(_review_json())
++    output["verdict_reason"] = "该摘要未使用目标算法，因此查新点部分新颖。"
++    output["highly_relevant_works"][0]["relevance_reason"] = "文献未采用目标算法。"
++    client = ScriptedClient(ModelResponse(content=json.dumps(output, ensure_ascii=False)))
++    reviewer = _reviewer(client, RecordingReader())
++    request = _request()
++    review = asyncio.run(reviewer.review_card(request) if card_only
++                         else reviewer.summarize_reviews(request, [_indexed_review()]))
++    assert review.status.value == "insufficient_evidence"
++    assert review.verdict is None
++    assert review.highly_relevant_works[0].evidence_ids == ["E-1"]
++    assert "未采用" not in review.highly_relevant_works[0].relevance_reason
++    assert "输入引文没有直接支持" in review.supplement_request.reason
++
++
++def test_reviewer_rejects_novel_verdict_based_on_abstract_nondisclosure():
++    output = json.loads(_review_json())
++    output["verdict"] = "novel"
++    output["verdict_reason"] = "摘要未披露目标机制，未覆盖完整组合，因此具有新颖性。"
++    output["highly_relevant_works"][0]["relevance_reason"] = "文献未披露目标机制。"
++    review = asyncio.run(_reviewer(
++        ScriptedClient(ModelResponse(content=json.dumps(output, ensure_ascii=False))),
++        RecordingReader(),
++    ).summarize_reviews(_request(), [_indexed_review()]))
++    assert review.status.value == "insufficient_evidence"
++    assert review.verdict is None
++    assert "未披露" not in review.highly_relevant_works[0].relevance_reason
++
++
++def test_reviewer_keeps_limited_judgment_when_quote_explicitly_denies_feature():
++    request = _request()
++    request.evidence[0].quote = "We do not use the target algorithm."
++    output = json.loads(_review_json())
++    output["verdict_reason"] = "文献未使用目标算法，且原文明确说明这一点。"
++    review = asyncio.run(_reviewer(
++        ScriptedClient(ModelResponse(content=json.dumps(output, ensure_ascii=False))),
++        RecordingReader(),
++    ).review_card(request))
++    assert review.status.value == "reviewed"
++
++
+ class PointReviewer:
+     def __init__(self):
+         self.requests = []
+diff --git a/tests/test_point_extractor.py b/tests/test_point_extractor.py
+index 732bf4f..c20d688 100644
+--- a/tests/test_point_extractor.py
++++ b/tests/test_point_extractor.py
+@@ -268,6 +268,22 @@ def test_extractor_dedup_receives_features_and_ignores_noninteger_indices():
+     assert agent.last_trace["deduplication"]["invalid_entries"] == [True, 2.0, "3"]
+ 
+ 
++def test_extractor_dedup_receives_only_bounded_author_contributions():
++    paper = make_paper().model_copy(update={"full_text": (
++        "论文开头" + "正文" * 1200 + "主要贡献总结" + "独立算法" * 400
++    )})
++    client = SequencedClient([
++        json.dumps({"novelty_points": three_items()}),
++        json.dumps({"delete_indices": []}),
++    ])
++    agent = make_agent(client)
++    agent.extract(build_paper_digest(paper), previous_brief=None, attempt=1)
++    review_user = client.calls[1][0][1].content
++    assert "独立算法" in review_user
++    assert "论文开头" not in review_user
++    assert len(agent.last_trace["deduplication"]["contribution_context"][0]) <= 1200
++
++
+ def test_extractor_coverage_followup_shares_budget_and_records_numbering():
+     items = three_items()
+     client = SequencedClient([

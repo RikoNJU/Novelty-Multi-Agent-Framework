@@ -1,0 +1,562 @@
+{
+  "agent_arguments": {
+    "max_results": 10,
+    "query": "distributed GNN training graph summarization leader-worker attention"
+  },
+  "agent_tool_call_id": "01a0aad43ac0feea19d90e880a0620be",
+  "business_status": "NORMAL",
+  "duration": 0.960503,
+  "duration_ms": 960,
+  "error": null,
+  "execution_status": "SUCCESS",
+  "failure_phase": null,
+  "finished_at": "2026-09-16T15:27:11.636039+00:00",
+  "normalized_result": {
+    "query": "distributed GNN training graph summarization leader-worker attention",
+    "results": [
+      {
+        "published_at": "2023-03-01T14:09:25",
+        "snippet": "图神经网络(GNNs)是一种在图上学习的深度学习模型,并已成功应用于许多领域。尽管 GNN 有效,但 GNN 有效地扩展到大型图仍然具有挑战性 。作为一种补救措施, 分布式计算 成为训练大规模 GNN 的一种有前途的解决方案,因为它能够提供丰富的计算资源。然而, 图结构的依赖性 增加了实现高效分布式 GNN 训练的难度,导致 大量通信和工作负载不平衡 。近年来,在分布式 GNN 训练方面做出了很多努力,并提出了一系列训练算法和系统。然而,缺乏 对从图处理到分布式执行的优化技术 的系统回顾。在本次调查中,我们分析了分布式 GNN 训练的 三大挑战 ,即 海量特征通信、模型精度损失 和 工作负载不平衡 。然后,我们为分布式 GNN 训练中的优化技术引入了一种 新的分类法 ,以应对上述挑战。新分类法将现有技术分为四类,即 GNN 数据分区、GNN 批处理生成、GNN 执行模型 和 GNN 通信协议 。我们仔细讨论了每个类别中的技术。最后,我们分别总结了用于 多GPU、GPU 集群和 CPU 集群 的现有分布式 GNN 系统,并讨论了可扩展 GNN 的 未来发展方向 。 简介 GNN 是处理图建模问题的强大工具,并已广泛应用于各种应用,包括社交网络(例如,社交垃圾邮件发送者检测 [87、112]、社交网络分析 [91])、生物信息学(例如,蛋白质界面预测 [35]、疾病-基因关联 [83])、药物发现 [11、66]、流量预测[61]、医疗保健 [2、21]、推荐 [32、49、 55、111]、自然语言处理 [134、145] 和其他 [26、85、133、141、144]。通过将图结构信息集成到深度学习模型中,GNN 可以获得比传统机器学习和数据挖掘方法明显更好的结果。 GNN 模型通常包含多图卷积层,其中每个顶点聚合其邻居的最新状态,更新顶点的状态,并将神经网络(即转换)应用于顶点的更新状态。以传统的图卷积网络(GCN)为例,在每一层中,一个顶点使用 求和函数 聚合邻居状态和自己的状态,然后应用 单层MLP 来转换新状态。如果层数为 𝐿,则此类过程重复 𝐿次。第𝐿层生成的顶点状态被下游任务使用,如节点分类、链路预测等。在过去的几年中,许多研究工作在图神经网络模型的设计方面取得了显着进展。突出的模型包括 GCN [108]、GraphSAGE [46]、GAT [95]、GIN [118] 和许多其他特定于应用程序的 GNN 模型 [128、130]。迄今为止,有数十项调查审查了 GNN 模型 [114、116、135、147]。",
+        "source_name": "Tencent腾讯（腾讯官方网）",
+        "source_record_id": "src_1eee03f7afd673e24551ee6f",
+        "title": "【阅读】Distributed Graph Neural Network Training: A Survey——翻译",
+        "url": "https://cloud.tencent.com/developer/article/2230138"
+      },
+      {
+        "published_at": "2023-02-26T11:31:45",
+        "snippet": "来自计算所发布的 研究分布式GNN训练中使用的各种优化技术,提供了分布式GNN训练的全面综述 。 图神经网络(GNNs)在图学习方面的有效性已被证明是广泛应用领域的一种强大的算法模型。为了扩大GNN训练以适应大规模和不断增长的图,最有前途的解决方案是分布式训练,它将训练工作量分布到多个计算节点。然而,对分布式GNN训练的工作流程、计算模式、通信模式和优化技术仍有初步了解。 在本文中,我们通过研究分布式GNN训练中使用的各种优化技术,提供了分布式GNN训练的全面综述 。首先,根据分布式GNN训练的工作流程将其分为几类;此外,还介绍了它们的计算模式和通信模式,以及最新工作提出的优化技术。其次,介绍了分布式GNN训练的软件框架和硬件平台,以加深对分布式GNN训练的了解。第三,将分布式GNN训练与深度神经网络的分布式训练进行了比较,强调了分布式GNN训练的唯一性。最后,讨论了该领域的研究热点和发展机遇。 https://www.zhuanzhi.ai/paper/e85caecb1c45f7412fc38a4f681097ab 1. 概述 图具有强大的数据表示能力,特别是在表示对象之间的关联[1],[2]等方面有着广泛的应用 。许多真实世界的数据可以自然地表示为由一组顶点和边组成的图。以社交网络为例[3],[4],图中的顶点表示人,边表示人在Facebook上的互动[5]。如图1 (a)所示,圆圈代表顶点,箭头代表边。另一个众所周知的例子是知识图[6]、[7],其中顶点表示实体,而边表示实体之间的关系[8]。图神经网络(GNNs)在图[9]-[11]的学习中表现出优于其他算法模型的性能。深度神经网络(DNNs)已广泛应用于分析图像[12]等欧几里德数据。然而,由于图[13]的任意大小和复杂的拓扑结构,非欧氏域的图数据对它们提出了挑战。此外,工业界识别的 深度学习 范式的一个主要弱点是不能有效地进行因果推理,这大大降低了智能系统[14]的认知能力。为此,GNN已成为图学习的主要范式,并赋予智能系统认知能力。如图1 (b)所示。GNN在获取图数据作为输入后,使用前向传播和后向传播来更新模型参数。然后将训练好的模型应用于图任务,包括顶点预测[15](预测特定顶点的属性),链接预测[16](预测两个顶点之间是否存在一条边),图预测[17](预测整个图的属性),如图1 (c)所示。 由于GNN的优越性,它们在许多关键领域的各种实际应用中得到了广泛的应用。这些实际应用包括知识推理[18]、 自然语言处理 [19]、[20]、 机器翻译 [21]、 推荐系统 [22]-[24]、视觉推理",
+        "source_name": "Tencent腾讯（腾讯官方网）",
+        "source_record_id": "src_1dc3274385ea01b5579cbd4d",
+        "title": "GNN如何分布式?中科院综述《图神经网络分布式训练》",
+        "url": "https://cloud.tencent.com/developer/article/2226265"
+      },
+      {
+        "published_at": "2026-09-03T00:00:00",
+        "snippet": "The goal of graph summarization is to represent large graphs in a structured and compact way. A graph summary based on equivalence classes preserves pre-defined features of a graph's vertex within a k k -hop neighborhood such as the vertex labels and edge labels. Based on these neighborhood characteristics, the vertex is assigned to an equivalence class. The calculation of the assigned equivalence class must be a permutation invariant operation on the pre-defined features. This is achieved by sorting on the feature values, e. g., the edge labels, which is computationally expensive, and subsequently hashing the result. Graph Neural Networks (GNN) fulfill the permutation invariance requirement. We formulate the problem of graph summarization as a subgraph classification task on the root vertex of the k k -hop neighborhood. We adapt different GNN architectures, both based on the popular message-passing protocol and alternative approaches, to perform the structural graph summarization task. We compare different GNNs with a standard multi-layer perceptron (MLP) and Bloom filter as non-neural method. For our experiments, we consider four popular graph summary models on a large web graph. This resembles challenging multi-class vertex classification tasks with the numbers of classes ranging from 576 576 to multiple hundreds of thousands. Our results show that the performance of GNNs are close to each other. In three out of four experiments, the non-message-passing GraphMLP model outperforms the other GNNs. The performance of the standard MLP is extraordinary good, especially in the presence of many classes. Finally, the Bloom filter outperforms all neural architectures by a large margin, except for the dataset with the fewest number of 576 576 classes.doi:10.48550/arXiv.2203.05919Blasi, MaximilianFreudenreich, Manuel",
+        "source_name": "无",
+        "source_record_id": "src_bedb664c032805fad758a753",
+        "title": "Graph Summarization with Graph Neural Networks",
+        "url": "http://ieeexplore.ieee.org/document/10032447/"
+      },
+      {
+        "published_at": "2024-02-17T14:35:43",
+        "snippet": "1 概述 GNN 在许多任务上实现了最先进的性能, 但在处理具有大量数据和严格延迟要求的实际应用程序时,面临可扩展性挑战 。为了应对这些挑战,已经进行了许多关于如何加速GNN的研究。这些加速技术涉及GNN的各个方面,从智能训练和推理算法到高效系统和定制硬件。本综述提供了GNN加速的分类,回顾了现有的方法,并提出了未来的研究方向。 如图1所示,GNN加速技术分为三类:算法、系统和定制硬件。算法包括修改图或样本以缓解节点依赖性,以及剪枝、量化和蒸馏等推理加速技术;系统包括GPU内核加速、用户定义函数优化和可扩展系统设计;定制硬件包括具有不同属性的加速器,支持不同级别的并行化和稀疏性。 图1 GNN加速的分类 2 GNN加速:训练算法 GNN训练旨在找到最佳参数𝜃*,使损失最小化。训练延迟主要来自感受野中的消息聚合,对于深度GNN,计算图可能变得巨大。训练加速的总体思路是减少计算图。有两种方法:图修改和采样。图修改分为两步:首先生成一个小图G',然后进行常规GNN训练。采样则是选择节点/边的子集来构建较小的计算图,修改是动态且隐式的。两种方法都能加速训练,但图修改可能会创建新的节点和边,而采样则保证所有节点和边都有机会被覆盖。 2.1 图修改 图修改分两步加速 GNN 训练。图修改方法包括图粗化、图稀疏化和图压缩。这些方法中的每一种都以不同的方式修改图 G 以创建自己的 G ' ,但所有 G ' 都是较小的图,可以加速 GNN 训练。这些图修改方法的说明如图2所示。 图2 图修改方法说明:图粗化方法执行图聚类并将节点簇合并为超级节点。图稀疏化方法删除不太重要的边。图压缩方法使用随机初始化的生成模型生成新的压缩图。对于修改后的图(最右列),黑色节点/边来自原始图,彩色节点/边是新创建的。 图粗化, 是一种减小图大小同时保留其整体结构的技术。通过将相同局部结构中的节点合并为“超级节点”,并将连接超级节点的边合并为“超级边”,可以得到粗图。图粗化的核心步骤是图聚类,通常与图谱相关。一些算法如受限谱近似和逆拉普拉斯,被用于保留一些图属性。黄等人提出了一种使用图粗化来加速GNN训练的通用框架,通过将图划分为K个簇,并设置超级节点特征和标签。还有其他相关工作,如GOREN和GraphZoom,但关注点不同。 图稀疏化, 通过删除冗余边来减少计算图,加速GNN训练。现有方法通常保留原始图的关键属性,如切割总权重、光谱特性和分层结构。",
+        "source_name": "Tencent腾讯（腾讯官方网）",
+        "source_record_id": "src_76bdd168780ee372ca718bfd",
+        "title": "图神经网络加速综述: 算法、系统和硬件",
+        "url": "https://cloud.tencent.com/developer/article/2388789"
+      },
+      {
+        "published_at": "2024-03-29T13:50:17",
+        "snippet": "GNN-to-MLP distillation旨在利用知识蒸馏(KD)通过模拟teacher GNN的输出表示来学习计算高效的多层感知器(student MLP)用于图数据。现有方法主要使MLP模仿GNN对少量类别标签的预测。然而,类别空间可能不足以覆盖众多不同的局部图结构,从而限制了从GNN到MLP的知识迁移的性能。为解决这一问题,我们提出通过直接标记节点的多样局部结构来学习新的强大图表示空间用于GNN-to-MLP蒸馏。具体来说,我们提出了VQ-VAE的变体在图数据上学习一个结构感知的标记器,该标记器可以将每个节点的局部子结构编码为离散化语义token。如下图所示 这些token构成了一个代码簿(codebook),作为一个新的图表示空间,能够识别具有相应代码索引的节点的不同局部图结构。然后,基于学习的codebook,我们提出了一种新的蒸馏目标,即soft code assignments,以直接将每个节点的结构知识从GNN传输到MLP。由此产生的框架VQGraph在跨七个图数据集的传导和归纳设置中实现了新的最先进性能。我们展示了VQGraph比GNN快828倍,并且分别比GNN和独立的MLP平均提高了3.90%和28.05%的准确率。",
+        "source_name": "北京智源人工智能研究院",
+        "source_record_id": "src_5853638039dd691f342ac4be",
+        "title": "[ICLR 2024] VQGraph: 重新审视图表示学习,将Graph空间Token化",
+        "url": "https://hub.baai.ac.cn/view/36109"
+      },
+      {
+        "published_at": "2025-02-13T23:10:00",
+        "snippet": "By Yuke Wu, Yiwen Zhang and Daniel Zhou for CS 224W course project Fall 2024. 颗粒流(Granular flows)在自然环境和人工环境中无处不在,包括大量离散颗粒(如沙子、砾石或雪)的运动。准确模拟这些流动的能力对于理解和缓解各种岩土灾害(如山体滑坡、泥石流和雪崩)至关重要。 然而,由于包括颗粒相互作用、摩擦以及颗粒材料的复杂行为在内的众多因素的错综复杂的相互作用,颗粒流的数值模拟面临着巨大的挑战。 目前,用于模拟颗粒流的传统数值方法,例如离散元法(Discrete Element Method,DEM)和物质点法(Material Point Method,MPM),虽然可以提供有价值的见解,但计算成本可能很高,尤其是在处理大型系统或长时间模拟时。DEM 跟踪单个粒子的运动和相互作用,提供高保真结果,但通常需要大量计算资源。另一方面,MPM 将材料离散化为物质点的集合,提供了一种更有效的方法,但可能会牺牲捕捉单个粒子详细行为的准确性。 该领域的持续研究对于开发更高效、更准确、更强大的模拟工具至关重要,最终将在工程、环境管理和灾害防备方面带来更安全、更可持续的实践。 在这篇博文中,我们希望利用机器学习框架基于图神经网络的模拟器 (Graph Neural Network-based Simulators,GNS) 作为替代模型来预测颗粒和流体流动动力学。 图神经网络 (Graph Neural Network,GNN) 的计算效率和通用性使其成为评估流出危险和其他需要大量模拟的颗粒流场景的有前途的工具。具体来说,我们希望展示 GNN 复制颗粒柱或水滴的坍塌及其与障碍物相互作用的能力。 Sanchez-Gonzalez 等人在《Learning to Simulate Complex Physics with Graph Networks》中介绍的 GNS 结构 GitHub 存储库 这是我们的 GitHub 存储库的链接,其中包含我们 GNS 模型的所有代码。README 文件提供了有关如何根据模拟数据训练 GNS 并呈现结果的说明。请下载代码,您应该能够在 VSCode 的帮助下执行训练过程。 基于图形神经网络的模拟器的 Git 存储库。 https://github.com/LeonardZ0731/gns_attention Colab 这是我们关联的 Google Colab 笔记本的链接。它基于我们的 GitHub 存储库,包含加载数据和执行训练的必要步骤。 https://colab.research.google.com/drive/1G2uEStj3of6zDIGacf03OnEM2usj4crV?usp=sharing&source=post_page-----08ed0a20b28d--------------------------------",
+        "source_name": "北京智源人工智能研究院",
+        "source_record_id": "src_87fea75a95a12c85cc548ed7",
+        "title": "项目实战 | 基于图神经网络的模拟器:预测颗粒和流体系统",
+        "url": "https://hub.baai.ac.cn/view/43329"
+      },
+      {
+        "published_at": "2023-10-25T09:33:36",
+        "snippet": "1. Does Graph Distillation See Like",
+        "source_name": "Tencent腾讯（腾讯官方网）",
+        "source_record_id": "src_5f118e742d4630e3410cd4a2",
+        "title": "GNN周报重磅回归!来自北航、北邮、慕尼黑大学、CMU等机构前沿论文研究",
+        "url": "https://cloud.tencent.com/developer/article/2351028"
+      },
+      {
+        "published_at": "2022-07-01T10:53:00",
+        "snippet": "尽管scalable GNN 近年来被广泛的研究,但是处理 large-scale 图数据时仍然存在挑战,其中主要的困难包括但不限于:服务器有限的计算资源、图数据节点之间的依赖关系、集中式数据存储和模型训练带来的隐私问题,一种直观的解决方案是实现 分布式训练 ,但是现有的分布式 GNN  训练方法 会导致高额的通信开销和内存消耗。基于此本文提出一种有效的分布式 GNN 训练方法 Learn Locally, Correct Globally(LLCG)。 LLCGarxiv.org/pdf/2111.08202.pdf 1. Motivation 现有的处理 large-scale 图数据的训练方法主要基于 采样技术 ,但是由于 GNN 的特点和当前服务器有限的内存容量和带宽,导致其训练效率仍然很低,同时 集中式数据存储 的假设将会导致隐私问题。一个标准的解决方案是基于多机的分布式训练,其将显著减少训练时间,并减小内存开销。同时可以通过避免本地机器之间相互访问数据,并只使用一个可信的第三方全局协调来解决隐私问题。 在实现 GNN 的分布式训练时将会不可避免地产生信息损失问题(将完整的图切分成多个子图将导致邻域缺失问题),现有的一些分布式 GNN 训练方法提出在多个本地机器之间传输节点特征或者节点嵌入来解决此问题,但是上述方法将会导致显著的通信开销并且存在隐私泄露的风险。 基于此,本文受周期性平均分布式优化的启发提出 LLCG ,在减小通信开销的基础上保证训练效果。步骤如下: 每个本地机器利用本地数据训练 GNN 模型(忽略缺失的边) 发送训练好的模型到可信的第三方进行周期性的模型聚合,之后接受聚合后的模型到本地继续训练 上述方法可以避免在本地机器之间进行节点特征或嵌入的传输,在一定程度上解决了隐私泄露问题,但是缺乏全局图结构和不同机器之间所持有图数据节点之间的依赖关系可能会导致显著的性能下降。为解决此问题,本文提出一种新的策略 Global Server Correction,其利用服务器上可用的全局图结构,在将平均的本地学习模型发送回每个本地机器之前对其进行细化。 2. Problem Formulation Training GCN on a single machine L ( θ ) = 1 N ∑ i ∈ V ϕ ( h i ( L ) , y i ) , h i ( ℓ ) = σ ( 1 | N",
+        "source_name": "知乎",
+        "source_record_id": "src_4c190d57eae16ce67113b7bd",
+        "title": "论文笔记:ICLR'22 Learn Locally, Correct Globally A Distributed Algorithm for Training GNNs",
+        "url": "https://zhuanlan.zhihu.com/p/536158540"
+      },
+      {
+        "published_at": "2022-09-21T11:55:52",
+        "snippet": "1. GNN 探究模型表达能力 How Powerful are K-hop Message Passing Graph Neural Networks Ordered Subgraph Aggregation Networks Convolutional Neural Networks on Graphs with Chebyshev Approximation, Revisited Exponentially Improving the Complexity of Simulating the Weisfeiler-Lehman Test with Graph Neural Networks Understanding Non-linearity in Graph Neural Networks from the Bayesian-Inference Perspective Understanding and Extending Subgraph GNNs by Rethinking Their Symmetries A Practical, Progressively-Expressive GNN 泛化性分析 Generalization Analysis of Message Passing Neural Networks on Large Random Graphs 减少Message Passing中的冗余计算 Redundancy-Free Message Passing for Graph Neural Networks Scalability Sketch-GNN: Scalable Graph Neural Networks with Sublinear Training Complexity 捕获长距离依赖 Capturing Graphs with Hypo-Elliptic Diffusions MGNNI: Multiscale Graph Neural Networks with Implicit Layers 强化节点表征(通过引入结构,距离特征,etc) Geodesic Graph Neural Network for Efficient Graph Representation Learning Template based Graph Neural Network with Optimal Transport Distances",
+        "source_name": "北京智源人工智能研究院",
+        "source_record_id": "src_131761bb23aba675a83371d2",
+        "title": "NeurIPS'22上的GNN好文集合 (表示能力、架构设计、图对比/自监督学习、分布偏移、可解释、推荐系统等)",
+        "url": "https://hub.baai.ac.cn/view/20589"
+      },
+      {
+        "published_at": "2022-12-01T11:49:46",
+        "snippet": "标题: 链接:https://arxiv.org/abs/2211.17068 作者:Li Sun,Junda Ye,Hao Peng,Feiyang Wang,Philip S. Yu 机构:School of Control and Computer Engineering, North China Electric Power University, Beijing , China, School of Computer Science, Beijing University of Posts and Telecommunications, Beijing , China 备注:Accepted by AAAI 2023 (Main Track), 9 pages, 4 figures 【2】 Directed Acyclic Graph Structure Learning from Dynamic Graphs 标题:从动态图中学习有向无环图结构 链接:https://arxiv.org/abs/2211.17029 作者:Shaohua Fan,Shuyang Zhang,Xiao Wang,Chuan Shi 机构:Beijing University of Posts and Telecommunications, China, Peng Cheng Laboratory, China 备注:Accepted by AAAI23 【3】 Generating Realistic Synthetic Relational Data through Graph Variational Autoencoders 标题:用图变分自动编码器生成真实的合成关系数据 链接:https://arxiv.org/abs/2211.16889 作者:Ciro Antonio Mami,Andrea Coser,Eric Medvet,Alexander T. P. Boudewijn,Marco Volpe,Michael Whitworth,Borut Svara,Gabriele Sgroi,Daniele Panfilo,Sebastiano Saccani 机构:AREA Science Park, Trieste, Italy, University of Trieste, Alexander T.P. Boudewijn, Aindo;, Katholieke Universiteit Leuven, Heverlee, Belgium, Business Integration Partners (BIP), Milan, Italy, Chaucer, Manchester, England, United Kingdom 备注:8 pages, 2 figures, 2 tables, Synthetic Data 4 ML workshop of the Thirty-sixth Conference on Neural Information Processing Systems (NeurIPS 2022) 【4】 T2G-Former: Organizing Tabular Features into Relation Graphs Promotes Heterogeneous Feature Interaction 标题: 标题:T2G-Forger:将表格要素组织到关系图中,促进异类要素交互",
+        "source_name": "知乎",
+        "source_record_id": "src_6feb6a1aedaa44e7fb2a7d78",
+        "title": "机器学习学术速递[2022.12.1]",
+        "url": "https://zhuanlan.zhihu.com/p/588287085"
+      }
+    ],
+    "succeeded": true,
+    "summary": "发现并保存 10 个 Web 候选来源",
+    "warnings": []
+  },
+  "raw_result": {
+    "arguments": {
+      "max_results": 10,
+      "query": "distributed GNN training graph summarization leader-worker attention"
+    },
+    "elapsed_ms": 960,
+    "error": null,
+    "payload": {
+      "search_result": {
+        "query": "distributed GNN training graph summarization leader-worker attention",
+        "results": [
+          {
+            "published_at": "2023-03-01T14:09:25",
+            "rank": 1,
+            "score": null,
+            "snippet": "图神经网络(GNNs)是一种在图上学习的深度学习模型,并已成功应用于许多领域。尽管 GNN 有效,但 GNN 有效地扩展到大型图仍然具有挑战性 。作为一种补救措施, 分布式计算 成为训练大规模 GNN 的一种有前途的解决方案,因为它能够提供丰富的计算资源。然而, 图结构的依赖性 增加了实现高效分布式 GNN 训练的难度,导致 大量通信和工作负载不平衡 。近年来,在分布式 GNN 训练方面做出了很多努力,并提出了一系列训练算法和系统。然而,缺乏 对从图处理到分布式执行的优化技术 的系统回顾。在本次调查中,我们分析了分布式 GNN 训练的 三大挑战 ,即 海量特征通信、模型精度损失 和 工作负载不平衡 。然后,我们为分布式 GNN 训练中的优化技术引入了一种 新的分类法 ,以应对上述挑战。新分类法将现有技术分为四类,即 GNN 数据分区、GNN 批处理生成、GNN 执行模型 和 GNN 通信协议 。我们仔细讨论了每个类别中的技术。最后,我们分别总结了用于 多GPU、GPU 集群和 CPU 集群 的现有分布式 GNN 系统,并讨论了可扩展 GNN 的 未来发展方向 。 简介 GNN 是处理图建模问题的强大工具,并已广泛应用于各种应用,包括社交网络(例如,社交垃圾邮件发送者检测 [87、112]、社交网络分析 [91])、生物信息学(例如,蛋白质界面预测 [35]、疾病-基因关联 [83])、药物发现 [11、66]、流量预测[61]、医疗保健 [2、21]、推荐 [32、49、 55、111]、自然语言处理 [134、145] 和其他 [26、85、133、141、144]。通过将图结构信息集成到深度学习模型中,GNN 可以获得比传统机器学习和数据挖掘方法明显更好的结果。 GNN 模型通常包含多图卷积层,其中每个顶点聚合其邻居的最新状态,更新顶点的状态,并将神经网络(即转换)应用于顶点的更新状态。以传统的图卷积网络(GCN)为例,在每一层中,一个顶点使用 求和函数 聚合邻居状态和自己的状态,然后应用 单层MLP 来转换新状态。如果层数为 𝐿,则此类过程重复 𝐿次。第𝐿层生成的顶点状态被下游任务使用,如节点分类、链路预测等。在过去的几年中,许多研究工作在图神经网络模型的设计方面取得了显着进展。突出的模型包括 GCN [108]、GraphSAGE [46]、GAT [95]、GIN [118] 和许多其他特定于应用程序的 GNN 模型 [128、130]。迄今为止,有数十项调查审查了 GNN 模型 [114、116、135、147]。",
+            "source_name": "Tencent腾讯（腾讯官方网）",
+            "source_record_id": "src_1eee03f7afd673e24551ee6f",
+            "title": "【阅读】Distributed Graph Neural Network Training: A Survey——翻译",
+            "url": "https://cloud.tencent.com/developer/article/2230138"
+          },
+          {
+            "published_at": "2023-02-26T11:31:45",
+            "rank": 2,
+            "score": null,
+            "snippet": "来自计算所发布的 研究分布式GNN训练中使用的各种优化技术,提供了分布式GNN训练的全面综述 。 图神经网络(GNNs)在图学习方面的有效性已被证明是广泛应用领域的一种强大的算法模型。为了扩大GNN训练以适应大规模和不断增长的图,最有前途的解决方案是分布式训练,它将训练工作量分布到多个计算节点。然而,对分布式GNN训练的工作流程、计算模式、通信模式和优化技术仍有初步了解。 在本文中,我们通过研究分布式GNN训练中使用的各种优化技术,提供了分布式GNN训练的全面综述 。首先,根据分布式GNN训练的工作流程将其分为几类;此外,还介绍了它们的计算模式和通信模式,以及最新工作提出的优化技术。其次,介绍了分布式GNN训练的软件框架和硬件平台,以加深对分布式GNN训练的了解。第三,将分布式GNN训练与深度神经网络的分布式训练进行了比较,强调了分布式GNN训练的唯一性。最后,讨论了该领域的研究热点和发展机遇。 https://www.zhuanzhi.ai/paper/e85caecb1c45f7412fc38a4f681097ab 1. 概述 图具有强大的数据表示能力,特别是在表示对象之间的关联[1],[2]等方面有着广泛的应用 。许多真实世界的数据可以自然地表示为由一组顶点和边组成的图。以社交网络为例[3],[4],图中的顶点表示人,边表示人在Facebook上的互动[5]。如图1 (a)所示,圆圈代表顶点,箭头代表边。另一个众所周知的例子是知识图[6]、[7],其中顶点表示实体,而边表示实体之间的关系[8]。图神经网络(GNNs)在图[9]-[11]的学习中表现出优于其他算法模型的性能。深度神经网络(DNNs)已广泛应用于分析图像[12]等欧几里德数据。然而,由于图[13]的任意大小和复杂的拓扑结构,非欧氏域的图数据对它们提出了挑战。此外,工业界识别的 深度学习 范式的一个主要弱点是不能有效地进行因果推理,这大大降低了智能系统[14]的认知能力。为此,GNN已成为图学习的主要范式,并赋予智能系统认知能力。如图1 (b)所示。GNN在获取图数据作为输入后,使用前向传播和后向传播来更新模型参数。然后将训练好的模型应用于图任务,包括顶点预测[15](预测特定顶点的属性),链接预测[16](预测两个顶点之间是否存在一条边),图预测[17](预测整个图的属性),如图1 (c)所示。 由于GNN的优越性,它们在许多关键领域的各种实际应用中得到了广泛的应用。这些实际应用包括知识推理[18]、 自然语言处理 [19]、[20]、 机器翻译 [21]、 推荐系统 [22]-[24]、视觉推理",
+            "source_name": "Tencent腾讯（腾讯官方网）",
+            "source_record_id": "src_1dc3274385ea01b5579cbd4d",
+            "title": "GNN如何分布式?中科院综述《图神经网络分布式训练》",
+            "url": "https://cloud.tencent.com/developer/article/2226265"
+          },
+          {
+            "published_at": "2026-09-03T00:00:00",
+            "rank": 3,
+            "score": null,
+            "snippet": "The goal of graph summarization is to represent large graphs in a structured and compact way. A graph summary based on equivalence classes preserves pre-defined features of a graph's vertex within a k k -hop neighborhood such as the vertex labels and edge labels. Based on these neighborhood characteristics, the vertex is assigned to an equivalence class. The calculation of the assigned equivalence class must be a permutation invariant operation on the pre-defined features. This is achieved by sorting on the feature values, e. g., the edge labels, which is computationally expensive, and subsequently hashing the result. Graph Neural Networks (GNN) fulfill the permutation invariance requirement. We formulate the problem of graph summarization as a subgraph classification task on the root vertex of the k k -hop neighborhood. We adapt different GNN architectures, both based on the popular message-passing protocol and alternative approaches, to perform the structural graph summarization task. We compare different GNNs with a standard multi-layer perceptron (MLP) and Bloom filter as non-neural method. For our experiments, we consider four popular graph summary models on a large web graph. This resembles challenging multi-class vertex classification tasks with the numbers of classes ranging from 576 576 to multiple hundreds of thousands. Our results show that the performance of GNNs are close to each other. In three out of four experiments, the non-message-passing GraphMLP model outperforms the other GNNs. The performance of the standard MLP is extraordinary good, especially in the presence of many classes. Finally, the Bloom filter outperforms all neural architectures by a large margin, except for the dataset with the fewest number of 576 576 classes.doi:10.48550/arXiv.2203.05919Blasi, MaximilianFreudenreich, Manuel",
+            "source_name": "无",
+            "source_record_id": "src_bedb664c032805fad758a753",
+            "title": "Graph Summarization with Graph Neural Networks",
+            "url": "http://ieeexplore.ieee.org/document/10032447/"
+          },
+          {
+            "published_at": "2024-02-17T14:35:43",
+            "rank": 4,
+            "score": null,
+            "snippet": "1 概述 GNN 在许多任务上实现了最先进的性能, 但在处理具有大量数据和严格延迟要求的实际应用程序时,面临可扩展性挑战 。为了应对这些挑战,已经进行了许多关于如何加速GNN的研究。这些加速技术涉及GNN的各个方面,从智能训练和推理算法到高效系统和定制硬件。本综述提供了GNN加速的分类,回顾了现有的方法,并提出了未来的研究方向。 如图1所示,GNN加速技术分为三类:算法、系统和定制硬件。算法包括修改图或样本以缓解节点依赖性,以及剪枝、量化和蒸馏等推理加速技术;系统包括GPU内核加速、用户定义函数优化和可扩展系统设计;定制硬件包括具有不同属性的加速器,支持不同级别的并行化和稀疏性。 图1 GNN加速的分类 2 GNN加速:训练算法 GNN训练旨在找到最佳参数𝜃*,使损失最小化。训练延迟主要来自感受野中的消息聚合,对于深度GNN,计算图可能变得巨大。训练加速的总体思路是减少计算图。有两种方法:图修改和采样。图修改分为两步:首先生成一个小图G',然后进行常规GNN训练。采样则是选择节点/边的子集来构建较小的计算图,修改是动态且隐式的。两种方法都能加速训练,但图修改可能会创建新的节点和边,而采样则保证所有节点和边都有机会被覆盖。 2.1 图修改 图修改分两步加速 GNN 训练。图修改方法包括图粗化、图稀疏化和图压缩。这些方法中的每一种都以不同的方式修改图 G 以创建自己的 G ' ,但所有 G ' 都是较小的图,可以加速 GNN 训练。这些图修改方法的说明如图2所示。 图2 图修改方法说明:图粗化方法执行图聚类并将节点簇合并为超级节点。图稀疏化方法删除不太重要的边。图压缩方法使用随机初始化的生成模型生成新的压缩图。对于修改后的图(最右列),黑色节点/边来自原始图,彩色节点/边是新创建的。 图粗化, 是一种减小图大小同时保留其整体结构的技术。通过将相同局部结构中的节点合并为“超级节点”,并将连接超级节点的边合并为“超级边”,可以得到粗图。图粗化的核心步骤是图聚类,通常与图谱相关。一些算法如受限谱近似和逆拉普拉斯,被用于保留一些图属性。黄等人提出了一种使用图粗化来加速GNN训练的通用框架,通过将图划分为K个簇,并设置超级节点特征和标签。还有其他相关工作,如GOREN和GraphZoom,但关注点不同。 图稀疏化, 通过删除冗余边来减少计算图,加速GNN训练。现有方法通常保留原始图的关键属性,如切割总权重、光谱特性和分层结构。",
+            "source_name": "Tencent腾讯（腾讯官方网）",
+            "source_record_id": "src_76bdd168780ee372ca718bfd",
+            "title": "图神经网络加速综述: 算法、系统和硬件",
+            "url": "https://cloud.tencent.com/developer/article/2388789"
+          },
+          {
+            "published_at": "2024-03-29T13:50:17",
+            "rank": 5,
+            "score": null,
+            "snippet": "GNN-to-MLP distillation旨在利用知识蒸馏(KD)通过模拟teacher GNN的输出表示来学习计算高效的多层感知器(student MLP)用于图数据。现有方法主要使MLP模仿GNN对少量类别标签的预测。然而,类别空间可能不足以覆盖众多不同的局部图结构,从而限制了从GNN到MLP的知识迁移的性能。为解决这一问题,我们提出通过直接标记节点的多样局部结构来学习新的强大图表示空间用于GNN-to-MLP蒸馏。具体来说,我们提出了VQ-VAE的变体在图数据上学习一个结构感知的标记器,该标记器可以将每个节点的局部子结构编码为离散化语义token。如下图所示 这些token构成了一个代码簿(codebook),作为一个新的图表示空间,能够识别具有相应代码索引的节点的不同局部图结构。然后,基于学习的codebook,我们提出了一种新的蒸馏目标,即soft code assignments,以直接将每个节点的结构知识从GNN传输到MLP。由此产生的框架VQGraph在跨七个图数据集的传导和归纳设置中实现了新的最先进性能。我们展示了VQGraph比GNN快828倍,并且分别比GNN和独立的MLP平均提高了3.90%和28.05%的准确率。",
+            "source_name": "北京智源人工智能研究院",
+            "source_record_id": "src_5853638039dd691f342ac4be",
+            "title": "[ICLR 2024] VQGraph: 重新审视图表示学习,将Graph空间Token化",
+            "url": "https://hub.baai.ac.cn/view/36109"
+          },
+          {
+            "published_at": "2025-02-13T23:10:00",
+            "rank": 6,
+            "score": null,
+            "snippet": "By Yuke Wu, Yiwen Zhang and Daniel Zhou for CS 224W course project Fall 2024. 颗粒流(Granular flows)在自然环境和人工环境中无处不在,包括大量离散颗粒(如沙子、砾石或雪)的运动。准确模拟这些流动的能力对于理解和缓解各种岩土灾害(如山体滑坡、泥石流和雪崩)至关重要。 然而,由于包括颗粒相互作用、摩擦以及颗粒材料的复杂行为在内的众多因素的错综复杂的相互作用,颗粒流的数值模拟面临着巨大的挑战。 目前,用于模拟颗粒流的传统数值方法,例如离散元法(Discrete Element Method,DEM)和物质点法(Material Point Method,MPM),虽然可以提供有价值的见解,但计算成本可能很高,尤其是在处理大型系统或长时间模拟时。DEM 跟踪单个粒子的运动和相互作用,提供高保真结果,但通常需要大量计算资源。另一方面,MPM 将材料离散化为物质点的集合,提供了一种更有效的方法,但可能会牺牲捕捉单个粒子详细行为的准确性。 该领域的持续研究对于开发更高效、更准确、更强大的模拟工具至关重要,最终将在工程、环境管理和灾害防备方面带来更安全、更可持续的实践。 在这篇博文中,我们希望利用机器学习框架基于图神经网络的模拟器 (Graph Neural Network-based Simulators,GNS) 作为替代模型来预测颗粒和流体流动动力学。 图神经网络 (Graph Neural Network,GNN) 的计算效率和通用性使其成为评估流出危险和其他需要大量模拟的颗粒流场景的有前途的工具。具体来说,我们希望展示 GNN 复制颗粒柱或水滴的坍塌及其与障碍物相互作用的能力。 Sanchez-Gonzalez 等人在《Learning to Simulate Complex Physics with Graph Networks》中介绍的 GNS 结构 GitHub 存储库 这是我们的 GitHub 存储库的链接,其中包含我们 GNS 模型的所有代码。README 文件提供了有关如何根据模拟数据训练 GNS 并呈现结果的说明。请下载代码,您应该能够在 VSCode 的帮助下执行训练过程。 基于图形神经网络的模拟器的 Git 存储库。 https://github.com/LeonardZ0731/gns_attention Colab 这是我们关联的 Google Colab 笔记本的链接。它基于我们的 GitHub 存储库,包含加载数据和执行训练的必要步骤。 https://colab.research.google.com/drive/1G2uEStj3of6zDIGacf03OnEM2usj4crV?usp=sharing&source=post_page-----08ed0a20b28d--------------------------------",
+            "source_name": "北京智源人工智能研究院",
+            "source_record_id": "src_87fea75a95a12c85cc548ed7",
+            "title": "项目实战 | 基于图神经网络的模拟器:预测颗粒和流体系统",
+            "url": "https://hub.baai.ac.cn/view/43329"
+          },
+          {
+            "published_at": "2023-10-25T09:33:36",
+            "rank": 7,
+            "score": null,
+            "snippet": "1. Does Graph Distillation See Like",
+            "source_name": "Tencent腾讯（腾讯官方网）",
+            "source_record_id": "src_5f118e742d4630e3410cd4a2",
+            "title": "GNN周报重磅回归!来自北航、北邮、慕尼黑大学、CMU等机构前沿论文研究",
+            "url": "https://cloud.tencent.com/developer/article/2351028"
+          },
+          {
+            "published_at": "2022-07-01T10:53:00",
+            "rank": 8,
+            "score": null,
+            "snippet": "尽管scalable GNN 近年来被广泛的研究,但是处理 large-scale 图数据时仍然存在挑战,其中主要的困难包括但不限于:服务器有限的计算资源、图数据节点之间的依赖关系、集中式数据存储和模型训练带来的隐私问题,一种直观的解决方案是实现 分布式训练 ,但是现有的分布式 GNN  训练方法 会导致高额的通信开销和内存消耗。基于此本文提出一种有效的分布式 GNN 训练方法 Learn Locally, Correct Globally(LLCG)。 LLCGarxiv.org/pdf/2111.08202.pdf 1. Motivation 现有的处理 large-scale 图数据的训练方法主要基于 采样技术 ,但是由于 GNN 的特点和当前服务器有限的内存容量和带宽,导致其训练效率仍然很低,同时 集中式数据存储 的假设将会导致隐私问题。一个标准的解决方案是基于多机的分布式训练,其将显著减少训练时间,并减小内存开销。同时可以通过避免本地机器之间相互访问数据,并只使用一个可信的第三方全局协调来解决隐私问题。 在实现 GNN 的分布式训练时将会不可避免地产生信息损失问题(将完整的图切分成多个子图将导致邻域缺失问题),现有的一些分布式 GNN 训练方法提出在多个本地机器之间传输节点特征或者节点嵌入来解决此问题,但是上述方法将会导致显著的通信开销并且存在隐私泄露的风险。 基于此,本文受周期性平均分布式优化的启发提出 LLCG ,在减小通信开销的基础上保证训练效果。步骤如下: 每个本地机器利用本地数据训练 GNN 模型(忽略缺失的边) 发送训练好的模型到可信的第三方进行周期性的模型聚合,之后接受聚合后的模型到本地继续训练 上述方法可以避免在本地机器之间进行节点特征或嵌入的传输,在一定程度上解决了隐私泄露问题,但是缺乏全局图结构和不同机器之间所持有图数据节点之间的依赖关系可能会导致显著的性能下降。为解决此问题,本文提出一种新的策略 Global Server Correction,其利用服务器上可用的全局图结构,在将平均的本地学习模型发送回每个本地机器之前对其进行细化。 2. Problem Formulation Training GCN on a single machine L ( θ ) = 1 N ∑ i ∈ V ϕ ( h i ( L ) , y i ) , h i ( ℓ ) = σ ( 1 | N",
+            "source_name": "知乎",
+            "source_record_id": "src_4c190d57eae16ce67113b7bd",
+            "title": "论文笔记:ICLR'22 Learn Locally, Correct Globally A Distributed Algorithm for Training GNNs",
+            "url": "https://zhuanlan.zhihu.com/p/536158540"
+          },
+          {
+            "published_at": "2022-09-21T11:55:52",
+            "rank": 9,
+            "score": null,
+            "snippet": "1. GNN 探究模型表达能力 How Powerful are K-hop Message Passing Graph Neural Networks Ordered Subgraph Aggregation Networks Convolutional Neural Networks on Graphs with Chebyshev Approximation, Revisited Exponentially Improving the Complexity of Simulating the Weisfeiler-Lehman Test with Graph Neural Networks Understanding Non-linearity in Graph Neural Networks from the Bayesian-Inference Perspective Understanding and Extending Subgraph GNNs by Rethinking Their Symmetries A Practical, Progressively-Expressive GNN 泛化性分析 Generalization Analysis of Message Passing Neural Networks on Large Random Graphs 减少Message Passing中的冗余计算 Redundancy-Free Message Passing for Graph Neural Networks Scalability Sketch-GNN: Scalable Graph Neural Networks with Sublinear Training Complexity 捕获长距离依赖 Capturing Graphs with Hypo-Elliptic Diffusions MGNNI: Multiscale Graph Neural Networks with Implicit Layers 强化节点表征(通过引入结构,距离特征,etc) Geodesic Graph Neural Network for Efficient Graph Representation Learning Template based Graph Neural Network with Optimal Transport Distances",
+            "source_name": "北京智源人工智能研究院",
+            "source_record_id": "src_131761bb23aba675a83371d2",
+            "title": "NeurIPS'22上的GNN好文集合 (表示能力、架构设计、图对比/自监督学习、分布偏移、可解释、推荐系统等)",
+            "url": "https://hub.baai.ac.cn/view/20589"
+          },
+          {
+            "published_at": "2022-12-01T11:49:46",
+            "rank": 10,
+            "score": null,
+            "snippet": "标题: 链接:https://arxiv.org/abs/2211.17068 作者:Li Sun,Junda Ye,Hao Peng,Feiyang Wang,Philip S. Yu 机构:School of Control and Computer Engineering, North China Electric Power University, Beijing , China, School of Computer Science, Beijing University of Posts and Telecommunications, Beijing , China 备注:Accepted by AAAI 2023 (Main Track), 9 pages, 4 figures 【2】 Directed Acyclic Graph Structure Learning from Dynamic Graphs 标题:从动态图中学习有向无环图结构 链接:https://arxiv.org/abs/2211.17029 作者:Shaohua Fan,Shuyang Zhang,Xiao Wang,Chuan Shi 机构:Beijing University of Posts and Telecommunications, China, Peng Cheng Laboratory, China 备注:Accepted by AAAI23 【3】 Generating Realistic Synthetic Relational Data through Graph Variational Autoencoders 标题:用图变分自动编码器生成真实的合成关系数据 链接:https://arxiv.org/abs/2211.16889 作者:Ciro Antonio Mami,Andrea Coser,Eric Medvet,Alexander T. P. Boudewijn,Marco Volpe,Michael Whitworth,Borut Svara,Gabriele Sgroi,Daniele Panfilo,Sebastiano Saccani 机构:AREA Science Park, Trieste, Italy, University of Trieste, Alexander T.P. Boudewijn, Aindo;, Katholieke Universiteit Leuven, Heverlee, Belgium, Business Integration Partners (BIP), Milan, Italy, Chaucer, Manchester, England, United Kingdom 备注:8 pages, 2 figures, 2 tables, Synthetic Data 4 ML workshop of the Thirty-sixth Conference on Neural Information Processing Systems (NeurIPS 2022) 【4】 T2G-Former: Organizing Tabular Features into Relation Graphs Promotes Heterogeneous Feature Interaction 标题: 标题:T2G-Forger:将表格要素组织到关系图中,促进异类要素交互",
+            "source_name": "知乎",
+            "source_record_id": "src_6feb6a1aedaa44e7fb2a7d78",
+            "title": "机器学习学术速递[2022.12.1]",
+            "url": "https://zhuanlan.zhihu.com/p/588287085"
+          }
+        ],
+        "warnings": []
+      },
+      "source_records": [
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "1",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://cloud.tencent.com/developer/article/2230138",
+          "observed_at": "2026-09-16T15:27:11.625099Z",
+          "provenance": {
+            "query": "distributed GNN training graph summarization leader-worker attention",
+            "rank": 1,
+            "run_id": "run-063681ec4a1046b99be3a1ce43f54c77",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": " 图神经网络(GNNs)是一种在图上学习的深度学习模型,并已成功应用于许多领域。尽管 GNN 有效,但 GNN 有效地扩展到大型图仍然具有挑战性 。作为一种补救措施, 分布式计算 成为训练大规模 GNN 的一种有前途的解决方案,因为它能够提供丰富的计算资源。然而, 图结构的依赖性 增加了实现高效分布式 GNN 训练的难度,导致 大量通信和工作负载不平衡 。近年来,在分布式 GNN 训练方面做出了很多努力,并提出了一系列训练算法和系统。然而,缺乏 对从图处理到分布式执行的优化技术 的系统回顾。在本次调查中,我们分析了分布式 GNN 训练的 三大挑战 ,即 海量特征通信、模型精度损失 和 工作负载不平衡 。然后,我们为分布式 GNN 训练中的优化技术引入了一种 新的分类法 ,以应对上述挑战。新分类法将现有技术分为四类,即 GNN 数据分区、GNN 批处理生成、GNN 执行模型 和 GNN 通信协议 。我们仔细讨论了每个类别中的技术。最后,我们分别总结了用于 多GPU、GPU 集群和 CPU 集群 的现有分布式 GNN 系统,并讨论了可扩展 GNN 的 未来发展方向 。 简介 GNN 是处理图建模问题的强大工具,并已广泛应用于各种应用,包括社交网络(例如,社交垃圾邮件发送者检测 [87、112]、社交网络分析 [91])、生物信息学(例如,蛋白质界面预测 [35]、疾病-基因关联 [83])、药物发现 [11、66]、流量预测[61]、医疗保健 [2、21]、推荐 [32、49、 55、111]、自然语言处理 [134、145] 和其他 [26、85、133、141、144]。通过将图结构信息集成到深度学习模型中,GNN 可以获得比传统机器学习和数据挖掘方法明显更好的结果。 GNN 模型通常包含多图卷积层,其中每个顶点聚合其邻居的最新状态,更新顶点的状态,并将神经网络(即转换)应用于顶点的更新状态。以传统的图卷积网络(GCN)为例,在每一层中,一个顶点使用 求和函数 聚合邻居状态和自己的状态,然后应用 单层MLP 来转换新状态。如果层数为 𝐿,则此类过程重复 𝐿次。第𝐿层生成的顶点状态被下游任务使用,如节点分类、链路预测等。在过去的几年中,许多研究工作在图神经网络模型的设计方面取得了显着进展。突出的模型包括 GCN [108]、GraphSAGE [46]、GAT [95]、GIN [118] 和许多其他特定于应用程序的 GNN 模型 [128、130]。迄今为止,有数十项调查审查了 GNN 模型 [114、116、135、147]。",
+            "published_at": "2023-03-01T14:09:25",
+            "request_id": "9a7b5892-8241-4cc3-9e0b-6a46ded34997",
+            "search_score": null,
+            "search_snippet": "图神经网络(GNNs)是一种在图上学习的深度学习模型,并已成功应用于许多领域。尽管 GNN 有效,但 GNN 有效地扩展到大型图仍然具有挑战性 。作为一种补救措施, 分布式计算 成为训练大规模 GNN 的一种有前途的解决方案,因为它能够提供丰富的计算资源。然而, 图结构的依赖性 增加了实现高效分布式 GNN 训练的难度,导致 大量通信和工作负载不平衡 。近年来,在分布式 GNN 训练方面做出了很多努力,并提出了一系列训练算法和系统。然而,缺乏 对从图处理到分布式执行的优化技术 的系统回顾。在本次调查中,我们分析了分布式 GNN 训练的 三大挑战 ,即 海量特征通信、模型精度损失 和 工作负载不平衡 。然后,我们为分布式 GNN 训练中的优化技术引入了一种 新的分类法 ,以应对上述挑战。新分类法将现有技术分为四类,即 GNN 数据分区、GNN 批处理生成、GNN 执行模型 和 GNN 通信协议 。我们仔细讨论了每个类别中的技术。最后,我们分别总结了用于 多GPU、GPU 集群和 CPU 集群 的现有分布式 GNN 系统,并讨论了可扩展 GNN 的 未来发展方向 。 简介 GNN 是处理图建模问题的强大工具,并已广泛应用于各种应用,包括社交网络(例如,社交垃圾邮件发送者检测 [87、112]、社交网络分析 [91])、生物信息学(例如,蛋白质界面预测 [35]、疾病-基因关联 [83])、药物发现 [11、66]、流量预测[61]、医疗保健 [2、21]、推荐 [32、49、 55、111]、自然语言处理 [134、145] 和其他 [26、85、133、141、144]。通过将图结构信息集成到深度学习模型中,GNN 可以获得比传统机器学习和数据挖掘方法明显更好的结果。 GNN 模型通常包含多图卷积层,其中每个顶点聚合其邻居的最新状态,更新顶点的状态,并将神经网络(即转换)应用于顶点的更新状态。以传统的图卷积网络(GCN)为例,在每一层中,一个顶点使用 求和函数 聚合邻居状态和自己的状态,然后应用 单层MLP 来转换新状态。如果层数为 𝐿,则此类过程重复 𝐿次。第𝐿层生成的顶点状态被下游任务使用,如节点分类、链路预测等。在过去的几年中,许多研究工作在图神经网络模型的设计方面取得了显着进展。突出的模型包括 GCN [108]、GraphSAGE [46]、GAT [95]、GIN [118] 和许多其他特定于应用程序的 GNN 模型 [128、130]。迄今为止,有数十项调查审查了 GNN 模型 [114、116、135、147]。",
+            "source_name": "Tencent腾讯（腾讯官方网）",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web_supplement",
+          "source_record_id": "src_1eee03f7afd673e24551ee6f",
+          "title": "【阅读】Distributed Graph Neural Network Training: A Survey——翻译",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "2",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://cloud.tencent.com/developer/article/2226265",
+          "observed_at": "2026-09-16T15:27:11.625099Z",
+          "provenance": {
+            "query": "distributed GNN training graph summarization leader-worker attention",
+            "rank": 2,
+            "run_id": "run-063681ec4a1046b99be3a1ce43f54c77",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": " 来自计算所发布的 研究分布式GNN训练中使用的各种优化技术,提供了分布式GNN训练的全面综述 。 图神经网络(GNNs)在图学习方面的有效性已被证明是广泛应用领域的一种强大的算法模型。为了扩大GNN训练以适应大规模和不断增长的图,最有前途的解决方案是分布式训练,它将训练工作量分布到多个计算节点。然而,对分布式GNN训练的工作流程、计算模式、通信模式和优化技术仍有初步了解。 在本文中,我们通过研究分布式GNN训练中使用的各种优化技术,提供了分布式GNN训练的全面综述 。首先,根据分布式GNN训练的工作流程将其分为几类;此外,还介绍了它们的计算模式和通信模式,以及最新工作提出的优化技术。其次,介绍了分布式GNN训练的软件框架和硬件平台,以加深对分布式GNN训练的了解。第三,将分布式GNN训练与深度神经网络的分布式训练进行了比较,强调了分布式GNN训练的唯一性。最后,讨论了该领域的研究热点和发展机遇。 https://www.zhuanzhi.ai/paper/e85caecb1c45f7412fc38a4f681097ab 1. 概述 图具有强大的数据表示能力,特别是在表示对象之间的关联[1],[2]等方面有着广泛的应用 。许多真实世界的数据可以自然地表示为由一组顶点和边组成的图。以社交网络为例[3],[4],图中的顶点表示人,边表示人在Facebook上的互动[5]。如图1 (a)所示,圆圈代表顶点,箭头代表边。另一个众所周知的例子是知识图[6]、[7],其中顶点表示实体,而边表示实体之间的关系[8]。图神经网络(GNNs)在图[9]-[11]的学习中表现出优于其他算法模型的性能。深度神经网络(DNNs)已广泛应用于分析图像[12]等欧几里德数据。然而,由于图[13]的任意大小和复杂的拓扑结构,非欧氏域的图数据对它们提出了挑战。此外,工业界识别的 深度学习 范式的一个主要弱点是不能有效地进行因果推理,这大大降低了智能系统[14]的认知能力。为此,GNN已成为图学习的主要范式,并赋予智能系统认知能力。如图1 (b)所示。GNN在获取图数据作为输入后,使用前向传播和后向传播来更新模型参数。然后将训练好的模型应用于图任务,包括顶点预测[15](预测特定顶点的属性),链接预测[16](预测两个顶点之间是否存在一条边),图预测[17](预测整个图的属性),如图1 (c)所示。 由于GNN的优越性,它们在许多关键领域的各种实际应用中得到了广泛的应用。这些实际应用包括知识推理[18]、 自然语言处理 [19]、[20]、 机器翻译 [21]、 推荐系统 [22]-[24]、视觉推理",
+            "published_at": "2023-02-26T11:31:45",
+            "request_id": "9a7b5892-8241-4cc3-9e0b-6a46ded34997",
+            "search_score": null,
+            "search_snippet": "来自计算所发布的 研究分布式GNN训练中使用的各种优化技术,提供了分布式GNN训练的全面综述 。 图神经网络(GNNs)在图学习方面的有效性已被证明是广泛应用领域的一种强大的算法模型。为了扩大GNN训练以适应大规模和不断增长的图,最有前途的解决方案是分布式训练,它将训练工作量分布到多个计算节点。然而,对分布式GNN训练的工作流程、计算模式、通信模式和优化技术仍有初步了解。 在本文中,我们通过研究分布式GNN训练中使用的各种优化技术,提供了分布式GNN训练的全面综述 。首先,根据分布式GNN训练的工作流程将其分为几类;此外,还介绍了它们的计算模式和通信模式,以及最新工作提出的优化技术。其次,介绍了分布式GNN训练的软件框架和硬件平台,以加深对分布式GNN训练的了解。第三,将分布式GNN训练与深度神经网络的分布式训练进行了比较,强调了分布式GNN训练的唯一性。最后,讨论了该领域的研究热点和发展机遇。 https://www.zhuanzhi.ai/paper/e85caecb1c45f7412fc38a4f681097ab 1. 概述 图具有强大的数据表示能力,特别是在表示对象之间的关联[1],[2]等方面有着广泛的应用 。许多真实世界的数据可以自然地表示为由一组顶点和边组成的图。以社交网络为例[3],[4],图中的顶点表示人,边表示人在Facebook上的互动[5]。如图1 (a)所示,圆圈代表顶点,箭头代表边。另一个众所周知的例子是知识图[6]、[7],其中顶点表示实体,而边表示实体之间的关系[8]。图神经网络(GNNs)在图[9]-[11]的学习中表现出优于其他算法模型的性能。深度神经网络(DNNs)已广泛应用于分析图像[12]等欧几里德数据。然而,由于图[13]的任意大小和复杂的拓扑结构,非欧氏域的图数据对它们提出了挑战。此外,工业界识别的 深度学习 范式的一个主要弱点是不能有效地进行因果推理,这大大降低了智能系统[14]的认知能力。为此,GNN已成为图学习的主要范式,并赋予智能系统认知能力。如图1 (b)所示。GNN在获取图数据作为输入后,使用前向传播和后向传播来更新模型参数。然后将训练好的模型应用于图任务,包括顶点预测[15](预测特定顶点的属性),链接预测[16](预测两个顶点之间是否存在一条边),图预测[17](预测整个图的属性),如图1 (c)所示。 由于GNN的优越性,它们在许多关键领域的各种实际应用中得到了广泛的应用。这些实际应用包括知识推理[18]、 自然语言处理 [19]、[20]、 机器翻译 [21]、 推荐系统 [22]-[24]、视觉推理",
+            "source_name": "Tencent腾讯（腾讯官方网）",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web_supplement",
+          "source_record_id": "src_1dc3274385ea01b5579cbd4d",
+          "title": "GNN如何分布式?中科院综述《图神经网络分布式训练》",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "3",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "http://ieeexplore.ieee.org/document/10032447/",
+          "observed_at": "2026-09-16T15:27:11.625099Z",
+          "provenance": {
+            "query": "distributed GNN training graph summarization leader-worker attention",
+            "rank": 3,
+            "run_id": "run-063681ec4a1046b99be3a1ce43f54c77",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": "The goal of graph summarization is to represent large graphs in a structured and compact way. A graph summary based on equivalence classes preserves pre-defined features of a graph's vertex within a k k -hop neighborhood such as the vertex labels and edge labels. Based on these neighborhood characteristics, the vertex is assigned to an equivalence class. The calculation of the assigned equivalence class must be a permutation invariant operation on the pre-defined features. This is achieved by sorting on the feature values, e. g., the edge labels, which is computationally expensive, and subsequently hashing the result. Graph Neural Networks (GNN) fulfill the permutation invariance requirement. We formulate the problem of graph summarization as a subgraph classification task on the root vertex of the k k -hop neighborhood. We adapt different GNN architectures, both based on the popular message-passing protocol and alternative approaches, to perform the structural graph summarization task. We compare different GNNs with a standard multi-layer perceptron (MLP) and Bloom filter as non-neural method. For our experiments, we consider four popular graph summary models on a large web graph. This resembles challenging multi-class vertex classification tasks with the numbers of classes ranging from 576 576 to multiple hundreds of thousands. Our results show that the performance of GNNs are close to each other. In three out of four experiments, the non-message-passing GraphMLP model outperforms the other GNNs. The performance of the standard MLP is extraordinary good, especially in the presence of many classes. Finally, the Bloom filter outperforms all neural architectures by a large margin, except for the dataset with the fewest number of 576 576 classes.doi:10.48550/arXiv.2203.05919Blasi, MaximilianFreudenreich, Manuel",
+            "published_at": "2026-09-03T00:00:00",
+            "request_id": "9a7b5892-8241-4cc3-9e0b-6a46ded34997",
+            "search_score": null,
+            "search_snippet": "The goal of graph summarization is to represent large graphs in a structured and compact way. A graph summary based on equivalence classes preserves pre-defined features of a graph's vertex within a k k -hop neighborhood such as the vertex labels and edge labels. Based on these neighborhood characteristics, the vertex is assigned to an equivalence class. The calculation of the assigned equivalence class must be a permutation invariant operation on the pre-defined features. This is achieved by sorting on the feature values, e. g., the edge labels, which is computationally expensive, and subsequently hashing the result. Graph Neural Networks (GNN) fulfill the permutation invariance requirement. We formulate the problem of graph summarization as a subgraph classification task on the root vertex of the k k -hop neighborhood. We adapt different GNN architectures, both based on the popular message-passing protocol and alternative approaches, to perform the structural graph summarization task. We compare different GNNs with a standard multi-layer perceptron (MLP) and Bloom filter as non-neural method. For our experiments, we consider four popular graph summary models on a large web graph. This resembles challenging multi-class vertex classification tasks with the numbers of classes ranging from 576 576 to multiple hundreds of thousands. Our results show that the performance of GNNs are close to each other. In three out of four experiments, the non-message-passing GraphMLP model outperforms the other GNNs. The performance of the standard MLP is extraordinary good, especially in the presence of many classes. Finally, the Bloom filter outperforms all neural architectures by a large margin, except for the dataset with the fewest number of 576 576 classes.doi:10.48550/arXiv.2203.05919Blasi, MaximilianFreudenreich, Manuel",
+            "source_name": "无",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web_supplement",
+          "source_record_id": "src_bedb664c032805fad758a753",
+          "title": "Graph Summarization with Graph Neural Networks",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "4",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://cloud.tencent.com/developer/article/2388789",
+          "observed_at": "2026-09-16T15:27:11.625099Z",
+          "provenance": {
+            "query": "distributed GNN training graph summarization leader-worker attention",
+            "rank": 4,
+            "run_id": "run-063681ec4a1046b99be3a1ce43f54c77",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": " 1 概述 GNN 在许多任务上实现了最先进的性能, 但在处理具有大量数据和严格延迟要求的实际应用程序时,面临可扩展性挑战 。为了应对这些挑战,已经进行了许多关于如何加速GNN的研究。这些加速技术涉及GNN的各个方面,从智能训练和推理算法到高效系统和定制硬件。本综述提供了GNN加速的分类,回顾了现有的方法,并提出了未来的研究方向。 如图1所示,GNN加速技术分为三类:算法、系统和定制硬件。算法包括修改图或样本以缓解节点依赖性,以及剪枝、量化和蒸馏等推理加速技术;系统包括GPU内核加速、用户定义函数优化和可扩展系统设计;定制硬件包括具有不同属性的加速器,支持不同级别的并行化和稀疏性。 图1 GNN加速的分类 2 GNN加速:训练算法 GNN训练旨在找到最佳参数𝜃*,使损失最小化。训练延迟主要来自感受野中的消息聚合,对于深度GNN,计算图可能变得巨大。训练加速的总体思路是减少计算图。有两种方法:图修改和采样。图修改分为两步:首先生成一个小图G',然后进行常规GNN训练。采样则是选择节点/边的子集来构建较小的计算图,修改是动态且隐式的。两种方法都能加速训练,但图修改可能会创建新的节点和边,而采样则保证所有节点和边都有机会被覆盖。 2.1 图修改 图修改分两步加速 GNN 训练。图修改方法包括图粗化、图稀疏化和图压缩。这些方法中的每一种都以不同的方式修改图 G 以创建自己的 G ' ,但所有 G ' 都是较小的图,可以加速 GNN 训练。这些图修改方法的说明如图2所示。 图2 图修改方法说明:图粗化方法执行图聚类并将节点簇合并为超级节点。图稀疏化方法删除不太重要的边。图压缩方法使用随机初始化的生成模型生成新的压缩图。对于修改后的图(最右列),黑色节点/边来自原始图,彩色节点/边是新创建的。 图粗化, 是一种减小图大小同时保留其整体结构的技术。通过将相同局部结构中的节点合并为“超级节点”,并将连接超级节点的边合并为“超级边”,可以得到粗图。图粗化的核心步骤是图聚类,通常与图谱相关。一些算法如受限谱近似和逆拉普拉斯,被用于保留一些图属性。黄等人提出了一种使用图粗化来加速GNN训练的通用框架,通过将图划分为K个簇,并设置超级节点特征和标签。还有其他相关工作,如GOREN和GraphZoom,但关注点不同。 图稀疏化, 通过删除冗余边来减少计算图,加速GNN训练。现有方法通常保留原始图的关键属性,如切割总权重、光谱特性和分层结构。",
+            "published_at": "2024-02-17T14:35:43",
+            "request_id": "9a7b5892-8241-4cc3-9e0b-6a46ded34997",
+            "search_score": null,
+            "search_snippet": "1 概述 GNN 在许多任务上实现了最先进的性能, 但在处理具有大量数据和严格延迟要求的实际应用程序时,面临可扩展性挑战 。为了应对这些挑战,已经进行了许多关于如何加速GNN的研究。这些加速技术涉及GNN的各个方面,从智能训练和推理算法到高效系统和定制硬件。本综述提供了GNN加速的分类,回顾了现有的方法,并提出了未来的研究方向。 如图1所示,GNN加速技术分为三类:算法、系统和定制硬件。算法包括修改图或样本以缓解节点依赖性,以及剪枝、量化和蒸馏等推理加速技术;系统包括GPU内核加速、用户定义函数优化和可扩展系统设计;定制硬件包括具有不同属性的加速器,支持不同级别的并行化和稀疏性。 图1 GNN加速的分类 2 GNN加速:训练算法 GNN训练旨在找到最佳参数𝜃*,使损失最小化。训练延迟主要来自感受野中的消息聚合,对于深度GNN,计算图可能变得巨大。训练加速的总体思路是减少计算图。有两种方法:图修改和采样。图修改分为两步:首先生成一个小图G',然后进行常规GNN训练。采样则是选择节点/边的子集来构建较小的计算图,修改是动态且隐式的。两种方法都能加速训练,但图修改可能会创建新的节点和边,而采样则保证所有节点和边都有机会被覆盖。 2.1 图修改 图修改分两步加速 GNN 训练。图修改方法包括图粗化、图稀疏化和图压缩。这些方法中的每一种都以不同的方式修改图 G 以创建自己的 G ' ,但所有 G ' 都是较小的图,可以加速 GNN 训练。这些图修改方法的说明如图2所示。 图2 图修改方法说明:图粗化方法执行图聚类并将节点簇合并为超级节点。图稀疏化方法删除不太重要的边。图压缩方法使用随机初始化的生成模型生成新的压缩图。对于修改后的图(最右列),黑色节点/边来自原始图,彩色节点/边是新创建的。 图粗化, 是一种减小图大小同时保留其整体结构的技术。通过将相同局部结构中的节点合并为“超级节点”,并将连接超级节点的边合并为“超级边”,可以得到粗图。图粗化的核心步骤是图聚类,通常与图谱相关。一些算法如受限谱近似和逆拉普拉斯,被用于保留一些图属性。黄等人提出了一种使用图粗化来加速GNN训练的通用框架,通过将图划分为K个簇,并设置超级节点特征和标签。还有其他相关工作,如GOREN和GraphZoom,但关注点不同。 图稀疏化, 通过删除冗余边来减少计算图,加速GNN训练。现有方法通常保留原始图的关键属性,如切割总权重、光谱特性和分层结构。",
+            "source_name": "Tencent腾讯（腾讯官方网）",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web_supplement",
+          "source_record_id": "src_76bdd168780ee372ca718bfd",
+          "title": "图神经网络加速综述: 算法、系统和硬件",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "5",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://hub.baai.ac.cn/view/36109",
+          "observed_at": "2026-09-16T15:27:11.625099Z",
+          "provenance": {
+            "query": "distributed GNN training graph summarization leader-worker attention",
+            "rank": 5,
+            "run_id": "run-063681ec4a1046b99be3a1ce43f54c77",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": " GNN-to-MLP distillation旨在利用知识蒸馏(KD)通过模拟teacher GNN的输出表示来学习计算高效的多层感知器(student MLP)用于图数据。现有方法主要使MLP模仿GNN对少量类别标签的预测。然而,类别空间可能不足以覆盖众多不同的局部图结构,从而限制了从GNN到MLP的知识迁移的性能。为解决这一问题,我们提出通过直接标记节点的多样局部结构来学习新的强大图表示空间用于GNN-to-MLP蒸馏。具体来说,我们提出了VQ-VAE的变体在图数据上学习一个结构感知的标记器,该标记器可以将每个节点的局部子结构编码为离散化语义token。如下图所示 这些token构成了一个代码簿(codebook),作为一个新的图表示空间,能够识别具有相应代码索引的节点的不同局部图结构。然后,基于学习的codebook,我们提出了一种新的蒸馏目标,即soft code assignments,以直接将每个节点的结构知识从GNN传输到MLP。由此产生的框架VQGraph在跨七个图数据集的传导和归纳设置中实现了新的最先进性能。我们展示了VQGraph比GNN快828倍,并且分别比GNN和独立的MLP平均提高了3.90%和28.05%的准确率。",
+            "published_at": "2024-03-29T13:50:17",
+            "request_id": "9a7b5892-8241-4cc3-9e0b-6a46ded34997",
+            "search_score": null,
+            "search_snippet": "GNN-to-MLP distillation旨在利用知识蒸馏(KD)通过模拟teacher GNN的输出表示来学习计算高效的多层感知器(student MLP)用于图数据。现有方法主要使MLP模仿GNN对少量类别标签的预测。然而,类别空间可能不足以覆盖众多不同的局部图结构,从而限制了从GNN到MLP的知识迁移的性能。为解决这一问题,我们提出通过直接标记节点的多样局部结构来学习新的强大图表示空间用于GNN-to-MLP蒸馏。具体来说,我们提出了VQ-VAE的变体在图数据上学习一个结构感知的标记器,该标记器可以将每个节点的局部子结构编码为离散化语义token。如下图所示 这些token构成了一个代码簿(codebook),作为一个新的图表示空间,能够识别具有相应代码索引的节点的不同局部图结构。然后,基于学习的codebook,我们提出了一种新的蒸馏目标,即soft code assignments,以直接将每个节点的结构知识从GNN传输到MLP。由此产生的框架VQGraph在跨七个图数据集的传导和归纳设置中实现了新的最先进性能。我们展示了VQGraph比GNN快828倍,并且分别比GNN和独立的MLP平均提高了3.90%和28.05%的准确率。",
+            "source_name": "北京智源人工智能研究院",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web_supplement",
+          "source_record_id": "src_5853638039dd691f342ac4be",
+          "title": "[ICLR 2024] VQGraph: 重新审视图表示学习,将Graph空间Token化",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "6",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://hub.baai.ac.cn/view/43329",
+          "observed_at": "2026-09-16T15:27:11.625099Z",
+          "provenance": {
+            "query": "distributed GNN training graph summarization leader-worker attention",
+            "rank": 6,
+            "run_id": "run-063681ec4a1046b99be3a1ce43f54c77",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": " By Yuke Wu, Yiwen Zhang and Daniel Zhou for CS 224W course project Fall 2024. 颗粒流(Granular flows)在自然环境和人工环境中无处不在,包括大量离散颗粒(如沙子、砾石或雪)的运动。准确模拟这些流动的能力对于理解和缓解各种岩土灾害(如山体滑坡、泥石流和雪崩)至关重要。 然而,由于包括颗粒相互作用、摩擦以及颗粒材料的复杂行为在内的众多因素的错综复杂的相互作用,颗粒流的数值模拟面临着巨大的挑战。 目前,用于模拟颗粒流的传统数值方法,例如离散元法(Discrete Element Method,DEM)和物质点法(Material Point Method,MPM),虽然可以提供有价值的见解,但计算成本可能很高,尤其是在处理大型系统或长时间模拟时。DEM 跟踪单个粒子的运动和相互作用,提供高保真结果,但通常需要大量计算资源。另一方面,MPM 将材料离散化为物质点的集合,提供了一种更有效的方法,但可能会牺牲捕捉单个粒子详细行为的准确性。 该领域的持续研究对于开发更高效、更准确、更强大的模拟工具至关重要,最终将在工程、环境管理和灾害防备方面带来更安全、更可持续的实践。 在这篇博文中,我们希望利用机器学习框架基于图神经网络的模拟器 (Graph Neural Network-based Simulators,GNS) 作为替代模型来预测颗粒和流体流动动力学。 图神经网络 (Graph Neural Network,GNN) 的计算效率和通用性使其成为评估流出危险和其他需要大量模拟的颗粒流场景的有前途的工具。具体来说,我们希望展示 GNN 复制颗粒柱或水滴的坍塌及其与障碍物相互作用的能力。 Sanchez-Gonzalez 等人在《Learning to Simulate Complex Physics with Graph Networks》中介绍的 GNS 结构 GitHub 存储库 这是我们的 GitHub 存储库的链接,其中包含我们 GNS 模型的所有代码。README 文件提供了有关如何根据模拟数据训练 GNS 并呈现结果的说明。请下载代码,您应该能够在 VSCode 的帮助下执行训练过程。 基于图形神经网络的模拟器的 Git 存储库。 https://github.com/LeonardZ0731/gns_attention Colab 这是我们关联的 Google Colab 笔记本的链接。它基于我们的 GitHub 存储库,包含加载数据和执行训练的必要步骤。 https://colab.research.google.com/drive/1G2uEStj3of6zDIGacf03OnEM2usj4crV?usp=sharing&source=post_page-----08ed0a20b28d--------------------------------",
+            "published_at": "2025-02-13T23:10:00",
+            "request_id": "9a7b5892-8241-4cc3-9e0b-6a46ded34997",
+            "search_score": null,
+            "search_snippet": "By Yuke Wu, Yiwen Zhang and Daniel Zhou for CS 224W course project Fall 2024. 颗粒流(Granular flows)在自然环境和人工环境中无处不在,包括大量离散颗粒(如沙子、砾石或雪)的运动。准确模拟这些流动的能力对于理解和缓解各种岩土灾害(如山体滑坡、泥石流和雪崩)至关重要。 然而,由于包括颗粒相互作用、摩擦以及颗粒材料的复杂行为在内的众多因素的错综复杂的相互作用,颗粒流的数值模拟面临着巨大的挑战。 目前,用于模拟颗粒流的传统数值方法,例如离散元法(Discrete Element Method,DEM)和物质点法(Material Point Method,MPM),虽然可以提供有价值的见解,但计算成本可能很高,尤其是在处理大型系统或长时间模拟时。DEM 跟踪单个粒子的运动和相互作用,提供高保真结果,但通常需要大量计算资源。另一方面,MPM 将材料离散化为物质点的集合,提供了一种更有效的方法,但可能会牺牲捕捉单个粒子详细行为的准确性。 该领域的持续研究对于开发更高效、更准确、更强大的模拟工具至关重要,最终将在工程、环境管理和灾害防备方面带来更安全、更可持续的实践。 在这篇博文中,我们希望利用机器学习框架基于图神经网络的模拟器 (Graph Neural Network-based Simulators,GNS) 作为替代模型来预测颗粒和流体流动动力学。 图神经网络 (Graph Neural Network,GNN) 的计算效率和通用性使其成为评估流出危险和其他需要大量模拟的颗粒流场景的有前途的工具。具体来说,我们希望展示 GNN 复制颗粒柱或水滴的坍塌及其与障碍物相互作用的能力。 Sanchez-Gonzalez 等人在《Learning to Simulate Complex Physics with Graph Networks》中介绍的 GNS 结构 GitHub 存储库 这是我们的 GitHub 存储库的链接,其中包含我们 GNS 模型的所有代码。README 文件提供了有关如何根据模拟数据训练 GNS 并呈现结果的说明。请下载代码,您应该能够在 VSCode 的帮助下执行训练过程。 基于图形神经网络的模拟器的 Git 存储库。 https://github.com/LeonardZ0731/gns_attention Colab 这是我们关联的 Google Colab 笔记本的链接。它基于我们的 GitHub 存储库,包含加载数据和执行训练的必要步骤。 https://colab.research.google.com/drive/1G2uEStj3of6zDIGacf03OnEM2usj4crV?usp=sharing&source=post_page-----08ed0a20b28d--------------------------------",
+            "source_name": "北京智源人工智能研究院",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web_supplement",
+          "source_record_id": "src_87fea75a95a12c85cc548ed7",
+          "title": "项目实战 | 基于图神经网络的模拟器:预测颗粒和流体系统",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "7",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://cloud.tencent.com/developer/article/2351028",
+          "observed_at": "2026-09-16T15:27:11.625099Z",
+          "provenance": {
+            "query": "distributed GNN training graph summarization leader-worker attention",
+            "rank": 7,
+            "run_id": "run-063681ec4a1046b99be3a1ce43f54c77",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": " 1. Does Graph Distillation See Like",
+            "published_at": "2023-10-25T09:33:36",
+            "request_id": "9a7b5892-8241-4cc3-9e0b-6a46ded34997",
+            "search_score": null,
+            "search_snippet": "1. Does Graph Distillation See Like",
+            "source_name": "Tencent腾讯（腾讯官方网）",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web_supplement",
+          "source_record_id": "src_5f118e742d4630e3410cd4a2",
+          "title": "GNN周报重磅回归!来自北航、北邮、慕尼黑大学、CMU等机构前沿论文研究",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "8",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://zhuanlan.zhihu.com/p/536158540",
+          "observed_at": "2026-09-16T15:27:11.625099Z",
+          "provenance": {
+            "query": "distributed GNN training graph summarization leader-worker attention",
+            "rank": 8,
+            "run_id": "run-063681ec4a1046b99be3a1ce43f54c77",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": " 尽管scalable GNN 近年来被广泛的研究,但是处理 large-scale 图数据时仍然存在挑战,其中主要的困难包括但不限于:服务器有限的计算资源、图数据节点之间的依赖关系、集中式数据存储和模型训练带来的隐私问题,一种直观的解决方案是实现 分布式训练 ,但是现有的分布式 GNN  训练方法 会导致高额的通信开销和内存消耗。基于此本文提出一种有效的分布式 GNN 训练方法 Learn Locally, Correct Globally(LLCG)。 LLCGarxiv.org/pdf/2111.08202.pdf 1. Motivation 现有的处理 large-scale 图数据的训练方法主要基于 采样技术 ,但是由于 GNN 的特点和当前服务器有限的内存容量和带宽,导致其训练效率仍然很低,同时 集中式数据存储 的假设将会导致隐私问题。一个标准的解决方案是基于多机的分布式训练,其将显著减少训练时间,并减小内存开销。同时可以通过避免本地机器之间相互访问数据,并只使用一个可信的第三方全局协调来解决隐私问题。 在实现 GNN 的分布式训练时将会不可避免地产生信息损失问题(将完整的图切分成多个子图将导致邻域缺失问题),现有的一些分布式 GNN 训练方法提出在多个本地机器之间传输节点特征或者节点嵌入来解决此问题,但是上述方法将会导致显著的通信开销并且存在隐私泄露的风险。 基于此,本文受周期性平均分布式优化的启发提出 LLCG ,在减小通信开销的基础上保证训练效果。步骤如下: 每个本地机器利用本地数据训练 GNN 模型(忽略缺失的边) 发送训练好的模型到可信的第三方进行周期性的模型聚合,之后接受聚合后的模型到本地继续训练 上述方法可以避免在本地机器之间进行节点特征或嵌入的传输,在一定程度上解决了隐私泄露问题,但是缺乏全局图结构和不同机器之间所持有图数据节点之间的依赖关系可能会导致显著的性能下降。为解决此问题,本文提出一种新的策略 Global Server Correction,其利用服务器上可用的全局图结构,在将平均的本地学习模型发送回每个本地机器之前对其进行细化。 2. Problem Formulation Training GCN on a single machine L ( θ ) = 1 N ∑ i ∈ V ϕ ( h i ( L ) , y i ) , h i ( ℓ ) = σ ( 1 | N",
+            "published_at": "2022-07-01T10:53:00",
+            "request_id": "9a7b5892-8241-4cc3-9e0b-6a46ded34997",
+            "search_score": null,
+            "search_snippet": "尽管scalable GNN 近年来被广泛的研究,但是处理 large-scale 图数据时仍然存在挑战,其中主要的困难包括但不限于:服务器有限的计算资源、图数据节点之间的依赖关系、集中式数据存储和模型训练带来的隐私问题,一种直观的解决方案是实现 分布式训练 ,但是现有的分布式 GNN  训练方法 会导致高额的通信开销和内存消耗。基于此本文提出一种有效的分布式 GNN 训练方法 Learn Locally, Correct Globally(LLCG)。 LLCGarxiv.org/pdf/2111.08202.pdf 1. Motivation 现有的处理 large-scale 图数据的训练方法主要基于 采样技术 ,但是由于 GNN 的特点和当前服务器有限的内存容量和带宽,导致其训练效率仍然很低,同时 集中式数据存储 的假设将会导致隐私问题。一个标准的解决方案是基于多机的分布式训练,其将显著减少训练时间,并减小内存开销。同时可以通过避免本地机器之间相互访问数据,并只使用一个可信的第三方全局协调来解决隐私问题。 在实现 GNN 的分布式训练时将会不可避免地产生信息损失问题(将完整的图切分成多个子图将导致邻域缺失问题),现有的一些分布式 GNN 训练方法提出在多个本地机器之间传输节点特征或者节点嵌入来解决此问题,但是上述方法将会导致显著的通信开销并且存在隐私泄露的风险。 基于此,本文受周期性平均分布式优化的启发提出 LLCG ,在减小通信开销的基础上保证训练效果。步骤如下: 每个本地机器利用本地数据训练 GNN 模型(忽略缺失的边) 发送训练好的模型到可信的第三方进行周期性的模型聚合,之后接受聚合后的模型到本地继续训练 上述方法可以避免在本地机器之间进行节点特征或嵌入的传输,在一定程度上解决了隐私泄露问题,但是缺乏全局图结构和不同机器之间所持有图数据节点之间的依赖关系可能会导致显著的性能下降。为解决此问题,本文提出一种新的策略 Global Server Correction,其利用服务器上可用的全局图结构,在将平均的本地学习模型发送回每个本地机器之前对其进行细化。 2. Problem Formulation Training GCN on a single machine L ( θ ) = 1 N ∑ i ∈ V ϕ ( h i ( L ) , y i ) , h i ( ℓ ) = σ ( 1 | N",
+            "source_name": "知乎",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web_supplement",
+          "source_record_id": "src_4c190d57eae16ce67113b7bd",
+          "title": "论文笔记:ICLR'22 Learn Locally, Correct Globally A Distributed Algorithm for Training GNNs",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "9",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://hub.baai.ac.cn/view/20589",
+          "observed_at": "2026-09-16T15:27:11.625099Z",
+          "provenance": {
+            "query": "distributed GNN training graph summarization leader-worker attention",
+            "rank": 9,
+            "run_id": "run-063681ec4a1046b99be3a1ce43f54c77",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": " 1. GNN 探究模型表达能力 How Powerful are K-hop Message Passing Graph Neural Networks Ordered Subgraph Aggregation Networks Convolutional Neural Networks on Graphs with Chebyshev Approximation, Revisited Exponentially Improving the Complexity of Simulating the Weisfeiler-Lehman Test with Graph Neural Networks Understanding Non-linearity in Graph Neural Networks from the Bayesian-Inference Perspective Understanding and Extending Subgraph GNNs by Rethinking Their Symmetries A Practical, Progressively-Expressive GNN 泛化性分析 Generalization Analysis of Message Passing Neural Networks on Large Random Graphs 减少Message Passing中的冗余计算 Redundancy-Free Message Passing for Graph Neural Networks Scalability Sketch-GNN: Scalable Graph Neural Networks with Sublinear Training Complexity 捕获长距离依赖 Capturing Graphs with Hypo-Elliptic Diffusions MGNNI: Multiscale Graph Neural Networks with Implicit Layers 强化节点表征(通过引入结构,距离特征,etc) Geodesic Graph Neural Network for Efficient Graph Representation Learning Template based Graph Neural Network with Optimal Transport Distances",
+            "published_at": "2022-09-21T11:55:52",
+            "request_id": "9a7b5892-8241-4cc3-9e0b-6a46ded34997",
+            "search_score": null,
+            "search_snippet": "1. GNN 探究模型表达能力 How Powerful are K-hop Message Passing Graph Neural Networks Ordered Subgraph Aggregation Networks Convolutional Neural Networks on Graphs with Chebyshev Approximation, Revisited Exponentially Improving the Complexity of Simulating the Weisfeiler-Lehman Test with Graph Neural Networks Understanding Non-linearity in Graph Neural Networks from the Bayesian-Inference Perspective Understanding and Extending Subgraph GNNs by Rethinking Their Symmetries A Practical, Progressively-Expressive GNN 泛化性分析 Generalization Analysis of Message Passing Neural Networks on Large Random Graphs 减少Message Passing中的冗余计算 Redundancy-Free Message Passing for Graph Neural Networks Scalability Sketch-GNN: Scalable Graph Neural Networks with Sublinear Training Complexity 捕获长距离依赖 Capturing Graphs with Hypo-Elliptic Diffusions MGNNI: Multiscale Graph Neural Networks with Implicit Layers 强化节点表征(通过引入结构,距离特征,etc) Geodesic Graph Neural Network for Efficient Graph Representation Learning Template based Graph Neural Network with Optimal Transport Distances",
+            "source_name": "北京智源人工智能研究院",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web_supplement",
+          "source_record_id": "src_131761bb23aba675a83371d2",
+          "title": "NeurIPS'22上的GNN好文集合 (表示能力、架构设计、图对比/自监督学习、分布偏移、可解释、推荐系统等)",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "10",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://zhuanlan.zhihu.com/p/588287085",
+          "observed_at": "2026-09-16T15:27:11.625099Z",
+          "provenance": {
+            "query": "distributed GNN training graph summarization leader-worker attention",
+            "rank": 10,
+            "run_id": "run-063681ec4a1046b99be3a1ce43f54c77",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": " 标题: 链接:https://arxiv.org/abs/2211.17068 作者:Li Sun,Junda Ye,Hao Peng,Feiyang Wang,Philip S. Yu 机构:School of Control and Computer Engineering, North China Electric Power University, Beijing , China, School of Computer Science, Beijing University of Posts and Telecommunications, Beijing , China 备注:Accepted by AAAI 2023 (Main Track), 9 pages, 4 figures 【2】 Directed Acyclic Graph Structure Learning from Dynamic Graphs 标题:从动态图中学习有向无环图结构 链接:https://arxiv.org/abs/2211.17029 作者:Shaohua Fan,Shuyang Zhang,Xiao Wang,Chuan Shi 机构:Beijing University of Posts and Telecommunications, China, Peng Cheng Laboratory, China 备注:Accepted by AAAI23 【3】 Generating Realistic Synthetic Relational Data through Graph Variational Autoencoders 标题:用图变分自动编码器生成真实的合成关系数据 链接:https://arxiv.org/abs/2211.16889 作者:Ciro Antonio Mami,Andrea Coser,Eric Medvet,Alexander T. P. Boudewijn,Marco Volpe,Michael Whitworth,Borut Svara,Gabriele Sgroi,Daniele Panfilo,Sebastiano Saccani 机构:AREA Science Park, Trieste, Italy, University of Trieste, Alexander T.P. Boudewijn, Aindo;, Katholieke Universiteit Leuven, Heverlee, Belgium, Business Integration Partners (BIP), Milan, Italy, Chaucer, Manchester, England, United Kingdom 备注:8 pages, 2 figures, 2 tables, Synthetic Data 4 ML workshop of the Thirty-sixth Conference on Neural Information Processing Systems (NeurIPS 2022) 【4】 T2G-Former: Organizing Tabular Features into Relation Graphs Promotes Heterogeneous Feature Interaction 标题: 标题:T2G-Forger:将表格要素组织到关系图中,促进异类要素交互",
+            "published_at": "2022-12-01T11:49:46",
+            "request_id": "9a7b5892-8241-4cc3-9e0b-6a46ded34997",
+            "search_score": null,
+            "search_snippet": "标题: 链接:https://arxiv.org/abs/2211.17068 作者:Li Sun,Junda Ye,Hao Peng,Feiyang Wang,Philip S. Yu 机构:School of Control and Computer Engineering, North China Electric Power University, Beijing , China, School of Computer Science, Beijing University of Posts and Telecommunications, Beijing , China 备注:Accepted by AAAI 2023 (Main Track), 9 pages, 4 figures 【2】 Directed Acyclic Graph Structure Learning from Dynamic Graphs 标题:从动态图中学习有向无环图结构 链接:https://arxiv.org/abs/2211.17029 作者:Shaohua Fan,Shuyang Zhang,Xiao Wang,Chuan Shi 机构:Beijing University of Posts and Telecommunications, China, Peng Cheng Laboratory, China 备注:Accepted by AAAI23 【3】 Generating Realistic Synthetic Relational Data through Graph Variational Autoencoders 标题:用图变分自动编码器生成真实的合成关系数据 链接:https://arxiv.org/abs/2211.16889 作者:Ciro Antonio Mami,Andrea Coser,Eric Medvet,Alexander T. P. Boudewijn,Marco Volpe,Michael Whitworth,Borut Svara,Gabriele Sgroi,Daniele Panfilo,Sebastiano Saccani 机构:AREA Science Park, Trieste, Italy, University of Trieste, Alexander T.P. Boudewijn, Aindo;, Katholieke Universiteit Leuven, Heverlee, Belgium, Business Integration Partners (BIP), Milan, Italy, Chaucer, Manchester, England, United Kingdom 备注:8 pages, 2 figures, 2 tables, Synthetic Data 4 ML workshop of the Thirty-sixth Conference on Neural Information Processing Systems (NeurIPS 2022) 【4】 T2G-Former: Organizing Tabular Features into Relation Graphs Promotes Heterogeneous Feature Interaction 标题: 标题:T2G-Forger:将表格要素组织到关系图中,促进异类要素交互",
+            "source_name": "知乎",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web_supplement",
+          "source_record_id": "src_6feb6a1aedaa44e7fb2a7d78",
+          "title": "机器学习学术速递[2022.12.1]",
+          "work_id": null
+        }
+      ]
+    },
+    "succeeded": true,
+    "summary": "发现并保存 10 个 Web 候选来源",
+    "tool_name": "web_search"
+  },
+  "resolved_arguments": {
+    "max_results": 10,
+    "query": "distributed GNN training graph summarization leader-worker attention"
+  },
+  "result_count": 10,
+  "stage_name": "run_research_task",
+  "started_at": "2026-09-16T15:27:10.674059+00:00",
+  "tool_call_id": "tool_0066",
+  "tool_name": "web_search"
+}

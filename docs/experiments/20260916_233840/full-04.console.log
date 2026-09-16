@@ -1,0 +1,433 @@
+{
+  "brief": {
+    "paper_summary": "由于现实世界中的大多数数据都可以用图表示，因此近年来针对图表示学\n习的研究越来越受到关注。通过将高维图数据转化成低维的表征向量，图表示\n学习可以有效地对图的信息进行存储并快捷地访问图中实体的关键知识。利用\n学习到的图表征数据可以为社交网络行为分析、节点分类、链路预测和聚类等\n下游任务提供帮助。随着深度学习的快速发展，研究人员提出了基于图神经网\n络的图表示学习方法，其使图中的节点能够同时学习图的结构信息以及邻域节\n点的特征信息，从而得到高质量的低维表征。针对图神经网络上的图表示学\n习，本文主要关注两个问题：大规模时序图场景下的图表示学习方法和分布式\n场景下的大规模图的图神经网络优化训练方法。\n真实世界中的图数据规模往往十分庞大且处于动态变化的状态，而现有的\n图神经网络要么无法处理动态时序图上的图表征学习，要么面对大规模图数据\n集时训练效率低下。为了解决大规模动态图上的图表征学习问题，本文提出了\n一种基于图摘要的大规模时序图表示学习方法——GSAERU 模型。GSAERU 模\n型由“图表征学习模块”和“时序学习模块”两部分构成。首先将动态时序图\n建模为各时刻上原图快照的序列，接着在单时间步上将图快照输入图表征学习\n模块。该模块通过图摘要技术对原图进行压缩，并将压缩后的新图输入图自编\n码器，利用和原图的重构误差训练原图节点的表征。在获得单时间步上的图表\n征后将其输入时序学习模块，并通过一个循环神经网络学习原图在时间维度上\n的特征信息与依赖关系，从而得到大规模时序图的高质量表征。基于在四个真\n实世界的大规模图数据集上的大量实验表明，GSAERU 模型能够高效生成时序\n图的表征。与传统的图神经网络算法相比，其平均内存消耗和平均训练时长只\n有其9.86% 与13.27%，且与性能最好的算法在大部分指标下的差距都不超过\n3.5%。\n\nii\n使用分布式技术加速神经网络训练也是如今热门的研究课题，因为在处理\n大规模数据时，单个设备（如CPU，GPU）有限的内存和计算资源往往会成为\n训练瓶颈。而分布式技术可以提供更多的计算资源来提高训练效率。然而由于\n图数据的不规则性，传统分布式机器学习方法中的子任务划分和模型训练方法\n难以直接应用于图神经网络。针对大规模图流数据场景下的分布式图神经网络\n训练优化问题，本文提出了基于图摘要的分布式图神经网络优化训练算法——\nDSGNN 模型。DSGNN 模型采用“领导——工作者”工作模式，首先由领导节\n点利用一个基于边分割的图流划分算法对原图进行划分并将划分子图分配给各\n个工作节点。工作节点随后执行一个基于图摘要技术的小批量训练并将训练结\n果通过一个注意力层返回给领导节点，最后由领导节点汇总结果并计算梯度，\n并根据梯度同步更新所有计算节点上的模型。基于四个真实世界的大规模图数\n据集上的大量实验，结果表明DSGNN 模型可以大大加速GNN 模型的训练，\n并且在链路预测任务上的F1 分数显著高于其它分布式图神经网络模型。",
+    "research_problem": "面向大规模动态图的图神经网络优化机制研究",
+    "novelty_points": [
+      {
+        "point_id": "NP-1",
+        "claim": "提出一种基于图摘要的大规模时序图表示学习方法GSAERU，通过图摘要技术将动态时序图压缩为固定规模的新图，解决GNN输出无法直接输入RNN训练的问题，并利用图自编码器与循环神经网络学习时序特征。",
+        "claim_en": "Propose a large-scale sequential graph representation learning method GSAERU based on graph summarization, which compresses dynamic sequential graphs into fixed-size new graphs via graph summarization, addressing the issue that GNN outputs cannot be directly fed into RNN, and uses graph autoencoder and recurrent neural network to learn temporal features.",
+        "technical_features": [
+          "将动态时序图建模为各时刻原图快照的序列",
+          "通过图摘要技术对原图进行压缩，生成固定规模的新图",
+          "将压缩后的新图输入图自编码器，利用与原图的重构误差训练原图节点表征",
+          "将单时间步图表征输入循环神经网络学习时间维度特征与依赖关系"
+        ],
+        "technical_features_en": [
+          "Model dynamic sequential graphs as a sequence of snapshots of the original graph at each time step",
+          "Compress the original graph via graph summarization to generate fixed-size new graphs",
+          "Input the compressed new graph into a graph autoencoder and train node representations using reconstruction error with the original graph",
+          "Feed single-time-step graph representations into a recurrent neural network to learn temporal features and dependencies"
+        ],
+        "source_locations": [
+          "摘要视图-abstract",
+          "作者贡献段1-第1点",
+          "full_text_excerpt-第5-6页"
+        ]
+      },
+      {
+        "point_id": "NP-2",
+        "claim": "提出基于图摘要的分布式图神经网络优化训练框架DSGNN，采用领导-工作者模式，领导节点负责图划分与参数同步更新，工作者节点基于图摘要进行小批量训练，并通过注意力层返回结果。",
+        "claim_en": "Propose a distributed graph neural network optimization training framework DSGNN based on graph summarization, adopting a leader-worker mode where the leader handles graph partitioning and synchronous parameter updates, and workers perform mini-batch training based on graph summarization and return results via an attention layer.",
+        "technical_features": [
+          "采用领导-工作者工作模式",
+          "领导节点利用基于边分割的图流划分算法对原图进行划分并分配子图",
+          "工作者节点执行基于图摘要技术的小批量训练",
+          "训练结果通过注意力层返回给领导节点",
+          "领导节点汇总结果并计算梯度，同步更新所有计算节点上的模型"
+        ],
+        "technical_features_en": [
+          "Adopt a leader-worker mode",
+          "Leader partitions the original graph using an edge-segmentation-based graph stream partitioning algorithm and assigns subgraphs",
+          "Workers perform mini-batch training based on graph summarization",
+          "Training results are returned to the leader through an attention layer",
+          "Leader aggregates results, computes gradients, and synchronously updates models on all computing nodes"
+        ],
+        "source_locations": [
+          "摘要视图-abstract",
+          "作者贡献段1-第1点",
+          "作者贡献段2-第1点",
+          "full_text_excerpt-第6页"
+        ]
+      },
+      {
+        "point_id": "NP-3",
+        "claim": "提出一种基于边分割的图流划分算法Sketch-DBH，利用Count-Min Sketch概率数据结构存储节点度数信息，并使用最小堆维护高频节点信息，实现常数时间内返回查询结果并生成子图编号，确保负载均衡。",
+        "claim_en": "Propose an edge-segmentation-based graph stream partitioning algorithm Sketch-DBH, which uses Count-Min Sketch probabilistic data structure to store node degree information and a min-heap to maintain high-frequency node information, enabling constant-time query results and generating subgraph IDs, ensuring load balancing.",
+        "technical_features": [
+          "使用Count-Min Sketch概率数据结构存储每个节点的度数信息",
+          "使用最小堆维护图流数据中的高频节点信息",
+          "在常数时间内返回查询结果",
+          "根据节点度数信息生成单条图流数据即将被分配到的子图编号",
+          "高效完成大规模图流数据的划分且确保负载均衡"
+        ],
+        "technical_features_en": [
+          "Use Count-Min Sketch probabilistic data structure to store degree information of each node",
+          "Use a min-heap to maintain high-frequency node information in graph stream data",
+          "Return query results in constant time",
+          "Generate the subgraph ID to which each graph stream data item will be assigned based on node degree information",
+          "Efficiently partition large-scale graph stream data and ensure load balancing"
+        ],
+        "source_locations": [
+          "作者贡献段1-第2点",
+          "作者贡献段2-第2点",
+          "full_text_excerpt-第20页"
+        ]
+      }
+    ],
+    "keywords_zh": [
+      "图表示学习",
+      "深度学习",
+      "图神经网络",
+      "分布式技术"
+    ],
+    "keywords_en": [
+      "graph representation learning",
+      "deep learning",
+      "graph neural network",
+      "distributed"
+    ],
+    "research_tasks": [
+      {
+        "task_id": "T-R2-1",
+        "novelty_point_id": "NP-2",
+        "task_type": "literature_search",
+        "language": "en",
+        "description": "Final valid evidence cards are insufficient for novelty point NP-2 (0 < 1). This round performs an English literature search to find related distributed graph neural network training frameworks based on graph summarization, leader-worker architectures, mini-batch training, and attention-based result aggregation, to complement the evidence for NP-2.",
+        "attempt": 2
+      }
+    ]
+  },
+  "evidence_cards": [
+    {
+      "card_id": "card_eb9701e9ca820e30cd228af4",
+      "task_id": "T-1",
+      "novelty_point_id": "NP-1",
+      "document_title": "DTFormer: A Transformer-Based Method for Discrete-Time Dynamic Graph Representation Learning",
+      "main_contribution": "DTFormer introduces a Transformer-based representation learning method for Discrete-Time Dynamic Graphs (DTDGs), pivoting from the traditional GNN+RNN framework to address its limitations including scaling to large graph sizes.",
+      "overlaps": [
+        "Models dynamic graphs as successive graph snapshots (technical feature 1)",
+        "Addresses the GNN+RNN architecture and its scaling limitations for large graphs (motivation of technical feature 2)",
+        "Processes static snapshots with graph neural networks and integrates representations over time"
+      ],
+      "differences": [
+        "Uses a Transformer-based architecture instead of graph summarization + graph autoencoder + RNN",
+        "Does not compress the original graph into a fixed-size new graph via graph summarization",
+        "Does not use a graph autoencoder with reconstruction error for node representation training",
+        "Does not feed single-time-step graph representations into an RNN for temporal learning"
+      ],
+      "sources": [
+        {
+          "title": "DTFormer: A Transformer-Based Method for Discrete-Time Dynamic Graph Representation Learning",
+          "quote": "GNN+RNN architectures also grapple with scaling to large graph sizes and long sequences.",
+          "location": "artifact art_5d2a5d231b0a81e0637a2646 chars:735-823",
+          "doi": null,
+          "url": "https://arxiv.org/pdf/2407.18523"
+        },
+        {
+          "title": "DTFormer: A Transformer-Based Method for Discrete-Time Dynamic Graph Representation Learning",
+          "quote": "static graph neural networks, such as GNNs (17) and Graph Convolutional Networks (GCNs) (18), are used to process static snapshots of the graph to capture topological relationships.",
+          "location": "artifact art_d74cd5fe4fb7f8f30bcb1d3b chars:7063-7244",
+          "doi": null,
+          "url": "https://arxiv.org/pdf/2407.18523"
+        }
+      ],
+      "cited_by_paper": null,
+      "possible_baseline": false,
+      "relevance": 0.65,
+      "confidence": 0.75,
+      "evidence_ids": [
+        "ev_25fbf8e09874b623e07eaf16",
+        "ev_95e6bf4aa38c1944af234029"
+      ]
+    },
+    {
+      "card_id": "card_2b4864cb12d4a361c38ca4e9",
+      "task_id": "T-1",
+      "novelty_point_id": "NP-1",
+      "document_title": "EvolveGCN: Evolving Graph Convolutional Networks for Dynamic Graphs",
+      "main_contribution": "EvolveGCN adapts the graph convolutional network (GCN) along the temporal dimension by using an RNN to evolve the GCN parameters, capturing the dynamism of graph sequences without relying on node embeddings.",
+      "overlaps": [
+        "Models dynamic graphs as a sequence of graph snapshots over time (technical feature 1)",
+        "Uses a recurrent neural network to learn temporal dynamics of graph sequences (technical feature 4)",
+        "Addresses the GNN+RNN combination where GNNs act as feature extractors and RNNs perform sequence learning"
+      ],
+      "differences": [
+        "Does not use graph summarization to compress the original graph into a fixed-size new graph",
+        "Does not use a graph autoencoder with reconstruction error to train node representations",
+        "Uses the RNN to evolve GCN network parameters rather than feeding single-time-step graph representations into an RNN",
+        "Does not address the issue of GNN outputs not being directly feedable into RNN via graph compression"
+      ],
+      "sources": [
+        {
+          "title": "EvolveGCN: Evolving Graph Convolutional Networks for Dynamic Graphs",
+          "quote": "The proposed approach captures the dynamism of the graph sequence through using an RNN to evolve the GCN parameters.",
+          "location": "artifact art_0e0b76110b06e28d52d3110d chars:2783-2899",
+          "doi": null,
+          "url": "https://arxiv.org/pdf/1902.10191"
+        },
+        {
+          "title": "EvolveGCN: Evolving Graph Convolutional Networks for Dynamic Graphs",
+          "quote": "These methods use GNNs as a feature extractor and RNNs for sequence learning from the extracted features (node embeddings).",
+          "location": "artifact art_0e0b76110b06e28d52d3110d chars:6614-6737",
+          "doi": null,
+          "url": "https://arxiv.org/pdf/1902.10191"
+        }
+      ],
+      "cited_by_paper": null,
+      "possible_baseline": true,
+      "relevance": 0.7,
+      "confidence": 0.8,
+      "evidence_ids": [
+        "ev_63b5144219315e017ae50e4c",
+        "ev_cbc12cf749ae4273b59446f8"
+      ]
+    },
+    {
+      "card_id": "card_2831f90cbd08b9ebb74d0c5d",
+      "task_id": "T-1",
+      "novelty_point_id": "NP-3",
+      "document_title": "ADWISE: Adaptive Window-based Streaming Edge Partitioning for High-Speed Graph Processing",
+      "main_contribution": "ADWISE proposes a window-based streaming edge partitioning algorithm that assigns individual graph edges to partitions in a streaming manner, dynamically adapting window size to balance partitioning latency and partitioning quality for large graphs.",
+      "overlaps": [
+        "Edge-based streaming graph partitioning: assigns individual graph edges to partitions in a streaming manner",
+        "Targets very large graphs and distributed graph processing",
+        "Aims to reduce partitioning/processing latency and improve partitioning quality"
+      ],
+      "differences": [
+        "ADWISE uses a window-based selection strategy (choosing the best edge from a set) rather than edge-segmentation with Count-Min Sketch",
+        "No Count-Min Sketch probabilistic data structure is used for storing node degree information",
+        "No min-heap is used to maintain high-frequency node information",
+        "Does not describe constant-time (O(1)) query results or subgraph-ID generation based on degree estimation"
+      ],
+      "sources": [
+        {
+          "title": "ADWISE: Adaptive Window-based Streaming Edge Partitioning for High-Speed Graph Processing",
+          "quote": "Existing graph partitioning algorithms minimize partitioning latency by assigning individual graph edges to partitions in a streaming manner --- at the cost of reduced partitioning quality.",
+          "location": "artifact art_e96f0ff1bfe649c77e9b8343 chars:155-344",
+          "doi": null,
+          "url": "https://arxiv.org/pdf/1712.08367"
+        }
+      ],
+      "cited_by_paper": null,
+      "possible_baseline": true,
+      "relevance": 0.6,
+      "confidence": 0.7,
+      "evidence_ids": [
+        "ev_656f0c26b43c97b105751b04"
+      ]
+    },
+    {
+      "card_id": "card_927caf724042beff967b2231",
+      "task_id": "T-1",
+      "novelty_point_id": "NP-3",
+      "document_title": "Window-based Streaming Graph Partitioning Algorithm",
+      "main_contribution": "WStream is a window-based streaming graph partitioning algorithm (edge-cut) that partitions large graph data in a one-pass manner while keeping load balanced across partitions and minimizing communication.",
+      "overlaps": [
+        "Streaming graph partitioning for large-scale graph data",
+        "Load balancing across partitions",
+        "One-pass (streaming) processing of graph data"
+      ],
+      "differences": [
+        "WStream is a vertex-assignment (edge-cut) partitioning algorithm that distributes vertices, not edge-segmentation-based subgraph-ID generation",
+        "No Count-Min Sketch probabilistic data structure for degree storage",
+        "No min-heap for high-frequency node maintenance",
+        "Does not describe constant-time query results or degree-based subgraph assignment"
+      ],
+      "sources": [
+        {
+          "title": "Window-based Streaming Graph Partitioning Algorithm",
+          "quote": "Our results suggest that the WStream algorithm is able to partition large graph data efficiently while keeping the load balanced across different partitions, and communication to a minimum.",
+          "location": "artifact art_044b624240993e16c40f3537 chars:924-1113",
+          "doi": "10.1145/3290688.3290711",
+          "url": "https://arxiv.org/pdf/1902.01543"
+        }
+      ],
+      "cited_by_paper": null,
+      "possible_baseline": true,
+      "relevance": 0.55,
+      "confidence": 0.7,
+      "evidence_ids": [
+        "ev_c21472ba3116535fc3ac83a2"
+      ]
+    }
+  ],
+  "rejected_evidence": [],
+  "novelty_reviews": [
+    {
+      "novelty_point_id": "NP-1",
+      "status": "insufficient_evidence",
+      "verdict": null,
+      "verdict_reason": null,
+      "confidence": null,
+      "highly_relevant_works": [
+        {
+          "work_id": "wrk_0e7a55685030127620af7c00",
+          "card_ids": [
+            "card_eb9701e9ca820e30cd228af4"
+          ],
+          "evidence_ids": [
+            "ev_25fbf8e09874b623e07eaf16",
+            "ev_95e6bf4aa38c1944af234029"
+          ],
+          "relevance_reason": "该文献提及GNN+RNN架构在大规模图上的扩展性问题，与查新点声称的解决GNN输出无法直接输入RNN的问题存在局部相关性，但未核验其是否采用图摘要技术，需进一步核验原文。"
+        }
+      ],
+      "supplement_request": {
+        "reason": "裁定依赖文献未采用图摘要等关键特征的断言，但输入引文未直接支持该否定；且EvolveGCN卡因工具预算耗尽未能完成核验，需补充核验。",
+        "missing_aspects": [
+          "核验wrk_0e7a55685030127620af7c00是否采用图摘要技术压缩动态图",
+          "核验wrk_0e7a55685030127620af7c00是否使用图自编码器及重构误差训练节点表征",
+          "核验wrk_0e7a55685030127620af7c00是否将单时间步表征输入RNN学习时序依赖",
+          "核验wrk_2b4864cb12d4a361c38ca4e9（EvolveGCN）是否采用图摘要或类似压缩机制"
+        ],
+        "suggested_focus": []
+      }
+    },
+    {
+      "novelty_point_id": "NP-2",
+      "status": "insufficient_evidence",
+      "verdict": null,
+      "verdict_reason": null,
+      "confidence": null,
+      "highly_relevant_works": [],
+      "supplement_request": {
+        "reason": "当前查新点没有可供可靠判定的已绑定证据。",
+        "missing_aspects": [],
+        "suggested_focus": []
+      }
+    },
+    {
+      "novelty_point_id": "NP-3",
+      "status": "insufficient_evidence",
+      "verdict": null,
+      "verdict_reason": null,
+      "confidence": null,
+      "highly_relevant_works": [
+        {
+          "work_id": "wrk_07b61d6672c4287867079716",
+          "card_ids": [
+            "card_2831f90cbd08b9ebb74d0c5d"
+          ],
+          "evidence_ids": [
+            "ev_656f0c26b43c97b105751b04"
+          ],
+          "relevance_reason": "该文献与查新点存在局部相关性；具体技术差异尚待原文核验。"
+        },
+        {
+          "work_id": "wrk_dd602dc2d2b07d7e69e6724c",
+          "card_ids": [
+            "card_927caf724042beff967b2231"
+          ],
+          "evidence_ids": [
+            "ev_c21472ba3116535fc3ac83a2"
+          ],
+          "relevance_reason": "WStream 是流式图划分算法，目标为大规模图数据负载均衡划分，与查新点目标重合；但摘要证实其为顶点分配（edge-cut）算法，与查新点的边分割机制存在结构性差异，且未提及 Count-Min Sketch 与最小堆机制。"
+        }
+      ],
+      "supplement_request": {
+        "reason": "裁定依赖文献未采用特征的断言，但输入引文没有直接支持该否定；需核验原文。",
+        "missing_aspects": [
+          "核验被声称未采用的关键特征"
+        ],
+        "suggested_focus": []
+      }
+    }
+  ],
+  "insufficient_final_evidence_points": [
+    {
+      "novelty_point_id": "NP-2",
+      "valid_card_count": 0,
+      "required_card_count": 1,
+      "reason": "insufficient_final_evidence"
+    }
+  ],
+  "issues": [],
+  "rounds": 2,
+  "report": {
+    "paper_id": "MF2033k6lC",
+    "conclusions": [
+      {
+        "novelty_point_id": "NP-1",
+        "review_status": "insufficient_evidence",
+        "verdict": null,
+        "verdict_reason": null,
+        "confidence": null,
+        "summary": "该查新点的关键比较证据不足，尚不能作出新颖性裁定。",
+        "supporting_card_ids": [
+          "card_eb9701e9ca820e30cd228af4",
+          "card_2b4864cb12d4a361c38ca4e9"
+        ],
+        "counter_card_ids": [],
+        "highly_relevant_works": [
+          {
+            "work_id": "wrk_0e7a55685030127620af7c00",
+            "card_ids": [
+              "card_eb9701e9ca820e30cd228af4"
+            ],
+            "evidence_ids": [
+              "ev_25fbf8e09874b623e07eaf16",
+              "ev_95e6bf4aa38c1944af234029"
+            ],
+            "relevance_reason": "该文献提及GNN+RNN架构在大规模图上的扩展性问题，与查新点声称的解决GNN输出无法直接输入RNN的问题存在局部相关性，但未核验其是否采用图摘要技术，需进一步核验原文。"
+          }
+        ]
+      },
+      {
+        "novelty_point_id": "NP-2",
+        "review_status": "insufficient_evidence",
+        "verdict": null,
+        "verdict_reason": null,
+        "confidence": null,
+        "summary": "该查新点的关键比较证据不足，尚不能作出新颖性裁定。",
+        "supporting_card_ids": [],
+        "counter_card_ids": [],
+        "highly_relevant_works": []
+      },
+      {
+        "novelty_point_id": "NP-3",
+        "review_status": "insufficient_evidence",
+        "verdict": null,
+        "verdict_reason": null,
+        "confidence": null,
+        "summary": "该查新点的关键比较证据不足，尚不能作出新颖性裁定。",
+        "supporting_card_ids": [
+          "card_2831f90cbd08b9ebb74d0c5d",
+          "card_927caf724042beff967b2231"
+        ],
+        "counter_card_ids": [],
+        "highly_relevant_works": [
+          {
+            "work_id": "wrk_07b61d6672c4287867079716",
+            "card_ids": [
+              "card_2831f90cbd08b9ebb74d0c5d"
+            ],
+            "evidence_ids": [
+              "ev_656f0c26b43c97b105751b04"
+            ],
+            "relevance_reason": "该文献与查新点存在局部相关性；具体技术差异尚待原文核验。"
+          },
+          {
+            "work_id": "wrk_dd602dc2d2b07d7e69e6724c",
+            "card_ids": [
+              "card_927caf724042beff967b2231"
+            ],
+            "evidence_ids": [
+              "ev_c21472ba3116535fc3ac83a2"
+            ],
+            "relevance_reason": "WStream 是流式图划分算法，目标为大规模图数据负载均衡划分，与查新点目标重合；但摘要证实其为顶点分配（edge-cut）算法，与查新点的边分割机制存在结构性差异，且未提及 Count-Min Sketch 与最小堆机制。"
+          }
+        ]
+      }
+    ],
+    "missing_references": [],
+    "missing_baselines": [],
+    "citation_issues": [],
+    "limitations": [
+      "本次查新未提供各检索源的执行状态、覆盖范围和命中记录详情，检索覆盖程度未知，无法区分检索失败、成功零命中与有命中但未通过证据门控等情形。",
+      "对于NP-2，无任何有效EvidenceCard，但无法由此推断是检索零命中还是候选文献未达证据门槛，也不能断言“未见报道”。",
+      "对于NP-1和NP-3，虽存在有效EvidenceCard，但关键区别特征（如是否采用图摘要、Count-Min Sketch、最小堆等）在现有证据中未被充分核验，证据不足以支撑新颖性裁定，属于证据不充分而非明确检索零命中。",
+      "未提供被拒绝证据列表，因此无技术性质疑或格式性拒绝信息可写入。"
+    ]
+  }
+}

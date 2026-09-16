@@ -1,0 +1,2186 @@
+Play like a Vertex: A Stackelberg Game Approach for Streaming Graph Partitioning
+
+      Report GitHub Issue
+      ×
+
+      Title:
+
+Content selection saved. Describe the issue below:
+
+      Description:
+
+      Submit without GitHub
+      Submit in GitHub
+
+    arXiv is now an independent nonprofit!
+    Learn more
+    ×
+
+      Back to arXiv
+
+    Why HTML?
+
+      Report Issue
+
+      Back to Abstract
+
+      Download PDF
+
+Abstract.
+
+1 Introduction
+
+2 preliminaries
+
+2.1 Vertex-Cut Streaming Partitioning
+
+2.2 Stackelberg Game
+
+2.3 Graph Skewness
+
+3 related work
+
+4 Skewness-aware Vertex-cut Partitioner
+
+4.1 Approach Overview
+
+4.2 Skewness-aware Streaming Graph Clustering
+
+4.3 Stackelberg Game-based Partitioning
+
+4.4 Optimization Strategy
+
+5 theoretical analysis
+
+5.1 Time Cost Analysis
+
+5.2 Memory Cost Analysis
+
+5.3 Metric Analysis
+
+5.4 Stackelberg Game Analysis
+
+6 experiments
+
+6.1 Experimental Setup
+
+6.2 Performance (Q1Q_{1})
+
+6.3 Component Analysis (Q2Q_{2})
+
+6.4 Optimization (Q3Q_{3})
+
+6.5  Parameter Sensitivity (Q4Q_{4})
+
+6.6  Deployment on Real Systems (Q5Q_{5})
+
+6.7  Skewness Analysis (Q6Q_{6})
+
+7 conclusion
+
+Acknowledgements
+
+References
+
+    License: arXiv.org perpetual non-exclusive license
+
+arXiv:2402.18304v1 [cs.DC] 28 Feb 2024
+
+Play like a Vertex: A Stackelberg Game Approach for Streaming Graph Partitioning
+
+DOI: XXXXXXX.XXXXXXXJournal: PACMMODVolume: 3741116CCS: Information systems Graph-based database models
+
+Zezhong Ding
+
+Note: School of Data Science.
+
+email: zezhongding@mail.ustc.edu.cn
+
+Affiliation: Data Darkness Lab, MIRACLE Center, Suzhou Institute for Advanced Research, University of Science and Technology of China, Suzhou, Jiangsu, China
+
+,
+Yongan Xiang
+
+Note: School of Computer Science and Technology.
+
+email: ya_xiang@mail.ustc.edu.cn
+
+Affiliation: Data Darkness Lab, MIRACLE Center, Suzhou Institute for Advanced Research, University of Science and Technology of China, Suzhou, Jiangsu, China
+
+,
+Shangyou Wang
+
+email: wash_you@mail.ustc.edu.cn
+
+Affiliation: Data Darkness Lab, MIRACLE Center, Suzhou Institute for Advanced Research, University of Science and Technology of China, Suzhou, Jiangsu, China
+
+,
+Xike Xie
+
+Note: School of Biomedical Engineering.
+
+email: xkxie@ustc.edu.cn
+
+Affiliation: Data Darkness Lab, MIRACLE Center, Suzhou Institute for Advanced Research, University of Science and Technology of China, Suzhou, Jiangsu, China
+
+ and
+S. Kevin Zhou
+
+email: s.kevin.zhou@gmail.com
+
+Affiliation: Data Darkness Lab, MIRACLE Center, Suzhou Institute for Advanced Research, University of Science and Technology of China, Suzhou, Jiangsu, China
+
+Received  23 February 2024
+
+Abstract.
+
+In the realm of distributed systems tasked with managing and processing large-scale graph-structured data, optimizing graph partitioning stands as a pivotal challenge. The primary goal is to minimize communication overhead and runtime cost. However, alongside the computational complexity associated with optimal graph partitioning, a critical factor to consider is memory overhead. Real-world graphs often reach colossal sizes, making it impractical and economically unviable to load the entire graph into memory for partitioning. This is also a fundamental premise in distributed graph processing, where accommodating a graph with non-distributed systems is unattainable. Currently, existing streaming partitioning algorithms exhibit a skew-oblivious nature, yielding satisfactory partitioning results exclusively for specific graph types.
+In this paper, we propose a novel streaming partitioning algorithm, the Skewness-aware Vertex-cut Partitioner (S5P), designed to leverage the skewness characteristics of real graphs for achieving high-quality partitioning. S5P offers high partitioning quality by segregating the graph’s edge set into two subsets, head and tail sets.
+Following processing by a skewness-aware clustering algorithm, these two subsets subsequently undergo a Stackelberg graph game.
+Our extensive evaluations conducted on substantial real-world and synthetic graphs demonstrate that, in all instances, the partitioning quality of S5P surpasses that of existing streaming partitioning algorithms, operating within the same load balance constraints.
+For example, S5P can bring up to a 51% improvement in partitioning quality compared to the top partitioner among the baselines.
+Lastly, we showcase that the implementation of S5P results in up to an 8181% reduction in communication cost and a 130%130\% increase in runtime efficiency for distributed graph processing tasks on PowerGraph.
+
+Keywords: Graph Partitioning; Streaming Partitioning; Distributed Systems
+
+1. Introduction
+
+Graph partitioning is a crucial technique for managing large-scale graph analytics in a distributed manner. In this process, an input graph is partitioned across a cluster of machines. This enables the handling of graphs that are too large for a single machine while accelerating computation through parallelization. This trend is evident in the rise of distributed graph systems, e.g., Blogel(Yan et al., 2014), PowerGraph(Gonzalez et al., 2012), GraphX(Gonzalez et al., 2014), PowerLyra(Chen et al., 2015), TopoX(Zhang et al., 2020), EASE(Merkel et al., 2023), ScaleG(Wang et al., 2023), HCPD(Qu et al., 2023), Pregel(Malewicz et al., 2010), AGP(Fan et al., 2023), G-thinker(Yan et al., 2020), and GridGraph(Zhu et al., 2015).
+Recent advances in graph neural networks further underscore the significance of graph partitioning, e.g., BNS-GCN(Wan et al., 2022), AliGraph(Zhu et al., 2019), Betty(Yang et al., 2023), and DistGNN(Md et al., 2021).
+
+Using the GAS (Gather-Apply-Scatter) model11
+            1
+
+          Other programming models in distributed graph processing, such as BSP (Malewicz et al., 2010) and asynchronous model (Low et al., 2012), consist of computation, communication, and synchronization phases, which
+can be viewed as different orders of API calls of GAS.
+ as an example in the context of distributed graph processing, vertices in a distributed system iteratively gather information from their neighbors, apply computation to the data, and then scatter the results back to their neighbors.
+At each iteration, a vertex collects messages sent by its replicas maintained in other machines (or partitions) and organizes them for synchronization.
+The primary objective of graph partitioning is to minimize the number of vertices (or edges) that are cut and replicated among different partitions. This minimization helps significantly reduce the communication and synchronization overhead in distributed graph tasks, as each cut results in message transfers between different partitions.
+
+Figure 1.  Distributions about Graph Skewness
+
+The evolution of graph partitioning algorithms has unfolded across two pivotal dimensions: the transition from edge-cut to vertex-cut partitioning strategies, and the shift from offline to streaming methodologies.
+
+Basically, edge-cut partitioning involves cutting edges to distribute vertices across partitions, minimizing cross-partition edges, while vertex-cut partitioning achieves the same by cutting vertices into multiple replicas.
+Traditional edge-cut algorithms, effective in non-skewed graph scenarios, confront challenges in dealing with real-world power-law graphs (Gonzalez et al., 2012; Bourse et al., 2014; Feige et al., 2008a; Albert et al., 2000), where vertex degrees follow a long-tail distribution, yielding a large number of low-degree vertices in the tail and a small number of very high-degree vertices in the head (Liu et al., 2021), as depicted in Figure 1.
+The skewness challenge drove the adoption of vertex-cut techniques, which excel in addressing skewed distributions by selectively replicating high-degree vertices (Zhang et al., 2017).
+
+Simultaneously, scaling partitioning algorithms to massive graphs prompts a shift from offline methods that preload the entire graph, to streaming methods that access and process edges in a sequence.
+However, early streaming partitioning algorithms, e.g., (Xie et al., 2014) (Petroni et al., 2015), despite the advantage of scalability, tend to be agnostic to skewness, treating all parts of a graph uniformly. This leads to inferior partitioning quality on skewed graphs.
+Recent research trends as seen in (Mayer et al., 2022) and (Kong et al., 2022) share a common improvement theme, which unconsciously addresses the underutilization of skewness through graph clustering and improves the performance.
+However, this implicit addressing of skewness is only marginal and not substantial,
+leaving room for further performance enhancement over skewed graphs.
+In fact, a low-degree vertex in the tail has a marginal effect on the partitioning quality, whereas a high-degree vertex in the head exerts a substantial influence (cf. Figure 1). Therefore, it is crucial to strike a balance between the two sets and their mutual impact on the partitioning quality.
+
+In this paper, we study a skewness-aware vertex-cut streaming partitioning approach, which employs a Stackelberg game for addressing the mutual effect of high- and low-degree vertices in partitioning quality.
+Considering the partitioning process as a game of allocation, where players represent graph entities, e.g., vertices, edges, or subgraphs, to a predetermined set of partitions, we posit that the Stackelberg game effectively encapsulates the skewness characteristics.
+In general, the Stackelberg game embodies the hierarchical interaction among players taking different roles, akin to the hierarchical structure seen in an ant colony, with its queen and worker ants.
+Following a similar line of thought,
+we can also assign different roles to graph entities, e.g., vertices, fostering interactions through game-theoretic dynamics.
+High-degree vertices assume leadership roles much like queen ants, while low-degree vertices take on follower roles reminiscent of worker ants. Real-world graphs often exhibit a significant preponderance of low-degree vertices, analogous to the higher number of worker ants in an ant colony than queen ants. Modeling the dynamic interplay between the two groups through the lens of a Stackelberg game effectively captures the asymmetric influence of high-degree leader vertices on their low-degree follower counterparts.
+
+Still, in the context of streaming partitioning, efficiently extracting skewness-related information for each vertex to address graph skewness presents technical challenges that demand both low memory consumption and high-speed processing.
+
+To address the challenge, our techniques are three-fold. First, we investigate a skewness-aware clustering algorithm, seamlessly integrated with the Stackelberg game to constitute a clustering-refinement framework for graph partitioning, aligning with the cutting-edge framework of stream partitioners. Second, we use the count-min sketch for summarizing graph information to construct compact strategy sets for different players with high time and space efficiency yet without compromising the quality.
+Third, we exploit parallelization for accelerating the game process, enabling the concurrent operations among graph entities participated in the partitioning process, akin to a colony of ants working towards a common goal.
+
+Our contributions can be listed as follows.
+
+•
+
+We have spearheaded the examination of the profound connection between skewness and the graph partitioning quality, based on which we propose the first Stackelberg game-based approach to tackle the challenges of streaming graph partitioning.
+
+•
+
+Taking graph skewness into consideration, we first propose skewness-aware graph clustering. Oriented at vertex-cut partitioning, this approach brings in over 16×\times space efficiency and over 8×\times time efficiency (Section 6.3).
+Furthermore, it offers excellent versatility and can be seamlessly integrated into other partitioning algorithms, conforming to the clustering-refinement framework.
+
+•
+
+We are the first to introduce the Stackelberg game from the perspective of graph skewness into the solution of vertex-cut partitioning problem. We offer relevant theoretical analysis, specifically in the context of graph partitioning.
+Additionally, we have incorporated sketching and parallelization techniques to streamline and optimize the time and space complexities associated with the game process.
+
+•
+
+Extensive experiments are conducted on 1111 real and 66 synthetic graphs, varying in scales and types. The experimental results show that S5P outperforms state-of-the-art solutions in terms of quality, especially for social and web graphs.
+Moreover, the deployment of partitioning algorithms to real distributed graph systems, e.g., Powergraph, showcases an enhancement in executing graph tasks, e.g., PageRank, with up to an 8181% reduction in communication cost and 130%130\% increase in runtime efficiency.
+
+The subsequent sections of this paper are structured as follows.
+In Section 2, we commence by formalizing and delving into the vertex-cut partitioning problem, and present preliminaries of the two-stage Stackelberg game and graph skewness.
+Section 3 engages in a discussion of related works.
+Section 4 is dedicated to introducing the S5P framework, encompassing the innovative streaming skewness-aware graph clustering algorithm, the two-stage Stackelberg-based partitioning algorithm, and the optimization strategy.
+In Section 5, we present a comprehensive theoretical analysis.
+Section 6 evaluates the performance of S5P against 8 robust baselines under 11 real-world graphs and 6 synthetic graphs.
+Section 7 concludes the paper.
+
+2. preliminaries
+
+2.1. Vertex-Cut Streaming Partitioning
+
+Vertex-Cut Graph Partitioning
+
+Give a directed or undirected graph G=(V,E)G=(V,E), where VV is the set of vertices and E⊆V×VE\subseteq V\times V is the set of edges, and given a number of kk partitions P={pi}i≤kP=\{p_{i}\}_{i\leq k}, the vertex-cut partitioning algorithm exclusively assigns each edge ei∈Ge_{i}\in G to a partition pi∈Pp_{i}\in P, satisfying ∪i≤kpi=E\cup_{i\leq k}p_{i}=E and pi∩pj=∅​(i≠j)p_{i}\cap p_{j}=\emptyset(i\neq j).
+
+Vertex-Cut Streaming Partitioning
+
+The stream edge model SG={e1,e2,…,e|E|}S_{G}=\{e_{1},e_{2},...,e_{|E|}\} assumes the edges of an input graph G=(V,E)G=(V,E) arrive in a sequence.
+Then, the vertex-cut (edge) streaming partitioning performs single or multiple passes over the graph stream and makes partitioning decisions.
+
+Quality of Vertex-cut Partitioning
+
+The primary goal of the partitioning algorithm is to optimize the efficiency of upper-level distributed graph systems.
+So, the replication factor (RF) serves as the standard metric for evaluating partitioning quality, as shown in Equation (1).
+
+(1)
+
+RF=∑v∈V|P⁡(v)||V|⏟Vertex Replication Form=∑dig⁡(di)​f​(di)|V|⏟ Degree Distribution Form\small\text{RF}=\underbrace{\frac{\sum_{v\in V}{|P(v)|}}{|V|}}_{\textit{Vertex Replication Form}}=\underbrace{\frac{\sum_{d_{i}}{g(d_{i})f(d_{i})}}{|V|}}_{\textit{ Degree Distribution Form}}
+
+, where P⁡(v)P(v) represents the set of partitions holding vertex vv, and |P⁡(v)||P(v)| signifies the number of partitions holding vv, a.k.a., the number of replications of vv.
+
+We can also rewrite the equation of replication factor from the vertex replication form into the degree distribution form, as shown in Equation (1), where g⁡(di)=∑d⁡(v)=di|P⁡(v)|g(d_{i})=\sum_{d(v)=d_{i}}|P(v)| represents the average replication of all the vertices with degree did_{i}, and f⁡(di)f(d_{i}) represents the frequency of degree did_{i}.
+Thus, RF can be viewed as the result of integrating g⁡(di)g(d_{i}) across various degrees.
+So, the development of partitioning strategies that take into account the skewness in distributions holds the promise of effectively reducing RFs.
+
+With Equation (1), the vertex-cut partitioning problem can be formalized as an optimization problem (Gonzalez et al., 2012), which is known to be NP-hard (Holyer, 1981; Feige et al., 2008b), as follows.
+
+(2)
+
+m​i​n​i​m​i​z​e​RFs.t.k​maxi=1,…​k​|Pi||E|≤τminimize\ \text{RF}\ \ s.t.\ \frac{k\max_{i=1,...k}|P_{i}|}{|E|}\leq\tau
+
+Here, τ\tau is the threshold of imbalance.
+
+2.2. Stackelberg Game
+
+The Stackelberg game can be categorized into single-stage and multi-stage versions. In a single-stage scenario, leaders and followers make decisions simultaneously and adopt a unique optimization function. In contrast, the multi-stage Stackelberg game unfolds over multiple stages. The leaders and followers are divided into different stages to make decisions.
+In this paper, we adopt the simplest variant of the multi-stage Stackelberg game, known as the two-stage Stackelberg game, to maximally reduce the time overhead incurred in-between multiple subsequent stages.
+In a two-stage Stackelberg game, all leaders make the initial move (Stage 1), and then all followers choose an action after being informed of the leaders’ choice (Stage 2).
+The cost function of the leaders can be defined as Ω⁡(θ,λ)\Omega(\theta,\lambda), where θ\theta is one of the leader’s strategies and λ\lambda is one of the follower’s strategies. Also, the cost function of the follower can be defined as Φ⁡(θ,λ)\Phi(\theta,\lambda).
+In this paper, we consider a two-stage Stackelberg game.
+
+Disincentive Strategy Modeling
+
+Determining the optimal disincentive strategy ⟨θ∗,λ∗⟩\langle\theta^{*},\lambda^{*}\rangle is modeled as a two-stage Stackelberg game. Each of the players tries to minimize its own cost by determining an optimal parameter in the disincentive strategy, which can be manipulated by itself (called its optimal strategy hereafter, for simplicity), satisfying:
+
+(3)
+
+Stage 1 [Leaders’ Side]: θ∗=argminθΩ(θ,λ)\displaystyle\textbf{Stage 1 [Leaders' Side]: }\theta^{*}=argmin_{\theta}\Omega(\theta,\lambda)
+
+Stage 2 [followers’ Side]: λ∗=argminλΦ(θ,λ)\displaystyle\textbf{Stage 2 [followers' Side]: }\lambda^{*}=argmin_{\lambda}\Phi(\theta,\lambda)
+
+In the above game, the objective is to find an optimal disincentive strategy ⟨θ∗,λ∗⟩\langle\theta^{*},\lambda^{*}\rangle, by which each participant can minimize its own cost. Meanwhile, the optimal solution must satisfy the Stackelberg Equilibrium (SE), so that no one is willing to adopt other strategies. The SE is defined as follows:
+
+Stackelberg Equilibrium, SE
+
+An optimal disincentive strategy ⟨θ∗,λ∗⟩\langle\theta^{*},\lambda^{*}\rangle constitutes a SE iff the following set of inequalities is satisfied:
+
+(4)
+
+Ω⁡(θ∗,λ∗)≤Ω⁡(θ,λ∗)\displaystyle\Omega(\theta^{*},\lambda^{*})\leq\Omega(\theta,\lambda^{*})
+
+Φ⁡(θ∗,λ∗)≤Φ⁡(θ∗,λ)\displaystyle\Phi(\theta^{*},\lambda^{*})\leq\Phi(\theta^{*},\lambda)
+
+2.3. Graph Skewness
+
+The significance of graph skewness has long been recognized in many fields, referring to the measurement of uneven distributions of graph entities (e.g., vertices or edges) or statistics (e.g., structural characteristics), each attributed to varying definitions.
+
+Regression-based Graph Skewness (Newman, 2005)
+
+Given a specific vertex degree dd, the number of vertices follows a power-law distribution, f⁡(d)∝d−ρf(d)\propto d^{-\rho}. Most natural graphs typically have a power-law constant 2<ρ<32<\rho<3 (Choromanski et al., 2013; Durrett, 2007). A smaller ρ⁡(G)\rho(G) indicates a more skewed graph. Since regression-based skewness incurs low precision due to the inability of logarithmic transformation to handle zero values, two other metrics are more often used (Merkel et al., 2023).
+
+Pearson’s Graph Skewness (Doane and Seward, 2011)
+
+Pearson’s first skewness of a graph GG is
+ρ1​(G)=m​e​a​n​(d)−m​o​d​e​(d)σ\rho_{1}(G)=\frac{mean(d)-mode(d)}{\sigma}, with dd being the degree of vertices in GG and σ\sigma being the standard deviation of the degree.
+Pearson’s second skewness of GG can be obtained by replacing the calculation of mode with that of the median,
+ρ2​(G)=3​(m​e​a​n​(d)−m​e​d​i​a​n​(d))σ\rho_{2}(G)=\frac{3(mean(d)-median(d))}{\sigma}.
+Both
+ρ1​(G)\rho_{1}(G) and ρ2​(G)\rho_{2}(G)
+are based on degree perspectives, with bigger values indicating more skewed graphs.
+
+Planarization Graph Skewness (Cimikowski, 1992)
+
+The skewness of a graph GG can also be defined from the topology perspective, as the minimum number of edges, whose removal results in a planar graph. Since such determination is NP-hard,
+an alternative indicator
+ρ3​(G)=|E|−(3​|V|−6)\rho_{3}(G)=|E|-(3|V|-6)
+is proposed. It implies that
+the graph is more skewed as the increase of ρ3​(G)\rho_{3}(G).
+
+3. related work
+
+Edge- vs. Vertex-cut Partitioning
+
+There are two major graph partitioning strategies, namely edge- and vertex-cut partitioning, based on whether edges or vertices are cut.
+The vertex-cut partitioning strategy evenly distributes graph edges across distributed nodes while minimizing vertex replications.
+Empirical and theoretical evidence, as shown in (Gonzalez et al., 2012; Bourse et al., 2014; Feige et al., 2008a; Albert et al., 2000), consistently highlights the superior effectiveness of the vertex-cut partitioning over the edge-cut counterpart, especially when dealing with large graphs.
+This superiority is particularly pronounced in real-world graphs characterized by a skewed distribution (Liu et al., 2021), where vertex degrees follow a power-law pattern, yielding a large number of low-degree vertices and a small number of very high-degree vertices, as depicted in Figure 1.
+
+Stream vs. Offline Vertex-cut Partitioning
+
+Despite advances in the field of vertex-cut partitioning over the past decade, the challenge of effective vertex-cut partitioning remains unsolved.
+Existing approaches to address the vertex-cut partitioning problem can be broadly classified into two categories: streaming methods (Kong et al., 2022; Petroni et al., 2015; Mayer et al., 2022; Mayer et al., 2018; Hua et al., 2019; Xie et al., 2014; Gonzalez et al., 2012; Zwolak et al., 2022; Mayer et al., 2018; Taimouri and Saadatfar, 2019; Qu et al., 2023) and offline methods (Karypis and Kumar, 1998; Zhang et al., 2017; Hanai et al., 2019; Mayer and Jacobsen, 2021). The offline algorithms necessitate the preloading of the partial or entire graph into the main memory before partitioning, while streaming algorithms process the graph incrementally as a continuous stream of edges. This allows streaming methods to operate with big graphs under lower memory constraints.
+
+Stream Partitioning
+
+Streaming partitioning is deemed practical for managing large-scale graphs. Methods like DBH (Xie et al., 2014) and Grid (Jain et al., 2013), which solely rely on hash-based partitioning, often exhibit poor partitioning quality.
+Greedy (Gonzalez et al., 2012), ADWISE (Mayer et al., 2018), and HDRF (Petroni et al., 2015) improve the partitioning quality by designing different scoring functions. However, their algorithmic time complexity is dependent on the number of partitions, thus limiting the system scalability.
+To improve the performance, cutting-edge streaming partitioning algorithms follow a common clustering-refinement framework (Mayer et al., 2022) (Kong et al., 2022).
+In particular, 2PS-L (Mayer et al., 2022) adopts a two-stage graph traversal strategy, whereas the first phase refers to vertex clustering, i.e., Holl (Hollocou et al., 2017), and the second phase utilizes existing heuristic methods, i.e., HDRF, for graph partitioning.
+Concurrently, CLUGP (Kong et al., 2022) improves the performance by revising clustering algorithm, i.e., Holl (Hollocou et al., 2017), specifically for optimizing the replication factor, and accelerates the refinement process by employing a post-clustering game.
+However, CLUGP and S5P differ significantly, because 1) game processes differ theoretically, leading to divergent downstream techniques. CLUGP is with static game theories, while S5P is with sequential game theories; 2) targets differ. CLUGP targets web graphs but struggles with skewed graphs. In contrast, S5P recognizes the skewness in general graphs.
+
+Other Game-based Partitioning
+
+There exist edge-cut partitioning algorithms that employ a Nash game.
+MDSGP (Sun et al., 2022) takes O⁡(r⁡(m​i​n​(2m​k​m,k​m​Gm​a​x)))O(r(min(2^{m}km,kmG_{max}))) time, where mm is the size of the strategy space, which is combinatorially high, and rr is the number of windows. The game function of RMGP (Armenatzoglou et al., 2015) is
+derived based on graphical distances and semantic similarities, which incurs significant time cost (O⁡(|V|3)O(|V|^{3})) and space cost (O⁡(|V|2)O(|V|^{2})).
+What is more, RMGP’s optimization relies on heavy offline graph coloring, which takes O⁡(|V|2)O(|V|^{2}) time and O⁡(|E|)O(|E|) space. Its game process takes O⁡(|V|+|E|)O(|V|+|E|) time for each iteration, and the number of iterations is not bounded.
+Besides, the game has been studied in other research problems, such as vertex separator, which aims to find a set of vertices that split a graph
+into equally-sized components. CVSP (Fabio et al., 2021) proposes a Stackelbeg game-based method to solve this problem.
+There exist significant distinctions between CVSP and S5P. First, their problem settings differ. S5P is on stream partitioning, requiring access to edges in a sequence, a prerequisite not met by CVSP. This dissimilarity gives rise to markedly different downstream techniques and strategies. Second, the application of game theories diverges entirely. In CVSP, the leader extracts a subgraph, and the follower identifies the maximum connected component, whereas, in S5P, leaders and followers are represented by head and tail clusters. Theoretically, in CVSP, each game iteration requires O⁡(|E|)O(|E|) time and O⁡(|V|2)O(|V|^{2}), and the number of iterations is unbounded. In contrast, S5P’s total time and space complexity is O⁡(|E|)O(|E|) and O⁡(|V|)O(|V|) (cf. Section 5). Empirically, S5P shows an efficiency advantage of up to 2 orders of magnitude over CVSP (Table 4).
+So, it is technically challenging to apply game theories to graph partitioning.
+
+Streaming Graph Clustering
+
+Streaming graph clustering is used to efficiently and effectively analyze large-scale dynamic graphs (Jiang et al., 2023; Tang et al., 2016; Gou et al., 2019).
+In the field of graph partitioning, representative graph clustering algorithms include Holl (Hollocou et al., 2017), CLUGP-Clustering(Kong et al., 2022), and 2PS-L-Clustering (Mayer et al., 2022). These algorithms can be generalized into an allocation-migration framework for graph clustering.
+For the migration step, the Holl algorithm calculates cluster volume based on local vertex degrees. The 2PS-L-Clustering precomputes the global degrees for the alternative of local degrees to improve the clustering performance.
+Differently, the CLUGP-Clustering algorithm adopts local degrees to save the precomputation cost, while enhancing the clustering performance by introducing a splitting operation in the migration step.
+The characteristics of various streaming clustering algorithms are shown in Table 1.
+
+Table 1. Streaming Graph Clustering Algorithms
+
+Algorithm
+Allocation
+Migration
+Skewness-aware
+
+Holl
+✓
+local
+X
+
+CLUGP-Clustering
+✓
+local
+X
+
+2PS-L-Clustering
+✓
+global
+X
+
+S5P-Clustering
+✓
+local/global
+✓
+
+4. Skewness-aware Vertex-cut Partitioner
+
+4.1. Approach Overview
+
+Figure 2. Skewness-aware Vertex-cut Partitioner Framework
+
+The architecture of our proposed skewness-aware vertex-cut partitioner
+follows clustering-refinement framework (Mayer et al., 2022; Kong et al., 2022), where streaming graph edges are processed in a biphasic manner, as shown in Figure 2.
+First, we study skewness-aware graph clustering to generate fine-grained head and tail clusters (Section 3.2).
+Second, we delve into a Stackelberg game to allocate head and tail clusters to a predefined set of partitions (Section 3.3).
+This allocation minimizes the number of vertices crossing partitions while ensuring an evenly distributed storage load.
+At last, we present a series of optimization techniques to enhance the time and space efficiency in meeting the requirements of stream partitioning (Section 3.4).
+
+4.2. Skewness-aware Streaming Graph Clustering
+
+Definition 0 (Head and Tail Vertices/Edges/Clusters).
+
+Given a vertex v∈Vv\in V of a graph G=(V,E)G=(V,E), if the degree of vv (d⁡(v)d(v)) is higher than a predefined threshold22
+                2
+
+              In our implementation, we adopt consistent parameter settings for all datasets, with ξ\xi and κ\kappa following (Hollocou et al., 2017; Kong et al., 2022; Mayer et al., 2022).
+In particular, we set ξ=β​2​|E||V|\xi=\beta\frac{2|E|}{|V|}, which is the product of coefficient β\beta and the average degree of the graph. Here, β\beta equals 11, which is a constant (as discussed in Section 6.5) and |E||E| and |V||V| are fixed for a given dataset.
+We set κ=2​|E|k\kappa=\frac{2|E|}{k}, where kk is the number of partitions, and |E||E| is fixed for a given dataset.
+ ξ\xi, i.e., d⁡(v)>ξd(v)>\xi, then vv is a head vertex; otherwise, it is a tail vertex. Accordingly, an edge e⁡(vi,vj)e(v_{i},v_{j}) is a head edge, if viv_{i} and vjv_{j} are both head vertices; otherwise, ee is a tail edge.
+
+It is worth highlighting that tail vertices exclusively appear within tail edges, whereas some head vertices may be associated with two distinct edges: one as a head edge and another as a tail edge. This occurs because a head vertex can be present in both head and tail edges, according to Definition 1.
+We showcase an example in Figure 3, where head vertices and edges are in blue, and tail vertices and edges are in orange.
+The number of an edge represents the order of its arrival in a stream.
+
+Figure 3. A Toy Graph with 1212 Vertices and 1414 Edges
+
+Based on the definition of head/tail vertices/edges, we can define head/tail clusters.
+For a cluster produced by head edges/vertices, the cluster is a head cluster named CHC_{H}; otherwise, it is a tail cluster named CTC_{T}. Next, we formalize the problem of streaming graph clustering as follows.
+
+Definition 0 (Streaming Graph Clustering).
+
+Consider a graph of streaming edges, denoted as GS={e1,e2,⋯,e|E|}G_{S}=\{e_{1},e_{2},\cdots,e_{|E|}\}, along with a maximum cluster volume represented by κ\kappa2
+the objective of streaming graph clustering is to assign each vertex vv to head or tail clusters, such that the edge-cutting is minimized.
+The clustering output can be presented as a table that maps a vertex to multiple specific (head/tail) clusters, i.e., {⟨vi,cj⟩}\{\langle v_{i},c_{j}\rangle\}.
+
+Algorithm 1  Skewness-aware Graph Clustering
+
+Input Streaming Graph Edge Set ESE_{S}, Cluster constrains κ\kappa
+
+Output V2​CHV_{2}C_{H}, V2​CTV_{2}C_{T}
+
+              1:
+
+            for e⁡(u,v)∈ESe(u,v)\in E_{S} do
+
+              2:
+
+              if e∈EHe\in E_{H} then
+
+              3:
+
+               if V2​CH​[u]​o​r​V2​CH​[v]​i​s​N​U​L​LV_{2}C_{H}[u]\ or\ V_{2}C_{H}[v]\ is\ NULL then Assign a new ID
+   
+
+              4:
+
+               Update v​o​l​(⋅)vol(\cdot) by d⁡(u)d(u) and d⁡(v)d(v)
+
+              5:
+
+               if  v​o​l​(V2​CH​[u])​a​n​d​v​o​l​(V2​CH​[v])<κvol(V_{2}C_{H}[u])\ and\ vol(V_{2}C_{H}[v])\ <\ \kappa then
+
+              6:
+
+                 i←arg⁡minz∈{u,v}⁡(v​o​l​(V2​CH​[z])−d⁡(z))i\leftarrow\mathop{\arg\min}_{z\in\{u,v\}}(vol(V_{2}C_{H}[z])-d(z))
+
+              7:
+
+                 j←z∈{u,v}:z≠ij\leftarrow z\in\{u,v\}:z\neq i
+
+              8:
+
+                 if  v​o​l​(V2​CH​[j])+d⁡(i)<κvol(V_{2}C_{H}[j])+d(i)<\ \kappa then
+
+              9:
+
+                  v​o​l​(V2​CH​[j])←v​o​l​(V2​CH​[j])+d⁡(i)vol(V_{2}C_{H}[j])\leftarrow vol(V_{2}C_{H}[j])+d(i)
+
+              10:
+
+                  v​o​l​(V2​CH​[i])←v​o​l​(V2​CH​[i])−d⁡(i)vol(V_{2}C_{H}[i])\leftarrow vol(V_{2}C_{H}[i])-d(i)
+
+              11:
+
+                  V2​CH​[i]←V2​CH​[j]V_{2}C_{H}[i]\leftarrow V_{2}C_{H}[j]
+          
+
+              12:
+
+              if e∈ETe\in E_{T} then
+
+              13:
+
+               if V2​CT​[u]​o​r​V2​CT​[v]​i​s​N​U​L​LV_{2}C_{T}[u]\ or\ V_{2}C_{T}[v]\ is\ NULL then , Assign a new ID
+   
+
+              14:
+
+               Update v​o​l​(⋅)vol(\cdot) by 11
+
+              15:
+
+               Update l​d​(⋅)ld(\cdot) by 11
+
+              16:
+
+               if  v​o​l​(V2​CT​[u])​a​n​d​v​o​l​(V2​CT​[v])<κvol(V_{2}C_{T}[u])\ and\ vol(V_{2}C_{T}[v])\ <\ \kappa then
+
+              17:
+
+                 i←arg⁡minz∈{u,v}⁡(v​o​l​(V2​CT​[z]))i\leftarrow\mathop{\arg\min}_{z\in\{u,v\}}(vol(V_{2}C_{T}[z]))
+
+              18:
+
+                 j←z∈{u,v}:z≠ij\leftarrow z\in\{u,v\}:z\neq i
+
+              19:
+
+                 v​o​l​(V2​CT​[j])←v​o​l​(V2​CT​[j])+l​d​(i)vol(V_{2}C_{T}[j])\leftarrow vol(V_{2}C_{T}[j])+ld(i)
+
+              20:
+
+                 v​o​l​(V2​CT​[i])←v​o​l​(V2​CT​[i])−l​d​(i)vol(V_{2}C_{T}[i])\leftarrow vol(V_{2}C_{T}[i])-ld(i)
+
+              21:
+
+                 V2​CT​[i]←V2​CT​[j]V_{2}C_{T}[i]\leftarrow V_{2}C_{T}[j]
+     
+
+Clustering is widely acknowledged as a method for data summarization. In the context of graphs, clustering functions as a method for graph summarization(Jiang et al., 2023). Graph clustering can be classified into two categories: vertex- and edge-centric clustering. Vertex-centric clustering offers the advantage of being more space- and time-efficient (O⁡(|V|)O(|V|) vs. O⁡(|E|)O(|E|)), since the number of vertices is significantly smaller than the number of edges (Kong et al., 2022). Conversely, edge-centric clustering preserves more connection information but at the expense of high space cost, i.e., O⁡(|E|)O(|E|). To strike a balance between the two, we represent edge-centric clusters in the form of vertex clusters, employing two tables, denoted as V2​CHV_{2}C_{H} (Vertex-to-Head-Cluster) and V2​CTV_{2}C_{T} (Vertex-to-Tail-Cluster).
+
+Algorithm 1 processes graph edges in a one-pass manner. For each upcoming edge, we first determine its type (head or tail) and subsequently execute an allocation operation in the corresponding Vertex-to-Cluster table (V2​CV_{2}C).
+This involves assigning a unique ID to vertices without cluster labels. In our experiments, we employed natural numbers as IDs, commencing from 00 and incrementing by 11 for each new allocation.
+Following this, we update the corresponding cluster size, denoted as vol in Algorithm 1.
+In the case of a head edge, a “splitting” operation is performed independently for both clusters associated with the two vertices of the edge, provided their sizes exceed the specified cluster capacity κ\kappa. Regarding the “Update v​o​l​(⋅)vol(\cdot)” operation, for tail clusters, when a vertex is added to a cluster , we increase the volume of the cluster by 11. This process is equivalent to updating based on local degree (l​dld) information.
+For head clusters, when a vertex joins a cluster, we increase the volume of the cluster by the degree of the vertex, reflecting an update that incorporates global degree information.
+
+For head edges, we execute a global degree-aware operation (lines 5−115-11). In contrast, for tail edges, we employ a local degree-aware operation (lines 13−2113-21). This distinction arises from the fact that the vertices in head edges possess higher degrees, making it necessary to use a global degree approach to accurately represent their degrees. Conversely, the nodes in tail edges have relatively smaller degrees, and employing local degree measures is adequate for reflecting their true degrees.
+
+Taking the toy graph in Figure 3 as an example (kk = 3), we can compute κ=2×143≈9.3\kappa=\frac{2\times 14}{3}\approx 9.3. When considering the initial head edge e5​(v1,v2)e_{5}(v_{1},v_{2}), which arrives first, both vertices v1v_{1} and v2v_{2} are assigned to newly created head clusters, c1c_{1} and c2c_{2} (cf. line 3). Following this, we proceed to update the volumes of c1c_{1} and c2c_{2} to 55 and 66, respectively (cf line 4). After that, due to the combined volume of c1c_{1} and d⁡(v2)d(v_{2}) exceeding κ\kappa (11 > 9.3), we abstain from executing migration operations (lines 8-11). Similarly, when the subsequent edge e6​(v0,v1)e_{6}(v_{0},v_{1}) arrives, v0v_{0} is assigned to a new head cluster and migrated to c1c_{1}.
+For tail edges, we apply a comparable operation, with the primary distinction being the substitution of the global degree with a real-time updated local degree.
+
+Once the clustering process is completed, we can obtain the clustering results, as shown in Figure 4. Here, c1c_{1} and c2c_{2} are head clusters, while c4c_{4}, c5c_{5}, and c6c_{6} are tail clusters.
+From the outcome presented, we can observe that skewness-aware clustering effectively captures information from both head and tail nodes, resulting in the formulation of different cluster types, including head and tail clusters, as well as leaders and followers.
+This underscores a capacity that eludes the clustering methods described in Section 3..
+
+Figure 4. Skewness-aware Streaming Graph Clustering (kk=3)
+
+4.3. Stackelberg Game-based Partitioning
+
+Using the clusters generated by Algorithm 1 as input, we can transform the graph partitioning problem into cluster-to-partition assignment process. In the process, each cluster is allocated to one of the predefined partitions. Once clusters are assigned, the edges within each cluster can be mapped to their respective partitions.
+
+In the cluster-to-partition assignment process, every (head/tail) cluster takes on the role of a player. These players engage in both competitive and collaborative actions concurrently, all geared toward minimizing the replication factor during the partition assignment process. To portray this dynamic, each player is equipped with a distinct optimization objective encapsulated within their cost function. In the context of a Stackelberg game involving both head and tail clusters, these cost functions stand as the measure of their objectives.
+The process continues until the attainment of the Nash equilibrium within the Stackelberg game, signifying that all clusters have fine-tuned their cost functions, and no player can improve the cost by unilaterally changing their strategy.
+
+In the sequel, we investigate the player modeling, cost functions, Stackelberg game Nash equilibrium, as well as the best response dynamics and postprocessing.
+
+Clusters as Players
+
+As aforementioned, each head or tail cluster is taken as a player of a two-stage Stackelberg game. The decision not to directly operate at the level of individual graph edges is driven by two primary factors.
+First, the time complexity of using edges is O⁡(|E|2)O(|E|^{2}) and that of using clusters is only O⁡(|C|2)O(|C|^{2}) (cf. Section 5.1), and |E||E| is much greater than |C||C| (cf. Section 5.1), so conducting the game at the granularity of edges would be expensive and using clusters as players can avoid computational bottlenecks, i.e., from O⁡(|E|2)O(|E|^{2}) to O⁡(|C|2)O(|C|^{2}).
+Second, clustering offers a means to summarize the graphical structural information and connectivity patterns through cluster sizes and intersections(Jiang et al., 2023). With this streamlined representation, modeling interactions between head and tail clusters via a Stackelberg game becomes a practical undertaking. The distinct leader-follower roles align with the varying influence of head and tail edges. The cluster-level representatives are generated through our skewness-aware clustering method. It can preserve skewness properties because the graph clustering is regarded as a summarization of graph information(Jiang et al., 2023).
+
+Cost Function
+
+In a Stackelberg game, cost functions are vital mathematical constructs, which quantify the objectives and modeling the actions of all players, i.e., head and tail clusters, by assigning numerical values to their strategies based on utility or cost.
+These functions are instrumental in modeling the decision-making process within this hierarchical framework, where head clusters’ initial actions influence subsequent tail clusters’ responses.
+Essentially, cost functions guide players in optimizing their strategies, considering both their objectives and the expected reactions of others, thus shaping the equilibrium dynamics of a Stackelberg game.
+Hereby, we define a new social welfare function as follows.
+
+(5)
+
+S⁡(Λ)=δ​∑i=1k|pi|2k⏟l​o​a​d​b​a​l​a​n​c​e​p​a​r​t+∑i=1kΘ⁡(pi,V)k⏟c​o​m​m​u​n​i​c​a​t​i​o​n​p​a​r​tS(\Lambda)=\underbrace{\delta\frac{\sum_{i=1}^{k}{|p_{i}|^{2}}}{k}}_{load\ balance\ part}+\underbrace{\frac{\sum_{i=1}^{k}{\Theta(p_{i},V)}}{k}}_{communication\ part}
+
+where δ\delta is the normalization factor and Θ⁡(pi,V−pi)\Theta(p_{i},V-p_{i}) is the total number of edges in |E||E| that span across partition pip_{i} and all other partitions.
+Thus, Θ⁡(pi,V)=Θ⁡(pi,V−pi)+|pi|\Theta(p_{i},V)=\Theta(p_{i},V-p_{i})+|p_{i}|. Subsequently, we establish the unique cost function for every player (cluster) using the social welfare metric S⁡(Λ)S(\Lambda) as the basis.
+
+For each cluster, ci∈CHc_{i}\in C_{H} or CTC_{T}, the cost associated with the selection of partition pip_{i} for the cluster is expressed as follows.
+
+(6)
+
+Sci​(pi)=δk​|ci|⋅|pi|+F⁡(ci)+|ci|k​ , whereS_{c_{i}}(p_{i})=\frac{\delta}{k}|c_{i}|\cdot|p_{i}|+\frac{F(c_{i})+|c_{i}|}{k}\text{~~, where}
+
+(7)
+
+F⁡(ci)=∑cj∈CH∪CLΘ⁡(ci,cj)​𝕀​(i,j)F(c_{i})=\sum_{c_{j}\in C_{H}\cup C_{L}}\Theta(c_{i},c_{j})\mathbb{I}(i,j)
+
+Here, Θ⁡(ci,cj)\Theta(c_{i},c_{j}) is the total number of edges in |E||E| that span across cluster cic_{i} and cjc_{j}. 𝕀⁡(i,j)\mathbb{I}(i,j) serves as an indicator function that yields 11 if P⁡(ci)≠P⁡(cj)P(c_{i})\neq P(c_{j}), and 00 otherwise. According to Theorem 4, it holds that the social welfare S⁡(Λ)S(\Lambda) corresponds to the summation of all individual cost incurred by clusters.
+
+Stackelberg Game Nash Equilibrium
+
+Given established cost functions, the Stackelberg game Nash equilibrium occurs when all head and tail clusters simultaneously achieve their optimization objectives while accounting for the strategic choices made by the other clusters, in relevance to graph partitioning.
+
+A strategy decision profile, denoted as Λ∗=ΛH∗+ΦT∗\Lambda^{*}=\Lambda^{*}_{H}+\Phi^{*}_{T}, constitutes a Nash equilibrium, where ΛH∗\Lambda^{*}_{H} and ΛT∗\Lambda^{*}_{T} represent the set of strategies employed by head and tail clusters, respectively.
+In this equilibrium state, when both head and tail clusters achieve their respective local optimization targets, there exists no cluster with a motivation to unilaterally deviate from its strategy to obtain a lower cost.
+
+Leaders in the Stackelberg game have the advantage of the first move (Etro, 2008), making the equilibrium of game in favor of optimization towards leaders, which is consistent with the strategies in skewness-aware graph partitioning.
+For example, as seen in Figure  13, S5P has a significant advantage over CLUGP in terms of average RF for vertices with high degrees, which is based on simultaneous-move game theories. We empirically examine the performance of Stackelberg game in comparison to other game variants in Table 4.
+
+Algorithm 2  Stackelberg Game
+
+Input V2​CHV_{2}C_{H}, V2​CTV_{2}C_{T}
+
+Output C2​PHC_{2}P_{H}, C2​PTC_{2}P_{T}
+
+                1:
+
+              Initialization(V2​CHV_{2}C_{H}, V2​CTV_{2}C_{T})
+
+                2:
+
+              repeat
+
+                3:
+
+                LeaderDesisionProcess
+
+                4:
+
+                FollowerDesisionProcess
+
+                5:
+
+              until No clusters change their current strategies
+
+                6:
+
+              procedure Leader/FollowerDesisionProcess
+
+                7:
+
+                for each high/tail cluster ci∈CH/CTc_{i}\in C_{H}/C_{T} do
+
+                8:
+
+                 Find CiC_{i}’s best response θ\theta which is based on Eq.(6)
+
+                9:
+
+                 if θ≠θci\theta\neq\theta_{c_{i}} then
+
+                10:
+
+                    θci←θ\theta_{c_{i}}\leftarrow\theta
+     
+
+Algorithm 3  Postprocessing
+
+Input C2​PHC_{2}P_{H}, C2​PTC_{2}P_{T}, L=τ​|E|kL=\frac{\tau|E|}{k}
+
+Output Edge Partition Results
+
+                1:
+
+              for e⁡(u,v)∈Ee(u,v)\in E do
+
+                2:
+
+                if e∈EHe\in E_{H} then
+
+                3:
+
+                 C​l​uu=V2​CH​(u),C​l​uv=V2​CH​(v)Clu_{u}=V_{2}C_{H}(u),Clu_{v}=V_{2}C_{H}(v)
+  
+
+                4:
+
+                if e∈ELe\in E_{L} then
+
+                5:
+
+                 C​l​uu=V2​CT​(u),C​l​uv=V2​CT​(v)Clu_{u}=V_{2}C_{T}(u),Clu_{v}=V_{2}C_{T}(v)
+  
+
+                6:
+
+                Pu=C2​P​(C​l​uu),Pv=C2​P​(C​l​uv)P_{u}=C_{2}P(Clu_{u}),P_{v}=C_{2}P(Clu_{v})
+
+                7:
+
+                if L​o​a​d​(Pu)>LLoad(P_{u})>L and L​o​a​d​(Pv)>LLoad(P_{v})>L then
+
+                8:
+
+                 Place ee in a partition with available space.
+
+                9:
+
+                else if L​o​a​d​(Pu)>L​o​a​d​(Pv)Load(P_{u})>Load(P_{v}) then
+  Place ee into PvP_{v}
+
+                10:
+
+                else,   Place ee into PuP_{u}
+  
+
+                11:
+
+                update L​o​a​dLoad
+
+Best Response Dynamics
+
+The Nash equilibrium of a game can be either pure Nash equilibrium or mixed Nash equilibrium.
+The decision form corresponding to the mixed strategy Nash equilibrium is expressed in probabilities. As a result, the game is with randomness and poses challenges in convergence (Gairing et al., 2005). Therefore, in this work, we consider pure Nash equilibrium, which offers more intuitive and stable solutions.
+A pure Nash equilibrium in a Stackelberg game can be achieved through the application of Best Response Dynamics, as discussed in (Hua et al., 2019).
+The core of the Best Response Dynamics algorithm lies in the design of the response function, as shown in Algorithm 2 (line 8). The design of the response function needs to satisfy two requirements. First, it should optimize the global software function (Equation 5) through local best response (Equation  6), guaranteed by Theorem 4. Second, the computation cost of the response function should not be very high, as ensured by the optimized sketch-based methods discussed in Section 4.4.
+
+Figure 5. Stackelberg Game-based
+Partitioning (kk=33)
+
+Figures 5 (a) and (b) depict the operation of the Stackelberg game. Assuming the initial partitioning as c1c_{1} and c2c_{2} in p1p_{1}, c3c_{3} in p2p_{2}, and c4c_{4} and c5c_{5} in p3p_{3}, we first calculate
+δ≈0.65\delta\approx 0.65 based on Equation (12).
+
+In Stage 11, head clusters, starting with c1c_{1}, compute their partition cost (cf. Equation 6) and migrate to the partition with the minimum cost. In this case, c1c_{1} stays in p1p_{1} and c2c_{2} is mitigated to p3p_{3}. Then, tail clusters initiate their decision making process in Stage 22. For example, c3c_{3} calculates its cost and moves to the appropriate partition. Stage 2 terminates once all tail clusters have been processed, making the end of this game round.
+Another round of the game commences, and continues until Nash equilibrium is reached, where decisions of all clusters remain unchanged (Figure 5(c)).
+
+Postprocessing
+
+Following the Stackelberg game phase, we can get a
+cluster-level balancing because of the load balance part of Equation (5). Then, the transitioning from a broader cluster-level balancing to a more refined edge-level one is expected.
+Leveraging the previously obtained graph information, we can make efficient use of existing clusters during the final allocation of edges. Similarly, in the allocation process outlined in Algorithm 3, we adopt a strategy that takes into account the skewness of the distribution.
+For a given edge e⁡(u,v)e(u,v), we query the current partitions to which vertices uu and vv belong to. If both vertices belong to partitions whose sizes have already exceeded the capacity threshold LL, we execute the operation described in line 8 of the algorithm.
+For head edges, we traverse from the first partition to the last, adding these edges to the first partition that satisfies the condition |pi|<L|p_{i}|<L.
+Conversely, for tail edges, we perform the same operation in reverse order. The objective of this operation is to minimize the number of partitions an edge can be assigned to, thereby reducing the replication factor.
+If each of them belongs to partitions whose sizes are already less than LL, add this edge to the partition with a larger size.
+Upon completing the postprocessing phase, all edges have been successfully assigned to partitions, and no partition contains more than ⌈τ​|E|k⌉\lceil\tau\frac{|E|}{k}\rceil edges33
+                3
+
+              In our implementation, we set τ\tau to 1.01.0 to meet the requirement of load balancing. . In Figure 5(c), for e6​(v0,v1)e_{6}(v_{0},v_{1}), since the head clusters corresponding to v0v_{0} and v1v_{1} are both in partition p2p_{2}, the edge is added to p2p_{2}. Similarly, e14​(v3,v6)e_{14}(v_{3},v_{6}) is added to p1p_{1}, and e4​(v2,v7)e_{4}(v_{2},v_{7}) is added to p3p_{3}. After processing, we obtain the edge partitioning results, as shown in Figure 5 (d).
+
+4.4. Optimization Strategy
+
+Sketch
+
+As a player of the game, a partition necessitates the calculation the cost function for strategy tuning, which requires the calculation of the number of inter-cluster edges (i.e., Θ⁡(ci,cj)\Theta(c_{i},c_{j}) in Equation 7).
+The most straightforward approach would be to design a red-black tree data structure for mapping incident vertices of an edge to its count, which is incrementally updated during the edge traversal.
+However, such a design would incur significant cost in terms of both query and insertion operations. To address this issue, we adopt the Count-Min Sketch (Cormode and Muthukrishnan, 2005) (CMS) method to achieve the same functionality. It uses multiple hash functions and maintains a two-dimensional array of ww columns and rr rows.
+One of the key features of CMS is its efficient utilization of space in summarizing large-scale data, making it particularly suitable for applications where memory usage is of utmost concern. As a trade-off, it provides approximate results with guaranteed errors stemming from hash collisions.
+The parameters ww and dd are chosen by setting w=⌈e^ϵ⌉w=\lceil\frac{\hat{e}}{\epsilon}\rceil and d=⌈l​n​1ν⌉d=\lceil ln\frac{1}{\nu}\rceil, where the error in answering a query is within an additive factor of ϵ\epsilon with probability 1−ν1-\nu and e^\hat{e} is Euler’s number44
+                4
+
+              In our implementation, we set ϵ\epsilon to 0.1 and ν\nu to 0.01 and we can get w=27w=27 and d=4.6d=4.6..
+In our specific problem context, we set the elements to be hashed as the concatenation of two cluster ID strings. The concatenated string can be posted to a CMS during the edge traversal, and the corresponding count can be approximately retrieved for the calculation of Equation 7. If we do not use a CMS, we would need to allocate space of size |C|2|C|^{2} to store the intersection sizes of different clusters. By using CMS, we only need a two-dimensional array of size w×dw\times d for insertion and querying. The accuracy of the queries is guaranteed by the principles of CMS (Cormode and Muthukrishnan, 2005). For instance, with our configuration, we only need 27×4.627\times 4.6 units of space to ensure that the probability of the query result differing from the true result by no more than 10% is greater than 99%. We can reduce ϵ\epsilon and ν\nu to make the probability of errors in the CMS smaller; however, this will result in an increase in the space of the two-dimensional array (i.e., larger values of w and d), leading to higher memory usage.
+
+Parallelism
+
+The primary advantage of the game theory in graph partitioning is its ability to enable parallel acceleration (Kong et al., 2022; Hua et al., 2019).
+In S5P, parallelization is facilitated through clustering, which preserves the graph’s locality, ensuring that clusters with closely aligned cluster IDs are often adjacent in the graph structure. This feature makes our Stackelberg game method well-suited for the parallelization implementation.
+On the other hand, given that clustering algorithms effectively extract graph information and reduce the scale of game players, the number of the game players is still significant.
+Besides, we employ a batch-wise parallel approach to accelerate the gaming process.
+The parallelism between different batches is managed through a thread pool, with each batch running independently.
+To enhance the convergence speed and the quality of the game, we can also impose restrictions on the number of rounds in the game.
+There also exists potential enhancement of partitioning efficiency through more sophisticated parallelization techniques.
+We assert that a significant contribution of the Stackelberg game lies in its facilitation of parallelization. It is essential to highlight that the current implementation’s efficiency suffices for enhancing downstream distributed graph processing performance. The partitioning runtime overhead constitutes only a small fraction of the overall distributed graph processing. For example, in Figure 13 (c), the runtime cost of partitioning on S5P is merely 19.7% of that of the overall processing. Further optimization efforts in parallelization are orthogonal to the scope of this paper.
+
+5. theoretical analysis
+
+5.1. Time Cost Analysis
+
+We analyze each phase of S5P separately. Phase 1, specified in Algorithm 1, performs a fixed number of passes through the edge set. In each pass, a constant number of operations is performed on each edge. Hence, the time complexity of the first phase is in O⁡(|E|)O(|E|). Phase 2, the time cost for each round of Stackeberg graph game is O⁡(|C|2+k​|C|)O(|C|^{2}+k|C|) and the round complexity can be bound by O⁡(k​|V|)O(k|V|). With parallelization, the average time complexity can be approximated as O⁡(|Ca​v​g|2​|C|b​a​t​c​h​s​i​z​e×t)O(|C_{avg}|^{2}\frac{|C|}{batchsize\times t}), where |Ca​v​g||C_{avg}| is the average number of clusters in each batch. In summary, the second phase of S5P has a time complexity of O⁡(|E|)O(|E|), as |E|≫|V|≫|C||E|\gg|V|\gg|C|.
+Phase 3, edges are partitioned with a constant number of operations resulting in O⁡(|E|)O(|E|) time complexity. The total time complexity of S5P is, hence, in O⁡(|E|)O(|E|), i.e., linear in the number of edges.
+
+5.2. Memory Cost Analysis
+
+In our analysis of the S5P algorithm’s data structures, we employ various arrays as illustrated in Algorithm 1. These arrays are utilized to store information such as vertex local and global degrees, cluster volumes, vertex-to-cluster mappings, and cluster details. It’s worth noting that each of these arrays has a space complexity of O⁡(|V|)O(|V|). In Algorithm 2, we introduce additional arrays for mapping clusters to partitions and maintaining cluster-related information. Similar to the previous case, these arrays also exhibit a space complexity of O⁡(|V|)O(|V|). In Algorithm 3, we employ a vertex-to-partition replication matrix, which, despite its seemingly larger size, boasts a space complexity of O⁡(k​|V|)O(k|V|). Notably, this space complexity remains unaffected by the number of edges present in the graph.
+
+5.3. Metric Analysis
+
+Theorem 1.
+
+The relative load balance τ\tau can be bounded by k​L|E|\frac{kL}{|E|}. If we want to ensure that the upper limit for relative load balance is tt, we can set m​a​x​L​o​a​dmaxLoad to t​|E|k\frac{t|E|}{k}.
+
+Bounds on Replication Factor
+
+To the best of our knowledge, most of the streaming vertex-cut algorithms do not have bounds. In the line of research on stream partitioning, RF bounds are commonly employed to quantify the gap with optimal solutions (Petroni et al., 2015; Xie et al., 2014). The Grid (Jain et al., 2013) and HDRF (Petroni et al., 2015) have a well-defined bound, and the DBH algorithm (Xie et al., 2014) only bounds the average RF value. The typical approach for bounding vertex-cut partitioning algorithms is to limit the maximum number of partitions each edge can be assigned to. However, such constraints often lead to improved Load Balance. Striking a trade-off between RF and load balance is a challenging task. Based on this, we modified S5P to create S5P w/ bound (S5P-B), which is a bounded version of the streaming vertex-cut algorithm with an RF bound.
+
+S5P-B has two key modifications compared to S5P. Firstly, it entirely relies on global degrees in place of all local degrees in its processing. Secondly,
+We have removed the cluster constraints κ\kappa Algorithm 1 and m​a​x​L​o​a​dmaxLoad in Algorithm 3 to better formalize the RF bound of our skewness-aware design.
+
+Theorem 2.
+
+Algorithm S5P-B achieves a replication factor,
+when applied to partition a graph with |E||E| edges on kk partitions, that can be bounded by:
+
+(8)
+
+RF≤χH⋅k⏟h​e​a​d​p​a​r​t+∑i=1χT​|V|dm​((k−1dm)1−ρ+i−1|V|)−1χT⋅|V|+1⏟t​a​i​l​p​a​r​t\displaystyle\text{RF}\leq\underbrace{\chi_{H}\cdot k}_{head\ part}+\underbrace{\sum_{i=1}^{\chi_{T}|V|}\frac{d_{m}((\frac{k-1}{d_{m}})^{1-\rho}+\frac{i-1}{|V|})^{-1}}{\chi_{T}\cdot|V|}+1}_{tail\ part}
+
+where χT\chi_{T} (or χH\chi_{H}) represents the fraction of low-degree (or high-degree) vertices and dmd_{m} is the global minimum vertex degree.
+
+Proof.
+
+The RF bound comprises two components: the head part and the tail part. The head part accounts for the fraction χH\chi_{H} of high-degree vertices in the graph.
+In the worst case, head vertices are replicated across all partitions, resulting in the head part of RF as χH⋅k\chi_{H}\cdot k.
+Here, χT\chi_{T} (or χH\chi_{H}) can be expressed as ∑j=1ξj−ρ|V|\frac{\sum_{j=1}^{\xi}j^{-\rho}}{|V|} (or 1−∑j=1ξj−ρ|V|1-\frac{\sum_{j=1}^{\xi}j^{-\rho}}{|V|}), because the vertex degrees in the graph follow a power-law distribution (Section 2.3).
+
+The tail part considers the contribution to the RF from tail vertices.
+Firstly, only allocation in Algorithm 1 (lines 3 and 13) replicates a tail vertex connecting head vertices and produces at most 1 replica. Secondly, the replication of a tail vertex connecting to tail vertices can be bound by its degree. Rescaling based on the combination of the tail vertex degree bound from (Cohen et al., 2001; Petroni et al., 2015) and the range of ρ\rho in real-world graphs in (Choromanski et al., 2013; Durrett, 2007), the degree of a tail vertex connecting tail vertices can thus be bounded by dm​((k−1dm)1−ρ+i−1|V|)−1d_{m}((\frac{k-1}{d_{m}})^{1-\rho}+\frac{i-1}{|V|})^{-1}. So, the tail part RF can be bounded by ∑i=1χT​|V|1+dm​((k−1dm)1−ρ+i−1|V|)−1χT​|V|=∑i=1χT​|V|dm​((k−1dm)1−ρ+i−1|V|)−1χT​|V|+1\sum_{i=1}^{\chi_{T}|V|}\frac{1+d_{m}((\frac{k-1}{d_{m}})^{1-\rho}+\frac{i-1}{|V|})^{-1}}{\chi_{T}|V|}=\sum_{i=1}^{\chi_{T}|V|}\frac{d_{m}((\frac{k-1}{d_{m}})^{1-\rho}+\frac{i-1}{|V|})^{-1}}{\chi_{T}|V|}+1.
+∎
+
+Given that RF of an optimal solution is known to be no less than 1, Equation (8) provides an upper bound for the approximation ratio.
+
+Theorem 3.
+
+The bound of RF will decrease as the decrease of ρ\rho.
+
+Proof.
+
+For the head part, as ρ\rho decreases, the head part decreases due to the decrease of 1- ∑j=1ξj−ρ|V|\frac{\sum_{j=1}^{\xi}j^{-\rho}}{|V|}.
+The tail part can be regarded as the average of Γ⁡(ρ)=dm​((k−1dm)1−ρ+i−1|V|)−1\Gamma(\rho)=d_{m}((\frac{k-1}{d_{m}})^{1-\rho}+\frac{i-1}{|V|})^{-1}. Since Γ⁡(ρ)\Gamma(\rho) decreases monotonically with respect to ρ\rho, the tail part also deceases monotonically. Therefore, the theorem is proven.
+∎
+
+S5P-B can be regarded as the approximation of S5P. Firstly, for tail edges, the local degree can be a good estimate for the global degree (Petroni et al., 2015). Secondly, adding load balance constraints during the clustering process and the postpartitioning process can better serve downstream tasks. Overall, S5P is expected to achieve a replication factor similar to S5P-B.
+Since the ρ\rho serves as an indicator of graph skewness,
+Theorem 3 theoretically guarantees a tighter RF bound of S5P on a more skewed graph.
+
+5.4. Stackelberg Game Analysis
+
+Theorem 4.
+
+The stackelberg game social welfare is the sum of all individual cost of clusters.
+
+Proof.
+
+(9)
+
+∑ci∈CH∪CLδk​|ci|⋅|pi|+∑ci∈CH∪CLF⁡(ci)k+∑ci∈CH∪CL|ci|k\displaystyle~~~~\sum_{c_{i}\in C_{H}\cup C_{L}}\frac{\delta}{k}|c_{i}|\cdot|p_{i}|+\sum_{c_{i}\in C_{H}\cup C_{L}}\frac{F(c_{i})}{k}+\sum_{c_{i}\in C_{H}\cup C_{L}}\frac{|c_{i}|}{k}
+
+=δk​∑i=1|C||ci|⋅|C2​P​(i)|+1k​∑i=1,j=1|C|Θ⁡(ci,cj)​𝕀​(i,j)+1k​∑i=1k∑cj∈pi|cj|\displaystyle=\frac{\delta}{k}\sum_{i=1}^{|C|}|c_{i}|\cdot|C_{2}P(i)|+\frac{1}{k}\sum_{i=1,j=1}^{|C|}\Theta(c_{i},c_{j})\mathbb{I}(i,j)+\frac{1}{k}\sum_{i=1}^{k}\sum_{c_{j}\in p_{i}}|c_{j}|
+
+=δk​∑i=1k∑cj∈pi|cj|⋅|pi|+1k​∑i=1k∑cj∈piΘ⁡(cj,V−C2​P​(cj))+∑i=1k|pi|k\displaystyle=\frac{\delta}{k}\sum_{i=1}^{k}\sum_{c_{j}\in p_{i}}|c_{j}|\cdot|p_{i}|+\frac{1}{k}\sum_{i=1}^{k}\sum_{c_{j}\in p_{i}}\Theta(c_{j},V-C_{2}P(c_{j}))+\sum_{i=1}^{k}\frac{|p_{i}|}{k}
+
+=δ​∑i=1k|pi|2k+1k​∑i=1k(Θ⁡(pi,V−pi)+|pi|)\displaystyle=\delta\frac{\sum_{i=1}^{k}{|p_{i}|^{2}}}{k}+\frac{1}{k}\sum_{i=1}^{k}(\Theta(p_{i},V-p_{i})+|p_{i}|)
+
+(10)
+
+=δ​∑i=1k|pi|2k+∑i=1kΘ⁡(pi,V)k\displaystyle=\delta\frac{\sum_{i=1}^{k}{|p_{i}|^{2}}}{k}+\frac{\sum_{i=1}^{k}{\Theta(p_{i},V)}}{k}
+
+∎
+
+Normalization
+
+We demonstrate the process of selecting the normalization factor δ\delta. The numerical values of the two components of the social welfare function exhibit significant disparities. As a result, we present a strategy for establishing the value of δ\delta. We can assume the two components in Equation (5) are of importance to calculate δ=∑i=1kΘ⁡(Pi,V)∑i=1k|Pi|2\delta=\frac{\sum_{i=1}^{k}{\Theta(P_{i},V)}}{\sum_{i=1}^{k}{|P_{i}|^{2}}} (Kong et al., 2022). Then, we have:
+
+(11)
+
+1∑ci∈CH∪CL|ci|≤δ≤k​∑ci∈CH∪CL(F⁡(ci)+|ci|)(∑ci∈CH∪CL|ci|)2\frac{1}{\sum_{c_{i}\in C_{H}\cup C_{L}}|c_{i}|}\leq\delta\leq\frac{k\sum_{c_{i}\in C_{H}\cup C_{L}}(F(c_{i})+|c_{i}|)}{(\sum_{c_{i}\in C_{H}\cup C_{L}}|c_{i}|)^{2}}
+
+Proof.
+
+We can employ the method of extreme assumptions to demonstrate the above formula. When all clusters are assigned to the same partition, we can get:
+
+δm​i​n=∑ci∈CH∪CL|ci|(∑ci∈CH∪CL|ci|)2=1∑ci∈CH∪CL|ci|\delta_{min}=\frac{\sum_{c_{i}\in C_{H}\cup C_{L}}|c_{i}|}{(\sum_{c_{i}\in C_{H}\cup C_{L}}|c_{i}|)^{2}}=\frac{1}{\sum_{c_{i}\in C_{H}\cup C_{L}}|c_{i}|}
+
+If all clusters are evenly distributed to all partitions, we have:
+
+(12)
+
+δm​a​x=∑ci∈CH∪CL(F⁡(ci)+|ci|)k​(∑ci∈CH∪CL|ci|k)2=k​∑ci∈CH∪CL(F⁡(ci)+|ci|)(∑ci∈CH∪CL|ci|)2\delta_{max}=\frac{\sum_{c_{i}\in C_{H}\cup C_{L}}(F(c_{i})+|c_{i}|)}{k(\frac{\sum_{c_{i}\in C_{H}\cup C_{L}}|c_{i}|}{k})^{2}}=\frac{k\sum_{c_{i}\in C_{H}\cup C_{L}}(F(c_{i})+|c_{i}|)}{(\sum_{c_{i}\in C_{H}\cup C_{L}}|c_{i}|)^{2}}
+
+Setting δ\delta to a value within the range of Equation (11) can help ensure that the two components are treated as equally as possible. In the experiment, we set δ\delta to the maximum value within its range. ∎
+
+Theorem 5.
+
+The PoA of the stackelberg game is bounded by k + 1
+
+Price of Anarchy
+
+PoA (Price of Anarchy) is the worse ratio of social welfare S⁡(Λ)S(\Lambda) when the strategy profile is a Nash Equilibrium over the optimum value of S⁡(Λ)S(\Lambda). It is an important metric to measure the quality of Nash Equilibriums. To minimize cost social welfare objective, it is formally defined as:
+
+(13)
+
+PoA=m​a​xΛ∗∈PNE​S​(Λ∗)OPT\text{PoA}=\frac{max_{\Lambda^{*}\in\text{PNE}}S(\Lambda^{*})}{\text{OPT}}
+
+where PNE is the set of pure Nash equilibrium and OPT is the global minimum value of social welfare in the case of cost minimization problem.
+
+Proof.
+
+When all clusters are in one partition, the load balance part is maximized. It is easy to see from the mean inequality that the load balance part is minimized when the sizes in each partition are equal.
+If the load balancing and cutting factors get their maximum values simultaneously, the upper bound of S⁡(Λ)S(\Lambda) is:
+
+(14)
+
+S⁡(Λ∗)≤δk​(∑i=1m|ci|)2+1k​∑ci∈C(F⁡(ci)+|ci|)≤k+1k​∑ci∈C(F⁡(ci)+|ci|)S(\Lambda^{*})\leq\frac{\delta}{k}(\sum_{i=1}^{m}|c_{i}|)^{2}+\frac{1}{k}\sum_{c_{i}\in C}(F(c_{i})+|c_{i}|)\leq\frac{k+1}{k}\sum_{c_{i}\in C}(F(c_{i})+|c_{i}|)
+
+Similarly, if the two factors simultaneously get their minimum values, the lower bound of S⁡(Λ)S(\Lambda) can be computed as:
+
+(15)
+
+OPT≥δ​(∑i=1m|ci|k)2+∑i=1m|ci|k≥1k​∑ci∈C(F⁡(ci)+|ci|)\text{OPT}\geq\delta(\frac{\sum_{i=1}^{m}|c_{i}|}{k})^{2}+\frac{\sum_{i=1}^{m}|c_{i}|}{k}\geq\frac{1}{k}\sum_{c_{i}\in C}(F(c_{i})+|c_{i}|)
+
+PoA must be no larger than the quotient of the upper bound of S⁡(Λ∗)S(\Lambda^{*}) (Equation (14)) and the lower bound of OPT (Equation (15)). Thus we have PoA=m​a​xS⁡(Λ∗)∈PNE​S​(Λ)OPT=S⁡(Λ∗)OPT≤k+1\text{PoA}=\frac{max_{S(\Lambda^{*})\in\text{PNE}}S(\Lambda)}{\text{OPT}}=\frac{S(\Lambda^{*})}{\text{OPT}}\leq k+1.
+∎
+
+Round Complexity
+
+Theorem 6.
+
+The rounds (RD) required until Stackelberg game converges to a Nash equilibrium can be bounded by:
+
+(16)
+
+RD≤2​(∑i=1τdm​((k−1dm)1−ρ+i−1|V|)−1⏟t​a​i​l​p​a​r​t+|V|​(1−∑i=1ξi−ρ)​dM⏟h​e​a​d​p​a​r​t+|V|)\text{RD}\leq 2(\underbrace{\sum_{i=1}^{\tau}d_{m}((\frac{k-1}{d_{m}})^{1-\rho}+\frac{i-1}{|V|})^{-1}}_{tail\ part}+\underbrace{|V|(1-\sum_{i=1}^{\xi}i^{-\rho})d_{M}}_{head\ part}+|V|)
+
+where τ=|V|−|V|(dM−ξ)​dM−ρ\tau=|V|-|V|(d_{M}-\xi)d_{M}^{-\rho} is the bound of the tail vertices’ number and dmd_{m} (or dMd_{M}) is the global minimum (or maximum) degree.
+
+Proof.
+
+Based on Equation (11), the upper bound of the load balance part is 1k​∑v∈Vd⁡(v)+|V|k\frac{1}{k}\sum_{v\in V}d(v)+\frac{|V|}{k} .
+The number of tail vertex can be calculated as |V|−|V|​∑i=ξ+1dMi−ρ<τ|V|-|V|\sum_{i=\xi+1}^{d_{M}}i^{-\rho}<\tau.
+So, the sum of tail vertices’ degrees can be bounded by the head part. The number of head vertex can be calculated as |V|​(1−∑i=1ξi−ρ)|V|(1-\sum_{i=1}^{\xi}i^{-\rho}). So we can get the sum of head vertices’ degrees as the head part. The upper bound of communication part is the same as the load balance part. Since δ​∑i=1k|Pi|2+∑i=1kΘ⁡(Pi,V)\delta\sum_{i=1}^{k}{|P_{i}|^{2}}+\sum_{i=1}^{k}{\Theta(P_{i},V)} is in the integer domain, it implies that if a cluster changes its current strategy in the game, the reduction of S⁡(Λ)S(\Lambda) is at least 1k\frac{1}{k}. So, the therom is proven.
+∎
+
+It can theoretically guarantee a tighter RD bound of S5P on a more skewed graph, because both the tail part and the head part monotonically decrease as ρ\rho decreases.
+
+6. experiments
+
+We conducted experiments with S5P on real-world graphs of varying types and sizes to assess its effectiveness and scalability, aiming at answering the following six key questions.
+
+•
+
+Q1Q_{1}. Can S5P outperform other state-of-the-art partitioning methods, including streaming, in-memory, and hybrid vertex-cut partitioners?
+
+•
+
+Q2Q_{2}. How does each component of S5P, such as clustering and stackelberg gaming, affect the partitioner’s performance?
+
+•
+
+Q3Q_{3}. What is the effect of proposed optimization techniques, such as sketching and parallelization, particularly concerning time and space efficiency?
+
+•
+
+Q4Q_{4}. What is the influence of S5P’s parameters on its overall performance and effectiveness?
+
+•
+
+Q5Q_{5}. How much improvement does the deployment of S5P bring to real distributed graph systems, e.g., PowerGraph?
+
+•
+
+Q6Q_{6}.What is the relationship between the skewness of graph and the performance improvement achieved by S5P.
+
+6.1. Experimental Setup
+
+Evaluation Platform
+
+We perform all experiments on a server with 2×322\times 32 Intel(R) Xeon(R) Platinum 8358 CPU @ 2.60GHz, 377 GiB of main memory. We use Ubuntu 20.04.6 LTS as our operating system. To test the partitioning quality on a real distributed environment, we use docker to simulate 32 computing nodes equipped with PowerGraph (Gonzalez et al., 2012), and allocate one CPU for each computing node.
+Each reported value is the average of 10 runs.
+
+Table 2.  Details of Graphs
+
+Graphs
+|V||V|
+|E||E|
+Size
+Type
+(ρ\rho, ρ1\rho_{1}, ρ2\rho_{2}, ρ3\rho_{3})
+
+OK(com-orkut)
+3.1M
+117M
+1.7GiB
+Social
+(2.13, 0.49, 0.61, 108M)
+
+TW(twitter-2010)
+42M
+1.5B
+25.0GiB
+Social
+(1.43, 0.03, 0.07, 1.3B)
+
+FR(com-friendster)
+66M
+1.8B
+31.0GiB
+Social
+(2.56, 0.39, 1.00, 1.6B)
+
+LJ(com-livejournal)
+4M
+35M
+479MiB
+Social
+(2.40, 0.38, 0.79, 227M )
+
+IT(it-2004)
+41M
+1.2B
+19.0GiB
+Web
+(1.74, 0.06, 0.13, 1B)
+
+UK7(uk-2007-05)
+106M
+3.7B
+63.0GiB
+Web
+(1.31, 0.10, 0.20, 3.4B)
+
+IN(in-2004)
+1M
+16M
+231MiB
+Web
+(1.36, 0.15, 0.31, 12M)
+
+SK(sk-2005)
+51M
+1.9B
+32.0GiB
+Web
+(1.11, 0.04, 0.07, 1.8B)
+
+UK2(uk-2002)
+18M
+298M
+4.7GiB
+Web
+(2.06, 0.21, 0.38, 243M)
+
+AR(arabic-2005)
+23M
+639M
+11.0GiB
+Web
+(1.62, 0.10, 0.19, 572M)
+
+WB(webbase-2001)
+118M
+1B
+17.2GiB
+Web
+(2.21, 0.11, 0.23, 665M)
+
+R-MAT-G1G_{1}
+1.04M
+314M
+3.0GiB
+Synthetic
+(0.89, 0.15, 0.44, 102M)
+
+R-MAT-G2G_{2}
+1.04M
+629M
+5.5GiB
+Synthetic
+(0.87, 0.17, 0.48, 626M)
+
+R-MAT-G3G_{3}
+1.04M
+1.04B
+8.6GiB
+Synthetic
+(0.84, 0.19, 0.52, 1B)
+
+R-MAT-G4G_{4}
+67.1M
+671M
+10.1GiB
+Synthetic
+(1.16, 0.048, 0.145, 469M)
+
+R-MAT-G5G_{5}
+67.1M
+2.01B
+30.1GiB
+Synthetic
+(1.11, 0.051, 0.152, 1B)
+
+R-MAT-G6G_{6}
+67.1M
+3.36B
+49.8GiB
+Synthetic
+(1.07, 0.053, 0.157, 3B)
+
+Graph Datasets
+
+We employ 11 distinct graphs characterized by varying sizes, originating from diverse web repositories, and obtained through independent web crawling efforts by distinct organizations. These are social network graphs (OK (Leskovec and Krevl, 2014; Yang and Leskovec, 2012), TW  (Leskovec and Krevl, 2014; Kwak et al., 2010), FR (Leskovec and Krevl, 2014; Yang and Leskovec, 2012), and LJ (Leskovec and Krevl, 2014; Yang and Leskovec, 2012)), as well as web graphs (IT (Boldi and Vigna, 2004; Boldi et al., 2011; Boldi et al., 2018), UK7 (Boldi and Vigna, 2004; Boldi et al., 2011; Boldi et al., 2018), IN (Boldi and Vigna, 2004; Boldi et al., 2011; Boldi et al., 2018), SK (Boldi and Vigna, 2004; Boldi et al., 2011; Boldi et al., 2018), UK2 (Boldi and Vigna, 2004; Boldi et al., 2011; Boldi et al., 2018), AR (Boldi and Vigna, 2004; Boldi et al., 2011; Boldi et al., 2018), and WB (Boldi and Vigna, 2004; Boldi et al., 2011; Boldi et al., 2018)).
+We select the real-world graphs for comprehensively evaluating the partitioning strategies, which provide: 1) standardized test cases, 2) scalability challenges of big data, and 3) diversity in graph topology and partitioning difficulty.
+First, many of the graphs are established benchmarks commonly used to assess partitioning algorithms in academic literature. Using widely adopted datasets enables fair comparison to prior works.
+Second, most graphs are massive in scale, comprising billions of edges. Processing networks of this size poses considerable memory and computational challenges. Our experiments show that not all partitioning techniques scale effectively to such large graphs on our test platform.
+Third, the graphs exhibit diversity in structure and complexity. This heterogeneity stringently evaluates partitioning methods.
+For certain datasets, even the most proficient partitioning algorithms result in relatively elevated replication factors. We also use R-MAT (TrillionG) (Park and Kim, 2017; Chakrabarti et al., 2004) to generate 66 big graphs with varying amounts of skewness to get deeper insights into the performance of skewness-aware partitioners.
+
+Competitors
+
+We compare S5P to 8 of the most recent and best
+streaming and offline partitioners. From the line of streaming
+partitioners, we compare S5P to HDRF (Petroni et al., 2015), Greedy (Gonzalez et al., 2012), DBH (Xie et al., 2014), 2PS-L (Mayer et al., 2022),
+and CLUGP (Kong et al., 2022). From the line of offline partitioners, we compare to NE (Zhang et al., 2017), METIS (Karypis and Kumar, 1998), and HEP (Mayer and Jacobsen, 2021). Additionally, we compare S5P with 3 game-based approaches, denoted as RMGP (Armenatzoglou et al., 2015), MDSGP (Sun et al., 2022), and CVSP (Fabio et al., 2021), which are related to the streaming vertex-cut partitioning.
+
+Implementation55
+              5
+
+            Our source code and links to all datasets are available online (https://github.com/BearBiscuit05/S5P).
+
+When possible, we utilize the official reference implementations provided by the authors of (Xie et al., 2014; Gonzalez et al., 2012; Hua et al., 2019; Mayer et al., 2022; Kong et al., 2022; Zhang et al., 2017; Hanai et al., 2019; Karypis and Kumar, 1998; Mayer and Jacobsen, 2021). For HDRF, we employ the improved version in (Mayer et al., 2022), since the original version (Petroni et al., 2015) does not perform well on large graphs.
+DBH, RMGP, and MDSGP have no public reference implementation, so we use the re-implementation of DBH (Mayer et al., 2022) and re-implement RMGP, MDSGP, and CVSP. We adopt the C++ versions in our experiments and also provide the Java ports in our open-source repository. We configure all algorithm parameters based on recommendations from the respective papers.
+
+6.2. Performance (Q1Q_{1})
+
+(a) FR: Replication Factor
+
+(b) UK7: Replication Factor
+
+(c) FR: Run-time
+
+(d) UK7: Run-time
+
+(e) FR: Memory Overhead
+
+(f) UK7: Memory Overhead
+
+Figure 6. Performance on Real-world Graphs
+
+Table 3. Replication Factor of Different Graphs
+
+CLUGP
+2PS-L
+HDRF
+S5P
+
+kk:64
+kk:128
+kk:256
+kk:64
+kk:128
+kk:256
+kk:64
+kk:128
+kk:256
+kk:64
+kk:128
+kk:256
+
+OK
+14.288
+17.522
+20.636
+15.112
+18.915
+23.200
+17.860
+22.617
+27.023
+11.614
+15.391
+19.055
+
+TW
+8.808
+10.817
+11.861
+10.642
+13.074
+15.577
+9.520
+11.789
+14.408
+7.583
+9.068
+10.526
+
+FR
+10.311
+13.432
+17.011
+11.241
+14.359
+17.457
+11.324
+14.757
+18.122
+7.870
+11.244
+14.995
+
+LJ
+4.913
+5.471
+5.945
+5.036
+5.593
+6.045
+6.778
+7.763
+8.545
+4.549
+5.112
+5.636
+
+IT
+1.908
+1.973
+2.041
+3.680
+4.110
+4.420
+12.538
+14.500
+16.469
+1.273
+1.232
+1.210
+
+UK7
+1.754
+1.876
+1.839
+3.338
+3.760
+4.077
+14.190
+16.700
+19.181
+1.265
+1.213
+1.196
+
+IN
+1.415
+1.542
+1.621
+1.895
+2.241
+2.887
+6.884
+8.028
+8.890
+1.229
+1.207
+1.225
+
+SK
+2.299
+2.584
+2.566
+4.001
+5.466
+7.029
+16.561
+19.413
+21.766
+1.337
+1.310
+1.293
+
+UK2
+1.561
+1.698
+1.692
+2.644
+2.752
+2.921
+9.414
+10.673
+11.791
+1.371
+1.227
+1.238
+
+AR
+2.015
+1.929
+2.005
+3.409
+3.803
+4.119
+12.599
+14.768
+16.762
+1.131
+1.213
+1.233
+
+WB
+1.446
+1.493
+1.485
+1.829
+1.836
+1.822
+5.951
+6.646
+7.283
+1.296
+1.178
+1.188
+
+Table 4. Game-based Methods (Time/sec | Memory/GB | Hour(s): h | kk = 32)
+
+RMGP
+MDSGP
+CVSP
+CLUGP
+S5P
+
+RF
+Time
+Mem.
+RF
+Time
+Mem.
+RF
+Time
+Mem.
+RF
+Time
+Mem.
+RF
+Time
+Mem.
+
+OK
+16.7
+535
+4.01
+9.9
+324
+8.95
+17.4
+141
+2.25
+10.7
+91
+1.02
+8.5
+60
+0.38
+
+TW
+-
+>24h
+48.70
+6.8
+5189
+99.08
+-
+>24h
+56.01
+7.6
+1333
+11.65
+6.0
+808
+4.64
+
+FR
+10.9
+4553
+70.20
+7.6
+4934
+144.96
+11.2
+2078
+80.69
+7.2
+3045
+14.12
+7.0
+1466
+7.22
+
+LJ
+5.4
+65
+2.08
+4.5
+184
+3.83
+5.7
+32
+2.25
+4.2
+111
+1.11
+3.9
+28
+0.48
+
+WB
+4.2
+1871
+61.10
+6.2
+6320
+119.45
+4.8
+822
+79.46
+1.5
+1101
+25.11
+1.1
+696
+12.90
+
+G6G_{6}
+-
+>24h
+115.5
+4.9
+11915
+231.87
+-
+>24h
+110.8
+4.8
+4847
+18.01
+4.4
+2620
+8.06
+
+Table 5.  Optimality (Opt.)
+
+                                  G
+
+                                    /
+                                    α
+                                    β
+                                    γ
+
+CLUGP
+2PS-L
+S5P
+
+RF
+α\alpha
+RF
+α\alpha
+RF
+α\alpha
+
+GαG_{\alpha}(7, 12) [1.43]
+1.86
+1.30
+2.00
+1.41
+1.71
+1.20
+
+GβG_{\beta}(8, 15) [1.63]
+2.38
+1.46
+2.38
+1.46
+2.12
+1.30
+
+GγG_{\gamma}(10, 12) [1.30]
+1.90
+1.46
+2.00
+1.54
+1.80
+1.38
+
+Figures 6 (a-f) report the performance under the metrics of replication factor, runtime cost, and space cost, for all 1212 partitioners, on UK7 and FR. Three key observations can be drawn.
+
+(1) Under the same constraints of load balancing, S5P achieves lower replication factors than all other streaming partitioners, like HDRF, 2PS-L, DBH, and CLUGP. On average, CLUGP’s replication factor is 10% higher, 2PS-L’s is 72% higher, and HDRF’s is 3×\times higher, than S5P. Although offline partitioners and hybrid method yields slightly better RF, their time and space overheads are much higher.
+
+(2) We compare the time cost of different methods, including its
+scalability w.r.t. the number of partitions, in Figures 6 (c) and (d).
+It shows that the time cost of HDRF increases significantly as the increase of the number of partitions.
+In contrast, results of S5P and others are not sensitive to the number of partitions.
+For example, when the number of partitions varies from 4 to 32, the runtime cost of S5P merely increases about 22%, i.e., from 1230 to 1254 seconds (in UK7).
+The result also shows that DBH is faster than S5P, but its quality is much lower (cf. Figure 6).
+
+(3) We measure S5P’s memory consumption and its scalability w.r.t. the number of partitions
+in Figure 6 (e) and (f). It shows that offline methods consume the largest amount of memory. The widely-recognized benchmark METIS, for instance, utilizes roughly 5050×\times more memory than S5P. On UK7, METIS runs out of memory (OOM).
+For the hybrid method HEP, the memory cost is more than 22 times higher than that of S5P.
+
+(a) Time S5P- vs. Edge-Clustering
+
+(b) Mem. S5P- vs. Edge-Clustering
+
+(c) RF w/ vs. w/o Clustering
+
+(d) w/ vs. w/o Stackelberg Game
+
+Figure 7. Component Analysis
+
+Figure 8. Degree Analysis (kk=32)
+
+(a) Sketch (Time)
+
+(b) Sketch (Mem.)
+
+(c) Sketch (Rep. Factor)
+
+(d)  Sketch (ϵ\epsilon and ν\nu)
+
+Figure 9.  Sketch-based Optimization
+
+Figure 10. Parallelization
+
+(a) Run-time
+
+(b) Communication Cost
+
+(c) Run-time w/ Latency (IT)
+
+Figure 11.  Deployment on Distributed Graph System (kk=32)
+
+(a) Effect of β\beta (OK)
+
+(b) Effect of batchsize (OK)
+
+Figure 12. Parameter Sensitivity
+
+(a) Replication Factor
+
+(b) Run-time
+
+(c) Max. RSS
+
+Figure 13.  Skewness Analysis (kk=6464)
+
+From now on, we focus exclusively on assessing the RF of the top 4 streaming partitioning methods, including 2PS-L, CLUGP, HDRF, and S5P, which is the category to which our method belongs.
+In Table 3, it shows that the partitioning quality of S5P dominates those of other baselines, in all test cases.
+For social graphs, S5P yields up to a 12% improvement compared to the second-ranked partitioner, and up to 30% improvement compared to the fourth-ranked method. For web graphs, S5P can achieve a maximum improvement of 51% compared to the second-ranked partitioner and up to 91% improvement compared to the fourth-ranked method.
+
+What is more, we calculate the approximation ration using small-scale datasets RMAT-Gα/β/γG_{\alpha/\beta/\gamma} generated by R-MAT. We obtained the optimality for each graph using the enumeration (i.e., the algorithmic time complexity is k|E|k^{|E|}). As shown in Table 5, We have verified S5P reduces the approximation α\alpha in comparison to HDRF, CLUGP, and 2PS-L under k=4k=4.
+
+We compare game-based methods in Table 4.
+It shows that S5P has significant advantages in terms of RF, time, and memory.
+
+Compared with others, S5P introduces a differentiation between head and tail clusters considering the skewness, where actions of head clusters influence the moves of tail clusters, aligning with sequential game theories.
+Compared to other game-based methods, S5P achieves up to a 6-fold improvement in RF, and orders of magnitude acceleration and compression.
+
+In summary, S5P, as a streaming vertex-cut partitioner with skewness awareness, outperforms existing streaming edge partitioning methods. It can effectively reduce replication factors and run efficiently in low-memory environments. The novelty of S5P is underscored by its innovative approach, while adapting clusters as players in a Stackelberg game poses unique challenges: (1) The clustering process is intricate, especially in streaming scenarios. Current streaming clustering algorithms lack skewness awareness, as highlighted in Table 1. Therefore, the partition quality they ultimately produce is not good (cf. Table 3). (2) Transferring skewness information from clustering to game tasks is a non-trivial task. S5P adeptly utilizes skewness information from clustering for both leaders and followers. In contrast, other games often treat different cluster types unequally, limiting their ability to fully leverage this information. Experimental results further substantiate the significant advantages of our game (cf. Table 4). Hence, S5P represents an appealing new option for streaming graph partitioning when partitioning quality, execution time, and memory usage are crucial factors to consider.
+
+6.3. Component Analysis (Q2Q_{2})
+
+Hereby, we study the effectiveness of the two major components of S5P, skewness-aware clustering and gaming.
+
+Skewness-aware Clustering
+
+We investigate the effectiveness of our proposed skewness-aware clustering (S5P-Clustering) in LJ. As our approach employs vertex clusters to represent edge clusters, two questions need addressing: 1) what are the advantages of this representation? 2) whether it compromises the partitioning quality?
+Then, we investigate the effect of S5P-Clustering by comparing it with Edge-Clustering.
+In Figure 13 (a), we compare the runtime cost of S5P-Clustering and Edge-Clustering. Compared to Edge-Clustering, using S5P-Clustering achieves a speedup of 8×8\times.
+In Figure 13 (b), we compare the memory consumption of S5P-Clustering and Edge-Clustering.
+The memory consumption of S5P-Clustering is only 6% of Edge-Clustering’s.
+
+Stackelberg Graph Game
+
+The experiment in Figure 13 (c) compares the result of Stackelberg gaming on cluster levels (w/ clustering) and ordinary gaming on edge levels (w/o clustering) in LJ.
+The results show that cluster-level Stackelberg gaming adeptly captures the skewness of distributions, resulting in a reduced replication factor. Particularly noteworthy is the increasing advantage observed as the number of partitions grows. In particular, with the presence of 256 partitions, the replication factor of w/ clustering is merely 40% of that of w/o clustering, which underscores the effectiveness of Stackelberg game.
+We further test the effectiveness of gaming on cluster levels in SK.
+Specifically, the experiment presented in Figure 13 (d) evaluates the efficacy of the one-stage game, where head and tail clusters are not differentiated, against the two-stage Stackelberg game introduced in Section 4. The results emphasize the substantial advantage of the two-stage Stackelberg game in terms of replication factor reduction. In the majority of tests, the two-stage Stackelberg game achieves a RF that is approximately 50% lower than that of the one-stage game.
+
+6.4. Optimization (Q3Q_{3})
+
+Parallelization
+
+We investigated the impact of different amounts of parallelism (thread counts) on the runtime cost during the game process (cf. Figure 13).
+It shows that the runtime cost significantly reduces as the increase of the number of threads.
+On the other hand, the acceleration becomes less significant, if the benefits of parallelism are counteracted by the cost of CPU switching and memory accessing when given a large number of threads.
+Based on comprehensive experimental results, we set the thread count tt to 16 in our implementation.
+
+Sketch
+
+We consider three strategies for updating and estimating the intersection size between different clusters: red-black trees (RBT), red-black trees with thread parallelism, and CMS. Experimental results revealed that using CMS not only achieves significant optimizations in terms of time and space but also demonstrates comparable performance with other strategies in RF outputs. As shown in Figure 13 (a), using CMS in the OK dataset achieves an acceleration of over 44 times.
+In Figures 13 (b) and (c), we compare the memory usage and RF of CMS and the vanilla data structure (i.e., RBT).
+When k=256k=256, RBT-based implementation requires a total of 4.54.5GB of memory to achieve an RF of 19.04619.046. In contrast, CMS-based implementation only takes 6060MB of memory yet reaches an RF of 19.05519.055.
+In other words, we trade less than 0.010.01% RF loss for more than a 7070-fold memory cost reduction. Figure 13 (d) examines the effect of sketch parameter settings, i.e., ϵ\epsilon and ν\nu.
+It shows that, as ϵ\epsilon and ν\nu decrease, the estimation error of CMS is also decreased, so that the corresponding RF shows a slight downward trend.
+On the other hand, the memory usage is quite stable, because the space cost of CMS is dominated by other parts of Algorithm 1 (i.e., O⁡(|V|)O(|V|)).
+
+6.5. Parameter Sensitivity (Q4Q_{4})
+
+The variation of β\beta affects the distribution changes in the head and tail parts of the graph components.  As shown in Figure 13 (a), we observed that as β\beta increases, the RF decreases rapidly at first, then gradually rises, showing an elbow-shaped trend. The runtime decreases initially and then increases with the increase of β\beta. This phenomenon occurs because when β\beta is too small or too large, either the head part or the tail part dominates the algorithm execution process, weakening the skewness-aware property of the algorithm. It can be observed from the graph that S5P is not sensitive to β\beta. For simplicity, we recommend setting β\beta to 1. Consequently, this leads to a decline in both partition quality and efficiency. Therefore, it is evident that skewness-aware algorithms not only enhance partition quality but also optimize efficiency.
+
+With the increase in batch size, the runtime gradually increases and then stabilizes within a relatively small range, which is shown in Figure 13 (b). It is because even a larger batch size results in more time spent on each game iteration, the total number of game iterations decreases due to the reduction in the number of batches. When the batch size increases, gradually RF declines. This occurs because as the batch size increases, the algorithm incorporates more game information, leading to an overall downward trend.
+
+6.6. Deployment on Real Systems (Q5Q_{5})
+
+We evaluate the performance of partitioning algorithms on real distributed graph systems, specifically PowerGraph. Figure 13 (a) and (b) present the graph processing time and communication cost for the PageRank algorithm. Across all tests, S5P consistently exhibits the shortest computation and communication times. Compared to the second fastest algorithm, S5P achieves a maximum speedup of 1.5 ×\times and a 49% reduction in communication cost. Compared to the fourth fastest algorithm, S5P achieves a maximum speedup of 2.3 ×\times and an 81% reduction in communication cost. This outstanding performance can be attributed to S5P’s high partitioning quality, which includes load balancing and a low replication factor.
+There exists a trade-off between RF and partitioning runtime. In addition, the RF value has a significant impact on the efficiency of downstream distributed graph tasks.
+In Figure 13 (a), we can find that S5P excels in the total processing time, consisting of time cost of graph partitioning and downstream distributed tasks.
+
+Moreover, the cost incurred in graph partitioning serves as an upfront investment that, when reused across multiple distributed graph tasks, yields escalating benefits by consistently reducing communication cost and enhancing overall computational efficiency.
+In general, hashing-based methods perform the worst, and the performance gap widens as data volumes increase. To assess latency, we utilize PUMBA (Ledenev, 2023) to manipulate the Round-Trip Time (RTT) from 10ms to 100ms in IT. Figure 13 (c) illustrates the running time of PageRank under various network latency conditions. As the latency increases, the proportion of time spent on graph computing becomes larger. Once again, S5P proves to be the most efficient and stable method in all scenarios.
+
+6.7. Skewness Analysis (Q6Q_{6})
+
+We evaluate the performance of the top four streaming partitioners on a series of synthetic graphs (G1G_{1} to G6G_{6}), representing different levels of skewness, generated by R-MAT. These graphs can be divided into two groups: {G1,G2,G3}\{G_{1},G_{2},G_{3}\} and {G4,G5,G6}\{G_{4},G_{5},G_{6}\}, with bigger subscripts indicating more skewed graphs within each group.
+In Figure 13 (a), it shows that partitioners other than S5P exhibit a substantial increase in RF as the graphs are more skewed. In contrast, S5P excels in coping with skewed graphs, showing the smallest RF increments as the graphs are more skewed. Remarkably, from G2G_{2} to G3G_{3}, where the graph skewness changes from (0.87, 0.17, 0.48, 626M) to (0.84, 0.19, 0.52, 1B), the resulting RF of S5P even decreases from 16.46016.460 to 12.01112.011. Figures 13 (b) and (c) show the performance of S5P on runtime and memory overhead under different skewness settings, which is consistent with the results on real graphs.
+
+7. conclusion
+
+In this paper, we propose a new skewness-aware vertex-cut streaming partitioner, S5P, for large graphs. S5P follows a biphasic clustering-refinement framework, wherein we propose a skewness-aware clustering algorithm for retrieving find-grained head and tail clusters, and further propose a Stackelberg gaming approach to allocate the clusters into predefined partitions. Alongside this, we investigate a series of techniques, including sketching and parallelization, for optimizing the performance of the partitioner. Theoretically, we provide a detailed analysis of S5P. Experimentally, we conduct extensive experiments on real-world and synthetic graphs to showcase the effectiveness and efficiency of our approach. In the future, we plan to extend the skewness-aware partitioning paradigm to traditional graph computing systems and graph learning systems.
+
+Acknowledgements.
+This work is supported by NSFC (No.61772492, 62072428). Xike Xie is the corresponding author.
+
+References
+
+Albert et al. (2000)
+
+Réka Albert, Hawoong
+Jeong, and Albert-László Barabási.
+2000.
+
+Error and attack tolerance of complex networks.
+
+nature 406,
+6794 (2000), 378–382.
+
+https://doi.org/10.1038/35019019
+
+Armenatzoglou et al. (2015)
+
+Nikos Armenatzoglou, Huy
+Pham, Vasilis Ntranos, Dimitris
+Papadias, and Cyrus Shahabi.
+2015.
+
+Real-Time Multi-Criteria Social Graph Partitioning:
+A Game Theoretic Approach. In SIGMOD.
+ACM, New York, NY, USA,
+1617–1628.
+
+https://doi.org/10.1145/2723372.2749450
+
+Boldi et al. (2018)
+
+Paolo Boldi, Andrea
+Marino, Massimo Santini, and Sebastiano
+Vigna. 2018.
+
+BUbiNG: Massive crawling for the masses.
+
+TWEB (2018),
+1–26.
+
+https://doi.org/10.1145/3160017
+
+Boldi et al. (2011)
+
+Paolo Boldi, Marco Rosa,
+Massimo Santini, and Sebastiano Vigna.
+2011.
+
+Layered label propagation: A multiresolution
+coordinate-free ordering for compressing social networks. In
+WWW. 587–596.
+
+https://doi.org/10.1145/1963405.1963488
+
+Boldi and Vigna (2004)
+
+Paolo Boldi and
+Sebastiano Vigna. 2004.
+
+The webgraph framework I: compression techniques.
+In WWW. 595–602.
+
+https://doi.org/10.1145/988672.988752
+
+Bourse et al. (2014)
+
+Florian Bourse, Marc
+Lelarge, and Milan Vojnovic.
+2014.
+
+Balanced Graph Edge Partition. In
+SIGKDD (New York, New York, USA).
+Association for Computing Machinery,
+New York, NY, USA, 1456–1465.
+
+https://doi.org/10.1145/2623330.2623660
+
+Chakrabarti et al. (2004)
+
+Deepayan Chakrabarti,
+Yiping Zhan, and Christos Faloutsos.
+2004.
+
+R-MAT: A recursive model for graph mining. In
+Proceedings of the 2004 SIAM International
+Conference on Data Mining. SIAM, 442–446.
+
+https://epubs.siam.org/doi/abs/10.1137/1.9781611972740.43
+
+Chen et al. (2015)
+
+Rong Chen, Jiaxin Shi,
+Yanzhe Chen, and Haibo Chen.
+2015.
+
+PowerLyra: differentiated graph computation and
+partitioning on skewed graphs. In EuroSys.
+ACM, 1:1–1:15.
+
+https://doi.org/10.1145/3298989
+
+Choromanski et al. (2013)
+
+Krzysztof Choromanski,
+Michal Matuszak, and Jacek Miekisz.
+2013.
+
+Scale-free graph with preferential attachment and
+evolving internal vertex structure.
+
+Journal of Statistical Physics
+151 (2013), 1175–1183.
+
+https://doi.org/10.1007/s10955-013-0749-1
+
+Cimikowski (1992)
+
+Robert J Cimikowski.
+1992.
+
+Graph planarization and skewness.
+
+Congressus Numerantium
+(1992), 21–21.
+
+https://citeseerx.ist.psu.edu/document?repid=rep1&type=pdf&doi=98060fa1da8eb732b8095e6f731ae387671d9ebb
+
+Cohen et al. (2001)
+
+Reuven Cohen, Keren Erez,
+Daniel Ben-Avraham, and Shlomo Havlin.
+2001.
+
+Breakdown of the internet under intentional
+attack.
+
+Physical review letters
+86, 16 (2001),
+3682.
+
+https://doi.org/10.1103/PhysRevLett.86.3682
+
+Cormode and Muthukrishnan (2005)
+
+Graham Cormode and S.
+Muthukrishnan. 2005.
+
+An Improved Data Stream Summary: The Count-Min
+Sketch and Its Applications.
+
+J. Algorithms 55,
+1 (2005), 58–75.
+
+https://doi.org/10.1016/j.jalgor.2003.12.001
+
+Doane and Seward (2011)
+
+David P. Doane and
+Lori E. Seward. 2011.
+
+Measuring Skewness: A Forgotten Statistic?
+
+Journal of Statistics Education
+19, 2 (2011).
+
+https://doi.org/10.1080/10691898.2011.11889611
+
+Durrett (2007)
+
+Richard Durrett.
+2007.
+
+Random graph dynamics.
+Vol. 200.
+
+Cambridge university press Cambridge.
+
+https://services.math.duke.edu/~rtd/RGD/RGD.pdf
+
+Etro (2008)
+
+Federico Etro.
+2008.
+
+Stackelberg Competition with Endogenous Entry.
+
+The Economic Journal 118,
+532 (09 2008),
+1670–1697.
+
+https://doi.org/10.1111/j.1468-0297.2008.02185.x
+
+Fabio et al. (2021)
+
+Furini Fabio, Ljubić
+Ivana, Malaguti Enrico, and Paronuzzi
+Paolo. 2021.
+
+Casting Light on the Hidden Bilevel Combinatorial
+Structure of the Capacitated Vertex Separator Problem.
+
+Operations Research (2021).
+
+https://api.semanticscholar.org/CorpusID:219719610
+
+Fan et al. (2023)
+
+Wenfei Fan, Ruiqi Xu,
+Qiang Yin, Wenyuan Yu, and
+Jingren Zhou. 2023.
+
+Application-driven graph partitioning.
+
+VLDB J. 32,
+1 (2023), 149–172.
+
+https://doi.org/10.1007/s00778-022-00736-2
+
+Feige et al. (2008a)
+
+Uriel Feige, MohammadTaghi
+Hajiaghayi, and James R. Lee.
+2008a.
+
+Improved Approximation Algorithms for Minimum
+Weight Vertex Separators.
+
+SIAM J. Comput. 38,
+2 (2008), 629–657.
+
+https://doi.org/10.1137/05064299X
+
+Feige et al. (2008b)
+
+Uriel Feige, MohammadTaghi
+Hajiaghayi, and James R. Lee.
+2008b.
+
+Improved Approximation Algorithms for Minimum
+Weight Vertex Separators.
+
+SIAM J. Comput. 38,
+2 (2008), 629–657.
+
+https://doi.org/10.1137/05064299X
+
+Gairing et al. (2005)
+
+Martin Gairing, Thomas
+Lücking, Burkhard Monien, and Karsten
+Tiemann. 2005.
+
+Nash Equilibria, the Price of Anarchy and the
+Fully Mixed Nash Equilibrium Conjecture. In
+Automata, Languages and Programming,
+Luís Caires,
+Giuseppe F. Italiano, Luís Monteiro,
+Catuscia Palamidessi, and Moti Yung
+(Eds.). Springer Berlin Heidelberg,
+Berlin, Heidelberg, 51–65.
+
+https://link.springer.com/chapter/10.1007/11523468_5
+
+Gonzalez et al. (2012)
+
+Joseph E. Gonzalez,
+Yucheng Low, Haijie Gu,
+Danny Bickson, and Carlos Guestrin.
+2012.
+
+PowerGraph: Distributed Graph-Parallel Computation
+on Natural Graphs. In OSDI.
+USENIX, 17–30.
+
+https://www.usenix.org/conference/osdi12/technical-sessions/presentation/gonzalez
+
+Gonzalez et al. (2014)
+
+Joseph E Gonzalez,
+Reynold S Xin, Ankur Dave,
+Daniel Crankshaw, Michael J Franklin,
+and Ion Stoica. 2014.
+
+{\{GraphX}\}: Graph processing in a distributed
+dataflow framework. In OSDI.
+599–613.
+
+https://www.usenix.org/conference/osdi14/technical-sessions/presentation/gonzalez
+
+Gou et al. (2019)
+
+Xiangyang Gou, Lei Zou,
+Chenxingyu Zhao, and Tong Yang.
+2019.
+
+Fast and Accurate Graph Stream Summarization. In
+ICDE. IEEE,
+1118–1129.
+
+https://doi.org/10.1109/ICDE.2019.00103
+
+Hanai et al. (2019)
+
+Masatoshi Hanai, Toyotaro
+Suzumura, Wen Jun Tan, Elvis S. Liu,
+Georgios Theodoropoulos, and Wentong
+Cai. 2019.
+
+Distributed Edge Partitioning for Trillion-edge
+Graphs.
+
+VLDB 12,
+13 (2019), 2379–2392.
+
+https://doi.org/10.48550/arXiv.1908.05855
+
+Hollocou et al. (2017)
+
+Alexandre Hollocou, Julien
+Maudet, Thomas Bonald, and Marc
+Lelarge. 2017.
+
+A Streaming Algorithm for Graph Clustering.
+
+CoRR abs/1712.04337
+(2017).
+
+https://doi.org/10.48550/arXiv.1712.04337
+
+Holyer (1981)
+
+Ian Holyer.
+1981.
+
+The NP-Completeness of Some Edge-Partition
+Problems.
+
+SIAM J. Comput. 10,
+4 (1981), 713–717.
+
+https://doi.org/10.1137/0210054
+
+Hua et al. (2019)
+
+Qiang-Sheng Hua, Yangyang
+Li, Dongxiao Yu, and Hai Jin.
+2019.
+
+Quasi-streaming graph partitioning: A game
+theoretical approach.
+
+TPDS 30,
+7 (2019), 1643–1656.
+
+https://doi.org/10.1109/TPDS.2018.2890515
+
+Jain et al. (2013)
+
+Nilesh Jain, Guangdeng
+Liao, and Theodore L. Willke.
+2013.
+
+GraphBuilder: Scalable Graph ETL Framework.
+ACM.
+
+https://doi.org/10.1145/2484425.2484429
+
+Jiang et al. (2023)
+
+Zhiguo Jiang, Hanhua
+Chen, and Hai Jin. 2023.
+
+Auxo: A Scalable and Efficient Graph Stream
+Summarization Structure.
+
+VLDB 16,
+6 (2023), 1386–1398.
+
+https://doi.org/10.14778/3583140.3583154
+
+Karypis and Kumar (1998)
+
+George Karypis and Vipin
+Kumar. 1998.
+
+A fast and high quality multilevel scheme for
+partitioning irregular graphs.
+
+SIAM Journal on scientific Computing
+20, 1 (1998),
+359–392.
+
+https://doi.org/10.1137/S1064827595287997
+
+Kong et al. (2022)
+
+Deyu Kong, Xike Xie,
+and Zhuoxu Zhang. 2022.
+
+Clustering-based Partitioning for Large Web
+Graphs. In ICDE. IEEE,
+593–606.
+
+https://doi.org/10.1109/ICDE53745.2022.00049
+
+Kwak et al. (2010)
+
+Haewoon Kwak, Changhyun
+Lee, Hosung Park, and Sue Moon.
+2010.
+
+What is Twitter, a social network or a news
+media?. In WWW. 591–600.
+
+https://doi.org/10.1145/1772690.1772751
+
+Ledenev (2023)
+
+Alexei Ledenev.
+2023.
+
+Pumba: chaos testing tool for Docker.
+
+https://github.com/alexei-led/pumba
+
+Leskovec and Krevl (2014)
+
+Jure Leskovec and Andrej
+Krevl. 2014.
+
+SNAP Datasets: Stanford Large Network Dataset
+Collection.
+
+http://snap.stanford.edu/data.
+
+Liu et al. (2021)
+
+Zemin Liu, Trung-Kien
+Nguyen, and Yuan Fang. 2021.
+
+Tail-GNN: Tail-Node Graph Neural Networks. In
+SIGKDD. ACM,
+1109–1119.
+
+https://doi.org/10.1145/3447548.3467276
+
+Low et al. (2012)
+
+Yucheng Low, Joseph
+Gonzalez, Aapo Kyrola, Danny Bickson,
+Carlos Guestrin, and Joseph M.
+Hellerstein. 2012.
+
+Distributed GraphLab: A Framework for Machine
+Learning in the Cloud.
+
+VLDB 5,
+8 (2012), 716–727.
+
+https://doi.org/10.14778/2212351.2212354
+
+Malewicz et al. (2010)
+
+Grzegorz Malewicz,
+Matthew H. Austern, Aart J. C. Bik,
+James C. Dehnert, Ilan Horn,
+Naty Leiser, and Grzegorz Czajkowski.
+2010.
+
+Pregel: a system for large-scale graph processing.
+In SIGMOD. ACM,
+135–146.
+
+https://doi.org/10.1145/1807167.1807184
+
+Mayer et al. (2018)
+
+Christian Mayer, Ruben
+Mayer, Muhammad Adnan Tariq, Heiko
+Geppert, Larissa Laich, Lukas Rieger,
+and Kurt Rothermel. 2018.
+
+ADWISE: Adaptive Window-Based Streaming Edge
+Partitioning for High-Speed Graph Processing. In
+ICDCS. IEEE,
+685–695.
+
+https://doi.org/10.1109/ICDCS.2018.00072
+
+Mayer and Jacobsen (2021)
+
+Ruben Mayer and
+Hans-Arno Jacobsen. 2021.
+
+Hybrid Edge Partitioner: Partitioning Large
+Power-Law Graphs under Memory Constraints. In
+SIGMOD. ACM,
+1289–1302.
+
+https://doi.org/10.1145/3448016.3457300
+
+Mayer et al. (2022)
+
+Ruben Mayer, Kamil
+Orujzade, and Hans-Arno Jacobsen.
+2022.
+
+Out-of-Core Edge Partitioning at Linear Run-Time.
+In ICDE. IEEE,
+2629–2642.
+
+https://doi.org/10.1109/ICDE53745.2022.00242
+
+Md et al. (2021)
+
+Vasimuddin Md, Sanchit
+Misra, Guixiang Ma, Ramanarayan Mohanty,
+Evangelos Georganas, Alexander Heinecke,
+Dhiraj Kalamkar, Nesreen K. Ahmed, and
+Sasikanth Avancha. 2021.
+
+DistGNN: Scalable Distributed Training for
+Large-Scale Graph Neural Networks. In SC.
+ACM, New York, NY, USA, Article
+76, 14 pages.
+
+https://doi.org/10.1145/3458817.3480856
+
+Merkel et al. (2023)
+
+Nikolai Merkel, Ruben
+Mayer, Tawkir Ahmed Fakir, and
+Hans-Arno Jacobsen. 2023.
+
+Partitioner Selection with EASE to Optimize
+Distributed Graph Processing. IEEE,
+2400–2414.
+
+https://doi.org/10.1109/ICDE55515.2023.00185
+
+Newman (2005)
+
+Mark EJ Newman.
+2005.
+
+Power laws, Pareto distributions and Zipf’s law.
+
+Contemporary physics 46,
+5 (2005), 323–351.
+
+https://www.tandfonline.com/doi/abs/10.1080/00107510500052444
+
+Park and Kim (2017)
+
+Himchan Park and Min-Soo
+Kim. 2017.
+
+TrillionG: A Trillion-Scale Synthetic Graph
+Generator Using a Recursive Vector Model. In
+SIGMOD. ACM,
+New York, NY, USA, 913–928.
+
+https://doi.org/10.1145/3035918.3064014
+
+Petroni et al. (2015)
+
+Fabio Petroni, Leonardo
+Querzoni, Khuzaima Daudjee, Shahin
+Kamali, and Giorgio Iacoboni.
+2015.
+
+HDRF: Stream-Based Partitioning for Power-Law
+Graphs. In CIKM. ACM,
+243–252.
+
+https://doi.org/10.1145/2806416.2806424
+
+Qu et al. (2023)
+
+Wenwen Qu, Weixi Zhang,
+Ji Cheng, Chaorui Zhang,
+Wei Han, Bo Bai,
+Chen Jason Zhang, Liang He, and
+Xiaoling Wang. 2023.
+
+Optimizing Graph Partition by Optimal Vertex-Cut:
+A Holistic Approach. In ICDE.
+IEEE, 1019–1031.
+
+https://doi.org/10.1109/ICDE55515.2023.00083
+
+Sun et al. (2022)
+
+Zhipeng Sun, Guosun Zeng,
+Chunling Ding, and Tengteng Cheng.
+2022.
+
+A Streaming Graph Partitioning Method to Achieve
+High Cohesion and Equilibrium via Multiplayer Repeated Game.
+
+TCSS (2022),
+1–12.
+
+https://doi.org/10.1109/TCSS.2022.3226

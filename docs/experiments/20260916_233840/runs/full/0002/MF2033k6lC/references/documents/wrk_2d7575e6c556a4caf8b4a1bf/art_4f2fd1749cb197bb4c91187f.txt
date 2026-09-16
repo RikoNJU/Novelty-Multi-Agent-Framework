@@ -1,0 +1,1389 @@
+PGT-I: Scaling Spatiotemporal GNNs with Memory-Efficient Distributed Training
+
+      Report GitHub Issue
+      ×
+
+      Title:
+
+Content selection saved. Describe the issue below:
+
+      Description:
+
+      Submit without GitHub
+      Submit in GitHub
+
+    arXiv is now an independent nonprofit!
+    Learn more
+    ×
+
+      Back to arXiv
+
+    Why HTML?
+
+      Report Issue
+
+      Back to Abstract
+
+      Download PDF
+
+Abstract.
+
+1 Introduction
+
+2 Background
+
+2.1 Spatiotemporal Data
+
+2.2 Spatiotemporal Graph Neural Networks
+
+2.3 Spatiotemporal Data Preprocessing
+
+3 Motivating Case Study
+
+3.1 Setup
+
+3.2 Results
+
+3.3 Analysis
+
+4 Design
+
+4.1 Index-Batching
+
+4.2 Distributed-Index-Batching
+
+5 Evaluation
+
+5.1 Effect of Single-GPU Index-Batching on Accuracy, Runtime, and Memory Usage
+
+5.2 Benefits of GPU-Index-Batching Relative to Index-Batching
+
+5.3 Distributed-Index-Batching Scaling Study
+
+5.3.1 Scaling
+
+5.3.2 Comparison with DDP
+
+5.3.3 Accuracy with Increasing GPUs
+
+5.4 Scaling to Larger-than-Memory Datasets
+
+5.5 Broader Applicability
+
+5.6 Discussion and Summary of Key Results
+
+6 Related Work
+
+7 Conclusion
+
+Acknowledgements
+
+References
+
+    License: CC BY 4.0
+
+arXiv:2507.11683v3 [cs.DC] 15 Sep 2025
+
+PGT-I: Scaling Spatiotemporal GNNs with Memory-Efficient Distributed Training
+
+Seth Ockerman
+
+Affiliation: University of Wisconsin-Madison, Madison, WI, USA
+
+Alternate Affiliation: Argonne National Laboratory, Lemont, IL, USA
+
+email: sockerman@cs.wisc.edu
+
+,
+Amal Gueroudji
+
+Affiliation: Argonne National Laboratory, Lemont, IL, USA
+
+email: agueroudji@anl.gov
+
+,
+Tanwi Mallick
+
+Affiliation: Argonne National Laboratory, Lemont, IL, USA
+
+email: tmallick@anl.gov
+
+,
+Yixuan He
+
+Affiliation: Arizona State University, Phoenix, AZ, USA
+
+email: Yixuan.He@asu.edu
+
+,
+Line Pouchard
+
+Affiliation: Sandia National Laboratories, Albuquerque, NM, USA
+
+email: lcpouch@sandia.gov
+
+,
+Robert Ross
+
+Affiliation: Argonne National Laboratory, Lemont, IL, USA
+
+email: rross@anl.gov
+
+ and
+Shivaram Venkataraman
+
+Affiliation: University of Wisconsin-Madison, Madison, WI, USA
+
+email: shivaram@cs.wisc.edu
+
+Abstract.
+
+Spatiotemporal graph neural networks (ST-GNNs) are powerful tools for modeling spatial and temporal data dependencies. However, their applications have been limited primarily to small-scale datasets because of memory constraints. While distributed training offers a solution, current frameworks lack support for spatiotemporal models and overlook the properties of spatiotemporal data. Informed by a scaling study on a large-scale workload, we present PyTorch Geometric Temporal Index (PGT-I), an extension to PyTorch Geometric Temporal that integrates distributed data parallel training and two novel strategies: index-batching and distributed-index-batching. Our index techniques exploit spatiotemporal structure to construct snapshots dynamically at runtime, significantly reducing memory overhead, while distributed-index-batching extends this approach by enabling scalable processing across multiple GPUs. Our techniques enable the first-ever training of an ST-GNN on the entire PeMS dataset without graph partitioning, reducing peak memory usage by up to 89% and achieving up to a 11.78x speedup over standard DDP with 128 GPUs. 11
+          1
+
+        To appear in the 2025 International Conference for High Performance Computing,
+Networking, Storage, and Analysis.
+
+Keywords: Spatiotemporal Graph Neural Networks, Distributed Data Parallel, Dask.distributed, HPC Scaling Study
+
+1. Introduction
+
+Machine learning (ML) is increasingly popular because of its effectiveness, and the advent of big data has enabled applications in numerous domains such as digital agriculture (Wolfert et al., 2017; Meshram et al., 2021), climate modeling (Kashinath et al., 2021; de Burgh-Day and Leeuwenburg, 2023; O’Gorman and Dwyer, 2018), and public health (Olawade et al., 2023; Mhasawade et al., 2021). Many of these applications rely on data that combines spatial and temporal information, necessitating models that can predict future events based on patterns that unfold across both dimensions. ST-GNNs (Sahili and Awad, 2023) address this challenge; these models are used for tasks such as traffic prediction (Li et al., 2021; Yu et al., 2018; Zuo et al., 2022), energy modeling (Daenens et al., 2024; Karimi et al., 2021; Fan et al., 2024), and infectious disease forecasting (Croft et al., 2023; Fritz et al., 2022; Rozemberczki et al., 2021a). Spatiotemporal data consists of a series of graphs, where graph nodes and edges capture spatial relationships, structured as a time series that captures temporal trends. To process spatiotemporal data, ST-GNNs use a combination of recurrent (Rumelhart and McClelland, 1987; Jordan, 1986) and convolutional (Lecun et al., 1998) layers, enabling them to model complex data dependencies and make precise predictions.
+
+There is a growing need to support training on larger spatiotemporal datasets to increase model accuracy (Mallick et al., 2020; Guan et al., 2022; Wang et al., 2024; Kong et al., 2025) and enable large-scale prediction for tasks such as statewide traffic prediction and detailed epidemiological modeling. Currently, the majority of ST-GNN applications have been limited to small to moderate-sized datasets (Yu et al., 2018; Wu et al., 2019; Bai et al., 2020; Li et al., 2023); existing ST-GNN tools (Rozemberczki et al., 2021a; Li et al., 2018; Li et al., 2021) support only single-GPU computation and impose substantial memory requirements, which can exceed the memory capacity of even state-of-the-art compute nodes. For example, PeMS, a modest 8 GB dataset before preprocessing, crashes because of out-of-memory (OOM) errors on a compute node with 512 GB of RAM. Furthermore, even for smaller datasets that fit within system memory, GPU acceleration is limited to individual batches, and the broader workflow remains bottlenecked by frequent CPU-to-GPU memory transfers. While distributed computation presents a potential solution, existing distributed training tools (Zhou et al., 2023; Gandhi and Iyer, 2021; Wang et al., 2020; Zheng et al., 2020) do not support many of the necessary operations for ST-GNN models, lack compatibility with spatiotemporal data, and limit optimization to model training. These limitations prevent ST-GNN workflows from taking full advantage of a high-performance computing (HPC) environment’s distributed infrastructure and powerful GPUs.
+
+In this work we investigate how to increase the efficiency of ST-GNN training and best utilize modern HPC machines, which include state-of-the-art GPU accelerators and distributed infrastructures. We propose a set of techniques designed to reduce the memory demands of spatiotemporal data, reduce overhead due to frequent CPU-to-GPU memory transfers, and enable distributed data parallel (DDP) training with spatiotemporal models. We begin by analyzing model training on the PeMS-All-LA dataset – noted for its memory and runtime challenges in prior work (Mallick et al., 2020) – to identify key obstacles to scaling ST-GNNs. Our analysis uses both a baseline PyTorch implementation of the popular Diffusion Convolutional Recurrent Neural Network (DCRNN) (Li et al., 2018) and an optimized PGT (Rozemberczki et al., 2021a) implementation. We identify that existing tools are unable to scale to large datasets because of significant memory overhead caused by data duplication during preprocessing and the lack of a distributed implementation.
+
+Based on our analysis, we propose a new index-based approach to preprocessing and training. Index-batching reorganizes spatiotemporal preprocessing to eliminate unneeded memory duplication and constructs dataset items at runtime with low overhead. We utilize index-batching’s low memory footprint to enable GPU-index-batching, a technique that performs the ST-GNN workflow (i.e., preprocessing and training) entirely within GPU memory and consolidates CPU-to-GPU memory transfers to a single operation at the beginning of preprocessing. To enable full use of the distributed infrastructure of HPC environments, we combine our optimizations with DDP training as distributed-index-batching. Our techniques allow us to scale training, for the first time, to the full PeMS dataset without graph partitioning. Notably, our techniques are applicable to any model that operates on spatiotemporal data in a sequence-to-sequence format, enabling their adoption across a broad range of models (e.g., ST-LLMs (Liu et al., 2024), ST-GNNs (Shleifer et al., 2019; Li et al., 2021), and attention-based-GNNs (Guo et al., 2019; Zhu et al., 2020; Grigsby et al., 2023)). We publish our work as PyTorch Geometric Temporal Index, an extension to PGT that incorporates DDP training and is specifically designed for spatiotemporal training. In summary, we make the following major contributions:
+
+•
+
+We propose and evaluate two novel techniques — index-batching and distributed-index-batching — and their respective GPU optimizations that increase memory efficiency and scalability for the spatiotemporal family of models.
+
+•
+
+We present the first open-source DDP training framework tailored for ST-GNNs, integrating our techniques into PGT22
+                  2
+
+                https://github.com/benedekrozemberczki/pytorch_geometric_temporal with minimal changes to the existing workflow.
+
+•
+
+We validate PGT-I’s efficacy through a scaling study with up to 128 GPUs on ALCF’s Polaris supercomputer  33
+                  3
+
+                https://www.alcf.anl.gov/polaris using the PeMS dataset and DCRNN. Our results demonstrate that our techniques scale efficiently, achieving up to a 115.49x reduction in training time with 128 GPUs, while also outperforming standard DDP training by up to 11.78x in terms of workflow runtime and reducing memory usage by up to 89%.
+
+2. Background
+
+This work focuses on the distributed training of ST-GNNs. Accordingly, section 2.1 provides an introduction to spatiotemporal data, section 2.2 introduces ST-GNNs and DCRNN, and section 2.3 describes ST-GNN data preprocessing. To provide clarity, we define the terminology relating to “nodes" as follows. “Graph node" refers to an individual entity within a network in the context of graph theory. For example, we may refer to a “graph with 300 nodes" to define the number of nodes within its network. The other use of “node" in this paper is “compute node." In this work, “compute node" refers to an individual computational unit within the context of a larger HPC environment.
+
+2.1. Spatiotemporal Data
+
+Spatiotemporal data records the evolution of features across both space and time, integrating location with temporal progression. At a high level, each spatiotemporal dataset captures a record of features over time as a series of graphs. Each time step in the dataset corresponds to a snapshot of the graph, where nodes are associated with feature vectors that change over time – such as sensor readings, traffic speeds, or environmental metrics. The temporal dimension adds sequential context, capturing how node features evolve, while the spatial structure models interactions between different locations. Together, this structure enables models to reason about patterns that evolve along both dimensions. To encode spatial information as graph nodes, practitioners load information about node IDs and their corresponding latitudes and longitudes from a separate file as an adjacency matrix. A simple transformation can be applied to the adjacency matrix to generate a weighted matrix that encodes the strength of connections between graph nodes.
+
+Dataset
+Type
+Features
+Nodes
+Entries
+Size Before Preprocessing
+Size After Preprocessing
+
+Chickenpox-Hungary
+Epidemiological
+case count
+20
+522
+83.36 KB
+657.92 KB
+
+Windmill-Large
+Energy
+hourly energy output
+319
+17,472
+44.59 MB
+712.80 MB
+
+METR-LA
+Traffic
+speed, day of week
+207
+34,272
+54.39 MB
+2.54 GB
+
+PeMS-BAY
+Traffic
+speed, day of week
+325
+52,105
+129.62 MB
+6.05 GB
+
+PeMS-All-LA
+Traffic
+speed, day of week
+2716
+105,120
+2.12 GB
+102.08 GB
+
+PeMS
+Traffic
+speed, day of week
+11,160
+105,120
+8.71 GB
+419.46 GB
+
+Table 1. Summary of the datasets used and their sizes before and after preprocessing with float64 precision. Datasets are listed in ascending order of size.
+
+2.2. Spatiotemporal Graph Neural Networks
+
+ST-GNNs are a specialized type of graph neural network (GNN) designed to model and analyze spatiotemporal data. They differ from standard GNNs and temporal graph neural networks (T-GNNs) in a few key ways. GNNs operate on graph-structured data, predicting the properties of graph edges and nodes, which are typically static. In contrast, ST-GNNs train on graph data that evolves over time. T-GNNs train on graphs with dynamically evolving topology or features, focusing on temporal dependencies; however, T-GNNs do not explicitly model spatial correlations, which are central to spatiotemporal training that jointly learns spatial and temporal dependencies over a static or evolving graph.
+
+ST-GNNs, such as DCRNN described in Li et al. (2018), use a graph-based encoder-decoder architecture to capture the spatial and temporal patterns in data. In this work we focus on spatiotemporal data of three primary types: epidemiological (disease spread), energy modeling, and traffic prediction. As described in section 2.1, the connection data can be modeled as a static graph G=(V,E,A)G=(V,E,A), where VV is a set of NN graph nodes representing the locations, EE is a set of directed edges representing the connections between graph nodes, and A∈ℝN×NA\in\mathbb{R}^{N\times N} is the weighted adjacency matrix representing the strength of proximity between graph nodes. We adopt a static graph representation with dynamic/temporal signal as defined in  Rozemberczki et al. (2021a). Given the historical observations/signals X⁡(t−T′+1),…,X⁡(t)X(t-T^{\prime}+1),\dots,X(t) at each node of the graph, the goal is to learn a function f⁡(⋅)f(\cdot) that takes observations for T′T^{\prime} time steps as input to forecast the relevant metric (e.g., chickenpox cases in a city) for the next TT time steps:
+
+X⁡(t−T′+1),…,X⁡(t);G→f⁡(⋅)X⁡(t+1),…,X⁡(t+T).X(t-T^{\prime}+1),\ldots,X(t);G\xrightarrow{f(\cdot)}X(t+1),\ldots,X(t+T).
+
+Using graph-structured time series data and the corresponding adjacency matrix, DCRNN performs graph convolutions within a recurrent neural network. To model spatial relationships within the graph, each layer calculates a respective graph node’s value, also known as its feature, by aggregating the features of its spatial neighbors. Layers capture the temporal aspect of the data by incorporating the gated mechanisms of recurrent neural networks, which retain the memory of past states. This capability allows DCRNN to model changes in the data throughout the time series and predict future states accurately.
+
+2.3. Spatiotemporal Data Preprocessing
+
+In order to convert data into a format compatible with ST-GNNs, the data must be restructured and standardized (the algorithm is shown in Algorithm 1). ST-GNNs rely on sequence-to-sequence data, where one sequence of spatiotemporal information is used as input to predict a subsequent sequence. Sliding window analysis (SWA) (Ockerman et al., 2023) is used to segment the data into sequential, overlapping time slices (see fig. 1). SWA generates a corresponding target sequence (yy) for each input sequence (xx); yy is the sequence of a user-specified time period, which is referred to as the horizon, ahead of xx. For example, if xx consists of the graphs of traffic speeds observed from 8:00 AM to 9:00 AM and the model is set to predict 60 minutes into the future, then yy would correspond to the ground truth graphs of traffic speeds from 9:00 AM to 10:00 AM. After this mapping is generated, the window is moved forward in time, and the process is repeated until the window has traversed the entire dataset. Subsequently, the data is normalized based on the training set, requiring the calculation of the mean and standard deviation. Normalization ensures that each node contributes equally to the model’s predictions, preventing those with larger values from dominating the learning process (Singh and Singh, 2020; Huang et al., 2020; Wan, 2019).
+
+Figure 1. Simplified workflow of spatiotemporal preprocessing with a h​o​r​i​z​o​nhorizon of 3. G0 represents the state of the graph at time 0, G1 represents the state of the graph at time 1, and so on to time 4. During preprocessing, a sliding window of size h​o​r​i​z​o​nhorizon is applied to the data, extracting snapshots. After preprocessing, the data consists of a set of snapshots constructed from the original data.
+
+The preprocessing algorithm described in algorithm 1 has been applied to train many state-of-the-art ST-GNN models (Zhu et al., 2020; Zhao et al., 2020; Li et al., 2021; Zhu et al., 2021; Roy et al., 2021; He et al., 2023; Liu et al., 2024). Although effective for small datasets, the preprocessing algorithm and its common open-source implementations (Li et al., 2021; Rozemberczki et al., 2021a) are not designed with a focus on memory efficiency. Figure 1 shows a simplified visual illustration of spatiotemporal preprocessing, which extracts overlapping snapshots from the original data (the top half of fig. 1) and stores the collection of temporal snapshots in a list-based data structure (the bottom half of fig. 1). This process introduces a high degree of data redundancy and causes significant memory growth that precludes training on larger datasets without graph partitioning. Prior to this work, training a model on the full PeMS dataset, which grows to 419.46 GB during preprocessing, was intractable, causing open-source preprocessing implementations (Li et al., 2018; Rozemberczki et al., 2021a) to crash even on a supercomputer node with 512 GB of RAM. For each dataset utilized in this work, the sizes before and after preprocessing, as well as key dataset characteristics, are shown in  table 1.
+
+              0:
+
+             integer: horizon {How far we are predicting in the future}
+
+              1:
+
+             file_data = load(file_path)
+
+              2:
+
+             data = file_data.get_node_data()
+
+              3:
+
+             
+
+              4:
+
+             x,y = [], []
+
+              5:
+
+             # Let window be a 3D tuple defining the window shape
+
+              6:
+
+             for each window in d​a​t​adata do
+
+              7:
+
+              x.append(data[window])
+
+              8:
+
+              y.append(data[window + horizon])
+
+              9:
+
+             end for
+
+              10:
+
+             
+
+              11:
+
+             # Stack the spatiotemporal snapshots
+
+              12:
+
+             x = stack(x, axis=0)
+
+              13:
+
+             y = stack(y, axis=0)
+
+              14:
+
+             
+
+              15:
+
+             # Standardize the data
+
+              16:
+
+             x_train = x[:round(len(x) * 0.70)]
+
+              17:
+
+             μ\mu = mean(x_train)
+
+              18:
+
+             σ\sigma = std_dev(x_train)
+
+              19:
+
+             x = (x - μ\mu) / σ\sigma
+
+              20:
+
+             y = (y - μ\mu) / σ\sigma
+
+              21:
+
+             return  x, y
+
+Algorithm 1  General algorithm for preprocessing spatiotemporal data based on popular open-source tools (Rozemberczki et al., 2021a; Li et al., 2018; Li et al., 2021). Note that different methods of standardization and train, validation, and test splits are possible.
+
+3. Motivating Case Study
+
+To guide the design of PGT-I, we first investigate the challenges associated with scaling the ST-GNN workflow (data preprocessing, standardization, and training) to larger datasets using existing tools. To do so, we utilize two datasets: PeMS-All-LA, which posed significant challenges due to its high memory footprint in prior work (Mallick et al., 2020), and PeMS (of California, [n. d.]), which, to the best of our knowledge, is the largest available real-world spatiotemporal dataset. PeMS-All-LA is a medium-sized traffic dataset that includes graphs with 2,716 nodes, making it significantly larger than the datasets typically used for benchmarking (see table 1). PeMS contains 11,126 nodes and grows to nearly 420 GB after preprocessing. To the best of our knowledge, an ST-GNN has not been successfully trained on the full PeMS dataset without graph partitioning because of memory restrictions (Mallick et al., 2020).
+
+We evaluate training behavior using two implementations of DCRNN. To establish a baseline, we utilize the PyTorch DCRNN implementation introduced in Li et al. (2018). Additionally, we modify the existing PGT-DCRNN implementation to support batching and stepwise sequence-to-sequence prediction. PGT is a popular  (Mohammadiyeh and Neysiani, 2023; Verdone et al., 2024; Lin et al., 2022) open-source Python library designed to facilitate the development and application of ST-GNNs. PGT models offer speedups over many prior benchmark ST-GNN implementations by leveraging optimized PyG implementations of graph operations, message passing, and parallelism (Fey and Lenssen, 2019). To enable sequence-to-sequence prediction, we extend the model to process the input sequence in a stepwise fashion, feeding it one temporal slice at a time. Specifically, our implementation maintains and updates a hidden state across time steps, producing an output at each step that ultimately forms a prediction sequence of equal length to the input. While PGT-DCRNN implements the diffusion convolution operations described in Li et al. (2018), it is a lightweight variant that uses a single spatiotemporal diffusion convolution layer and does not replicate the full behavior of the original model (e.g., the RNN-based encoder-decoder structure). As such, accuracy may differ between the two implementations. Our case study focuses on runtime and memory consumption, as these are critical factors for scalability, and the proposed optimizations (see section 4.1) are applicable to both the original DCRNN and the simplified PGT-DCRNN.
+
+Model
+Runtime (mins)
+Max System Memory Usage (GB)
+Max GPU Memory Usage (GB)
+
+DCRNN
+68.48
+371.25/512
+24.84/40
+
+PGT-DCRNN
+4.48
+259.84/512
+1.58/40
+
+Table 2. Single-epoch performance comparison of DCRNN and PGT-DCRNN using PeMS-All-LA.
+
+3.1. Setup
+
+Given that we observe consistent resource usage across epochs, we limit node-hour costs by profiling training for a single epoch. We record the epoch runtime and capture system memory usage and GPU memory usage on a per-second basis using psutil and pynvml, respectively. We perform testing on the state-of-the-art Polaris supercomputer using a single compute node. Each compute node is equipped with a 2.8 GHz AMD EPYC Milan 7543P 32-core CPU, 512 GB of DDR4 RAM, and four NVIDIA A100 GPUs. The system is interconnected using HPE Slingshot 11 and employs a Dragonfly topology with adaptive routing. We integrate the standard open-source preprocessing implementation (Li et al., 2018; Li et al., 2021) into both workflows; and in all cases we use the default training, validation, and test split (Li et al., 2018): 70% train, 10% validation, and 20% test. Whenever possible, training uses the hyperparameters recommended by prior work (Mallick et al., 2020); however, because of GPU memory restrictions in the PyTorch DCRNN implementation, we select a batch size of 32. Since inference is not the focus of this work, we exclude evaluation with the test set from our experiments.
+
+3.2. Results
+
+The PeMS-All-LA dataset presents significant memory challenges for both the DCRNN and PGT-DCRNN implementations. As shown in table 2, DCRNN exhibits high memory consumption, with a peak system memory usage of 371.25 GB and peak GPU memory usage of 24.84 GB. Although still suffering from high memory usage, the PGT-DCRNN model demonstrates substantial lower memory usage (see fig. 2), reducing peak system memory usage to 259.84 GB and peak GPU memory usage to just 1.58 GB. The higher memory usage in the original DCRNN implementation stems from its custom dataloader, which stores extra copies of the dataset — padded to align with the batch size — in addition to the original data. PGT-DCRNN also reduces GPU memory usage and achieves a 15.30x reduction in runtime relative to the original DCRNN model, highlighting its potential as a lightweight foundation for integrating additional scalability techniques.
+
+Figure 2. Memory usage throughout training with PeMS-All-LA and PeMS using the original DCRNN model and the PGT-DCRNN model.
+
+Despite PGT-DCRNN’s lower resource demands compared to DCRNN, neither implementation can scale to the full PeMS dataset because of system memory restrictions. As fig. 2 shows, both DCRNN implementations exceed the system memory limit and crash before beginning training. These results highlight that, unlike the typical challenge of excessive GPU memory usage in standard GNNs (Lee et al., 2024), the primary scalability bottleneck for ST-GNNs lies in restrictive CPU memory consumption.
+
+3.3. Analysis
+
+Motivated by DCRNN’s high memory usage, we examined the ST-GNN workflow to identify the root causes. Further analysis revealed that the majority of the memory overhead stems from the representation of spatiotemporal graph snapshots produced by SWA. To generate the feature (xx) and label (yy) arrays, open-source implementations perform SWA on the source data, extracting an input sequence and label sequence at every valid placement of the window. As shown in fig. 1, preprocessing applies SWA to segment the data into time snapshots (stage 2 in fig. 3). Each of the snapshots contains h​o​r​i​z​o​n−1horizon-1 redundant data values, where h​o​r​i​z​o​nhorizon represents the number of time steps the model is predicting into the future. The data is then further duplicated by creating a yy time slice label for each corresponding xx time slice (stage 3 in fig. 3). This process and its high degree of data growth are shown graphically for PeMS-All-LA in fig. 3. The resulting data growth can be described analytically as follows: Given a spatiotemporal dataset whose original size is s​i​z​e=e​n​t​r​i​e​s×n​o​d​e​s×f​e​a​t​u​r​e​ssize=entries\times nodes\times features, its final size after preprocessing is described by eq. 1, where e​n​t​r​i​e​sentries is the total number of dataset items, h​o​r​i​z​o​nhorizon is the number of time periods the model is predicting into the future, n​o​d​e​snodes is the number of graph nodes in each graph, and f​e​a​t​u​r​e​sfeatures is the number of data features (e.g., speed, day of week).
+
+size
+=2[(entries−(2×horizon−1))\displaystyle=2\big[(\text{entries}-(2\times\text{horizon}-1))
+
+(1)
+
+×horizon×nodes×features]\displaystyle\quad\times\text{horizon}\times\text{nodes}\times\text{features}\big]
+
+Figure 3. Data growth when processing PeMS-All-LA. Stage 1 represents the added data from including time-of-day information as a transposed matrix. Stage 2 displays the data growth after applying sliding window analysis. Stage 3 shows the data growth by further dividing the data into heavily overlapping xx and yy train, validation, and test sets.
+
+As shown in fig. 3, the current ST-GNN preprocessing workflow leads to significant data duplication, causing the majority of the postprocessed data to be redundant. The described data growth due to unnecessary data duplication is present in open-source ST-GNN tools (Li et al., 2018; Rozemberczki et al., 2021a) and applies to many state-of-the-art models (Zhao et al., 2020; Li et al., 2021; Zhu et al., 2021; Roy et al., 2021; He et al., 2023; Liu et al., 2024; Huang et al., 2023; Rozemberczki et al., 2021a; Ye et al., 2022; Zhu et al., 2020) in addition to DCRNN. To enable further scaling in the spatiotemporal family of models, we design methods tailored to address spatiotemporal data growth and integrate them into PGT-I.
+
+4. Design
+
+Section 3.2 demonstrates that even when using the full resources of a Polaris compute node, state-of-the-art tools such as PGT are insufficient for training models on large-scale spatiotemporal datasets. These challenges extend beyond DCRNN to the majority of ST-GNN models (Zhao et al., 2020; Li et al., 2021; Zhu et al., 2021; Roy et al., 2021; He et al., 2023; Liu et al., 2024; Huang et al., 2023; Rozemberczki et al., 2021a; Ye et al., 2022; Zhu et al., 2020) because they similarly utilize sequence-to-sequence data and the standard ST-GNN preprocessing pipeline (Li et al., 2018; Rozemberczki et al., 2021a) that results in significant memory growth. Our case study highlights the need for new tools that explicitly address spatiotemporal data growth and enable distributed, large-scale training. Thus, we propose techniques that decrease memory usage and enable distributed training without utilizing graph partitioning, which can negatively impact accuracy (Mallick et al., 2020; Ji et al., 2024; Hamilton et al., 2018). Given its performance and flexibility, we select PGT as our base and propose an extension – PyTorch Geometric Temporal-Index (PGT-I) – designed to overcome current ST-GNN limitations and fully leverage HPC platforms to accelerate model training. PGT-I is a memory-efficient training framework that is fully integrated into the PGT code base and enables distributed training using Dask and Dask-DDP. Our implementation includes two novel techniques:
+
+•
+
+Index-batching
+
+•
+
+Distributed-index-batching
+
+Index-batching introduces a new approach to spatiotemporal data management designed to reduce memory usage. To do so, it redesigns the preprocessing pipeline to eliminate data duplication and constructs the spatiotemporal snapshots at runtime using an array of graph IDs (see fig. 1). We provide both CPU and GPU implementations of index-batching. The latter, which we refer to as GPU-index-batching, extends index-batching to perform preprocessing and training entirely on the GPU. We combine our index techniques with distributed training, thereby enabling multi-node, multi-GPU computation within the ST-GNN workflow.
+
+4.1. Index-Batching
+
+Index-batching modifies ST-GNN preprocessing and training to significantly reduce memory usage. To do so, we take advantage of the unique properties of ST-GNN preprocessing. Given that all data contained in the generated xx feature array and the yy label array is already present in the original file, we observed that it is more efficient to store only a single copy of the original data (which corresponds to stage 2 in fig. 3) and the graph IDs (see fig. 4) or indices corresponding to the data each xx-yy mapping accesses. Furthermore, since the size of the time slices and the offset between xx and yy slices are constants defined by the h​o​r​i​z​o​nhorizon, it is unnecessary to store all the indices for each slice or maintain a separate set of indices for the yy array. For example, in fig. 4, which uses a h​o​r​i​z​o​nhorizon of 3, if we store the graph ID that corresponds to the first entry in snapshot 0 (i.e., graph ID 0) in s​t​a​r​tstart, we can reconstruct the snapshot and its label at runtime as NumPy views by accessing data[start:start+horizon]data[start:start+horizon] and data[start+horizon:start+(2∗horizon)]data[start+horizon:start+(2*horizon)]. This practice removes the high degree of data duplication present in the standard preprocessing workflow by only storing an array of graph IDs roughly equal in size to the number of dataset entries (entries−2×horizon−1\text{entries}-2\times\text{horizon}-1) and a single copy of the original data. Additionally, by leveraging NumPy views to reference a given snapshot, we avoid copying data during batching. During training, batches are generated on demand by slicing into the standardized data using a set of indices and the h​o​r​i​z​o​nhorizon value to reconstruct the appropriate snapshots.
+
+Figure 4. Simplified example of constructing snapshots at runtime using index-batching where “indices" store graph IDs. Given a horizon size (or window) of 3, we construct the feature and label for snapshot 0 by extracting NumPy views from the data based on graph ID and horizon size.
+
+Index-batching significantly improves memory efficiency compared with the existing ST-GNN workflow. As shown in eq. 1, the primary factors driving the increase in size during ST-GNN preprocessing are the h​o​r​i​z​o​nhorizon size and the 2​x2x multiplier due to maintaining separate sets of xx and yy data points. In contrast, index-batching’s space needs are not increased by larger h​o​r​i​z​o​nhorizon values, and it does not maintain a separate yy dataset in addition to the xx dataset. Index-batching’s space requirements are represented by eq. 2, where
+e​n​t​r​i​e​s−(2×h​o​r​i​z​o​n−1)entries-(2\times horizon-1) represents the extra data due to including an array of indices.
+
+index_batching_size
+=entries×nodes×features\displaystyle=\text{entries}\times\text{nodes}\times\text{features}
+
+(2)
+
++(entries−(2×horizon−1))\displaystyle\quad+(\text{entries}-(2\times\text{horizon}-1))
+
+GPU-Index-Batching: To enable ST-GNN workflows to execute entirely on the GPU, we implement a GPU version of index-batching, which we refer to as GPU-index-batching. GPU-index-batching relies on the low memory footprint of index-batching and PyTorch tensor operations to handle preprocessing and training entirely on the GPU, eliminating mid-training CPU-to-GPU communication overhead. After reading the data from disk, the data is migrated from CPU memory to GPU memory. Once on the GPU, the workflow proceeds in the same manner as index-batching, simulating the effects of SWA without requiring explicit data duplication.
+
+In contrast to previous techniques that limit optimizations to GNN training (Gandhi and Iyer, 2021; Guan et al., 2022; Wang et al., 2020; Zheng et al., 2020; Zhou et al., 2023), we extend our optimizations to preprocessing. Further, by transferring all data to GPU memory prior to the start of training, we eliminate the overhead of periodically moving data between the CPU and GPU during training, which is particularly relevant with larger datasets. While the GPU-index-batching method is not suitable for datasets that exceed GPU memory capacity, the current largest real-world ST-GNN dataset PeMS (of California, [n. d.]) is 8 GB in size, and the majority of ST-GNN benchmark datasets (Rozemberczki et al., 2021a; Mallick et al., 2020) are less than 2.5 GB in size (see table 1 for more examples). By eliminating the data growth typically associated with ST-GNN preprocessing, GPU-index-batching offers a practical and efficient technique for spatiotemporal datasets.
+
+4.2. Distributed-Index-Batching
+
+Distributed-index-batching combines DDP training and index-batching techniques to enable memory-efficient, distributed ST-GNN workflows. To enable DDP training, we utilize dask-pytorch-ddp, 44
+              4
+
+            https://github.com/saturncloud/dask-pytorch-ddp a wrapper around PyTorch’s DDP module that allows it to leverage Dask.distributed. We integrate Dask-DDP into PGT, following the standard DDP workflow present in popular open-source distributed tools (Li et al., 2020; Wolf et al., 2020). In order to mirror the baseline open-source DCRNN implementation (Li et al., 2018),55
+              5
+
+            https://github.com/liyaguang/DCRNN/blob/master/lib/utils.py#L189 the dataset is shuffled at the start of each epoch. After shuffling, the dataset is partitioned according to the number of workers, enabling each worker to independently perform forward and backward passes. During the backward pass, each worker computes the gradients of the loss with respect to the model parameters. These gradients are then averaged across all workers through an all-reduce operation, and the averaged gradient is used to update each local model’s parameters.
+
+When using distributed-index-batching, each worker maintains its own in-memory copy of the dataset, allowing it to perform preprocessing and training entirely in local memory without requiring inter-worker communication (aside from DDP calls to AllReduce to average model gradients). This is possible due to the low memory footprint of index-batching; previously, even a single copy of PeMS would exceed a Polaris compute node’s 512 GB of memory during preprocessing. Maintaining a local copy in each worker’s memory enables communication-free global shuffling, that is, shuffling across all workers between epochs. At the start of each epoch, each worker samples a new data subset from its local memory without inter-worker communication. Global shuffling differs from local shuffling strategies, which keep the data each worker uses, referred to as its data partition, fixed across epochs. In local shuffling, data is shuffled only within a worker’s own partition, without any mixing between partitions. Previous work demonstrated that local shuffling can result in slower convergence (Nguyen et al., 2022; Meng et al., 2017) and reduced final accuracy (Meng et al., 2017). Therefore, we elect to utilize global shuffling. By default, distributed-index-batching utilizes GPU-index-batching at the worker level; however, similar to our single-GPU techniques, we also support a CPU-based alternative.
+
+5. Evaluation
+
+PGT-I has the potential to retain the ease of use of PGT, reduce memory usage in a single-GPU setting, and provide multi-GPU and multi-node scalability through specialized distributed training techniques. To evaluate our techniques, we aim to answer three key questions:
+
+(1)
+
+What is the impact of index-batching on runtime, memory usage, and accuracy in a single-GPU setting?
+
+(2)
+
+How does GPU-index-batching affect memory usage and runtime relative to standard index-batching in a single-GPU setting?
+
+(3)
+
+How does distributed-index-batching scale with respect to runtime and accuracy as the number of GPUs increases, particularly relative to standard DDP techniques?
+
+To test PGT-I’s impact on accuracy, runtime, and memory usage in a single-GPU setting, we perform training using three benchmark datasets: PeMS-Bay (Li et al., 2018), Windmill-Large (Rozemberczki et al., 2021a), and Chickenpox-Hungary (Rozemberczki et al., 2021b). These datasets represent several common ST-GNN benchmarks and span multiple domains, making them an ideal baseline for testing PGT-I’s broader applicability. We train with batch sizes of 64, 64, and 4, respectively. The first two batch sizes are selected based on prior work’s hyperparameter tuning (Li et al., 2018), while Chickenpox-Hungary’s batch size is selected based on its limited 522 entries. To enhance performance and encourage generalizability across datasets, we adopt established hyperparameters (Mallick et al., 2020) and the default PyTorch Adam optimizer. We compare the performance of PGT-DCRNN with standard batching to its performance with index-batching. Each training run consists of 100 epochs. We measure runtime, accuracy, and memory usage and average the results over 10 runs on Polaris (see section 3.1 for hardware specifications) to increase robustness. Additionally, to study the effect of dataset scale on memory savings, we compare PGT’s and PGT-I’s memory usage with the full PeMS dataset.
+
+To investigate the performance of single-GPU index-batching and GPU-index-batching, we conduct model training with the full PeMS dataset on Polaris. The models are trained for 30 epochs, utilizing the Adam optimizer and model hyperparameters found in past work (Mallick et al., 2020; Li et al., 2018). To evaluate distributed performance, we conduct a scaling study with the PeMS dataset, collecting data on runtime, accuracy, and memory usage across 30 epochs. As is standard practice in ML scaling studies (Kaplan et al., 2020; Rajbhandari et al., 2020; Krizhevsky, 2014), the dataset remains fixed, and the global batch size (i.e., the batch size per worker ×\times the number of workers) increases as we increase the number of GPUs. We perform distributed training using 4, 8, 16, 64, and 128 GPUs (corresponding to 1, 2, 4, 8, 16, and 32 compute nodes, respectively, on Polaris).
+
+Runtime (s)
+MAE
+Max Memory Usage ( MB)
+
+Base-Chickenpox
+188 ±\pm 5.15
+0.6061 ±\pm 0.0011
+1093 ±\pm 2.24
+
+Index-Chickenpox
+192 ±\pm 3.2
+0.6061 ±\pm 0.0010
+1089 ±\pm 4.09
+
+Base-Windmill
+2323 ±\pm 10.86
+0.1707 ±\pm 0.0303
+2455 ±\pm 72.93
+
+Index-Windmill
+2339 ±\pm 18.78
+0.1606 ±\pm 0.0231
+1304 ±\pm 39.99
+
+Base-PeMS-Bay
+3731 ±\pm 36.32
+1.8923 ±\pm 0.0056
+4497 ±\pm 56.67
+
+Index-PeMS-Bay
+3735 ±\pm 31.41
+1.8892 ±\pm 0.0055
+1335 ±\pm 62.13
+
+Table 3. Performance comparison of base PGT-DCRNN and PGT-DCRNN utilizing index-batching. Runtime and memory statistics are the average of 10 experiments performed on Polaris.
+
+Given that existing distributed graph training libraries (e.g., P3 (Gandhi and Iyer, 2021), DGL (Wang et al., 2020), and DIST-DGL (Zheng et al., 2020)) are incompatible with spatiotemporal data, we compare distributed-index-batching with its single-GPU PGT counterpart and a standard DDP workflow, which we refer to as baseline DDP or simply DDP. As described in section 3, PGT represents the state of the art in spatiotemporal training and integrates a range of performance optimizations, making it an ideal single-GPU baseline. Additionally, we compare performance relative to DDP, implemented using PGT for computational efficiency and Dask.distributed to distribute data across the workers during both preprocessing and training; similar to many large-scale DDP frameworks (Zheng et al., 2020; Elgabli et al., 2020; Shao et al., 2024), this method communicates data on demand across workers. To reduce the cost of communication and ensure a fair comparison, we tested multiple DDP implementations and a variety of Dask configurations (e.g., data transfer block size, threads per worker, spill-to-disk threshold), selecting the best-performing configuration. We found that issuing Dask communication requests for a batch of data rather than individual data items within a batch, which would align with the standard PyTorch sampler’s practice, significantly reduced communication overhead; hence, we incorporated this optimization into our baseline DDP approach. In order to maintain parity with our distributed-index-batching approach and avoid the decreased accuracy associated with local shuffling (Meng et al., 2017), DDP performs global shuffling between epochs.
+
+Figure 5.  Single-GPU validation accuracy for each dataset during training. Notably, index-batching provides accuracy and convergence speed comparable to PGT with standard batching techniques.
+
+Figure 6. Single-GPU memory usage with PeMS with and without index-batching. While memory usage is presented as measured, the positions of index-batching and GPU-index-batching’s measurements have been shifted right by 1% and 2%, respectively, along the x-axis for visual clarity.
+
+5.1. Effect of Single-GPU Index-Batching on Accuracy, Runtime, and Memory Usage
+
+As shown in table 3, index-batching reduces memory usage while demonstrating less than 1% absolute difference in overall runtime. The memory reduction is proportional to the size of the dataset and the horizon. Thus, with smaller PGT datasets such as Chickenpox-Hungary, which grows to only 643 KB after preprocessing, the memory reduction is minimal. For more modest datasets such as Windmill-Large and PeMS-Bay,
+index-batching achieves clear memory overhead reductions of 46.88% and 70.31%, respectively. The effect is even more pronounced with the full PeMS dataset; fig. 6 shows the memory usage of the baseline (standard ST-GNN batching techniques), index-batching, and GPU-index-batching implementations. The standard PGT-DCRNN workflow crashes during preprocessing because it exceeds the system memory limit of 512 GB. In contrast, PGT-DCRNN uses a maximum of 45.75 GB of memory with index-batching, enabling training on large datasets even on commodity devices.
+
+Figure 5 displays the training and validation accuracy of PGT for each dataset based on a single test iteration, as we observe minimal variation across runs (see table 3). While the inherent randomness of ML training affects the convergence process, as the training progresses, each batching technique ultimately exhibits similar convergence times and negligible differences in optimal MAE values (see table 3 for exact numbers). This behavior is expected; index-batching feeds the same spatiotemporal snapshots to the model as standard ST-GNN batching, providing identical accuracy while reducing memory overhead.
+
+5.2. Benefits of GPU-Index-Batching Relative to Index-Batching
+
+As shown in table 4, GPU-index-batching accelerates data preprocessing and model training over index-batching on the PeMS dataset, reducing runtime by 12.87%. Both implementations complete preprocessing in under 30 seconds, with index-batching requiring 26.05 seconds and GPU-index-batching 19.05 seconds. Since preprocessing accounts for only a small fraction of the total training time, we did not prioritize optimizing it for GPU execution. GPU-index-batching’s speedup is due to the elimination of CPU-to-GPU data transfers during training. As a result of storing the dataset in GPU memory, however, GPU-index-batching uses significantly more GPU memory than does index-batching, requiring 18.60 GB relative to index-batching’s 5.50 GB. This is balanced by reducing CPU memory usage by 60.30%. As shown in fig. 6, index-batching causes a spike in CPU memory usage to approximately 46 GB. This initial spike occurs during preprocessing, and by performing preprocessing on the GPU, GPU-index-batching reduces the spike and maintains a lower overall memory footprint.
+
+Implementation
+Runtime
+CPU Memory
+GPU Memory
+
+Index-batching
+333.58 min
+45.84 GB
+5.50 GB
+
+GPU-index-batching
+290.65 min
+18.20 GB
+18.60 GB
+
+Table 4. Single-GPU PeMS training performance metrics.
+
+5.3. Distributed-Index-Batching Scaling Study
+
+This section presents the results of our scaling study, beginning with an evaluation of our solution’s strong scaling relative to its single-GPU performance. We then compare the performance of distributed-index-batching with that of DDP and conclude with a discussion of the impact of increasing parallelism on model accuracy.
+
+5.3.1. Scaling
+
+Distributed-index-batching demonstrates favorable scaling relative to its single-GPU implementation, reducing runtime by up to 79.41x with 128 GPUs when including preprocessing and up to 115.49x when considering training time alone. As anticipated, the static preprocessing cost and overhead introduced by DDP (e.g., syncing gradients, AllReduce operations to calculate validation accuracy) hinder linear scaling, especially as overall runtime decreases. Our technique achieves near-linear training scaling with 4, 8, 16, and 32 GPUs but falls short with 64 and 128 GPUs since fixed costs constitute a larger proportion of the total runtime.
+
+Figure 7. Scaling study runtime results. The x-axis shows the number of GPUs/workers, while the y-axis shows the total runtime in minutes. By eliminating the need for inter-worker data communication, distributed-index-batching significantly outperforms DDP.
+
+PGT-I’s runtime efficiency significantly lowers the barrier to performing training with the PeMS dataset, which was previously intractable even on a state-of-the-art compute node. We note that preprocessing time with distributed-index-batching fluctuates because of the need to perform I/O over a shared parallel file system and Dask setup time. This is evident in the abnormally high preprocessing time of approximately 35-40 seconds with 16 and 32 GPUs in contrast to the 10–20 seconds observed in the majority of index-batching experiments. In follow-up experiments with 4 GPUs, we observed preprocessing times ranging from 11 seconds to 32 seconds, corresponding to measured fluctuations in I/O time rather than data preprocessing. These I/O fluctuations exist regardless of the number of workers. Nevertheless, despite I/O variability, PGT-I maintains fast and scalable training performance, making large-scale spatiotemporal modeling more accessible.
+
+5.3.2. Comparison with DDP
+
+Distributed-index-batching significantly outperforms the DDP approach, reducing overall runtime by 2.16x and 11.78x with 4 and 128 GPUs, respectively. This speedup arises from the elimination of inter-node communication and periodic CPU-to-GPU memory transfers, since workers can process data in local memory and utilize a single consolidated CPU-to-GPU memory transfer. As noted in section 5.3.1, because each worker performs preprocessing in local memory, distributed-index-batching’s preprocessing time does not scale with the number of GPUs.
+
+Distributed-index-batching demonstrates significantly better scaling than does DDP. As the number of workers increases, communication overhead limits DDP’s scaling. Furthermore, DDP’s preprocessing time remains relatively stable, reaching a maximum of 305 seconds with 128 workers, despite distributing computation across more workers. The increase in preprocessing time with 128 workers is due to the overhead of distributing data across a larger number of workers, which outweighs the benefits of increased preprocessing parallelization with PeMS. However, DDP maintains a smaller memory footprint than distributed-index-batching when using 32, 64, and 128 GPUs. When using 32 workers, for example, DDP reduces its maximum memory footprint to 53.3 GB, falling below distributed-index-batching’s footprint of 90.18 GB.
+
+Figure 8. Training and validation MAE on the PeMS dataset as the number of GPUs increases.
+
+5.3.3. Accuracy with Increasing GPUs
+
+Figure 8 presents the training and validation MAE as the number of GPUs increases. As the number of GPUs used for DDP increases, the optimal training and validation MAE also increases, with a value of 1.66 with 1 GPU and a value of 2.23 with 128 GPUs. This effect has been established in prior literature (Chaubard et al., 2024; You et al., 2017; Goyal et al., 2018); averaging gradients over an increasing number of distributed mini-batches, as well as an increasingly large global batch size, can alter convergence dynamics and may result in diminished learning. This presents a trade-off between final accuracy and computational efficiency. However, the decline in accuracy with more GPUs may be offset by significantly improved runtime. Follow-up testing indicated that the majority of the MAE increase was due to the increased global batch size rather than DDP effects, and techniques such as learning rate scaling (You et al., 2017) reduced the increase in MAE with larger global batch sizes.
+
+5.4. Scaling to Larger-than-Memory Datasets
+
+To enable training with larger-than-memory datasets, we design a version of distributed-index-batching that supports distributed preprocessing and partitions data across all workers. We refer to this approach as generalized-distributed-index-batching. To improve on our baseline DDP implementation, we seek to reduce communication overhead by utilizing a fixed data partition and replacing global shuffling with batch-level shuffling. That is, rather than shuffle individual samples, the order of the batches is shuffled (while the data inside the batch remains fixed) within each worker’s data partition. This approach improves memory locality and reduces the number of separate communications required to load a batch into local memory. To assess the impact on accuracy of local batch shuffling, we compare accuracy with global shuffling with PeMS-Bay using 4, 8, and 16 GPUs and the same experimental settings described in section 5. The results are shown in table 5. Notably, local batch-level shuffling obtains accuracy similar to that of global shuffling.
+
+Implementation
+4 GPUs
+8 GPUs
+16 GPUs
+
+Global Shuffling
+1.932
+2.008
+2.149
+
+Local Batch Shuffling
+1.913
+1.868
+1.833
+
+Table 5. Optimal Validation MAE with global shuffling vs local batch shuffling using PeMS-Bay.
+
+To evaluate the runtime performance of our technique, we utilize the larger PeMS dataset, performing a single epoch of training using 4, 8, 16, 32, 64, and 128 GPUs. We compare with DDP modified to include the changes described above. Notably, while index-batching reduces distributed preprocessing time relative to DDP across all configurations, preprocessing constitutes a small portion of the overall runtime in a full training workflow. Therefore, we omit further analysis of preprocessing time.
+
+Figure 9. Batch-shuffling versions of generalized-distributed-index-batching and baseline DDP. Generalized-distributed-index-batching significantly lowers communication cost (as shown by the lighter colored portion of each bar) by decreasing overall data volume.
+
+Generalized-distributed-index-batching outperforms the baseline epoch time by up to 2.28x (see fig. 9). While the baseline’s epoch time improves from 303 seconds using 4 GPUs to 231 seconds, it still suffers from high overhead due to the large volume of communicated data. Generalized-distributed-index-batching also significantly reduces memory usage, using only 53.28 GB of memory with four workers compared with the baseline’s 479.66 GB. Notably, the index-batching implementation’s memory footprint with only 4 GPUs is comparable to the footprint baseline DDP achieved with 32 GPUs (53.30 GB), demonstrating substantial memory savings even in a single-node setting.
+
+5.5. Broader Applicability
+
+To demonstrate index-batching’s generalizability to sequence-to-sequence models, we perform additional single-GPU experiments with A3T-GCN (Zhu et al., 2020) and the Metr-LA (of California, [n. d.]) dataset. Additionally, we perform a distributed-index-batching scaling study with ST-LLM (Liu et al., 2024) and the PeMS-Bay dataset. A3T-GCN is a spatiotemporal forecasting model that integrates graph convolutions with gated recurrent units and a global attention (Vaswani et al., 2023) mechanism to achieve high accuracy. We integrate index-batching into A3T-GCN’s PGT implementation, 66
+              6
+
+            https://github.com/benedekrozemberczki/pytorch_geometric_temporal/blob/master/examples/recurrent/a3tgcn2_example.py utilizing the provided hyperparameters and training for 30 epochs. ST-LLM utilizes a state-of-the-art approach that encodes spatial-temporal context into token embeddings that are then processed by GPT2 (Radford et al., 2019). ST-LLM is not currently integrated into PGT, and we therefore use its open-source implementation.77
+              7
+
+            https://github.com/ChenxiLiu-HNU/ST-LLM All tests are performed on the Polaris supercomputer, which is described in section 3.1, and we reuse the experimental settings described in section 5. To reduce node-hour cost, we limit the distributed-index-batching tests to 4, 8, 16, and 32 GPUs.
+
+Implementation
+Runtime
+CPU Memory
+Test MSE
+
+Baseline
+1041.95 (s)
+2426.26 MB
+0.5436
+
+Index-batching
+1050.80 (s)
+1232.62 MB
+0.5427
+
+Table 6. Single-GPU A3T-GCN performance metrics.
+
+Figure 10. Scaling study runtime results with ST-LLM. The x-axis shows the number of GPUs/workers, while the y-axis shows the total runtime in minutes.
+
+Single-GPU tests with A3T-GCN reinforce that index-batching reduces memory usage with negligible impact on runtime or accuracy, achieving a 49.20% reduction in memory usage (see table 6). Additionally, distributed-index-batching reduces training time by 3.92x with 4 GPUs and 30.01x with 32 GPUs compared with single-GPU index-batching. Due in part to the small size of PeMS-Bay, the overall workflow demonstrates near-linear scaling (see fig. 10); and preprocessing constitutes a minimal portion of overall runtime, requiring at most 1.35 seconds. These results not only highlight the advantages of index-batching but also demonstrate its broader applicability to sequence-to-sequence models.
+
+5.6. Discussion and Summary of Key Results
+
+Index-batching enables ST-GNNs to train on formerly intractable datasets such as PeMS using a single GPU. Additionally, distributed-index-batching outperforms a baseline DDP implementation, demonstrating near-linear scaling. By leveraging the memory savings provided by index-batching, distributed-index-batching is able to maintain a local copy of the dataset in each worker’s memory and eliminate the communication required for global shuffling. However, this optimization is not applicable to datasets larger than memory, where data must be distributed across multiple nodes. To the best of our knowledge, such spatiotemporal datasets do not currently exist; however, in the future, larger-than-memory datasets likely will be made available. Thus, we include an extension to distributed-index-batching that integrates distributed data management techniques to ensure future scalability.
+
+6. Related Work
+
+A significant amount of effort has also been dedicated to efficient distributed GNN training (Besta and Hoefler, 2024; Zheng et al., 2020). Gandhi and Iyer (2021), Wang et al. (2020), and Zheng et al. (2020) present distributed GNN training libraries P3, DGL, and DIST-DGL. However, these libraries are not compatible with spatiotemporal data. As such, they are unable to address the need for distributed spatiotemporal training and are incompatible as benchmarks for comparison with our techniques. Another relevant distributed graph training library is DistTGL (Zhou et al., 2023). DistTGL is a distributed training framework designed specifically for training temporal graph neural networks. However, DistTGL lacks support for spatiotemporal coupling, where graph-based spatial dependencies and sequential temporal modeling must be tightly integrated.
+
+To the best of our knowledge, DynaGraph (Guan et al., 2022) is the only proposed framework designed specifically for distributed ST-GNN training. However, DynaGraph utilizes graph partitioning, introducing overhead due to communication (Chen et al., 2019) and potentially reducing accuracy (Mallick et al., 2020; Ji et al., 2024; Hamilton et al., 2018). To reduce memory requirements, Guan et al. (2022) utilizes a sliding window on each graph partition rather than many static snapshots. While the sliding window method focuses on processing smaller, overlapping segments of data in a sequential manner, index-batching dynamically constructs batches at runtime using indices, thus eliminating the need to store redundant data across windows and allowing workers to process disjoint segments of data. Instead of graph partitioning, we analyze the ST-GNN workflow to pinpoint memory bottlenecks and propose solutions that keep graphs intact without added communication overhead. Further, we provide a more expansive scaling study, testing with up to 128 GPUs across 32 nodes compared with up to 16 GPUs across 8 nodes. Furthermore, DynaGraph lacks a publicly available implementation, precluding direct performance comparisons or widespread community adoption.
+
+7. Conclusion
+
+In this work we explored best practices for leveraging modern HPC infrastructure in the ST-GNN training workflow. We introduced index-batching, which significantly reduces the memory footprint of single-GPU training without impacting accuracy or runtime. We further optimized index-batching as GPU-index-batching -- a method that performs the workflow entirely in GPU memory and lowers memory usage and runtime by 60.30% and 12.87%, respectively, for single-GPU training using the PeMS dataset. We evaluated distributed-index-batching in a distributed environment with up to 128 GPUs, displaying favorable scaling and outperforming DDP by up to 11.78x. Additionally, we proposed an extension to index-batching that utilizes optimized distributed data management techniques to reduce memory usage and epoch runtime by up to 9.00x and 2.28x, respectively, over DDP. We merge our techniques into the state-of-the-art ST-GNN package88
+            8
+
+          https://github.com/benedekrozemberczki/pytorch_geometric_temporal and publish our source code to promote reproducibility.99
+            9
+
+          https://github.com/uw-mad-dash/PGT_Index
+
+Building on this work, we plan to extend PGT-I to support additional spatiotemporal data structures such as dynamic graphs with temporal signal (Rozemberczki et al., 2021a). Future research might also explore options to further enhance the efficiency of distributed ST-GNN training. One option would be to investigate the integration of index-batching with graph partitioning, potentially yielding further speedups at a potential cost to accuracy. Another option is to explore data distribution strategies that allow a higher degree of user control and implement prefetching. This could help reduce the communication overhead of the distributed strategies. Additionally, by applying the tools we publish, researchers can train ST-GNNs with larger datasets more efficiently, allowing for less time-intensive application development. 1010
+            10
+
+          ChatGPT (OpenAI, 2024) and Grammarly (Inc., 2024) were used to improve the grammar and phrasing of this work.
+
+Acknowledgements.
+This material is based upon work supported by the U.S. Department of Energy (DOE), Office of Science, Office of Advanced Scientific Computing Research and the DOE SciDAC program under grant 0000269227 and contracts DE-AC02-06CH11357, DE-AC02-05CH11231, and DESC0012704. Additionally, this work is supported by NNSA under contract DE-NA0003525.
+
+References
+
+Bai et al. (2020)
+
+Lei Bai, Lina Yao, Can Li, Xianzhi Wang, and Can Wang. 2020.
+
+Adaptive graph convolutional recurrent network for traffic forecasting. In Proceedings of the 34th International Conference on Neural Information Processing Systems (Vancouver, BC, Canada) (NIPS ’20). Curran Associates Inc., Red Hook, NY, USA, Article 1494, 12 pages.
+
+Besta and Hoefler (2024)
+
+Maciej Besta and Torsten Hoefler. 2024.
+
+Parallel and Distributed Graph Neural Networks: An In-Depth Concurrency Analysis.
+
+IEEE Transactions on Pattern Analysis and Machine Intelligence (2024).
+
+doi:10.1109/TPAMI.2023.3303431
+
+Chaubard et al. (2024)
+
+Francois Chaubard, Duncan Eddy, and Mykel J. Kochenderfer. 2024.
+
+Beyond Gradient Averaging in Parallel Optimization: Improved Robustness through Gradient Agreement Filtering.
+
+arXiv:2412.18052 [cs.LG]
+
+https://arxiv.org/abs/2412.18052
+
+Chen et al. (2019)
+
+Rong Chen, Jiaxin Shi, Yanzhe Chen, Binyu Zang, Haibing Guan, and Haibo Chen. 2019.
+
+PowerLyra: Differentiated Graph Computation and Partitioning on Skewed Graphs.
+
+ACM Trans. Parallel Comput. 5, 3, Article 13 (Jan. 2019), 39 pages.
+
+doi:10.1145/3298989
+
+Croft et al. (2023)
+
+V. Maxime Croft, Senna C. J. L. van Iersel, and Cosimo Della Santina. 2023.
+
+Forecasting infections with spatio-temporal graph neural networks: a case study of the Dutch SARS-CoV-2 spread.
+
+Frontiers in Physics 11 (2023).
+
+doi:10.3389/fphy.2023.1277052
+
+Daenens et al. (2024)
+
+Simon Daenens, Timothy Verstraeten, Pieter-Jan Daems, Ann Nowe, and Jan Helsen. 2024.
+
+Spatio-Temporal Graph Neural Networks for Power Prediction in Offshore Wind Farms Using SCADA Data.
+
+doi:10.5194/wes-2024-113
+
+de Burgh-Day and Leeuwenburg (2023)
+
+C.O. de Burgh-Day and T. Leeuwenburg. 2023.
+
+Machine learning for numerical weather and climate modelling: a review.
+
+Geoscientific Model Development (2023).
+
+doi:10.5194/gmd-16-6433-2023
+
+Elgabli et al. (2020)
+
+Anis Elgabli, Jihong Park, Amrit S. Bedi, Mehdi Bennis, and Vaneet Aggarwal. 2020.
+
+GADMM: Fast and Communication Efficient Framework for Distributed Machine Learning.
+
+arXiv:1909.00047 [cs.LG]
+
+https://arxiv.org/abs/1909.00047
+
+Fan et al. (2024)
+
+Yangxin Fan, Raymond J. Wieser, Xuanji Yu, Yinghui Wu, Laura S. Bruckman, and Roger H. French. 2024.
+
+Using spatio-temporal graph neural networks to estimate fleet-wide photovoltaic performance degradation patterns.
+
+PLOS ONE 19 (2024).
+
+Fey and Lenssen (2019)
+
+Matthias Fey and Jan Eric Lenssen. 2019.
+
+Fast Graph Representation Learning with PyTorch Geometric.
+
+arXiv:1903.02428 [cs.LG]
+
+https://arxiv.org/abs/1903.02428
+
+Fritz et al. (2022)
+
+Cornelius Fritz, Emilio Dorigatti, and David Rügamer. 2022.
+
+Combining graph neural networks and spatio-temporal disease models to improve the prediction of weekly COVID-19 cases in Germany, volume = 12, journal = Scientific Reports, doi = 10.1038/s41598-022-07757-5.
+
+Scientific Reports (03 2022), 3930.
+
+Gandhi and Iyer (2021)
+
+Swapnil Gandhi and Anand Padmanabha Iyer. 2021.
+
+P3: Distributed Deep Graph Learning at Scale. In 15th USENIX Symposium on Operating Systems Design and Implementation (OSDI 21). USENIX Association, 551–568.
+
+https://www.usenix.org/conference/osdi21/presentation/gandhi
+
+Goyal et al. (2018)
+
+Priya Goyal, Piotr Dollár, Ross Girshick, Pieter Noordhuis, Lukasz Wesolowski, Aapo Kyrola, Andrew Tulloch, Yangqing Jia, and Kaiming He. 2018.
+
+Accurate, Large Minibatch SGD: Training ImageNet in 1 Hour.
+
+arXiv:1706.02677 [cs.CV]
+
+https://arxiv.org/abs/1706.02677
+
+Grigsby et al. (2023)
+
+Jake Grigsby, Zhe Wang, Nam Nguyen, and Yanjun Qi. 2023.
+
+Long-Range Transformers for Dynamic Spatiotemporal Forecasting.
+
+arXiv:2109.12218 [cs.LG]
+
+https://arxiv.org/abs/2109.12218
+
+Guan et al. (2022)
+
+Mingyu Guan, Anand Padmanabha Iyer, and Taesoo Kim. 2022.
+
+Dynagraph: dynamic graph neural networks at scale. In 5th ACM SIGMOD Joint International Workshop on Graph Data Management Experiences & Systems and Network Data Analytics.
+
+Guo et al. (2019)
+
+Shengnan Guo, Youfang Lin, Ning Feng, Chao Song, and Huaiyu Wan. 2019.
+
+Attention Based Spatial-Temporal Graph Convolutional Networks for Traffic Flow Forecasting.
+
+Proceedings of the AAAI Conference on Artificial Intelligence 33, 01 (July 2019), 922–929.
+
+doi:10.1609/aaai.v33i01.3301922
+
+Hamilton et al. (2018)
+
+William L. Hamilton, Rex Ying, and Jure Leskovec. 2018.
+
+Inductive Representation Learning on Large Graphs.
+
+arXiv:1706.02216 [cs.SI]
+
+https://arxiv.org/abs/1706.02216
+
+He et al. (2023)
+
+Silu He, Qinyao Luo, Ronghua Du, Ling Zhao, Guangjun He, Han Fu, and Haifeng Li. 2023.
+
+STGC-GNNs: A GNN-based traffic prediction framework with a spatial–temporal Granger causality graph.
+
+Physica A: Statistical Mechanics and its Applications 623 (2023), 128913.
+
+doi:10.1016/j.physa.2023.128913
+
+Huang et al. (2020)
+
+Lei Huang, Jie Qin, Yi Zhou, Fan Zhu, Li Liu, and Ling Shao. 2020.
+
+Normalization Techniques in Training DNNs: Methodology, Analysis and Application.
+
+arXiv:2009.12836 [cs.LG]
+
+https://arxiv.org/abs/2009.12836
+
+Huang et al. (2023)
+
+Zhixin Huang, Yujiang He, and Bernhard Sick. 2023.
+
+Spatio-Temporal Attention Graph Neural Network for Remaining Useful Life Prediction. In 2023 International Conference on Computational Science and Computational Intelligence (CSCI). 99–105.
+
+doi:10.1109/CSCI62032.2023.00022
+
+Inc. (2024)
+
+Grammarly Inc. 2024.
+
+Grammarly.
+
+https://www.grammarly.com/.
+
+Writing assistant software.
+
+Ji et al. (2024)
+
+Shengwei Ji, Shengjie Li, Fei Liu, and Qiang Xu. 2024.
+
+LocalDGP: local degree-balanced graph partitioning for lightweight GNNs.
+
+Applied Intelligence 55, 2 (Dec. 2024), 19 pages.
+
+doi:10.1007/s10489-024-05964-3
+
+Jordan (1986)
+
+M I Jordan. June 1985-March 1986.
+
+Serial order: a parallel distributed processing approach.
+
+Technical report. University of California, San Diego.
+
+https://www.osti.gov/biblio/6910294
+
+Kaplan et al. (2020)
+
+Jared Kaplan, Sam McCandlish, Tom Henighan, Tom B. Brown, Benjamin Chess, Rewon Child, Scott Gray, Alec Radford, Jeffrey Wu, and Dario Amodei. 2020.
+
+Scaling Laws for Neural Language Models.
+
+arXiv:2001.08361 [cs.LG]
+
+https://arxiv.org/abs/2001.08361
+
+Karimi et al. (2021)
+
+Ahmad Maroof Karimi, Yinghui Wu, Mehmet Koyuturk, and Roger French. 2021.
+
+Spatiotemporal Graph Neural Network for Performance Prediction of Photovoltaic Power Systems.
+
+Proceedings of the AAAI Conference on Artificial Intelligence 35 (05 2021), 15323–15330.
+
+doi:10.1609/aaai.v35i17.17799
+
+Kashinath et al. (2021)
+
+K. Kashinath et al. 2021.
+
+Physics-informed machine learning: case studies for weather and climate modelling.
+
+Philosophical Transactions of the Royal Society A: Mathematical, Physical and Engineering Sciences (2021).
+
+arXiv:https://royalsocietypublishing.org/doi/pdf/10.1098/rsta.2020.0093
+doi:10.1098/rsta.2020.0093
+
+Kong et al. (2025)
+
+Weiyang Kong, Kaiqi Wu, Sen Zhang, and Yubao Liu. 2025.
+
+GraphSparseNet: a Novel Method for Large Scale Traffic Flow Prediction.
+
+arXiv:2502.19823 [cs.LG]
+
+https://arxiv.org/abs/2502.19823
+
+Krizhevsky (2014)
+
+Alex Krizhevsky. 2014.
+
+One weird trick for parallelizing convolutional neural networks.
+
+arXiv:1404.5997 [cs.NE]
+
+https://arxiv.org/abs/1404.5997
+
+Lecun et al. (1998)
+
+Y. Lecun, L. Bottou, Y. Bengio, and P. Haffner. 1998.
+
+Gradient-based learning applied to document recognition.
+
+Proc. IEEE 86, 11 (1998), 2278–2324.
+
+doi:10.1109/5.726791
+
+Lee et al. (2024)
+
+Claire Songhyun Lee, V. Hewes, Giuseppe Cerati, Kewei Wang, Adam Aurisano, Ankit Agrawal, Alok Choudhary, and Wei-Keng Liao. 2024.
+
+Addressing GPU memory limitations for Graph Neural Networks in High-Energy Physics applications.
+
+Frontiers in High Performance Computing 2 (2024).
+
+doi:10.3389/fhpcp.2024.1458674
+
+Li et al. (2021)
+
+Fuxian Li et al. 2021.
+
+Dynamic Graph Convolutional Recurrent Network for Traffic Prediction: Benchmark and Solution.
+
+arXiv:2104.14917 [cs.LG]
+
+Li et al. (2020)
+
+Shen Li et al. 2020.
+
+PyTorch distributed: experiences on accelerating data parallel training.
+
+Proc. VLDB Endow. 13, 12 (aug 2020), 3005–3018.
+
+doi:10.14778/3415478.3415530
+
+Li et al. (2023)
+
+Wei Li, Xi Zhan, Xin Liu, Lei Zhang, Yu Pan, and Zhisong Pan. 2023.
+
+SASTGCN: A Self-Adaptive Spatio-Temporal Graph Convolutional Network for Traffic Prediction.
+
+ISPRS International Journal of Geo-Information 12, 8 (2023).
+
+doi:10.3390/ijgi12080346
+
+Li et al. (2018)
+
+Yaguang Li et al. 2018.
+
+Diffusion Convolutional Recurrent Neural Network: Data-Driven Traffic Forecasting. In ICLR ’18.
+
+Lin et al. (2022)
+
+Haitao Lin, Zhangyang Gao, Yongjie Xu, Lirong Wu, Ling Li, and Stan Z. Li. 2022.
+
+Conditional Local Convolution for Spatio-Temporal Meteorological Forecasting.
+
+Proceedings of the AAAI Conference on Artificial Intelligence 36, 7 (Jun. 2022), 7470–7478.
+
+doi:10.1609/aaai.v36i7.20711
+
+Liu et al. (2024)
+
+Chenxi Liu, Sun Yang, Qianxiong Xu, Zhishuai Li, Cheng Long, Ziyue Li, and Rui Zhao. 2024.
+
+Spatial-Temporal Large Language Model for Traffic Prediction.
+
+arXiv:2401.10134 [cs.LG]
+
+https://arxiv.org/abs/2401.10134
+
+Mallick et al. (2020)
+
+Tanwi Mallick et al. 2020.
+
+Graph-Partitioning-Based Diffusion Convolutional Recurrent Neural Network for Large-Scale Traffic Forecasting.
+
+Transportation Research Record: Journal of the Transportation Research Board (2020).
+
+doi:10.1177/0361198120930010
+
+Meng et al. (2017)
+
+Qi Meng, Wei Chen, Yue Wang, Zhi-Ming Ma, and Tie-Yan Liu. 2017.
+
+Convergence Analysis of Distributed Stochastic Gradient Descent with Shuffling.
+
+arXiv:1709.10432 [stat.ML]
+
+https://arxiv.org/abs/1709.10432
+
+Meshram et al. (2021)
+
+Vishal Meshram et al. 2021.
+
+Machine learning in agriculture domain: A state-of-art survey.
+
+Artificial Intelligence in the Life Sciences (2021).
+
+doi:10.1016/j.ailsci.2021.100010
+
+Mhasawade et al. (2021)
+
+Vishwali Mhasawade, Yuan Zhao, and Rumi Chunara. 2021.
+
+Machine learning and algorithmic fairness in public and population health.
+
+Nature Machine Intelligence 3 (2021), 659 – 666.
+
+Mohammadiyeh and Neysiani (2023)
+
+Seyyed Ali Mohammadiyeh and Behzad Soleimani Neysiani. 2023.
+
+Analyzing and Improving Prediction of Spatiotemporal Signal Data Using Grid Search on Graph Convolutional Networks.
+
+2023 9th International Conference on Web Research (ICWR) (2023), 294–299.
+
+https://api.semanticscholar.org/CorpusID:259100915
+
+Nguyen et al. (2022)
+
+Truong Thao Nguyen, François Trahay, Jens Domke, Aleksandr Drozd, Emil Vatai, Jianwei Liao, Mohamed Wahib, and Balazs Gerofi. 2022.
+
+Why Globally Re-shuffle? Revisiting Data Shuffling in Large Scale Deep Learning. In 2022 IEEE International Parallel and Distributed Processing Symposium (IPDPS). 1085–1096.
+
+doi:10.1109/IPDPS53621.2022.00109
+
+Ockerman et al. (2023)
+
+Seth Ockerman, Zachary Klamer, and Brian Haab. 2023.
+
+Accelerating Biological Spatial Cluster Analysis with the Parallel Integral Image Technique.
+
+arXiv:2410.16291 [cs.CV]
+
+https://arxiv.org/abs/2410.16291
+
+of California ([n. d.])
+
+State of California. [n. d.].
+
+Caltrans Performance Measurement System (PeMS).
+
+data retrieved from PeMS, https://pems.dot.ca.gov.
+
+O’Gorman and Dwyer (2018)
+
+Paul A. O’Gorman and John G. Dwyer. 2018.
+
+Using Machine Learning to Parameterize Moist Convection: Potential for Modeling of Climate, Climate Change, and Extreme Events.
+
+Journal of Advances in Modeling Earth Systems 10, 10 (2018), 2548–2563.
+
+arXiv:https://agupubs.onlinelibrary.wiley.com/doi/pdf/10.1029/2018MS001351
+doi:10.1029/2018MS001351
+
+Olawade et al. (2023)
+
+David Olawade et al. 2023.
+
+Using artificial intelligence to improve public health: a narrative review.
+
+Frontiers in Public Health (10 2023).
+
+doi:10.3389/fpubh.2023.1196397
+
+OpenAI (2024)
+
+OpenAI. 2024.
+
+ChatGPT (v4).
+
+https://www.openai.com/chatgpt
+
+Radford et al. (2019)
+
+Alec Radford, Jeff Wu, Rewon Child, David Luan, Dario Amodei, and Ilya Sutskever. 2019.
+
+Language Models are Unsupervised Multitask Learners.
+
+https://api.semanticscholar.org/CorpusID:160025533
+
+Rajbhandari et al. (2020)
+
+Samyam Rajbhandari, Jeff Rasley, Olatunji Ruwase, and Yuxiong He. 2020.
+
+ZeRO: Memory Optimizations Toward Training Trillion Parameter Models.
+
+arXiv:1910.02054 [cs.LG]
+
+https://arxiv.org/abs/1910.02054
+
+Roy et al. (2021)
+
+Amit Roy, Kashob Kumar Roy, Amin Ahsan Ali, M Ashraful Amin, and AKM Mahbubur Rahman. 2021.
+
+SST-GNN: simplified spatio-temporal traffic forecasting model using graph neural network. In Advances in Knowledge Discovery and Data Mining: 25th Pacific-Asia Conference, PAKDD 2021, Virtual Event, May 11–14, 2021, Proceedings, Part III. Springer, 90–102.
+
+Rozemberczki et al. (2021a)
+
+Benedek Rozemberczki, Paul Scherer, Yixuan He, George Panagopoulos, Alexander Riedel, Maria Astefanoaei, Oliver Kiss, Ferenc Beres, Guzman Lopez, Nicolas Collignon, and Rik Sarkar. 2021a.
+
+PyTorch Geometric Temporal: Spatiotemporal Signal Processing with Neural Machine Learning Models. In Proceedings of the 30th ACM International Conference on Information and Knowledge Management. 4564–4573.
+
+Rozemberczki et al. (2021b)
+
+Benedek Rozemberczki, Paul Scherer, Oliver Kiss, Rik Sarkar, and Tamas Ferenci. 2021b.
+
+Chickenpox Cases in Hungary: a Benchmark Dataset for Spatiotemporal Signal Processing with Graph Neural Networks.
+
+arXiv:2102.08100 [cs.LG]
+
+https://arxiv.org/abs/2102.08100
+
+Rumelhart and McClelland (1987)
+
+David E. Rumelhart and James L. McClelland. 1987.
+
+Learning Internal Representations by Error Propagation.
+
+MIT Press, 318–362.
+
+Sahili and Awad (2023)
+
+Zahraa Al Sahili and Mariette Awad. 2023.
+
+Spatio-Temporal Graph Neural Networks: A Survey.
+
+arXiv:2301.10569 [cs.LG]
+
+https://arxiv.org/abs/2301.10569
+
+Shao et al. (2024)
+
+Yingxia Shao et al. 2024.
+
+Distributed Graph Neural Network Training: A Survey.
+
+ACM Comput. Surv. (apr 2024).
+
+doi:10.1145/3648358
+
+Shleifer et al. (2019)
+
+Sam Shleifer, Clara McCreery, and Vamsi Chitters. 2019.
+
+Incrementally Improving Graph WaveNet Performance on Traffic Prediction.
+
+arXiv:1912.07390 [eess.SP]
+
+https://arxiv.org/abs/1912.07390
+
+Singh and Singh (2020)
+
+Dalwinder Singh and Birmohan Singh. 2020.
+
+Investigating the impact of data normalization on classification performance.
+
+Applied Soft Computing 97 (2020), 105524.
+
+doi:10.1016/j.asoc.2019.105524
+
+Vaswani et al. (2023)
+
+Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N. Gomez, Lukasz Kaiser, and Illia Polosukhin. 2023.
+
+Attention Is All You Need.
+
+arXiv:1706.03762 [cs.CL]
+
+https://arxiv.org/abs/1706.03762
+
+Verdone et al. (2024)
+
+Alessio Verdone, Simone Scardapane, and Massimo Panella. 2024.
+
+Explainable Spatio-Temporal Graph Neural Networks for multi-site photovoltaic energy production.
+
+Applied Energy 353 (2024), 122151.
+
+doi:10.1016/j.apenergy.2023.122151
+
+Wan (2019)
+
+Xing Wan. 2019.
+
+Influence of feature scaling on convergence of gradient iterative algorithm.
+
+Journal of Physics: Conference Series 1213 (06 2019), 032021.
+
+doi:10.1088/1742-6596/1213/3/032021
+
+Wang et al. (2024)
+
+Binwu Wang, Pengkun Wang, Zhengyang Zhou, Zhe Zhao, Wei Xu, and Yang Wang. 2024.
+
+Make Bricks with a Little Straw: Large-Scale Spatio-Temporal Graph Learning with Restricted GPU-Memory Capacity. In Proceedings of the Thirty-Third International Joint Conference on Artificial Intelligence, IJCAI-24, Kate Larson (Ed.). International Joint Conferences on Artificial Intelligence Organization, 2388–2396.
+
+doi:10.24963/ijcai.2024/264
+
+Main Track.
+
+Wang et al. (2020)
+
+Minjie Wang et al. 2020.
+
+Deep Graph Library: A Graph-Centric, Highly-Performant Package for Graph Neural Networks.
+
+arXiv:1909.01315
+
+https://arxiv.org/abs/1909.01315
+
+Wolf et al. (2020)
+
+Thomas Wolf, Lysandre Debut, Victor Sanh, Julien Chaumond, Clement Delangue, Anthony Moi, Pierric Cistac, Tim Rault, Rémi Louf, Morgan Funtowicz, Joe Davison, Sam Shleifer, Patrick von Platen, Clara Ma, Yacine Jernite, Julien Plu, Canwen Xu, Teven Le Scao, Sylvain Gugger, Mariama Drame, Quentin Lhoest, and Alexander M. Rush. 2020.
+
+HuggingFace’s Transformers: State-of-the-art Natural Language Processing.
+
+arXiv:1910.03771 [cs.CL]
+
+https://arxiv.org/abs/1910.03771
+
+Wolfert et al. (2017)
+
+Sjaak Wolfert, Lan Ge, Cor Verdouw, and Marc-Jeroen Bogaardt. 2017.
+
+Big Data in Smart Farming – A review.
+
+Agricultural Systems (2017).
+
+doi:10.1016/j.agsy.2017.01.023
+
+Wu et al. (2019)
+
+Zonghan Wu, Shirui Pan, Guodong Long, Jing Jiang, and Chengqi Zhang. 2019.
+
+Graph wavenet for deep spatial-temporal graph modeling. In Proceedings of the 28th International Joint Conference on Artificial Intelligence (Macao, China) (IJCAI’19). AAAI Press, 1907–1913.
+
+Ye et al. (2022)
+
+Junchen Ye, Zihan Liu, Bowen Du, Leilei Sun, Weimiao Li, Yanjie Fu, and Hui Xiong. 2022.
+
+Learning the Evolutionary and Multi-Scale Graph Structure for Multivariate Time Series Forecasting. In Proceedings of the 28th ACM SIGKDD Conference on Knowledge Discovery and Data Mining (Washington DC, USA) (KDD ’22). Association for Computing Machinery, New York, NY, USA, 2296–2306.
+
+doi:10.1145/3534678.3539274
+
+You et al. (2017)
+
+Yang You, Igor Gitman, and Boris Ginsburg. 2017.
+
+Large Batch Training of Convolutional Networks.
+
+arXiv:1708.03888 [cs.CV]
+
+https://arxiv.org/abs/1708.03888
+
+Yu et al. (2018)
+
+Bing Yu, Haoteng Yin, and Zhanxing Zhu. 2018.
+
+Spatio-Temporal Graph Convolutional Networks: A Deep Learning Framework for Traffic Forecasting. In Proceedings of the Twenty-Seventh International Joint Conference on Artificial Intelligence (IJCAI-2018).
+
+doi:10.24963/ijcai.2018/505
+
+Zhao et al. (2020)
+
+Ling Zhao, Yujiao Song, Chao Zhang, Yu Liu, Pu Wang, Tao Lin, Min Deng, and Haifeng Li. 2020.
+
+T-GCN: A Temporal Graph Convolutional Network for Traffic Prediction.
+
+IEEE Transactions on Intelligent Transportation Systems 21 (2020), 3848–3858.
+
+Issue 9.
+doi:10.1109/TITS.2019.2935152
+
+Zheng et al. (2020)
+
+Da Zheng et al. 2020.
+
+DistDGL: Distributed Graph Neural Network Training for Billion-Scale Graphs. In 2020 IEEE/ACM 10th Workshop on Irregular Applications: Architectures and Algorithms.
+
+doi:10.1109/IA351965.2020.00011
+
+Zhou et al. (2023)
+
+Hongkuan Zhou, Da Zheng, Xiang Song, George Karypis, and Viktor Prasanna. 2023.
+
+DistTGL: Distributed Memory-Based Temporal Graph Neural Network Training. In Proceedings of the International Conference for High Performance Computing, Networking, Storage and Analysis (Denver, CO, USA) (SC ’23). Association for Computing Machinery, New York, NY, USA, Article 39, 12 pages.
+
+doi:10.1145/3581784.3607056
+
+Zhu et al. (2020)
+
+Jiawei Zhu, Yujiao Song, Ling Zhao, and Haifeng Li. 2020.
+
+A3T-GCN: Attention Temporal Graph Convolutional Network for Traffic Forecasting.
+
+arXiv:2006.11583 [cs.LG]
+
+https://arxiv.org/abs/2006.11583
+
+Zhu et al. (2021)
+
+Jiawei Zhu, Qiongjie Wang, Chao Tao, Hanhan Deng, Ling Zhao, and Haifeng Li. 2021.
+
+AST-GCN: Attribute-Augmented Spatiotemporal Graph Convolutional Network for Traffic Forecasting.
+
+IEEE Access 9 (2021), 35973–35983.
+
+doi:10.1109/ACCESS.2021.3062114
+
+Zuo et al. (2022)
+
+Jingwei Zuo, Karine Zeitouni, Yehia Taher, and Sandra Garcia-Rodriguez. 2022.
+
+Graph Convolutional Networks for Traffic Forecasting with Missing Values.
+
+arXiv:2212.06419 [cs.LG]
+
+https://arxiv.org/abs/2212.06419
+
+    Experimental support, please
+    view the build logs
+    for errors. Generated by
+
+        L
+        A
+        T
+        E
+
+      xml
+
+    .
+
+Instructions for reporting errors
+
+We are continuing to improve HTML versions of papers, and your feedback helps enhance accessibility and mobile
+      support. To report errors in the HTML that will help us improve conversion and rendering, choose any of the
+      methods listed below:
+
+Click the "Report Issue" (
+
+          ) button, located in the page header.
+
+Tip: You can select the relevant text first, to include it in your report.
+
+Our team has already identified the following issues. We appreciate your time reviewing and reporting rendering errors we
+      may not have found yet. Your efforts will help us improve the HTML versions for all readers, because disability
+      should not be a barrier to accessing research. Thank you for your continued support in championing open access for
+      all.
+
+Have a free development cycle? Help support accessibility at arXiv! Our collaborators at LaTeXML maintain a list of packages that need conversion, and welcome developer contributions.
+
+        We gratefully acknowledge support from
+        our major funders,
+        member institutions, ,
+        and all contributors.
+
+        About
+        ·
+        Help
+        ·
+        Contact
+        ·
+        Subscribe
+        ·
+        Copyright
+        ·
+        Privacy
+        ·
+        Accessibility
+        ·
+        Operational Status (opens in new tab)
+
+Major funding support from

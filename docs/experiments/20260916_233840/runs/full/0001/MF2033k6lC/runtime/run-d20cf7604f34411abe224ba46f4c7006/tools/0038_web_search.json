@@ -1,0 +1,561 @@
+{
+  "agent_arguments": {
+    "query": "Sketch-DBH graph stream partitioning"
+  },
+  "agent_tool_call_id": "01a0aaad898d1dfa7374b0f43803feab",
+  "business_status": "NORMAL",
+  "duration": 0.937637,
+  "duration_ms": 937,
+  "error": null,
+  "execution_status": "SUCCESS",
+  "failure_phase": null,
+  "finished_at": "2026-09-16T14:44:55.863825+00:00",
+  "normalized_result": {
+    "query": "Sketch-DBH graph stream partitioning",
+    "results": [
+      {
+        "published_at": "2020-06-30T23:02:01",
+        "snippet": "图流划分 图流划分(streaming graph partition, SGP)问题是图划分问题的一个新的衍生。与传统图划分算法相比,图流划分算法不在执行划分算法的计算机上存储完整的图,而是对持续不断地读入的边或者点进行实时划分。这些读入的点或边可以源自 计算机集群 的硬盘,或者是直接从数据源获取的 动态数据 。由于不需要在单机上存储完整的图数据,图流划分算法相比传统图划分算法,可以应用于更大规模的图,同时具有 时间复杂度 低,可以处理动态数据的优势。但是由于其缺少完整的图数据,图流划分的难度更大,而且划分效果往往略差于传统图划分算法。 根据划分方式,图流划分同样可以分为点划分与边划分两种,二者使用的数据模型有所区别。点划分使用点流 (vertex stream)模型,每次读入的数据项为一个点及其完整的邻接列表。而边划分则使用边流(edge stream)模型,每次读入的数据项为一条单独的边。",
+        "source_name": "知乎",
+        "source_record_id": "src_950f101bd0f30a986e9ded23",
+        "title": "图流划分算法综述",
+        "url": "https://zhuanlan.zhihu.com/p/152221150"
+      },
+      {
+        "published_at": "2026-07-21T09:22:18",
+        "snippet": "5进 2 筛选 美观vs 严谨 一次乌龙插曲 最终选型 我前两天在做一个标书,里面要配一堆图,流程图、鱼骨图、架构图,七八张。 以前我会打开 Visio 一个箭头一个箭头拖。现在Claude Code和Codex都支持挂载「Skill」,你跟它说一句话,它就能直接生成一张完整的技术图。 但GitHub上做这个方向的开源 Skill 一大把,到底哪个好使? 我把GitHub 上星星比较多的 5 个图表生成 Skill 全拉到 Tabbit 里做了一轮筛选,挑出两个进入实测。条件很公平,同一篇 Word 文档、同一句提示词、同一个模型(MiniMax M3),分别让两个 Skill 给文章配图并生成新版 Word。 结论直接给你。 ››› 五个选手速览 ” LINEUP · 5 进 2 TOOL 1 Archify(2.6k star) HTML/SVG 架构图,美观但只做英文、图类型有限。 TOOL 2 Cocoon-AI(6.3k star) 专做架构图的 HTML 渲染,就一种图类型。 TOOL 3 fireworks-tech-graph(8.3k star) HTML 渲染 SVG 转 PNG,14+ 图类型,中文友好,有连线碰撞检测。 TOOL 4 drawio-skill(5.4k star) 生成.drawio 文件走 CLI 渲染,图类型最全,连线纠错最完整。 TOOL 5 paper-craft-skills(785 star) 面向学术论文做方法示意图的,和通用配图不搭边。 五个里面,fireworks 和 drawio是唯二同时满足「中文友好 + 多图类型 + 有质量校验」的。其余三个要么只做英文,要么就一种图。 所以最终进入实测的就是这两位。",
+        "source_name": "Tencent腾讯（腾讯官方网）",
+        "source_record_id": "src_1f3f7be1e867f3e0bd467a9a",
+        "title": "GitHub上5个架构图Skill,我实测完只推荐这两个",
+        "url": "https://cloud.tencent.com/developer/article/2712880"
+      },
+      {
+        "published_at": "2022-08-20T10:07:00",
+        "snippet": "1. 简介 图分割是将一个大图均匀的分成一系列的子图去适应分布式应用,每个子图存储在一台机器上,子图之间可以并行化执行,如果当前子图需要其他子图的信息就需要通讯开销,而 图分割 的质量影响着每台机器存储代价和机器之间通讯代价。 粗略地按照分割的内存开销大小分类,可以分为离线offline和流式streaming两类分割算法 [1]。offline是将整个图数据一次性载入内存中然后根据图的结构进行切分;streaming是按批次读取图数据,实时的将图的边或者结点分配到指定的子图中。对于大规模图数据来说,单机的内存无法满足分割算法的需求这个时候 流式分割 显得尤为重要。 按照对图数据的切分方式分类,可以分为点分割(vertext partitioning or edge-cut partitioning)和边分割(edge partitioning or vertex-cut partitioning)。如图1所示,点分割是将图的结点分配到各个子图中,维持结点之间子图的完整性,这个时候可能造成某些结点之间的边被切掉(edge-cut); 同理边分割 是将图的边分配到各个子图中,每组分配的边构成子图,这个时候造成某些结点的冗余(vertex-cut)。对于服从 幂律分布 power-law的图数据,某些结点的边可能特别多,如果执行点分割会造成大量边的缺失以及边的负载不均匀;而边分割可以处理这类问题。[2] 图1 点分割(左)和边分割(右)的示例 图分割的两个目标是负载均衡load balancing(减少存储代价)和最小化切边或点minimum cuts(减少通讯代价),同时优化这两个目标是 平衡图分割 (balanced graph partitioning)问题,这是一个NP难的问题[2]。通常情况下松弛为优化load balancing的同时尽可能保证minimum cuts。给定一个图  G = ( V , E ) 包含 | E | 条边和 | V | 个顶点,将它分割成  k 份, 点分割表示如下: m a x i ∈ [ 1 , k ] | V i | ≤ ( 1 +",
+        "source_name": "知乎",
+        "source_record_id": "src_1e87d52fca57eaa48d9f5c04",
+        "title": "图分割Graph Partitioning技术总结",
+        "url": "https://zhuanlan.zhihu.com/p/446152634"
+      },
+      {
+        "published_at": "2026-07-24T22:57:43",
+        "snippet": "Software Development  Online database entity-relationship diagram editor and SQL generator About us  drawDB is a robust and user-friendly database entity relationship (DBER) editor right in your browser. Build diagrams with a few clicks, export sql scripts, customize your editor, and more without creating an account.  Website  https://www.drawdb.app  Industry  Software Development  Company size  1 employee  Type  Nonprofit  Updates  drawDB  1,865 followers  3w  Introducing drawDB Pro 🚀 A database diagram shouldn’t become a static artifact that gets forgotten once development begins. It should remain useful from initial design through implementation. With drawDB Pro, you can: → Design or import schemas visually → Review designs with AI → Connect coding agents through MCP → Share and collaborate with your team → Save diagrams in the cloud ... and much more Try drawDB Pro now at https://www.drawdb.app/ Star the open-source editor: https://lnkd.in/eTjCyj6X How do you keep your database designs connected to implementation? #DatabaseDesign #DeveloperTools #OpenSource #MCP #Databases",
+        "source_name": "领英网",
+        "source_record_id": "src_1a3330cf81e2c9484ab1b72c",
+        "title": "drawDB",
+        "url": "https://www.linkedin.com/company/drawdb"
+      },
+      {
+        "published_at": "2026-09-09T09:05:49",
+        "snippet": "1. 项目概述:从“diagram-design”标题看一个被严重低估的前端可视化基建能力 “diagram-design”这四个字乍看像一个模糊的开发任务描述,甚至可能被误认为是某个UI设计稿的命名。但结合热搜词里反复出现的SVG、HTML、Claude Code、ant design vue、cesium 加载 svg、地图json转svg地图这些关键词,我立刻意识到——这不是在聊PPT画图,而是在讨论一套可编程、可嵌入、可交互、可工程化交付的矢量图表生成与渲染体系。它横跨前端工程、图形学基础、设计系统集成和地理空间可视化多个维度,是当前中后台系统、工业监控平台、GIS应用、电路仿真工具链里真正卡脖子的“最后一公里”能力。 我做过6个大型可视化中台项目,其中4个在交付阶段被客户反复追问:“这个流程图能不能双击跳转?连线能不能拖拽重连?节点样式能不能按状态自动变色?导出PDF时文字会不会糊?”——所有这些问题,最终都收束到同一个底层能力上:不是用Canvas画一堆像素,而是用SVG构建一套语义化的、结构可读、行为可控、样式可继承的 diagram DSL(领域特定语言)。而“diagram-design”正是这个DSL的设计入口:它不单指“画图”,更指定义图元语义、约束连接逻辑、绑定数据映射、声明交互响应、统一导出策略这一整套设计契约。 你可能正在用ant design vue写管理后台,发现内置的Tree或Steps组件根本无法表达复杂的审批流分支;也可能在用Cesium做三维地理场景,想把管线拓扑图叠加到倾斜摄影模型上,却发现网页里贴PNG图会糊、用Canvas又没法缩放不失真;还可能在调试PCB设计文档的EMC合规性报告,需要把原理图中的信号路径高亮标注并导出为印刷级矢量图——这些场景背后,全依赖一套健壮的 diagram-design 能力。它不是炫技,而是让图表从“静态展示物”变成“可编程界面元素”的关键跃迁。 这套能力的核心价值,在于它打破了传统设计与开发之间的“交付鸿沟”。设计师给的Sketch文件里,连线只是贝塞尔曲线;而真正的 diagram-design 必须让这条线具备“source: nodeA, target: nodeB, type: 'data-flow', status: 'pending'”这样的结构化属性。当Claude Code这类AI辅助工具介入时,它能直接理解“生成一个带3个输入节点、2个处理节点、1个输出节点的FMEA分析图”,而不是生成一张不可编辑的PNG。这才是“design complier”这个词突然火起来的本质:人们开始期待设计稿本身就能被编译成可运行、可调试、可测试的前端代码模块。 所以,如果你正被以下问题困扰,这篇内容就是为你写的:",
+        "source_name": "CSDN软件开发网",
+        "source_record_id": "src_b375279fc15ff67c0d8fd650",
+        "title": "diagram-design:基于SVG的可编程图表DSL设计与实现",
+        "url": "https://blog.csdn.net/weixin_32050773/article/details/164779577"
+      },
+      {
+        "published_at": "2021-12-24T13:23:35",
+        "snippet": "1 数据库核心:数据结构 首先介绍一个世界上最简单的数据库,其通过两个 Bash 函数实现: 代码语言: javascript AI代码解释 #!/bin/bash db_set ( ) { echo \"$1,$2\" >> database } db_get ( ) { grep \"^$1,\" database | sed - e \"s/^$1,//\" | tail - n 1 } 这两个函数实现了一个 key-value 存储。当调用 db_set key value 时,它将在数据库中保存所输入的 key 和 value ;然后,调用 db_get key ,它会查找与输入 key 相关联的最新值并返回。例如: 代码语言: $ db_set 123456 '{\"name\":\"London\",\"attractions\":[\"Big Ben\",\"London Eye\"]}' $ db_set 42 '{\"name\":\"San Francisco\",\"attractions\":[\"Golden Gate Bridge\"]}' $ db_set 42 '{\"name\":\"San Francisco\",\"attractions\":[\"Exploratorium\"]}' $ db_get 42 { \"name\" : \"San Francisco\" , \"attractions\" : [ \"Exploratorium\" ] } $ cat database 123456 , { \"name\" : \"London\" , \"attractions\" : [ \"Big Ben\" , \"London Eye\" ] } 42 , { \"name\" : \"San Francisco\" , \"attractions\" : [ \"Golden Gate Bridge\" ] } 42 , { \"name\" : \"San Francisco\" , \"attractions\" : [ \"Exploratorium\" ] } 该数据库的底层存储格式非常简单:一个 「纯文本」 文件,其中每行包含一个 key-value 对,用逗号分隔(与 CSV 文件类似,忽略转义问题)。每次调用 db_set 文件将追加新内容到文件末尾,即便多次更新某个键,旧版本的值也不会被覆盖,而是需要查看文件中 「最后一次」 出现的键来找到最新的值(在 db_get 中使用了 tail -n 1 )。 追加文件尾部方式的 「优点」 在于其非常高效,使得 db_set 函数的性能很好。当前许多数据库内部都使用了与这种方式的基本原理相同的 「日志」 (log),其是一个仅支持追加式更新的数据文件。另一方面,这种方式的 「缺点」 在于,如果 日志文件 保存了大量的记录,那么 db_get 函数的性能会非常差,每一次查询都需要从头到尾扫",
+        "source_name": "Tencent腾讯（腾讯官方网）",
+        "source_record_id": "src_4ecb439db443951c9cc6d59f",
+        "title": "《数据密集型应用系统设计》读书笔记(三)",
+        "url": "https://cloud.tencent.com/developer/article/1924265"
+      },
+      {
+        "published_at": "2026-06-13T09:25:20",
+        "snippet": "1. 这不是简单的“GROUP BY”——多维聚合中的数据变形术到底在解决什么问题? 你有没有遇到过这样的场景:销售部门要按“地区+产品线+季度”三个维度看营收,同时还要对比去年同期、计算环比增长率、标记是否达成KPI阈值;财务系统需要把千万级订单明细,实时聚合成“客户等级×支付方式×退款状态”的交叉报表,且每格单元格里还得嵌套显示平均客单价、订单数、退货率三个指标;BI看板上一个下拉筛选器切换“城市”,背后却要动态重算27个不同口径的衍生指标——从用户留存率到LTV预测误差带。这些都不是单表GROUP BY能扛住的。多维聚合(Multi-Dimensional Aggregation)的本质,是让数据在多个正交坐标轴上同时坍缩、重组、再投影的过程,而DataManipulation(数据变形)就是驱动这场坍缩的底层引擎。它不只关乎“怎么算”,更决定“算得准不准”、“算得快不快”、“算得活不活”。我做过6个跨行业OLAP项目,发现83%的性能瓶颈和47%的业务逻辑错误,根源不在SQL写法,而在聚合前的数据预处理环节——比如时间粒度对齐时忽略夏令时偏移、分类字段空值未做统一映射、数值型指标混入文本型异常值却未清洗。这篇内容聚焦Part 20这个关键节点,拆解如何在真实生产环境中,用结构化思维而非碎片化技巧,完成多维聚合前的数据变形。适合正在搭建分析平台的工程师、需要交付复杂报表的数据分析师,以及被“明明SQL没错但结果总差5%”折磨的产品经理。核心关键词已自然嵌入:Multi-Dimensional Aggregation、Data Manipulation、维度对齐、指标派生、空值治理、聚合粒度控制。 2. 整体设计思路:为什么必须把“变形”前置到聚合之前? 2.1 传统流程的致命陷阱:先聚合再修正,等于在流沙上盖楼 很多团队默认采用“原始数据→直接GROUP BY→后处理修正”的三段式流程。表面看逻辑清晰,实则埋下三颗雷: 第一颗雷:空值爆炸。当region字段存在NULL、'Unknown'、''三种空值形态时,若直接GROUP BY region, product_line,数据库会把它们拆成三组独立聚合结果。后续想合并?得写CASE WHEN region IN ('Unknown', '') OR region IS NULL THEN 'Other' ELSE region END,但此时聚合已发生,SUM(sales)、COUNT(*)等指标已被错误分组污染,修正只能靠二次扫描全量数据,I/O成本翻倍。 第二颗雷:时间粒度撕裂。订单表里order_time是精确到毫秒的TIMESTAMP,但业务要求按“自然周”统计。",
+        "source_name": "CSDN软件开发网",
+        "source_record_id": "src_f494e078a8cae616640c4ae5",
+        "title": "多维聚合前的数据变形:维度对齐、指标派生与空值治理-CSDN博客",
+        "url": "https://blog.csdn.net/aikunjiao3421/article/details/101971057"
+      },
+      {
+        "published_at": "2024-09-25T12:21:00",
+        "snippet": "在概念性地讨论了Graph RAG之后,让我们将其投入生产。这是如何将GraphRAG投入生产的方法:完全采用无服务器架构,完全并行化以最小化推理和索引时间,并且永远不需要接触图数据库(保证!)。 在本文中,我将向您介绍graphrag-lite,这是一个端到端的Graph RAG数据摄入和查询实现。我将graphrag-lite作为一个开源项目发布,以使您在GCP上部署graphrag时更加轻松。graphrag-lite是专门为Google Cloud设计的,开箱即用。代码采用模块化设计,可根据您的选择进行调整。 检索增强生成本身尚未描述任何特定的架构或方法。它仅描述了使用任意检索方法增强给定生成任务的过程。原始的RAG论文(由Lewis等人撰写的《检索增强生成在知识密集型NLP任务中的应用》(Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks))比较了双塔嵌入方法与词袋检索方法。 现代的问答系统能够区分本地和全局问题。在一个非结构化的知识库中,一个本地(提取型)问题可能是“2023年诺贝尔和平奖得主是谁?”而一个全局(聚合型)问题可能是“你知道最近的诺贝尔奖得主有哪些?”text2embedding RAG在处理全局和结构化问题时存在明显不足。而Graph RAG可以弥补这些不足,并且做得很好!通过一个抽象层,它学习了知识图谱社区的语义。这构建了一个对索引数据集更“全局”的理解。这里有一篇概念性介绍Graph RAG的文章可以阅读。 Graph RAG 管道 一个Graph RAG 管道通常会遵循以下步骤: 图提取 这是主要的导入步骤。您的LLM会使用一个提示来扫描每一份传入的文档,以提取我们知识图谱的相关节点和边。您需要多次迭代这个提示,以确保捕获所有相关信息。 图存储 你将提取的节点和边存储在你选择的数据存储中。专用的图数据库是一个选项,但它们通常比较繁琐。Graph2nosql 是一个基于 Python 的接口,用于在 Firestore 或任何其他 NoSQL 数据库中存储和管理知识图谱。我开源了这个项目,因为我没有在市场上找到任何其他类似的知识图谱原生选项。 社区检测 一旦你存储了知识图谱数据,你将使用社区检测算法来识别那些在彼此之间比在图的其余部分更紧密连接的节点组。在知识图谱的背景下,假设密集的社区涵盖了共同的主题。 社区报告生成 然后你指示你的LLM为每个图社区生成一份报告。这些社区报告有助于抽象出单一主题,从而把握数据集中的更广泛、全局的概念。",
+        "source_name": "慕课网",
+        "source_record_id": "src_3cae2cdceb14fb819ec76d78",
+        "title": "Graph RAG 生产部署指南 — 一步一步详解",
+        "url": "https://www.imooc.com/article/358403"
+      },
+      {
+        "published_at": "2024-06-13T11:31:00",
+        "snippet": "【论文翻译】-- Omnisketch:高效的多维任意谓词高速流分析 兮尔 在这里插入图片描述 在这里插入图片描述 摘要 不同学科的一个关键需求是对快节奏的 数据流 执行分析,其性质类似于 关系数据库 中的传统 OLAP 分析,即使用过滤器和聚合。然而,由于存储要求高,以及存储海量数据时引入的延迟,存储 无界流 不是一种现实或理想的方法。因此,已经提出了许多概要/草图,它们可以在小内存(通常足够小以存储在RAM中)中总结流,这样就可以有效地近似 聚合查询 ,而无需存储整个流。然而,过去的概要主要关注对单一 属性流 的总结,无法有效地处理对多个属性的任意子集进行过滤和约束。在这项工作中,我们提出了 OmniSketch ,这是第一个能够适应快节奏和复杂数据流(具有许多属性)的草图,并支持在查询时动态选择多个属性的过滤器的 计数聚合 。该草图提供概率保证、有利的空间精度权衡以及更新和查询执行的最坏情况下的对数复杂度。我们通过对真实和 合成数据 的实验证明,该草图优于最先进的技术,并且可以在配置好的精度保证下,以较小的内存需求近似复杂的临时查询。 PVLDB 参考格式:Wieger R. Punter, Odysseas Papapetrou, and Minos Garofalakis. OmniSketch: Efficient Multi-Dimensional High-Velocity Stream Analytics with Arbitrary Predicates. PVLDB, 17(3): 319 - 331, 2023. doi:10.14778/3632093.3632098 PVLDB 工件可用性: 源代码 、数据和/或其他工件已在 https://github.com/wiegerpunter/omnisketch上提供。",
+        "source_name": "知乎",
+        "source_record_id": "src_e93908335d5998db41869d64",
+        "title": "【论文翻译】-- Omnisketch:高效的多维任意谓词高速流分析",
+        "url": "https://zhuanlan.zhihu.com/p/703137121"
+      },
+      {
+        "published_at": "2020-11-20T14:13:41",
+        "snippet": "1. 开源项目名称:Picasso 2. github地址:https://github.com/wuba/Picasso 3. 简介:Picasso是58同城推出的一款sketch设计稿智能解析工具,可将sketch设计稿自动解析成还原精准,可用度高的前端代码;从而提高前端开发效率,助力业务快速发展。 Picasso于2020年9月份开源,具备以下特点: UI还原度高,设计稿还原精准。 生成代码可用度高,可维护性好。 解析工具使用方便、操作简单,完全自动化解析。 针对不同的应用场景,提供运营版和普通版两种模式。 支持导出多种尺寸(1倍 1.5倍 2倍 3倍)图片,满足不同屏幕尺寸适配需求。 项目背景UI自动化已经成为当前行业研究的趋势,各大公司都在进行相关方向的研究,sketch设计稿存储的是结构化数据,这给我们进行UI自动化解析生成代码提供了契机;为了提升前端开发效率,减少页面重构的工作,甚至某些场景下完全自动化生成代码,Picasso智能解析工具应运而生。 核心设计Picasso的核心解析流程主要包括Symbol解析、图层重构、属性解析、布局处理。 1. Symbol解析 1). Symbol模块整合 设计稿源文件中包含以下两个json文件:Page页面json和Symbol模块json。 我们通过SymbolID的引用关系来推导出模块之间的依赖关系,将symbol模块json整合到各个Page页面json中,便于后续的解析。 2). Symbol模块传参 参数只作用于其子Symbol模块。 相同参数传值:外层(父父级)参数值的权重高于内层(父级)。 3). Symbol模块缩放 根据SymbolInstance和SymbolMaster的尺寸比例,等比例转换symbolMaster的坐标尺寸,作为实例SymbolInstance的坐标尺寸。 通过对Symbol的解析,我们得了一个包含页面重构所需的完整信息的json。 2. 图层重构图层重构主要包含五个步骤,如下图: 第一步. 去掉分组 由于UI设计师并不了解前端的布局习惯,他们对图层进行的分组,往往和前端期望的结果差别较大,几乎不可用;看下这张设计稿: 该设计稿的原始分组如下: 前端开发期望的分组如下: 因此,我们需要去掉设计稿中已有的分组,在后续的流程中进行重新分组。第二步. 分层 UI设计稿中经常会出现多层重叠的结构,例如弹层,吸底栏等;这时候需要我们进行分层处理,然后再对每层进行单独处理。 第三步. 重新排序和组合 UI设计稿主要专注于视觉效果,对设计稿中图层的顺序没有特别的要求,这就造成我们拿到的设计稿中图层的顺序是混乱的。 通过我们的排序算法,将图层的按照从左上到右下的顺序排列,如此同时处理图层之间的父子关系,优化后的顺序如下:",
+        "source_name": "知乎",
+        "source_record_id": "src_bf1a72b7da03163d09cf6218",
+        "title": "开源| Picasso:sketch设计稿智能解析工具",
+        "url": "https://zhuanlan.zhihu.com/p/258458827"
+      }
+    ],
+    "succeeded": true,
+    "summary": "发现并保存 10 个 Web 候选来源",
+    "warnings": []
+  },
+  "raw_result": {
+    "arguments": {
+      "max_results": 10,
+      "query": "Sketch-DBH graph stream partitioning"
+    },
+    "elapsed_ms": 937,
+    "error": null,
+    "payload": {
+      "search_result": {
+        "query": "Sketch-DBH graph stream partitioning",
+        "results": [
+          {
+            "published_at": "2020-06-30T23:02:01",
+            "rank": 1,
+            "score": null,
+            "snippet": "图流划分 图流划分(streaming graph partition, SGP)问题是图划分问题的一个新的衍生。与传统图划分算法相比,图流划分算法不在执行划分算法的计算机上存储完整的图,而是对持续不断地读入的边或者点进行实时划分。这些读入的点或边可以源自 计算机集群 的硬盘,或者是直接从数据源获取的 动态数据 。由于不需要在单机上存储完整的图数据,图流划分算法相比传统图划分算法,可以应用于更大规模的图,同时具有 时间复杂度 低,可以处理动态数据的优势。但是由于其缺少完整的图数据,图流划分的难度更大,而且划分效果往往略差于传统图划分算法。 根据划分方式,图流划分同样可以分为点划分与边划分两种,二者使用的数据模型有所区别。点划分使用点流 (vertex stream)模型,每次读入的数据项为一个点及其完整的邻接列表。而边划分则使用边流(edge stream)模型,每次读入的数据项为一条单独的边。",
+            "source_name": "知乎",
+            "source_record_id": "src_950f101bd0f30a986e9ded23",
+            "title": "图流划分算法综述",
+            "url": "https://zhuanlan.zhihu.com/p/152221150"
+          },
+          {
+            "published_at": "2026-07-21T09:22:18",
+            "rank": 2,
+            "score": null,
+            "snippet": "5进 2 筛选 美观vs 严谨 一次乌龙插曲 最终选型 我前两天在做一个标书,里面要配一堆图,流程图、鱼骨图、架构图,七八张。 以前我会打开 Visio 一个箭头一个箭头拖。现在Claude Code和Codex都支持挂载「Skill」,你跟它说一句话,它就能直接生成一张完整的技术图。 但GitHub上做这个方向的开源 Skill 一大把,到底哪个好使? 我把GitHub 上星星比较多的 5 个图表生成 Skill 全拉到 Tabbit 里做了一轮筛选,挑出两个进入实测。条件很公平,同一篇 Word 文档、同一句提示词、同一个模型(MiniMax M3),分别让两个 Skill 给文章配图并生成新版 Word。 结论直接给你。 ››› 五个选手速览 ” LINEUP · 5 进 2 TOOL 1 Archify(2.6k star) HTML/SVG 架构图,美观但只做英文、图类型有限。 TOOL 2 Cocoon-AI(6.3k star) 专做架构图的 HTML 渲染,就一种图类型。 TOOL 3 fireworks-tech-graph(8.3k star) HTML 渲染 SVG 转 PNG,14+ 图类型,中文友好,有连线碰撞检测。 TOOL 4 drawio-skill(5.4k star) 生成.drawio 文件走 CLI 渲染,图类型最全,连线纠错最完整。 TOOL 5 paper-craft-skills(785 star) 面向学术论文做方法示意图的,和通用配图不搭边。 五个里面,fireworks 和 drawio是唯二同时满足「中文友好 + 多图类型 + 有质量校验」的。其余三个要么只做英文,要么就一种图。 所以最终进入实测的就是这两位。",
+            "source_name": "Tencent腾讯（腾讯官方网）",
+            "source_record_id": "src_1f3f7be1e867f3e0bd467a9a",
+            "title": "GitHub上5个架构图Skill,我实测完只推荐这两个",
+            "url": "https://cloud.tencent.com/developer/article/2712880"
+          },
+          {
+            "published_at": "2022-08-20T10:07:00",
+            "rank": 3,
+            "score": null,
+            "snippet": "1. 简介 图分割是将一个大图均匀的分成一系列的子图去适应分布式应用,每个子图存储在一台机器上,子图之间可以并行化执行,如果当前子图需要其他子图的信息就需要通讯开销,而 图分割 的质量影响着每台机器存储代价和机器之间通讯代价。 粗略地按照分割的内存开销大小分类,可以分为离线offline和流式streaming两类分割算法 [1]。offline是将整个图数据一次性载入内存中然后根据图的结构进行切分;streaming是按批次读取图数据,实时的将图的边或者结点分配到指定的子图中。对于大规模图数据来说,单机的内存无法满足分割算法的需求这个时候 流式分割 显得尤为重要。 按照对图数据的切分方式分类,可以分为点分割(vertext partitioning or edge-cut partitioning)和边分割(edge partitioning or vertex-cut partitioning)。如图1所示,点分割是将图的结点分配到各个子图中,维持结点之间子图的完整性,这个时候可能造成某些结点之间的边被切掉(edge-cut); 同理边分割 是将图的边分配到各个子图中,每组分配的边构成子图,这个时候造成某些结点的冗余(vertex-cut)。对于服从 幂律分布 power-law的图数据,某些结点的边可能特别多,如果执行点分割会造成大量边的缺失以及边的负载不均匀;而边分割可以处理这类问题。[2] 图1 点分割(左)和边分割(右)的示例 图分割的两个目标是负载均衡load balancing(减少存储代价)和最小化切边或点minimum cuts(减少通讯代价),同时优化这两个目标是 平衡图分割 (balanced graph partitioning)问题,这是一个NP难的问题[2]。通常情况下松弛为优化load balancing的同时尽可能保证minimum cuts。给定一个图  G = ( V , E ) 包含 | E | 条边和 | V | 个顶点,将它分割成  k 份, 点分割表示如下: m a x i ∈ [ 1 , k ] | V i | ≤ ( 1 +",
+            "source_name": "知乎",
+            "source_record_id": "src_1e87d52fca57eaa48d9f5c04",
+            "title": "图分割Graph Partitioning技术总结",
+            "url": "https://zhuanlan.zhihu.com/p/446152634"
+          },
+          {
+            "published_at": "2026-07-24T22:57:43",
+            "rank": 4,
+            "score": null,
+            "snippet": "Software Development  Online database entity-relationship diagram editor and SQL generator About us  drawDB is a robust and user-friendly database entity relationship (DBER) editor right in your browser. Build diagrams with a few clicks, export sql scripts, customize your editor, and more without creating an account.  Website  https://www.drawdb.app  Industry  Software Development  Company size  1 employee  Type  Nonprofit  Updates  drawDB  1,865 followers  3w  Introducing drawDB Pro 🚀 A database diagram shouldn’t become a static artifact that gets forgotten once development begins. It should remain useful from initial design through implementation. With drawDB Pro, you can: → Design or import schemas visually → Review designs with AI → Connect coding agents through MCP → Share and collaborate with your team → Save diagrams in the cloud ... and much more Try drawDB Pro now at https://www.drawdb.app/ Star the open-source editor: https://lnkd.in/eTjCyj6X How do you keep your database designs connected to implementation? #DatabaseDesign #DeveloperTools #OpenSource #MCP #Databases",
+            "source_name": "领英网",
+            "source_record_id": "src_1a3330cf81e2c9484ab1b72c",
+            "title": "drawDB",
+            "url": "https://www.linkedin.com/company/drawdb"
+          },
+          {
+            "published_at": "2026-09-09T09:05:49",
+            "rank": 5,
+            "score": null,
+            "snippet": "1. 项目概述:从“diagram-design”标题看一个被严重低估的前端可视化基建能力 “diagram-design”这四个字乍看像一个模糊的开发任务描述,甚至可能被误认为是某个UI设计稿的命名。但结合热搜词里反复出现的SVG、HTML、Claude Code、ant design vue、cesium 加载 svg、地图json转svg地图这些关键词,我立刻意识到——这不是在聊PPT画图,而是在讨论一套可编程、可嵌入、可交互、可工程化交付的矢量图表生成与渲染体系。它横跨前端工程、图形学基础、设计系统集成和地理空间可视化多个维度,是当前中后台系统、工业监控平台、GIS应用、电路仿真工具链里真正卡脖子的“最后一公里”能力。 我做过6个大型可视化中台项目,其中4个在交付阶段被客户反复追问:“这个流程图能不能双击跳转?连线能不能拖拽重连?节点样式能不能按状态自动变色?导出PDF时文字会不会糊?”——所有这些问题,最终都收束到同一个底层能力上:不是用Canvas画一堆像素,而是用SVG构建一套语义化的、结构可读、行为可控、样式可继承的 diagram DSL(领域特定语言)。而“diagram-design”正是这个DSL的设计入口:它不单指“画图”,更指定义图元语义、约束连接逻辑、绑定数据映射、声明交互响应、统一导出策略这一整套设计契约。 你可能正在用ant design vue写管理后台,发现内置的Tree或Steps组件根本无法表达复杂的审批流分支;也可能在用Cesium做三维地理场景,想把管线拓扑图叠加到倾斜摄影模型上,却发现网页里贴PNG图会糊、用Canvas又没法缩放不失真;还可能在调试PCB设计文档的EMC合规性报告,需要把原理图中的信号路径高亮标注并导出为印刷级矢量图——这些场景背后,全依赖一套健壮的 diagram-design 能力。它不是炫技,而是让图表从“静态展示物”变成“可编程界面元素”的关键跃迁。 这套能力的核心价值,在于它打破了传统设计与开发之间的“交付鸿沟”。设计师给的Sketch文件里,连线只是贝塞尔曲线;而真正的 diagram-design 必须让这条线具备“source: nodeA, target: nodeB, type: 'data-flow', status: 'pending'”这样的结构化属性。当Claude Code这类AI辅助工具介入时,它能直接理解“生成一个带3个输入节点、2个处理节点、1个输出节点的FMEA分析图”,而不是生成一张不可编辑的PNG。这才是“design complier”这个词突然火起来的本质:人们开始期待设计稿本身就能被编译成可运行、可调试、可测试的前端代码模块。 所以,如果你正被以下问题困扰,这篇内容就是为你写的:",
+            "source_name": "CSDN软件开发网",
+            "source_record_id": "src_b375279fc15ff67c0d8fd650",
+            "title": "diagram-design:基于SVG的可编程图表DSL设计与实现",
+            "url": "https://blog.csdn.net/weixin_32050773/article/details/164779577"
+          },
+          {
+            "published_at": "2021-12-24T13:23:35",
+            "rank": 6,
+            "score": null,
+            "snippet": "1 数据库核心:数据结构 首先介绍一个世界上最简单的数据库,其通过两个 Bash 函数实现: 代码语言: javascript AI代码解释 #!/bin/bash db_set ( ) { echo \"$1,$2\" >> database } db_get ( ) { grep \"^$1,\" database | sed - e \"s/^$1,//\" | tail - n 1 } 这两个函数实现了一个 key-value 存储。当调用 db_set key value 时,它将在数据库中保存所输入的 key 和 value ;然后,调用 db_get key ,它会查找与输入 key 相关联的最新值并返回。例如: 代码语言: $ db_set 123456 '{\"name\":\"London\",\"attractions\":[\"Big Ben\",\"London Eye\"]}' $ db_set 42 '{\"name\":\"San Francisco\",\"attractions\":[\"Golden Gate Bridge\"]}' $ db_set 42 '{\"name\":\"San Francisco\",\"attractions\":[\"Exploratorium\"]}' $ db_get 42 { \"name\" : \"San Francisco\" , \"attractions\" : [ \"Exploratorium\" ] } $ cat database 123456 , { \"name\" : \"London\" , \"attractions\" : [ \"Big Ben\" , \"London Eye\" ] } 42 , { \"name\" : \"San Francisco\" , \"attractions\" : [ \"Golden Gate Bridge\" ] } 42 , { \"name\" : \"San Francisco\" , \"attractions\" : [ \"Exploratorium\" ] } 该数据库的底层存储格式非常简单:一个 「纯文本」 文件,其中每行包含一个 key-value 对,用逗号分隔(与 CSV 文件类似,忽略转义问题)。每次调用 db_set 文件将追加新内容到文件末尾,即便多次更新某个键,旧版本的值也不会被覆盖,而是需要查看文件中 「最后一次」 出现的键来找到最新的值(在 db_get 中使用了 tail -n 1 )。 追加文件尾部方式的 「优点」 在于其非常高效,使得 db_set 函数的性能很好。当前许多数据库内部都使用了与这种方式的基本原理相同的 「日志」 (log),其是一个仅支持追加式更新的数据文件。另一方面,这种方式的 「缺点」 在于,如果 日志文件 保存了大量的记录,那么 db_get 函数的性能会非常差,每一次查询都需要从头到尾扫",
+            "source_name": "Tencent腾讯（腾讯官方网）",
+            "source_record_id": "src_4ecb439db443951c9cc6d59f",
+            "title": "《数据密集型应用系统设计》读书笔记(三)",
+            "url": "https://cloud.tencent.com/developer/article/1924265"
+          },
+          {
+            "published_at": "2026-06-13T09:25:20",
+            "rank": 7,
+            "score": null,
+            "snippet": "1. 这不是简单的“GROUP BY”——多维聚合中的数据变形术到底在解决什么问题? 你有没有遇到过这样的场景:销售部门要按“地区+产品线+季度”三个维度看营收,同时还要对比去年同期、计算环比增长率、标记是否达成KPI阈值;财务系统需要把千万级订单明细,实时聚合成“客户等级×支付方式×退款状态”的交叉报表,且每格单元格里还得嵌套显示平均客单价、订单数、退货率三个指标;BI看板上一个下拉筛选器切换“城市”,背后却要动态重算27个不同口径的衍生指标——从用户留存率到LTV预测误差带。这些都不是单表GROUP BY能扛住的。多维聚合(Multi-Dimensional Aggregation)的本质,是让数据在多个正交坐标轴上同时坍缩、重组、再投影的过程,而DataManipulation(数据变形)就是驱动这场坍缩的底层引擎。它不只关乎“怎么算”,更决定“算得准不准”、“算得快不快”、“算得活不活”。我做过6个跨行业OLAP项目,发现83%的性能瓶颈和47%的业务逻辑错误,根源不在SQL写法,而在聚合前的数据预处理环节——比如时间粒度对齐时忽略夏令时偏移、分类字段空值未做统一映射、数值型指标混入文本型异常值却未清洗。这篇内容聚焦Part 20这个关键节点,拆解如何在真实生产环境中,用结构化思维而非碎片化技巧,完成多维聚合前的数据变形。适合正在搭建分析平台的工程师、需要交付复杂报表的数据分析师,以及被“明明SQL没错但结果总差5%”折磨的产品经理。核心关键词已自然嵌入:Multi-Dimensional Aggregation、Data Manipulation、维度对齐、指标派生、空值治理、聚合粒度控制。 2. 整体设计思路:为什么必须把“变形”前置到聚合之前? 2.1 传统流程的致命陷阱:先聚合再修正,等于在流沙上盖楼 很多团队默认采用“原始数据→直接GROUP BY→后处理修正”的三段式流程。表面看逻辑清晰,实则埋下三颗雷: 第一颗雷:空值爆炸。当region字段存在NULL、'Unknown'、''三种空值形态时,若直接GROUP BY region, product_line,数据库会把它们拆成三组独立聚合结果。后续想合并?得写CASE WHEN region IN ('Unknown', '') OR region IS NULL THEN 'Other' ELSE region END,但此时聚合已发生,SUM(sales)、COUNT(*)等指标已被错误分组污染,修正只能靠二次扫描全量数据,I/O成本翻倍。 第二颗雷:时间粒度撕裂。订单表里order_time是精确到毫秒的TIMESTAMP,但业务要求按“自然周”统计。",
+            "source_name": "CSDN软件开发网",
+            "source_record_id": "src_f494e078a8cae616640c4ae5",
+            "title": "多维聚合前的数据变形:维度对齐、指标派生与空值治理-CSDN博客",
+            "url": "https://blog.csdn.net/aikunjiao3421/article/details/101971057"
+          },
+          {
+            "published_at": "2024-09-25T12:21:00",
+            "rank": 8,
+            "score": null,
+            "snippet": "在概念性地讨论了Graph RAG之后,让我们将其投入生产。这是如何将GraphRAG投入生产的方法:完全采用无服务器架构,完全并行化以最小化推理和索引时间,并且永远不需要接触图数据库(保证!)。 在本文中,我将向您介绍graphrag-lite,这是一个端到端的Graph RAG数据摄入和查询实现。我将graphrag-lite作为一个开源项目发布,以使您在GCP上部署graphrag时更加轻松。graphrag-lite是专门为Google Cloud设计的,开箱即用。代码采用模块化设计,可根据您的选择进行调整。 检索增强生成本身尚未描述任何特定的架构或方法。它仅描述了使用任意检索方法增强给定生成任务的过程。原始的RAG论文(由Lewis等人撰写的《检索增强生成在知识密集型NLP任务中的应用》(Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks))比较了双塔嵌入方法与词袋检索方法。 现代的问答系统能够区分本地和全局问题。在一个非结构化的知识库中,一个本地(提取型)问题可能是“2023年诺贝尔和平奖得主是谁?”而一个全局(聚合型)问题可能是“你知道最近的诺贝尔奖得主有哪些?”text2embedding RAG在处理全局和结构化问题时存在明显不足。而Graph RAG可以弥补这些不足,并且做得很好!通过一个抽象层,它学习了知识图谱社区的语义。这构建了一个对索引数据集更“全局”的理解。这里有一篇概念性介绍Graph RAG的文章可以阅读。 Graph RAG 管道 一个Graph RAG 管道通常会遵循以下步骤: 图提取 这是主要的导入步骤。您的LLM会使用一个提示来扫描每一份传入的文档,以提取我们知识图谱的相关节点和边。您需要多次迭代这个提示,以确保捕获所有相关信息。 图存储 你将提取的节点和边存储在你选择的数据存储中。专用的图数据库是一个选项,但它们通常比较繁琐。Graph2nosql 是一个基于 Python 的接口,用于在 Firestore 或任何其他 NoSQL 数据库中存储和管理知识图谱。我开源了这个项目,因为我没有在市场上找到任何其他类似的知识图谱原生选项。 社区检测 一旦你存储了知识图谱数据,你将使用社区检测算法来识别那些在彼此之间比在图的其余部分更紧密连接的节点组。在知识图谱的背景下,假设密集的社区涵盖了共同的主题。 社区报告生成 然后你指示你的LLM为每个图社区生成一份报告。这些社区报告有助于抽象出单一主题,从而把握数据集中的更广泛、全局的概念。",
+            "source_name": "慕课网",
+            "source_record_id": "src_3cae2cdceb14fb819ec76d78",
+            "title": "Graph RAG 生产部署指南 — 一步一步详解",
+            "url": "https://www.imooc.com/article/358403"
+          },
+          {
+            "published_at": "2024-06-13T11:31:00",
+            "rank": 9,
+            "score": null,
+            "snippet": "【论文翻译】-- Omnisketch:高效的多维任意谓词高速流分析 兮尔 在这里插入图片描述 在这里插入图片描述 摘要 不同学科的一个关键需求是对快节奏的 数据流 执行分析,其性质类似于 关系数据库 中的传统 OLAP 分析,即使用过滤器和聚合。然而,由于存储要求高,以及存储海量数据时引入的延迟,存储 无界流 不是一种现实或理想的方法。因此,已经提出了许多概要/草图,它们可以在小内存(通常足够小以存储在RAM中)中总结流,这样就可以有效地近似 聚合查询 ,而无需存储整个流。然而,过去的概要主要关注对单一 属性流 的总结,无法有效地处理对多个属性的任意子集进行过滤和约束。在这项工作中,我们提出了 OmniSketch ,这是第一个能够适应快节奏和复杂数据流(具有许多属性)的草图,并支持在查询时动态选择多个属性的过滤器的 计数聚合 。该草图提供概率保证、有利的空间精度权衡以及更新和查询执行的最坏情况下的对数复杂度。我们通过对真实和 合成数据 的实验证明,该草图优于最先进的技术,并且可以在配置好的精度保证下,以较小的内存需求近似复杂的临时查询。 PVLDB 参考格式:Wieger R. Punter, Odysseas Papapetrou, and Minos Garofalakis. OmniSketch: Efficient Multi-Dimensional High-Velocity Stream Analytics with Arbitrary Predicates. PVLDB, 17(3): 319 - 331, 2023. doi:10.14778/3632093.3632098 PVLDB 工件可用性: 源代码 、数据和/或其他工件已在 https://github.com/wiegerpunter/omnisketch上提供。",
+            "source_name": "知乎",
+            "source_record_id": "src_e93908335d5998db41869d64",
+            "title": "【论文翻译】-- Omnisketch:高效的多维任意谓词高速流分析",
+            "url": "https://zhuanlan.zhihu.com/p/703137121"
+          },
+          {
+            "published_at": "2020-11-20T14:13:41",
+            "rank": 10,
+            "score": null,
+            "snippet": "1. 开源项目名称:Picasso 2. github地址:https://github.com/wuba/Picasso 3. 简介:Picasso是58同城推出的一款sketch设计稿智能解析工具,可将sketch设计稿自动解析成还原精准,可用度高的前端代码;从而提高前端开发效率,助力业务快速发展。 Picasso于2020年9月份开源,具备以下特点: UI还原度高,设计稿还原精准。 生成代码可用度高,可维护性好。 解析工具使用方便、操作简单,完全自动化解析。 针对不同的应用场景,提供运营版和普通版两种模式。 支持导出多种尺寸(1倍 1.5倍 2倍 3倍)图片,满足不同屏幕尺寸适配需求。 项目背景UI自动化已经成为当前行业研究的趋势,各大公司都在进行相关方向的研究,sketch设计稿存储的是结构化数据,这给我们进行UI自动化解析生成代码提供了契机;为了提升前端开发效率,减少页面重构的工作,甚至某些场景下完全自动化生成代码,Picasso智能解析工具应运而生。 核心设计Picasso的核心解析流程主要包括Symbol解析、图层重构、属性解析、布局处理。 1. Symbol解析 1). Symbol模块整合 设计稿源文件中包含以下两个json文件:Page页面json和Symbol模块json。 我们通过SymbolID的引用关系来推导出模块之间的依赖关系,将symbol模块json整合到各个Page页面json中,便于后续的解析。 2). Symbol模块传参 参数只作用于其子Symbol模块。 相同参数传值:外层(父父级)参数值的权重高于内层(父级)。 3). Symbol模块缩放 根据SymbolInstance和SymbolMaster的尺寸比例,等比例转换symbolMaster的坐标尺寸,作为实例SymbolInstance的坐标尺寸。 通过对Symbol的解析,我们得了一个包含页面重构所需的完整信息的json。 2. 图层重构图层重构主要包含五个步骤,如下图: 第一步. 去掉分组 由于UI设计师并不了解前端的布局习惯,他们对图层进行的分组,往往和前端期望的结果差别较大,几乎不可用;看下这张设计稿: 该设计稿的原始分组如下: 前端开发期望的分组如下: 因此,我们需要去掉设计稿中已有的分组,在后续的流程中进行重新分组。第二步. 分层 UI设计稿中经常会出现多层重叠的结构,例如弹层,吸底栏等;这时候需要我们进行分层处理,然后再对每层进行单独处理。 第三步. 重新排序和组合 UI设计稿主要专注于视觉效果,对设计稿中图层的顺序没有特别的要求,这就造成我们拿到的设计稿中图层的顺序是混乱的。 通过我们的排序算法,将图层的按照从左上到右下的顺序排列,如此同时处理图层之间的父子关系,优化后的顺序如下:",
+            "source_name": "知乎",
+            "source_record_id": "src_bf1a72b7da03163d09cf6218",
+            "title": "开源| Picasso:sketch设计稿智能解析工具",
+            "url": "https://zhuanlan.zhihu.com/p/258458827"
+          }
+        ],
+        "warnings": []
+      },
+      "source_records": [
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "1",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://zhuanlan.zhihu.com/p/152221150",
+          "observed_at": "2026-09-16T14:44:55.848649Z",
+          "provenance": {
+            "query": "Sketch-DBH graph stream partitioning",
+            "rank": 1,
+            "run_id": "run-d20cf7604f34411abe224ba46f4c7006",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": " 图流划分 图流划分(streaming graph partition, SGP)问题是图划分问题的一个新的衍生。与传统图划分算法相比,图流划分算法不在执行划分算法的计算机上存储完整的图,而是对持续不断地读入的边或者点进行实时划分。这些读入的点或边可以源自 计算机集群 的硬盘,或者是直接从数据源获取的 动态数据 。由于不需要在单机上存储完整的图数据,图流划分算法相比传统图划分算法,可以应用于更大规模的图,同时具有 时间复杂度 低,可以处理动态数据的优势。但是由于其缺少完整的图数据,图流划分的难度更大,而且划分效果往往略差于传统图划分算法。 根据划分方式,图流划分同样可以分为点划分与边划分两种,二者使用的数据模型有所区别。点划分使用点流 (vertex stream)模型,每次读入的数据项为一个点及其完整的邻接列表。而边划分则使用边流(edge stream)模型,每次读入的数据项为一条单独的边。",
+            "published_at": "2020-06-30T23:02:01",
+            "request_id": "11fcf210-cdd6-4fe2-a451-8186361fc278",
+            "search_score": null,
+            "search_snippet": "图流划分 图流划分(streaming graph partition, SGP)问题是图划分问题的一个新的衍生。与传统图划分算法相比,图流划分算法不在执行划分算法的计算机上存储完整的图,而是对持续不断地读入的边或者点进行实时划分。这些读入的点或边可以源自 计算机集群 的硬盘,或者是直接从数据源获取的 动态数据 。由于不需要在单机上存储完整的图数据,图流划分算法相比传统图划分算法,可以应用于更大规模的图,同时具有 时间复杂度 低,可以处理动态数据的优势。但是由于其缺少完整的图数据,图流划分的难度更大,而且划分效果往往略差于传统图划分算法。 根据划分方式,图流划分同样可以分为点划分与边划分两种,二者使用的数据模型有所区别。点划分使用点流 (vertex stream)模型,每次读入的数据项为一个点及其完整的邻接列表。而边划分则使用边流(edge stream)模型,每次读入的数据项为一条单独的边。",
+            "source_name": "知乎",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web_supplement",
+          "source_record_id": "src_950f101bd0f30a986e9ded23",
+          "title": "图流划分算法综述",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "2",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://cloud.tencent.com/developer/article/2712880",
+          "observed_at": "2026-09-16T14:44:55.848649Z",
+          "provenance": {
+            "query": "Sketch-DBH graph stream partitioning",
+            "rank": 2,
+            "run_id": "run-d20cf7604f34411abe224ba46f4c7006",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": " 5进 2 筛选 美观vs 严谨 一次乌龙插曲 最终选型 我前两天在做一个标书,里面要配一堆图,流程图、鱼骨图、架构图,七八张。 以前我会打开 Visio 一个箭头一个箭头拖。现在Claude Code和Codex都支持挂载「Skill」,你跟它说一句话,它就能直接生成一张完整的技术图。 但GitHub上做这个方向的开源 Skill 一大把,到底哪个好使? 我把GitHub 上星星比较多的 5 个图表生成 Skill 全拉到 Tabbit 里做了一轮筛选,挑出两个进入实测。条件很公平,同一篇 Word 文档、同一句提示词、同一个模型(MiniMax M3),分别让两个 Skill 给文章配图并生成新版 Word。 结论直接给你。 ››› 五个选手速览 ” LINEUP · 5 进 2 TOOL 1 Archify(2.6k star) HTML/SVG 架构图,美观但只做英文、图类型有限。 TOOL 2 Cocoon-AI(6.3k star) 专做架构图的 HTML 渲染,就一种图类型。 TOOL 3 fireworks-tech-graph(8.3k star) HTML 渲染 SVG 转 PNG,14+ 图类型,中文友好,有连线碰撞检测。 TOOL 4 drawio-skill(5.4k star) 生成.drawio 文件走 CLI 渲染,图类型最全,连线纠错最完整。 TOOL 5 paper-craft-skills(785 star) 面向学术论文做方法示意图的,和通用配图不搭边。 五个里面,fireworks 和 drawio是唯二同时满足「中文友好 + 多图类型 + 有质量校验」的。其余三个要么只做英文,要么就一种图。 所以最终进入实测的就是这两位。",
+            "published_at": "2026-07-21T09:22:18",
+            "request_id": "11fcf210-cdd6-4fe2-a451-8186361fc278",
+            "search_score": null,
+            "search_snippet": "5进 2 筛选 美观vs 严谨 一次乌龙插曲 最终选型 我前两天在做一个标书,里面要配一堆图,流程图、鱼骨图、架构图,七八张。 以前我会打开 Visio 一个箭头一个箭头拖。现在Claude Code和Codex都支持挂载「Skill」,你跟它说一句话,它就能直接生成一张完整的技术图。 但GitHub上做这个方向的开源 Skill 一大把,到底哪个好使? 我把GitHub 上星星比较多的 5 个图表生成 Skill 全拉到 Tabbit 里做了一轮筛选,挑出两个进入实测。条件很公平,同一篇 Word 文档、同一句提示词、同一个模型(MiniMax M3),分别让两个 Skill 给文章配图并生成新版 Word。 结论直接给你。 ››› 五个选手速览 ” LINEUP · 5 进 2 TOOL 1 Archify(2.6k star) HTML/SVG 架构图,美观但只做英文、图类型有限。 TOOL 2 Cocoon-AI(6.3k star) 专做架构图的 HTML 渲染,就一种图类型。 TOOL 3 fireworks-tech-graph(8.3k star) HTML 渲染 SVG 转 PNG,14+ 图类型,中文友好,有连线碰撞检测。 TOOL 4 drawio-skill(5.4k star) 生成.drawio 文件走 CLI 渲染,图类型最全,连线纠错最完整。 TOOL 5 paper-craft-skills(785 star) 面向学术论文做方法示意图的,和通用配图不搭边。 五个里面,fireworks 和 drawio是唯二同时满足「中文友好 + 多图类型 + 有质量校验」的。其余三个要么只做英文,要么就一种图。 所以最终进入实测的就是这两位。",
+            "source_name": "Tencent腾讯（腾讯官方网）",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web_supplement",
+          "source_record_id": "src_1f3f7be1e867f3e0bd467a9a",
+          "title": "GitHub上5个架构图Skill,我实测完只推荐这两个",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "3",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://zhuanlan.zhihu.com/p/446152634",
+          "observed_at": "2026-09-16T14:44:55.848649Z",
+          "provenance": {
+            "query": "Sketch-DBH graph stream partitioning",
+            "rank": 3,
+            "run_id": "run-d20cf7604f34411abe224ba46f4c7006",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": " 1. 简介 图分割是将一个大图均匀的分成一系列的子图去适应分布式应用,每个子图存储在一台机器上,子图之间可以并行化执行,如果当前子图需要其他子图的信息就需要通讯开销,而 图分割 的质量影响着每台机器存储代价和机器之间通讯代价。 粗略地按照分割的内存开销大小分类,可以分为离线offline和流式streaming两类分割算法 [1]。offline是将整个图数据一次性载入内存中然后根据图的结构进行切分;streaming是按批次读取图数据,实时的将图的边或者结点分配到指定的子图中。对于大规模图数据来说,单机的内存无法满足分割算法的需求这个时候 流式分割 显得尤为重要。 按照对图数据的切分方式分类,可以分为点分割(vertext partitioning or edge-cut partitioning)和边分割(edge partitioning or vertex-cut partitioning)。如图1所示,点分割是将图的结点分配到各个子图中,维持结点之间子图的完整性,这个时候可能造成某些结点之间的边被切掉(edge-cut); 同理边分割 是将图的边分配到各个子图中,每组分配的边构成子图,这个时候造成某些结点的冗余(vertex-cut)。对于服从 幂律分布 power-law的图数据,某些结点的边可能特别多,如果执行点分割会造成大量边的缺失以及边的负载不均匀;而边分割可以处理这类问题。[2] 图1 点分割(左)和边分割(右)的示例 图分割的两个目标是负载均衡load balancing(减少存储代价)和最小化切边或点minimum cuts(减少通讯代价),同时优化这两个目标是 平衡图分割 (balanced graph partitioning)问题,这是一个NP难的问题[2]。通常情况下松弛为优化load balancing的同时尽可能保证minimum cuts。给定一个图  G = ( V , E ) 包含 | E | 条边和 | V | 个顶点,将它分割成  k 份, 点分割表示如下: m a x i ∈ [ 1 , k ] | V i | ≤ ( 1 +",
+            "published_at": "2022-08-20T10:07:00",
+            "request_id": "11fcf210-cdd6-4fe2-a451-8186361fc278",
+            "search_score": null,
+            "search_snippet": "1. 简介 图分割是将一个大图均匀的分成一系列的子图去适应分布式应用,每个子图存储在一台机器上,子图之间可以并行化执行,如果当前子图需要其他子图的信息就需要通讯开销,而 图分割 的质量影响着每台机器存储代价和机器之间通讯代价。 粗略地按照分割的内存开销大小分类,可以分为离线offline和流式streaming两类分割算法 [1]。offline是将整个图数据一次性载入内存中然后根据图的结构进行切分;streaming是按批次读取图数据,实时的将图的边或者结点分配到指定的子图中。对于大规模图数据来说,单机的内存无法满足分割算法的需求这个时候 流式分割 显得尤为重要。 按照对图数据的切分方式分类,可以分为点分割(vertext partitioning or edge-cut partitioning)和边分割(edge partitioning or vertex-cut partitioning)。如图1所示,点分割是将图的结点分配到各个子图中,维持结点之间子图的完整性,这个时候可能造成某些结点之间的边被切掉(edge-cut); 同理边分割 是将图的边分配到各个子图中,每组分配的边构成子图,这个时候造成某些结点的冗余(vertex-cut)。对于服从 幂律分布 power-law的图数据,某些结点的边可能特别多,如果执行点分割会造成大量边的缺失以及边的负载不均匀;而边分割可以处理这类问题。[2] 图1 点分割(左)和边分割(右)的示例 图分割的两个目标是负载均衡load balancing(减少存储代价)和最小化切边或点minimum cuts(减少通讯代价),同时优化这两个目标是 平衡图分割 (balanced graph partitioning)问题,这是一个NP难的问题[2]。通常情况下松弛为优化load balancing的同时尽可能保证minimum cuts。给定一个图  G = ( V , E ) 包含 | E | 条边和 | V | 个顶点,将它分割成  k 份, 点分割表示如下: m a x i ∈ [ 1 , k ] | V i | ≤ ( 1 +",
+            "source_name": "知乎",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web_supplement",
+          "source_record_id": "src_1e87d52fca57eaa48d9f5c04",
+          "title": "图分割Graph Partitioning技术总结",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "4",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://www.linkedin.com/company/drawdb",
+          "observed_at": "2026-09-16T14:44:55.848649Z",
+          "provenance": {
+            "query": "Sketch-DBH graph stream partitioning",
+            "rank": 4,
+            "run_id": "run-d20cf7604f34411abe224ba46f4c7006",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": " Software Development  Online database entity-relationship diagram editor and SQL generator About us  drawDB is a robust and user-friendly database entity relationship (DBER) editor right in your browser. Build diagrams with a few clicks, export sql scripts, customize your editor, and more without creating an account.  Website  https://www.drawdb.app  Industry  Software Development  Company size  1 employee  Type  Nonprofit  Updates  drawDB  1,865 followers  3w  Introducing drawDB Pro 🚀 A database diagram shouldn’t become a static artifact that gets forgotten once development begins. It should remain useful from initial design through implementation. With drawDB Pro, you can: → Design or import schemas visually → Review designs with AI → Connect coding agents through MCP → Share and collaborate with your team → Save diagrams in the cloud ... and much more Try drawDB Pro now at https://www.drawdb.app/ Star the open-source editor: https://lnkd.in/eTjCyj6X How do you keep your database designs connected to implementation? #DatabaseDesign #DeveloperTools #OpenSource #MCP #Databases",
+            "published_at": "2026-07-24T22:57:43",
+            "request_id": "11fcf210-cdd6-4fe2-a451-8186361fc278",
+            "search_score": null,
+            "search_snippet": "Software Development  Online database entity-relationship diagram editor and SQL generator About us  drawDB is a robust and user-friendly database entity relationship (DBER) editor right in your browser. Build diagrams with a few clicks, export sql scripts, customize your editor, and more without creating an account.  Website  https://www.drawdb.app  Industry  Software Development  Company size  1 employee  Type  Nonprofit  Updates  drawDB  1,865 followers  3w  Introducing drawDB Pro 🚀 A database diagram shouldn’t become a static artifact that gets forgotten once development begins. It should remain useful from initial design through implementation. With drawDB Pro, you can: → Design or import schemas visually → Review designs with AI → Connect coding agents through MCP → Share and collaborate with your team → Save diagrams in the cloud ... and much more Try drawDB Pro now at https://www.drawdb.app/ Star the open-source editor: https://lnkd.in/eTjCyj6X How do you keep your database designs connected to implementation? #DatabaseDesign #DeveloperTools #OpenSource #MCP #Databases",
+            "source_name": "领英网",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web_supplement",
+          "source_record_id": "src_1a3330cf81e2c9484ab1b72c",
+          "title": "drawDB",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "5",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://blog.csdn.net/weixin_32050773/article/details/164779577",
+          "observed_at": "2026-09-16T14:44:55.848649Z",
+          "provenance": {
+            "query": "Sketch-DBH graph stream partitioning",
+            "rank": 5,
+            "run_id": "run-d20cf7604f34411abe224ba46f4c7006",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": " 1. 项目概述:从“diagram-design”标题看一个被严重低估的前端可视化基建能力 “diagram-design”这四个字乍看像一个模糊的开发任务描述,甚至可能被误认为是某个UI设计稿的命名。但结合热搜词里反复出现的SVG、HTML、Claude Code、ant design vue、cesium 加载 svg、地图json转svg地图这些关键词,我立刻意识到——这不是在聊PPT画图,而是在讨论一套可编程、可嵌入、可交互、可工程化交付的矢量图表生成与渲染体系。它横跨前端工程、图形学基础、设计系统集成和地理空间可视化多个维度,是当前中后台系统、工业监控平台、GIS应用、电路仿真工具链里真正卡脖子的“最后一公里”能力。 我做过6个大型可视化中台项目,其中4个在交付阶段被客户反复追问:“这个流程图能不能双击跳转?连线能不能拖拽重连?节点样式能不能按状态自动变色?导出PDF时文字会不会糊?”——所有这些问题,最终都收束到同一个底层能力上:不是用Canvas画一堆像素,而是用SVG构建一套语义化的、结构可读、行为可控、样式可继承的 diagram DSL(领域特定语言)。而“diagram-design”正是这个DSL的设计入口:它不单指“画图”,更指定义图元语义、约束连接逻辑、绑定数据映射、声明交互响应、统一导出策略这一整套设计契约。 你可能正在用ant design vue写管理后台,发现内置的Tree或Steps组件根本无法表达复杂的审批流分支;也可能在用Cesium做三维地理场景,想把管线拓扑图叠加到倾斜摄影模型上,却发现网页里贴PNG图会糊、用Canvas又没法缩放不失真;还可能在调试PCB设计文档的EMC合规性报告,需要把原理图中的信号路径高亮标注并导出为印刷级矢量图——这些场景背后,全依赖一套健壮的 diagram-design 能力。它不是炫技,而是让图表从“静态展示物”变成“可编程界面元素”的关键跃迁。 这套能力的核心价值,在于它打破了传统设计与开发之间的“交付鸿沟”。设计师给的Sketch文件里,连线只是贝塞尔曲线;而真正的 diagram-design 必须让这条线具备“source: nodeA, target: nodeB, type: 'data-flow', status: 'pending'”这样的结构化属性。当Claude Code这类AI辅助工具介入时,它能直接理解“生成一个带3个输入节点、2个处理节点、1个输出节点的FMEA分析图”,而不是生成一张不可编辑的PNG。这才是“design complier”这个词突然火起来的本质:人们开始期待设计稿本身就能被编译成可运行、可调试、可测试的前端代码模块。 所以,如果你正被以下问题困扰,这篇内容就是为你写的:",
+            "published_at": "2026-09-09T09:05:49",
+            "request_id": "11fcf210-cdd6-4fe2-a451-8186361fc278",
+            "search_score": null,
+            "search_snippet": "1. 项目概述:从“diagram-design”标题看一个被严重低估的前端可视化基建能力 “diagram-design”这四个字乍看像一个模糊的开发任务描述,甚至可能被误认为是某个UI设计稿的命名。但结合热搜词里反复出现的SVG、HTML、Claude Code、ant design vue、cesium 加载 svg、地图json转svg地图这些关键词,我立刻意识到——这不是在聊PPT画图,而是在讨论一套可编程、可嵌入、可交互、可工程化交付的矢量图表生成与渲染体系。它横跨前端工程、图形学基础、设计系统集成和地理空间可视化多个维度,是当前中后台系统、工业监控平台、GIS应用、电路仿真工具链里真正卡脖子的“最后一公里”能力。 我做过6个大型可视化中台项目,其中4个在交付阶段被客户反复追问:“这个流程图能不能双击跳转?连线能不能拖拽重连?节点样式能不能按状态自动变色?导出PDF时文字会不会糊?”——所有这些问题,最终都收束到同一个底层能力上:不是用Canvas画一堆像素,而是用SVG构建一套语义化的、结构可读、行为可控、样式可继承的 diagram DSL(领域特定语言)。而“diagram-design”正是这个DSL的设计入口:它不单指“画图”,更指定义图元语义、约束连接逻辑、绑定数据映射、声明交互响应、统一导出策略这一整套设计契约。 你可能正在用ant design vue写管理后台,发现内置的Tree或Steps组件根本无法表达复杂的审批流分支;也可能在用Cesium做三维地理场景,想把管线拓扑图叠加到倾斜摄影模型上,却发现网页里贴PNG图会糊、用Canvas又没法缩放不失真;还可能在调试PCB设计文档的EMC合规性报告,需要把原理图中的信号路径高亮标注并导出为印刷级矢量图——这些场景背后,全依赖一套健壮的 diagram-design 能力。它不是炫技,而是让图表从“静态展示物”变成“可编程界面元素”的关键跃迁。 这套能力的核心价值,在于它打破了传统设计与开发之间的“交付鸿沟”。设计师给的Sketch文件里,连线只是贝塞尔曲线;而真正的 diagram-design 必须让这条线具备“source: nodeA, target: nodeB, type: 'data-flow', status: 'pending'”这样的结构化属性。当Claude Code这类AI辅助工具介入时,它能直接理解“生成一个带3个输入节点、2个处理节点、1个输出节点的FMEA分析图”,而不是生成一张不可编辑的PNG。这才是“design complier”这个词突然火起来的本质:人们开始期待设计稿本身就能被编译成可运行、可调试、可测试的前端代码模块。 所以,如果你正被以下问题困扰,这篇内容就是为你写的:",
+            "source_name": "CSDN软件开发网",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web_supplement",
+          "source_record_id": "src_b375279fc15ff67c0d8fd650",
+          "title": "diagram-design:基于SVG的可编程图表DSL设计与实现",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "6",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://cloud.tencent.com/developer/article/1924265",
+          "observed_at": "2026-09-16T14:44:55.848649Z",
+          "provenance": {
+            "query": "Sketch-DBH graph stream partitioning",
+            "rank": 6,
+            "run_id": "run-d20cf7604f34411abe224ba46f4c7006",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": " 1 数据库核心:数据结构 首先介绍一个世界上最简单的数据库,其通过两个 Bash 函数实现: 代码语言: javascript AI代码解释 #!/bin/bash db_set ( ) { echo \"$1,$2\" >> database } db_get ( ) { grep \"^$1,\" database | sed - e \"s/^$1,//\" | tail - n 1 } 这两个函数实现了一个 key-value 存储。当调用 db_set key value 时,它将在数据库中保存所输入的 key 和 value ;然后,调用 db_get key ,它会查找与输入 key 相关联的最新值并返回。例如: 代码语言: $ db_set 123456 '{\"name\":\"London\",\"attractions\":[\"Big Ben\",\"London Eye\"]}' $ db_set 42 '{\"name\":\"San Francisco\",\"attractions\":[\"Golden Gate Bridge\"]}' $ db_set 42 '{\"name\":\"San Francisco\",\"attractions\":[\"Exploratorium\"]}' $ db_get 42 { \"name\" : \"San Francisco\" , \"attractions\" : [ \"Exploratorium\" ] } $ cat database 123456 , { \"name\" : \"London\" , \"attractions\" : [ \"Big Ben\" , \"London Eye\" ] } 42 , { \"name\" : \"San Francisco\" , \"attractions\" : [ \"Golden Gate Bridge\" ] } 42 , { \"name\" : \"San Francisco\" , \"attractions\" : [ \"Exploratorium\" ] } 该数据库的底层存储格式非常简单:一个 「纯文本」 文件,其中每行包含一个 key-value 对,用逗号分隔(与 CSV 文件类似,忽略转义问题)。每次调用 db_set 文件将追加新内容到文件末尾,即便多次更新某个键,旧版本的值也不会被覆盖,而是需要查看文件中 「最后一次」 出现的键来找到最新的值(在 db_get 中使用了 tail -n 1 )。 追加文件尾部方式的 「优点」 在于其非常高效,使得 db_set 函数的性能很好。当前许多数据库内部都使用了与这种方式的基本原理相同的 「日志」 (log),其是一个仅支持追加式更新的数据文件。另一方面,这种方式的 「缺点」 在于,如果 日志文件 保存了大量的记录,那么 db_get 函数的性能会非常差,每一次查询都需要从头到尾扫",
+            "published_at": "2021-12-24T13:23:35",
+            "request_id": "11fcf210-cdd6-4fe2-a451-8186361fc278",
+            "search_score": null,
+            "search_snippet": "1 数据库核心:数据结构 首先介绍一个世界上最简单的数据库,其通过两个 Bash 函数实现: 代码语言: javascript AI代码解释 #!/bin/bash db_set ( ) { echo \"$1,$2\" >> database } db_get ( ) { grep \"^$1,\" database | sed - e \"s/^$1,//\" | tail - n 1 } 这两个函数实现了一个 key-value 存储。当调用 db_set key value 时,它将在数据库中保存所输入的 key 和 value ;然后,调用 db_get key ,它会查找与输入 key 相关联的最新值并返回。例如: 代码语言: $ db_set 123456 '{\"name\":\"London\",\"attractions\":[\"Big Ben\",\"London Eye\"]}' $ db_set 42 '{\"name\":\"San Francisco\",\"attractions\":[\"Golden Gate Bridge\"]}' $ db_set 42 '{\"name\":\"San Francisco\",\"attractions\":[\"Exploratorium\"]}' $ db_get 42 { \"name\" : \"San Francisco\" , \"attractions\" : [ \"Exploratorium\" ] } $ cat database 123456 , { \"name\" : \"London\" , \"attractions\" : [ \"Big Ben\" , \"London Eye\" ] } 42 , { \"name\" : \"San Francisco\" , \"attractions\" : [ \"Golden Gate Bridge\" ] } 42 , { \"name\" : \"San Francisco\" , \"attractions\" : [ \"Exploratorium\" ] } 该数据库的底层存储格式非常简单:一个 「纯文本」 文件,其中每行包含一个 key-value 对,用逗号分隔(与 CSV 文件类似,忽略转义问题)。每次调用 db_set 文件将追加新内容到文件末尾,即便多次更新某个键,旧版本的值也不会被覆盖,而是需要查看文件中 「最后一次」 出现的键来找到最新的值(在 db_get 中使用了 tail -n 1 )。 追加文件尾部方式的 「优点」 在于其非常高效,使得 db_set 函数的性能很好。当前许多数据库内部都使用了与这种方式的基本原理相同的 「日志」 (log),其是一个仅支持追加式更新的数据文件。另一方面,这种方式的 「缺点」 在于,如果 日志文件 保存了大量的记录,那么 db_get 函数的性能会非常差,每一次查询都需要从头到尾扫",
+            "source_name": "Tencent腾讯（腾讯官方网）",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web_supplement",
+          "source_record_id": "src_4ecb439db443951c9cc6d59f",
+          "title": "《数据密集型应用系统设计》读书笔记(三)",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "7",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://blog.csdn.net/aikunjiao3421/article/details/101971057",
+          "observed_at": "2026-09-16T14:44:55.848649Z",
+          "provenance": {
+            "query": "Sketch-DBH graph stream partitioning",
+            "rank": 7,
+            "run_id": "run-d20cf7604f34411abe224ba46f4c7006",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": " 1. 这不是简单的“GROUP BY”——多维聚合中的数据变形术到底在解决什么问题? 你有没有遇到过这样的场景:销售部门要按“地区+产品线+季度”三个维度看营收,同时还要对比去年同期、计算环比增长率、标记是否达成KPI阈值;财务系统需要把千万级订单明细,实时聚合成“客户等级×支付方式×退款状态”的交叉报表,且每格单元格里还得嵌套显示平均客单价、订单数、退货率三个指标;BI看板上一个下拉筛选器切换“城市”,背后却要动态重算27个不同口径的衍生指标——从用户留存率到LTV预测误差带。这些都不是单表GROUP BY能扛住的。多维聚合(Multi-Dimensional Aggregation)的本质,是让数据在多个正交坐标轴上同时坍缩、重组、再投影的过程,而DataManipulation(数据变形)就是驱动这场坍缩的底层引擎。它不只关乎“怎么算”,更决定“算得准不准”、“算得快不快”、“算得活不活”。我做过6个跨行业OLAP项目,发现83%的性能瓶颈和47%的业务逻辑错误,根源不在SQL写法,而在聚合前的数据预处理环节——比如时间粒度对齐时忽略夏令时偏移、分类字段空值未做统一映射、数值型指标混入文本型异常值却未清洗。这篇内容聚焦Part 20这个关键节点,拆解如何在真实生产环境中,用结构化思维而非碎片化技巧,完成多维聚合前的数据变形。适合正在搭建分析平台的工程师、需要交付复杂报表的数据分析师,以及被“明明SQL没错但结果总差5%”折磨的产品经理。核心关键词已自然嵌入:Multi-Dimensional Aggregation、Data Manipulation、维度对齐、指标派生、空值治理、聚合粒度控制。 2. 整体设计思路:为什么必须把“变形”前置到聚合之前? 2.1 传统流程的致命陷阱:先聚合再修正,等于在流沙上盖楼 很多团队默认采用“原始数据→直接GROUP BY→后处理修正”的三段式流程。表面看逻辑清晰,实则埋下三颗雷: 第一颗雷:空值爆炸。当region字段存在NULL、'Unknown'、''三种空值形态时,若直接GROUP BY region, product_line,数据库会把它们拆成三组独立聚合结果。后续想合并?得写CASE WHEN region IN ('Unknown', '') OR region IS NULL THEN 'Other' ELSE region END,但此时聚合已发生,SUM(sales)、COUNT(*)等指标已被错误分组污染,修正只能靠二次扫描全量数据,I/O成本翻倍。 第二颗雷:时间粒度撕裂。订单表里order_time是精确到毫秒的TIMESTAMP,但业务要求按“自然周”统计。",
+            "published_at": "2026-06-13T09:25:20",
+            "request_id": "11fcf210-cdd6-4fe2-a451-8186361fc278",
+            "search_score": null,
+            "search_snippet": "1. 这不是简单的“GROUP BY”——多维聚合中的数据变形术到底在解决什么问题? 你有没有遇到过这样的场景:销售部门要按“地区+产品线+季度”三个维度看营收,同时还要对比去年同期、计算环比增长率、标记是否达成KPI阈值;财务系统需要把千万级订单明细,实时聚合成“客户等级×支付方式×退款状态”的交叉报表,且每格单元格里还得嵌套显示平均客单价、订单数、退货率三个指标;BI看板上一个下拉筛选器切换“城市”,背后却要动态重算27个不同口径的衍生指标——从用户留存率到LTV预测误差带。这些都不是单表GROUP BY能扛住的。多维聚合(Multi-Dimensional Aggregation)的本质,是让数据在多个正交坐标轴上同时坍缩、重组、再投影的过程,而DataManipulation(数据变形)就是驱动这场坍缩的底层引擎。它不只关乎“怎么算”,更决定“算得准不准”、“算得快不快”、“算得活不活”。我做过6个跨行业OLAP项目,发现83%的性能瓶颈和47%的业务逻辑错误,根源不在SQL写法,而在聚合前的数据预处理环节——比如时间粒度对齐时忽略夏令时偏移、分类字段空值未做统一映射、数值型指标混入文本型异常值却未清洗。这篇内容聚焦Part 20这个关键节点,拆解如何在真实生产环境中,用结构化思维而非碎片化技巧,完成多维聚合前的数据变形。适合正在搭建分析平台的工程师、需要交付复杂报表的数据分析师,以及被“明明SQL没错但结果总差5%”折磨的产品经理。核心关键词已自然嵌入:Multi-Dimensional Aggregation、Data Manipulation、维度对齐、指标派生、空值治理、聚合粒度控制。 2. 整体设计思路:为什么必须把“变形”前置到聚合之前? 2.1 传统流程的致命陷阱:先聚合再修正,等于在流沙上盖楼 很多团队默认采用“原始数据→直接GROUP BY→后处理修正”的三段式流程。表面看逻辑清晰,实则埋下三颗雷: 第一颗雷:空值爆炸。当region字段存在NULL、'Unknown'、''三种空值形态时,若直接GROUP BY region, product_line,数据库会把它们拆成三组独立聚合结果。后续想合并?得写CASE WHEN region IN ('Unknown', '') OR region IS NULL THEN 'Other' ELSE region END,但此时聚合已发生,SUM(sales)、COUNT(*)等指标已被错误分组污染,修正只能靠二次扫描全量数据,I/O成本翻倍。 第二颗雷:时间粒度撕裂。订单表里order_time是精确到毫秒的TIMESTAMP,但业务要求按“自然周”统计。",
+            "source_name": "CSDN软件开发网",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web_supplement",
+          "source_record_id": "src_f494e078a8cae616640c4ae5",
+          "title": "多维聚合前的数据变形:维度对齐、指标派生与空值治理-CSDN博客",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "8",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://www.imooc.com/article/358403",
+          "observed_at": "2026-09-16T14:44:55.848649Z",
+          "provenance": {
+            "query": "Sketch-DBH graph stream partitioning",
+            "rank": 8,
+            "run_id": "run-d20cf7604f34411abe224ba46f4c7006",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": " 在概念性地讨论了Graph RAG之后,让我们将其投入生产。这是如何将GraphRAG投入生产的方法:完全采用无服务器架构,完全并行化以最小化推理和索引时间,并且永远不需要接触图数据库(保证!)。 在本文中,我将向您介绍graphrag-lite,这是一个端到端的Graph RAG数据摄入和查询实现。我将graphrag-lite作为一个开源项目发布,以使您在GCP上部署graphrag时更加轻松。graphrag-lite是专门为Google Cloud设计的,开箱即用。代码采用模块化设计,可根据您的选择进行调整。 检索增强生成本身尚未描述任何特定的架构或方法。它仅描述了使用任意检索方法增强给定生成任务的过程。原始的RAG论文(由Lewis等人撰写的《检索增强生成在知识密集型NLP任务中的应用》(Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks))比较了双塔嵌入方法与词袋检索方法。 现代的问答系统能够区分本地和全局问题。在一个非结构化的知识库中,一个本地(提取型)问题可能是“2023年诺贝尔和平奖得主是谁?”而一个全局(聚合型)问题可能是“你知道最近的诺贝尔奖得主有哪些?”text2embedding RAG在处理全局和结构化问题时存在明显不足。而Graph RAG可以弥补这些不足,并且做得很好!通过一个抽象层,它学习了知识图谱社区的语义。这构建了一个对索引数据集更“全局”的理解。这里有一篇概念性介绍Graph RAG的文章可以阅读。 Graph RAG 管道 一个Graph RAG 管道通常会遵循以下步骤: 图提取 这是主要的导入步骤。您的LLM会使用一个提示来扫描每一份传入的文档,以提取我们知识图谱的相关节点和边。您需要多次迭代这个提示,以确保捕获所有相关信息。 图存储 你将提取的节点和边存储在你选择的数据存储中。专用的图数据库是一个选项,但它们通常比较繁琐。Graph2nosql 是一个基于 Python 的接口,用于在 Firestore 或任何其他 NoSQL 数据库中存储和管理知识图谱。我开源了这个项目,因为我没有在市场上找到任何其他类似的知识图谱原生选项。 社区检测 一旦你存储了知识图谱数据,你将使用社区检测算法来识别那些在彼此之间比在图的其余部分更紧密连接的节点组。在知识图谱的背景下,假设密集的社区涵盖了共同的主题。 社区报告生成 然后你指示你的LLM为每个图社区生成一份报告。这些社区报告有助于抽象出单一主题,从而把握数据集中的更广泛、全局的概念。",
+            "published_at": "2024-09-25T12:21:00",
+            "request_id": "11fcf210-cdd6-4fe2-a451-8186361fc278",
+            "search_score": null,
+            "search_snippet": "在概念性地讨论了Graph RAG之后,让我们将其投入生产。这是如何将GraphRAG投入生产的方法:完全采用无服务器架构,完全并行化以最小化推理和索引时间,并且永远不需要接触图数据库(保证!)。 在本文中,我将向您介绍graphrag-lite,这是一个端到端的Graph RAG数据摄入和查询实现。我将graphrag-lite作为一个开源项目发布,以使您在GCP上部署graphrag时更加轻松。graphrag-lite是专门为Google Cloud设计的,开箱即用。代码采用模块化设计,可根据您的选择进行调整。 检索增强生成本身尚未描述任何特定的架构或方法。它仅描述了使用任意检索方法增强给定生成任务的过程。原始的RAG论文(由Lewis等人撰写的《检索增强生成在知识密集型NLP任务中的应用》(Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks))比较了双塔嵌入方法与词袋检索方法。 现代的问答系统能够区分本地和全局问题。在一个非结构化的知识库中,一个本地(提取型)问题可能是“2023年诺贝尔和平奖得主是谁?”而一个全局(聚合型)问题可能是“你知道最近的诺贝尔奖得主有哪些?”text2embedding RAG在处理全局和结构化问题时存在明显不足。而Graph RAG可以弥补这些不足,并且做得很好!通过一个抽象层,它学习了知识图谱社区的语义。这构建了一个对索引数据集更“全局”的理解。这里有一篇概念性介绍Graph RAG的文章可以阅读。 Graph RAG 管道 一个Graph RAG 管道通常会遵循以下步骤: 图提取 这是主要的导入步骤。您的LLM会使用一个提示来扫描每一份传入的文档,以提取我们知识图谱的相关节点和边。您需要多次迭代这个提示,以确保捕获所有相关信息。 图存储 你将提取的节点和边存储在你选择的数据存储中。专用的图数据库是一个选项,但它们通常比较繁琐。Graph2nosql 是一个基于 Python 的接口,用于在 Firestore 或任何其他 NoSQL 数据库中存储和管理知识图谱。我开源了这个项目,因为我没有在市场上找到任何其他类似的知识图谱原生选项。 社区检测 一旦你存储了知识图谱数据,你将使用社区检测算法来识别那些在彼此之间比在图的其余部分更紧密连接的节点组。在知识图谱的背景下,假设密集的社区涵盖了共同的主题。 社区报告生成 然后你指示你的LLM为每个图社区生成一份报告。这些社区报告有助于抽象出单一主题,从而把握数据集中的更广泛、全局的概念。",
+            "source_name": "慕课网",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web_supplement",
+          "source_record_id": "src_3cae2cdceb14fb819ec76d78",
+          "title": "Graph RAG 生产部署指南 — 一步一步详解",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "9",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://zhuanlan.zhihu.com/p/703137121",
+          "observed_at": "2026-09-16T14:44:55.848649Z",
+          "provenance": {
+            "query": "Sketch-DBH graph stream partitioning",
+            "rank": 9,
+            "run_id": "run-d20cf7604f34411abe224ba46f4c7006",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": "【论文翻译】-- Omnisketch:高效的多维任意谓词高速流分析 兮尔 在这里插入图片描述 在这里插入图片描述 摘要 不同学科的一个关键需求是对快节奏的 数据流 执行分析,其性质类似于 关系数据库 中的传统 OLAP 分析,即使用过滤器和聚合。然而,由于存储要求高,以及存储海量数据时引入的延迟,存储 无界流 不是一种现实或理想的方法。因此,已经提出了许多概要/草图,它们可以在小内存(通常足够小以存储在RAM中)中总结流,这样就可以有效地近似 聚合查询 ,而无需存储整个流。然而,过去的概要主要关注对单一 属性流 的总结,无法有效地处理对多个属性的任意子集进行过滤和约束。在这项工作中,我们提出了 OmniSketch ,这是第一个能够适应快节奏和复杂数据流(具有许多属性)的草图,并支持在查询时动态选择多个属性的过滤器的 计数聚合 。该草图提供概率保证、有利的空间精度权衡以及更新和查询执行的最坏情况下的对数复杂度。我们通过对真实和 合成数据 的实验证明,该草图优于最先进的技术,并且可以在配置好的精度保证下,以较小的内存需求近似复杂的临时查询。 PVLDB 参考格式:Wieger R. Punter, Odysseas Papapetrou, and Minos Garofalakis. OmniSketch: Efficient Multi-Dimensional High-Velocity Stream Analytics with Arbitrary Predicates. PVLDB, 17(3): 319 - 331, 2023. doi:10.14778/3632093.3632098 PVLDB 工件可用性: 源代码 、数据和/或其他工件已在 https://github.com/wiegerpunter/omnisketch上提供。",
+            "published_at": "2024-06-13T11:31:00",
+            "request_id": "11fcf210-cdd6-4fe2-a451-8186361fc278",
+            "search_score": null,
+            "search_snippet": "【论文翻译】-- Omnisketch:高效的多维任意谓词高速流分析 兮尔 在这里插入图片描述 在这里插入图片描述 摘要 不同学科的一个关键需求是对快节奏的 数据流 执行分析,其性质类似于 关系数据库 中的传统 OLAP 分析,即使用过滤器和聚合。然而,由于存储要求高,以及存储海量数据时引入的延迟,存储 无界流 不是一种现实或理想的方法。因此,已经提出了许多概要/草图,它们可以在小内存(通常足够小以存储在RAM中)中总结流,这样就可以有效地近似 聚合查询 ,而无需存储整个流。然而,过去的概要主要关注对单一 属性流 的总结,无法有效地处理对多个属性的任意子集进行过滤和约束。在这项工作中,我们提出了 OmniSketch ,这是第一个能够适应快节奏和复杂数据流(具有许多属性)的草图,并支持在查询时动态选择多个属性的过滤器的 计数聚合 。该草图提供概率保证、有利的空间精度权衡以及更新和查询执行的最坏情况下的对数复杂度。我们通过对真实和 合成数据 的实验证明,该草图优于最先进的技术,并且可以在配置好的精度保证下,以较小的内存需求近似复杂的临时查询。 PVLDB 参考格式:Wieger R. Punter, Odysseas Papapetrou, and Minos Garofalakis. OmniSketch: Efficient Multi-Dimensional High-Velocity Stream Analytics with Arbitrary Predicates. PVLDB, 17(3): 319 - 331, 2023. doi:10.14778/3632093.3632098 PVLDB 工件可用性: 源代码 、数据和/或其他工件已在 https://github.com/wiegerpunter/omnisketch上提供。",
+            "source_name": "知乎",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web_supplement",
+          "source_record_id": "src_e93908335d5998db41869d64",
+          "title": "【论文翻译】-- Omnisketch:高效的多维任意谓词高速流分析",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "10",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://zhuanlan.zhihu.com/p/258458827",
+          "observed_at": "2026-09-16T14:44:55.848649Z",
+          "provenance": {
+            "query": "Sketch-DBH graph stream partitioning",
+            "rank": 10,
+            "run_id": "run-d20cf7604f34411abe224ba46f4c7006",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": " 1. 开源项目名称:Picasso 2. github地址:https://github.com/wuba/Picasso 3. 简介:Picasso是58同城推出的一款sketch设计稿智能解析工具,可将sketch设计稿自动解析成还原精准,可用度高的前端代码;从而提高前端开发效率,助力业务快速发展。 Picasso于2020年9月份开源,具备以下特点: UI还原度高,设计稿还原精准。 生成代码可用度高,可维护性好。 解析工具使用方便、操作简单,完全自动化解析。 针对不同的应用场景,提供运营版和普通版两种模式。 支持导出多种尺寸(1倍 1.5倍 2倍 3倍)图片,满足不同屏幕尺寸适配需求。 项目背景UI自动化已经成为当前行业研究的趋势,各大公司都在进行相关方向的研究,sketch设计稿存储的是结构化数据,这给我们进行UI自动化解析生成代码提供了契机;为了提升前端开发效率,减少页面重构的工作,甚至某些场景下完全自动化生成代码,Picasso智能解析工具应运而生。 核心设计Picasso的核心解析流程主要包括Symbol解析、图层重构、属性解析、布局处理。 1. Symbol解析 1). Symbol模块整合 设计稿源文件中包含以下两个json文件:Page页面json和Symbol模块json。 我们通过SymbolID的引用关系来推导出模块之间的依赖关系,将symbol模块json整合到各个Page页面json中,便于后续的解析。 2). Symbol模块传参 参数只作用于其子Symbol模块。 相同参数传值:外层(父父级)参数值的权重高于内层(父级)。 3). Symbol模块缩放 根据SymbolInstance和SymbolMaster的尺寸比例,等比例转换symbolMaster的坐标尺寸,作为实例SymbolInstance的坐标尺寸。 通过对Symbol的解析,我们得了一个包含页面重构所需的完整信息的json。 2. 图层重构图层重构主要包含五个步骤,如下图: 第一步. 去掉分组 由于UI设计师并不了解前端的布局习惯,他们对图层进行的分组,往往和前端期望的结果差别较大,几乎不可用;看下这张设计稿: 该设计稿的原始分组如下: 前端开发期望的分组如下: 因此,我们需要去掉设计稿中已有的分组,在后续的流程中进行重新分组。第二步. 分层 UI设计稿中经常会出现多层重叠的结构,例如弹层,吸底栏等;这时候需要我们进行分层处理,然后再对每层进行单独处理。 第三步. 重新排序和组合 UI设计稿主要专注于视觉效果,对设计稿中图层的顺序没有特别的要求,这就造成我们拿到的设计稿中图层的顺序是混乱的。 通过我们的排序算法,将图层的按照从左上到右下的顺序排列,如此同时处理图层之间的父子关系,优化后的顺序如下:",
+            "published_at": "2020-11-20T14:13:41",
+            "request_id": "11fcf210-cdd6-4fe2-a451-8186361fc278",
+            "search_score": null,
+            "search_snippet": "1. 开源项目名称:Picasso 2. github地址:https://github.com/wuba/Picasso 3. 简介:Picasso是58同城推出的一款sketch设计稿智能解析工具,可将sketch设计稿自动解析成还原精准,可用度高的前端代码;从而提高前端开发效率,助力业务快速发展。 Picasso于2020年9月份开源,具备以下特点: UI还原度高,设计稿还原精准。 生成代码可用度高,可维护性好。 解析工具使用方便、操作简单,完全自动化解析。 针对不同的应用场景,提供运营版和普通版两种模式。 支持导出多种尺寸(1倍 1.5倍 2倍 3倍)图片,满足不同屏幕尺寸适配需求。 项目背景UI自动化已经成为当前行业研究的趋势,各大公司都在进行相关方向的研究,sketch设计稿存储的是结构化数据,这给我们进行UI自动化解析生成代码提供了契机;为了提升前端开发效率,减少页面重构的工作,甚至某些场景下完全自动化生成代码,Picasso智能解析工具应运而生。 核心设计Picasso的核心解析流程主要包括Symbol解析、图层重构、属性解析、布局处理。 1. Symbol解析 1). Symbol模块整合 设计稿源文件中包含以下两个json文件:Page页面json和Symbol模块json。 我们通过SymbolID的引用关系来推导出模块之间的依赖关系,将symbol模块json整合到各个Page页面json中,便于后续的解析。 2). Symbol模块传参 参数只作用于其子Symbol模块。 相同参数传值:外层(父父级)参数值的权重高于内层(父级)。 3). Symbol模块缩放 根据SymbolInstance和SymbolMaster的尺寸比例,等比例转换symbolMaster的坐标尺寸,作为实例SymbolInstance的坐标尺寸。 通过对Symbol的解析,我们得了一个包含页面重构所需的完整信息的json。 2. 图层重构图层重构主要包含五个步骤,如下图: 第一步. 去掉分组 由于UI设计师并不了解前端的布局习惯,他们对图层进行的分组,往往和前端期望的结果差别较大,几乎不可用;看下这张设计稿: 该设计稿的原始分组如下: 前端开发期望的分组如下: 因此,我们需要去掉设计稿中已有的分组,在后续的流程中进行重新分组。第二步. 分层 UI设计稿中经常会出现多层重叠的结构,例如弹层,吸底栏等;这时候需要我们进行分层处理,然后再对每层进行单独处理。 第三步. 重新排序和组合 UI设计稿主要专注于视觉效果,对设计稿中图层的顺序没有特别的要求,这就造成我们拿到的设计稿中图层的顺序是混乱的。 通过我们的排序算法,将图层的按照从左上到右下的顺序排列,如此同时处理图层之间的父子关系,优化后的顺序如下:",
+            "source_name": "知乎",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web_supplement",
+          "source_record_id": "src_bf1a72b7da03163d09cf6218",
+          "title": "开源| Picasso:sketch设计稿智能解析工具",
+          "work_id": null
+        }
+      ]
+    },
+    "succeeded": true,
+    "summary": "发现并保存 10 个 Web 候选来源",
+    "tool_name": "web_search"
+  },
+  "resolved_arguments": {
+    "max_results": 10,
+    "query": "Sketch-DBH graph stream partitioning"
+  },
+  "result_count": 10,
+  "stage_name": "run_research_task",
+  "started_at": "2026-09-16T14:44:54.924375+00:00",
+  "tool_call_id": "tool_0038",
+  "tool_name": "web_search"
+}

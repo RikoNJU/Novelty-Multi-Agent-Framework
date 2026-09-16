@@ -1,0 +1,562 @@
+{
+  "agent_arguments": {
+    "max_results": 10,
+    "query": "graph stream partitioning Count-Min Sketch min-heap degree"
+  },
+  "agent_tool_call_id": "01a0aad7affa47110ad7b8946fd54d15",
+  "business_status": "NORMAL",
+  "duration": 0.865697,
+  "duration_ms": 865,
+  "error": null,
+  "execution_status": "SUCCESS",
+  "failure_phase": null,
+  "finished_at": "2026-09-16T15:30:58.147922+00:00",
+  "normalized_result": {
+    "query": "graph stream partitioning Count-Min Sketch min-heap degree",
+    "results": [
+      {
+        "published_at": "2019-12-11T11:31:40",
+        "snippet": "我需要在一个流中存储前k个最频繁的元素.为了估计频率,我使用count-min-sketch算法.我的流是由键(字符串)组成的.因此,基本上每次我在我的流中遇到新的密钥时,我都会通过查看count-min-sketch数据结构来计算到目前为止当前密钥的频率.但是,我无法存储前k个最频繁的密钥. 我的第一个想法是将它们存储在一个大小固定为k的最小堆中,然后在这个最小堆中存储频率,键与比较器比较频率.因此,每当我得到一个键的频率时,我会尝试查看堆大小是否超过k,如果是,则将当前键的频率与min-heap中的最高(最小)频率进行比较,如果当前键的频率较高,则弹出顶部,并将键插入到堆中. 然而,我意识到min-heap不是一个集合,这意味着它允许复制.假设我有一个非常热的键,我一直在流中计数它,所以每次我将这个频率,键插入堆中,最终我的堆将充满相同的键,只有不同的频率. 所以我想知道有没有一个好方法来存储count-min-sketch中的前k个不同的更频繁的元素. java data-structures heap count-min-sketch 关注问题 分享 en 回答 2 推荐 最新 stack overflow用户 发布于 2019-12-11 11:31:40 您还可以维护所有三种数据结构1. count-min sketch来存储您在流中遇到的所有内容2.最小大小为k的堆3.大小为k的散列映射 在热门项的情况下-您增加计数并从count-min sketch获得新的频率,假设该项已经存在于min-heap中,您从hash-map获得该项并增加频率 当你遇到一个不同的项目,它的频率刚刚增加,并且进入了著名的min-heap,你可以同时从min-heap和hash-map中取出根,所以基本上min-heap可以帮助你维护前k个频繁的项目,并使用hash-map来随机访问那些频繁的项目.请注意,min-heap和hash-map都可以映射到相同的内存地址,因此只能对存储在hash-map中的项执行更新频率 收藏 分享 票数 2 en stack overflow用户 发布于 2018-11-01 14:05:19 维护堆中已有的 [key,<frequency,position>] 对的哈希图是有意义的. position 指堆中键的索引(假设基于数组的堆).当密钥到达时,您检查两个条件: -the密钥在哈希表中 -its频率已更改 如果两者都为真,那么您将在 o(1) 时间内找到堆中的键,因为您已经在hashmap中存储了它的位置,然后修改键的频率,并根据频率的增加或降低,从该位置( o(logn) )",
+        "source_name": "Tencent腾讯（腾讯官方网）",
+        "source_record_id": "src_53aeb62fca9510f7fd4c6cc3",
+        "title": "存储count-min-sketch的前k个结果",
+        "url": "https://cloud.tencent.com/developer/ask/sof/105861594"
+      },
+      {
+        "published_at": "2026-04-24T11:36:57",
+        "snippet": "Count-Min Sketch:海量数据频率统计的“轻量级计数器“ 一句话总结:Count-Min Sketch(CMS)是一种用固定内存空间近似统计流数据频率的概率数据结构。它用空间换精度,用确定性上界换亚线性内存,是处理海量实时计数的工程利器。 一、论文出处 Count-Min Sketch 由Graham Cormode与S. Muthukrishnan于2005 年正式提出,发表在Journal of Algorithms上: Cormode, G., & Muthukrishnan, S. (2005).“An improved data stream summary: the count-min sketch and its applications.”Journal of Algorithms, 55(1), 58–75. DOI:10.1016/j.jalgor.2003.12.001 该论文奠定了CMS的理论基础,并系统论证了其在数据流摘要、频率估计、Heavy Hitter 检测等场景中的应用。此后 CMS 成为流计算、网络遥测、数据库近似查询等领域的标准工具之一 。 使用一个d × w d \\times wd×w的计数器矩阵; 对每个元素用d dd个独立哈希函数映射到每行的一个计数器; 更新时:所有映射位置+ 1 +1+1; 查询时:取d dd个位置中的最小值作为频率估计。 误差保证(核心定理) 由于哈希碰撞只会使计数器\"高估\"(overestimate),取最小值可在概率意义上将误差控制在ε ∥ a ∥ 1 \\varepsilon \\|a\\|_1ε∥a∥1​以内,空间复杂度仅为O ( ( 1 / ε ) log ⁡ ( 1 / δ ) ) O((1/\\varepsilon) \\log(1/\\delta))O((1/ε)log(1/δ))。 对于任意元素x xx,以至少1 − δ 1-\\delta1−δ的概率: a x ≤ a ^ x ≤ a x + ε∥ a ∥ 1 a_x \\leq \\hat{a}_x \\leq a_x + \\varepsilon \\|a\\|_1ax​≤a^x​≤ax​+ε∥a∥1​ 其中: ∥ a ∥ 1 = ∑ y a y \\|a\\|_1 = \\sum_{y} a_y∥a∥1​=∑y​ay​(所有元素频率之和,即数据流总长度) ε \\varepsilonε= 允许的相对误差上界 δ \\deltaδ= 失败概率(置信度参数) 参数设置公式 为了达到上述误差保证,参数设置为: w = ⌈ e ε ⌉ , d = ⌈ ln ⁡ ( 1 δ ) ⌉ \\boxed{w = \\left\\lceil \\frac{e}{\\varepsilon} \\right\\rceil, \\quad d = \\left\\lceil \\ln\\left(\\frac{1}{\\delta}\\right) \\right\\rceil}w=⌈εe​⌉,d=⌈ln(δ1​)⌉​ 其中e ≈ 2.718 e \\approx 2.718e≈2.718是自然对数的底。 空间复杂度 O ( 1 ε log ⁡ 1 δ ) \\boxed{O\\left(\\frac{1}{\\varepsilon} \\log\\frac{1}{\\delta}\\right)}O(ε1​logδ1​)​ 对比:精确存储需要O ( ∣ U ∣ ) O(|\\mathcal{U}|)O(∣U∣)的空间,而 CMS 用亚线性空间就能给出有概率保",
+        "source_name": "CSDN软件开发网",
+        "source_record_id": "src_7cd6d25fc8bb5309d79c3741",
+        "title": "Count-Min Sketch:海量数据频率统计的“轻量级计数器“",
+        "url": "https://blog.csdn.net/qq_19446965/article/details/160451571"
+      },
+      {
+        "published_at": "2025-10-24T08:46:11",
+        "snippet": "structalignas(64) Bucket { uint64_tkey; floatvalue; booloccupied; }; Bucket*find(uint64_tkey){ size_tindex =hash(key) % capacity; while(buckets[index].occupied) { if(buckets[index].key == key) return&buckets[index]; index = (index +1) % capacity;// 线性探测 } returnnullptr; } 利用现代多核架构,可通过线程池预计算用户嵌入向量相似度。典型策略包括: 使用std::async 或自定义线程池分发批量推理任务 通过内存池减少频繁 new/delete 带来的开销 采用SIMD 指令加速向量点积运算 缓存友好性设计 为提升CPU缓存命中率,应尽量保证数据连续存储。下表对比了两种常见存储方式的性能特征: <table><tr><th>存储方式</th><th>内存局部性</th><th>插入效率</th><th>适用场景</th></tr><tr><td>数组连续存储</td><td>高</td><td>低</td><td>静态特征批量处理</td></tr><tr><td>链表指针跳转</td><td>低</td><td>高</td><td>动态行为流更新</td></tr></table> 第二章:高并发处理的核心机制与实现 2.1 基于线程池的请求并发控制 在高并发服务场景中,直接为每个请求创建线程将导致资源耗尽。线程池通过复用有限线程,有效控制系统负载。 使用固定大小的线程池,预先初始化一组工作线程,任务提交至队列后由空闲线程处理。 varwg sync.WaitGroup pool :=make(chanstruct{},10)// 控制最大并发数为10 fori :=0; i <100; i++ { wg.Add(1) gofunc(idint){ deferwg.Done() pool <-struct{}{}// 获取执行权 deferfunc(){ <-pool }()// 释放 // 执行业务逻辑 fmt.Printf(\"处理请求: %d\\n\", id) }(i) } Lobster AI 上述代码通过带缓冲的 channel 模拟线程池,pool := make(chan struct{}, 10)限制同时运行的 goroutine 数量,确保系统资源不被耗尽。",
+        "source_name": "CSDN软件开发网",
+        "source_record_id": "src_22b76229c5b2dfe20ee4ae13",
+        "title": "【推荐系统性能飞跃指南】:C++高并发处理与内存优化的7个关键技巧",
+        "url": "https://blog.csdn.net/DeepNest/article/details/153814881"
+      },
+      {
+        "published_at": "2026-04-20T04:28:33",
+        "snippet": "1. Top K问题的本质与挑战 Top K问题看似简单——找出数据集中最大或最小的K个元素,但在实际应用中却充满变数。数据规模、内存限制、实时性要求、数据分布特征等因素都会影响解决方案的选择。 在内存可容纳全部数据的情况下,我们有多种选择: 全排序后取前K个(O(nlogn)) 部分排序算法如快速选择(O(n)平均) 堆结构(O(nlogk)) 但当数据量超出内存容量时,问题就变得复杂起来。我曾参与过一个电商日志分析项目,单日用户行为数据就超过500GB,传统的排序方法完全无法应对。 关键考量因素: 数据规模:内存能否容纳全部数据? 数据特性:是否有序?分布是否均匀? 实时性要求:是否需要流式处理? 精确度要求:允许近似解吗? 提示:在实际工程中,99%的情况下我们都不需要完全精确的Top K结果,适度的近似可以带来显著的性能提升。 2. 内存友好型解决方案 对于可以完全装入内存的数据集,我们有多种高效解决方案。让我们从最直观的方法开始,逐步优化。 2.1 基于排序的经典方法 // 使用STL sort进行全排序 vector<int>findTopKBySort(vector<int>& nums,intk){ sort(nums.begin(), nums.end(),greater<int>()); returnvector<int>(nums.begin(), nums.begin() + k); } Lobster AIcpp 运行 这种方法简单直接,但时间复杂度为O(nlogn),当n很大而k很小时效率不高。我在处理百万级数据时,这种方法耗时约120ms,显然有优化空间。 2.2 快速选择算法优化 快速选择(QuickSelect)是快速排序的变种,平均时间复杂度O(n),最坏情况O(n²)。在实践中,通过合理选择pivot可以避免最坏情况。",
+        "source_name": "CSDN软件开发网",
+        "source_record_id": "src_2436ba2ed954d56864e07217",
+        "title": "从信息学奥赛题到实际应用:Top K问题在推荐系统与日志分析中的C++实现",
+        "url": "https://blog.csdn.net/weixin_30797199/article/details/97890279"
+      },
+      {
+        "published_at": "2026-04-20T10:34:43",
+        "snippet": "Caffeine 缓存深度扩展:Count-Min Sketch 数学原理、自定义 Weigher 与 Spring Boot 集成 第一部分:引言与背景 1.1 为什么需要本地缓存? 在分布式系统中,缓存是提升性能的“银弹”之一。相比 Redis 等分布式缓存,本地(进程内)缓存具有: 零网络开销:内存访问延迟为纳秒级(~10-100ns),而 Redis 为毫秒级(~0.1-1ms)。 数据安全隔离:不依赖外部服务,即使网络分区,核心功能仍可运行。 高并发吞吐:Caffeine 基于 JDK 的ConcurrentHashMap思想优化,单机 QPS 可达百万级。 1.2 Caffeine 的诞生 Caffeine 是 GoogleGuavaCache 的替代者,基于Java 8重写,借鉴了ConcurrentHashMap的高并发设计,并引入了W-TinyLFU淘汰算法,解决了传统 LRU/LFU 的痛点。 第二部分:核心优势(对标 Guava Cache) <table><tr><th>特性</th><th>Guava Cache</th><th>Caffeine</th><th>胜出原因</th></tr><tr><td>淘汰算法</td><td>近似LRU</td><td>W-TinyLFU (Window + TinyLFU + Segmented LRU)</td><td>抗突发流量,命中率更高</td></tr><tr><td>写入性能</td><td>分段锁 + 简单 CAS</td><td>异步环形缓冲区 (Ring Buffer) + 无锁化</td><td>写吞吐量提升 10+ 倍</td></tr><tr><td>内存占用</td><td>较高</td><td>优化元数据存储 (使用 Object[] 而非 Node 对象)</td><td>节省30% 堆内存</td></tr><tr><td>异步支持</td><td>无</td><td>LoadingCache 异步变体 ( AsyncCache )</td><td>非阻塞加载</td></tr><tr><td>统计信息</td><td>基础</td><td>详细的命中率、加载时间、淘汰计数</td><td>便于监控</td></tr></table> 基准测试结果(官方数据): 在8 核 16G 机器上,Caffeine 读操作约100M ops/s,Guava 约30M ops/s;写操作差距更大。 第三部分:W-TinyLFU 算法深度解析 这是Caffeine 的灵魂。要理解 Caffeine,必须理解它如何平衡频率与新鲜度。 3.1 传统算法的缺陷 LRU:偏爱冷数据(一次扫描全部淘汰热点)。 LFU:偏爱历史热点(无法适应访问模式变化,且需要维护频率计数器,内存开销大)。 ARC(Adaptive Replacement Cache):复杂,且需要额外元数据。 3.2 W-TinyLFU 的三大组件 text ┌─────────────┐│ 新访问条目 │└──────┬──────┘│┌──────▼──────┐│ Window │ (占 1% 容量) │ Cache │ LRU └──────┬──────┘│ 淘汰 ┌──────▼──────┐│ TinyLFU │ (主区,占 99% 容量) │ (Seg LRU) │→ Protected (80%) ││",
+        "source_name": "CSDN软件开发网",
+        "source_record_id": "src_b2194c0d18576eaddd8be2e4",
+        "title": "Caffeine 缓存深度扩展:Count-Min Sketch 数学原理、自定义 Weigher 与 Spring Boot 集成_caffine如何实现count-min sketch寻找位置的-CSDN博客",
+        "url": "https://blog.csdn.net/qq_41581588/article/details/160279262"
+      },
+      {
+        "published_at": "2026-08-28T00:00:00",
+        "snippet": "Two sketch-based algorithms for processing time-decayed streams have been recently published independently near the end of 2016. The Filtered Space Saving with Quasi-Heap (FSSQ) algorithm, besides a sketch, also uses an additional data structure called quasi-heap to maintain frequent items. Forward Decay Count-Min Space Saving (FDCMSS), our algorithm, cleverly combines key ideas borrowed from forward decay, the Count-Min sketch and the Space Saving algorithm. Therefore, it makes sense to compare and contrast the two algorithms in order to fully understand their strengths and weaknesses. We show, through extensive experimental results, that FSSQ is better for detecting frequent items than for frequency estimation. The use of the quasi-heap data structure slows down the algorithm owing to the huge number of maintenance operations. Therefore, FSSQ may not be able to cope with high-speed data streams. FDCMSS is better suitable for frequency estimation; moreover, it is extremely fast and can be used in the context of high-speed data streams and for the detection of frequent items as well, since its recall is always greater than 99%, even when using an extremely tiny amount of space. Therefore, FDCMSS proves to be an overall good choice when considering jointly the recall, precision, average relative error and the speed.",
+        "source_name": "无",
+        "source_record_id": "src_8f396c6fb034e534fe50f112",
+        "title": "On Frequency Estimation and Detection of Frequent Items in Time Faded Streams",
+        "url": "http://ieeexplore.ieee.org/document/8091102/"
+      },
+      {
+        "published_at": "2024-03-17T16:33:31",
+        "snippet": "Heterogeneous Environment Aware Streaming Graph Partitioning(IEEE Trans2014) 随着图数据规模增大,图分区成为有效预处理技术。多数现有流分区工作假设节点同质,但实际集群常为异构,传统算法性能会下降。本文提出新颖自适应流图分区方法,对异构环境建模,提出新目标函数和流算法。实验表明,该方法能显著提高作业执行时间,平衡工作负载。 Heterogeneous Environment Aware Streaming Graph Partitioning–异构环境感知流图分区 基于完成时间最早的异构感知流式图划分 对象:(非动态)流式大图 划分方式:以顶点为中心 缺点:仅考虑了图处理系统,没有考虑应用在其上的图算法对图划分的影响 摘要   随着图数据可用性的提高和云计算范式的广泛采用,图分区已经成为一种有效的预处理技术,可以平衡计算工作量和应对大量输入数据。由于对整个图进行分区的成本是昂贵的,因此最近有一些针对流图分区的尝试性工作,这些工作运行速度更快,易于并行化,并且可以增量更新。大多数现有的流分区工作都假设集群内的工作节点本质上是同质的。不幸的是,这个假设并不总是成立。实验表明,这些同构算法在异构环境中运行时性能会显着下降。在本文中,我们提出了一种新颖的自适应流图分区方法来应对异构环境。我们首先考虑每个节点的计算能力(例如CPU频率)和通信能力(例如网络带宽)的不平衡,对异构计算环境进行形式化建模。基于该模型,我们提出了一种新的图划分目标函数,旨在最小化图处理作业的总执行时间。然后,我们针对该目标函数探索一些简单而有效的流算法,可以实现平衡且高效的划分结果。在具有真实世界网络和社交网络图的中等规模计算集群上进行了大量实验。结果表明,与最先进的解决方案相比,所提出的方法取得了显着的改进。 引言   近年来,图数据规模变大并持续快速增长[11],[9]。图数据前所未有的激增需要高效的处理机制和方法来处理不同的工作负载。   事实证明,传统的 MapReduce 框架对于图上的迭代计算工作负载效率低下 [12]。因此,最近提出了许多基于图的并行框架。例如,Pregel、GraphLab [18]、[16]被提出来利用不同的并行图处理方法。作为最近新兴的并行图计算系统的代表,Pregel基于BSP(批量同步并行)模型[30],并采用以顶点为中心的模型,其中每个顶点以一系列超级步骤执行用户定义的函数。默认情况下,Pregel使用哈希函数来划分顶点,这对于机器之间的大量通信是低效的。需要一个有效的图形分区来最大限度地减少应用程序的整体运行时间。",
+        "source_name": "CSDN软件开发网",
+        "source_record_id": "src_6562ea71be456ce965125221",
+        "title": "Heterogeneous Environment Aware Streaming Graph Partitioning(IEEE Trans2014)",
+        "url": "https://blog.csdn.net/weixin_43856668/article/details/136777936"
+      },
+      {
+        "published_at": "2024-12-20T22:57:42",
+        "snippet": "如何查找一组未排序的数中,第K大的元素? 假设现在我们有一个包含 10 亿个搜索关键词的日志文件,如何能快速获取到热门榜 Top 10 的搜索关键词? 如何根据年龄给 100 万用户排序? 在两个包含10亿个url地址的文件内如何找到相同的url ? 1. 如何实现LRU缓存淘汰算法 package com.lruDemo; import java.util.*; publicclassLRUCache<K, V>{ privatefinalint capacity; privatefinalMap<K, V>cache;//存储缓存的键值对 privatefinalLinkedHashMap<K, Long>accessOrder;//存储键的访问时间,用于决定淘汰顺序 //构造函数 public LRUCache(int capacity) { this.capacity=capacity; this.cache=new LinkedHashMap<>(capacity,0.75f,true);//自动按访问顺序排序 this.accessOrder=new LinkedHashMap<>(); } //获取缓存数据 public Vget(Kkey) { if(!cache.containsKey(key)) { returnnull; } //将此元素访问时间更新为最新 accessOrder.put(key, System.nanoTime()); returncache.get(key); } //插入缓存数据 public void put(Kkey, Vvalue) { if(cache.size()>=capacity) { evict();//如果缓存满了,执行淘汰 } cache.put(key,value); accessOrder.put(key, System.nanoTime());//更新插入的元素的时间 } //淘汰最久未使用的元素 private void evict() { //找出访问时间最早的元素(即最久未使用) long oldestTime=Long.MAX_VALUE; K oldestKey=null; for(Map.Entry<K, Long>entry : accessOrder.entrySet()) { if(entry.getValue()<oldestTime) { oldestTime=entry.getValue(); oldestKey=entry.getKey(); } } if(oldestKey !=null) { cache.remove(oldestKey);//删除最久未访问的元素 accessOrder.remove(oldestKey); } } //输出缓存内容 public void printCache() { System.out.println(cache); } //测试LRU缓存 public static void main(String[] args) { LRUCache<Integer,String>lruCache=new LRUCache<>(3); lruCache.put(1,\"A\"); lruCache.put(2,\"B\"); lruCache.put(3,\"C\"); lruCache.printCache();//输出:{1=A,2=B,3=C}",
+        "source_name": "CSDN软件开发网",
+        "source_record_id": "src_1768c26d0e078057f64bb6dc",
+        "title": "排序算法相关场景面试-CSDN博客",
+        "url": "https://blog.csdn.net/weixin_44374928/article/details/144621511"
+      },
+      {
+        "published_at": "2026-02-14T01:51:31",
+        "snippet": "1.1 传统方案的瓶颈:HashMap + Heap 与 Count-Min Sketch 我们先快速回顾一下常见的两种思路及其局限: HashMap+ 最小堆:这是最直观的方法。用一个HashMap<String, Long>记录每个元素的精确出现次数,同时维护一个容量为K的最小堆来保存当前的TopK候选。 优点:结果100%准确。 致命缺点:空间复杂度为O(N),N是数据流中不同元素的数量。在商品ID、用户ID、搜索词等基数巨大的场景下,内存会迅速被撑爆,完全不具备可扩展性。 Count-Min Sketch (CMS):这是一个经典的概率数据结构。它使用一个d行w列的二维数组,配合d个独立的哈希函数。每个元素到来时,会被这d个哈希函数映射到每一行的某个位置,并将该位置的计数器加1。",
+        "source_name": "CSDN软件开发网",
+        "source_record_id": "src_347e43f9a0a88edf5459c8ed",
+        "title": "Java实战:手把手教你用HeavyKeeper实现实时TopK热点检测(附完整代码)",
+        "url": "https://blog.csdn.net/t1u2v/article/details/155190077"
+      },
+      {
+        "published_at": "2023-04-20T10:32:25",
+        "snippet": "GridGraph论文分析 单机内存图处理系统受限于内存空间和单机算力,能够解决的图规模有限。分布式内存图处理系统理论上可以随着集群规模的增大进而解决更大的图规模,但集群间的网络带宽问题,负载不均衡,同步开销大,容错开销和图分割挑战也愈变明显。无论是单机还是分布式,内存式图处理系统能够处理的图规模都是有限的。因此想要使用更少的资源解决更大的图规模,可以使用单机核外图处理系统。单机核外图处理系统使用磁盘顺序读写进行数据置换,能够在有限的内存中计算更大规模的图。单机核外图处理系统在最大化利用磁盘顺序读写,在选择调度和同异步计算模式等方面做出了重要探索。 GridGraph GridGraph是一种单机核外图处理系统,在大规模图处理系统中充分利用磁盘读写,在有限内存中高效完成大规模图计算。 GridGraph充分利用磁盘大容量,解决单机内存有限时实现大规模图计算问题。GridGraph采用Streaming-Apply方式减少计算中的IO 请求数量,通过文件调入顺序减少不必要的io开销。 同时GridGraph也利用顺序读和顺序写的特点,尽可能的较少硬盘的写操作。 主要贡献 GridGraph的主要贡献有: 1、基于边列表快速生成一种新的图表示形式--网格划分。网格划分是一种不同于邻接矩阵和邻接链表的表示形式,网格划分不需要将index排序,网格的边block可以由未排序的边列表转换而来,数据前置预处理开销小,可应用于不同的算法和不同的机器。 2、2-levelhierarchicalpartitioning 使用两层分区划分模式,该模式不仅适用于核外,在内存中同样有效。 3、提出streaming-apply模式,以提高IO。通过双滑动窗口(Dual sliding windows)保证顶点访问的局部性。 4、提供灵活的点边流式接口函数,通过用户自定义过滤函数来跳过非活跃顶点(活跃顶点:bitmap中该顶点index的状态为1)或非活跃边的计算。对于活跃顶点集随着收敛而缩小的迭代算法,这种方法显著提高了算法的性能。 为了在有限的内存中完成大规模图计算,并严格控制内存消耗,需要将图进行网格划分。 1、顶点集划分成P个均匀的chunk。 2、边集划分在P*P个block中,行表示源顶点,列表示目的顶点。",
+        "source_name": "知乎",
+        "source_record_id": "src_69fcf6e51a858c40800ac456",
+        "title": "图计算引擎分析--GridGraph",
+        "url": "https://zhuanlan.zhihu.com/p/623358432"
+      }
+    ],
+    "succeeded": true,
+    "summary": "发现并保存 10 个 Web 候选来源",
+    "warnings": []
+  },
+  "raw_result": {
+    "arguments": {
+      "max_results": 10,
+      "query": "graph stream partitioning Count-Min Sketch min-heap degree"
+    },
+    "elapsed_ms": 865,
+    "error": null,
+    "payload": {
+      "search_result": {
+        "query": "graph stream partitioning Count-Min Sketch min-heap degree",
+        "results": [
+          {
+            "published_at": "2019-12-11T11:31:40",
+            "rank": 1,
+            "score": null,
+            "snippet": "我需要在一个流中存储前k个最频繁的元素.为了估计频率,我使用count-min-sketch算法.我的流是由键(字符串)组成的.因此,基本上每次我在我的流中遇到新的密钥时,我都会通过查看count-min-sketch数据结构来计算到目前为止当前密钥的频率.但是,我无法存储前k个最频繁的密钥. 我的第一个想法是将它们存储在一个大小固定为k的最小堆中,然后在这个最小堆中存储频率,键与比较器比较频率.因此,每当我得到一个键的频率时,我会尝试查看堆大小是否超过k,如果是,则将当前键的频率与min-heap中的最高(最小)频率进行比较,如果当前键的频率较高,则弹出顶部,并将键插入到堆中. 然而,我意识到min-heap不是一个集合,这意味着它允许复制.假设我有一个非常热的键,我一直在流中计数它,所以每次我将这个频率,键插入堆中,最终我的堆将充满相同的键,只有不同的频率. 所以我想知道有没有一个好方法来存储count-min-sketch中的前k个不同的更频繁的元素. java data-structures heap count-min-sketch 关注问题 分享 en 回答 2 推荐 最新 stack overflow用户 发布于 2019-12-11 11:31:40 您还可以维护所有三种数据结构1. count-min sketch来存储您在流中遇到的所有内容2.最小大小为k的堆3.大小为k的散列映射 在热门项的情况下-您增加计数并从count-min sketch获得新的频率,假设该项已经存在于min-heap中,您从hash-map获得该项并增加频率 当你遇到一个不同的项目,它的频率刚刚增加,并且进入了著名的min-heap,你可以同时从min-heap和hash-map中取出根,所以基本上min-heap可以帮助你维护前k个频繁的项目,并使用hash-map来随机访问那些频繁的项目.请注意,min-heap和hash-map都可以映射到相同的内存地址,因此只能对存储在hash-map中的项执行更新频率 收藏 分享 票数 2 en stack overflow用户 发布于 2018-11-01 14:05:19 维护堆中已有的 [key,<frequency,position>] 对的哈希图是有意义的. position 指堆中键的索引(假设基于数组的堆).当密钥到达时,您检查两个条件: -the密钥在哈希表中 -its频率已更改 如果两者都为真,那么您将在 o(1) 时间内找到堆中的键,因为您已经在hashmap中存储了它的位置,然后修改键的频率,并根据频率的增加或降低,从该位置( o(logn) )",
+            "source_name": "Tencent腾讯（腾讯官方网）",
+            "source_record_id": "src_53aeb62fca9510f7fd4c6cc3",
+            "title": "存储count-min-sketch的前k个结果",
+            "url": "https://cloud.tencent.com/developer/ask/sof/105861594"
+          },
+          {
+            "published_at": "2026-04-24T11:36:57",
+            "rank": 2,
+            "score": null,
+            "snippet": "Count-Min Sketch:海量数据频率统计的“轻量级计数器“ 一句话总结:Count-Min Sketch(CMS)是一种用固定内存空间近似统计流数据频率的概率数据结构。它用空间换精度,用确定性上界换亚线性内存,是处理海量实时计数的工程利器。 一、论文出处 Count-Min Sketch 由Graham Cormode与S. Muthukrishnan于2005 年正式提出,发表在Journal of Algorithms上: Cormode, G., & Muthukrishnan, S. (2005).“An improved data stream summary: the count-min sketch and its applications.”Journal of Algorithms, 55(1), 58–75. DOI:10.1016/j.jalgor.2003.12.001 该论文奠定了CMS的理论基础,并系统论证了其在数据流摘要、频率估计、Heavy Hitter 检测等场景中的应用。此后 CMS 成为流计算、网络遥测、数据库近似查询等领域的标准工具之一 。 使用一个d × w d \\times wd×w的计数器矩阵; 对每个元素用d dd个独立哈希函数映射到每行的一个计数器; 更新时:所有映射位置+ 1 +1+1; 查询时:取d dd个位置中的最小值作为频率估计。 误差保证(核心定理) 由于哈希碰撞只会使计数器\"高估\"(overestimate),取最小值可在概率意义上将误差控制在ε ∥ a ∥ 1 \\varepsilon \\|a\\|_1ε∥a∥1​以内,空间复杂度仅为O ( ( 1 / ε ) log ⁡ ( 1 / δ ) ) O((1/\\varepsilon) \\log(1/\\delta))O((1/ε)log(1/δ))。 对于任意元素x xx,以至少1 − δ 1-\\delta1−δ的概率: a x ≤ a ^ x ≤ a x + ε∥ a ∥ 1 a_x \\leq \\hat{a}_x \\leq a_x + \\varepsilon \\|a\\|_1ax​≤a^x​≤ax​+ε∥a∥1​ 其中: ∥ a ∥ 1 = ∑ y a y \\|a\\|_1 = \\sum_{y} a_y∥a∥1​=∑y​ay​(所有元素频率之和,即数据流总长度) ε \\varepsilonε= 允许的相对误差上界 δ \\deltaδ= 失败概率(置信度参数) 参数设置公式 为了达到上述误差保证,参数设置为: w = ⌈ e ε ⌉ , d = ⌈ ln ⁡ ( 1 δ ) ⌉ \\boxed{w = \\left\\lceil \\frac{e}{\\varepsilon} \\right\\rceil, \\quad d = \\left\\lceil \\ln\\left(\\frac{1}{\\delta}\\right) \\right\\rceil}w=⌈εe​⌉,d=⌈ln(δ1​)⌉​ 其中e ≈ 2.718 e \\approx 2.718e≈2.718是自然对数的底。 空间复杂度 O ( 1 ε log ⁡ 1 δ ) \\boxed{O\\left(\\frac{1}{\\varepsilon} \\log\\frac{1}{\\delta}\\right)}O(ε1​logδ1​)​ 对比:精确存储需要O ( ∣ U ∣ ) O(|\\mathcal{U}|)O(∣U∣)的空间,而 CMS 用亚线性空间就能给出有概率保",
+            "source_name": "CSDN软件开发网",
+            "source_record_id": "src_7cd6d25fc8bb5309d79c3741",
+            "title": "Count-Min Sketch:海量数据频率统计的“轻量级计数器“",
+            "url": "https://blog.csdn.net/qq_19446965/article/details/160451571"
+          },
+          {
+            "published_at": "2025-10-24T08:46:11",
+            "rank": 3,
+            "score": null,
+            "snippet": "structalignas(64) Bucket { uint64_tkey; floatvalue; booloccupied; }; Bucket*find(uint64_tkey){ size_tindex =hash(key) % capacity; while(buckets[index].occupied) { if(buckets[index].key == key) return&buckets[index]; index = (index +1) % capacity;// 线性探测 } returnnullptr; } 利用现代多核架构,可通过线程池预计算用户嵌入向量相似度。典型策略包括: 使用std::async 或自定义线程池分发批量推理任务 通过内存池减少频繁 new/delete 带来的开销 采用SIMD 指令加速向量点积运算 缓存友好性设计 为提升CPU缓存命中率,应尽量保证数据连续存储。下表对比了两种常见存储方式的性能特征: <table><tr><th>存储方式</th><th>内存局部性</th><th>插入效率</th><th>适用场景</th></tr><tr><td>数组连续存储</td><td>高</td><td>低</td><td>静态特征批量处理</td></tr><tr><td>链表指针跳转</td><td>低</td><td>高</td><td>动态行为流更新</td></tr></table> 第二章:高并发处理的核心机制与实现 2.1 基于线程池的请求并发控制 在高并发服务场景中,直接为每个请求创建线程将导致资源耗尽。线程池通过复用有限线程,有效控制系统负载。 使用固定大小的线程池,预先初始化一组工作线程,任务提交至队列后由空闲线程处理。 varwg sync.WaitGroup pool :=make(chanstruct{},10)// 控制最大并发数为10 fori :=0; i <100; i++ { wg.Add(1) gofunc(idint){ deferwg.Done() pool <-struct{}{}// 获取执行权 deferfunc(){ <-pool }()// 释放 // 执行业务逻辑 fmt.Printf(\"处理请求: %d\\n\", id) }(i) } Lobster AI 上述代码通过带缓冲的 channel 模拟线程池,pool := make(chan struct{}, 10)限制同时运行的 goroutine 数量,确保系统资源不被耗尽。",
+            "source_name": "CSDN软件开发网",
+            "source_record_id": "src_22b76229c5b2dfe20ee4ae13",
+            "title": "【推荐系统性能飞跃指南】:C++高并发处理与内存优化的7个关键技巧",
+            "url": "https://blog.csdn.net/DeepNest/article/details/153814881"
+          },
+          {
+            "published_at": "2026-04-20T04:28:33",
+            "rank": 4,
+            "score": null,
+            "snippet": "1. Top K问题的本质与挑战 Top K问题看似简单——找出数据集中最大或最小的K个元素,但在实际应用中却充满变数。数据规模、内存限制、实时性要求、数据分布特征等因素都会影响解决方案的选择。 在内存可容纳全部数据的情况下,我们有多种选择: 全排序后取前K个(O(nlogn)) 部分排序算法如快速选择(O(n)平均) 堆结构(O(nlogk)) 但当数据量超出内存容量时,问题就变得复杂起来。我曾参与过一个电商日志分析项目,单日用户行为数据就超过500GB,传统的排序方法完全无法应对。 关键考量因素: 数据规模:内存能否容纳全部数据? 数据特性:是否有序?分布是否均匀? 实时性要求:是否需要流式处理? 精确度要求:允许近似解吗? 提示:在实际工程中,99%的情况下我们都不需要完全精确的Top K结果,适度的近似可以带来显著的性能提升。 2. 内存友好型解决方案 对于可以完全装入内存的数据集,我们有多种高效解决方案。让我们从最直观的方法开始,逐步优化。 2.1 基于排序的经典方法 // 使用STL sort进行全排序 vector<int>findTopKBySort(vector<int>& nums,intk){ sort(nums.begin(), nums.end(),greater<int>()); returnvector<int>(nums.begin(), nums.begin() + k); } Lobster AIcpp 运行 这种方法简单直接,但时间复杂度为O(nlogn),当n很大而k很小时效率不高。我在处理百万级数据时,这种方法耗时约120ms,显然有优化空间。 2.2 快速选择算法优化 快速选择(QuickSelect)是快速排序的变种,平均时间复杂度O(n),最坏情况O(n²)。在实践中,通过合理选择pivot可以避免最坏情况。",
+            "source_name": "CSDN软件开发网",
+            "source_record_id": "src_2436ba2ed954d56864e07217",
+            "title": "从信息学奥赛题到实际应用:Top K问题在推荐系统与日志分析中的C++实现",
+            "url": "https://blog.csdn.net/weixin_30797199/article/details/97890279"
+          },
+          {
+            "published_at": "2026-04-20T10:34:43",
+            "rank": 5,
+            "score": null,
+            "snippet": "Caffeine 缓存深度扩展:Count-Min Sketch 数学原理、自定义 Weigher 与 Spring Boot 集成 第一部分:引言与背景 1.1 为什么需要本地缓存? 在分布式系统中,缓存是提升性能的“银弹”之一。相比 Redis 等分布式缓存,本地(进程内)缓存具有: 零网络开销:内存访问延迟为纳秒级(~10-100ns),而 Redis 为毫秒级(~0.1-1ms)。 数据安全隔离:不依赖外部服务,即使网络分区,核心功能仍可运行。 高并发吞吐:Caffeine 基于 JDK 的ConcurrentHashMap思想优化,单机 QPS 可达百万级。 1.2 Caffeine 的诞生 Caffeine 是 GoogleGuavaCache 的替代者,基于Java 8重写,借鉴了ConcurrentHashMap的高并发设计,并引入了W-TinyLFU淘汰算法,解决了传统 LRU/LFU 的痛点。 第二部分:核心优势(对标 Guava Cache) <table><tr><th>特性</th><th>Guava Cache</th><th>Caffeine</th><th>胜出原因</th></tr><tr><td>淘汰算法</td><td>近似LRU</td><td>W-TinyLFU (Window + TinyLFU + Segmented LRU)</td><td>抗突发流量,命中率更高</td></tr><tr><td>写入性能</td><td>分段锁 + 简单 CAS</td><td>异步环形缓冲区 (Ring Buffer) + 无锁化</td><td>写吞吐量提升 10+ 倍</td></tr><tr><td>内存占用</td><td>较高</td><td>优化元数据存储 (使用 Object[] 而非 Node 对象)</td><td>节省30% 堆内存</td></tr><tr><td>异步支持</td><td>无</td><td>LoadingCache 异步变体 ( AsyncCache )</td><td>非阻塞加载</td></tr><tr><td>统计信息</td><td>基础</td><td>详细的命中率、加载时间、淘汰计数</td><td>便于监控</td></tr></table> 基准测试结果(官方数据): 在8 核 16G 机器上,Caffeine 读操作约100M ops/s,Guava 约30M ops/s;写操作差距更大。 第三部分:W-TinyLFU 算法深度解析 这是Caffeine 的灵魂。要理解 Caffeine,必须理解它如何平衡频率与新鲜度。 3.1 传统算法的缺陷 LRU:偏爱冷数据(一次扫描全部淘汰热点)。 LFU:偏爱历史热点(无法适应访问模式变化,且需要维护频率计数器,内存开销大)。 ARC(Adaptive Replacement Cache):复杂,且需要额外元数据。 3.2 W-TinyLFU 的三大组件 text ┌─────────────┐│ 新访问条目 │└──────┬──────┘│┌──────▼──────┐│ Window │ (占 1% 容量) │ Cache │ LRU └──────┬──────┘│ 淘汰 ┌──────▼──────┐│ TinyLFU │ (主区,占 99% 容量) │ (Seg LRU) │→ Protected (80%) ││",
+            "source_name": "CSDN软件开发网",
+            "source_record_id": "src_b2194c0d18576eaddd8be2e4",
+            "title": "Caffeine 缓存深度扩展:Count-Min Sketch 数学原理、自定义 Weigher 与 Spring Boot 集成_caffine如何实现count-min sketch寻找位置的-CSDN博客",
+            "url": "https://blog.csdn.net/qq_41581588/article/details/160279262"
+          },
+          {
+            "published_at": "2026-08-28T00:00:00",
+            "rank": 6,
+            "score": null,
+            "snippet": "Two sketch-based algorithms for processing time-decayed streams have been recently published independently near the end of 2016. The Filtered Space Saving with Quasi-Heap (FSSQ) algorithm, besides a sketch, also uses an additional data structure called quasi-heap to maintain frequent items. Forward Decay Count-Min Space Saving (FDCMSS), our algorithm, cleverly combines key ideas borrowed from forward decay, the Count-Min sketch and the Space Saving algorithm. Therefore, it makes sense to compare and contrast the two algorithms in order to fully understand their strengths and weaknesses. We show, through extensive experimental results, that FSSQ is better for detecting frequent items than for frequency estimation. The use of the quasi-heap data structure slows down the algorithm owing to the huge number of maintenance operations. Therefore, FSSQ may not be able to cope with high-speed data streams. FDCMSS is better suitable for frequency estimation; moreover, it is extremely fast and can be used in the context of high-speed data streams and for the detection of frequent items as well, since its recall is always greater than 99%, even when using an extremely tiny amount of space. Therefore, FDCMSS proves to be an overall good choice when considering jointly the recall, precision, average relative error and the speed.",
+            "source_name": "无",
+            "source_record_id": "src_8f396c6fb034e534fe50f112",
+            "title": "On Frequency Estimation and Detection of Frequent Items in Time Faded Streams",
+            "url": "http://ieeexplore.ieee.org/document/8091102/"
+          },
+          {
+            "published_at": "2024-03-17T16:33:31",
+            "rank": 7,
+            "score": null,
+            "snippet": "Heterogeneous Environment Aware Streaming Graph Partitioning(IEEE Trans2014) 随着图数据规模增大,图分区成为有效预处理技术。多数现有流分区工作假设节点同质,但实际集群常为异构,传统算法性能会下降。本文提出新颖自适应流图分区方法,对异构环境建模,提出新目标函数和流算法。实验表明,该方法能显著提高作业执行时间,平衡工作负载。 Heterogeneous Environment Aware Streaming Graph Partitioning–异构环境感知流图分区 基于完成时间最早的异构感知流式图划分 对象:(非动态)流式大图 划分方式:以顶点为中心 缺点:仅考虑了图处理系统,没有考虑应用在其上的图算法对图划分的影响 摘要   随着图数据可用性的提高和云计算范式的广泛采用,图分区已经成为一种有效的预处理技术,可以平衡计算工作量和应对大量输入数据。由于对整个图进行分区的成本是昂贵的,因此最近有一些针对流图分区的尝试性工作,这些工作运行速度更快,易于并行化,并且可以增量更新。大多数现有的流分区工作都假设集群内的工作节点本质上是同质的。不幸的是,这个假设并不总是成立。实验表明,这些同构算法在异构环境中运行时性能会显着下降。在本文中,我们提出了一种新颖的自适应流图分区方法来应对异构环境。我们首先考虑每个节点的计算能力(例如CPU频率)和通信能力(例如网络带宽)的不平衡,对异构计算环境进行形式化建模。基于该模型,我们提出了一种新的图划分目标函数,旨在最小化图处理作业的总执行时间。然后,我们针对该目标函数探索一些简单而有效的流算法,可以实现平衡且高效的划分结果。在具有真实世界网络和社交网络图的中等规模计算集群上进行了大量实验。结果表明,与最先进的解决方案相比,所提出的方法取得了显着的改进。 引言   近年来,图数据规模变大并持续快速增长[11],[9]。图数据前所未有的激增需要高效的处理机制和方法来处理不同的工作负载。   事实证明,传统的 MapReduce 框架对于图上的迭代计算工作负载效率低下 [12]。因此,最近提出了许多基于图的并行框架。例如,Pregel、GraphLab [18]、[16]被提出来利用不同的并行图处理方法。作为最近新兴的并行图计算系统的代表,Pregel基于BSP(批量同步并行)模型[30],并采用以顶点为中心的模型,其中每个顶点以一系列超级步骤执行用户定义的函数。默认情况下,Pregel使用哈希函数来划分顶点,这对于机器之间的大量通信是低效的。需要一个有效的图形分区来最大限度地减少应用程序的整体运行时间。",
+            "source_name": "CSDN软件开发网",
+            "source_record_id": "src_6562ea71be456ce965125221",
+            "title": "Heterogeneous Environment Aware Streaming Graph Partitioning(IEEE Trans2014)",
+            "url": "https://blog.csdn.net/weixin_43856668/article/details/136777936"
+          },
+          {
+            "published_at": "2024-12-20T22:57:42",
+            "rank": 8,
+            "score": null,
+            "snippet": "如何查找一组未排序的数中,第K大的元素? 假设现在我们有一个包含 10 亿个搜索关键词的日志文件,如何能快速获取到热门榜 Top 10 的搜索关键词? 如何根据年龄给 100 万用户排序? 在两个包含10亿个url地址的文件内如何找到相同的url ? 1. 如何实现LRU缓存淘汰算法 package com.lruDemo; import java.util.*; publicclassLRUCache<K, V>{ privatefinalint capacity; privatefinalMap<K, V>cache;//存储缓存的键值对 privatefinalLinkedHashMap<K, Long>accessOrder;//存储键的访问时间,用于决定淘汰顺序 //构造函数 public LRUCache(int capacity) { this.capacity=capacity; this.cache=new LinkedHashMap<>(capacity,0.75f,true);//自动按访问顺序排序 this.accessOrder=new LinkedHashMap<>(); } //获取缓存数据 public Vget(Kkey) { if(!cache.containsKey(key)) { returnnull; } //将此元素访问时间更新为最新 accessOrder.put(key, System.nanoTime()); returncache.get(key); } //插入缓存数据 public void put(Kkey, Vvalue) { if(cache.size()>=capacity) { evict();//如果缓存满了,执行淘汰 } cache.put(key,value); accessOrder.put(key, System.nanoTime());//更新插入的元素的时间 } //淘汰最久未使用的元素 private void evict() { //找出访问时间最早的元素(即最久未使用) long oldestTime=Long.MAX_VALUE; K oldestKey=null; for(Map.Entry<K, Long>entry : accessOrder.entrySet()) { if(entry.getValue()<oldestTime) { oldestTime=entry.getValue(); oldestKey=entry.getKey(); } } if(oldestKey !=null) { cache.remove(oldestKey);//删除最久未访问的元素 accessOrder.remove(oldestKey); } } //输出缓存内容 public void printCache() { System.out.println(cache); } //测试LRU缓存 public static void main(String[] args) { LRUCache<Integer,String>lruCache=new LRUCache<>(3); lruCache.put(1,\"A\"); lruCache.put(2,\"B\"); lruCache.put(3,\"C\"); lruCache.printCache();//输出:{1=A,2=B,3=C}",
+            "source_name": "CSDN软件开发网",
+            "source_record_id": "src_1768c26d0e078057f64bb6dc",
+            "title": "排序算法相关场景面试-CSDN博客",
+            "url": "https://blog.csdn.net/weixin_44374928/article/details/144621511"
+          },
+          {
+            "published_at": "2026-02-14T01:51:31",
+            "rank": 9,
+            "score": null,
+            "snippet": "1.1 传统方案的瓶颈:HashMap + Heap 与 Count-Min Sketch 我们先快速回顾一下常见的两种思路及其局限: HashMap+ 最小堆:这是最直观的方法。用一个HashMap<String, Long>记录每个元素的精确出现次数,同时维护一个容量为K的最小堆来保存当前的TopK候选。 优点:结果100%准确。 致命缺点:空间复杂度为O(N),N是数据流中不同元素的数量。在商品ID、用户ID、搜索词等基数巨大的场景下,内存会迅速被撑爆,完全不具备可扩展性。 Count-Min Sketch (CMS):这是一个经典的概率数据结构。它使用一个d行w列的二维数组,配合d个独立的哈希函数。每个元素到来时,会被这d个哈希函数映射到每一行的某个位置,并将该位置的计数器加1。",
+            "source_name": "CSDN软件开发网",
+            "source_record_id": "src_347e43f9a0a88edf5459c8ed",
+            "title": "Java实战:手把手教你用HeavyKeeper实现实时TopK热点检测(附完整代码)",
+            "url": "https://blog.csdn.net/t1u2v/article/details/155190077"
+          },
+          {
+            "published_at": "2023-04-20T10:32:25",
+            "rank": 10,
+            "score": null,
+            "snippet": "GridGraph论文分析 单机内存图处理系统受限于内存空间和单机算力,能够解决的图规模有限。分布式内存图处理系统理论上可以随着集群规模的增大进而解决更大的图规模,但集群间的网络带宽问题,负载不均衡,同步开销大,容错开销和图分割挑战也愈变明显。无论是单机还是分布式,内存式图处理系统能够处理的图规模都是有限的。因此想要使用更少的资源解决更大的图规模,可以使用单机核外图处理系统。单机核外图处理系统使用磁盘顺序读写进行数据置换,能够在有限的内存中计算更大规模的图。单机核外图处理系统在最大化利用磁盘顺序读写,在选择调度和同异步计算模式等方面做出了重要探索。 GridGraph GridGraph是一种单机核外图处理系统,在大规模图处理系统中充分利用磁盘读写,在有限内存中高效完成大规模图计算。 GridGraph充分利用磁盘大容量,解决单机内存有限时实现大规模图计算问题。GridGraph采用Streaming-Apply方式减少计算中的IO 请求数量,通过文件调入顺序减少不必要的io开销。 同时GridGraph也利用顺序读和顺序写的特点,尽可能的较少硬盘的写操作。 主要贡献 GridGraph的主要贡献有: 1、基于边列表快速生成一种新的图表示形式--网格划分。网格划分是一种不同于邻接矩阵和邻接链表的表示形式,网格划分不需要将index排序,网格的边block可以由未排序的边列表转换而来,数据前置预处理开销小,可应用于不同的算法和不同的机器。 2、2-levelhierarchicalpartitioning 使用两层分区划分模式,该模式不仅适用于核外,在内存中同样有效。 3、提出streaming-apply模式,以提高IO。通过双滑动窗口(Dual sliding windows)保证顶点访问的局部性。 4、提供灵活的点边流式接口函数,通过用户自定义过滤函数来跳过非活跃顶点(活跃顶点:bitmap中该顶点index的状态为1)或非活跃边的计算。对于活跃顶点集随着收敛而缩小的迭代算法,这种方法显著提高了算法的性能。 为了在有限的内存中完成大规模图计算,并严格控制内存消耗,需要将图进行网格划分。 1、顶点集划分成P个均匀的chunk。 2、边集划分在P*P个block中,行表示源顶点,列表示目的顶点。",
+            "source_name": "知乎",
+            "source_record_id": "src_69fcf6e51a858c40800ac456",
+            "title": "图计算引擎分析--GridGraph",
+            "url": "https://zhuanlan.zhihu.com/p/623358432"
+          }
+        ],
+        "warnings": []
+      },
+      "source_records": [
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "1",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://cloud.tencent.com/developer/ask/sof/105861594",
+          "observed_at": "2026-09-16T15:30:58.138393Z",
+          "provenance": {
+            "query": "graph stream partitioning Count-Min Sketch min-heap degree",
+            "rank": 1,
+            "run_id": "run-35ba784d006c4137aa1c7adf065d9f1a",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": "我需要在一个流中存储前k个最频繁的元素.为了估计频率,我使用count-min-sketch算法.我的流是由键(字符串)组成的.因此,基本上每次我在我的流中遇到新的密钥时,我都会通过查看count-min-sketch数据结构来计算到目前为止当前密钥的频率.但是,我无法存储前k个最频繁的密钥. 我的第一个想法是将它们存储在一个大小固定为k的最小堆中,然后在这个最小堆中存储频率,键与比较器比较频率.因此,每当我得到一个键的频率时,我会尝试查看堆大小是否超过k,如果是,则将当前键的频率与min-heap中的最高(最小)频率进行比较,如果当前键的频率较高,则弹出顶部,并将键插入到堆中. 然而,我意识到min-heap不是一个集合,这意味着它允许复制.假设我有一个非常热的键,我一直在流中计数它,所以每次我将这个频率,键插入堆中,最终我的堆将充满相同的键,只有不同的频率. 所以我想知道有没有一个好方法来存储count-min-sketch中的前k个不同的更频繁的元素. java data-structures heap count-min-sketch 关注问题 分享 en 回答 2 推荐 最新 stack overflow用户 发布于 2019-12-11 11:31:40 您还可以维护所有三种数据结构1. count-min sketch来存储您在流中遇到的所有内容2.最小大小为k的堆3.大小为k的散列映射 在热门项的情况下-您增加计数并从count-min sketch获得新的频率,假设该项已经存在于min-heap中,您从hash-map获得该项并增加频率 当你遇到一个不同的项目,它的频率刚刚增加,并且进入了著名的min-heap,你可以同时从min-heap和hash-map中取出根,所以基本上min-heap可以帮助你维护前k个频繁的项目,并使用hash-map来随机访问那些频繁的项目.请注意,min-heap和hash-map都可以映射到相同的内存地址,因此只能对存储在hash-map中的项执行更新频率 收藏 分享 票数 2 en stack overflow用户 发布于 2018-11-01 14:05:19 维护堆中已有的 [key,<frequency,position>] 对的哈希图是有意义的. position 指堆中键的索引(假设基于数组的堆).当密钥到达时,您检查两个条件: -the密钥在哈希表中 -its频率已更改 如果两者都为真,那么您将在 o(1) 时间内找到堆中的键,因为您已经在hashmap中存储了它的位置,然后修改键的频率,并根据频率的增加或降低,从该位置( o(logn) )",
+            "published_at": "2019-12-11T11:31:40",
+            "request_id": "1339ae8c-5213-4edc-bd9e-4e5c569f82ae",
+            "search_score": null,
+            "search_snippet": "我需要在一个流中存储前k个最频繁的元素.为了估计频率,我使用count-min-sketch算法.我的流是由键(字符串)组成的.因此,基本上每次我在我的流中遇到新的密钥时,我都会通过查看count-min-sketch数据结构来计算到目前为止当前密钥的频率.但是,我无法存储前k个最频繁的密钥. 我的第一个想法是将它们存储在一个大小固定为k的最小堆中,然后在这个最小堆中存储频率,键与比较器比较频率.因此,每当我得到一个键的频率时,我会尝试查看堆大小是否超过k,如果是,则将当前键的频率与min-heap中的最高(最小)频率进行比较,如果当前键的频率较高,则弹出顶部,并将键插入到堆中. 然而,我意识到min-heap不是一个集合,这意味着它允许复制.假设我有一个非常热的键,我一直在流中计数它,所以每次我将这个频率,键插入堆中,最终我的堆将充满相同的键,只有不同的频率. 所以我想知道有没有一个好方法来存储count-min-sketch中的前k个不同的更频繁的元素. java data-structures heap count-min-sketch 关注问题 分享 en 回答 2 推荐 最新 stack overflow用户 发布于 2019-12-11 11:31:40 您还可以维护所有三种数据结构1. count-min sketch来存储您在流中遇到的所有内容2.最小大小为k的堆3.大小为k的散列映射 在热门项的情况下-您增加计数并从count-min sketch获得新的频率,假设该项已经存在于min-heap中,您从hash-map获得该项并增加频率 当你遇到一个不同的项目,它的频率刚刚增加,并且进入了著名的min-heap,你可以同时从min-heap和hash-map中取出根,所以基本上min-heap可以帮助你维护前k个频繁的项目,并使用hash-map来随机访问那些频繁的项目.请注意,min-heap和hash-map都可以映射到相同的内存地址,因此只能对存储在hash-map中的项执行更新频率 收藏 分享 票数 2 en stack overflow用户 发布于 2018-11-01 14:05:19 维护堆中已有的 [key,<frequency,position>] 对的哈希图是有意义的. position 指堆中键的索引(假设基于数组的堆).当密钥到达时,您检查两个条件: -the密钥在哈希表中 -its频率已更改 如果两者都为真,那么您将在 o(1) 时间内找到堆中的键,因为您已经在hashmap中存储了它的位置,然后修改键的频率,并根据频率的增加或降低,从该位置( o(logn) )",
+            "source_name": "Tencent腾讯（腾讯官方网）",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web_supplement",
+          "source_record_id": "src_53aeb62fca9510f7fd4c6cc3",
+          "title": "存储count-min-sketch的前k个结果",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "2",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://blog.csdn.net/qq_19446965/article/details/160451571",
+          "observed_at": "2026-09-16T15:30:58.138393Z",
+          "provenance": {
+            "query": "graph stream partitioning Count-Min Sketch min-heap degree",
+            "rank": 2,
+            "run_id": "run-35ba784d006c4137aa1c7adf065d9f1a",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": "Count-Min Sketch:海量数据频率统计的“轻量级计数器“ 一句话总结:Count-Min Sketch(CMS)是一种用固定内存空间近似统计流数据频率的概率数据结构。它用空间换精度,用确定性上界换亚线性内存,是处理海量实时计数的工程利器。 一、论文出处 Count-Min Sketch 由Graham Cormode与S. Muthukrishnan于2005 年正式提出,发表在Journal of Algorithms上: Cormode, G., & Muthukrishnan, S. (2005).“An improved data stream summary: the count-min sketch and its applications.”Journal of Algorithms, 55(1), 58–75. DOI:10.1016/j.jalgor.2003.12.001 该论文奠定了CMS的理论基础,并系统论证了其在数据流摘要、频率估计、Heavy Hitter 检测等场景中的应用。此后 CMS 成为流计算、网络遥测、数据库近似查询等领域的标准工具之一 。 使用一个d × w d \\times wd×w的计数器矩阵; 对每个元素用d dd个独立哈希函数映射到每行的一个计数器; 更新时:所有映射位置+ 1 +1+1; 查询时:取d dd个位置中的最小值作为频率估计。 误差保证(核心定理) 由于哈希碰撞只会使计数器\"高估\"(overestimate),取最小值可在概率意义上将误差控制在ε ∥ a ∥ 1 \\varepsilon \\|a\\|_1ε∥a∥1​以内,空间复杂度仅为O ( ( 1 / ε ) log ⁡ ( 1 / δ ) ) O((1/\\varepsilon) \\log(1/\\delta))O((1/ε)log(1/δ))。 对于任意元素x xx,以至少1 − δ 1-\\delta1−δ的概率: a x ≤ a ^ x ≤ a x + ε∥ a ∥ 1 a_x \\leq \\hat{a}_x \\leq a_x + \\varepsilon \\|a\\|_1ax​≤a^x​≤ax​+ε∥a∥1​ 其中: ∥ a ∥ 1 = ∑ y a y \\|a\\|_1 = \\sum_{y} a_y∥a∥1​=∑y​ay​(所有元素频率之和,即数据流总长度) ε \\varepsilonε= 允许的相对误差上界 δ \\deltaδ= 失败概率(置信度参数) 参数设置公式 为了达到上述误差保证,参数设置为: w = ⌈ e ε ⌉ , d = ⌈ ln ⁡ ( 1 δ ) ⌉ \\boxed{w = \\left\\lceil \\frac{e}{\\varepsilon} \\right\\rceil, \\quad d = \\left\\lceil \\ln\\left(\\frac{1}{\\delta}\\right) \\right\\rceil}w=⌈εe​⌉,d=⌈ln(δ1​)⌉​ 其中e ≈ 2.718 e \\approx 2.718e≈2.718是自然对数的底。 空间复杂度 O ( 1 ε log ⁡ 1 δ ) \\boxed{O\\left(\\frac{1}{\\varepsilon} \\log\\frac{1}{\\delta}\\right)}O(ε1​logδ1​)​ 对比:精确存储需要O ( ∣ U ∣ ) O(|\\mathcal{U}|)O(∣U∣)的空间,而 CMS 用亚线性空间就能给出有概率保",
+            "published_at": "2026-04-24T11:36:57",
+            "request_id": "1339ae8c-5213-4edc-bd9e-4e5c569f82ae",
+            "search_score": null,
+            "search_snippet": "Count-Min Sketch:海量数据频率统计的“轻量级计数器“ 一句话总结:Count-Min Sketch(CMS)是一种用固定内存空间近似统计流数据频率的概率数据结构。它用空间换精度,用确定性上界换亚线性内存,是处理海量实时计数的工程利器。 一、论文出处 Count-Min Sketch 由Graham Cormode与S. Muthukrishnan于2005 年正式提出,发表在Journal of Algorithms上: Cormode, G., & Muthukrishnan, S. (2005).“An improved data stream summary: the count-min sketch and its applications.”Journal of Algorithms, 55(1), 58–75. DOI:10.1016/j.jalgor.2003.12.001 该论文奠定了CMS的理论基础,并系统论证了其在数据流摘要、频率估计、Heavy Hitter 检测等场景中的应用。此后 CMS 成为流计算、网络遥测、数据库近似查询等领域的标准工具之一 。 使用一个d × w d \\times wd×w的计数器矩阵; 对每个元素用d dd个独立哈希函数映射到每行的一个计数器; 更新时:所有映射位置+ 1 +1+1; 查询时:取d dd个位置中的最小值作为频率估计。 误差保证(核心定理) 由于哈希碰撞只会使计数器\"高估\"(overestimate),取最小值可在概率意义上将误差控制在ε ∥ a ∥ 1 \\varepsilon \\|a\\|_1ε∥a∥1​以内,空间复杂度仅为O ( ( 1 / ε ) log ⁡ ( 1 / δ ) ) O((1/\\varepsilon) \\log(1/\\delta))O((1/ε)log(1/δ))。 对于任意元素x xx,以至少1 − δ 1-\\delta1−δ的概率: a x ≤ a ^ x ≤ a x + ε∥ a ∥ 1 a_x \\leq \\hat{a}_x \\leq a_x + \\varepsilon \\|a\\|_1ax​≤a^x​≤ax​+ε∥a∥1​ 其中: ∥ a ∥ 1 = ∑ y a y \\|a\\|_1 = \\sum_{y} a_y∥a∥1​=∑y​ay​(所有元素频率之和,即数据流总长度) ε \\varepsilonε= 允许的相对误差上界 δ \\deltaδ= 失败概率(置信度参数) 参数设置公式 为了达到上述误差保证,参数设置为: w = ⌈ e ε ⌉ , d = ⌈ ln ⁡ ( 1 δ ) ⌉ \\boxed{w = \\left\\lceil \\frac{e}{\\varepsilon} \\right\\rceil, \\quad d = \\left\\lceil \\ln\\left(\\frac{1}{\\delta}\\right) \\right\\rceil}w=⌈εe​⌉,d=⌈ln(δ1​)⌉​ 其中e ≈ 2.718 e \\approx 2.718e≈2.718是自然对数的底。 空间复杂度 O ( 1 ε log ⁡ 1 δ ) \\boxed{O\\left(\\frac{1}{\\varepsilon} \\log\\frac{1}{\\delta}\\right)}O(ε1​logδ1​)​ 对比:精确存储需要O ( ∣ U ∣ ) O(|\\mathcal{U}|)O(∣U∣)的空间,而 CMS 用亚线性空间就能给出有概率保",
+            "source_name": "CSDN软件开发网",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web_supplement",
+          "source_record_id": "src_7cd6d25fc8bb5309d79c3741",
+          "title": "Count-Min Sketch:海量数据频率统计的“轻量级计数器“",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "3",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://blog.csdn.net/DeepNest/article/details/153814881",
+          "observed_at": "2026-09-16T15:30:58.138393Z",
+          "provenance": {
+            "query": "graph stream partitioning Count-Min Sketch min-heap degree",
+            "rank": 3,
+            "run_id": "run-35ba784d006c4137aa1c7adf065d9f1a",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": " structalignas(64) Bucket { uint64_tkey; floatvalue; booloccupied; }; Bucket*find(uint64_tkey){ size_tindex =hash(key) % capacity; while(buckets[index].occupied) { if(buckets[index].key == key) return&buckets[index]; index = (index +1) % capacity;// 线性探测 } returnnullptr; } 利用现代多核架构,可通过线程池预计算用户嵌入向量相似度。典型策略包括: 使用std::async 或自定义线程池分发批量推理任务 通过内存池减少频繁 new/delete 带来的开销 采用SIMD 指令加速向量点积运算 缓存友好性设计 为提升CPU缓存命中率,应尽量保证数据连续存储。下表对比了两种常见存储方式的性能特征: <table><tr><th>存储方式</th><th>内存局部性</th><th>插入效率</th><th>适用场景</th></tr><tr><td>数组连续存储</td><td>高</td><td>低</td><td>静态特征批量处理</td></tr><tr><td>链表指针跳转</td><td>低</td><td>高</td><td>动态行为流更新</td></tr></table> 第二章:高并发处理的核心机制与实现 2.1 基于线程池的请求并发控制 在高并发服务场景中,直接为每个请求创建线程将导致资源耗尽。线程池通过复用有限线程,有效控制系统负载。 使用固定大小的线程池,预先初始化一组工作线程,任务提交至队列后由空闲线程处理。 varwg sync.WaitGroup pool :=make(chanstruct{},10)// 控制最大并发数为10 fori :=0; i <100; i++ { wg.Add(1) gofunc(idint){ deferwg.Done() pool <-struct{}{}// 获取执行权 deferfunc(){ <-pool }()// 释放 // 执行业务逻辑 fmt.Printf(\"处理请求: %d\\n\", id) }(i) } Lobster AI 上述代码通过带缓冲的 channel 模拟线程池,pool := make(chan struct{}, 10)限制同时运行的 goroutine 数量,确保系统资源不被耗尽。",
+            "published_at": "2025-10-24T08:46:11",
+            "request_id": "1339ae8c-5213-4edc-bd9e-4e5c569f82ae",
+            "search_score": null,
+            "search_snippet": "structalignas(64) Bucket { uint64_tkey; floatvalue; booloccupied; }; Bucket*find(uint64_tkey){ size_tindex =hash(key) % capacity; while(buckets[index].occupied) { if(buckets[index].key == key) return&buckets[index]; index = (index +1) % capacity;// 线性探测 } returnnullptr; } 利用现代多核架构,可通过线程池预计算用户嵌入向量相似度。典型策略包括: 使用std::async 或自定义线程池分发批量推理任务 通过内存池减少频繁 new/delete 带来的开销 采用SIMD 指令加速向量点积运算 缓存友好性设计 为提升CPU缓存命中率,应尽量保证数据连续存储。下表对比了两种常见存储方式的性能特征: <table><tr><th>存储方式</th><th>内存局部性</th><th>插入效率</th><th>适用场景</th></tr><tr><td>数组连续存储</td><td>高</td><td>低</td><td>静态特征批量处理</td></tr><tr><td>链表指针跳转</td><td>低</td><td>高</td><td>动态行为流更新</td></tr></table> 第二章:高并发处理的核心机制与实现 2.1 基于线程池的请求并发控制 在高并发服务场景中,直接为每个请求创建线程将导致资源耗尽。线程池通过复用有限线程,有效控制系统负载。 使用固定大小的线程池,预先初始化一组工作线程,任务提交至队列后由空闲线程处理。 varwg sync.WaitGroup pool :=make(chanstruct{},10)// 控制最大并发数为10 fori :=0; i <100; i++ { wg.Add(1) gofunc(idint){ deferwg.Done() pool <-struct{}{}// 获取执行权 deferfunc(){ <-pool }()// 释放 // 执行业务逻辑 fmt.Printf(\"处理请求: %d\\n\", id) }(i) } Lobster AI 上述代码通过带缓冲的 channel 模拟线程池,pool := make(chan struct{}, 10)限制同时运行的 goroutine 数量,确保系统资源不被耗尽。",
+            "source_name": "CSDN软件开发网",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web_supplement",
+          "source_record_id": "src_22b76229c5b2dfe20ee4ae13",
+          "title": "【推荐系统性能飞跃指南】:C++高并发处理与内存优化的7个关键技巧",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "4",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://blog.csdn.net/weixin_30797199/article/details/97890279",
+          "observed_at": "2026-09-16T15:30:58.138393Z",
+          "provenance": {
+            "query": "graph stream partitioning Count-Min Sketch min-heap degree",
+            "rank": 4,
+            "run_id": "run-35ba784d006c4137aa1c7adf065d9f1a",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": " 1. Top K问题的本质与挑战 Top K问题看似简单——找出数据集中最大或最小的K个元素,但在实际应用中却充满变数。数据规模、内存限制、实时性要求、数据分布特征等因素都会影响解决方案的选择。 在内存可容纳全部数据的情况下,我们有多种选择: 全排序后取前K个(O(nlogn)) 部分排序算法如快速选择(O(n)平均) 堆结构(O(nlogk)) 但当数据量超出内存容量时,问题就变得复杂起来。我曾参与过一个电商日志分析项目,单日用户行为数据就超过500GB,传统的排序方法完全无法应对。 关键考量因素: 数据规模:内存能否容纳全部数据? 数据特性:是否有序?分布是否均匀? 实时性要求:是否需要流式处理? 精确度要求:允许近似解吗? 提示:在实际工程中,99%的情况下我们都不需要完全精确的Top K结果,适度的近似可以带来显著的性能提升。 2. 内存友好型解决方案 对于可以完全装入内存的数据集,我们有多种高效解决方案。让我们从最直观的方法开始,逐步优化。 2.1 基于排序的经典方法 // 使用STL sort进行全排序 vector<int>findTopKBySort(vector<int>& nums,intk){ sort(nums.begin(), nums.end(),greater<int>()); returnvector<int>(nums.begin(), nums.begin() + k); } Lobster AIcpp 运行 这种方法简单直接,但时间复杂度为O(nlogn),当n很大而k很小时效率不高。我在处理百万级数据时,这种方法耗时约120ms,显然有优化空间。 2.2 快速选择算法优化 快速选择(QuickSelect)是快速排序的变种,平均时间复杂度O(n),最坏情况O(n²)。在实践中,通过合理选择pivot可以避免最坏情况。",
+            "published_at": "2026-04-20T04:28:33",
+            "request_id": "1339ae8c-5213-4edc-bd9e-4e5c569f82ae",
+            "search_score": null,
+            "search_snippet": "1. Top K问题的本质与挑战 Top K问题看似简单——找出数据集中最大或最小的K个元素,但在实际应用中却充满变数。数据规模、内存限制、实时性要求、数据分布特征等因素都会影响解决方案的选择。 在内存可容纳全部数据的情况下,我们有多种选择: 全排序后取前K个(O(nlogn)) 部分排序算法如快速选择(O(n)平均) 堆结构(O(nlogk)) 但当数据量超出内存容量时,问题就变得复杂起来。我曾参与过一个电商日志分析项目,单日用户行为数据就超过500GB,传统的排序方法完全无法应对。 关键考量因素: 数据规模:内存能否容纳全部数据? 数据特性:是否有序?分布是否均匀? 实时性要求:是否需要流式处理? 精确度要求:允许近似解吗? 提示:在实际工程中,99%的情况下我们都不需要完全精确的Top K结果,适度的近似可以带来显著的性能提升。 2. 内存友好型解决方案 对于可以完全装入内存的数据集,我们有多种高效解决方案。让我们从最直观的方法开始,逐步优化。 2.1 基于排序的经典方法 // 使用STL sort进行全排序 vector<int>findTopKBySort(vector<int>& nums,intk){ sort(nums.begin(), nums.end(),greater<int>()); returnvector<int>(nums.begin(), nums.begin() + k); } Lobster AIcpp 运行 这种方法简单直接,但时间复杂度为O(nlogn),当n很大而k很小时效率不高。我在处理百万级数据时,这种方法耗时约120ms,显然有优化空间。 2.2 快速选择算法优化 快速选择(QuickSelect)是快速排序的变种,平均时间复杂度O(n),最坏情况O(n²)。在实践中,通过合理选择pivot可以避免最坏情况。",
+            "source_name": "CSDN软件开发网",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web_supplement",
+          "source_record_id": "src_2436ba2ed954d56864e07217",
+          "title": "从信息学奥赛题到实际应用:Top K问题在推荐系统与日志分析中的C++实现",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "5",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://blog.csdn.net/qq_41581588/article/details/160279262",
+          "observed_at": "2026-09-16T15:30:58.138393Z",
+          "provenance": {
+            "query": "graph stream partitioning Count-Min Sketch min-heap degree",
+            "rank": 5,
+            "run_id": "run-35ba784d006c4137aa1c7adf065d9f1a",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": "Caffeine 缓存深度扩展:Count-Min Sketch 数学原理、自定义 Weigher 与 Spring Boot 集成 第一部分:引言与背景 1.1 为什么需要本地缓存? 在分布式系统中,缓存是提升性能的“银弹”之一。相比 Redis 等分布式缓存,本地(进程内)缓存具有: 零网络开销:内存访问延迟为纳秒级(~10-100ns),而 Redis 为毫秒级(~0.1-1ms)。 数据安全隔离:不依赖外部服务,即使网络分区,核心功能仍可运行。 高并发吞吐:Caffeine 基于 JDK 的ConcurrentHashMap思想优化,单机 QPS 可达百万级。 1.2 Caffeine 的诞生 Caffeine 是 GoogleGuavaCache 的替代者,基于Java 8重写,借鉴了ConcurrentHashMap的高并发设计,并引入了W-TinyLFU淘汰算法,解决了传统 LRU/LFU 的痛点。 第二部分:核心优势(对标 Guava Cache) <table><tr><th>特性</th><th>Guava Cache</th><th>Caffeine</th><th>胜出原因</th></tr><tr><td>淘汰算法</td><td>近似LRU</td><td>W-TinyLFU (Window + TinyLFU + Segmented LRU)</td><td>抗突发流量,命中率更高</td></tr><tr><td>写入性能</td><td>分段锁 + 简单 CAS</td><td>异步环形缓冲区 (Ring Buffer) + 无锁化</td><td>写吞吐量提升 10+ 倍</td></tr><tr><td>内存占用</td><td>较高</td><td>优化元数据存储 (使用 Object[] 而非 Node 对象)</td><td>节省30% 堆内存</td></tr><tr><td>异步支持</td><td>无</td><td>LoadingCache 异步变体 ( AsyncCache )</td><td>非阻塞加载</td></tr><tr><td>统计信息</td><td>基础</td><td>详细的命中率、加载时间、淘汰计数</td><td>便于监控</td></tr></table> 基准测试结果(官方数据): 在8 核 16G 机器上,Caffeine 读操作约100M ops/s,Guava 约30M ops/s;写操作差距更大。 第三部分:W-TinyLFU 算法深度解析 这是Caffeine 的灵魂。要理解 Caffeine,必须理解它如何平衡频率与新鲜度。 3.1 传统算法的缺陷 LRU:偏爱冷数据(一次扫描全部淘汰热点)。 LFU:偏爱历史热点(无法适应访问模式变化,且需要维护频率计数器,内存开销大)。 ARC(Adaptive Replacement Cache):复杂,且需要额外元数据。 3.2 W-TinyLFU 的三大组件 text ┌─────────────┐│ 新访问条目 │└──────┬──────┘│┌──────▼──────┐│ Window │ (占 1% 容量) │ Cache │ LRU └──────┬──────┘│ 淘汰 ┌──────▼──────┐│ TinyLFU │ (主区,占 99% 容量) │ (Seg LRU) │→ Protected (80%) ││",
+            "published_at": "2026-04-20T10:34:43",
+            "request_id": "1339ae8c-5213-4edc-bd9e-4e5c569f82ae",
+            "search_score": null,
+            "search_snippet": "Caffeine 缓存深度扩展:Count-Min Sketch 数学原理、自定义 Weigher 与 Spring Boot 集成 第一部分:引言与背景 1.1 为什么需要本地缓存? 在分布式系统中,缓存是提升性能的“银弹”之一。相比 Redis 等分布式缓存,本地(进程内)缓存具有: 零网络开销:内存访问延迟为纳秒级(~10-100ns),而 Redis 为毫秒级(~0.1-1ms)。 数据安全隔离:不依赖外部服务,即使网络分区,核心功能仍可运行。 高并发吞吐:Caffeine 基于 JDK 的ConcurrentHashMap思想优化,单机 QPS 可达百万级。 1.2 Caffeine 的诞生 Caffeine 是 GoogleGuavaCache 的替代者,基于Java 8重写,借鉴了ConcurrentHashMap的高并发设计,并引入了W-TinyLFU淘汰算法,解决了传统 LRU/LFU 的痛点。 第二部分:核心优势(对标 Guava Cache) <table><tr><th>特性</th><th>Guava Cache</th><th>Caffeine</th><th>胜出原因</th></tr><tr><td>淘汰算法</td><td>近似LRU</td><td>W-TinyLFU (Window + TinyLFU + Segmented LRU)</td><td>抗突发流量,命中率更高</td></tr><tr><td>写入性能</td><td>分段锁 + 简单 CAS</td><td>异步环形缓冲区 (Ring Buffer) + 无锁化</td><td>写吞吐量提升 10+ 倍</td></tr><tr><td>内存占用</td><td>较高</td><td>优化元数据存储 (使用 Object[] 而非 Node 对象)</td><td>节省30% 堆内存</td></tr><tr><td>异步支持</td><td>无</td><td>LoadingCache 异步变体 ( AsyncCache )</td><td>非阻塞加载</td></tr><tr><td>统计信息</td><td>基础</td><td>详细的命中率、加载时间、淘汰计数</td><td>便于监控</td></tr></table> 基准测试结果(官方数据): 在8 核 16G 机器上,Caffeine 读操作约100M ops/s,Guava 约30M ops/s;写操作差距更大。 第三部分:W-TinyLFU 算法深度解析 这是Caffeine 的灵魂。要理解 Caffeine,必须理解它如何平衡频率与新鲜度。 3.1 传统算法的缺陷 LRU:偏爱冷数据(一次扫描全部淘汰热点)。 LFU:偏爱历史热点(无法适应访问模式变化,且需要维护频率计数器,内存开销大)。 ARC(Adaptive Replacement Cache):复杂,且需要额外元数据。 3.2 W-TinyLFU 的三大组件 text ┌─────────────┐│ 新访问条目 │└──────┬──────┘│┌──────▼──────┐│ Window │ (占 1% 容量) │ Cache │ LRU └──────┬──────┘│ 淘汰 ┌──────▼──────┐│ TinyLFU │ (主区,占 99% 容量) │ (Seg LRU) │→ Protected (80%) ││",
+            "source_name": "CSDN软件开发网",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web_supplement",
+          "source_record_id": "src_b2194c0d18576eaddd8be2e4",
+          "title": "Caffeine 缓存深度扩展:Count-Min Sketch 数学原理、自定义 Weigher 与 Spring Boot 集成_caffine如何实现count-min sketch寻找位置的-CSDN博客",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "6",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "http://ieeexplore.ieee.org/document/8091102/",
+          "observed_at": "2026-09-16T15:30:58.138393Z",
+          "provenance": {
+            "query": "graph stream partitioning Count-Min Sketch min-heap degree",
+            "rank": 6,
+            "run_id": "run-35ba784d006c4137aa1c7adf065d9f1a",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": "Two sketch-based algorithms for processing time-decayed streams have been recently published independently near the end of 2016. The Filtered Space Saving with Quasi-Heap (FSSQ) algorithm, besides a sketch, also uses an additional data structure called quasi-heap to maintain frequent items. Forward Decay Count-Min Space Saving (FDCMSS), our algorithm, cleverly combines key ideas borrowed from forward decay, the Count-Min sketch and the Space Saving algorithm. Therefore, it makes sense to compare and contrast the two algorithms in order to fully understand their strengths and weaknesses. We show, through extensive experimental results, that FSSQ is better for detecting frequent items than for frequency estimation. The use of the quasi-heap data structure slows down the algorithm owing to the huge number of maintenance operations. Therefore, FSSQ may not be able to cope with high-speed data streams. FDCMSS is better suitable for frequency estimation; moreover, it is extremely fast and can be used in the context of high-speed data streams and for the detection of frequent items as well, since its recall is always greater than 99%, even when using an extremely tiny amount of space. Therefore, FDCMSS proves to be an overall good choice when considering jointly the recall, precision, average relative error and the speed.",
+            "published_at": "2026-08-28T00:00:00",
+            "request_id": "1339ae8c-5213-4edc-bd9e-4e5c569f82ae",
+            "search_score": null,
+            "search_snippet": "Two sketch-based algorithms for processing time-decayed streams have been recently published independently near the end of 2016. The Filtered Space Saving with Quasi-Heap (FSSQ) algorithm, besides a sketch, also uses an additional data structure called quasi-heap to maintain frequent items. Forward Decay Count-Min Space Saving (FDCMSS), our algorithm, cleverly combines key ideas borrowed from forward decay, the Count-Min sketch and the Space Saving algorithm. Therefore, it makes sense to compare and contrast the two algorithms in order to fully understand their strengths and weaknesses. We show, through extensive experimental results, that FSSQ is better for detecting frequent items than for frequency estimation. The use of the quasi-heap data structure slows down the algorithm owing to the huge number of maintenance operations. Therefore, FSSQ may not be able to cope with high-speed data streams. FDCMSS is better suitable for frequency estimation; moreover, it is extremely fast and can be used in the context of high-speed data streams and for the detection of frequent items as well, since its recall is always greater than 99%, even when using an extremely tiny amount of space. Therefore, FDCMSS proves to be an overall good choice when considering jointly the recall, precision, average relative error and the speed.",
+            "source_name": "无",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web_supplement",
+          "source_record_id": "src_8f396c6fb034e534fe50f112",
+          "title": "On Frequency Estimation and Detection of Frequent Items in Time Faded Streams",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "7",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://blog.csdn.net/weixin_43856668/article/details/136777936",
+          "observed_at": "2026-09-16T15:30:58.138393Z",
+          "provenance": {
+            "query": "graph stream partitioning Count-Min Sketch min-heap degree",
+            "rank": 7,
+            "run_id": "run-35ba784d006c4137aa1c7adf065d9f1a",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": "Heterogeneous Environment Aware Streaming Graph Partitioning(IEEE Trans2014) 随着图数据规模增大,图分区成为有效预处理技术。多数现有流分区工作假设节点同质,但实际集群常为异构,传统算法性能会下降。本文提出新颖自适应流图分区方法,对异构环境建模,提出新目标函数和流算法。实验表明,该方法能显著提高作业执行时间,平衡工作负载。 Heterogeneous Environment Aware Streaming Graph Partitioning–异构环境感知流图分区 基于完成时间最早的异构感知流式图划分 对象:(非动态)流式大图 划分方式:以顶点为中心 缺点:仅考虑了图处理系统,没有考虑应用在其上的图算法对图划分的影响 摘要   随着图数据可用性的提高和云计算范式的广泛采用,图分区已经成为一种有效的预处理技术,可以平衡计算工作量和应对大量输入数据。由于对整个图进行分区的成本是昂贵的,因此最近有一些针对流图分区的尝试性工作,这些工作运行速度更快,易于并行化,并且可以增量更新。大多数现有的流分区工作都假设集群内的工作节点本质上是同质的。不幸的是,这个假设并不总是成立。实验表明,这些同构算法在异构环境中运行时性能会显着下降。在本文中,我们提出了一种新颖的自适应流图分区方法来应对异构环境。我们首先考虑每个节点的计算能力(例如CPU频率)和通信能力(例如网络带宽)的不平衡,对异构计算环境进行形式化建模。基于该模型,我们提出了一种新的图划分目标函数,旨在最小化图处理作业的总执行时间。然后,我们针对该目标函数探索一些简单而有效的流算法,可以实现平衡且高效的划分结果。在具有真实世界网络和社交网络图的中等规模计算集群上进行了大量实验。结果表明,与最先进的解决方案相比,所提出的方法取得了显着的改进。 引言   近年来,图数据规模变大并持续快速增长[11],[9]。图数据前所未有的激增需要高效的处理机制和方法来处理不同的工作负载。   事实证明,传统的 MapReduce 框架对于图上的迭代计算工作负载效率低下 [12]。因此,最近提出了许多基于图的并行框架。例如,Pregel、GraphLab [18]、[16]被提出来利用不同的并行图处理方法。作为最近新兴的并行图计算系统的代表,Pregel基于BSP(批量同步并行)模型[30],并采用以顶点为中心的模型,其中每个顶点以一系列超级步骤执行用户定义的函数。默认情况下,Pregel使用哈希函数来划分顶点,这对于机器之间的大量通信是低效的。需要一个有效的图形分区来最大限度地减少应用程序的整体运行时间。",
+            "published_at": "2024-03-17T16:33:31",
+            "request_id": "1339ae8c-5213-4edc-bd9e-4e5c569f82ae",
+            "search_score": null,
+            "search_snippet": "Heterogeneous Environment Aware Streaming Graph Partitioning(IEEE Trans2014) 随着图数据规模增大,图分区成为有效预处理技术。多数现有流分区工作假设节点同质,但实际集群常为异构,传统算法性能会下降。本文提出新颖自适应流图分区方法,对异构环境建模,提出新目标函数和流算法。实验表明,该方法能显著提高作业执行时间,平衡工作负载。 Heterogeneous Environment Aware Streaming Graph Partitioning–异构环境感知流图分区 基于完成时间最早的异构感知流式图划分 对象:(非动态)流式大图 划分方式:以顶点为中心 缺点:仅考虑了图处理系统,没有考虑应用在其上的图算法对图划分的影响 摘要   随着图数据可用性的提高和云计算范式的广泛采用,图分区已经成为一种有效的预处理技术,可以平衡计算工作量和应对大量输入数据。由于对整个图进行分区的成本是昂贵的,因此最近有一些针对流图分区的尝试性工作,这些工作运行速度更快,易于并行化,并且可以增量更新。大多数现有的流分区工作都假设集群内的工作节点本质上是同质的。不幸的是,这个假设并不总是成立。实验表明,这些同构算法在异构环境中运行时性能会显着下降。在本文中,我们提出了一种新颖的自适应流图分区方法来应对异构环境。我们首先考虑每个节点的计算能力(例如CPU频率)和通信能力(例如网络带宽)的不平衡,对异构计算环境进行形式化建模。基于该模型,我们提出了一种新的图划分目标函数,旨在最小化图处理作业的总执行时间。然后,我们针对该目标函数探索一些简单而有效的流算法,可以实现平衡且高效的划分结果。在具有真实世界网络和社交网络图的中等规模计算集群上进行了大量实验。结果表明,与最先进的解决方案相比,所提出的方法取得了显着的改进。 引言   近年来,图数据规模变大并持续快速增长[11],[9]。图数据前所未有的激增需要高效的处理机制和方法来处理不同的工作负载。   事实证明,传统的 MapReduce 框架对于图上的迭代计算工作负载效率低下 [12]。因此,最近提出了许多基于图的并行框架。例如,Pregel、GraphLab [18]、[16]被提出来利用不同的并行图处理方法。作为最近新兴的并行图计算系统的代表,Pregel基于BSP(批量同步并行)模型[30],并采用以顶点为中心的模型,其中每个顶点以一系列超级步骤执行用户定义的函数。默认情况下,Pregel使用哈希函数来划分顶点,这对于机器之间的大量通信是低效的。需要一个有效的图形分区来最大限度地减少应用程序的整体运行时间。",
+            "source_name": "CSDN软件开发网",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web_supplement",
+          "source_record_id": "src_6562ea71be456ce965125221",
+          "title": "Heterogeneous Environment Aware Streaming Graph Partitioning(IEEE Trans2014)",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "8",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://blog.csdn.net/weixin_44374928/article/details/144621511",
+          "observed_at": "2026-09-16T15:30:58.138393Z",
+          "provenance": {
+            "query": "graph stream partitioning Count-Min Sketch min-heap degree",
+            "rank": 8,
+            "run_id": "run-35ba784d006c4137aa1c7adf065d9f1a",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": " 如何查找一组未排序的数中,第K大的元素? 假设现在我们有一个包含 10 亿个搜索关键词的日志文件,如何能快速获取到热门榜 Top 10 的搜索关键词? 如何根据年龄给 100 万用户排序? 在两个包含10亿个url地址的文件内如何找到相同的url ? 1. 如何实现LRU缓存淘汰算法 package com.lruDemo; import java.util.*; publicclassLRUCache<K, V>{ privatefinalint capacity; privatefinalMap<K, V>cache;//存储缓存的键值对 privatefinalLinkedHashMap<K, Long>accessOrder;//存储键的访问时间,用于决定淘汰顺序 //构造函数 public LRUCache(int capacity) { this.capacity=capacity; this.cache=new LinkedHashMap<>(capacity,0.75f,true);//自动按访问顺序排序 this.accessOrder=new LinkedHashMap<>(); } //获取缓存数据 public Vget(Kkey) { if(!cache.containsKey(key)) { returnnull; } //将此元素访问时间更新为最新 accessOrder.put(key, System.nanoTime()); returncache.get(key); } //插入缓存数据 public void put(Kkey, Vvalue) { if(cache.size()>=capacity) { evict();//如果缓存满了,执行淘汰 } cache.put(key,value); accessOrder.put(key, System.nanoTime());//更新插入的元素的时间 } //淘汰最久未使用的元素 private void evict() { //找出访问时间最早的元素(即最久未使用) long oldestTime=Long.MAX_VALUE; K oldestKey=null; for(Map.Entry<K, Long>entry : accessOrder.entrySet()) { if(entry.getValue()<oldestTime) { oldestTime=entry.getValue(); oldestKey=entry.getKey(); } } if(oldestKey !=null) { cache.remove(oldestKey);//删除最久未访问的元素 accessOrder.remove(oldestKey); } } //输出缓存内容 public void printCache() { System.out.println(cache); } //测试LRU缓存 public static void main(String[] args) { LRUCache<Integer,String>lruCache=new LRUCache<>(3); lruCache.put(1,\"A\"); lruCache.put(2,\"B\"); lruCache.put(3,\"C\"); lruCache.printCache();//输出:{1=A,2=B,3=C}",
+            "published_at": "2024-12-20T22:57:42",
+            "request_id": "1339ae8c-5213-4edc-bd9e-4e5c569f82ae",
+            "search_score": null,
+            "search_snippet": "如何查找一组未排序的数中,第K大的元素? 假设现在我们有一个包含 10 亿个搜索关键词的日志文件,如何能快速获取到热门榜 Top 10 的搜索关键词? 如何根据年龄给 100 万用户排序? 在两个包含10亿个url地址的文件内如何找到相同的url ? 1. 如何实现LRU缓存淘汰算法 package com.lruDemo; import java.util.*; publicclassLRUCache<K, V>{ privatefinalint capacity; privatefinalMap<K, V>cache;//存储缓存的键值对 privatefinalLinkedHashMap<K, Long>accessOrder;//存储键的访问时间,用于决定淘汰顺序 //构造函数 public LRUCache(int capacity) { this.capacity=capacity; this.cache=new LinkedHashMap<>(capacity,0.75f,true);//自动按访问顺序排序 this.accessOrder=new LinkedHashMap<>(); } //获取缓存数据 public Vget(Kkey) { if(!cache.containsKey(key)) { returnnull; } //将此元素访问时间更新为最新 accessOrder.put(key, System.nanoTime()); returncache.get(key); } //插入缓存数据 public void put(Kkey, Vvalue) { if(cache.size()>=capacity) { evict();//如果缓存满了,执行淘汰 } cache.put(key,value); accessOrder.put(key, System.nanoTime());//更新插入的元素的时间 } //淘汰最久未使用的元素 private void evict() { //找出访问时间最早的元素(即最久未使用) long oldestTime=Long.MAX_VALUE; K oldestKey=null; for(Map.Entry<K, Long>entry : accessOrder.entrySet()) { if(entry.getValue()<oldestTime) { oldestTime=entry.getValue(); oldestKey=entry.getKey(); } } if(oldestKey !=null) { cache.remove(oldestKey);//删除最久未访问的元素 accessOrder.remove(oldestKey); } } //输出缓存内容 public void printCache() { System.out.println(cache); } //测试LRU缓存 public static void main(String[] args) { LRUCache<Integer,String>lruCache=new LRUCache<>(3); lruCache.put(1,\"A\"); lruCache.put(2,\"B\"); lruCache.put(3,\"C\"); lruCache.printCache();//输出:{1=A,2=B,3=C}",
+            "source_name": "CSDN软件开发网",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web_supplement",
+          "source_record_id": "src_1768c26d0e078057f64bb6dc",
+          "title": "排序算法相关场景面试-CSDN博客",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "9",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://blog.csdn.net/t1u2v/article/details/155190077",
+          "observed_at": "2026-09-16T15:30:58.138393Z",
+          "provenance": {
+            "query": "graph stream partitioning Count-Min Sketch min-heap degree",
+            "rank": 9,
+            "run_id": "run-35ba784d006c4137aa1c7adf065d9f1a",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": " 1.1 传统方案的瓶颈:HashMap + Heap 与 Count-Min Sketch 我们先快速回顾一下常见的两种思路及其局限: HashMap+ 最小堆:这是最直观的方法。用一个HashMap<String, Long>记录每个元素的精确出现次数,同时维护一个容量为K的最小堆来保存当前的TopK候选。 优点:结果100%准确。 致命缺点:空间复杂度为O(N),N是数据流中不同元素的数量。在商品ID、用户ID、搜索词等基数巨大的场景下,内存会迅速被撑爆,完全不具备可扩展性。 Count-Min Sketch (CMS):这是一个经典的概率数据结构。它使用一个d行w列的二维数组,配合d个独立的哈希函数。每个元素到来时,会被这d个哈希函数映射到每一行的某个位置,并将该位置的计数器加1。",
+            "published_at": "2026-02-14T01:51:31",
+            "request_id": "1339ae8c-5213-4edc-bd9e-4e5c569f82ae",
+            "search_score": null,
+            "search_snippet": "1.1 传统方案的瓶颈:HashMap + Heap 与 Count-Min Sketch 我们先快速回顾一下常见的两种思路及其局限: HashMap+ 最小堆:这是最直观的方法。用一个HashMap<String, Long>记录每个元素的精确出现次数,同时维护一个容量为K的最小堆来保存当前的TopK候选。 优点:结果100%准确。 致命缺点:空间复杂度为O(N),N是数据流中不同元素的数量。在商品ID、用户ID、搜索词等基数巨大的场景下,内存会迅速被撑爆,完全不具备可扩展性。 Count-Min Sketch (CMS):这是一个经典的概率数据结构。它使用一个d行w列的二维数组,配合d个独立的哈希函数。每个元素到来时,会被这d个哈希函数映射到每一行的某个位置,并将该位置的计数器加1。",
+            "source_name": "CSDN软件开发网",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web_supplement",
+          "source_record_id": "src_347e43f9a0a88edf5459c8ed",
+          "title": "Java实战:手把手教你用HeavyKeeper实现实时TopK热点检测(附完整代码)",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "10",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://zhuanlan.zhihu.com/p/623358432",
+          "observed_at": "2026-09-16T15:30:58.138393Z",
+          "provenance": {
+            "query": "graph stream partitioning Count-Min Sketch min-heap degree",
+            "rank": 10,
+            "run_id": "run-35ba784d006c4137aa1c7adf065d9f1a",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": " GridGraph论文分析 单机内存图处理系统受限于内存空间和单机算力,能够解决的图规模有限。分布式内存图处理系统理论上可以随着集群规模的增大进而解决更大的图规模,但集群间的网络带宽问题,负载不均衡,同步开销大,容错开销和图分割挑战也愈变明显。无论是单机还是分布式,内存式图处理系统能够处理的图规模都是有限的。因此想要使用更少的资源解决更大的图规模,可以使用单机核外图处理系统。单机核外图处理系统使用磁盘顺序读写进行数据置换,能够在有限的内存中计算更大规模的图。单机核外图处理系统在最大化利用磁盘顺序读写,在选择调度和同异步计算模式等方面做出了重要探索。 GridGraph GridGraph是一种单机核外图处理系统,在大规模图处理系统中充分利用磁盘读写,在有限内存中高效完成大规模图计算。 GridGraph充分利用磁盘大容量,解决单机内存有限时实现大规模图计算问题。GridGraph采用Streaming-Apply方式减少计算中的IO 请求数量,通过文件调入顺序减少不必要的io开销。 同时GridGraph也利用顺序读和顺序写的特点,尽可能的较少硬盘的写操作。 主要贡献 GridGraph的主要贡献有: 1、基于边列表快速生成一种新的图表示形式--网格划分。网格划分是一种不同于邻接矩阵和邻接链表的表示形式,网格划分不需要将index排序,网格的边block可以由未排序的边列表转换而来,数据前置预处理开销小,可应用于不同的算法和不同的机器。 2、2-levelhierarchicalpartitioning 使用两层分区划分模式,该模式不仅适用于核外,在内存中同样有效。 3、提出streaming-apply模式,以提高IO。通过双滑动窗口(Dual sliding windows)保证顶点访问的局部性。 4、提供灵活的点边流式接口函数,通过用户自定义过滤函数来跳过非活跃顶点(活跃顶点:bitmap中该顶点index的状态为1)或非活跃边的计算。对于活跃顶点集随着收敛而缩小的迭代算法,这种方法显著提高了算法的性能。 为了在有限的内存中完成大规模图计算,并严格控制内存消耗,需要将图进行网格划分。 1、顶点集划分成P个均匀的chunk。 2、边集划分在P*P个block中,行表示源顶点,列表示目的顶点。",
+            "published_at": "2023-04-20T10:32:25",
+            "request_id": "1339ae8c-5213-4edc-bd9e-4e5c569f82ae",
+            "search_score": null,
+            "search_snippet": "GridGraph论文分析 单机内存图处理系统受限于内存空间和单机算力,能够解决的图规模有限。分布式内存图处理系统理论上可以随着集群规模的增大进而解决更大的图规模,但集群间的网络带宽问题,负载不均衡,同步开销大,容错开销和图分割挑战也愈变明显。无论是单机还是分布式,内存式图处理系统能够处理的图规模都是有限的。因此想要使用更少的资源解决更大的图规模,可以使用单机核外图处理系统。单机核外图处理系统使用磁盘顺序读写进行数据置换,能够在有限的内存中计算更大规模的图。单机核外图处理系统在最大化利用磁盘顺序读写,在选择调度和同异步计算模式等方面做出了重要探索。 GridGraph GridGraph是一种单机核外图处理系统,在大规模图处理系统中充分利用磁盘读写,在有限内存中高效完成大规模图计算。 GridGraph充分利用磁盘大容量,解决单机内存有限时实现大规模图计算问题。GridGraph采用Streaming-Apply方式减少计算中的IO 请求数量,通过文件调入顺序减少不必要的io开销。 同时GridGraph也利用顺序读和顺序写的特点,尽可能的较少硬盘的写操作。 主要贡献 GridGraph的主要贡献有: 1、基于边列表快速生成一种新的图表示形式--网格划分。网格划分是一种不同于邻接矩阵和邻接链表的表示形式,网格划分不需要将index排序,网格的边block可以由未排序的边列表转换而来,数据前置预处理开销小,可应用于不同的算法和不同的机器。 2、2-levelhierarchicalpartitioning 使用两层分区划分模式,该模式不仅适用于核外,在内存中同样有效。 3、提出streaming-apply模式,以提高IO。通过双滑动窗口(Dual sliding windows)保证顶点访问的局部性。 4、提供灵活的点边流式接口函数,通过用户自定义过滤函数来跳过非活跃顶点(活跃顶点:bitmap中该顶点index的状态为1)或非活跃边的计算。对于活跃顶点集随着收敛而缩小的迭代算法,这种方法显著提高了算法的性能。 为了在有限的内存中完成大规模图计算,并严格控制内存消耗,需要将图进行网格划分。 1、顶点集划分成P个均匀的chunk。 2、边集划分在P*P个block中,行表示源顶点,列表示目的顶点。",
+            "source_name": "知乎",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web_supplement",
+          "source_record_id": "src_69fcf6e51a858c40800ac456",
+          "title": "图计算引擎分析--GridGraph",
+          "work_id": null
+        }
+      ]
+    },
+    "succeeded": true,
+    "summary": "发现并保存 10 个 Web 候选来源",
+    "tool_name": "web_search"
+  },
+  "resolved_arguments": {
+    "max_results": 10,
+    "query": "graph stream partitioning Count-Min Sketch min-heap degree"
+  },
+  "result_count": 10,
+  "stage_name": "run_research_task",
+  "started_at": "2026-09-16T15:30:57.280312+00:00",
+  "tool_call_id": "tool_0035",
+  "tool_name": "web_search"
+}

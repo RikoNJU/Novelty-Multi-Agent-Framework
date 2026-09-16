@@ -1,0 +1,561 @@
+{
+  "agent_arguments": {
+    "query": "Sketch-DBH graph stream partitioning Count-Min Sketch"
+  },
+  "agent_tool_call_id": "01a0aabd86cbeef451a55c2b8f0e7a58",
+  "business_status": "NORMAL",
+  "duration": 0.83508,
+  "duration_ms": 835,
+  "error": null,
+  "execution_status": "SUCCESS",
+  "failure_phase": null,
+  "finished_at": "2026-09-16T15:02:23.618274+00:00",
+  "normalized_result": {
+    "query": "Sketch-DBH graph stream partitioning Count-Min Sketch",
+    "results": [
+      {
+        "published_at": "2025-12-05T08:20:00",
+        "snippet": "count_min_sketch 聚合函數 適用於: Databricks SQL  Databricks Runtime 傳回column 的群組中所有值的 count-min 草圖,使用 epsilon 、 confidence 和 seed 。 在Databricks SQL 和 Databricks Runtime 13.3 LTS 和更新版本中,此函式支援 具名參數調用 。 語法 count_min_sketch ( [ALL | DISTINCT] column, epsilon, confidence, seed ) [FILTER ( WHERE cond ) ]  您也可以使用 子句,將此功能作為 OVER 來調用。 引數 column :評估為整數數值、 STRING 或 BINARY 的表達式。 epsilon DOUBLE :描述相對錯誤的大於 0 的常值。 confidence DOUBLE :常值大於 0 且小於 1。 seed : INTEGER 常值。 cond :選擇性布爾表示式,篩選用於匯總的數據列。 退貨 BINARY 。 Count-min sketch 是一種使用子線性空間進行基數估計的概率數據結構。 如果DISTINCT 指定,則函式只會在一組 expr 唯一的值上運作。 範例 SQL -- Named parameter invocation > SELECT hex (count_min_sketch( column => col , confidence => 0.5 d, epsilon =>",
+        "source_name": "微软网站",
+        "source_record_id": "src_27a39798fa0e8446e41e8c7e",
+        "title": "count_min_sketch聚合函數 - Azure Databricks - Databricks SQL | Microsoft Learn",
+        "url": "https://docs.microsoft.com/zh-tw/azure/databricks/spark/latest/spark-sql/language-manual/functions/count_min_sketch"
+      },
+      {
+        "published_at": "2019-09-29T14:33:00",
+        "snippet": "是数据库中用到的一种 Sketch,所谓 sketch 就是用很少的一点数据来描述全体数据的特性,牺牲了准确性但是代价变得很低。 CM-Sketch 的 数据模型 是这样的:有一个维度为  n 、不断变化的 向量 ( t 表示 时间戳 ) a ( t ) = [ a 1 ( t ) , … a i ( t ) , … a n ( t ) ] 每个时间  t 上会发生一个更新操作,将其中某一个值加上  c ,其他值不变 a i t ( t ) = a i t ( t − 1 )",
+        "source_name": "知乎",
+        "source_record_id": "src_23f4f9dea2000244292bc280",
+        "title": "Count-Min Sketch",
+        "url": "https://zhuanlan.zhihu.com/p/84688298"
+      },
+      {
+        "published_at": "2026-09-12T10:37:09",
+        "snippet": "一、HyperLogLog 是什么:count-distinct问题的近似解法 在日志与指标系统中,\"某个时间窗口内一共有多少个不同的取值\"(即基数、cardinality)是最常见也最难精确回答的问题之一。精确解法(HashSet)随元素个数线性增长,在海量数据下既不省内存也不易并行合并。HyperLogLog 是解决 count-distinct 问题的经典概率算法:它用固定大小的寄存器数组去近似一个多重集合中的去重元素数量,用很少的内存换取可接受的精度误差。 Loki 仓库将axiomhq/hyperloglog作为第三方依赖引入(位于vendor 目录),并在pkg/logql/approx_count_distinct.go、pkg/logql/count_min_sketch.go、pkg/logql/sketch/topk.go、pkg/storage/detected/fields.go等多处使用它。理解这个库,就等于理解 Loki 做近似去重统计的底层引擎。",
+        "source_name": "CSDN软件开发网",
+        "source_record_id": "src_12da7f4d0ccb59d116b9fa96",
+        "title": "Grafana Loki 中 HyperLogLog 基数估算库的算法原理与 Go 实现解析",
+        "url": "https://blog.csdn.net/gitblog_00194/article/details/165099425"
+      },
+      {
+        "published_at": "2023-01-05T14:16:39",
+        "snippet": "在Every Row Counts: Combining Sketches and Sampling for Accurate Group-By Result Estimates 这篇论文中,作者比较了基于 Sample 的 GEE/AE 与面向全量数据的 HyperLogLog sketch 算法,HyperLogLog 的精确度完胜。当然这仅仅是在计算 NDV 的场景。 当我们需要某个单一确定数据在集群中的特征时, sample 都很难回答该类问题。举个例子,数据的存在问题,即某数据是否在集群中存在,如果该数据不在 sample 集中存在,那既有可能整体中也不存在,也有可能只是没有被 sample 到。",
+        "source_name": "阿里云.",
+        "source_record_id": "src_6c18cbe6723162655fa94d0f",
+        "title": "简介:简介: 统计信息是为优化器的 cost 估算提供数据支撑,其中很重要的一点需求便是等值查询(EQUALS, IN 等) 场景下的基数估算。",
+        "url": "https://developer.aliyun.com/article/1488880"
+      },
+      {
+        "published_at": "2018-07-06T12:03:00",
+        "snippet": "2. Count-Min Sketch 简介 Count-Min Sketch 是一种可以处理等值查询,Join 大小估计等的 数据结构 ,并且可以提供很强的准确性保证。自 2003 年在文献 An improved data stream summary: The count-min sketch and its applications中提出以来,由于其创建和使用的简单性获得了广泛的使用。 Count-Min Sketch 维护了一个 d*w 的计数数组,对于每一个值,用 d 个独立的 hash 函数映射到每一行的",
+        "source_name": "知乎",
+        "source_record_id": "src_8758ccb930b18d0ebe427d9f",
+        "title": "TiDB 源码阅读系列文章(十二)统计信息(上)",
+        "url": "https://zhuanlan.zhihu.com/p/39139693"
+      },
+      {
+        "published_at": "2024-04-18T18:00:48",
+        "snippet": "VLDBJ 2020 | SKCompress:分布式机器学习稀疏非均匀梯度压缩 随着机器学习的训练数据规模不断增长,分布式机器学习逐渐成为相关领域的研究热点。分布式机器学习通过数据并行或者模型并行的方式将训练负载合理地分配到不同的机器上,加速了在大规模数据集上的训练过程。然而,当前分布式机器学习仍然面临着通信层面的效率挑战。在分布式环境中执行随机梯度下降(SGD)过程时,节点之间需要通过网络交换梯度信息。现有的方法在梯度分布较为密集的条件下表现较优,但是并不适用于梯度稀疏且分布不均匀的情况。本次为大家带来VLDBJ 2020的论文《SKCompress: compressing sparse and nonuniform gradient in distributed machine learning》。 一.背景 机器学习技术目前已广泛应用于许多领域中,例如推荐系统、文本挖掘、图像识别、视频检测、智能城市计算等等。然而,随着训练数据集规模的不断增长,传统的集中式系统无法再高效地运行机器学习任务。因此,分布式环境已经成为大量机器学习研究和应用工作的首选配置。但是在分布式环境下的一个主要问题是通信量大,因为节点之间需要频繁交换梯度信息,并且通信成本在总成本中往往占主导地位。尽管目前的网络设施已经非常快,但是降低通信成本在许多领域中仍然有必要,包括但不限于以下的情况:1)大模型。大模型可以更好地表示用户或对象,并产生更好的预测结果。然而,大模型在分布式集群中巨大的通信开销会影响整体性能。2)云环境。Amazon EC2、阿里云和 Microsoft Azure 等云平台通常提供可调整规模的按需定价云计算服务,而这些服务通常按照带宽大小调整价格,因此为了最小化成本,需要降低通信开销。3)地理分布式机器学习。对于许多跨国公司来说,在世界各地的数据中心之间转移数据的成本是非常高的。降低数据中心之间的通信成本有利于地理分布式机器学习任务。 在上述机器学习案例中,通过减少梯度通信的通信开销并同时保证算法的正确性具有重要意义。一般来说,减少梯度通信开销往往采用压缩技术。现有的压缩方法可以分为两类:无损方法和有损方法。无损压缩算法虽然能够保证数据的严格一致,但是压缩效果一般。有损压缩算法一般分为两类:基于稀疏化和基于量化。基于稀疏化的方法在某些情况下会不利于收敛,因而量化的方法具备更好的适用性。然而,对于梯度稀疏分布的情况而言,量化压缩的效果较为一般。 为了解决这个问题,论文提出了一个支持高效压缩稀疏梯度的通用压缩框架SKCompress,对于由键值对组成的稀疏梯度向量,SKCompress",
+        "source_name": "云数互联墨天轮",
+        "source_record_id": "src_6e3d936bdc1be93eec0c28de",
+        "title": "VLDBJ 2020 | SKCompress:分布式机器学习稀疏非均匀梯度压缩",
+        "url": "https://www.modb.pro/db/1871140927859863552"
+      },
+      {
+        "published_at": "2020-11-12T22:47:46",
+        "snippet": "本系列文章主要介绍 HTAP 数据库 BaikalDB 的技术实现细节 作者简介:于正泉,百度商业平台研发部高级研发工程师。主要从事分布式存储、分布式数据库等领域的工作,现主要负责 BaikalDB SQL 性能优化,稳定性相关方向的研发工作。 BaikalDB 系统简介 BaikalDB是一个分布式可扩展的存储系统,兼容 MySQL 协议,整个系统的架构如下图所示: BaikalStore 负责数据存储,数据分区按 region 组织,三个 Store 的三个 region 形成一个 Raft-group 实现三副本,多实例部署,Store 实例宕机可以自动迁移 Region 数据; BaikalMeta 负责元信息管理,包括分区,容量,权限,均衡等, Raft 保障的 3 副本部署,Meta 宕机只影响数据无法扩容迁移,不影响数据读写; BaikalDB 负责前端 SQL 解析,查询计划生成执行,无状态全同构多实例部署,宕机实例数不超过 qps 承载极限即可。 本文只介绍 BaikalDB 是怎样基于代价进行索引选择的。首先简单回顾下 BaikalDB 的索引。 BaikalDB 索引类型包括,主键索引,局部索引,局部唯一索引,全局二级索引和倒排索引。主键索引是 BaikalDB 针对主键创建的索引,主键 key 值必须唯一。BaikalDB 使用主键值将整个表进行 range 划分为多个 region 分区。 示例: CREATE TABLE `t` ( `a` INT(10) NOT NULL, `b` DATETIME NOT NULL, `c` BIGINT(20) UNSIGNED NOT NULL, `d` TINYINT(3) NOT NULL, `e` VARCHAR(100)NO NULL, PRIMARY KEY (`a`), KEY b_c_key (`b`, `c`), UNIQ KEY c_d_uniq (`c`, `d`) ) 存储模型如下图: 其中倒排索引不适合做列信息的统计,不在本文的讨论范围。全局二级索引和主表数据存储在不同分片上,统计信息使用和局部二级索引类似,只以局部二级索引为例。 索引选择 索引遵循最左前缀匹配原则:只有相等的情况,才会使用下一级索引,如遇范围匹配则不能使用下一级索引。示例: 索引(a,b),比如 where b = 2;则不符合最左前缀原则,无法使用该索引。只有在查询条件中使用了创建索引时的第一个字段,索引才会被使用。 索引(a,b,c,d),比如 where a = 1 and b = 2 and c > 3 and d = 4;范围查询条件命中索引时无法继续使用下一级,例子中 c 为范围查询,则 d 用不到索引,只能作为普通条件过滤。如果索引是 (a,b,d,c),则可以用到全部索引列。 基于代价优选索引 对于能匹配到多个索引的 SQL,需要选择一个最优的代价最小的去执行。",
+        "source_name": "OSCHINA - 中文开源技术交流社区",
+        "source_record_id": "src_da7080f5e2428abb45fd92c0",
+        "title": "BaikalDB 技术实现内幕(三)-- 代价模型实现",
+        "url": "https://my.oschina.net/BaikalDB/blog/4715063"
+      },
+      {
+        "published_at": "2023-12-25T18:20:07",
+        "snippet": "1. 业务场景 对数据集深入分析前,可以通过 summary函数快速了解数值型列的概括信息,例如,平均值、标准差、最小值、最大值和百分位数,这有助于初步了解数据的分布情况和特征。在探索性数据分析(EDA)过程中,summary函数有助于识别异常值、离群值和数据分析的偏态。通过观察统计信息,可以进一步决定数据清洗和数据转换的策略。例如,如果某个数值型列的最大值或最小值远离其平均值,则可能存在异常值或离群值;如果某个数值型列的标准差较大,则表示可能存在数据分布的偏态。 2. 函数简介 2.1 语法 summary(X,[interpolation='linear'],[characteristic=`avg`std],[percentile=[25,50,75]],[precision=0.01],[partitionSampling=1.0]) 2.2 参数介绍 X:内存表、DFS 表或由 sqlDS函数生成的数据源。 interpolation:计算百分位采用的插值方法,可选:linear、nearest、lower、higher、midpoint。 characteristic:需要输出的统计特征,可选:avg 和 std。 percentile:需要输出的百分位数。 precision:百分位计算精度。 partitionSampling:针对分区表设计的参数,表示参与进行数据统计的分区数量。 有关summary函数的用法、示例及注意事项,参考 DolphinDB 用户手册中该函数的详细介绍。 3. 使用示例 3.1 生成内存表统计信息 n=2022 data=1..2022 value=take(1..3,n) name=take(`APPLE`IBM`INTEL,n) t=table(data,value,name); res = summary(t, precision=0.001); 3.2 生成 DFS 表统计信息 db = database(dbName,VALUE,`A`B`C`D) ... pt = loadTable(dbName, tableName) // 生成 DFS 表统计信息,同时指定分区采样率为 0.5 re = summary(pt,`linear,`avg`std, [25,50], 0.001, 0.5) 示例中的 DFS 表采用值分区方式,拥有 A、B、C和 D 共 4 个分区。分区采样率为 0.5,结果将随机输出 2 个分区的数据统计信息。 3.3 使用 SQL 语句作为输入数据源 ds = sqlDS(<select * from table>) re = summary(ds, type) 3.4 大规模数据计算",
+        "source_name": "无",
+        "source_record_id": "src_464d405d86f3d481a13dfec4",
+        "title": "用DolphinDB summary 函数优化你的数据清洗策略",
+        "url": "https://maimai.cn/article/detail?fid=1815514482&efid=JJVAkXg7LXgieijt6rJCSw"
+      },
+      {
+        "published_at": "2020-07-14T14:18:42",
+        "snippet": "DBSCAN (Density-Based Spatial Clustering of Applications with Noise) 是一种基于密度的聚类算法,基于密度的聚类寻找被低密度区域分离的高密度区域。常用于异常值或者离群点检测。 DBSCAN 怎么算 当某个点的密度达到算法设定的阈值,则这个点称为核心对象。(即r领域内点的数量小于minPts),其中领域的距离阈值为用户设定值。 若某点p在q的r领域内,且q是核心点,则p-q直接密度可达。若有一个点的序列q0、q1、q2…qK,对任意的qi-qi+1是直接密度可达的,则称q0到qK密度可达。称为密度的传播。 当一个非核心点不能发展下线,则称该点为边界点。若某一点,从任一核心地点出发都是密度不可达的,则称该点为噪声点 DBSCAN 聚类算法实现如下图: 当出现奇葩数据时,K-Means 无法正常聚类,而 DBSCAN 完全无问题 优点: 与K-Means相比,不需要手动确定簇的个数K,但需要确定邻域r和密度阈值minPts 能发现任意形状的簇 能有效处理噪声点(邻域r和密度阈值minPts参数的设置可以影响噪声点) 缺点: 当数据量大时,处理速度慢,消耗大 当空间聚类的密度不均匀、聚类间距差相差很大时参数密度阈值minPts和邻域r参数选取困难 对于高维数据,容易产生“维数灾难”(聚类算法基于欧式距离的通病) DBSCAN 聚类 Python 实现 代码语言:javascript AI代码解释 # coding=utf-8\"\"\" Created on2019/10/1211:42@author:EwdAger\"\"\"importnumpyasnp from sklearn.clusterimportDBSCANfrom sklearnimportmetrics from sklearn.datasets.samples_generatorimportmake_blobs from sklearn.preprocessingimportStandardScalerimportmatplotlib.pyplotasplt centers=[[1,1],[-1,-1],[1,-1]]# 生成聚类中心点X,labels_true=make_blobs(n_samples=750,centers=centers,cluster_std=0.4,random_state=0)# 生成样本数据集X=StandardScaler().fit_transform(X)# StandardScaler 标准化处理。且是针对每一个特征维度来做的,而不是针对样本。 # 调用密度聚类DBSCANdb=DBSCAN(eps=0.3,min_samples=10).fit(X)#print(db.labels_)# db.labels_为所有样本的聚类索引,没有聚类索引为-1#print(db.core_sample_indices_)# 所有核心样本的索引 core_samples_mask=np.zeros_like(db.labels_,dtype=bool)# 设置一个样本个数长度的全false向量core_samples_mask[db.core_sample_indices_]=True #将核心样本部分设置为truelabels=db.labels_ n_clusters_=len(set(labels))-(1if-1inlabelselse0)# 获取聚类个数。",
+        "source_name": "Tencent腾讯（腾讯官方网）",
+        "source_record_id": "src_16afccd82d0f595f032d8850",
+        "title": "聚类算法之DBSCAN聚类",
+        "url": "https://cloud.tencent.com/developer/article/1661130"
+      },
+      {
+        "published_at": "2022-04-13T19:39:04",
+        "snippet": "一、目的 在OLAP场景中, 多表连接 是十分常见的,查询的执行效率跟它涉及的表的连接顺序息息相关。以A、B、C三张表为例,有一条查询:SELECT * FROM A, B, C WHERE …,那么这三张表的连接顺序可以是(A⋈B)⋈C、(A⋈B)⋈C、(A⋈C)⋈B等共6种连接顺序,我们将全部连接顺序称为搜索空间。不同的连接顺序是语义等价的,即能获得相同的结果集,但是对于查询效率有着非常大的影响。从搜索空间中选出性能最优的连接顺序是一个关键的DBMS优化问题,但是随着 连接表 数量的增加,搜索空间的大小呈指数级增长,这使得连接顺序选择成为一个NP-hard问题。本文主要评测OceanBase连接顺序选择策略的优劣,以分析OceanBase对多表连接查询的处理能力以及优化空间。 二、OceanBase 查询计划 分析 为了得到OceanBase执行某查询时选择的连接顺序,我们需要分析该查询的执行计划,具体方法如下。 2.1 EXPLAIN关键字 OceanBase可以利用EXPLAIN关键字得到查询的 执行计划 。 示例: obclient> explain select count(*) from table_0, table_6, table_5, table_3 where table_0.fk_0 = table_6.primaryKey and table_0.fk_1 = table_5.primaryKey and table_0.fk_3 = table_3.primaryKey and table_0.col_0 > 10000 and table_5.col_6 > 10000 and table_6.col_3 > 10000 and table_3.col_2 > 10000; | Query Plan =================================================== |ID|OPERATOR |NAME |EST. ROWS|COST | --------------------------------------------------- |0 |SCALAR GROUP BY | |1 |15299| |1 | HASH JOIN | |334 |15236| |2 | PX COORDINATOR | |338 |11647| |3 | EXCHANGE OUT DISTR|:EX10000|338 |11519| |4 | HASH JOIN | |338 |11519| |5 | HASH JOIN | |341 |6906 | |6 | TABLE SCAN |table_3 |400 |3148 | |7 | TABLE SCAN |table_0 |344 |2932 | |8 | TABLE SCAN |table_6 |452 |3580 | |9 | TABLE SCAN |table_5 |313 |2486 | =================================================== Outputs & filters: ------------------------------------- 0 - output([T_FUN_COUNT(*)]), filter(nil), group(nil), agg_func([T_FUN_COUNT(*)]) 1 - output([1]), filter(nil), equal_conds([table_0.fk_1 = table_5.primaryKey]), other_conds(nil) 2 - output([table_0.fk_1]), filter(nil) 3 - output([t",
+        "source_name": "知乎",
+        "source_record_id": "src_f2e729c65960bd95022d768d",
+        "title": "OceanBase连接顺序选择的优劣评估",
+        "url": "https://zhuanlan.zhihu.com/p/498042859"
+      }
+    ],
+    "succeeded": true,
+    "summary": "发现并保存 10 个 Web 候选来源",
+    "warnings": []
+  },
+  "raw_result": {
+    "arguments": {
+      "max_results": 10,
+      "query": "Sketch-DBH graph stream partitioning Count-Min Sketch"
+    },
+    "elapsed_ms": 834,
+    "error": null,
+    "payload": {
+      "search_result": {
+        "query": "Sketch-DBH graph stream partitioning Count-Min Sketch",
+        "results": [
+          {
+            "published_at": "2025-12-05T08:20:00",
+            "rank": 1,
+            "score": null,
+            "snippet": "count_min_sketch 聚合函數 適用於: Databricks SQL  Databricks Runtime 傳回column 的群組中所有值的 count-min 草圖,使用 epsilon 、 confidence 和 seed 。 在Databricks SQL 和 Databricks Runtime 13.3 LTS 和更新版本中,此函式支援 具名參數調用 。 語法 count_min_sketch ( [ALL | DISTINCT] column, epsilon, confidence, seed ) [FILTER ( WHERE cond ) ]  您也可以使用 子句,將此功能作為 OVER 來調用。 引數 column :評估為整數數值、 STRING 或 BINARY 的表達式。 epsilon DOUBLE :描述相對錯誤的大於 0 的常值。 confidence DOUBLE :常值大於 0 且小於 1。 seed : INTEGER 常值。 cond :選擇性布爾表示式,篩選用於匯總的數據列。 退貨 BINARY 。 Count-min sketch 是一種使用子線性空間進行基數估計的概率數據結構。 如果DISTINCT 指定,則函式只會在一組 expr 唯一的值上運作。 範例 SQL -- Named parameter invocation > SELECT hex (count_min_sketch( column => col , confidence => 0.5 d, epsilon =>",
+            "source_name": "微软网站",
+            "source_record_id": "src_27a39798fa0e8446e41e8c7e",
+            "title": "count_min_sketch聚合函數 - Azure Databricks - Databricks SQL | Microsoft Learn",
+            "url": "https://docs.microsoft.com/zh-tw/azure/databricks/spark/latest/spark-sql/language-manual/functions/count_min_sketch"
+          },
+          {
+            "published_at": "2019-09-29T14:33:00",
+            "rank": 2,
+            "score": null,
+            "snippet": "是数据库中用到的一种 Sketch,所谓 sketch 就是用很少的一点数据来描述全体数据的特性,牺牲了准确性但是代价变得很低。 CM-Sketch 的 数据模型 是这样的:有一个维度为  n 、不断变化的 向量 ( t 表示 时间戳 ) a ( t ) = [ a 1 ( t ) , … a i ( t ) , … a n ( t ) ] 每个时间  t 上会发生一个更新操作,将其中某一个值加上  c ,其他值不变 a i t ( t ) = a i t ( t − 1 )",
+            "source_name": "知乎",
+            "source_record_id": "src_23f4f9dea2000244292bc280",
+            "title": "Count-Min Sketch",
+            "url": "https://zhuanlan.zhihu.com/p/84688298"
+          },
+          {
+            "published_at": "2026-09-12T10:37:09",
+            "rank": 3,
+            "score": null,
+            "snippet": "一、HyperLogLog 是什么:count-distinct问题的近似解法 在日志与指标系统中,\"某个时间窗口内一共有多少个不同的取值\"(即基数、cardinality)是最常见也最难精确回答的问题之一。精确解法(HashSet)随元素个数线性增长,在海量数据下既不省内存也不易并行合并。HyperLogLog 是解决 count-distinct 问题的经典概率算法:它用固定大小的寄存器数组去近似一个多重集合中的去重元素数量,用很少的内存换取可接受的精度误差。 Loki 仓库将axiomhq/hyperloglog作为第三方依赖引入(位于vendor 目录),并在pkg/logql/approx_count_distinct.go、pkg/logql/count_min_sketch.go、pkg/logql/sketch/topk.go、pkg/storage/detected/fields.go等多处使用它。理解这个库,就等于理解 Loki 做近似去重统计的底层引擎。",
+            "source_name": "CSDN软件开发网",
+            "source_record_id": "src_12da7f4d0ccb59d116b9fa96",
+            "title": "Grafana Loki 中 HyperLogLog 基数估算库的算法原理与 Go 实现解析",
+            "url": "https://blog.csdn.net/gitblog_00194/article/details/165099425"
+          },
+          {
+            "published_at": "2023-01-05T14:16:39",
+            "rank": 4,
+            "score": null,
+            "snippet": "在Every Row Counts: Combining Sketches and Sampling for Accurate Group-By Result Estimates 这篇论文中,作者比较了基于 Sample 的 GEE/AE 与面向全量数据的 HyperLogLog sketch 算法,HyperLogLog 的精确度完胜。当然这仅仅是在计算 NDV 的场景。 当我们需要某个单一确定数据在集群中的特征时, sample 都很难回答该类问题。举个例子,数据的存在问题,即某数据是否在集群中存在,如果该数据不在 sample 集中存在,那既有可能整体中也不存在,也有可能只是没有被 sample 到。",
+            "source_name": "阿里云.",
+            "source_record_id": "src_6c18cbe6723162655fa94d0f",
+            "title": "简介:简介: 统计信息是为优化器的 cost 估算提供数据支撑,其中很重要的一点需求便是等值查询(EQUALS, IN 等) 场景下的基数估算。",
+            "url": "https://developer.aliyun.com/article/1488880"
+          },
+          {
+            "published_at": "2018-07-06T12:03:00",
+            "rank": 5,
+            "score": null,
+            "snippet": "2. Count-Min Sketch 简介 Count-Min Sketch 是一种可以处理等值查询,Join 大小估计等的 数据结构 ,并且可以提供很强的准确性保证。自 2003 年在文献 An improved data stream summary: The count-min sketch and its applications中提出以来,由于其创建和使用的简单性获得了广泛的使用。 Count-Min Sketch 维护了一个 d*w 的计数数组,对于每一个值,用 d 个独立的 hash 函数映射到每一行的",
+            "source_name": "知乎",
+            "source_record_id": "src_8758ccb930b18d0ebe427d9f",
+            "title": "TiDB 源码阅读系列文章(十二)统计信息(上)",
+            "url": "https://zhuanlan.zhihu.com/p/39139693"
+          },
+          {
+            "published_at": "2024-04-18T18:00:48",
+            "rank": 6,
+            "score": null,
+            "snippet": "VLDBJ 2020 | SKCompress:分布式机器学习稀疏非均匀梯度压缩 随着机器学习的训练数据规模不断增长,分布式机器学习逐渐成为相关领域的研究热点。分布式机器学习通过数据并行或者模型并行的方式将训练负载合理地分配到不同的机器上,加速了在大规模数据集上的训练过程。然而,当前分布式机器学习仍然面临着通信层面的效率挑战。在分布式环境中执行随机梯度下降(SGD)过程时,节点之间需要通过网络交换梯度信息。现有的方法在梯度分布较为密集的条件下表现较优,但是并不适用于梯度稀疏且分布不均匀的情况。本次为大家带来VLDBJ 2020的论文《SKCompress: compressing sparse and nonuniform gradient in distributed machine learning》。 一.背景 机器学习技术目前已广泛应用于许多领域中,例如推荐系统、文本挖掘、图像识别、视频检测、智能城市计算等等。然而,随着训练数据集规模的不断增长,传统的集中式系统无法再高效地运行机器学习任务。因此,分布式环境已经成为大量机器学习研究和应用工作的首选配置。但是在分布式环境下的一个主要问题是通信量大,因为节点之间需要频繁交换梯度信息,并且通信成本在总成本中往往占主导地位。尽管目前的网络设施已经非常快,但是降低通信成本在许多领域中仍然有必要,包括但不限于以下的情况:1)大模型。大模型可以更好地表示用户或对象,并产生更好的预测结果。然而,大模型在分布式集群中巨大的通信开销会影响整体性能。2)云环境。Amazon EC2、阿里云和 Microsoft Azure 等云平台通常提供可调整规模的按需定价云计算服务,而这些服务通常按照带宽大小调整价格,因此为了最小化成本,需要降低通信开销。3)地理分布式机器学习。对于许多跨国公司来说,在世界各地的数据中心之间转移数据的成本是非常高的。降低数据中心之间的通信成本有利于地理分布式机器学习任务。 在上述机器学习案例中,通过减少梯度通信的通信开销并同时保证算法的正确性具有重要意义。一般来说,减少梯度通信开销往往采用压缩技术。现有的压缩方法可以分为两类:无损方法和有损方法。无损压缩算法虽然能够保证数据的严格一致,但是压缩效果一般。有损压缩算法一般分为两类:基于稀疏化和基于量化。基于稀疏化的方法在某些情况下会不利于收敛,因而量化的方法具备更好的适用性。然而,对于梯度稀疏分布的情况而言,量化压缩的效果较为一般。 为了解决这个问题,论文提出了一个支持高效压缩稀疏梯度的通用压缩框架SKCompress,对于由键值对组成的稀疏梯度向量,SKCompress",
+            "source_name": "云数互联墨天轮",
+            "source_record_id": "src_6e3d936bdc1be93eec0c28de",
+            "title": "VLDBJ 2020 | SKCompress:分布式机器学习稀疏非均匀梯度压缩",
+            "url": "https://www.modb.pro/db/1871140927859863552"
+          },
+          {
+            "published_at": "2020-11-12T22:47:46",
+            "rank": 7,
+            "score": null,
+            "snippet": "本系列文章主要介绍 HTAP 数据库 BaikalDB 的技术实现细节 作者简介:于正泉,百度商业平台研发部高级研发工程师。主要从事分布式存储、分布式数据库等领域的工作,现主要负责 BaikalDB SQL 性能优化,稳定性相关方向的研发工作。 BaikalDB 系统简介 BaikalDB是一个分布式可扩展的存储系统,兼容 MySQL 协议,整个系统的架构如下图所示: BaikalStore 负责数据存储,数据分区按 region 组织,三个 Store 的三个 region 形成一个 Raft-group 实现三副本,多实例部署,Store 实例宕机可以自动迁移 Region 数据; BaikalMeta 负责元信息管理,包括分区,容量,权限,均衡等, Raft 保障的 3 副本部署,Meta 宕机只影响数据无法扩容迁移,不影响数据读写; BaikalDB 负责前端 SQL 解析,查询计划生成执行,无状态全同构多实例部署,宕机实例数不超过 qps 承载极限即可。 本文只介绍 BaikalDB 是怎样基于代价进行索引选择的。首先简单回顾下 BaikalDB 的索引。 BaikalDB 索引类型包括,主键索引,局部索引,局部唯一索引,全局二级索引和倒排索引。主键索引是 BaikalDB 针对主键创建的索引,主键 key 值必须唯一。BaikalDB 使用主键值将整个表进行 range 划分为多个 region 分区。 示例: CREATE TABLE `t` ( `a` INT(10) NOT NULL, `b` DATETIME NOT NULL, `c` BIGINT(20) UNSIGNED NOT NULL, `d` TINYINT(3) NOT NULL, `e` VARCHAR(100)NO NULL, PRIMARY KEY (`a`), KEY b_c_key (`b`, `c`), UNIQ KEY c_d_uniq (`c`, `d`) ) 存储模型如下图: 其中倒排索引不适合做列信息的统计,不在本文的讨论范围。全局二级索引和主表数据存储在不同分片上,统计信息使用和局部二级索引类似,只以局部二级索引为例。 索引选择 索引遵循最左前缀匹配原则:只有相等的情况,才会使用下一级索引,如遇范围匹配则不能使用下一级索引。示例: 索引(a,b),比如 where b = 2;则不符合最左前缀原则,无法使用该索引。只有在查询条件中使用了创建索引时的第一个字段,索引才会被使用。 索引(a,b,c,d),比如 where a = 1 and b = 2 and c > 3 and d = 4;范围查询条件命中索引时无法继续使用下一级,例子中 c 为范围查询,则 d 用不到索引,只能作为普通条件过滤。如果索引是 (a,b,d,c),则可以用到全部索引列。 基于代价优选索引 对于能匹配到多个索引的 SQL,需要选择一个最优的代价最小的去执行。",
+            "source_name": "OSCHINA - 中文开源技术交流社区",
+            "source_record_id": "src_da7080f5e2428abb45fd92c0",
+            "title": "BaikalDB 技术实现内幕(三)-- 代价模型实现",
+            "url": "https://my.oschina.net/BaikalDB/blog/4715063"
+          },
+          {
+            "published_at": "2023-12-25T18:20:07",
+            "rank": 8,
+            "score": null,
+            "snippet": "1. 业务场景 对数据集深入分析前,可以通过 summary函数快速了解数值型列的概括信息,例如,平均值、标准差、最小值、最大值和百分位数,这有助于初步了解数据的分布情况和特征。在探索性数据分析(EDA)过程中,summary函数有助于识别异常值、离群值和数据分析的偏态。通过观察统计信息,可以进一步决定数据清洗和数据转换的策略。例如,如果某个数值型列的最大值或最小值远离其平均值,则可能存在异常值或离群值;如果某个数值型列的标准差较大,则表示可能存在数据分布的偏态。 2. 函数简介 2.1 语法 summary(X,[interpolation='linear'],[characteristic=`avg`std],[percentile=[25,50,75]],[precision=0.01],[partitionSampling=1.0]) 2.2 参数介绍 X:内存表、DFS 表或由 sqlDS函数生成的数据源。 interpolation:计算百分位采用的插值方法,可选:linear、nearest、lower、higher、midpoint。 characteristic:需要输出的统计特征,可选:avg 和 std。 percentile:需要输出的百分位数。 precision:百分位计算精度。 partitionSampling:针对分区表设计的参数,表示参与进行数据统计的分区数量。 有关summary函数的用法、示例及注意事项,参考 DolphinDB 用户手册中该函数的详细介绍。 3. 使用示例 3.1 生成内存表统计信息 n=2022 data=1..2022 value=take(1..3,n) name=take(`APPLE`IBM`INTEL,n) t=table(data,value,name); res = summary(t, precision=0.001); 3.2 生成 DFS 表统计信息 db = database(dbName,VALUE,`A`B`C`D) ... pt = loadTable(dbName, tableName) // 生成 DFS 表统计信息,同时指定分区采样率为 0.5 re = summary(pt,`linear,`avg`std, [25,50], 0.001, 0.5) 示例中的 DFS 表采用值分区方式,拥有 A、B、C和 D 共 4 个分区。分区采样率为 0.5,结果将随机输出 2 个分区的数据统计信息。 3.3 使用 SQL 语句作为输入数据源 ds = sqlDS(<select * from table>) re = summary(ds, type) 3.4 大规模数据计算",
+            "source_name": "无",
+            "source_record_id": "src_464d405d86f3d481a13dfec4",
+            "title": "用DolphinDB summary 函数优化你的数据清洗策略",
+            "url": "https://maimai.cn/article/detail?fid=1815514482&efid=JJVAkXg7LXgieijt6rJCSw"
+          },
+          {
+            "published_at": "2020-07-14T14:18:42",
+            "rank": 9,
+            "score": null,
+            "snippet": "DBSCAN (Density-Based Spatial Clustering of Applications with Noise) 是一种基于密度的聚类算法,基于密度的聚类寻找被低密度区域分离的高密度区域。常用于异常值或者离群点检测。 DBSCAN 怎么算 当某个点的密度达到算法设定的阈值,则这个点称为核心对象。(即r领域内点的数量小于minPts),其中领域的距离阈值为用户设定值。 若某点p在q的r领域内,且q是核心点,则p-q直接密度可达。若有一个点的序列q0、q1、q2…qK,对任意的qi-qi+1是直接密度可达的,则称q0到qK密度可达。称为密度的传播。 当一个非核心点不能发展下线,则称该点为边界点。若某一点,从任一核心地点出发都是密度不可达的,则称该点为噪声点 DBSCAN 聚类算法实现如下图: 当出现奇葩数据时,K-Means 无法正常聚类,而 DBSCAN 完全无问题 优点: 与K-Means相比,不需要手动确定簇的个数K,但需要确定邻域r和密度阈值minPts 能发现任意形状的簇 能有效处理噪声点(邻域r和密度阈值minPts参数的设置可以影响噪声点) 缺点: 当数据量大时,处理速度慢,消耗大 当空间聚类的密度不均匀、聚类间距差相差很大时参数密度阈值minPts和邻域r参数选取困难 对于高维数据,容易产生“维数灾难”(聚类算法基于欧式距离的通病) DBSCAN 聚类 Python 实现 代码语言:javascript AI代码解释 # coding=utf-8\"\"\" Created on2019/10/1211:42@author:EwdAger\"\"\"importnumpyasnp from sklearn.clusterimportDBSCANfrom sklearnimportmetrics from sklearn.datasets.samples_generatorimportmake_blobs from sklearn.preprocessingimportStandardScalerimportmatplotlib.pyplotasplt centers=[[1,1],[-1,-1],[1,-1]]# 生成聚类中心点X,labels_true=make_blobs(n_samples=750,centers=centers,cluster_std=0.4,random_state=0)# 生成样本数据集X=StandardScaler().fit_transform(X)# StandardScaler 标准化处理。且是针对每一个特征维度来做的,而不是针对样本。 # 调用密度聚类DBSCANdb=DBSCAN(eps=0.3,min_samples=10).fit(X)#print(db.labels_)# db.labels_为所有样本的聚类索引,没有聚类索引为-1#print(db.core_sample_indices_)# 所有核心样本的索引 core_samples_mask=np.zeros_like(db.labels_,dtype=bool)# 设置一个样本个数长度的全false向量core_samples_mask[db.core_sample_indices_]=True #将核心样本部分设置为truelabels=db.labels_ n_clusters_=len(set(labels))-(1if-1inlabelselse0)# 获取聚类个数。",
+            "source_name": "Tencent腾讯（腾讯官方网）",
+            "source_record_id": "src_16afccd82d0f595f032d8850",
+            "title": "聚类算法之DBSCAN聚类",
+            "url": "https://cloud.tencent.com/developer/article/1661130"
+          },
+          {
+            "published_at": "2022-04-13T19:39:04",
+            "rank": 10,
+            "score": null,
+            "snippet": "一、目的 在OLAP场景中, 多表连接 是十分常见的,查询的执行效率跟它涉及的表的连接顺序息息相关。以A、B、C三张表为例,有一条查询:SELECT * FROM A, B, C WHERE …,那么这三张表的连接顺序可以是(A⋈B)⋈C、(A⋈B)⋈C、(A⋈C)⋈B等共6种连接顺序,我们将全部连接顺序称为搜索空间。不同的连接顺序是语义等价的,即能获得相同的结果集,但是对于查询效率有着非常大的影响。从搜索空间中选出性能最优的连接顺序是一个关键的DBMS优化问题,但是随着 连接表 数量的增加,搜索空间的大小呈指数级增长,这使得连接顺序选择成为一个NP-hard问题。本文主要评测OceanBase连接顺序选择策略的优劣,以分析OceanBase对多表连接查询的处理能力以及优化空间。 二、OceanBase 查询计划 分析 为了得到OceanBase执行某查询时选择的连接顺序,我们需要分析该查询的执行计划,具体方法如下。 2.1 EXPLAIN关键字 OceanBase可以利用EXPLAIN关键字得到查询的 执行计划 。 示例: obclient> explain select count(*) from table_0, table_6, table_5, table_3 where table_0.fk_0 = table_6.primaryKey and table_0.fk_1 = table_5.primaryKey and table_0.fk_3 = table_3.primaryKey and table_0.col_0 > 10000 and table_5.col_6 > 10000 and table_6.col_3 > 10000 and table_3.col_2 > 10000; | Query Plan =================================================== |ID|OPERATOR |NAME |EST. ROWS|COST | --------------------------------------------------- |0 |SCALAR GROUP BY | |1 |15299| |1 | HASH JOIN | |334 |15236| |2 | PX COORDINATOR | |338 |11647| |3 | EXCHANGE OUT DISTR|:EX10000|338 |11519| |4 | HASH JOIN | |338 |11519| |5 | HASH JOIN | |341 |6906 | |6 | TABLE SCAN |table_3 |400 |3148 | |7 | TABLE SCAN |table_0 |344 |2932 | |8 | TABLE SCAN |table_6 |452 |3580 | |9 | TABLE SCAN |table_5 |313 |2486 | =================================================== Outputs & filters: ------------------------------------- 0 - output([T_FUN_COUNT(*)]), filter(nil), group(nil), agg_func([T_FUN_COUNT(*)]) 1 - output([1]), filter(nil), equal_conds([table_0.fk_1 = table_5.primaryKey]), other_conds(nil) 2 - output([table_0.fk_1]), filter(nil) 3 - output([t",
+            "source_name": "知乎",
+            "source_record_id": "src_f2e729c65960bd95022d768d",
+            "title": "OceanBase连接顺序选择的优劣评估",
+            "url": "https://zhuanlan.zhihu.com/p/498042859"
+          }
+        ],
+        "warnings": []
+      },
+      "source_records": [
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "1",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://docs.microsoft.com/zh-tw/azure/databricks/spark/latest/spark-sql/language-manual/functions/count_min_sketch",
+          "observed_at": "2026-09-16T15:02:23.610923Z",
+          "provenance": {
+            "query": "Sketch-DBH graph stream partitioning Count-Min Sketch",
+            "rank": 1,
+            "run_id": "run-d36b9cc71aac4891bd09e05ac8eb7602",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": "count_min_sketch 聚合函數 適用於: Databricks SQL  Databricks Runtime 傳回column 的群組中所有值的 count-min 草圖,使用 epsilon 、 confidence 和 seed 。 在Databricks SQL 和 Databricks Runtime 13.3 LTS 和更新版本中,此函式支援 具名參數調用 。 語法 count_min_sketch ( [ALL | DISTINCT] column, epsilon, confidence, seed ) [FILTER ( WHERE cond ) ]  您也可以使用 子句,將此功能作為 OVER 來調用。 引數 column :評估為整數數值、 STRING 或 BINARY 的表達式。 epsilon DOUBLE :描述相對錯誤的大於 0 的常值。 confidence DOUBLE :常值大於 0 且小於 1。 seed : INTEGER 常值。 cond :選擇性布爾表示式,篩選用於匯總的數據列。 退貨 BINARY 。 Count-min sketch 是一種使用子線性空間進行基數估計的概率數據結構。 如果DISTINCT 指定,則函式只會在一組 expr 唯一的值上運作。 範例 SQL -- Named parameter invocation > SELECT hex (count_min_sketch( column => col , confidence => 0.5 d, epsilon => ",
+            "published_at": "2025-12-05T08:20:00",
+            "request_id": "dd0cb646-475c-46ba-9f5b-b31bc725e179",
+            "search_score": null,
+            "search_snippet": "count_min_sketch 聚合函數 適用於: Databricks SQL  Databricks Runtime 傳回column 的群組中所有值的 count-min 草圖,使用 epsilon 、 confidence 和 seed 。 在Databricks SQL 和 Databricks Runtime 13.3 LTS 和更新版本中,此函式支援 具名參數調用 。 語法 count_min_sketch ( [ALL | DISTINCT] column, epsilon, confidence, seed ) [FILTER ( WHERE cond ) ]  您也可以使用 子句,將此功能作為 OVER 來調用。 引數 column :評估為整數數值、 STRING 或 BINARY 的表達式。 epsilon DOUBLE :描述相對錯誤的大於 0 的常值。 confidence DOUBLE :常值大於 0 且小於 1。 seed : INTEGER 常值。 cond :選擇性布爾表示式,篩選用於匯總的數據列。 退貨 BINARY 。 Count-min sketch 是一種使用子線性空間進行基數估計的概率數據結構。 如果DISTINCT 指定,則函式只會在一組 expr 唯一的值上運作。 範例 SQL -- Named parameter invocation > SELECT hex (count_min_sketch( column => col , confidence => 0.5 d, epsilon =>",
+            "source_name": "微软网站",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web_supplement",
+          "source_record_id": "src_27a39798fa0e8446e41e8c7e",
+          "title": "count_min_sketch聚合函數 - Azure Databricks - Databricks SQL | Microsoft Learn",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "2",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://zhuanlan.zhihu.com/p/84688298",
+          "observed_at": "2026-09-16T15:02:23.610923Z",
+          "provenance": {
+            "query": "Sketch-DBH graph stream partitioning Count-Min Sketch",
+            "rank": 2,
+            "run_id": "run-d36b9cc71aac4891bd09e05ac8eb7602",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": " 是数据库中用到的一种 Sketch,所谓 sketch 就是用很少的一点数据来描述全体数据的特性,牺牲了准确性但是代价变得很低。 CM-Sketch 的 数据模型 是这样的:有一个维度为  n 、不断变化的 向量 ( t 表示 时间戳 ) a ( t ) = [ a 1 ( t ) , … a i ( t ) , … a n ( t ) ] 每个时间  t 上会发生一个更新操作,将其中某一个值加上  c ,其他值不变 a i t ( t ) = a i t ( t − 1 )",
+            "published_at": "2019-09-29T14:33:00",
+            "request_id": "dd0cb646-475c-46ba-9f5b-b31bc725e179",
+            "search_score": null,
+            "search_snippet": "是数据库中用到的一种 Sketch,所谓 sketch 就是用很少的一点数据来描述全体数据的特性,牺牲了准确性但是代价变得很低。 CM-Sketch 的 数据模型 是这样的:有一个维度为  n 、不断变化的 向量 ( t 表示 时间戳 ) a ( t ) = [ a 1 ( t ) , … a i ( t ) , … a n ( t ) ] 每个时间  t 上会发生一个更新操作,将其中某一个值加上  c ,其他值不变 a i t ( t ) = a i t ( t − 1 )",
+            "source_name": "知乎",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web_supplement",
+          "source_record_id": "src_23f4f9dea2000244292bc280",
+          "title": "Count-Min Sketch",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "3",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://blog.csdn.net/gitblog_00194/article/details/165099425",
+          "observed_at": "2026-09-16T15:02:23.610923Z",
+          "provenance": {
+            "query": "Sketch-DBH graph stream partitioning Count-Min Sketch",
+            "rank": 3,
+            "run_id": "run-d36b9cc71aac4891bd09e05ac8eb7602",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": " 一、HyperLogLog 是什么:count-distinct问题的近似解法 在日志与指标系统中,\"某个时间窗口内一共有多少个不同的取值\"(即基数、cardinality)是最常见也最难精确回答的问题之一。精确解法(HashSet)随元素个数线性增长,在海量数据下既不省内存也不易并行合并。HyperLogLog 是解决 count-distinct 问题的经典概率算法:它用固定大小的寄存器数组去近似一个多重集合中的去重元素数量,用很少的内存换取可接受的精度误差。 Loki 仓库将axiomhq/hyperloglog作为第三方依赖引入(位于vendor 目录),并在pkg/logql/approx_count_distinct.go、pkg/logql/count_min_sketch.go、pkg/logql/sketch/topk.go、pkg/storage/detected/fields.go等多处使用它。理解这个库,就等于理解 Loki 做近似去重统计的底层引擎。",
+            "published_at": "2026-09-12T10:37:09",
+            "request_id": "dd0cb646-475c-46ba-9f5b-b31bc725e179",
+            "search_score": null,
+            "search_snippet": "一、HyperLogLog 是什么:count-distinct问题的近似解法 在日志与指标系统中,\"某个时间窗口内一共有多少个不同的取值\"(即基数、cardinality)是最常见也最难精确回答的问题之一。精确解法(HashSet)随元素个数线性增长,在海量数据下既不省内存也不易并行合并。HyperLogLog 是解决 count-distinct 问题的经典概率算法:它用固定大小的寄存器数组去近似一个多重集合中的去重元素数量,用很少的内存换取可接受的精度误差。 Loki 仓库将axiomhq/hyperloglog作为第三方依赖引入(位于vendor 目录),并在pkg/logql/approx_count_distinct.go、pkg/logql/count_min_sketch.go、pkg/logql/sketch/topk.go、pkg/storage/detected/fields.go等多处使用它。理解这个库,就等于理解 Loki 做近似去重统计的底层引擎。",
+            "source_name": "CSDN软件开发网",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web_supplement",
+          "source_record_id": "src_12da7f4d0ccb59d116b9fa96",
+          "title": "Grafana Loki 中 HyperLogLog 基数估算库的算法原理与 Go 实现解析",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "4",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://developer.aliyun.com/article/1488880",
+          "observed_at": "2026-09-16T15:02:23.610923Z",
+          "provenance": {
+            "query": "Sketch-DBH graph stream partitioning Count-Min Sketch",
+            "rank": 4,
+            "run_id": "run-d36b9cc71aac4891bd09e05ac8eb7602",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": " 在Every Row Counts: Combining Sketches and Sampling for Accurate Group-By Result Estimates 这篇论文中,作者比较了基于 Sample 的 GEE/AE 与面向全量数据的 HyperLogLog sketch 算法,HyperLogLog 的精确度完胜。当然这仅仅是在计算 NDV 的场景。 当我们需要某个单一确定数据在集群中的特征时, sample 都很难回答该类问题。举个例子,数据的存在问题,即某数据是否在集群中存在,如果该数据不在 sample 集中存在,那既有可能整体中也不存在,也有可能只是没有被 sample 到。",
+            "published_at": "2023-01-05T14:16:39",
+            "request_id": "dd0cb646-475c-46ba-9f5b-b31bc725e179",
+            "search_score": null,
+            "search_snippet": "在Every Row Counts: Combining Sketches and Sampling for Accurate Group-By Result Estimates 这篇论文中,作者比较了基于 Sample 的 GEE/AE 与面向全量数据的 HyperLogLog sketch 算法,HyperLogLog 的精确度完胜。当然这仅仅是在计算 NDV 的场景。 当我们需要某个单一确定数据在集群中的特征时, sample 都很难回答该类问题。举个例子,数据的存在问题,即某数据是否在集群中存在,如果该数据不在 sample 集中存在,那既有可能整体中也不存在,也有可能只是没有被 sample 到。",
+            "source_name": "阿里云.",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web_supplement",
+          "source_record_id": "src_6c18cbe6723162655fa94d0f",
+          "title": "简介:简介: 统计信息是为优化器的 cost 估算提供数据支撑,其中很重要的一点需求便是等值查询(EQUALS, IN 等) 场景下的基数估算。",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "5",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://zhuanlan.zhihu.com/p/39139693",
+          "observed_at": "2026-09-16T15:02:23.610923Z",
+          "provenance": {
+            "query": "Sketch-DBH graph stream partitioning Count-Min Sketch",
+            "rank": 5,
+            "run_id": "run-d36b9cc71aac4891bd09e05ac8eb7602",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": " 2. Count-Min Sketch 简介 Count-Min Sketch 是一种可以处理等值查询,Join 大小估计等的 数据结构 ,并且可以提供很强的准确性保证。自 2003 年在文献 An improved data stream summary: The count-min sketch and its applications中提出以来,由于其创建和使用的简单性获得了广泛的使用。 Count-Min Sketch 维护了一个 d*w 的计数数组,对于每一个值,用 d 个独立的 hash 函数映射到每一行的",
+            "published_at": "2018-07-06T12:03:00",
+            "request_id": "dd0cb646-475c-46ba-9f5b-b31bc725e179",
+            "search_score": null,
+            "search_snippet": "2. Count-Min Sketch 简介 Count-Min Sketch 是一种可以处理等值查询,Join 大小估计等的 数据结构 ,并且可以提供很强的准确性保证。自 2003 年在文献 An improved data stream summary: The count-min sketch and its applications中提出以来,由于其创建和使用的简单性获得了广泛的使用。 Count-Min Sketch 维护了一个 d*w 的计数数组,对于每一个值,用 d 个独立的 hash 函数映射到每一行的",
+            "source_name": "知乎",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web_supplement",
+          "source_record_id": "src_8758ccb930b18d0ebe427d9f",
+          "title": "TiDB 源码阅读系列文章(十二)统计信息(上)",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "6",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://www.modb.pro/db/1871140927859863552",
+          "observed_at": "2026-09-16T15:02:23.610923Z",
+          "provenance": {
+            "query": "Sketch-DBH graph stream partitioning Count-Min Sketch",
+            "rank": 6,
+            "run_id": "run-d36b9cc71aac4891bd09e05ac8eb7602",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": "VLDBJ 2020 | SKCompress:分布式机器学习稀疏非均匀梯度压缩 随着机器学习的训练数据规模不断增长,分布式机器学习逐渐成为相关领域的研究热点。分布式机器学习通过数据并行或者模型并行的方式将训练负载合理地分配到不同的机器上,加速了在大规模数据集上的训练过程。然而,当前分布式机器学习仍然面临着通信层面的效率挑战。在分布式环境中执行随机梯度下降(SGD)过程时,节点之间需要通过网络交换梯度信息。现有的方法在梯度分布较为密集的条件下表现较优,但是并不适用于梯度稀疏且分布不均匀的情况。本次为大家带来VLDBJ 2020的论文《SKCompress: compressing sparse and nonuniform gradient in distributed machine learning》。 一.背景 机器学习技术目前已广泛应用于许多领域中,例如推荐系统、文本挖掘、图像识别、视频检测、智能城市计算等等。然而,随着训练数据集规模的不断增长,传统的集中式系统无法再高效地运行机器学习任务。因此,分布式环境已经成为大量机器学习研究和应用工作的首选配置。但是在分布式环境下的一个主要问题是通信量大,因为节点之间需要频繁交换梯度信息,并且通信成本在总成本中往往占主导地位。尽管目前的网络设施已经非常快,但是降低通信成本在许多领域中仍然有必要,包括但不限于以下的情况:1)大模型。大模型可以更好地表示用户或对象,并产生更好的预测结果。然而,大模型在分布式集群中巨大的通信开销会影响整体性能。2)云环境。Amazon EC2、阿里云和 Microsoft Azure 等云平台通常提供可调整规模的按需定价云计算服务,而这些服务通常按照带宽大小调整价格,因此为了最小化成本,需要降低通信开销。3)地理分布式机器学习。对于许多跨国公司来说,在世界各地的数据中心之间转移数据的成本是非常高的。降低数据中心之间的通信成本有利于地理分布式机器学习任务。 在上述机器学习案例中,通过减少梯度通信的通信开销并同时保证算法的正确性具有重要意义。一般来说,减少梯度通信开销往往采用压缩技术。现有的压缩方法可以分为两类:无损方法和有损方法。无损压缩算法虽然能够保证数据的严格一致,但是压缩效果一般。有损压缩算法一般分为两类:基于稀疏化和基于量化。基于稀疏化的方法在某些情况下会不利于收敛,因而量化的方法具备更好的适用性。然而,对于梯度稀疏分布的情况而言,量化压缩的效果较为一般。 为了解决这个问题,论文提出了一个支持高效压缩稀疏梯度的通用压缩框架SKCompress,对于由键值对组成的稀疏梯度向量,SKCompress",
+            "published_at": "2024-04-18T18:00:48",
+            "request_id": "dd0cb646-475c-46ba-9f5b-b31bc725e179",
+            "search_score": null,
+            "search_snippet": "VLDBJ 2020 | SKCompress:分布式机器学习稀疏非均匀梯度压缩 随着机器学习的训练数据规模不断增长,分布式机器学习逐渐成为相关领域的研究热点。分布式机器学习通过数据并行或者模型并行的方式将训练负载合理地分配到不同的机器上,加速了在大规模数据集上的训练过程。然而,当前分布式机器学习仍然面临着通信层面的效率挑战。在分布式环境中执行随机梯度下降(SGD)过程时,节点之间需要通过网络交换梯度信息。现有的方法在梯度分布较为密集的条件下表现较优,但是并不适用于梯度稀疏且分布不均匀的情况。本次为大家带来VLDBJ 2020的论文《SKCompress: compressing sparse and nonuniform gradient in distributed machine learning》。 一.背景 机器学习技术目前已广泛应用于许多领域中,例如推荐系统、文本挖掘、图像识别、视频检测、智能城市计算等等。然而,随着训练数据集规模的不断增长,传统的集中式系统无法再高效地运行机器学习任务。因此,分布式环境已经成为大量机器学习研究和应用工作的首选配置。但是在分布式环境下的一个主要问题是通信量大,因为节点之间需要频繁交换梯度信息,并且通信成本在总成本中往往占主导地位。尽管目前的网络设施已经非常快,但是降低通信成本在许多领域中仍然有必要,包括但不限于以下的情况:1)大模型。大模型可以更好地表示用户或对象,并产生更好的预测结果。然而,大模型在分布式集群中巨大的通信开销会影响整体性能。2)云环境。Amazon EC2、阿里云和 Microsoft Azure 等云平台通常提供可调整规模的按需定价云计算服务,而这些服务通常按照带宽大小调整价格,因此为了最小化成本,需要降低通信开销。3)地理分布式机器学习。对于许多跨国公司来说,在世界各地的数据中心之间转移数据的成本是非常高的。降低数据中心之间的通信成本有利于地理分布式机器学习任务。 在上述机器学习案例中,通过减少梯度通信的通信开销并同时保证算法的正确性具有重要意义。一般来说,减少梯度通信开销往往采用压缩技术。现有的压缩方法可以分为两类:无损方法和有损方法。无损压缩算法虽然能够保证数据的严格一致,但是压缩效果一般。有损压缩算法一般分为两类:基于稀疏化和基于量化。基于稀疏化的方法在某些情况下会不利于收敛,因而量化的方法具备更好的适用性。然而,对于梯度稀疏分布的情况而言,量化压缩的效果较为一般。 为了解决这个问题,论文提出了一个支持高效压缩稀疏梯度的通用压缩框架SKCompress,对于由键值对组成的稀疏梯度向量,SKCompress",
+            "source_name": "云数互联墨天轮",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web_supplement",
+          "source_record_id": "src_6e3d936bdc1be93eec0c28de",
+          "title": "VLDBJ 2020 | SKCompress:分布式机器学习稀疏非均匀梯度压缩",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "7",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://my.oschina.net/BaikalDB/blog/4715063",
+          "observed_at": "2026-09-16T15:02:23.610923Z",
+          "provenance": {
+            "query": "Sketch-DBH graph stream partitioning Count-Min Sketch",
+            "rank": 7,
+            "run_id": "run-d36b9cc71aac4891bd09e05ac8eb7602",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": " 本系列文章主要介绍 HTAP 数据库 BaikalDB 的技术实现细节 作者简介:于正泉,百度商业平台研发部高级研发工程师。主要从事分布式存储、分布式数据库等领域的工作,现主要负责 BaikalDB SQL 性能优化,稳定性相关方向的研发工作。 BaikalDB 系统简介 BaikalDB是一个分布式可扩展的存储系统,兼容 MySQL 协议,整个系统的架构如下图所示: BaikalStore 负责数据存储,数据分区按 region 组织,三个 Store 的三个 region 形成一个 Raft-group 实现三副本,多实例部署,Store 实例宕机可以自动迁移 Region 数据; BaikalMeta 负责元信息管理,包括分区,容量,权限,均衡等, Raft 保障的 3 副本部署,Meta 宕机只影响数据无法扩容迁移,不影响数据读写; BaikalDB 负责前端 SQL 解析,查询计划生成执行,无状态全同构多实例部署,宕机实例数不超过 qps 承载极限即可。 本文只介绍 BaikalDB 是怎样基于代价进行索引选择的。首先简单回顾下 BaikalDB 的索引。 BaikalDB 索引类型包括,主键索引,局部索引,局部唯一索引,全局二级索引和倒排索引。主键索引是 BaikalDB 针对主键创建的索引,主键 key 值必须唯一。BaikalDB 使用主键值将整个表进行 range 划分为多个 region 分区。 示例: CREATE TABLE `t` ( `a` INT(10) NOT NULL, `b` DATETIME NOT NULL, `c` BIGINT(20) UNSIGNED NOT NULL, `d` TINYINT(3) NOT NULL, `e` VARCHAR(100)NO NULL, PRIMARY KEY (`a`), KEY b_c_key (`b`, `c`), UNIQ KEY c_d_uniq (`c`, `d`) ) 存储模型如下图: 其中倒排索引不适合做列信息的统计,不在本文的讨论范围。全局二级索引和主表数据存储在不同分片上,统计信息使用和局部二级索引类似,只以局部二级索引为例。 索引选择 索引遵循最左前缀匹配原则:只有相等的情况,才会使用下一级索引,如遇范围匹配则不能使用下一级索引。示例: 索引(a,b),比如 where b = 2;则不符合最左前缀原则,无法使用该索引。只有在查询条件中使用了创建索引时的第一个字段,索引才会被使用。 索引(a,b,c,d),比如 where a = 1 and b = 2 and c > 3 and d = 4;范围查询条件命中索引时无法继续使用下一级,例子中 c 为范围查询,则 d 用不到索引,只能作为普通条件过滤。如果索引是 (a,b,d,c),则可以用到全部索引列。 基于代价优选索引 对于能匹配到多个索引的 SQL,需要选择一个最优的代价最小的去执行。",
+            "published_at": "2020-11-12T22:47:46",
+            "request_id": "dd0cb646-475c-46ba-9f5b-b31bc725e179",
+            "search_score": null,
+            "search_snippet": "本系列文章主要介绍 HTAP 数据库 BaikalDB 的技术实现细节 作者简介:于正泉,百度商业平台研发部高级研发工程师。主要从事分布式存储、分布式数据库等领域的工作,现主要负责 BaikalDB SQL 性能优化,稳定性相关方向的研发工作。 BaikalDB 系统简介 BaikalDB是一个分布式可扩展的存储系统,兼容 MySQL 协议,整个系统的架构如下图所示: BaikalStore 负责数据存储,数据分区按 region 组织,三个 Store 的三个 region 形成一个 Raft-group 实现三副本,多实例部署,Store 实例宕机可以自动迁移 Region 数据; BaikalMeta 负责元信息管理,包括分区,容量,权限,均衡等, Raft 保障的 3 副本部署,Meta 宕机只影响数据无法扩容迁移,不影响数据读写; BaikalDB 负责前端 SQL 解析,查询计划生成执行,无状态全同构多实例部署,宕机实例数不超过 qps 承载极限即可。 本文只介绍 BaikalDB 是怎样基于代价进行索引选择的。首先简单回顾下 BaikalDB 的索引。 BaikalDB 索引类型包括,主键索引,局部索引,局部唯一索引,全局二级索引和倒排索引。主键索引是 BaikalDB 针对主键创建的索引,主键 key 值必须唯一。BaikalDB 使用主键值将整个表进行 range 划分为多个 region 分区。 示例: CREATE TABLE `t` ( `a` INT(10) NOT NULL, `b` DATETIME NOT NULL, `c` BIGINT(20) UNSIGNED NOT NULL, `d` TINYINT(3) NOT NULL, `e` VARCHAR(100)NO NULL, PRIMARY KEY (`a`), KEY b_c_key (`b`, `c`), UNIQ KEY c_d_uniq (`c`, `d`) ) 存储模型如下图: 其中倒排索引不适合做列信息的统计,不在本文的讨论范围。全局二级索引和主表数据存储在不同分片上,统计信息使用和局部二级索引类似,只以局部二级索引为例。 索引选择 索引遵循最左前缀匹配原则:只有相等的情况,才会使用下一级索引,如遇范围匹配则不能使用下一级索引。示例: 索引(a,b),比如 where b = 2;则不符合最左前缀原则,无法使用该索引。只有在查询条件中使用了创建索引时的第一个字段,索引才会被使用。 索引(a,b,c,d),比如 where a = 1 and b = 2 and c > 3 and d = 4;范围查询条件命中索引时无法继续使用下一级,例子中 c 为范围查询,则 d 用不到索引,只能作为普通条件过滤。如果索引是 (a,b,d,c),则可以用到全部索引列。 基于代价优选索引 对于能匹配到多个索引的 SQL,需要选择一个最优的代价最小的去执行。",
+            "source_name": "OSCHINA - 中文开源技术交流社区",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web_supplement",
+          "source_record_id": "src_da7080f5e2428abb45fd92c0",
+          "title": "BaikalDB 技术实现内幕(三)-- 代价模型实现",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "8",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://maimai.cn/article/detail?fid=1815514482&efid=JJVAkXg7LXgieijt6rJCSw",
+          "observed_at": "2026-09-16T15:02:23.610923Z",
+          "provenance": {
+            "query": "Sketch-DBH graph stream partitioning Count-Min Sketch",
+            "rank": 8,
+            "run_id": "run-d36b9cc71aac4891bd09e05ac8eb7602",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": " 1. 业务场景 对数据集深入分析前,可以通过 summary函数快速了解数值型列的概括信息,例如,平均值、标准差、最小值、最大值和百分位数,这有助于初步了解数据的分布情况和特征。在探索性数据分析(EDA)过程中,summary函数有助于识别异常值、离群值和数据分析的偏态。通过观察统计信息,可以进一步决定数据清洗和数据转换的策略。例如,如果某个数值型列的最大值或最小值远离其平均值,则可能存在异常值或离群值;如果某个数值型列的标准差较大,则表示可能存在数据分布的偏态。 2. 函数简介 2.1 语法 summary(X,[interpolation='linear'],[characteristic=`avg`std],[percentile=[25,50,75]],[precision=0.01],[partitionSampling=1.0]) 2.2 参数介绍 X:内存表、DFS 表或由 sqlDS函数生成的数据源。 interpolation:计算百分位采用的插值方法,可选:linear、nearest、lower、higher、midpoint。 characteristic:需要输出的统计特征,可选:avg 和 std。 percentile:需要输出的百分位数。 precision:百分位计算精度。 partitionSampling:针对分区表设计的参数,表示参与进行数据统计的分区数量。 有关summary函数的用法、示例及注意事项,参考 DolphinDB 用户手册中该函数的详细介绍。 3. 使用示例 3.1 生成内存表统计信息 n=2022 data=1..2022 value=take(1..3,n) name=take(`APPLE`IBM`INTEL,n) t=table(data,value,name); res = summary(t, precision=0.001); 3.2 生成 DFS 表统计信息 db = database(dbName,VALUE,`A`B`C`D) ... pt = loadTable(dbName, tableName) // 生成 DFS 表统计信息,同时指定分区采样率为 0.5 re = summary(pt,`linear,`avg`std, [25,50], 0.001, 0.5) 示例中的 DFS 表采用值分区方式,拥有 A、B、C和 D 共 4 个分区。分区采样率为 0.5,结果将随机输出 2 个分区的数据统计信息。 3.3 使用 SQL 语句作为输入数据源 ds = sqlDS(<select * from table>) re = summary(ds, type) 3.4 大规模数据计算",
+            "published_at": "2023-12-25T18:20:07",
+            "request_id": "dd0cb646-475c-46ba-9f5b-b31bc725e179",
+            "search_score": null,
+            "search_snippet": "1. 业务场景 对数据集深入分析前,可以通过 summary函数快速了解数值型列的概括信息,例如,平均值、标准差、最小值、最大值和百分位数,这有助于初步了解数据的分布情况和特征。在探索性数据分析(EDA)过程中,summary函数有助于识别异常值、离群值和数据分析的偏态。通过观察统计信息,可以进一步决定数据清洗和数据转换的策略。例如,如果某个数值型列的最大值或最小值远离其平均值,则可能存在异常值或离群值;如果某个数值型列的标准差较大,则表示可能存在数据分布的偏态。 2. 函数简介 2.1 语法 summary(X,[interpolation='linear'],[characteristic=`avg`std],[percentile=[25,50,75]],[precision=0.01],[partitionSampling=1.0]) 2.2 参数介绍 X:内存表、DFS 表或由 sqlDS函数生成的数据源。 interpolation:计算百分位采用的插值方法,可选:linear、nearest、lower、higher、midpoint。 characteristic:需要输出的统计特征,可选:avg 和 std。 percentile:需要输出的百分位数。 precision:百分位计算精度。 partitionSampling:针对分区表设计的参数,表示参与进行数据统计的分区数量。 有关summary函数的用法、示例及注意事项,参考 DolphinDB 用户手册中该函数的详细介绍。 3. 使用示例 3.1 生成内存表统计信息 n=2022 data=1..2022 value=take(1..3,n) name=take(`APPLE`IBM`INTEL,n) t=table(data,value,name); res = summary(t, precision=0.001); 3.2 生成 DFS 表统计信息 db = database(dbName,VALUE,`A`B`C`D) ... pt = loadTable(dbName, tableName) // 生成 DFS 表统计信息,同时指定分区采样率为 0.5 re = summary(pt,`linear,`avg`std, [25,50], 0.001, 0.5) 示例中的 DFS 表采用值分区方式,拥有 A、B、C和 D 共 4 个分区。分区采样率为 0.5,结果将随机输出 2 个分区的数据统计信息。 3.3 使用 SQL 语句作为输入数据源 ds = sqlDS(<select * from table>) re = summary(ds, type) 3.4 大规模数据计算",
+            "source_name": "无",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web_supplement",
+          "source_record_id": "src_464d405d86f3d481a13dfec4",
+          "title": "用DolphinDB summary 函数优化你的数据清洗策略",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "9",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://cloud.tencent.com/developer/article/1661130",
+          "observed_at": "2026-09-16T15:02:23.610923Z",
+          "provenance": {
+            "query": "Sketch-DBH graph stream partitioning Count-Min Sketch",
+            "rank": 9,
+            "run_id": "run-d36b9cc71aac4891bd09e05ac8eb7602",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": " DBSCAN (Density-Based Spatial Clustering of Applications with Noise) 是一种基于密度的聚类算法,基于密度的聚类寻找被低密度区域分离的高密度区域。常用于异常值或者离群点检测。 DBSCAN 怎么算 当某个点的密度达到算法设定的阈值,则这个点称为核心对象。(即r领域内点的数量小于minPts),其中领域的距离阈值为用户设定值。 若某点p在q的r领域内,且q是核心点,则p-q直接密度可达。若有一个点的序列q0、q1、q2…qK,对任意的qi-qi+1是直接密度可达的,则称q0到qK密度可达。称为密度的传播。 当一个非核心点不能发展下线,则称该点为边界点。若某一点,从任一核心地点出发都是密度不可达的,则称该点为噪声点 DBSCAN 聚类算法实现如下图: 当出现奇葩数据时,K-Means 无法正常聚类,而 DBSCAN 完全无问题 优点: 与K-Means相比,不需要手动确定簇的个数K,但需要确定邻域r和密度阈值minPts 能发现任意形状的簇 能有效处理噪声点(邻域r和密度阈值minPts参数的设置可以影响噪声点) 缺点: 当数据量大时,处理速度慢,消耗大 当空间聚类的密度不均匀、聚类间距差相差很大时参数密度阈值minPts和邻域r参数选取困难 对于高维数据,容易产生“维数灾难”(聚类算法基于欧式距离的通病) DBSCAN 聚类 Python 实现 代码语言:javascript AI代码解释 # coding=utf-8\"\"\" Created on2019/10/1211:42@author:EwdAger\"\"\"importnumpyasnp from sklearn.clusterimportDBSCANfrom sklearnimportmetrics from sklearn.datasets.samples_generatorimportmake_blobs from sklearn.preprocessingimportStandardScalerimportmatplotlib.pyplotasplt centers=[[1,1],[-1,-1],[1,-1]]# 生成聚类中心点X,labels_true=make_blobs(n_samples=750,centers=centers,cluster_std=0.4,random_state=0)# 生成样本数据集X=StandardScaler().fit_transform(X)# StandardScaler 标准化处理。且是针对每一个特征维度来做的,而不是针对样本。 # 调用密度聚类DBSCANdb=DBSCAN(eps=0.3,min_samples=10).fit(X)#print(db.labels_)# db.labels_为所有样本的聚类索引,没有聚类索引为-1#print(db.core_sample_indices_)# 所有核心样本的索引 core_samples_mask=np.zeros_like(db.labels_,dtype=bool)# 设置一个样本个数长度的全false向量core_samples_mask[db.core_sample_indices_]=True #将核心样本部分设置为truelabels=db.labels_ n_clusters_=len(set(labels))-(1if-1inlabelselse0)# 获取聚类个数。",
+            "published_at": "2020-07-14T14:18:42",
+            "request_id": "dd0cb646-475c-46ba-9f5b-b31bc725e179",
+            "search_score": null,
+            "search_snippet": "DBSCAN (Density-Based Spatial Clustering of Applications with Noise) 是一种基于密度的聚类算法,基于密度的聚类寻找被低密度区域分离的高密度区域。常用于异常值或者离群点检测。 DBSCAN 怎么算 当某个点的密度达到算法设定的阈值,则这个点称为核心对象。(即r领域内点的数量小于minPts),其中领域的距离阈值为用户设定值。 若某点p在q的r领域内,且q是核心点,则p-q直接密度可达。若有一个点的序列q0、q1、q2…qK,对任意的qi-qi+1是直接密度可达的,则称q0到qK密度可达。称为密度的传播。 当一个非核心点不能发展下线,则称该点为边界点。若某一点,从任一核心地点出发都是密度不可达的,则称该点为噪声点 DBSCAN 聚类算法实现如下图: 当出现奇葩数据时,K-Means 无法正常聚类,而 DBSCAN 完全无问题 优点: 与K-Means相比,不需要手动确定簇的个数K,但需要确定邻域r和密度阈值minPts 能发现任意形状的簇 能有效处理噪声点(邻域r和密度阈值minPts参数的设置可以影响噪声点) 缺点: 当数据量大时,处理速度慢,消耗大 当空间聚类的密度不均匀、聚类间距差相差很大时参数密度阈值minPts和邻域r参数选取困难 对于高维数据,容易产生“维数灾难”(聚类算法基于欧式距离的通病) DBSCAN 聚类 Python 实现 代码语言:javascript AI代码解释 # coding=utf-8\"\"\" Created on2019/10/1211:42@author:EwdAger\"\"\"importnumpyasnp from sklearn.clusterimportDBSCANfrom sklearnimportmetrics from sklearn.datasets.samples_generatorimportmake_blobs from sklearn.preprocessingimportStandardScalerimportmatplotlib.pyplotasplt centers=[[1,1],[-1,-1],[1,-1]]# 生成聚类中心点X,labels_true=make_blobs(n_samples=750,centers=centers,cluster_std=0.4,random_state=0)# 生成样本数据集X=StandardScaler().fit_transform(X)# StandardScaler 标准化处理。且是针对每一个特征维度来做的,而不是针对样本。 # 调用密度聚类DBSCANdb=DBSCAN(eps=0.3,min_samples=10).fit(X)#print(db.labels_)# db.labels_为所有样本的聚类索引,没有聚类索引为-1#print(db.core_sample_indices_)# 所有核心样本的索引 core_samples_mask=np.zeros_like(db.labels_,dtype=bool)# 设置一个样本个数长度的全false向量core_samples_mask[db.core_sample_indices_]=True #将核心样本部分设置为truelabels=db.labels_ n_clusters_=len(set(labels))-(1if-1inlabelselse0)# 获取聚类个数。",
+            "source_name": "Tencent腾讯（腾讯官方网）",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web_supplement",
+          "source_record_id": "src_16afccd82d0f595f032d8850",
+          "title": "聚类算法之DBSCAN聚类",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "10",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://zhuanlan.zhihu.com/p/498042859",
+          "observed_at": "2026-09-16T15:02:23.610923Z",
+          "provenance": {
+            "query": "Sketch-DBH graph stream partitioning Count-Min Sketch",
+            "rank": 10,
+            "run_id": "run-d36b9cc71aac4891bd09e05ac8eb7602",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": " 一、目的 在OLAP场景中, 多表连接 是十分常见的,查询的执行效率跟它涉及的表的连接顺序息息相关。以A、B、C三张表为例,有一条查询:SELECT * FROM A, B, C WHERE …,那么这三张表的连接顺序可以是(A⋈B)⋈C、(A⋈B)⋈C、(A⋈C)⋈B等共6种连接顺序,我们将全部连接顺序称为搜索空间。不同的连接顺序是语义等价的,即能获得相同的结果集,但是对于查询效率有着非常大的影响。从搜索空间中选出性能最优的连接顺序是一个关键的DBMS优化问题,但是随着 连接表 数量的增加,搜索空间的大小呈指数级增长,这使得连接顺序选择成为一个NP-hard问题。本文主要评测OceanBase连接顺序选择策略的优劣,以分析OceanBase对多表连接查询的处理能力以及优化空间。 二、OceanBase 查询计划 分析 为了得到OceanBase执行某查询时选择的连接顺序,我们需要分析该查询的执行计划,具体方法如下。 2.1 EXPLAIN关键字 OceanBase可以利用EXPLAIN关键字得到查询的 执行计划 。 示例: obclient> explain select count(*) from table_0, table_6, table_5, table_3 where table_0.fk_0 = table_6.primaryKey and table_0.fk_1 = table_5.primaryKey and table_0.fk_3 = table_3.primaryKey and table_0.col_0 > 10000 and table_5.col_6 > 10000 and table_6.col_3 > 10000 and table_3.col_2 > 10000; | Query Plan =================================================== |ID|OPERATOR |NAME |EST. ROWS|COST | --------------------------------------------------- |0 |SCALAR GROUP BY | |1 |15299| |1 | HASH JOIN | |334 |15236| |2 | PX COORDINATOR | |338 |11647| |3 | EXCHANGE OUT DISTR|:EX10000|338 |11519| |4 | HASH JOIN | |338 |11519| |5 | HASH JOIN | |341 |6906 | |6 | TABLE SCAN |table_3 |400 |3148 | |7 | TABLE SCAN |table_0 |344 |2932 | |8 | TABLE SCAN |table_6 |452 |3580 | |9 | TABLE SCAN |table_5 |313 |2486 | =================================================== Outputs & filters: ------------------------------------- 0 - output([T_FUN_COUNT(*)]), filter(nil), group(nil), agg_func([T_FUN_COUNT(*)]) 1 - output([1]), filter(nil), equal_conds([table_0.fk_1 = table_5.primaryKey]), other_conds(nil) 2 - output([table_0.fk_1]), filter(nil) 3 - output([t",
+            "published_at": "2022-04-13T19:39:04",
+            "request_id": "dd0cb646-475c-46ba-9f5b-b31bc725e179",
+            "search_score": null,
+            "search_snippet": "一、目的 在OLAP场景中, 多表连接 是十分常见的,查询的执行效率跟它涉及的表的连接顺序息息相关。以A、B、C三张表为例,有一条查询:SELECT * FROM A, B, C WHERE …,那么这三张表的连接顺序可以是(A⋈B)⋈C、(A⋈B)⋈C、(A⋈C)⋈B等共6种连接顺序,我们将全部连接顺序称为搜索空间。不同的连接顺序是语义等价的,即能获得相同的结果集,但是对于查询效率有着非常大的影响。从搜索空间中选出性能最优的连接顺序是一个关键的DBMS优化问题,但是随着 连接表 数量的增加,搜索空间的大小呈指数级增长,这使得连接顺序选择成为一个NP-hard问题。本文主要评测OceanBase连接顺序选择策略的优劣,以分析OceanBase对多表连接查询的处理能力以及优化空间。 二、OceanBase 查询计划 分析 为了得到OceanBase执行某查询时选择的连接顺序,我们需要分析该查询的执行计划,具体方法如下。 2.1 EXPLAIN关键字 OceanBase可以利用EXPLAIN关键字得到查询的 执行计划 。 示例: obclient> explain select count(*) from table_0, table_6, table_5, table_3 where table_0.fk_0 = table_6.primaryKey and table_0.fk_1 = table_5.primaryKey and table_0.fk_3 = table_3.primaryKey and table_0.col_0 > 10000 and table_5.col_6 > 10000 and table_6.col_3 > 10000 and table_3.col_2 > 10000; | Query Plan =================================================== |ID|OPERATOR |NAME |EST. ROWS|COST | --------------------------------------------------- |0 |SCALAR GROUP BY | |1 |15299| |1 | HASH JOIN | |334 |15236| |2 | PX COORDINATOR | |338 |11647| |3 | EXCHANGE OUT DISTR|:EX10000|338 |11519| |4 | HASH JOIN | |338 |11519| |5 | HASH JOIN | |341 |6906 | |6 | TABLE SCAN |table_3 |400 |3148 | |7 | TABLE SCAN |table_0 |344 |2932 | |8 | TABLE SCAN |table_6 |452 |3580 | |9 | TABLE SCAN |table_5 |313 |2486 | =================================================== Outputs & filters: ------------------------------------- 0 - output([T_FUN_COUNT(*)]), filter(nil), group(nil), agg_func([T_FUN_COUNT(*)]) 1 - output([1]), filter(nil), equal_conds([table_0.fk_1 = table_5.primaryKey]), other_conds(nil) 2 - output([table_0.fk_1]), filter(nil) 3 - output([t",
+            "source_name": "知乎",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web_supplement",
+          "source_record_id": "src_f2e729c65960bd95022d768d",
+          "title": "OceanBase连接顺序选择的优劣评估",
+          "work_id": null
+        }
+      ]
+    },
+    "succeeded": true,
+    "summary": "发现并保存 10 个 Web 候选来源",
+    "tool_name": "web_search"
+  },
+  "resolved_arguments": {
+    "max_results": 10,
+    "query": "Sketch-DBH graph stream partitioning Count-Min Sketch"
+  },
+  "result_count": 10,
+  "stage_name": "run_research_task",
+  "started_at": "2026-09-16T15:02:22.781924+00:00",
+  "tool_call_id": "tool_0022",
+  "tool_name": "web_search"
+}

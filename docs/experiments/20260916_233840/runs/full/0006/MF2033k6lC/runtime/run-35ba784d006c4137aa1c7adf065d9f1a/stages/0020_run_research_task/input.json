@@ -1,0 +1,155 @@
+{
+  "current_point": {
+    "claim": "提出一种基于图摘要的分布式图神经网络优化训练框架DSGNN，采用领导-工作者模式，领导节点负责图划分与模型同步更新，工作者节点基于图摘要进行小批量训练，并通过注意力层返回结果。",
+    "claim_en": "Propose a distributed graph neural network optimization training framework DSGNN based on graph summarization, adopting a leader-worker mode where the leader performs graph partitioning and synchronous model updates, and workers conduct mini-batch training based on graph summarization and return results through an attention layer.",
+    "point_id": "NP-2",
+    "source_locations": [
+      "摘要视图-abstract",
+      "摘要视图-english_abstract",
+      "作者贡献段2"
+    ],
+    "technical_features": [
+      "采用领导-工作者工作模式",
+      "领导节点利用基于边分割的图流划分算法对原图划分并分配子图给工作者节点",
+      "工作者节点执行基于图摘要的小批量训练",
+      "训练结果通过注意力层返回领导节点",
+      "领导节点汇总结果并计算梯度，同步更新所有计算节点上的模型"
+    ],
+    "technical_features_en": [
+      "Adopt a leader-worker mode",
+      "Leader partitions the original graph using an edge-segmentation-based graph stream partitioning algorithm and assigns subgraphs to workers",
+      "Workers perform mini-batch training based on graph summarization",
+      "Training results are returned to the leader through an attention layer",
+      "Leader aggregates results, computes gradients, and synchronously updates models on all computing nodes"
+    ]
+  },
+  "current_search_plan": {
+    "concepts": [
+      {
+        "alias": [
+          "distributed GNN training",
+          "distributed graph learning system"
+        ],
+        "concept_id": "C1",
+        "exclude": [],
+        "importance": 3,
+        "name": "distributed graph neural network training framework",
+        "role": "object",
+        "terms": [
+          "distributed graph neural network training framework"
+        ]
+      },
+      {
+        "alias": [
+          "graph summary",
+          "graph condensation",
+          "graph coarsening"
+        ],
+        "concept_id": "C2",
+        "exclude": [],
+        "importance": 3,
+        "name": "graph summarization",
+        "role": "method",
+        "terms": [
+          "graph summarization"
+        ]
+      },
+      {
+        "alias": [
+          "mini-batch learning",
+          "batch training"
+        ],
+        "concept_id": "C3",
+        "exclude": [],
+        "importance": 2,
+        "name": "mini-batch training",
+        "role": "method",
+        "terms": [
+          "mini-batch training"
+        ]
+      },
+      {
+        "alias": [
+          "attention mechanism",
+          "attention aggregation"
+        ],
+        "concept_id": "C4",
+        "exclude": [],
+        "importance": 2,
+        "name": "attention layer",
+        "role": "feature",
+        "terms": [
+          "attention layer"
+        ]
+      },
+      {
+        "alias": [
+          "leader-follower",
+          "master-worker",
+          "parameter server"
+        ],
+        "concept_id": "C5",
+        "exclude": [],
+        "importance": 2,
+        "name": "leader-worker mode",
+        "role": "setting",
+        "terms": [
+          "leader-worker mode"
+        ]
+      },
+      {
+        "alias": [
+          "graph partition",
+          "edge partitioning",
+          "graph stream partitioning"
+        ],
+        "concept_id": "C6",
+        "exclude": [],
+        "importance": 1,
+        "name": "graph partitioning",
+        "role": "escape",
+        "terms": [
+          "graph partitioning"
+        ]
+      }
+    ],
+    "novelty_point_id": "NP-2",
+    "strategies": [
+      {
+        "description": "distributed graph neural network training framework AND graph summarization",
+        "expression": "C1 AND C2",
+        "level": "strict",
+        "strategy_id": "S1",
+        "use_alias": false,
+        "use_exclude": true
+      },
+      {
+        "description": "distributed graph neural network training framework AND graph summarization",
+        "expression": "C1 AND C2",
+        "level": "medium",
+        "strategy_id": "S2",
+        "use_alias": true,
+        "use_exclude": true
+      },
+      {
+        "description": "distributed graph neural network training framework OR graph summarization OR mini-batch training OR attention layer",
+        "expression": "C1 OR C2 OR C3 OR C4",
+        "level": "broad",
+        "strategy_id": "S3",
+        "use_alias": true,
+        "use_exclude": true
+      }
+    ],
+    "task_id": "T-R2-1"
+  },
+  "current_task": {
+    "attempt": 2,
+    "description": "For novelty point NP-2 (DSGNN distributed GNN training framework), the final effective evidence card count is 0, which is below the required threshold of 1. This round must conduct an additional English literature search to find work on distributed graph neural network training frameworks that combine graph summarization with mini-batch training and attention-based result aggregation, in order to establish sufficient evidence for comparison and novelty assessment.",
+    "language": "en",
+    "novelty_point_id": "NP-2",
+    "task_id": "T-R2-1",
+    "task_type": "literature_search"
+  },
+  "run_id": "run-35ba784d006c4137aa1c7adf065d9f1a",
+  "subject_paper_id": "MF2033k6lC"
+}

@@ -1,0 +1,562 @@
+{
+  "agent_arguments": {
+    "max_results": 10,
+    "query": "graph summarization graph autoencoder RNN temporal graph representation"
+  },
+  "agent_tool_call_id": "01a0aaad203c76bb74e775226c116840",
+  "business_status": "NORMAL",
+  "duration": 1.28694,
+  "duration_ms": 1286,
+  "error": null,
+  "execution_status": "SUCCESS",
+  "failure_phase": null,
+  "finished_at": "2026-09-16T14:44:29.270989+00:00",
+  "normalized_result": {
+    "query": "graph summarization graph autoencoder RNN temporal graph representation",
+    "results": [
+      {
+        "published_at": "2020-10-15T14:26:23",
+        "snippet": "Wu, Zonghan , et al. \"A Comprehensive Survey on Graph Neural Networks.\" (2019).“”后的翻译与笔记,写下这篇文章后不久便意外地转换了研究方向,如今已不再研究深度学习,所以文中难免有纰漏之处,欢迎发现的知友在评论中指出并给予宝贵的修改意见。 一、什么是图神经网络 二、有哪些图神经网络 三、图神经网络的应用 一、什么是图神经网络? 在过去的几年中,神经网络的兴起与应用成功推动了模式识别和数据挖掘的研究。许多曾经严重依赖于手工提取特征的机器学习任务(如目标检测、机器翻译和语音识别),如今都已被各种端到端的深度学习范式(例如卷积神经网络(CNN)、长短期记忆(LSTM)和自动编码器)彻底改变了。曾有学者将本次人工智能浪潮的兴起归因于三个条件,分别是: 计算资源的快速发展(如GPU) 大量训练数据的可用性 深度学习从欧氏空间数据中提取潜在特征的有效性 尽管传统的深度学习方法被应用在提取欧氏空间数据的特征方面取得了巨大的成功,但许多实际应用场景中的数据是从非欧式空间生成的,传统的深度学习方法在处理非欧式空间数据上的表现却仍难以使人满意。例如,在电子商务中,一个基于图(Graph)的学习系统能够利用用户和产品之间的交互来做出非常准确的推荐,但图的复杂性使得现有的深度学习算法在处理时面临着巨大的挑战。这是因为图是不规则的,每个图都有一个大小可变的无序节点,图中的每个节点都有不同数量的相邻节点,导致一些重要的操作(例如卷积)在图像(Image)上很容易计算,但不再适合直接用于图。此外,现有深度学习算法的一个核心假设是数据样本之间彼此独立。然而,对于图来说,情况并非如此,图中的每个数据样本(节点)都会有边与图中其他实数据样本(节点)相关,这些信息可用于捕获实例之间的相互依赖关系。 近年来,人们对深度学习方法在图上的扩展越来越感兴趣。在多方因素的成功推动下,研究人员借鉴了卷积网络、循环网络和深度自动编码器的思想,定义和设计了用于处理图数据的神经网络结构,由此一个新的研究热点——“图神经网络(Graph Neural Networks,GNN)”应运而生,本篇文章主要对图神经网络的研究现状进行简单的概述。 需要注意的是,图神经网络的研究与图嵌入(对图嵌入不了解的读者可以参考我的这篇文章《图嵌入综述》)或网络嵌入密切相关,图嵌入或网络嵌入是数据挖掘和机器学习界日益关注的另一个课题。",
+        "source_name": "知乎",
+        "source_record_id": "src_f280173bcf0395341c5ab8f7",
+        "title": "图神经网络(Graph Neural Networks,GNN)综述",
+        "url": "https://zhuanlan.zhihu.com/p/265931094"
+      },
+      {
+        "published_at": "2023-03-01T14:35:27",
+        "snippet": "公众号:DataStrategy 分享代码及训练数据集 收录于 · 机器学习 Graph Neural Network (GNN)图神经网络,是一种旨在对图结构数据就行操作的深度学习算法。它可以很自然地表示现实世界中的很多问题,包括社交网络, 分子结构 和交通网络等。GNN旨在处理此类图结构数据,并对图中的节点和边进行预测或执行任务。 GNN中节点的信息 通过节点和节点之间连接的边 在节点之间传递。其中每个节点都可以从其和它相邻的节点中接收信息并相应地更新自己的信息,这个过程通常会重复多次以使信息充分地沿着边流动和在节点处聚合。然后这些更新的节点可以用于对节点的分类(node classification)、节点之间边的预测(两个节点之间是否存在边)、对于整个图的分类、生成一个新的图(比如VAE或GAN)等等。这些已经应用于化学,社交网络和推荐系统等各个领域。 1. Graph 图 在 计算机科学 中,图是一种抽象的数据类型,旨在实现数学图论领域中的无向图和 有向图 概念。图类型的 数据结构 由一组有限的(可能是可变的)顶点(也称为节点或点)组成,对于无向图,这些顶点在一组无序对内,对于有向图,这些顶点在一组有序对内。这些对被称为边(也称为链接或线),对于有向图,这些对也被称为边,但有时也称为箭头或圆弧。顶点可以是图形结构的一部分,也可以是由整数索引或引用表示的外部实体。 例如,我们使用图来表示社交网络,如下图所示,图中的每个节点代表一个人,每两个节点之间的边则代表了这两个人互相认识,比如Person A 分别和Person B和Person C是好朋友,B又和D是好朋友,但是C和D却互不认识。如果这条边是无向的,可以表示较为平等的关系,比如友谊,同学等;如果是有向的,可以用来表示上下级,或是师生等关系。 2. Graph neural network  图神经网络 图神经网络是一类用于处理可以表示为图的数据的 人工神经网络 。在A Comprehensive Survey on Graph Neural Networks https://arxiv.org/pdf/1901.00596.pdf中提出了将图神经网络进一步地分为Recurrent  graph neural networks (RecGNNs) 递归图神经网络 、Convolutional graph neural networks (ConvGNNs) 卷积图神经网络 、Graph autoencoders (GAEs) 图自动编码器 和Spatial-temporal graph neural networks (STGNNs) 时空图神经网络 。 2.1 Recurrent graph neural networks (RecGNNs) 循环图神经网络 :  它是传统图神经网络的一种衍生,具有 循环结构 。\u0002",
+        "source_name": "知乎",
+        "source_record_id": "src_6a5d3d5e55174e6aab4c650d",
+        "title": "Graph Neural Network(GNN)图神经网络",
+        "url": "https://zhuanlan.zhihu.com/p/610036768"
+      },
+      {
+        "published_at": "2020-10-21T14:02:00",
+        "snippet": "1 Introduction 我们知道,CNNs、RNNs以及 autoencoders 等深度学习方法,可以取代手工的 特征提取 ,有效地捕获欧氏数据的隐含特征。但现实生活中,数据更普遍的形式是可以被构建为图的非欧数据。",
+        "source_name": "知乎",
+        "source_record_id": "src_610f21aae8353d9e701e0b1f",
+        "title": "【归纳综述】Graph Neural Network: An Introduction Ⅰ",
+        "url": "https://zhuanlan.zhihu.com/p/158984343"
+      },
+      {
+        "published_at": "2022-11-11T17:55:29",
+        "snippet": "生成学习与对比学习 自监督学习从大量的无监督数据中挖掘出自己需要的的监督信息。与监督学习相比,它使用来自数据集本身的信息来构建伪标签。而在对比学习[9]方面,自监督学习作为监督学习的补充具有很大的潜力。 自MoCo和SimCLR引入以来,对比学习在图自监督学习领域占据主导地位,其在节点分类和图分类等任务上的表现远远超过生成式自监督学习方法。但是对比学习的成功往往取决于下面的两个因素: 高质量的数据扩充。GraphCL[5]探索了几种数据增强方法的有效性,如掩蔽属性、子图采样和随机添加和删除边。但是通过研究发现有效的图数据增强往往依赖于领域知识;例如,随机添加和删除边缘对社交网络中的训练是有利的,但它会会对分子图产生负面影响。所以到目前为止,在图对比学习中还没有普遍有效的数据增强方法。 复杂的策略来稳定训练。对比方法通过通用的训练技巧避免模型陷入繁琐的解决方案。GRACE[8]、DGI[7]和GraphCL[5]等方法在训练中使用负采样,而BGRL[6]利用了非对称网络结构和指数移动平均策略。 而生成式自监督学习可以避免上述依赖关系。生成式自监督学习能够重构数据本身的特征和信息。在自然语言处理(NLP)中,BERT[3]旨在恢复遮蔽词;在CV (Computer Vision)中,MAE[2]恢复图像的像素点(块)。 对于图,GAE (Graph Autoencoder)重建图的结构信息或节点特征。现有的图数据动编码器大多着眼于链接预测和图数据聚类目标,因此通常会选择重构图数据的结构信息,即邻接矩阵a。所以近年来图数据自编码器的进展远远落后于对比学习,在分类等任务上的表现并不令人满意。节点分类、图分类等任务的SOTA都是基于对比学习的方法。 与以前的图形自编码器不同,GraphMAE通过简单的重建被遮蔽的损坏节点特征,使图自编码器超越对比学习 GraphMAE的关键设计在于以下几个方面: 基于遮蔽的节点特征重构。现有的图数据自编码器通常以边缘作为重构目标,但其在下游分类任务中的表现通常较差。 以GNN为解码器进行以重建过程。现有的图自编码器通常选择MLP作为解码器,由于大多数图形节点特征是连续的向量,MLP的能力不足以从编码结果重建节点特征。",
+        "source_name": "Tencent腾讯（腾讯官方网）",
+        "source_record_id": "src_41e7baddd61d734e8bd4d859",
+        "title": "GraphMAE:将MAE的方法应用到图中使图的生成式自监督学习超越了对比学习",
+        "url": "https://cloud.tencent.com/developer/article/2160113"
+      },
+      {
+        "published_at": "2022-11-11T10:48:38",
+        "snippet": "Graph-Bert Graph-Bert: Only Attention is Needed for Learning Graph Representations (arXiv 2020) https://arxiv.org/abs/2001.05140 GNN 过度依赖图上的链接,此外由于大图非常耗显存,可能无法直接进行操作。该论文提出了一种新的只依赖 attention 机制的图网络 Graph-BERT,Graph-BERT 的输入不是全图,而是一堆采样得到的子图(不带边)。作者使用节点属性重构以及结构恢复两个任务进行预训练,然后在下游数据集上进行微调。该方法在节点分类和图聚类任务上达到了 SOTA。 ▲图1:Graph-BERT 和之前 NLP 中的 BERT 不一杨的地方主要是 position encoding,Graph-BERT使用了三种 PE,分别是 WL absolute PE,intimacy based relative PE 和 Hop based relative PE,这里三个 PE 都是根据 complete graph 计算得到的。 为了便于操作,作者将 subgraph 根据图亲密度矩阵进行排序 [i, j, ...m],其中 S(i,j) > S(i,m),得到序列化的结果。 其中Weisfeiler-Lehman Absolute Role Embedding如下: 经过WL 之后,子结构一样的节点就会得到相同的 hash code,如果是 1-WL 有点像 degree centrality(针对无向图而言)。因此,WL PE 可以捕获全局节点角色信息。 Intimacy based Relative Positional Embedding 这个PE 捕获的是偏 local 的信息,因为输入已经根据图亲密度矩阵进行排序过了,这里只需要简单地设 ,越接近i的节点 会越小。映射公式如下: Hop based Relative Distance Embedding 该PE 捕获的是介于 global 和 local 之间的信息: 将节点 embedding 和这些 PE 加起来,然后输入到 Transformer 中得到 subgraph 每个节点的表征 。因为 subgraph 中有很多节点,作者希望最后只得到 target node 的表征 ,因此作者还设计了一个 Fusion function,原文中是把所有节点表征做一下 average。 都会被输出,根据下游任务选择所需的进行使用。",
+        "source_name": "Tencent腾讯（腾讯官方网）",
+        "source_record_id": "src_0ed81a5bf6988857ab7744b8",
+        "title": "一文带你浏览Graph Transformers",
+        "url": "https://cloud.tencent.com/developer/article/2159339"
+      },
+      {
+        "published_at": "2026-07-12T09:33:54",
+        "snippet": "这一突破性技术在图机器学习领域具有重要意义,为药物发现、社交网络分析、推荐系统等应用提供了强大的工具。这种自回归方法使得模型能够捕捉图的全局结构特征,同时保持生成过程的灵活性和多样性。 GraphRNN的工作流程非常巧妙:首先将图转换为节点序列,然后使用两个循环神经网络(RNN)协同工作。第一个RNN(节点级RNN)负责生成节点,第二个RNN(边级RNN)负责为每个新节点生成与之前节点的连接关系。 在model.py中,您可以看到GraphRNN的核心实现。模型采用BFS(广度优先搜索)排序来确保生成过程的稳定性,这种排序方法使得相似的图结构在序列表示上也相似。",
+        "source_name": "CSDN软件开发网",
+        "source_record_id": "src_28e295c96ce4c102a38b7ecb",
+        "title": "GraphRNN完全指南:革命性深度自回归模型如何生成逼真图结构",
+        "url": "https://blog.csdn.net/gitblog_00093/article/details/154379921"
+      },
+      {
+        "published_at": "2024-09-25T10:04:43",
+        "snippet": "1、监督学习(Supervised Learning) 监督学习是机器学习的一种形式,其中模型通过带标签的数据集进行训练。 2、无监督学习(Unsupervised Learning) 无监督学习是另一种机器学习形式,它不使用带标签的数据。模型必须自己发现数据中的模式或结构,常见任务包括聚类、降维和异常检测。 3、强化学习(Reinforcement Learning) 强化学习是一种学习方式,其中代理通过与环境互动来学习如何采取行动。代理通过执行动作并观察结果来学习,目标是最大化累积奖励。 4、半监督学习(Semi-Supervised Learning) 半监督学习结合了监督学习和无监督学习的特点,使用少量的标记数据和大量的未标记数据来改善模型的性能。 5、迁移学习(Transfer Learning) 迁移学习是将一个领域的知识转移到另一个相关领域,以加速学习或提高性能。通常涉及预训练的模型。 6、特征工程(Feature Engineering) 特征工程涉及选择和构造有助于模型预测的输入变量。这包括特征选择、特征构造、特征缩放等。 7、数据预处理(Data Preprocessing) 数据预处理涉及清洗、转换和标准化数据,以供机器学习模型使用。包括去除噪声、填补缺失值、数据标准化等步骤。 8、降维(Dimensionality Reduction) 降维是减少数据特征数量的过程,同时尽量保留重要信息。常用方法包括主成分分析(PCA)、t-SNE等。 9、过拟合(Overfitting) 过拟合发生在模型对训练数据过于敏感,以至于它无法很好地泛化到新的、未见过的数据上。可以通过正则化、早停等手段来缓解。 10、欠拟合(Underfitting) 欠拟合发生在模型过于简单,以至于无法捕捉数据中的模式。解决方法包括增加模型复杂度或特征工程。 11、交叉验证(Cross Validation) 交叉验证是一种评估模型性能的技术,通过将数据集分成训练集和验证集,并多次重复训练和验证过程。 12、回归分析(RegressionAnalysis) 回归分析是预测连续值输出的统计方法。常用方法包括线性回归、多元回归等。 13、分类(Classification) 分类是将输入数据分配到预定义类别中的任务。常用算法包括逻辑回归、支持向量机等。 14、聚类(Clustering) 聚类是将数据点分成多个组的过程,使得组内成员比组间成员更相似。常用方法包括K均值聚类。 15、决策树(Decision Tree) 决策树是一种树形结构模型,用于分类或回归。每个内部节点表示一个属性上的测试,每个分支代表一个测试结果,每个叶子节点代表一个类别或输出值。",
+        "source_name": "CSDN软件开发网",
+        "source_record_id": "src_50f77d34fc5331f7b666b8ed",
+        "title": "AI产品经理必知的133个专业术语",
+        "url": "https://blog.csdn.net/HPC_Evan/article/details/142515390"
+      },
+      {
+        "published_at": "2026-09-13T17:30:00",
+        "snippet": "想让模型学会何时检索、检索什么,甚至自己挖掘规则吗?从强化学习到规则增强,从云端到端侧,本文将带你探索RAG技术的最新突破与落地实践。 这一篇保留那些不适合塞进普通检索或 Agent 搜索主线的内容:训练模型学会何时检索、把硬规则写进回答、让 Agent 长期记住正确事实,以及在端侧资源有限时怎样部署。 本篇覆盖检索链训练、推理模型搜索、奖励建模、思维干预、推理时更新、规则增强、端侧索引和图结构长期记忆。时序 RAG 已单独归入第 3 篇。 实用性标注沿用原文:★ 工程可直接落地|◐ 有条件实用|○ 前沿或性价比低。 第10 族|强化学习结合 RAG:让模型\"学会检索\" 这一族解决什么:靠提示词让模型\"该查就查\"不可靠。这一族用训练(RL/蒸馏/微调)把\"何时检索、检索什么\"固化进模型。共性判断:训练门槛高,但\"推理+检索\"的产品形态值得跟。 10.1 Chain-of-Retrieval(CoRAG):给模型练\"检索链\" ◐ o1 靠\"思维链\"变强,CoRAG 照方抓药,给模型练的是\"检索链\"。训练分两步:先让模型自由地搜,把那些最终搜成功的路径用拒绝采样挑出来,当作教材;再用这些\"问题→中间检索→答案\"的链式数据微调,让模型学会把检索过程显式化——每一步搜什么、为什么搜、搜到了怎么修正方向,都变成可追溯的链路。这套数据不用人工标注,模型自己生成、自己筛选,成本可控。 它最实用的特性在推理侧:检索链的长度可以按预算调节——时间紧就搜两轮,追求效果就多搜几轮,分数随轮数平滑上升,这正是\"测试时扩展算力\"思想在检索上的落地。换句话说,同一个模型,你能用延迟换精度。 需要的条件:能微调开源模型的团队。拿不到模型权重的,这条路线暂时无缘。实用性◐。 CoRAG 的拒绝采样数据构造可以低成本地借鉴到非训练场景。它造数据的逻辑是:让模型对一个训练问题自由生成多条检索链,只保留最终答对的那条——成功路径就是最好的教材。把这个逻辑搬到工作流里,就是\"失败回放\"机制:线上每道答错的题,人工或模型回放\"理想的检索链应该是什么样\",存进一个\"检索链范例库\";遇到相似问题时,把这些成功链路作为 few-shot 示范给 agent 参考。这等于用运行时记忆代替了参数训练,虽然不如真训练来得彻底,但对提升多跳问题的成功率立竿见影,而且范例库随业务积累自动增值。很多\"训练才能做的事\"都有这类运行时近似版本,先用起来,把价值跑通,再决定要不要投入真训练。 • 📚出处:强化学习结合RAG/Chain-of-Retrieval Augmented Generation[arXiv]。",
+        "source_name": "知乎",
+        "source_record_id": "src_59e7477eb5b6e16d028b6a89",
+        "title": "RAG 论文解读系列 (四) | 学习型 RAG 论文解读|强化学习、规则与长期记忆",
+        "url": "https://zhuanlan.zhihu.com/p/2082521173359968785"
+      },
+      {
+        "published_at": "2026-09-11T20:55:00",
+        "snippet": "架构概览 这套系统主要依赖两条设计原则。 异构模型分层与自适应思考级别:角色复杂度不同,没必要统一使用同一个模型,也不需要给每个角色相同的计算预算。 架构师(gemini-pro-latest,high思考级别):承担推理强度最高的工作,包括界定问题边界、预判竞态条件,以及设计严格的pytest测试套件。 开发者(gemini-3.7-flash,medium思考级别):按照架构师给出的明确规格生成代码,在推理能力和吞吐量之间取平衡。 测试运行器:确定性的 Python 子进程,本地执行pytest。一次测试大约需要 15 毫秒,不消耗任何 LLM API Token。 调试器(gemini-3.7-flash,high思考级别):把更多推理资源留给因果根因分析,从原始堆栈跟踪定位真正出错的代码。 审查器(gemini-flash-lite-latest,low思考级别):处理代码风格检查、最终执行摘要这类相对直接的任务,使用轻量推理即可。 严格限制子智能体的工具作用域(最小权限原则):每个角色只拿到完成本职工作所需的输入和工具,不开放无关的终端或文件系统权限。开发者智能体不能执行任意终端命令;测试运行器只负责真正运行测试并返回结果,不让 LLM 猜测或生成测试结论。角色边界清楚之后,模型更容易把注意力放在当前任务上,也能减少工具混淆和幻觉。",
+        "source_name": "知乎",
+        "source_record_id": "src_686eaf2b02fea69ef7f4e3d0",
+        "title": "LangGraph 实战:构建带自动测试与调试闭环的多智能体系统",
+        "url": "https://zhuanlan.zhihu.com/p/2081848076923417358"
+      },
+      {
+        "published_at": "2022-06-28T09:13:59",
+        "snippet": "时间序列预测问题是根据一个序列的历史值预测未来值。当同时预测多个时间序列,并且各个时间序列之间存在空间上的关系时,就不能只将每个时间序列单独建模,而应该考虑不同时间序列之间的关系。例如,在交通预测场景中,需要预测不同地点的车流量,不同地点的车流量之间是存在空间上的关系的,例如A点的车20%在5分钟后会开往B点。仍然用传统的时间序列预测方法,即每个序列独立的进行预测,无法捕捉这种不同地点的空间关系信息。 目前解决时间+空间预估的方法主要包括基于图的时序预估和基于矩阵分解的时序预估两种方法。本文通过6篇顶会论文介绍了这两种类型方法的发展历程。 本节介绍几个图模型中的基础概念,感兴趣的同学可以深入其他图学习相关文章继续学习。N个节点组成的图可以由一个N*N的临接矩阵和一个N*N的度数矩阵表示。临接矩阵中第(i, j)个元素表示节点i和节点j之间在图上的距离,这个距离根据具体任务和图而定;度数矩阵是一个对角矩阵,第(i, i)个元素表示节点第i个节点和几个边相连。图的拉普拉斯矩阵由临接矩阵和度数矩阵计算得到,简单来说,拉普拉斯矩阵衡量了图中两两节点之间信息传递关系(具体来说,拉普拉斯矩阵是图上的拉普拉斯算子,拉普拉斯算子是高维空间二阶导数的推广)。通过拉普拉斯矩阵,我们可以将每个图中每个节点的特征进行扩散到其他节点,得到每个节点考虑了图中信息传播后新的特征。图卷积是图模型的一种实例。在将傅立叶变换拓展到图中时,发现傅立叶变换中的基就是图的拉普拉斯矩阵的特征向量。这样解决了Spatial卷积方法中,无法比较好的选择邻居节点、无向量化表示的问题。 拉普拉斯矩阵有不同的形式,例如最基础的拉普拉斯矩阵L=D-A,还有如下正则化拉普拉斯矩阵、随机游走拉普拉斯矩阵等,不同的拉普拉斯矩阵反应了图上信息流动方式的不同先验。 RNN是最基础的时间序列预测深度学习模型,RNN天然的序列建模能力可以很好的处理时间序列数据。在RNN的基础上,DIFFUSION CONVOLUTIONAL RECURRENT NEURAL NETWORK: DATA-DRIVEN TRAFFIC FORECASTING(ICLR 2018)提出DCRNN模型,通过将图的思想引入RNN,使RNN能够同时输入空间中多个节点的时间序列,在学习时间维度依赖的同时,学习不同节点的空间关系。 GRU是RNN模型的一种,DCRNN在GRU的基础上,将原来GRU中的全连接部分修改为diffusion convolutional layer(随机游走拉普拉斯矩阵+全连接),公式可以表示为如下形式:",
+        "source_name": "北京智源人工智能研究院",
+        "source_record_id": "src_ae47cd33a84a9c9441c975f9",
+        "title": "Spatial-Temporal时间序列预测建模方法汇总",
+        "url": "https://hub.baai.ac.cn/view/18415"
+      }
+    ],
+    "succeeded": true,
+    "summary": "发现并保存 10 个 Web 候选来源",
+    "warnings": []
+  },
+  "raw_result": {
+    "arguments": {
+      "max_results": 10,
+      "query": "graph summarization graph autoencoder RNN temporal graph representation"
+    },
+    "elapsed_ms": 1286,
+    "error": null,
+    "payload": {
+      "search_result": {
+        "query": "graph summarization graph autoencoder RNN temporal graph representation",
+        "results": [
+          {
+            "published_at": "2020-10-15T14:26:23",
+            "rank": 1,
+            "score": null,
+            "snippet": "Wu, Zonghan , et al. \"A Comprehensive Survey on Graph Neural Networks.\" (2019).“”后的翻译与笔记,写下这篇文章后不久便意外地转换了研究方向,如今已不再研究深度学习,所以文中难免有纰漏之处,欢迎发现的知友在评论中指出并给予宝贵的修改意见。 一、什么是图神经网络 二、有哪些图神经网络 三、图神经网络的应用 一、什么是图神经网络? 在过去的几年中,神经网络的兴起与应用成功推动了模式识别和数据挖掘的研究。许多曾经严重依赖于手工提取特征的机器学习任务(如目标检测、机器翻译和语音识别),如今都已被各种端到端的深度学习范式(例如卷积神经网络(CNN)、长短期记忆(LSTM)和自动编码器)彻底改变了。曾有学者将本次人工智能浪潮的兴起归因于三个条件,分别是: 计算资源的快速发展(如GPU) 大量训练数据的可用性 深度学习从欧氏空间数据中提取潜在特征的有效性 尽管传统的深度学习方法被应用在提取欧氏空间数据的特征方面取得了巨大的成功,但许多实际应用场景中的数据是从非欧式空间生成的,传统的深度学习方法在处理非欧式空间数据上的表现却仍难以使人满意。例如,在电子商务中,一个基于图(Graph)的学习系统能够利用用户和产品之间的交互来做出非常准确的推荐,但图的复杂性使得现有的深度学习算法在处理时面临着巨大的挑战。这是因为图是不规则的,每个图都有一个大小可变的无序节点,图中的每个节点都有不同数量的相邻节点,导致一些重要的操作(例如卷积)在图像(Image)上很容易计算,但不再适合直接用于图。此外,现有深度学习算法的一个核心假设是数据样本之间彼此独立。然而,对于图来说,情况并非如此,图中的每个数据样本(节点)都会有边与图中其他实数据样本(节点)相关,这些信息可用于捕获实例之间的相互依赖关系。 近年来,人们对深度学习方法在图上的扩展越来越感兴趣。在多方因素的成功推动下,研究人员借鉴了卷积网络、循环网络和深度自动编码器的思想,定义和设计了用于处理图数据的神经网络结构,由此一个新的研究热点——“图神经网络(Graph Neural Networks,GNN)”应运而生,本篇文章主要对图神经网络的研究现状进行简单的概述。 需要注意的是,图神经网络的研究与图嵌入(对图嵌入不了解的读者可以参考我的这篇文章《图嵌入综述》)或网络嵌入密切相关,图嵌入或网络嵌入是数据挖掘和机器学习界日益关注的另一个课题。",
+            "source_name": "知乎",
+            "source_record_id": "src_f280173bcf0395341c5ab8f7",
+            "title": "图神经网络(Graph Neural Networks,GNN)综述",
+            "url": "https://zhuanlan.zhihu.com/p/265931094"
+          },
+          {
+            "published_at": "2023-03-01T14:35:27",
+            "rank": 2,
+            "score": null,
+            "snippet": "公众号:DataStrategy 分享代码及训练数据集 收录于 · 机器学习 Graph Neural Network (GNN)图神经网络,是一种旨在对图结构数据就行操作的深度学习算法。它可以很自然地表示现实世界中的很多问题,包括社交网络, 分子结构 和交通网络等。GNN旨在处理此类图结构数据,并对图中的节点和边进行预测或执行任务。 GNN中节点的信息 通过节点和节点之间连接的边 在节点之间传递。其中每个节点都可以从其和它相邻的节点中接收信息并相应地更新自己的信息,这个过程通常会重复多次以使信息充分地沿着边流动和在节点处聚合。然后这些更新的节点可以用于对节点的分类(node classification)、节点之间边的预测(两个节点之间是否存在边)、对于整个图的分类、生成一个新的图(比如VAE或GAN)等等。这些已经应用于化学,社交网络和推荐系统等各个领域。 1. Graph 图 在 计算机科学 中,图是一种抽象的数据类型,旨在实现数学图论领域中的无向图和 有向图 概念。图类型的 数据结构 由一组有限的(可能是可变的)顶点(也称为节点或点)组成,对于无向图,这些顶点在一组无序对内,对于有向图,这些顶点在一组有序对内。这些对被称为边(也称为链接或线),对于有向图,这些对也被称为边,但有时也称为箭头或圆弧。顶点可以是图形结构的一部分,也可以是由整数索引或引用表示的外部实体。 例如,我们使用图来表示社交网络,如下图所示,图中的每个节点代表一个人,每两个节点之间的边则代表了这两个人互相认识,比如Person A 分别和Person B和Person C是好朋友,B又和D是好朋友,但是C和D却互不认识。如果这条边是无向的,可以表示较为平等的关系,比如友谊,同学等;如果是有向的,可以用来表示上下级,或是师生等关系。 2. Graph neural network  图神经网络 图神经网络是一类用于处理可以表示为图的数据的 人工神经网络 。在A Comprehensive Survey on Graph Neural Networks https://arxiv.org/pdf/1901.00596.pdf中提出了将图神经网络进一步地分为Recurrent  graph neural networks (RecGNNs) 递归图神经网络 、Convolutional graph neural networks (ConvGNNs) 卷积图神经网络 、Graph autoencoders (GAEs) 图自动编码器 和Spatial-temporal graph neural networks (STGNNs) 时空图神经网络 。 2.1 Recurrent graph neural networks (RecGNNs) 循环图神经网络 :  它是传统图神经网络的一种衍生,具有 循环结构 。\u0002",
+            "source_name": "知乎",
+            "source_record_id": "src_6a5d3d5e55174e6aab4c650d",
+            "title": "Graph Neural Network(GNN)图神经网络",
+            "url": "https://zhuanlan.zhihu.com/p/610036768"
+          },
+          {
+            "published_at": "2020-10-21T14:02:00",
+            "rank": 3,
+            "score": null,
+            "snippet": "1 Introduction 我们知道,CNNs、RNNs以及 autoencoders 等深度学习方法,可以取代手工的 特征提取 ,有效地捕获欧氏数据的隐含特征。但现实生活中,数据更普遍的形式是可以被构建为图的非欧数据。",
+            "source_name": "知乎",
+            "source_record_id": "src_610f21aae8353d9e701e0b1f",
+            "title": "【归纳综述】Graph Neural Network: An Introduction Ⅰ",
+            "url": "https://zhuanlan.zhihu.com/p/158984343"
+          },
+          {
+            "published_at": "2022-11-11T17:55:29",
+            "rank": 4,
+            "score": null,
+            "snippet": "生成学习与对比学习 自监督学习从大量的无监督数据中挖掘出自己需要的的监督信息。与监督学习相比,它使用来自数据集本身的信息来构建伪标签。而在对比学习[9]方面,自监督学习作为监督学习的补充具有很大的潜力。 自MoCo和SimCLR引入以来,对比学习在图自监督学习领域占据主导地位,其在节点分类和图分类等任务上的表现远远超过生成式自监督学习方法。但是对比学习的成功往往取决于下面的两个因素: 高质量的数据扩充。GraphCL[5]探索了几种数据增强方法的有效性,如掩蔽属性、子图采样和随机添加和删除边。但是通过研究发现有效的图数据增强往往依赖于领域知识;例如,随机添加和删除边缘对社交网络中的训练是有利的,但它会会对分子图产生负面影响。所以到目前为止,在图对比学习中还没有普遍有效的数据增强方法。 复杂的策略来稳定训练。对比方法通过通用的训练技巧避免模型陷入繁琐的解决方案。GRACE[8]、DGI[7]和GraphCL[5]等方法在训练中使用负采样,而BGRL[6]利用了非对称网络结构和指数移动平均策略。 而生成式自监督学习可以避免上述依赖关系。生成式自监督学习能够重构数据本身的特征和信息。在自然语言处理(NLP)中,BERT[3]旨在恢复遮蔽词;在CV (Computer Vision)中,MAE[2]恢复图像的像素点(块)。 对于图,GAE (Graph Autoencoder)重建图的结构信息或节点特征。现有的图数据动编码器大多着眼于链接预测和图数据聚类目标,因此通常会选择重构图数据的结构信息,即邻接矩阵a。所以近年来图数据自编码器的进展远远落后于对比学习,在分类等任务上的表现并不令人满意。节点分类、图分类等任务的SOTA都是基于对比学习的方法。 与以前的图形自编码器不同,GraphMAE通过简单的重建被遮蔽的损坏节点特征,使图自编码器超越对比学习 GraphMAE的关键设计在于以下几个方面: 基于遮蔽的节点特征重构。现有的图数据自编码器通常以边缘作为重构目标,但其在下游分类任务中的表现通常较差。 以GNN为解码器进行以重建过程。现有的图自编码器通常选择MLP作为解码器,由于大多数图形节点特征是连续的向量,MLP的能力不足以从编码结果重建节点特征。",
+            "source_name": "Tencent腾讯（腾讯官方网）",
+            "source_record_id": "src_41e7baddd61d734e8bd4d859",
+            "title": "GraphMAE:将MAE的方法应用到图中使图的生成式自监督学习超越了对比学习",
+            "url": "https://cloud.tencent.com/developer/article/2160113"
+          },
+          {
+            "published_at": "2022-11-11T10:48:38",
+            "rank": 5,
+            "score": null,
+            "snippet": "Graph-Bert Graph-Bert: Only Attention is Needed for Learning Graph Representations (arXiv 2020) https://arxiv.org/abs/2001.05140 GNN 过度依赖图上的链接,此外由于大图非常耗显存,可能无法直接进行操作。该论文提出了一种新的只依赖 attention 机制的图网络 Graph-BERT,Graph-BERT 的输入不是全图,而是一堆采样得到的子图(不带边)。作者使用节点属性重构以及结构恢复两个任务进行预训练,然后在下游数据集上进行微调。该方法在节点分类和图聚类任务上达到了 SOTA。 ▲图1:Graph-BERT 和之前 NLP 中的 BERT 不一杨的地方主要是 position encoding,Graph-BERT使用了三种 PE,分别是 WL absolute PE,intimacy based relative PE 和 Hop based relative PE,这里三个 PE 都是根据 complete graph 计算得到的。 为了便于操作,作者将 subgraph 根据图亲密度矩阵进行排序 [i, j, ...m],其中 S(i,j) > S(i,m),得到序列化的结果。 其中Weisfeiler-Lehman Absolute Role Embedding如下: 经过WL 之后,子结构一样的节点就会得到相同的 hash code,如果是 1-WL 有点像 degree centrality(针对无向图而言)。因此,WL PE 可以捕获全局节点角色信息。 Intimacy based Relative Positional Embedding 这个PE 捕获的是偏 local 的信息,因为输入已经根据图亲密度矩阵进行排序过了,这里只需要简单地设 ,越接近i的节点 会越小。映射公式如下: Hop based Relative Distance Embedding 该PE 捕获的是介于 global 和 local 之间的信息: 将节点 embedding 和这些 PE 加起来,然后输入到 Transformer 中得到 subgraph 每个节点的表征 。因为 subgraph 中有很多节点,作者希望最后只得到 target node 的表征 ,因此作者还设计了一个 Fusion function,原文中是把所有节点表征做一下 average。 都会被输出,根据下游任务选择所需的进行使用。",
+            "source_name": "Tencent腾讯（腾讯官方网）",
+            "source_record_id": "src_0ed81a5bf6988857ab7744b8",
+            "title": "一文带你浏览Graph Transformers",
+            "url": "https://cloud.tencent.com/developer/article/2159339"
+          },
+          {
+            "published_at": "2026-07-12T09:33:54",
+            "rank": 6,
+            "score": null,
+            "snippet": "这一突破性技术在图机器学习领域具有重要意义,为药物发现、社交网络分析、推荐系统等应用提供了强大的工具。这种自回归方法使得模型能够捕捉图的全局结构特征,同时保持生成过程的灵活性和多样性。 GraphRNN的工作流程非常巧妙:首先将图转换为节点序列,然后使用两个循环神经网络(RNN)协同工作。第一个RNN(节点级RNN)负责生成节点,第二个RNN(边级RNN)负责为每个新节点生成与之前节点的连接关系。 在model.py中,您可以看到GraphRNN的核心实现。模型采用BFS(广度优先搜索)排序来确保生成过程的稳定性,这种排序方法使得相似的图结构在序列表示上也相似。",
+            "source_name": "CSDN软件开发网",
+            "source_record_id": "src_28e295c96ce4c102a38b7ecb",
+            "title": "GraphRNN完全指南:革命性深度自回归模型如何生成逼真图结构",
+            "url": "https://blog.csdn.net/gitblog_00093/article/details/154379921"
+          },
+          {
+            "published_at": "2024-09-25T10:04:43",
+            "rank": 7,
+            "score": null,
+            "snippet": "1、监督学习(Supervised Learning) 监督学习是机器学习的一种形式,其中模型通过带标签的数据集进行训练。 2、无监督学习(Unsupervised Learning) 无监督学习是另一种机器学习形式,它不使用带标签的数据。模型必须自己发现数据中的模式或结构,常见任务包括聚类、降维和异常检测。 3、强化学习(Reinforcement Learning) 强化学习是一种学习方式,其中代理通过与环境互动来学习如何采取行动。代理通过执行动作并观察结果来学习,目标是最大化累积奖励。 4、半监督学习(Semi-Supervised Learning) 半监督学习结合了监督学习和无监督学习的特点,使用少量的标记数据和大量的未标记数据来改善模型的性能。 5、迁移学习(Transfer Learning) 迁移学习是将一个领域的知识转移到另一个相关领域,以加速学习或提高性能。通常涉及预训练的模型。 6、特征工程(Feature Engineering) 特征工程涉及选择和构造有助于模型预测的输入变量。这包括特征选择、特征构造、特征缩放等。 7、数据预处理(Data Preprocessing) 数据预处理涉及清洗、转换和标准化数据,以供机器学习模型使用。包括去除噪声、填补缺失值、数据标准化等步骤。 8、降维(Dimensionality Reduction) 降维是减少数据特征数量的过程,同时尽量保留重要信息。常用方法包括主成分分析(PCA)、t-SNE等。 9、过拟合(Overfitting) 过拟合发生在模型对训练数据过于敏感,以至于它无法很好地泛化到新的、未见过的数据上。可以通过正则化、早停等手段来缓解。 10、欠拟合(Underfitting) 欠拟合发生在模型过于简单,以至于无法捕捉数据中的模式。解决方法包括增加模型复杂度或特征工程。 11、交叉验证(Cross Validation) 交叉验证是一种评估模型性能的技术,通过将数据集分成训练集和验证集,并多次重复训练和验证过程。 12、回归分析(RegressionAnalysis) 回归分析是预测连续值输出的统计方法。常用方法包括线性回归、多元回归等。 13、分类(Classification) 分类是将输入数据分配到预定义类别中的任务。常用算法包括逻辑回归、支持向量机等。 14、聚类(Clustering) 聚类是将数据点分成多个组的过程,使得组内成员比组间成员更相似。常用方法包括K均值聚类。 15、决策树(Decision Tree) 决策树是一种树形结构模型,用于分类或回归。每个内部节点表示一个属性上的测试,每个分支代表一个测试结果,每个叶子节点代表一个类别或输出值。",
+            "source_name": "CSDN软件开发网",
+            "source_record_id": "src_50f77d34fc5331f7b666b8ed",
+            "title": "AI产品经理必知的133个专业术语",
+            "url": "https://blog.csdn.net/HPC_Evan/article/details/142515390"
+          },
+          {
+            "published_at": "2026-09-13T17:30:00",
+            "rank": 8,
+            "score": null,
+            "snippet": "想让模型学会何时检索、检索什么,甚至自己挖掘规则吗?从强化学习到规则增强,从云端到端侧,本文将带你探索RAG技术的最新突破与落地实践。 这一篇保留那些不适合塞进普通检索或 Agent 搜索主线的内容:训练模型学会何时检索、把硬规则写进回答、让 Agent 长期记住正确事实,以及在端侧资源有限时怎样部署。 本篇覆盖检索链训练、推理模型搜索、奖励建模、思维干预、推理时更新、规则增强、端侧索引和图结构长期记忆。时序 RAG 已单独归入第 3 篇。 实用性标注沿用原文:★ 工程可直接落地|◐ 有条件实用|○ 前沿或性价比低。 第10 族|强化学习结合 RAG:让模型\"学会检索\" 这一族解决什么:靠提示词让模型\"该查就查\"不可靠。这一族用训练(RL/蒸馏/微调)把\"何时检索、检索什么\"固化进模型。共性判断:训练门槛高,但\"推理+检索\"的产品形态值得跟。 10.1 Chain-of-Retrieval(CoRAG):给模型练\"检索链\" ◐ o1 靠\"思维链\"变强,CoRAG 照方抓药,给模型练的是\"检索链\"。训练分两步:先让模型自由地搜,把那些最终搜成功的路径用拒绝采样挑出来,当作教材;再用这些\"问题→中间检索→答案\"的链式数据微调,让模型学会把检索过程显式化——每一步搜什么、为什么搜、搜到了怎么修正方向,都变成可追溯的链路。这套数据不用人工标注,模型自己生成、自己筛选,成本可控。 它最实用的特性在推理侧:检索链的长度可以按预算调节——时间紧就搜两轮,追求效果就多搜几轮,分数随轮数平滑上升,这正是\"测试时扩展算力\"思想在检索上的落地。换句话说,同一个模型,你能用延迟换精度。 需要的条件:能微调开源模型的团队。拿不到模型权重的,这条路线暂时无缘。实用性◐。 CoRAG 的拒绝采样数据构造可以低成本地借鉴到非训练场景。它造数据的逻辑是:让模型对一个训练问题自由生成多条检索链,只保留最终答对的那条——成功路径就是最好的教材。把这个逻辑搬到工作流里,就是\"失败回放\"机制:线上每道答错的题,人工或模型回放\"理想的检索链应该是什么样\",存进一个\"检索链范例库\";遇到相似问题时,把这些成功链路作为 few-shot 示范给 agent 参考。这等于用运行时记忆代替了参数训练,虽然不如真训练来得彻底,但对提升多跳问题的成功率立竿见影,而且范例库随业务积累自动增值。很多\"训练才能做的事\"都有这类运行时近似版本,先用起来,把价值跑通,再决定要不要投入真训练。 • 📚出处:强化学习结合RAG/Chain-of-Retrieval Augmented Generation[arXiv]。",
+            "source_name": "知乎",
+            "source_record_id": "src_59e7477eb5b6e16d028b6a89",
+            "title": "RAG 论文解读系列 (四) | 学习型 RAG 论文解读|强化学习、规则与长期记忆",
+            "url": "https://zhuanlan.zhihu.com/p/2082521173359968785"
+          },
+          {
+            "published_at": "2026-09-11T20:55:00",
+            "rank": 9,
+            "score": null,
+            "snippet": "架构概览 这套系统主要依赖两条设计原则。 异构模型分层与自适应思考级别:角色复杂度不同,没必要统一使用同一个模型,也不需要给每个角色相同的计算预算。 架构师(gemini-pro-latest,high思考级别):承担推理强度最高的工作,包括界定问题边界、预判竞态条件,以及设计严格的pytest测试套件。 开发者(gemini-3.7-flash,medium思考级别):按照架构师给出的明确规格生成代码,在推理能力和吞吐量之间取平衡。 测试运行器:确定性的 Python 子进程,本地执行pytest。一次测试大约需要 15 毫秒,不消耗任何 LLM API Token。 调试器(gemini-3.7-flash,high思考级别):把更多推理资源留给因果根因分析,从原始堆栈跟踪定位真正出错的代码。 审查器(gemini-flash-lite-latest,low思考级别):处理代码风格检查、最终执行摘要这类相对直接的任务,使用轻量推理即可。 严格限制子智能体的工具作用域(最小权限原则):每个角色只拿到完成本职工作所需的输入和工具,不开放无关的终端或文件系统权限。开发者智能体不能执行任意终端命令;测试运行器只负责真正运行测试并返回结果,不让 LLM 猜测或生成测试结论。角色边界清楚之后,模型更容易把注意力放在当前任务上,也能减少工具混淆和幻觉。",
+            "source_name": "知乎",
+            "source_record_id": "src_686eaf2b02fea69ef7f4e3d0",
+            "title": "LangGraph 实战:构建带自动测试与调试闭环的多智能体系统",
+            "url": "https://zhuanlan.zhihu.com/p/2081848076923417358"
+          },
+          {
+            "published_at": "2022-06-28T09:13:59",
+            "rank": 10,
+            "score": null,
+            "snippet": "时间序列预测问题是根据一个序列的历史值预测未来值。当同时预测多个时间序列,并且各个时间序列之间存在空间上的关系时,就不能只将每个时间序列单独建模,而应该考虑不同时间序列之间的关系。例如,在交通预测场景中,需要预测不同地点的车流量,不同地点的车流量之间是存在空间上的关系的,例如A点的车20%在5分钟后会开往B点。仍然用传统的时间序列预测方法,即每个序列独立的进行预测,无法捕捉这种不同地点的空间关系信息。 目前解决时间+空间预估的方法主要包括基于图的时序预估和基于矩阵分解的时序预估两种方法。本文通过6篇顶会论文介绍了这两种类型方法的发展历程。 本节介绍几个图模型中的基础概念,感兴趣的同学可以深入其他图学习相关文章继续学习。N个节点组成的图可以由一个N*N的临接矩阵和一个N*N的度数矩阵表示。临接矩阵中第(i, j)个元素表示节点i和节点j之间在图上的距离,这个距离根据具体任务和图而定;度数矩阵是一个对角矩阵,第(i, i)个元素表示节点第i个节点和几个边相连。图的拉普拉斯矩阵由临接矩阵和度数矩阵计算得到,简单来说,拉普拉斯矩阵衡量了图中两两节点之间信息传递关系(具体来说,拉普拉斯矩阵是图上的拉普拉斯算子,拉普拉斯算子是高维空间二阶导数的推广)。通过拉普拉斯矩阵,我们可以将每个图中每个节点的特征进行扩散到其他节点,得到每个节点考虑了图中信息传播后新的特征。图卷积是图模型的一种实例。在将傅立叶变换拓展到图中时,发现傅立叶变换中的基就是图的拉普拉斯矩阵的特征向量。这样解决了Spatial卷积方法中,无法比较好的选择邻居节点、无向量化表示的问题。 拉普拉斯矩阵有不同的形式,例如最基础的拉普拉斯矩阵L=D-A,还有如下正则化拉普拉斯矩阵、随机游走拉普拉斯矩阵等,不同的拉普拉斯矩阵反应了图上信息流动方式的不同先验。 RNN是最基础的时间序列预测深度学习模型,RNN天然的序列建模能力可以很好的处理时间序列数据。在RNN的基础上,DIFFUSION CONVOLUTIONAL RECURRENT NEURAL NETWORK: DATA-DRIVEN TRAFFIC FORECASTING(ICLR 2018)提出DCRNN模型,通过将图的思想引入RNN,使RNN能够同时输入空间中多个节点的时间序列,在学习时间维度依赖的同时,学习不同节点的空间关系。 GRU是RNN模型的一种,DCRNN在GRU的基础上,将原来GRU中的全连接部分修改为diffusion convolutional layer(随机游走拉普拉斯矩阵+全连接),公式可以表示为如下形式:",
+            "source_name": "北京智源人工智能研究院",
+            "source_record_id": "src_ae47cd33a84a9c9441c975f9",
+            "title": "Spatial-Temporal时间序列预测建模方法汇总",
+            "url": "https://hub.baai.ac.cn/view/18415"
+          }
+        ],
+        "warnings": []
+      },
+      "source_records": [
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "1",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://zhuanlan.zhihu.com/p/265931094",
+          "observed_at": "2026-09-16T14:44:29.262005Z",
+          "provenance": {
+            "query": "graph summarization graph autoencoder RNN temporal graph representation",
+            "rank": 1,
+            "run_id": "run-d20cf7604f34411abe224ba46f4c7006",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": " Wu, Zonghan , et al. \"A Comprehensive Survey on Graph Neural Networks.\" (2019).“”后的翻译与笔记,写下这篇文章后不久便意外地转换了研究方向,如今已不再研究深度学习,所以文中难免有纰漏之处,欢迎发现的知友在评论中指出并给予宝贵的修改意见。 一、什么是图神经网络 二、有哪些图神经网络 三、图神经网络的应用 一、什么是图神经网络? 在过去的几年中,神经网络的兴起与应用成功推动了模式识别和数据挖掘的研究。许多曾经严重依赖于手工提取特征的机器学习任务(如目标检测、机器翻译和语音识别),如今都已被各种端到端的深度学习范式(例如卷积神经网络(CNN)、长短期记忆(LSTM)和自动编码器)彻底改变了。曾有学者将本次人工智能浪潮的兴起归因于三个条件,分别是: 计算资源的快速发展(如GPU) 大量训练数据的可用性 深度学习从欧氏空间数据中提取潜在特征的有效性 尽管传统的深度学习方法被应用在提取欧氏空间数据的特征方面取得了巨大的成功,但许多实际应用场景中的数据是从非欧式空间生成的,传统的深度学习方法在处理非欧式空间数据上的表现却仍难以使人满意。例如,在电子商务中,一个基于图(Graph)的学习系统能够利用用户和产品之间的交互来做出非常准确的推荐,但图的复杂性使得现有的深度学习算法在处理时面临着巨大的挑战。这是因为图是不规则的,每个图都有一个大小可变的无序节点,图中的每个节点都有不同数量的相邻节点,导致一些重要的操作(例如卷积)在图像(Image)上很容易计算,但不再适合直接用于图。此外,现有深度学习算法的一个核心假设是数据样本之间彼此独立。然而,对于图来说,情况并非如此,图中的每个数据样本(节点)都会有边与图中其他实数据样本(节点)相关,这些信息可用于捕获实例之间的相互依赖关系。 近年来,人们对深度学习方法在图上的扩展越来越感兴趣。在多方因素的成功推动下,研究人员借鉴了卷积网络、循环网络和深度自动编码器的思想,定义和设计了用于处理图数据的神经网络结构,由此一个新的研究热点——“图神经网络(Graph Neural Networks,GNN)”应运而生,本篇文章主要对图神经网络的研究现状进行简单的概述。 需要注意的是,图神经网络的研究与图嵌入(对图嵌入不了解的读者可以参考我的这篇文章《图嵌入综述》)或网络嵌入密切相关,图嵌入或网络嵌入是数据挖掘和机器学习界日益关注的另一个课题。",
+            "published_at": "2020-10-15T14:26:23",
+            "request_id": "149a2dc4-746e-47d7-a14f-044b7a529190",
+            "search_score": null,
+            "search_snippet": "Wu, Zonghan , et al. \"A Comprehensive Survey on Graph Neural Networks.\" (2019).“”后的翻译与笔记,写下这篇文章后不久便意外地转换了研究方向,如今已不再研究深度学习,所以文中难免有纰漏之处,欢迎发现的知友在评论中指出并给予宝贵的修改意见。 一、什么是图神经网络 二、有哪些图神经网络 三、图神经网络的应用 一、什么是图神经网络? 在过去的几年中,神经网络的兴起与应用成功推动了模式识别和数据挖掘的研究。许多曾经严重依赖于手工提取特征的机器学习任务(如目标检测、机器翻译和语音识别),如今都已被各种端到端的深度学习范式(例如卷积神经网络(CNN)、长短期记忆(LSTM)和自动编码器)彻底改变了。曾有学者将本次人工智能浪潮的兴起归因于三个条件,分别是: 计算资源的快速发展(如GPU) 大量训练数据的可用性 深度学习从欧氏空间数据中提取潜在特征的有效性 尽管传统的深度学习方法被应用在提取欧氏空间数据的特征方面取得了巨大的成功,但许多实际应用场景中的数据是从非欧式空间生成的,传统的深度学习方法在处理非欧式空间数据上的表现却仍难以使人满意。例如,在电子商务中,一个基于图(Graph)的学习系统能够利用用户和产品之间的交互来做出非常准确的推荐,但图的复杂性使得现有的深度学习算法在处理时面临着巨大的挑战。这是因为图是不规则的,每个图都有一个大小可变的无序节点,图中的每个节点都有不同数量的相邻节点,导致一些重要的操作(例如卷积)在图像(Image)上很容易计算,但不再适合直接用于图。此外,现有深度学习算法的一个核心假设是数据样本之间彼此独立。然而,对于图来说,情况并非如此,图中的每个数据样本(节点)都会有边与图中其他实数据样本(节点)相关,这些信息可用于捕获实例之间的相互依赖关系。 近年来,人们对深度学习方法在图上的扩展越来越感兴趣。在多方因素的成功推动下,研究人员借鉴了卷积网络、循环网络和深度自动编码器的思想,定义和设计了用于处理图数据的神经网络结构,由此一个新的研究热点——“图神经网络(Graph Neural Networks,GNN)”应运而生,本篇文章主要对图神经网络的研究现状进行简单的概述。 需要注意的是,图神经网络的研究与图嵌入(对图嵌入不了解的读者可以参考我的这篇文章《图嵌入综述》)或网络嵌入密切相关,图嵌入或网络嵌入是数据挖掘和机器学习界日益关注的另一个课题。",
+            "source_name": "知乎",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web_supplement",
+          "source_record_id": "src_f280173bcf0395341c5ab8f7",
+          "title": "图神经网络(Graph Neural Networks,GNN)综述",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "2",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://zhuanlan.zhihu.com/p/610036768",
+          "observed_at": "2026-09-16T14:44:29.262005Z",
+          "provenance": {
+            "query": "graph summarization graph autoencoder RNN temporal graph representation",
+            "rank": 2,
+            "run_id": "run-d20cf7604f34411abe224ba46f4c7006",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": " 公众号:DataStrategy 分享代码及训练数据集 收录于 · 机器学习 Graph Neural Network (GNN)图神经网络,是一种旨在对图结构数据就行操作的深度学习算法。它可以很自然地表示现实世界中的很多问题,包括社交网络, 分子结构 和交通网络等。GNN旨在处理此类图结构数据,并对图中的节点和边进行预测或执行任务。 GNN中节点的信息 通过节点和节点之间连接的边 在节点之间传递。其中每个节点都可以从其和它相邻的节点中接收信息并相应地更新自己的信息,这个过程通常会重复多次以使信息充分地沿着边流动和在节点处聚合。然后这些更新的节点可以用于对节点的分类(node classification)、节点之间边的预测(两个节点之间是否存在边)、对于整个图的分类、生成一个新的图(比如VAE或GAN)等等。这些已经应用于化学,社交网络和推荐系统等各个领域。 1. Graph 图 在 计算机科学 中,图是一种抽象的数据类型,旨在实现数学图论领域中的无向图和 有向图 概念。图类型的 数据结构 由一组有限的(可能是可变的)顶点(也称为节点或点)组成,对于无向图,这些顶点在一组无序对内,对于有向图,这些顶点在一组有序对内。这些对被称为边(也称为链接或线),对于有向图,这些对也被称为边,但有时也称为箭头或圆弧。顶点可以是图形结构的一部分,也可以是由整数索引或引用表示的外部实体。 例如,我们使用图来表示社交网络,如下图所示,图中的每个节点代表一个人,每两个节点之间的边则代表了这两个人互相认识,比如Person A 分别和Person B和Person C是好朋友,B又和D是好朋友,但是C和D却互不认识。如果这条边是无向的,可以表示较为平等的关系,比如友谊,同学等;如果是有向的,可以用来表示上下级,或是师生等关系。 2. Graph neural network  图神经网络 图神经网络是一类用于处理可以表示为图的数据的 人工神经网络 。在A Comprehensive Survey on Graph Neural Networks https://arxiv.org/pdf/1901.00596.pdf中提出了将图神经网络进一步地分为Recurrent  graph neural networks (RecGNNs) 递归图神经网络 、Convolutional graph neural networks (ConvGNNs) 卷积图神经网络 、Graph autoencoders (GAEs) 图自动编码器 和Spatial-temporal graph neural networks (STGNNs) 时空图神经网络 。 2.1 Recurrent graph neural networks (RecGNNs) 循环图神经网络 :  它是传统图神经网络的一种衍生,具有 循环结构 。\u0002",
+            "published_at": "2023-03-01T14:35:27",
+            "request_id": "149a2dc4-746e-47d7-a14f-044b7a529190",
+            "search_score": null,
+            "search_snippet": "公众号:DataStrategy 分享代码及训练数据集 收录于 · 机器学习 Graph Neural Network (GNN)图神经网络,是一种旨在对图结构数据就行操作的深度学习算法。它可以很自然地表示现实世界中的很多问题,包括社交网络, 分子结构 和交通网络等。GNN旨在处理此类图结构数据,并对图中的节点和边进行预测或执行任务。 GNN中节点的信息 通过节点和节点之间连接的边 在节点之间传递。其中每个节点都可以从其和它相邻的节点中接收信息并相应地更新自己的信息,这个过程通常会重复多次以使信息充分地沿着边流动和在节点处聚合。然后这些更新的节点可以用于对节点的分类(node classification)、节点之间边的预测(两个节点之间是否存在边)、对于整个图的分类、生成一个新的图(比如VAE或GAN)等等。这些已经应用于化学,社交网络和推荐系统等各个领域。 1. Graph 图 在 计算机科学 中,图是一种抽象的数据类型,旨在实现数学图论领域中的无向图和 有向图 概念。图类型的 数据结构 由一组有限的(可能是可变的)顶点(也称为节点或点)组成,对于无向图,这些顶点在一组无序对内,对于有向图,这些顶点在一组有序对内。这些对被称为边(也称为链接或线),对于有向图,这些对也被称为边,但有时也称为箭头或圆弧。顶点可以是图形结构的一部分,也可以是由整数索引或引用表示的外部实体。 例如,我们使用图来表示社交网络,如下图所示,图中的每个节点代表一个人,每两个节点之间的边则代表了这两个人互相认识,比如Person A 分别和Person B和Person C是好朋友,B又和D是好朋友,但是C和D却互不认识。如果这条边是无向的,可以表示较为平等的关系,比如友谊,同学等;如果是有向的,可以用来表示上下级,或是师生等关系。 2. Graph neural network  图神经网络 图神经网络是一类用于处理可以表示为图的数据的 人工神经网络 。在A Comprehensive Survey on Graph Neural Networks https://arxiv.org/pdf/1901.00596.pdf中提出了将图神经网络进一步地分为Recurrent  graph neural networks (RecGNNs) 递归图神经网络 、Convolutional graph neural networks (ConvGNNs) 卷积图神经网络 、Graph autoencoders (GAEs) 图自动编码器 和Spatial-temporal graph neural networks (STGNNs) 时空图神经网络 。 2.1 Recurrent graph neural networks (RecGNNs) 循环图神经网络 :  它是传统图神经网络的一种衍生,具有 循环结构 。\u0002",
+            "source_name": "知乎",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web_supplement",
+          "source_record_id": "src_6a5d3d5e55174e6aab4c650d",
+          "title": "Graph Neural Network(GNN)图神经网络",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "3",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://zhuanlan.zhihu.com/p/158984343",
+          "observed_at": "2026-09-16T14:44:29.262005Z",
+          "provenance": {
+            "query": "graph summarization graph autoencoder RNN temporal graph representation",
+            "rank": 3,
+            "run_id": "run-d20cf7604f34411abe224ba46f4c7006",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": " 1 Introduction 我们知道,CNNs、RNNs以及 autoencoders 等深度学习方法,可以取代手工的 特征提取 ,有效地捕获欧氏数据的隐含特征。但现实生活中,数据更普遍的形式是可以被构建为图的非欧数据。",
+            "published_at": "2020-10-21T14:02:00",
+            "request_id": "149a2dc4-746e-47d7-a14f-044b7a529190",
+            "search_score": null,
+            "search_snippet": "1 Introduction 我们知道,CNNs、RNNs以及 autoencoders 等深度学习方法,可以取代手工的 特征提取 ,有效地捕获欧氏数据的隐含特征。但现实生活中,数据更普遍的形式是可以被构建为图的非欧数据。",
+            "source_name": "知乎",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web_supplement",
+          "source_record_id": "src_610f21aae8353d9e701e0b1f",
+          "title": "【归纳综述】Graph Neural Network: An Introduction Ⅰ",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "4",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://cloud.tencent.com/developer/article/2160113",
+          "observed_at": "2026-09-16T14:44:29.262005Z",
+          "provenance": {
+            "query": "graph summarization graph autoencoder RNN temporal graph representation",
+            "rank": 4,
+            "run_id": "run-d20cf7604f34411abe224ba46f4c7006",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": " 生成学习与对比学习 自监督学习从大量的无监督数据中挖掘出自己需要的的监督信息。与监督学习相比,它使用来自数据集本身的信息来构建伪标签。而在对比学习[9]方面,自监督学习作为监督学习的补充具有很大的潜力。 自MoCo和SimCLR引入以来,对比学习在图自监督学习领域占据主导地位,其在节点分类和图分类等任务上的表现远远超过生成式自监督学习方法。但是对比学习的成功往往取决于下面的两个因素: 高质量的数据扩充。GraphCL[5]探索了几种数据增强方法的有效性,如掩蔽属性、子图采样和随机添加和删除边。但是通过研究发现有效的图数据增强往往依赖于领域知识;例如,随机添加和删除边缘对社交网络中的训练是有利的,但它会会对分子图产生负面影响。所以到目前为止,在图对比学习中还没有普遍有效的数据增强方法。 复杂的策略来稳定训练。对比方法通过通用的训练技巧避免模型陷入繁琐的解决方案。GRACE[8]、DGI[7]和GraphCL[5]等方法在训练中使用负采样,而BGRL[6]利用了非对称网络结构和指数移动平均策略。 而生成式自监督学习可以避免上述依赖关系。生成式自监督学习能够重构数据本身的特征和信息。在自然语言处理(NLP)中,BERT[3]旨在恢复遮蔽词;在CV (Computer Vision)中,MAE[2]恢复图像的像素点(块)。 对于图,GAE (Graph Autoencoder)重建图的结构信息或节点特征。现有的图数据动编码器大多着眼于链接预测和图数据聚类目标,因此通常会选择重构图数据的结构信息,即邻接矩阵a。所以近年来图数据自编码器的进展远远落后于对比学习,在分类等任务上的表现并不令人满意。节点分类、图分类等任务的SOTA都是基于对比学习的方法。 与以前的图形自编码器不同,GraphMAE通过简单的重建被遮蔽的损坏节点特征,使图自编码器超越对比学习 GraphMAE的关键设计在于以下几个方面: 基于遮蔽的节点特征重构。现有的图数据自编码器通常以边缘作为重构目标,但其在下游分类任务中的表现通常较差。 以GNN为解码器进行以重建过程。现有的图自编码器通常选择MLP作为解码器,由于大多数图形节点特征是连续的向量,MLP的能力不足以从编码结果重建节点特征。",
+            "published_at": "2022-11-11T17:55:29",
+            "request_id": "149a2dc4-746e-47d7-a14f-044b7a529190",
+            "search_score": null,
+            "search_snippet": "生成学习与对比学习 自监督学习从大量的无监督数据中挖掘出自己需要的的监督信息。与监督学习相比,它使用来自数据集本身的信息来构建伪标签。而在对比学习[9]方面,自监督学习作为监督学习的补充具有很大的潜力。 自MoCo和SimCLR引入以来,对比学习在图自监督学习领域占据主导地位,其在节点分类和图分类等任务上的表现远远超过生成式自监督学习方法。但是对比学习的成功往往取决于下面的两个因素: 高质量的数据扩充。GraphCL[5]探索了几种数据增强方法的有效性,如掩蔽属性、子图采样和随机添加和删除边。但是通过研究发现有效的图数据增强往往依赖于领域知识;例如,随机添加和删除边缘对社交网络中的训练是有利的,但它会会对分子图产生负面影响。所以到目前为止,在图对比学习中还没有普遍有效的数据增强方法。 复杂的策略来稳定训练。对比方法通过通用的训练技巧避免模型陷入繁琐的解决方案。GRACE[8]、DGI[7]和GraphCL[5]等方法在训练中使用负采样,而BGRL[6]利用了非对称网络结构和指数移动平均策略。 而生成式自监督学习可以避免上述依赖关系。生成式自监督学习能够重构数据本身的特征和信息。在自然语言处理(NLP)中,BERT[3]旨在恢复遮蔽词;在CV (Computer Vision)中,MAE[2]恢复图像的像素点(块)。 对于图,GAE (Graph Autoencoder)重建图的结构信息或节点特征。现有的图数据动编码器大多着眼于链接预测和图数据聚类目标,因此通常会选择重构图数据的结构信息,即邻接矩阵a。所以近年来图数据自编码器的进展远远落后于对比学习,在分类等任务上的表现并不令人满意。节点分类、图分类等任务的SOTA都是基于对比学习的方法。 与以前的图形自编码器不同,GraphMAE通过简单的重建被遮蔽的损坏节点特征,使图自编码器超越对比学习 GraphMAE的关键设计在于以下几个方面: 基于遮蔽的节点特征重构。现有的图数据自编码器通常以边缘作为重构目标,但其在下游分类任务中的表现通常较差。 以GNN为解码器进行以重建过程。现有的图自编码器通常选择MLP作为解码器,由于大多数图形节点特征是连续的向量,MLP的能力不足以从编码结果重建节点特征。",
+            "source_name": "Tencent腾讯（腾讯官方网）",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web_supplement",
+          "source_record_id": "src_41e7baddd61d734e8bd4d859",
+          "title": "GraphMAE:将MAE的方法应用到图中使图的生成式自监督学习超越了对比学习",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "5",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://cloud.tencent.com/developer/article/2159339",
+          "observed_at": "2026-09-16T14:44:29.262005Z",
+          "provenance": {
+            "query": "graph summarization graph autoencoder RNN temporal graph representation",
+            "rank": 5,
+            "run_id": "run-d20cf7604f34411abe224ba46f4c7006",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": " Graph-Bert Graph-Bert: Only Attention is Needed for Learning Graph Representations (arXiv 2020) https://arxiv.org/abs/2001.05140 GNN 过度依赖图上的链接,此外由于大图非常耗显存,可能无法直接进行操作。该论文提出了一种新的只依赖 attention 机制的图网络 Graph-BERT,Graph-BERT 的输入不是全图,而是一堆采样得到的子图(不带边)。作者使用节点属性重构以及结构恢复两个任务进行预训练,然后在下游数据集上进行微调。该方法在节点分类和图聚类任务上达到了 SOTA。 ▲图1:Graph-BERT 和之前 NLP 中的 BERT 不一杨的地方主要是 position encoding,Graph-BERT使用了三种 PE,分别是 WL absolute PE,intimacy based relative PE 和 Hop based relative PE,这里三个 PE 都是根据 complete graph 计算得到的。 为了便于操作,作者将 subgraph 根据图亲密度矩阵进行排序 [i, j, ...m],其中 S(i,j) > S(i,m),得到序列化的结果。 其中Weisfeiler-Lehman Absolute Role Embedding如下: 经过WL 之后,子结构一样的节点就会得到相同的 hash code,如果是 1-WL 有点像 degree centrality(针对无向图而言)。因此,WL PE 可以捕获全局节点角色信息。 Intimacy based Relative Positional Embedding 这个PE 捕获的是偏 local 的信息,因为输入已经根据图亲密度矩阵进行排序过了,这里只需要简单地设 ,越接近i的节点 会越小。映射公式如下: Hop based Relative Distance Embedding 该PE 捕获的是介于 global 和 local 之间的信息: 将节点 embedding 和这些 PE 加起来,然后输入到 Transformer 中得到 subgraph 每个节点的表征 。因为 subgraph 中有很多节点,作者希望最后只得到 target node 的表征 ,因此作者还设计了一个 Fusion function,原文中是把所有节点表征做一下 average。 都会被输出,根据下游任务选择所需的进行使用。",
+            "published_at": "2022-11-11T10:48:38",
+            "request_id": "149a2dc4-746e-47d7-a14f-044b7a529190",
+            "search_score": null,
+            "search_snippet": "Graph-Bert Graph-Bert: Only Attention is Needed for Learning Graph Representations (arXiv 2020) https://arxiv.org/abs/2001.05140 GNN 过度依赖图上的链接,此外由于大图非常耗显存,可能无法直接进行操作。该论文提出了一种新的只依赖 attention 机制的图网络 Graph-BERT,Graph-BERT 的输入不是全图,而是一堆采样得到的子图(不带边)。作者使用节点属性重构以及结构恢复两个任务进行预训练,然后在下游数据集上进行微调。该方法在节点分类和图聚类任务上达到了 SOTA。 ▲图1:Graph-BERT 和之前 NLP 中的 BERT 不一杨的地方主要是 position encoding,Graph-BERT使用了三种 PE,分别是 WL absolute PE,intimacy based relative PE 和 Hop based relative PE,这里三个 PE 都是根据 complete graph 计算得到的。 为了便于操作,作者将 subgraph 根据图亲密度矩阵进行排序 [i, j, ...m],其中 S(i,j) > S(i,m),得到序列化的结果。 其中Weisfeiler-Lehman Absolute Role Embedding如下: 经过WL 之后,子结构一样的节点就会得到相同的 hash code,如果是 1-WL 有点像 degree centrality(针对无向图而言)。因此,WL PE 可以捕获全局节点角色信息。 Intimacy based Relative Positional Embedding 这个PE 捕获的是偏 local 的信息,因为输入已经根据图亲密度矩阵进行排序过了,这里只需要简单地设 ,越接近i的节点 会越小。映射公式如下: Hop based Relative Distance Embedding 该PE 捕获的是介于 global 和 local 之间的信息: 将节点 embedding 和这些 PE 加起来,然后输入到 Transformer 中得到 subgraph 每个节点的表征 。因为 subgraph 中有很多节点,作者希望最后只得到 target node 的表征 ,因此作者还设计了一个 Fusion function,原文中是把所有节点表征做一下 average。 都会被输出,根据下游任务选择所需的进行使用。",
+            "source_name": "Tencent腾讯（腾讯官方网）",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web_supplement",
+          "source_record_id": "src_0ed81a5bf6988857ab7744b8",
+          "title": "一文带你浏览Graph Transformers",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "6",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://blog.csdn.net/gitblog_00093/article/details/154379921",
+          "observed_at": "2026-09-16T14:44:29.262005Z",
+          "provenance": {
+            "query": "graph summarization graph autoencoder RNN temporal graph representation",
+            "rank": 6,
+            "run_id": "run-d20cf7604f34411abe224ba46f4c7006",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": "这一突破性技术在图机器学习领域具有重要意义,为药物发现、社交网络分析、推荐系统等应用提供了强大的工具。这种自回归方法使得模型能够捕捉图的全局结构特征,同时保持生成过程的灵活性和多样性。 GraphRNN的工作流程非常巧妙:首先将图转换为节点序列,然后使用两个循环神经网络(RNN)协同工作。第一个RNN(节点级RNN)负责生成节点,第二个RNN(边级RNN)负责为每个新节点生成与之前节点的连接关系。 在model.py中,您可以看到GraphRNN的核心实现。模型采用BFS(广度优先搜索)排序来确保生成过程的稳定性,这种排序方法使得相似的图结构在序列表示上也相似。",
+            "published_at": "2026-07-12T09:33:54",
+            "request_id": "149a2dc4-746e-47d7-a14f-044b7a529190",
+            "search_score": null,
+            "search_snippet": "这一突破性技术在图机器学习领域具有重要意义,为药物发现、社交网络分析、推荐系统等应用提供了强大的工具。这种自回归方法使得模型能够捕捉图的全局结构特征,同时保持生成过程的灵活性和多样性。 GraphRNN的工作流程非常巧妙:首先将图转换为节点序列,然后使用两个循环神经网络(RNN)协同工作。第一个RNN(节点级RNN)负责生成节点,第二个RNN(边级RNN)负责为每个新节点生成与之前节点的连接关系。 在model.py中,您可以看到GraphRNN的核心实现。模型采用BFS(广度优先搜索)排序来确保生成过程的稳定性,这种排序方法使得相似的图结构在序列表示上也相似。",
+            "source_name": "CSDN软件开发网",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web_supplement",
+          "source_record_id": "src_28e295c96ce4c102a38b7ecb",
+          "title": "GraphRNN完全指南:革命性深度自回归模型如何生成逼真图结构",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "7",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://blog.csdn.net/HPC_Evan/article/details/142515390",
+          "observed_at": "2026-09-16T14:44:29.262005Z",
+          "provenance": {
+            "query": "graph summarization graph autoencoder RNN temporal graph representation",
+            "rank": 7,
+            "run_id": "run-d20cf7604f34411abe224ba46f4c7006",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": " 1、监督学习(Supervised Learning) 监督学习是机器学习的一种形式,其中模型通过带标签的数据集进行训练。 2、无监督学习(Unsupervised Learning) 无监督学习是另一种机器学习形式,它不使用带标签的数据。模型必须自己发现数据中的模式或结构,常见任务包括聚类、降维和异常检测。 3、强化学习(Reinforcement Learning) 强化学习是一种学习方式,其中代理通过与环境互动来学习如何采取行动。代理通过执行动作并观察结果来学习,目标是最大化累积奖励。 4、半监督学习(Semi-Supervised Learning) 半监督学习结合了监督学习和无监督学习的特点,使用少量的标记数据和大量的未标记数据来改善模型的性能。 5、迁移学习(Transfer Learning) 迁移学习是将一个领域的知识转移到另一个相关领域,以加速学习或提高性能。通常涉及预训练的模型。 6、特征工程(Feature Engineering) 特征工程涉及选择和构造有助于模型预测的输入变量。这包括特征选择、特征构造、特征缩放等。 7、数据预处理(Data Preprocessing) 数据预处理涉及清洗、转换和标准化数据,以供机器学习模型使用。包括去除噪声、填补缺失值、数据标准化等步骤。 8、降维(Dimensionality Reduction) 降维是减少数据特征数量的过程,同时尽量保留重要信息。常用方法包括主成分分析(PCA)、t-SNE等。 9、过拟合(Overfitting) 过拟合发生在模型对训练数据过于敏感,以至于它无法很好地泛化到新的、未见过的数据上。可以通过正则化、早停等手段来缓解。 10、欠拟合(Underfitting) 欠拟合发生在模型过于简单,以至于无法捕捉数据中的模式。解决方法包括增加模型复杂度或特征工程。 11、交叉验证(Cross Validation) 交叉验证是一种评估模型性能的技术,通过将数据集分成训练集和验证集,并多次重复训练和验证过程。 12、回归分析(RegressionAnalysis) 回归分析是预测连续值输出的统计方法。常用方法包括线性回归、多元回归等。 13、分类(Classification) 分类是将输入数据分配到预定义类别中的任务。常用算法包括逻辑回归、支持向量机等。 14、聚类(Clustering) 聚类是将数据点分成多个组的过程,使得组内成员比组间成员更相似。常用方法包括K均值聚类。 15、决策树(Decision Tree) 决策树是一种树形结构模型,用于分类或回归。每个内部节点表示一个属性上的测试,每个分支代表一个测试结果,每个叶子节点代表一个类别或输出值。",
+            "published_at": "2024-09-25T10:04:43",
+            "request_id": "149a2dc4-746e-47d7-a14f-044b7a529190",
+            "search_score": null,
+            "search_snippet": "1、监督学习(Supervised Learning) 监督学习是机器学习的一种形式,其中模型通过带标签的数据集进行训练。 2、无监督学习(Unsupervised Learning) 无监督学习是另一种机器学习形式,它不使用带标签的数据。模型必须自己发现数据中的模式或结构,常见任务包括聚类、降维和异常检测。 3、强化学习(Reinforcement Learning) 强化学习是一种学习方式,其中代理通过与环境互动来学习如何采取行动。代理通过执行动作并观察结果来学习,目标是最大化累积奖励。 4、半监督学习(Semi-Supervised Learning) 半监督学习结合了监督学习和无监督学习的特点,使用少量的标记数据和大量的未标记数据来改善模型的性能。 5、迁移学习(Transfer Learning) 迁移学习是将一个领域的知识转移到另一个相关领域,以加速学习或提高性能。通常涉及预训练的模型。 6、特征工程(Feature Engineering) 特征工程涉及选择和构造有助于模型预测的输入变量。这包括特征选择、特征构造、特征缩放等。 7、数据预处理(Data Preprocessing) 数据预处理涉及清洗、转换和标准化数据,以供机器学习模型使用。包括去除噪声、填补缺失值、数据标准化等步骤。 8、降维(Dimensionality Reduction) 降维是减少数据特征数量的过程,同时尽量保留重要信息。常用方法包括主成分分析(PCA)、t-SNE等。 9、过拟合(Overfitting) 过拟合发生在模型对训练数据过于敏感,以至于它无法很好地泛化到新的、未见过的数据上。可以通过正则化、早停等手段来缓解。 10、欠拟合(Underfitting) 欠拟合发生在模型过于简单,以至于无法捕捉数据中的模式。解决方法包括增加模型复杂度或特征工程。 11、交叉验证(Cross Validation) 交叉验证是一种评估模型性能的技术,通过将数据集分成训练集和验证集,并多次重复训练和验证过程。 12、回归分析(RegressionAnalysis) 回归分析是预测连续值输出的统计方法。常用方法包括线性回归、多元回归等。 13、分类(Classification) 分类是将输入数据分配到预定义类别中的任务。常用算法包括逻辑回归、支持向量机等。 14、聚类(Clustering) 聚类是将数据点分成多个组的过程,使得组内成员比组间成员更相似。常用方法包括K均值聚类。 15、决策树(Decision Tree) 决策树是一种树形结构模型,用于分类或回归。每个内部节点表示一个属性上的测试,每个分支代表一个测试结果,每个叶子节点代表一个类别或输出值。",
+            "source_name": "CSDN软件开发网",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web_supplement",
+          "source_record_id": "src_50f77d34fc5331f7b666b8ed",
+          "title": "AI产品经理必知的133个专业术语",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "8",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://zhuanlan.zhihu.com/p/2082521173359968785",
+          "observed_at": "2026-09-16T14:44:29.262005Z",
+          "provenance": {
+            "query": "graph summarization graph autoencoder RNN temporal graph representation",
+            "rank": 8,
+            "run_id": "run-d20cf7604f34411abe224ba46f4c7006",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": " 想让模型学会何时检索、检索什么,甚至自己挖掘规则吗?从强化学习到规则增强,从云端到端侧,本文将带你探索RAG技术的最新突破与落地实践。 这一篇保留那些不适合塞进普通检索或 Agent 搜索主线的内容:训练模型学会何时检索、把硬规则写进回答、让 Agent 长期记住正确事实,以及在端侧资源有限时怎样部署。 本篇覆盖检索链训练、推理模型搜索、奖励建模、思维干预、推理时更新、规则增强、端侧索引和图结构长期记忆。时序 RAG 已单独归入第 3 篇。 实用性标注沿用原文:★ 工程可直接落地|◐ 有条件实用|○ 前沿或性价比低。 第10 族|强化学习结合 RAG:让模型\"学会检索\" 这一族解决什么:靠提示词让模型\"该查就查\"不可靠。这一族用训练(RL/蒸馏/微调)把\"何时检索、检索什么\"固化进模型。共性判断:训练门槛高,但\"推理+检索\"的产品形态值得跟。 10.1 Chain-of-Retrieval(CoRAG):给模型练\"检索链\" ◐ o1 靠\"思维链\"变强,CoRAG 照方抓药,给模型练的是\"检索链\"。训练分两步:先让模型自由地搜,把那些最终搜成功的路径用拒绝采样挑出来,当作教材;再用这些\"问题→中间检索→答案\"的链式数据微调,让模型学会把检索过程显式化——每一步搜什么、为什么搜、搜到了怎么修正方向,都变成可追溯的链路。这套数据不用人工标注,模型自己生成、自己筛选,成本可控。 它最实用的特性在推理侧:检索链的长度可以按预算调节——时间紧就搜两轮,追求效果就多搜几轮,分数随轮数平滑上升,这正是\"测试时扩展算力\"思想在检索上的落地。换句话说,同一个模型,你能用延迟换精度。 需要的条件:能微调开源模型的团队。拿不到模型权重的,这条路线暂时无缘。实用性◐。 CoRAG 的拒绝采样数据构造可以低成本地借鉴到非训练场景。它造数据的逻辑是:让模型对一个训练问题自由生成多条检索链,只保留最终答对的那条——成功路径就是最好的教材。把这个逻辑搬到工作流里,就是\"失败回放\"机制:线上每道答错的题,人工或模型回放\"理想的检索链应该是什么样\",存进一个\"检索链范例库\";遇到相似问题时,把这些成功链路作为 few-shot 示范给 agent 参考。这等于用运行时记忆代替了参数训练,虽然不如真训练来得彻底,但对提升多跳问题的成功率立竿见影,而且范例库随业务积累自动增值。很多\"训练才能做的事\"都有这类运行时近似版本,先用起来,把价值跑通,再决定要不要投入真训练。 • 📚出处:强化学习结合RAG/Chain-of-Retrieval Augmented Generation[arXiv]。",
+            "published_at": "2026-09-13T17:30:00",
+            "request_id": "149a2dc4-746e-47d7-a14f-044b7a529190",
+            "search_score": null,
+            "search_snippet": "想让模型学会何时检索、检索什么,甚至自己挖掘规则吗?从强化学习到规则增强,从云端到端侧,本文将带你探索RAG技术的最新突破与落地实践。 这一篇保留那些不适合塞进普通检索或 Agent 搜索主线的内容:训练模型学会何时检索、把硬规则写进回答、让 Agent 长期记住正确事实,以及在端侧资源有限时怎样部署。 本篇覆盖检索链训练、推理模型搜索、奖励建模、思维干预、推理时更新、规则增强、端侧索引和图结构长期记忆。时序 RAG 已单独归入第 3 篇。 实用性标注沿用原文:★ 工程可直接落地|◐ 有条件实用|○ 前沿或性价比低。 第10 族|强化学习结合 RAG:让模型\"学会检索\" 这一族解决什么:靠提示词让模型\"该查就查\"不可靠。这一族用训练(RL/蒸馏/微调)把\"何时检索、检索什么\"固化进模型。共性判断:训练门槛高,但\"推理+检索\"的产品形态值得跟。 10.1 Chain-of-Retrieval(CoRAG):给模型练\"检索链\" ◐ o1 靠\"思维链\"变强,CoRAG 照方抓药,给模型练的是\"检索链\"。训练分两步:先让模型自由地搜,把那些最终搜成功的路径用拒绝采样挑出来,当作教材;再用这些\"问题→中间检索→答案\"的链式数据微调,让模型学会把检索过程显式化——每一步搜什么、为什么搜、搜到了怎么修正方向,都变成可追溯的链路。这套数据不用人工标注,模型自己生成、自己筛选,成本可控。 它最实用的特性在推理侧:检索链的长度可以按预算调节——时间紧就搜两轮,追求效果就多搜几轮,分数随轮数平滑上升,这正是\"测试时扩展算力\"思想在检索上的落地。换句话说,同一个模型,你能用延迟换精度。 需要的条件:能微调开源模型的团队。拿不到模型权重的,这条路线暂时无缘。实用性◐。 CoRAG 的拒绝采样数据构造可以低成本地借鉴到非训练场景。它造数据的逻辑是:让模型对一个训练问题自由生成多条检索链,只保留最终答对的那条——成功路径就是最好的教材。把这个逻辑搬到工作流里,就是\"失败回放\"机制:线上每道答错的题,人工或模型回放\"理想的检索链应该是什么样\",存进一个\"检索链范例库\";遇到相似问题时,把这些成功链路作为 few-shot 示范给 agent 参考。这等于用运行时记忆代替了参数训练,虽然不如真训练来得彻底,但对提升多跳问题的成功率立竿见影,而且范例库随业务积累自动增值。很多\"训练才能做的事\"都有这类运行时近似版本,先用起来,把价值跑通,再决定要不要投入真训练。 • 📚出处:强化学习结合RAG/Chain-of-Retrieval Augmented Generation[arXiv]。",
+            "source_name": "知乎",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web_supplement",
+          "source_record_id": "src_59e7477eb5b6e16d028b6a89",
+          "title": "RAG 论文解读系列 (四) | 学习型 RAG 论文解读|强化学习、规则与长期记忆",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "9",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://zhuanlan.zhihu.com/p/2081848076923417358",
+          "observed_at": "2026-09-16T14:44:29.262005Z",
+          "provenance": {
+            "query": "graph summarization graph autoencoder RNN temporal graph representation",
+            "rank": 9,
+            "run_id": "run-d20cf7604f34411abe224ba46f4c7006",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": " 架构概览 这套系统主要依赖两条设计原则。 异构模型分层与自适应思考级别:角色复杂度不同,没必要统一使用同一个模型,也不需要给每个角色相同的计算预算。 架构师(gemini-pro-latest,high思考级别):承担推理强度最高的工作,包括界定问题边界、预判竞态条件,以及设计严格的pytest测试套件。 开发者(gemini-3.7-flash,medium思考级别):按照架构师给出的明确规格生成代码,在推理能力和吞吐量之间取平衡。 测试运行器:确定性的 Python 子进程,本地执行pytest。一次测试大约需要 15 毫秒,不消耗任何 LLM API Token。 调试器(gemini-3.7-flash,high思考级别):把更多推理资源留给因果根因分析,从原始堆栈跟踪定位真正出错的代码。 审查器(gemini-flash-lite-latest,low思考级别):处理代码风格检查、最终执行摘要这类相对直接的任务,使用轻量推理即可。 严格限制子智能体的工具作用域(最小权限原则):每个角色只拿到完成本职工作所需的输入和工具,不开放无关的终端或文件系统权限。开发者智能体不能执行任意终端命令;测试运行器只负责真正运行测试并返回结果,不让 LLM 猜测或生成测试结论。角色边界清楚之后,模型更容易把注意力放在当前任务上,也能减少工具混淆和幻觉。",
+            "published_at": "2026-09-11T20:55:00",
+            "request_id": "149a2dc4-746e-47d7-a14f-044b7a529190",
+            "search_score": null,
+            "search_snippet": "架构概览 这套系统主要依赖两条设计原则。 异构模型分层与自适应思考级别:角色复杂度不同,没必要统一使用同一个模型,也不需要给每个角色相同的计算预算。 架构师(gemini-pro-latest,high思考级别):承担推理强度最高的工作,包括界定问题边界、预判竞态条件,以及设计严格的pytest测试套件。 开发者(gemini-3.7-flash,medium思考级别):按照架构师给出的明确规格生成代码,在推理能力和吞吐量之间取平衡。 测试运行器:确定性的 Python 子进程,本地执行pytest。一次测试大约需要 15 毫秒,不消耗任何 LLM API Token。 调试器(gemini-3.7-flash,high思考级别):把更多推理资源留给因果根因分析,从原始堆栈跟踪定位真正出错的代码。 审查器(gemini-flash-lite-latest,low思考级别):处理代码风格检查、最终执行摘要这类相对直接的任务,使用轻量推理即可。 严格限制子智能体的工具作用域(最小权限原则):每个角色只拿到完成本职工作所需的输入和工具,不开放无关的终端或文件系统权限。开发者智能体不能执行任意终端命令;测试运行器只负责真正运行测试并返回结果,不让 LLM 猜测或生成测试结论。角色边界清楚之后,模型更容易把注意力放在当前任务上,也能减少工具混淆和幻觉。",
+            "source_name": "知乎",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web_supplement",
+          "source_record_id": "src_686eaf2b02fea69ef7f4e3d0",
+          "title": "LangGraph 实战:构建带自动测试与调试闭环的多智能体系统",
+          "work_id": null
+        },
+        {
+          "abstract": null,
+          "access_status": "discovered",
+          "authors": [],
+          "external_id": "10",
+          "full_text_url": null,
+          "identifiers": [],
+          "landing_url": "https://hub.baai.ac.cn/view/18415",
+          "observed_at": "2026-09-16T14:44:29.262005Z",
+          "provenance": {
+            "query": "graph summarization graph autoencoder RNN temporal graph representation",
+            "rank": 10,
+            "run_id": "run-d20cf7604f34411abe224ba46f4c7006",
+            "tool": "web_search"
+          },
+          "publication_stage": "unknown",
+          "publication_stage_provenance": null,
+          "publication_year": null,
+          "raw_metadata": {
+            "content": " 时间序列预测问题是根据一个序列的历史值预测未来值。当同时预测多个时间序列,并且各个时间序列之间存在空间上的关系时,就不能只将每个时间序列单独建模,而应该考虑不同时间序列之间的关系。例如,在交通预测场景中,需要预测不同地点的车流量,不同地点的车流量之间是存在空间上的关系的,例如A点的车20%在5分钟后会开往B点。仍然用传统的时间序列预测方法,即每个序列独立的进行预测,无法捕捉这种不同地点的空间关系信息。 目前解决时间+空间预估的方法主要包括基于图的时序预估和基于矩阵分解的时序预估两种方法。本文通过6篇顶会论文介绍了这两种类型方法的发展历程。 本节介绍几个图模型中的基础概念,感兴趣的同学可以深入其他图学习相关文章继续学习。N个节点组成的图可以由一个N*N的临接矩阵和一个N*N的度数矩阵表示。临接矩阵中第(i, j)个元素表示节点i和节点j之间在图上的距离,这个距离根据具体任务和图而定;度数矩阵是一个对角矩阵,第(i, i)个元素表示节点第i个节点和几个边相连。图的拉普拉斯矩阵由临接矩阵和度数矩阵计算得到,简单来说,拉普拉斯矩阵衡量了图中两两节点之间信息传递关系(具体来说,拉普拉斯矩阵是图上的拉普拉斯算子,拉普拉斯算子是高维空间二阶导数的推广)。通过拉普拉斯矩阵,我们可以将每个图中每个节点的特征进行扩散到其他节点,得到每个节点考虑了图中信息传播后新的特征。图卷积是图模型的一种实例。在将傅立叶变换拓展到图中时,发现傅立叶变换中的基就是图的拉普拉斯矩阵的特征向量。这样解决了Spatial卷积方法中,无法比较好的选择邻居节点、无向量化表示的问题。 拉普拉斯矩阵有不同的形式,例如最基础的拉普拉斯矩阵L=D-A,还有如下正则化拉普拉斯矩阵、随机游走拉普拉斯矩阵等,不同的拉普拉斯矩阵反应了图上信息流动方式的不同先验。 RNN是最基础的时间序列预测深度学习模型,RNN天然的序列建模能力可以很好的处理时间序列数据。在RNN的基础上,DIFFUSION CONVOLUTIONAL RECURRENT NEURAL NETWORK: DATA-DRIVEN TRAFFIC FORECASTING(ICLR 2018)提出DCRNN模型,通过将图的思想引入RNN,使RNN能够同时输入空间中多个节点的时间序列,在学习时间维度依赖的同时,学习不同节点的空间关系。 GRU是RNN模型的一种,DCRNN在GRU的基础上,将原来GRU中的全连接部分修改为diffusion convolutional layer(随机游走拉普拉斯矩阵+全连接),公式可以表示为如下形式:",
+            "published_at": "2022-06-28T09:13:59",
+            "request_id": "149a2dc4-746e-47d7-a14f-044b7a529190",
+            "search_score": null,
+            "search_snippet": "时间序列预测问题是根据一个序列的历史值预测未来值。当同时预测多个时间序列,并且各个时间序列之间存在空间上的关系时,就不能只将每个时间序列单独建模,而应该考虑不同时间序列之间的关系。例如,在交通预测场景中,需要预测不同地点的车流量,不同地点的车流量之间是存在空间上的关系的,例如A点的车20%在5分钟后会开往B点。仍然用传统的时间序列预测方法,即每个序列独立的进行预测,无法捕捉这种不同地点的空间关系信息。 目前解决时间+空间预估的方法主要包括基于图的时序预估和基于矩阵分解的时序预估两种方法。本文通过6篇顶会论文介绍了这两种类型方法的发展历程。 本节介绍几个图模型中的基础概念,感兴趣的同学可以深入其他图学习相关文章继续学习。N个节点组成的图可以由一个N*N的临接矩阵和一个N*N的度数矩阵表示。临接矩阵中第(i, j)个元素表示节点i和节点j之间在图上的距离,这个距离根据具体任务和图而定;度数矩阵是一个对角矩阵,第(i, i)个元素表示节点第i个节点和几个边相连。图的拉普拉斯矩阵由临接矩阵和度数矩阵计算得到,简单来说,拉普拉斯矩阵衡量了图中两两节点之间信息传递关系(具体来说,拉普拉斯矩阵是图上的拉普拉斯算子,拉普拉斯算子是高维空间二阶导数的推广)。通过拉普拉斯矩阵,我们可以将每个图中每个节点的特征进行扩散到其他节点,得到每个节点考虑了图中信息传播后新的特征。图卷积是图模型的一种实例。在将傅立叶变换拓展到图中时,发现傅立叶变换中的基就是图的拉普拉斯矩阵的特征向量。这样解决了Spatial卷积方法中,无法比较好的选择邻居节点、无向量化表示的问题。 拉普拉斯矩阵有不同的形式,例如最基础的拉普拉斯矩阵L=D-A,还有如下正则化拉普拉斯矩阵、随机游走拉普拉斯矩阵等,不同的拉普拉斯矩阵反应了图上信息流动方式的不同先验。 RNN是最基础的时间序列预测深度学习模型,RNN天然的序列建模能力可以很好的处理时间序列数据。在RNN的基础上,DIFFUSION CONVOLUTIONAL RECURRENT NEURAL NETWORK: DATA-DRIVEN TRAFFIC FORECASTING(ICLR 2018)提出DCRNN模型,通过将图的思想引入RNN,使RNN能够同时输入空间中多个节点的时间序列,在学习时间维度依赖的同时,学习不同节点的空间关系。 GRU是RNN模型的一种,DCRNN在GRU的基础上,将原来GRU中的全连接部分修改为diffusion convolutional layer(随机游走拉普拉斯矩阵+全连接),公式可以表示为如下形式:",
+            "source_name": "北京智源人工智能研究院",
+            "web_anchor": ""
+          },
+          "source_id": "baidu",
+          "source_kind": "web_supplement",
+          "source_record_id": "src_ae47cd33a84a9c9441c975f9",
+          "title": "Spatial-Temporal时间序列预测建模方法汇总",
+          "work_id": null
+        }
+      ]
+    },
+    "succeeded": true,
+    "summary": "发现并保存 10 个 Web 候选来源",
+    "tool_name": "web_search"
+  },
+  "resolved_arguments": {
+    "max_results": 10,
+    "query": "graph summarization graph autoencoder RNN temporal graph representation"
+  },
+  "result_count": 10,
+  "stage_name": "run_research_task",
+  "started_at": "2026-09-16T14:44:27.982502+00:00",
+  "tool_call_id": "tool_0024",
+  "tool_name": "web_search"
+}

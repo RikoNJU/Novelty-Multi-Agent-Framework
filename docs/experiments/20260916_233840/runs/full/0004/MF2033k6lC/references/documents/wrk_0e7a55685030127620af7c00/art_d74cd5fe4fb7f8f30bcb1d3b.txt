@@ -1,0 +1,1287 @@
+DTFormer: A Transformer-Based Method for Discrete-Time Dynamic Graph Representation Learning
+
+      Report GitHub Issue
+      ×
+
+      Title:
+
+Content selection saved. Describe the issue below:
+
+      Description:
+
+      Submit without GitHub
+      Submit in GitHub
+
+    arXiv is now an independent nonprofit!
+    Learn more
+    ×
+
+      Back to arXiv
+
+    Why HTML?
+
+      Report Issue
+
+      Back to Abstract
+
+      Download PDF
+
+Abstract.
+
+1 Introduction
+
+2 Related Work
+
+2.1 Dynamic Graphs Representation Learning
+
+2.2 Transformers for Graph Learning
+
+3 Preliminaries
+
+4 Method
+
+4.1 Formatting Features
+
+4.2 Multi-Patching Module
+
+4.3 Transformer Encoder
+
+4.4 Link Prediction and Loss Function
+
+5 Experiments
+
+5.1 Experimental Setup
+
+5.2 Future Link Prediction
+
+5.3 An Empirical Study for Multi-Patching
+
+5.4 Ablation Study
+
+5.4.1 Features
+
+5.4.2 Different Modes for Modeling Neighbor Intersect Feature.
+
+6 Limitations and Future Work
+
+7 Conclusion
+
+Acknowledgements
+
+References
+
+    License: CC BY-NC-SA 4.0
+
+arXiv:2407.18523v1 [cs.LG] 26 Jul 2024
+
+DTFormer: A Transformer-Based Method for Discrete-Time Dynamic Graph Representation Learning
+
+Conference: Proceedings of the 33rd ACM International Conference on Information and Knowledge Management; October 21–25, 2024; Boise, ID, USA.Proceedings of the 33rd ACM International Conference on Information and Knowledge Management (CIKM ’24), October 21–25, 2024, Boise, ID, USAISBN: 979-8-4007-0436-9/24/10DOI: 10.1145/3627673.3679568CCS: Information systems Data miningCCS: Computing methodologies Modeling methodologies
+
+Xi Chen
+
+Affiliation: Shanghai Key Laboratory of Data Science, School of Computer Science, Fudan University, Shanghai, China
+
+,
+Yun Xiong
+
+Note: Corresponding author.
+
+Affiliation: Shanghai Key Laboratory of Data Science, School of Computer Science, Fudan University, Shanghai, China
+
+email: x_chen21@m.fudan.edu.cn
+
+email: yunx@fudan.edu.cn
+
+,
+Siwei Zhang
+
+Affiliation: Shanghai Key Laboratory of Data Science, School of Computer Science, Fudan University, Shanghai, China
+
+email: swzhang22@m.fudan.edu.cn
+
+,
+Jiawei Zhang
+
+Affiliation: IFM Lab, Department of Computer Science, University of California, Davis, CA, USA
+
+email: jiawei@ifmlab.org
+
+,
+Yao Zhang
+
+Affiliation: Shanghai Key Laboratory of Data Science, School of Computer Science, Fudan University, Shanghai, China
+
+email: yaozhang@fudan.edu.cn
+
+,
+Shiyang Zhou
+
+Affiliation: Shanghai Key Laboratory of Data Science, School of Computer Science, Fudan University, Shanghai, China
+
+,
+Xixi Wu
+
+Affiliation: Shanghai Key Laboratory of Data Science, School of Computer Science, Fudan University, Shanghai, China
+
+email: 22210240079@m.fudan.edu.cn
+
+email: 21210240043@m.fudan.edu.cn
+
+,
+Mingyang Zhang
+
+Affiliation: Ant Group, Hangzhou, China
+
+,
+Tengfei Liu
+
+Affiliation: Ant Group, Hangzhou, China
+
+ and
+Weiqiang Wang
+
+Affiliation: Ant Group, Hangzhou, China
+
+email: zhangmingyang.zmy@antgroup.com
+
+email: aaron.ltf@antgroup.com
+
+email: weiqiang.wwq@antgroup.com
+
+© acmlicensed
+
+Abstract.
+
+Discrete-Time Dynamic Graphs (DTDGs), which are prevalent in real-world implementations and notable for their ease of data acquisition, have garnered considerable attention from both academic researchers and industry practitioners. The representation learning of DTDGs has been extensively applied to model the dynamics of temporally changing entities and their evolving connections.
+Currently, DTDG representation learning predominantly relies on GNN+RNN architectures, which manifest the inherent limitations of both Graph Neural Networks (GNNs) and Recurrent Neural Networks (RNNs).
+GNNs suffer from the over-smoothing issue as the models architecture goes deeper, while RNNs struggle to capture long-term dependencies effectively. GNN+RNN architectures also grapple with scaling to large graph sizes and long sequences.
+Additionally, these methods often compute node representations separately and focus solely on individual node characteristics, thereby overlooking the behavior intersections between the two nodes whose link is being predicted, such as instances where the two nodes appear together in the same context or share common neighbors.
+
+This paper introduces a novel representation learning method DTFormer for DTDGs, pivoting from the traditional GNN+RNN framework to a Transformer-based architecture. Our approach exploits the attention mechanism to concurrently process topological information within the graph at each timestamp and temporal dynamics of graphs along the timestamps, circumventing the aforementioned fundamental weakness of both GNNs and RNNs. Moreover, we enhance the model’s expressive capability by incorporating the intersection relationships among nodes and integrating a multi-patching module.
+Extensive experiments conducted on six public dynamic graph benchmark datasets confirm our model’s efficacy, achieving the SOTA performance.
+
+Keywords: Dynamic Graphs; Transformer Model; Graph Representation Learning; Data Mining
+
+1. Introduction
+
+Dynamic graphs, characterized by their ability to the dynamics of temporally changing entities and their evolving interactions, find extensive applications across diverse fields including fraud detection (1), recommendation systems (2), and e-commerce (3).
+In dynamic graphs, entities are modeled as nodes, and their interactions are represented as edges, which typically encapsulate temporal information to accurately reflect interaction dynamics.
+Recent advancements in dynamic graph methods (4, 5, 6, 7) focus on deriving the nodes’ representations by aggregating their historical neighbor information. These nodes’ representations are then processed via neural networks to predict future interactive behaviors.
+
+Representation learning methods for dynamic graphs typically can be categorized into two distinct types, i.e., Discrete-Time Dynamic Graph (DTDG) and Continuous-Time Dynamic Graph (CTDG) (8, 9), each employing unique approaches for graph modeling and learning node embeddings.
+DTDGs (4, 5) model interactions within specified times or periods using static graph representations, capturing dynamic changes through successive graph snapshots.
+Meanwhile, CTDGs (6, 7) consider time as a continuous variable and utilize timestamps on edges to maintain temporal attributes, thereby directly linking time with interaction dynamics.
+In this paper, we will employ the DTDGs to model the dynamic graphs to be studied, which offers greater advantages over continuous-time based graph modeling approaches. According to prior work (10, 11, 12, 13), DTDGs can greatly simplify data processing and analysis by offering a manageable representation (12), and they support the use of a wide range of existing graph algorithms designed for static or coarser representations, which are easier to interpret and analyze (13).
+
+Previous methods for learning representations in DTDGs predominantly employ GNN+RNN architectures (14, 4, 5, 15, 16), which address both topological and temporal dimensions of the data. Initially, within these existing methods (14, 4, 5), static graph neural networks, such as GNNs (17) and Graph Convolutional Networks (GCNs) (18), are used to process static snapshots of the graph to capture topological relationships. These networks function by aggregating information from neighboring nodes, thereby generating node embeddings for each graph snapshot.
+Based on such learned representations by GNNs, these methods further employ RNNs, such as Long Short-Term Memory (LSTM) (19) and Gated Recurrent Units (GRU) (20), to integrate these embeddings over time, capturing the dynamic evolution of node features. This integration facilitates the prediction of future edge states, i.e., the existence or absence of connections between nodes. Although these methodologies adeptly capture both topological and temporal information for DTDGs, they also inherit significant limitations and challenges inherent to both GNNs and RNNs.
+
+One significant challenge in GNNs is over-smoothing (21, 22), a problem that occurs as GNNs integrate increasingly extensive neighborhood information through their layers. Initially, GNNs aggregate neighboring node features to update node representations. While additional layers theoretically enhance the richness of these representations by incorporating broader contextual information, they also lead to homogenization of features across nodes. As the number of layers increases, this homogenization intensifies, causing node features to converge and become indistinguishably similar, i.e., the over-smoothing problem. This over-smoothing effect ultimately diminishes the distinctiveness and expressive power of node representations within the GNN architecture.
+
+RNNs often struggle to capture node-wise long-term dependencies, especially in scenarios involving extended temporal sequences (23, 24).
+This challenge primarily arises from the propensity for vanishing or exploding gradients during the backpropagation process, which can severely impede learning stability and efficiency. Although enhanced versions of RNNs, such as LSTM and GRU, partially mitigate these issues, they still encounter significant difficulties when dealing with particularly long sequences (23).
+
+Additionally, compared with static graphs, DTDGs usually have much large sizes, since they involve the attributes and connections temporally changing along the discrete timestamps. When employing a GNN+RNN architecture for DTDG representation learning, the increasing number of nodes and edges in DTDGs necessitates storing the entire graph in GPU memory. This requirement can lead to an excessive burden on GPU memory and a high risk of Out-Of-Memory (OOM) problems. Moreover, as the number of snapshots in a DTDG increases, RNNs are required to process excessively long sequences, further escalating the demand for computational resources. Consequently, most existing models are typically evaluated on relatively small networks which contain only a few hundred nodes or transaction graphs with a limited number of edges, and are limited to handling a few hundred snapshots.
+
+To addressing the limitations previously discussed, this paper proposes an innovative representation learning method for DTDG, termed DTFormer. This method adopts a novel perspective by moving away from the commonly used GNN+RNN architecture towards a Transformer-based architecture. Taking advantage of the attention mechanism, our method concurrently captures both temporal dynamics and node-specific information.
+Initially, we collect all historical first-hop neighbors of both the two nodes, which are the nodes between which we aim to predict a future link. We then organize the features of these neighbors into sequences for Transformer processing.
+This involves extracting features for neighbors or edges across five categories: node features, edge features, time (i.e., snapshot), frequency of appearance in a given snapshot, and joint appearance in a snapshot as neighbors.
+Subsequently, we aggregate these sequences using the attention mechanism to derive the comprehensive representations of the nodes.
+
+Figure 1. Overview of DTFormer: First, we construct neighbor sequences for nodes ii and jj and format five distinct features, encoding them to create feature sequences. Next, we apply the multi-patching module and corresponding Transformer encoders to obtain the embeddings of nodes ii and jj, which are then concatenated and used to predict the future link.
+
+This method circumvents the problems prevalent in traditional GNN+RNN architectures, while enhancing the modeling of intersections between the two nodes.
+The self-attention mechanism of the Transformer enables the model to focus more effectively on relevant nodes, helping to mitigate the over-smoothing issue. By adjusting the weights between nodes based on their relationships, the self-attention mechanism preserves the distinctiveness between nodes (25).
+Furthermore, we introduce a novel multi-patching module that models dependencies at multiple temporal scales, effectively capturing both long-term and short-term patterns, while using far less memory space than previous methods.
+Extensive experiments conducted across 6 public datasets demonstrate that our approach significantly surpasses previous state-of-the-art (SOTA) methods, as evidenced by improvements in the Mean Reciprocal Rank (MRR). Moreover, it facilitates more efficient training and inference processes, handling large-scale datasets characterized by numerous nodes, edges, and extensive temporal spans.
+
+We summarize our contributions as follows:
+
+•
+
+We pioneer a departure from the conventional GNN+RNN framework for DTDG by treating interaction behaviors as sequence data, effectively circumventing the inherent limitations of traditional architectures.
+
+•
+
+We present an innovative application of the Transformer to DTDG representation learning with our DTFormer method, which enhances model expressiveness by incorporating five distinct feature types and utilizing a multi-patching module.
+
+•
+
+By leveraging the advantages of the Transformer architecture and using our proposed multi-patching module to manage the length of input sequences, our method can handle larger datasets more efficiently while avoiding OOM issues.
+
+•
+
+Our method is rigorously tested across 6 public datasets, with the results affirming its effectiveness and achieving unparalleled SOTA performance on these datasets.
+
+2. Related Work
+
+2.1. Dynamic Graphs Representation Learning
+
+Discrete-Time Dynamic Graphs (DTDGs).
+Previous research on DTDGs predominantly employs combined architectures of GNNs and RNNs. These methodologies typically involve treating each temporal snapshot of the graph as a static graph, wherein neighbor node information is aggregated via GNNs, and RNNs are subsequently employed to capture temporal dynamics (14, 4, 15, 16).
+The latest model, ROLAND (5), introduces a training method that aids the transition from static GNNs to dynamic models and features a live-update evaluation scenario where GNNs predict and update in a rolling manner.
+It partially mitigates the OOM issue by reducing the amount of data stored on the GPU. However, this increases the burden of data transfer between GPU and CPU. Additionally, it is also based on the GNN+RNN architecture, which still suffers from other issues inherent to the GNNs and RNNs.
+
+Continuous-Time Dynamic Graphs (CTDGs).
+The study of CTDGs began with Jodie (26), which uses dual RNNs and a projection operator to dynamically update node representations. This foundation led to TGN-based methods like TGAT (6), which integrates an attention mechanism to enhance neighbor information aggregation. TGN (7) unifies previous technologies into a single framework and introduces a memory module to store nodes’ historical interactions.
+Subsequent research mainly focuses on addressing CTDG-specific challenges (27, 28, 29, 30, 31, 24, 32, 33) such as large-scale training (28, 29), noise dynamics (30), and node-wise long-term modeling (31, 24).
+
+2.2. Transformers for Graph Learning
+
+The Transformer (34), a groundbreaking model designed for sequential data analysis, leverages a self-attention mechanism to handle extended sequences. This capability is crucial for modeling long sequences effectively. The Transformer has already proven its versatility across various applications, including computer vision (35, 36, 37), natural language processing (38, 39, 40), and time series analysis (41, 42, 43). In the context of static graphs, numerous Transformer-based approaches have been developed (44, 25, 45, 46, 47, 48).
+
+Despite the prevalence of GNN+RNN frameworks in DTDG research, applications of the Transformer as a core architecture remain relatively unexplored. Our model, however, integrates the Transformer into DTDG, pioneering new methodologies in DTDG modeling and potentially expanding the horizon of this field.
+
+3. Preliminaries
+
+Discrete-Time Dynamic Graph as Sequences.
+Previous methods typically employ graph neural networks combined with sequence models (such as RNN-based models) to generate node embeddings for dynamic graphs. Due to the inherent weakness and limitations of both GNNs and RNNs as mentioned before, our approach discards such prior approaches and proposes a novel Transformer-based model in this paper instead.
+
+For a series of graph snapshots of a DTDG, 𝒢={G1,G2,…,GT}\mathcal{G}=\{G_{1},G_{2},\ldots,G_{T}\}, each individual graph snapshot can be considered as a static graph snapshot Gt=(Vt,Et)G_{t}=(V_{t},E_{t}), where 1≤t≤T1\leq t\leq T. The node set of the graph snapshot GtG_{t} is defined as Vt={v1,v2,…,vn}V_{t}=\{v_{1},v_{2},\ldots,v_{n}\} and the edge set as Et={ei​j=(i,j,t)∣i,j∈Vt}E_{t}=\{e_{ij}=(i,j,t)\mid i,j\in V_{t}\}. Nodes can be paired with features 𝐍𝐎𝐃𝐄t={𝐧𝐨𝐝𝐞i∣i∈Vt}\mathbf{NODE}_{t}=\{\mathbf{node}_{i}\mid i\in V_{t}\}, where feature vector 𝐧𝐨𝐝𝐞i∈ℝdN\mathbf{node}_{i}\in\mathbb{R}^{d_{N}} of node ii has dimension dNd_{N}. While edges can also have features 𝐄𝐃𝐆𝐄t={𝐞𝐝𝐠𝐞i​j∣ei​j∈Et}\mathbf{EDGE}_{t}=\{\mathbf{edge}_{ij}\mid e_{ij}\in E_{t}\}, where feature vector 𝐞𝐝𝐠𝐞i,j∈ℝdE\mathbf{edge}_{i,j}\in\mathbb{R}^{d_{E}} has dimension dEd_{E}.
+To provide a sequence input for the Transformer-based encoder, we innovatively propose to use the history of first-hop neighbors of a node as the basic elements of the sequence. For a node ii in a snapshot GtG_{t}, we form a sequence by arranging all first-hop neighbors that have had an edge with node ii in any snapshot prior to tt, ordered by the snapshot in which they appeared, denoted as Nit=[n∣∀(i,n,t′)​ and ​∀t′<t]N_{i}^{t}=[n\mid\forall(i,n,{t^{\prime}})\text{ and }\forall t^{\prime}<t], where (i,n,t′)(i,n,t^{\prime}) indicates an edge between ii and nn at snapshot Gt′G_{t^{\prime}}.
+A specific neighbor nn can appear multiple times in NitN_{i}^{t}, because a single neighbor can have multiple edges with node ii.
+The sequence NitN_{i}^{t} effectively captures the set of neighbors who has interacted with ii prior to the current time tt, which effectively defines the learning contextual information for node ii’s both within graphs and also across the time. Consequently, for all nodes, at different snapshots, we can obtain such a sequence, and the encoded information of this sequence through the Transformer-based encoder serves as the embedding of the node in the current snapshot.
+
+Problem Definition.
+Given a series of history snapshots
+
+{G1,G2,…,Gt−1}\{G_{1},G_{2},\ldots,G_{t-1}\} prior to time tt, the goal is to predict whether there will be an edge between two nodes ii and jj in a future snapshot GtG_{t} by utilizing the node embeddings of ii and jj.
+
+4. Method
+
+To predict a potential edge between two nodes ii and jj in a snapshot at time tt, we characterize these nodes using embeddings derived from historical data. We start by extracting all first-hop historical neighbor nodes of ii and jj, from which we construct five distinct feature sequences. A novel multi-patching module then segments and standardizes these sequences at different granularities. Patched sequences of various granularities are processed through Transformer-based backbone models, effectively capturing historical information and acquiring embeddings of nodes ii and jj at corresponding granularities. Using the node embeddings of ii and jj, a projection head is then used to predict the presence or absence of their future link. The overall model structure is illustrated in Figure 1. In this section, we first explain how we construct the feature sequences, followed by a description of the multi-patching module and the employed Transformer encoder. Finally, we discuss the implementation of the link prediction task.
+
+Figure 2. Formatting and Encoding Features: For nodes ii and jj, we format node, edge, positional, occurrence, and intersect features and encode them to create feature sequences.
+
+4.1. Formatting Features
+
+An overview of formatting features is shown in Figure 2.
+
+Neighbor Basic Features.
+For a node ii, the sequence of its first-hop neighbor nodes before time tt, NitN_{i}^{t}, can be obtained from the raw data, which includes the features of all neighboring nodes and their corresponding edge features. These are compiled into two corresponding sequences which lengths equal to the number of neighbor nodes |Nit||N_{i}^{t}|, denoted as: 𝐍𝐎𝐃𝐄Nit=[𝐧𝐨𝐝𝐞n]n∈Nit∈ℝ|Nit|×dN\mathbf{NODE}_{N_{i}^{t}}=[\mathbf{node}_{n}]_{n\in N_{i}^{t}}\in\mathbb{R}^{|N_{i}^{t}|\times d_{N}} and 𝐄𝐃𝐆𝐄Nit=[𝐞𝐝𝐠𝐞(i,n,t′)]n∈Nit∈ℝ|Nit|×dE\mathbf{EDGE}_{N_{i}^{t}}=[\mathbf{edge}_{(i,n,t^{\prime})}]_{n\in N_{i}^{t}}\in\mathbb{R}^{|N_{i}^{t}|\times d_{E}},
+where dNd_{N} and dEd_{E} are the dimension of node features and edge features. These two sequences are then used as the basic features for the node ii.
+
+Neighbor Positional Feature.
+We assign sequential numbers to each graph snapshot according to their chronological order, using these positional indices in the order as substitutes for the traditional positional attributes in Transformers. The encoding of these attributes is then used as positional embedding inputs in the subsequent Transformer encoder. For a node ii, every edge connecting it to its first-hop neighbors appears in an indexed graph snapshot. We obtain the index pp of the snapshot where an neighboring edge exists and apply an encoding function to this index.
+
+There is an absence of explicit temporal attribute information in DTDG data. However, the chronological ordering of each snapshot inherently embeds temporal sequential information. This arrangement facilitates the incorporation of temporal order into our method. Inspired by the technique outlined in TGAT (6), we adopt a time encoding function similar to that described in TGAT to encode pp, formulated as
+
+(1)
+
+𝐏=12⋅dP​[cos⁡(w1​p),sin⁡(w1​p),…,cos⁡(wdP​p),sin⁡(wdP​p)],\mathbf{P}=\sqrt{\frac{1}{2\cdot d_{P}}}\left[\cos(w_{1}p),\sin(w_{1}p),\ldots,\cos(w_{d_{P}}p),\sin(w_{d_{P}}p)\right],
+
+which serves as the positional feature for the neighboring nodes sequence. Here the dimension of the positional feature 𝐏\mathbf{P} will be 2⋅dP2\cdot d_{P} and w1,⋯,wdPw_{1},\cdots,w_{d_{P}} are trainable parameters. This approach effectively leverages temporal information, thereby enhancing the encoder’s ability to process and interpret time-related data attributes. Similarly, this positional feature can also be organized into a sequence of length equal to |Nit||N_{i}^{t}|, denoted as: 𝐏𝐎𝐒Nit=[𝐏n]n∈Nit∈ℝ|Nit|×2⋅dP.\mathbf{POS}_{N_{i}^{t}}=[\mathbf{P}_{n}]_{n\in N_{i}^{t}}\in\mathbb{R}^{|N_{i}^{t}|\times 2\cdot d_{P}}.
+Using time encoding to encode the snapshot index enables us to utilize the limited temporal-related information in DTDGs, thereby enhancing the model’s capacity.
+
+Neighbor Occurrence Feature.
+To enhance the representation of nodes and capture the frequency and pattern of interactions of neighbors in their historical behavior, we design an occurrence feature. For each first-hop neighbor of a node ii, we compute the number of their interactions in each snapshot, resulting in an occurrence vector 𝐎n=[o1n,o2n,…,oTn]∈ℝT\mathbf{O}_{n}=[o_{1}^{n},o_{2}^{n},\dots,o_{T}^{n}]\in\mathbb{R}^{T} of length TT, where TT is the total number of snapshots. Here otno_{t}^{n} represents the number of interactions between node ii and its neighbor nn at snapshot tt, for t=1,2,…,Tt=1,2,\dots,T. Subsequently, in accordance with the snapshot currently being predicted, we mask the occurrence vector to retain only the features prior to this snapshot to prevent information leakage. The masked occurrence vector is noted as 𝐎¯n\bar{\mathbf{O}}_{n}, and then used as the occurrence feature. Similarly, the occurrence features of all neighbor nodes can form a sequence, denoted as: 𝐎𝐂𝐂Nit=[𝐎¯n]n∈Nit∈ℝ|Nit|×T.\mathbf{OCC}_{N_{i}^{t}}=[\bar{\mathbf{O}}_{n}]_{n\in N_{i}^{t}}\in\mathbb{R}^{|N_{i}^{t}|\times T}.
+
+Neighbor Intersect Feature.
+
+Existing approaches predominantly focus on modeling information for individual nodes, often neglecting the intersections between node pairs. However, in dynamic graphs, simultaneous interactions or shared neighbors play a crucial role in shaping node representations. Intuitively, if two nodes have shared common neighbors at some historical moment, the likelihood of new interaction between these two nodes in the future may increase with the interaction frequency of these common neighbors. For instance, in social networks like Twitter, the association between two individuals is reinforced if they both follow the same person or like the same tweet within the same time period. Furthermore, this regularity in the data may exhibit periodicity, For instance, in an e-commerce networks, individuals who share an interest in camping often tend to purchase related items predominantly during weekends. This observation suggests a cyclical pattern in consumer behaviors that could be crucial for predicting future purchase trends.
+
+Yet, this aspect is often overlooked or inadequately modeled by current methodologies.
+To model this scenario and incorporate the temporal sequence information of dynamic graphs, we constructed an intersect feature for nodes ii and jj. Initially, for one of the neighbor nodes nn, we build a matrix 𝐀n\mathbf{A}_{n} of dimensions ℝ2×T\mathbb{R}^{2\times T}, where the first row stores the count of occurrences of the current neighbor node among the neighbors of node ii, categorized by snapshot to indicate in which snapshots this neighbor node has appeared. The second row stores the count of occurrences of the current neighbor node as a neighbor of the other node jj, also categorized by snapshot. The matrix 𝐀n\mathbf{A}_{n} is defined as follows:
+
+𝐀n=[a1,1na1,2n⋯a1,Tna2,1na2,2n⋯a2,Tn],\mathbf{A}_{n}=\begin{bmatrix}a_{1,1}^{n}&a_{1,2}^{n}&\cdots&a_{1,T}^{n}\\
+a_{2,1}^{n}&a_{2,2}^{n}&\cdots&a_{2,T}^{n}\end{bmatrix},
+
+where: a1,tna_{1,t}^{n} represents the number of times neighbor nn appears as a neighbor of node ii in snapshot tt, and a2,tna_{2,t}^{n} represents the number of times neighbor nn appears as a neighbor of node jj in snapshot tt, for t=1,2,…,Tt=1,2,\dots,T.
+This matrix thus records the counts of the current neighbor node as a neighbor for both nodes ii and jj, separated according to the order of the snapshots.
+All 𝐀n\mathbf{A}_{n} matrices for the neighbors are then processed through a neural network (sequence networks like GRU or simply MLP), denoted as f⁡(⋅)f(\cdot), to represent the features 𝐀¯=f⁡(𝐀)\bar{\mathbf{A}}=f(\mathbf{A}) and normalize them to a dimension ℝdI\mathbb{R}^{d_{I}}, where dId_{I} is the dimension of the intersect feature. We explore three different modes of f⁡(⋅)f(\cdot): GRU mode, MLP mode, and SUM mode. This will be detailed discussed in the ablation study section, Section 5.4.2. Subsequently, for all neighbors of a node, their 𝐀¯\bar{\mathbf{A}} can form a sequence, serving as the intersect feature for that node, denoted as: 𝐈𝐍𝐓Nit=[𝐀¯n]n∈Nit∈ℝ|Nit|×dI.\mathbf{INT}_{N_{i}^{t}}=[\bar{\mathbf{A}}_{n}]_{n\in N_{i}^{t}}\in\mathbb{R}^{|N_{i}^{t}|\times d_{I}}.
+
+Figure 3. Multi-Patching: Applying multiple patch sizes to split feature sequences helps our model capture information at different granularities and reduce model complexity.
+
+4.2. Multi-Patching Module
+
+To reduce the computational complexity of the subsequent Transformer encoder, we introduce the patching operation first proposed in (36) into our model. This operation helps Transformer encoder captures local information in sequence data. Typically, smaller patches might focus on capturing fine-grained local features, while larger patches could encompass more contextual information (31). To simultaneously capture information at different granularities, corresponding to different lengths of time segments in dynamic graphs, we further design a multi-patching module.
+
+This module involves segmenting the existing sequences into patches of various sizes to obtain multiple subsequences. Let SmS_{m} denote the patch size, and λm\lambda_{m} denote the length of new sequence, each new sequence is of length equal to the original sequence length divided by the patch size: λm=|Nit|/Sm\lambda_{m}=|N_{i}^{t}|/S_{m}. If |Nit||N_{i}^{t}| cannot be divided by SmS_{m}, padding will be applied to the end of the patched sequence. Given different patch sizes Sm,Sn,…S_{m},S_{n},\ldots, the lengths of the new sequences vary λm,λn,…\lambda_{m},\lambda_{n},\ldots. For a node ii, assume the patch size is SmS_{m}, each of feature sequences undergoes the patching operation, we now have five corresponding new patched sequences: 𝐍𝐎𝐃𝐄Nit∈ℝλim×dN\mathbf{NODE}_{N_{i}^{t}}\in\mathbb{R}^{\lambda_{i}^{m}\times d_{N}}, 𝐄𝐃𝐆𝐄Nit∈ℝλim×dE\mathbf{EDGE}_{N_{i}^{t}}\in\mathbb{R}^{\lambda_{i}^{m}\times d_{E}}, 𝐏𝐎𝐒Nit∈ℝλim×2⋅dP\mathbf{POS}_{N_{i}^{t}}\in\mathbb{R}^{\lambda_{i}^{m}\times 2\cdot d_{P}},
+𝐎𝐂𝐂Nit∈ℝλim×T\mathbf{OCC}_{N_{i}^{t}}\in\mathbb{R}^{\lambda_{i}^{m}\times T} and
+𝐈𝐍𝐓Nit∈ℝλim×dI\mathbf{INT}_{N_{i}^{t}}\in\mathbb{R}^{\lambda_{i}^{m}\times d_{I}}.
+For different patch sizes, resulting in multiple new patched sequences of varying granularity. We then use these multi-patched sequences as inputs for the next step of the Transformer encoders. An illustration of multi-patching module is shown in Figure 3.
+
+Due to the patching operation, the length of the input sequences to the subsequent Transformer encoder can be controlled, allowing us to maintain our model complexity within an appropriate range. The related complexity analysis is discussed in Section 5.2. Additionally, the introduction of multi-patching enables our model to capture multi-granularity historical information simultaneously, thereby enhancing the expressive power of our model.
+
+4.3. Transformer Encoder
+
+In order to correspond with the multiple different patch sizes obtained through multi-patching, we employ multiple Transformer encoders, each designed to accept patched sequences of different lengths, thereby capturing information at varying granularities. The output of each Transformer encoder is considered as the representation of the node at the current granularity. Finally, these representations are integrated through a neural network (usually an MLP) to obtain the final embedding for the node.
+
+Taking patched sequences at a specific granularity as an example, for nodes ii, we first pass the five patched sequences 𝐍𝐎𝐃𝐄Nit\mathbf{NODE}_{N_{i}^{t}}, 𝐄𝐃𝐆𝐄Nit\mathbf{EDGE}_{N_{i}^{t}}, 𝐏𝐎𝐒Nit\mathbf{POS}_{N_{i}^{t}},
+𝐎𝐂𝐂Nit\mathbf{OCC}_{N_{i}^{t}} and 𝐈𝐍𝐓Nit\mathbf{INT}_{N_{i}^{t}} through MLPs to standardize their dimensions, resulting in five uniformly dimensioned sequences:
+
+(2)
+
+𝐅𝐄𝐀𝐓∗NitC=MLP(𝐅𝐄𝐀𝐓∗Nit)∈ℝλim×dC,\mathbf{FEAT*}_{N_{i}^{t}}^{C}=\text{MLP}(\mathbf{FEAT*}_{N_{i}^{t}})\in\mathbb{R}^{\lambda_{i}^{m}\times d_{C}},
+
+(3)
+
+𝐎𝐂𝐂NitC=MLP​(ReLU​(MLP​(𝐎𝐂𝐂Nit)))∈ℝλim×dC,\mathbf{OCC}_{N_{i}^{t}}^{C}=\text{MLP}(\text{ReLU}(\text{MLP}(\mathbf{OCC}_{N_{i}^{t}})))\in\mathbb{R}^{\lambda_{i}^{m}\times d_{C}},
+
+where all these patched sequences will have the identical dimension dCd_{C}, and 𝐅𝐞𝐚𝐭∗\mathbf{Feat*} can be 𝐍𝐎𝐃𝐄\mathbf{NODE}, 𝐄𝐃𝐆𝐄\mathbf{EDGE}, 𝐏𝐎𝐒\mathbf{POS} or 𝐈𝐍𝐓\mathbf{INT}.
+Due to there is an extra dimension for occurance feature, we apply an extra MLP and ReLU to unify the dimension.
+The five dimensionally uniform sequences are then concatenated to form the input sequence for the Transformer encoder: 𝐂iλim=𝐍𝐎𝐃𝐄NitC|𝐄𝐃𝐆𝐄NitC|𝐏𝐎𝐒NitC|𝐎𝐂𝐂NitC|𝐈𝐍𝐓NitC∈ℝλim×5⋅dC\mathbf{C}_{i}^{\lambda_{i}^{m}}=\mathbf{NODE}_{N_{i}^{t}}^{C}\parallel\mathbf{EDGE}_{N_{i}^{t}}^{C}\parallel\mathbf{POS}_{N_{i}^{t}}^{C}\parallel\mathbf{OCC}_{N_{i}^{t}}^{C}\parallel\mathbf{INT}_{N_{i}^{t}}^{C}\in\mathbb{R}^{\lambda_{i}^{m}\times 5\cdot d_{C}}, ∥\parallel indicates the concatenation operation.
+This process is completed for both nodes, thus we have 𝐂iλim\mathbf{C}_{i}^{\lambda_{i}^{m}} and 𝐂jλjm\mathbf{C}_{j}^{\lambda_{j}^{m}}.
+
+To capture the interactive dependencies between the two nodes, their sequences are stacked and fed into the Transformer (34, 36) for encoding:
+
+(4)
+
+𝐗(0)=[𝐂iλim,𝐂jλjm].\mathbf{X}^{(0)}=[\mathbf{C}_{i}^{\lambda_{i}^{m}},\mathbf{C}_{j}^{\lambda_{j}^{m}}].
+
+The Transformer encoder comprises LL layers, and the output of the Transformer encoder at the final layer LL is denoted by 𝐇=𝐗(L)\mathbf{H}=\mathbf{X}^{(L)}.
+The entire process of the Transformer encoder can be summarized as follows:
+
+(5)
+
+𝐇λm=Transformerλm​([𝐂iλim,𝐂jλjm]).\mathbf{H}_{\lambda_{m}}=\text{Transformer}_{\lambda_{m}}([\mathbf{C}_{i}^{\lambda_{i}^{m}},\mathbf{C}_{j}^{\lambda_{j}^{m}}]).
+
+4.4. Link Prediction and Loss Function
+
+For different patch sizes and sequence lengths, the output of the Transformer encoder then serves as the representation of the two nodes.
+Since features of two different nodes are input simultaneously, after the output, based on the order of the output sequence, it is split into two sequences representing the respective nodes, and by averaging, the representations of the two nodes at the current granularity can be obtained:
+
+(6)
+
+𝐄𝐦𝐛iλim,𝐄𝐦𝐛jλjm=MEAN(𝐇λm[:λim]),MEAN(𝐇λm[λim:]).\mathbf{Emb}_{i}^{\lambda_{i}^{m}},\mathbf{Emb}_{j}^{\lambda_{j}^{m}}=\text{MEAN}(\mathbf{H}_{\lambda_{m}}[:\lambda_{i}^{m}]),\text{MEAN}(\mathbf{H}_{\lambda_{m}}[\lambda_{i}^{m}:]).
+
+Finally, by concatenating the representations of the nodes at different granularities and passing them through an MLP, the final embeddings of the two nodes are obtained:
+
+(7)
+
+𝐅𝐢𝐧𝐚𝐥𝐄𝐦𝐛i=MLP(𝐄𝐦𝐛iλim∥𝐄𝐦𝐛iλin∥⋯),\mathbf{FinalEmb}_{i}=\text{MLP}(\mathbf{Emb}_{i}^{\lambda_{i}^{m}}\parallel\mathbf{Emb}_{i}^{\lambda_{i}^{n}}\parallel\cdots),
+
+(8)
+
+𝐅𝐢𝐧𝐚𝐥𝐄𝐦𝐛j=MLP(𝐄𝐦𝐛jλjm∥𝐄𝐦𝐛jλjn∥⋯).\mathbf{FinalEmb}_{j}=\text{MLP}(\mathbf{Emb}_{j}^{\lambda_{j}^{m}}\parallel\mathbf{Emb}_{j}^{\lambda_{j}^{n}}\parallel\cdots).
+
+After acquiring the final embeddings of the nodes ii and jj, a projection head, i.e., a two-layer MLP, is used to compute the probability of an edge existing between them, facilitating predictions for downstream tasks:
+
+(9)
+
+Y^i​j=MLP(𝐅𝐢𝐧𝐚𝐥𝐄𝐦𝐛i∥𝐅𝐢𝐧𝐚𝐥𝐄𝐦𝐛j),\hat{Y}_{ij}=\text{MLP}(\mathbf{FinalEmb}_{i}\parallel\mathbf{FinalEmb}_{j}),
+
+and we use the cross-entropy as the loss function:
+
+(10)
+
+ℒ=Cross-Entropy​(Y^i​j,Yi​j).\mathcal{L}=\text{Cross-Entropy}(\hat{Y}_{ij},Y_{ij}).
+
+Table 1. A performance comparison with baseline DTDG models on the future link prediction task is conducted, with MMRs reported. All experiments are conducted using three random seeds, and the average results and standard deviations are reported. Baseline results are derived from the ROLAND paper (5) and its corresponding implementation. We further report the AUC-ROC and AP metrics for our method to facilitate future comparisons by researchers.
+
+Link Prediction
+Bitcoin-OTC
+UCI-Message
+Reddit-Title
+Reddit-Body
+Mathoverstack
+Email
+
+GCN
+0.0025
+0.1141
+N/A, OOM
+N/A, OOM
+N/A, OOM
+N/A, OOM
+
+DynGEM
+0.0921
+0.1055
+N/A, OOM
+N/A, OOM
+N/A, OOM
+N/A, OOM
+
+dyngraph2vecAE
+0.0916
+0.0540
+N/A, OOM
+N/A, OOM
+N/A, OOM
+N/A, OOM
+
+dyngraph2vecAERNN
+0.1268
+0.0713
+N/A, OOM
+OOM
+N/A, OOM
+N/A, OOM
+
+EvolveGCN-H
+0.067 ± 0.035
+0.061 ± 0.040
+N/A, OOM
+0.148 ± 0.013
+N/A, OOM
+0.025 ± 0.016
+
+EvolveGCN-O
+0.085 ± 0.022
+0.071 ± 0.009
+N/A, OOM
+N/A, OOM
+N/A, OOM
+N/A, OOM
+
+GCRN-GRU
+OOM
+0.080 ± 0.012
+N/A, OOM
+N/A, OOM
+N/A, OOM
+0.059 ± 0.052
+
+GCRN-LSTM
+OOM
+0.083 ± 0.001
+N/A, OOM
+N/A, OOM
+N/A, OOM
+0.038 ± 0.010
+
+GCRN-Baseline
+0.152 ± 0.011
+0.069 ± 0.004
+N/A, OOM
+N/A, OOM
+N/A, OOM
+0.074 ± 0.037
+
+TGCN
+0.128 ± 0.049
+0.054 ± 0.024
+N/A, OOM
+N/A, OOM
+N/A, OOM
+0.058 ± 0.040
+
+ROLAND-Fix-GRU
+0.2203 ± 0.0167
+0.2289 ± 0.0618
+N/A, OOM
+N/A, OOM
+N/A, OOM
+0.0207 ± 0.0158
+
+ROLAND-GRU-Update
+0.194 ± 0.004
+0.112 ± 0.008
+0.425 ± 0.015
+0.362 ± 0.002
+0.271 ± 0.045
+0.102 ± 0.026
+
+DTFormer  (MRR)
+0.2838 ± 0.0291
+0.4925 ± 0.0208
+0.4296 ± 0.0114
+0.5055 ± 0.0166
+0.5431 ± 0.0328
+0.2398 ± 0.0226
+
+Improvement over best baseline
+28.82%
+81.73%
+1.08%
+21.54%
+100.41%
+134.18%
+
+DTFormer  (AUC-ROC)
+0.9477 ± 0.0022
+0.9524 ± 0.0024
+0.9764 ± 0.0001
+0.9746 ± 0.0002
+0.9745 ± 0.0018
+0.9670 ± 0.0006
+
+DTFormer  (AP)
+0.9527 ± 0.0008
+0.9607 ± 0.0026
+0.9792 ± 0.0001
+0.9781 ± 0.0003
+0.9780 ± 0.0014
+0.9633 ± 0.0012
+
+5. Experiments
+
+5.1. Experimental Setup
+
+Datasets. We conduct extensive experiments on 6 public datasets: Bitcoin-OTC (49), UCI-Message (50), Reddit-Title (51), Reddit-Body (51), Mathoverstack (52), and Email-Eu-core (Email) (52).
+
+Baselines.
+We employ various methods for DTDG representation learning as baselines, as detailed in Section 2. The majority of these methods utilize the GNN+RNN model architecture. Specifically for ROLAND (5), which incorporates multiple training approaches and diverse backbone models, we selected the two most effective setups as strong baselines.
+
+Task.
+We adopt the future link prediction task, a standard evaluation used in previous studies, to evaluate our model. Specifically, we utilize historical data, i.e., snapshots up to time t−1t-1, to predict the presence of edges at a subsequent snapshot at time tt. Consistent with the methodology employed in the ROLAND model, we evaluate our models using the Mean Reciprocal Rank (MRR). For each node ii with a positive edge to node jj at time tt, we randomly sample 1,000 negative edges originating from ii, and ranked the positive edge (i,j,t)(i,j,t) based on its prediction score relative to these negative edges. The overall MRR score is calculated as the mean of the reciprocal ranks for all testing nodes ii. Additionally, to enrich the comparative data for future research, we also report the Area Under the Receiver Operating Characteristic Curve (AUC-ROC) and the Average Precision (AP) for our method.
+
+Implementation Details.
+For all baseline models, we adhered to the configurations and parameters specified in ROLAND. For models not covered in ROLAND, we utilize the settings outlined in their respective original papers. Our model employ a consistent data division of 80% for training, 10% for validation, and 10% for testing. Training is set for 100 epochs, with a patience of 20 epochs for early stopping. We conduct all experiments using the Adam optimizer and repeat each experiment three times to ensure robust error estimation.
+Other hyperparameters may be adjusted according to different datasets to obtain optimized results. For example, with large datasets, a longer maximum input sequence length for the transformer may help the model gather more information about nodes from their neighbors. However, to simplify the experimental process, we use a unified set of hyperparameters. In our main experiments involving the multi-patching module, we employ three different patch sizes (2, 4, and 8) and set a maximum sequence length of 32 for all datasets.
+All experiments are performed on a single server equipped with a 72-core CPU, 128GB of RAM, and 4 Nvidia Tesla V100 GPUs, each with 32GB of memory. The codes of our methods are available at our GitHub repository.
+
+(a) Bitcoin-OTC
+
+(b) UCI-Message
+
+(c) Reddit-Body
+
+Figure 4. Experiment results for the empirical study of the multi-patching module, reporting the AP(%) and AUC-ROC(%).
+
+Table 2. Ablation Study: We report the performance of our method, measured by AUC-ROC and AP, when applying different neighbor features. In this experiment, we use the SUM mode to model the Neighbor Intersect Feature.
+
+Metric
+Features
+Bitcoin-OTC
+UCI-Message
+Reddit-Title
+Reddit-Body
+Mathoverstack
+Email
+
+Node&Edge
+Pos.
+Occ.
+Int.
+
+AUC-ROC
+
+✔
+✗
+✗
+✗
+0.5000 ± 0.0000
+0.5000 ± 0.0000
+0.9096 ± 0.0020
+0.8920 ± 0.0015
+0.5000 ± 0.0000
+0.5000 ± 0.0000
+
+✔
+✔
+✗
+✗
+0.7394 ± 0.0056
+0.7977 ± 0.0021
+0.9475 ± 0.0002
+0.9320 ± 0.0004
+0.7895 ± 0.0006
+0.8443 ± 0.0027
+
+✔
+✗
+✔
+✗
+0.8513 ± 0.0031
+0.8476 ± 0.0072
+0.9491 ± 0.0013
+0.9358 ± 0.0013
+0.8864 ± 0.0111
+0.9565 ± 0.0009
+
+✔
+✗
+✗
+✔
+0.9075 ± 0.0017
+0.9446 ± 0.0004
+0.9634 ± 0.0004
+0.9656 ± 0.0001
+0.9204 ± 0.0027
+0.9817 ± 0.0002
+
+✔
+✔
+✔
+✔
+0.9477 ± 0.0022
+0.9524 ± 0.0024
+0.9764 ± 0.0001
+0.9746 ± 0.0002
+0.9350 ± 0.0023
+0.9832 ± 0.0003
+
+AP
+
+✔
+✗
+✗
+✗
+0.5000 ± 0.0000
+0.5000 ± 0.0000
+0.8972 ± 0.0037
+0.8898 ± 0.0016
+0.5000 ± 0.0000
+0.5000 ± 0.0000
+
+✔
+✔
+✗
+✗
+0.7765 ± 0.0089
+0.7616 ± 0.0022
+0.9496 ± 0.0002
+0.9355 ± 0.0003
+0.8081 ± 0.0015
+0.8214 ± 0.0030
+
+✔
+✗
+✔
+✗
+0.8501 ± 0.0036
+0.8223 ± 0.0104
+0.9532 ± 0.0011
+0.9409 ± 0.0011
+0.8862 ± 0.0157
+0.9516 ± 0.0005
+
+✔
+✗
+✗
+✔
+0.9196 ± 0.0021
+0.9569 ± 0.0002
+0.9677 ± 0.0003
+0.9709 ± 0.0001
+0.9373 ± 0.0022
+0.9805 ± 0.0002
+
+✔
+✔
+✔
+✔
+0.9527 ± 0.0008
+0.9607 ± 0.0026
+0.9792 ± 0.0001
+0.9781 ± 0.0003
+0.9483 ± 0.0021
+0.9815 ± 0.0004
+
+5.2. Future Link Prediction
+
+In our main experiments, we compare our method with several previous SOTA models in the DTDG domain using the MRR metric, and we additionally report the AUC-ROC and AP for our experimental results. For the baseline models, where some datasets have been previously addressed, we follow the settings and results from these prior studies and those reported in ROLAND. We use historical snapshot data as training data and predict the existence of edges in future snapshots. During training, data from later snapshots could serve as a self-supervision signal for earlier snapshots. Ultimately, we select the model that performed best on the validation set for testing and predict future links on the test set.
+
+The experimental results are shown in Table 1. For our method, we chose three different strategies to aggregate the Neighbor Intersect Feature. We select the best experimental results for this table, and a detailed comparison will be discussed in Section 5.4.2. The results demonstrate that our method exceeded the performance of existing SOTA models on most datasets. On average, there is a 61.29% improvement over previous SOTA models across the 6 datasets.
+The baseline methods already perform quite well on the Reddit-Title and Reddit-Body due to the presence of edge features. Consequently, the improvement of our method over the baseline is not as substantial on these two datasets compared to others. This result can also be explained through our ablation study in Section 5.4.1.
+We believe that the performance improvement of our model stems from the precise modeling of node neighbor information and the intersections between the two nodes being predicted. Our method allows the final node embeddings to not only aggregate neighbor node information but also capture patterns of historical interactions. Additionally, the multi-patching module enables node representation at different granularities, allowing the model to retain local information while also capturing global-level information. The attention mechanism selectively transmits this information, enhancing the overall model’s expressiveness and accuracy.
+
+Additionally, while many previous methods frequently encountered OOM issues, our approach can easily be trained on larger datasets such as Reddit-Title and Mathoverstack. We analyze the space complexity of our model and compared with previous methods. Our model uses Transformers as the backbone, and its space complexity is given by
+O⁡(L⋅(5⋅dC+dC2+h⋅λm2))O(L\cdot(5\cdot d_{C}+d_{C}^{2}+h\cdot\lambda_{m}^{2})),
+where hh denotes the number of self-attention heads used in the model. It is evident that the space complexity of our model is primarily dominated by λm\lambda_{m}. Thanks to the introduction of the multi-patching module, this value can be controlled and is significantly smaller than the total number of nodes, i.e., |V||V|.
+In contrast, a commonly used GCN model in baseline methods has a space complexity of O⁡(dN⋅(|V|+|E|+L⋅dh+L⋅|V|))O(d_{N}\cdot(|V|+|E|+L\cdot d_{h}+L\cdot|V|)),
+where dhd_{h} is the dimension of the hidden layer in the RNN. This complexity is mainly dominated by the number of nodes and edges in the input graph.
+For models using an RNN to model temporal attributes, the space complexity of the simplest RNN model is O⁡(dh2+T⋅dh)O(d_{h}^{2}+T\cdot d_{h}),
+primarily dominated by the number of snapshots, TT. DTDG representation learning models under the GNN+RNN framework need to store intermediate activation values at each snapshot, resulting in higher space complexity than standalone GCNs, with a complexity of O⁡(dN⋅(|V|+|E|+L⋅dh+T⋅|V|))O(d_{N}\cdot(|V|+|E|+L\cdot d_{h}+T\cdot|V|)).
+Given that |V|≫λm|V|\gg\lambda_{m} and TT is often on the same order of magnitude or larger than λm\lambda_{m}, the space complexity of GNN+RNN models is much higher than that of our model. This explains why some previous models encounter OOM issues when handling the datasets used in this study, whereas our model leaves ample GPU memory for these experiments.
+
+Table 3. Ablation Study: Applying different modes, i.e., GRU mode, MLP mode and SUM mode, for modeling the Neighbor Intersect Feature and comparing the performance to the best baselines.
+
+Metric
+Mode
+Bitcoin-OTC
+UCI-Message
+Reddit-Title
+Reddit-Body
+Mathoverstack
+Email
+
+MRR
+Baseline
+0.2203 ± 0.0167
+0.2289 ± 0.0618
+0.425 ± 0.015
+0.362 ± 0.002
+0.271 ± 0.045
+0.1024 ± 0.0261
+
+MRR
+
+GRU
+0.2347 ± 0.0190
+0.2276 ± 0.0066
+0.3189 ± 0.0486
+0.2845 ± 0.0072
+N/A, OOM
+0.2191 ± 0.0043
+
+MLP
+0.2313 ± 0.0181
+0.3479 ± 0.0322
+0.2929 ± 0.0033
+0.2845 ± 0.0042
+0.5431 ± 0.0328
+0.2398 ± 0.0226
+
+SUM
+0.2838 ± 0.0291
+0.4925 ± 0.0208
+0.4296 ± 0.0114
+0.5055 ± 0.0166
+0.4864 ± 0.0279
+0.2012 ± 0.0107
+
+AUC-
+
+ROC
+
+GRU
+0.9371 ± 0.0022
+0.9174 ± 0.0032
+0.9617 ± 0.0004
+0.9525 ± 0.0016
+N/A, OOM
+0.9646 ± 0.0006
+
+MLP
+0.9368 ± 0.0044
+0.8955 ± 0.0178
+0.9617 ± 0.0013
+0.9523 ± 0.0009
+0.9745 ± 0.0018
+0.9670 ± 0.0006
+
+SUM
+0.9477 ± 0.0022
+0.9524 ± 0.0024
+0.9764 ± 0.0001
+0.9746 ± 0.0002
+0.9350 ± 0.0023
+0.9832 ± 0.0003
+
+AP
+
+GRU
+0.9412 ± 0.0026
+0.9220 ± 0.0022
+0.9640 ± 0.0007
+0.9561 ± 0.0011
+N/A, OOM
+0.9600 ± 0.0009
+
+MLP
+0.9405 ± 0.0040
+0.9039 ± 0.0150
+0.9641 ± 0.0008
+0.9556 ± 0.0008
+0.9780 ± 0.0014
+0.9633 ± 0.0012
+
+SUM
+0.9527 ± 0.0008
+0.9607 ± 0.0026
+0.9792 ± 0.0001
+0.9781 ± 0.0003
+0.9483 ± 0.0021
+0.9815 ± 0.0004
+
+5.3. An Empirical Study for Multi-Patching
+
+The multi-patching module allows our model to capture information about neighboring nodes at different granularities, enabling it to extract both local and global information simultaneously. However, the impact of information at different granularities varies across datasets due to differences in data distribution and size. Therefore, we conduct an empirical study using multiple patch sizes to identify the optimal number of patch sizes for different datasets. We performed experiments on the Bitcoin-OTC, UCI-Message, and Reddit-Body datasets, using up to five different patch sizes (2, 4, 8, 16, and 32). For experiments with fewer patch sizes, we chose the largest mm sizes from these five. The maximum input sequence length for the Transformer encoder is extended to 256.
+
+The experimental results for these 3 datasets are shown in Figure 4. The effects of using varying numbers of patch sizes differ across datasets. However, in general, using more patch sizes helps the model capture information at different granularities, particularly for larger datasets like Reddit-Body. We also find that setting the number of patch sizes to 3 produces generally stable results, leading us to apply 3 different patch sizes in our main experiment. The optimal number of patch sizes may vary depending on the dataset, and should be determined experimentally.
+
+5.4. Ablation Study
+
+5.4.1. Features
+
+We conduct ablation studies to identify the sources of performance improvements associated with the five features proposed. The multi-patching module is applied across all models to assess the individual impact of these features on performance. The results, presented in Table 2, confirm that each of the five features contributes positively to the model’s effectiveness. Notably, as some datasets do not include Node Features and/or Edge Features, we replace these with zero vectors. Consequently, models relying solely on these two features exhibit negligible effects for those datasets.
+
+5.4.2. Different Modes for Modeling Neighbor Intersect Feature.
+
+Our approach significantly improves upon previous methods through the development of the Neighbor Intersect Feature, designed to capture the intersections between neighboring nodes. To represent this feature, we explore various modes as the f⁡(⋅)f(\cdot) mentioned in Section 4.1. Experimental results are presented in Table 3.
+Considering that this feature generates a sequence for each neighboring node, an intuitive solution is to utilize a sequence model as f⁡(⋅)f(\cdot). Accordingly, we conduct experiments using the GRU model to process the sequence (GRU mode). However, this mode increases complexity and computational demands, leading to OOM errors on the largest datasets.
+Alternatively, we evaluate simpler neural network models like the MLP for representation (MLP mode). While the performance of the MLP mode may decrease on some datasets compare to the GRU mode, its reduced computational resource requirements ensure that all datasets can be processed.
+Additionally, some datasets feature nodes with limited interactions or interactions concentrated in specific snapshots, resulting in sequences characterized by a high prevalence of zeros. This can adversely affect the representation quality. To address this, we propose another alternative mode where we aggregate the occurrences of neighboring nodes as they relate to the two nodes across all snapshots by summation, and subsequently represent this aggregated data using an MLP (SUM mode). It can be seen from Table 3 that the SUM mode can also be applied to large datasets and may improve performance compared to the MLP mode.
+Moreover, experimental results indicate that our model consistently achieves competitive results across different representation strategies for Neighbor Intersect Feature when compared to baseline models.
+
+6. Limitations and Future Work
+
+A potential limitation of the proposed method is that, although we utilized a Transformer-based approach to avoid the OOM issues inherent in GNN+RNN based DTDG models, the inclusion of a GRU model to learn changes in neighboring nodes within each snapshot while representing the Neighbor Intersect Feature increases the model’s complexity. This added complexity could still result in OOM issues for larger graphs. However, this issue can be mitigated by using simpler neural networks, such as the MLP mode or SUM mode mentioned in this paper, though this might affect model performance.
+Another potential limitation is that the proposed multi-patching module also increases model complexity, which may lead to longer computation times. This issue can be addressed by reducing the number of patch sizes in the multi-patching module, but doing so could impact the model’s performance on some datasets.
+These limitations represent a trade-off between efficiency and effectiveness: using more complex networks can yield better results but also increases model complexity.
+
+We believe our method leaves some open research questions in DTDG representation learning. First, our method aggregates only first-hop neighbor information as a source for node representation. Future research could consider using methods such as random walks to sample higher-order neighbors and aggregate information from a broader neighborhood. Second, our method focuses on constructing multiple features for neighboring nodes based on the properties of DTDGs. Exploring other potential features and patterns in DTDGs could be a promising research direction. Lastly, we believe recent improvements to the transformer backbone model can be directly applied to our method to improve model performance and efficiency.
+
+7. Conclusion
+
+In this paper, we introduce a novel representation learning method for DTDGs that utilizes a Transformer as the backbone model. Our approach leverages neighboring nodes to learn node representations and then conducts future link prediction as a downstream task. Innovatively, we employ snapshot or temporal information as a substitute for traditional positional encoding, and link two nodes to model their intersections within historical snapshots. This technique aims to enhance the model’s ability to more effectively express node information. By capturing the dynamic intersections between nodes over time, our model provides a nuanced understanding of the network’s evolving structure. Additionally, we develop a multi-patching module designed to reduce the computational load of the model while capturing graph information at various granularities. We conduct extensive experiments on 6 public datasets, demonstrating the superior performance and scalability of our model to large datasets. Comprehensive ablation studies further validate the effectiveness of each component within our model.
+
+Acknowledgements.
+This work is partially supported by the National Key Research and Development Plan Project 2022YFC3600901, the National Natural Science Foundation of China Projects No.U1936213 and NSF through grants IIS-1763365 and IIS-2106972. This work is also supported by Ant Group.
+
+References
+
+(1)
+
+Anish Khazane, Jonathan Rider, Max Serpe, Antonia Gogoglou, Keegan Hines, C Bayan Bruss, and Richard Serpe.
+
+Deeptrax: Embedding graphs of financial transactions.
+
+In 2019 18th IEEE International Conference On Machine Learning And Applications (ICMLA), pages 126–133. IEEE, 2019.
+
+(2)
+
+Jiaxuan You, Yichen Wang, Aditya Pal, Pong Eksombatchai, Chuck Rosenburg, and Jure Leskovec.
+
+Hierarchical temporal convolutional networks for dynamic recommender systems.
+
+In The world wide web conference, pages 2236–2246, 2019.
+
+(3)
+
+Luwei Yang, Zhibo Xiao, Wen Jiang, Yi Wei, Yi Hu, and Hao Wang.
+
+Dynamic heterogeneous graph embedding using hierarchical attentions.
+
+In Advances in Information Retrieval: 42nd European Conference on IR Research, ECIR 2020, Lisbon, Portugal, April 14–17, 2020, Proceedings, Part II 42, pages 425–432. Springer, 2020.
+
+(4)
+
+Ling Zhao, Yujiao Song, Chao Zhang, Yu Liu, Pu Wang, Tao Lin, Min Deng, and Haifeng Li.
+
+T-gcn: A temporal graph convolutional network for traffic prediction.
+
+IEEE transactions on intelligent transportation systems, 21(9):3848–3858, 2019.
+
+(5)
+
+Jiaxuan You, Tianyu Du, and Jure Leskovec.
+
+Roland: graph learning framework for dynamic graphs.
+
+In Proceedings of the 28th ACM SIGKDD conference on knowledge discovery and data mining, pages 2358–2366, 2022.
+
+(6)
+
+Da Xu, Chuanwei Ruan, Evren Korpeoglu, Sushant Kumar, and Kannan Achan.
+
+Inductive representation learning on temporal graphs.
+
+arXiv preprint arXiv:2002.07962, 2020.
+
+(7)
+
+Emanuele Rossi, Ben Chamberlain, Fabrizio Frasca, Davide Eynard, Federico Monti, and Michael Bronstein.
+
+Temporal graph networks for deep learning on dynamic graphs.
+
+arXiv preprint arXiv:2006.10637, 2020.
+
+(8)
+
+Claudio DT Barros, Matheus RF Mendonça, Alex B Vieira, and Artur Ziviani.
+
+A survey on embedding dynamic graphs.
+
+ACM Computing Surveys (CSUR), 55(1):1–37, 2021.
+
+(9)
+
+Seyed Mehran Kazemi, Rishab Goel, Kshitij Jain, Ivan Kobyzev, Akshay Sethi, Peter Forsyth, and Pascal Poupart.
+
+Representation learning for dynamic graphs: A survey.
+
+Journal of Machine Learning Research, 21(70):1–73, 2020.
+
+(10)
+
+Kaike Zhang, Qi Cao, Gaolin Fang, Bingbing Xu, Hongjian Zou, Huawei Shen, and Xueqi Cheng.
+
+Dyted: Disentangled representation learning for discrete-time dynamic graph.
+
+In Proceedings of the 29th ACM SIGKDD Conference on Knowledge Discovery and Data Mining, pages 3309–3320, 2023.
+
+(11)
+
+Joakim Skarding, Bogdan Gabrys, and Katarzyna Musial.
+
+Foundations and modeling of dynamic networks using dynamic graph neural networks: A survey.
+
+iEEE Access, 9:79143–79168, 2021.
+
+(12)
+
+Menglin Yang, Min Zhou, Marcus Kalander, Zengfeng Huang, and Irwin King.
+
+Discrete-time temporal network embedding via implicit hierarchical learning in hyperbolic space.
+
+In Proceedings of the 27th ACM SIGKDD Conference on Knowledge Discovery & Data Mining, pages 1975–1985, 2021.
+
+(13)
+
+Charu Aggarwal and Karthik Subbian.
+
+Evolutionary network analysis: A survey.
+
+ACM Computing Surveys (CSUR), 47(1):1–36, 2014.
+
+(14)
+
+Aldo Pareja, Giacomo Domeniconi, Jie Chen, Tengfei Ma, Toyotaro Suzumura, Hiroki Kanezashi, Tim Kaler, Tao Schardl, and Charles Leiserson.
+
+Evolvegcn: Evolving graph convolutional networks for dynamic graphs.
+
+In Proceedings of the AAAI conference on artificial intelligence, volume 34, pages 5363–5370, 2020.
+
+(15)
+
+Michaël Defferrard, Xavier Bresson, and Pierre Vandergheynst.
+
+Convolutional neural networks on graphs with fast localized spectral filtering.
+
+Advances in neural information processing systems, 29, 2016.
+
+(16)
+
+Youngjoo Seo, Michaël Defferrard, Pierre Vandergheynst, and Xavier Bresson.
+
+Structured sequence modeling with graph convolutional recurrent networks.
+
+In Neural Information Processing: 25th International Conference, ICONIP 2018, Siem Reap, Cambodia, December 13-16, 2018, Proceedings, Part I 25, pages 362–373. Springer, 2018.
+
+(17)
+
+Franco Scarselli, Marco Gori, Ah Chung Tsoi, Markus Hagenbuchner, and Gabriele Monfardini.
+
+The graph neural network model.
+
+IEEE transactions on neural networks, 20(1):61–80, 2008.
+
+(18)
+
+David K Duvenaud, Dougal Maclaurin, Jorge Iparraguirre, Rafael Bombarell, Timothy Hirzel, Alán Aspuru-Guzik, and Ryan P Adams.
+
+Convolutional networks on graphs for learning molecular fingerprints.
+
+Advances in neural information processing systems, 28, 2015.
+
+(19)
+
+Alex Graves and Alex Graves.
+
+Long short-term memory.
+
+Supervised sequence labelling with recurrent neural networks, pages 37–45, 2012.
+
+(20)
+
+Rahul Dey and Fathi M Salem.
+
+Gate-variants of gated recurrent unit (gru) neural networks.
+
+In 2017 IEEE 60th international midwest symposium on circuits and systems (MWSCAS), pages 1597–1600. IEEE, 2017.
+
+(21)
+
+Deli Chen, Yankai Lin, Wei Li, Peng Li, Jie Zhou, and Xu Sun.
+
+Measuring and relieving the over-smoothing problem for graph neural networks from the topological view.
+
+In Proceedings of the AAAI conference on artificial intelligence, volume 34, pages 3438–3445, 2020.
+
+(22)
+
+Chaoqi Yang, Ruijie Wang, Shuochao Yao, Shengzhong Liu, and Tarek Abdelzaher.
+
+Revisiting over-smoothing in deep gcns.
+
+arXiv preprint arXiv:2003.13663, 2020.
+
+(23)
+
+Alex Sherstinsky.
+
+Fundamentals of recurrent neural network (rnn) and long short-term memory (lstm) network.
+
+Physica D: Nonlinear Phenomena, 404:132306, 2020.
+
+(24)
+
+Siwei Zhang, Yun Xiong, Yao Zhang, Xixi Wu, Yiheng Sun, and Jiawei Zhang.
+
+ilore: Dynamic graph representation with instant long-term modeling and re-occurrence preservation.
+
+In Proceedings of the 32nd ACM International Conference on Information and Knowledge Management, pages 3216–3225, 2023.
+
+(25)
+
+Jiawei Zhang, Haopeng Zhang, Congying Xia, and Li Sun.
+
+Graph-bert: Only attention is needed for learning graph representations.
+
+arXiv preprint arXiv:2001.05140, 2020.
+
+(26)
+
+Srijan Kumar, Xikun Zhang, and Jure Leskovec.
+
+Predicting dynamic embedding trajectory in temporal interaction networks.
+
+In Proceedings of the 25th ACM SIGKDD international conference on knowledge discovery & data mining, pages 1269–1278, 2019.
+
+(27)
+
+Yao Zhang, Yun Xiong, Yongxiang Liao, Yiheng Sun, Yucheng Jin, Xuehao Zheng, and Yangyong Zhu.
+
+Tiger: Temporal interaction graph embedding with restarts.
+
+In Proceedings of the ACM Web Conference 2023, pages 478–488, 2023.
+
+(28)
+
+Hongkuan Zhou, Da Zheng, Israt Nisa, Vasileios Ioannidis, Xiang Song, and George Karypis.
+
+Tgl: A general framework for temporal gnn training on billion-scale graphs.
+
+arXiv preprint arXiv:2203.14883, 2022.
+
+(29)
+
+Xi Chen, Yongxiang Liao, Yun Xiong, Yao Zhang, Siwei Zhang, Jiawei Zhang, and Yiheng Sun.
+
+Speed: Streaming partition and parallel acceleration for temporal interaction graph embedding.
+
+arXiv preprint arXiv:2308.14129, 2023.
+
+(30)
+
+Siwei Zhang, Yun Xiong, Yao Zhang, Yiheng Sun, Xi Chen, Yizhu Jiao, and Yangyong Zhu.
+
+Rdgsl: Dynamic graph representation learning with structure learning.
+
+In Proceedings of the 32nd ACM International Conference on Information and Knowledge Management, pages 3174–3183, 2023.
+
+(31)
+
+Le Yu, Leilei Sun, Bowen Du, and Weifeng Lv.
+
+Towards better dynamic graph learning: New architecture and unified library.
+
+Advances in Neural Information Processing Systems, 36, 2024.
+
+(32)
+
+Xi Chen, Siwei Zhang, Yun Xiong, Xixi Wu, Jiawei Zhang, Xiangguo Sun, Yao Zhang, Yinglong Zhao, and Yulin Kang.
+
+Prompt learning on temporal interaction graphs.
+
+arXiv preprint arXiv:2402.06326, 2024.
+
+(33)
+
+Siwei Zhang, Xi Chen, Yun Xiong, Xixi Wu, Yao Zhang, Yongrui Fu, Yinglong Zhao, and Jiawei Zhang.
+
+Towards adaptive neighborhood for advancing temporal interaction graph modeling.
+
+arXiv preprint arXiv:2406.11891, 2024.
+
+(34)
+
+Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N Gomez, Łukasz Kaiser, and Illia Polosukhin.
+
+Attention is all you need.
+
+Advances in neural information processing systems, 30, 2017.
+
+(35)
+
+Nicolas Carion, Francisco Massa, Gabriel Synnaeve, Nicolas Usunier, Alexander Kirillov, and Sergey Zagoruyko.
+
+End-to-end object detection with transformers.
+
+In European conference on computer vision, pages 213–229. Springer, 2020.
+
+(36)
+
+Alexey Dosovitskiy, Lucas Beyer, Alexander Kolesnikov, Dirk Weissenborn, Xiaohua Zhai, Thomas Unterthiner, Mostafa Dehghani, Matthias Minderer, Georg Heigold, Sylvain Gelly, et al.
+
+An image is worth 16x16 words: Transformers for image recognition at scale.
+
+arXiv preprint arXiv:2010.11929, 2020.
+
+(37)
+
+Ze Liu, Yutong Lin, Yue Cao, Han Hu, Yixuan Wei, Zheng Zhang, Stephen Lin, and Baining Guo.
+
+Swin transformer: Hierarchical vision transformer using shifted windows.
+
+In Proceedings of the IEEE/CVF international conference on computer vision, pages 10012–10022, 2021.
+
+(38)
+
+Jacob Devlin, Ming-Wei Chang, Kenton Lee, and Kristina Toutanova.
+
+Bert: Pre-training of deep bidirectional transformers for language understanding.
+
+arXiv preprint arXiv:1810.04805, 2018.
+
+(39)
+
+Yinhan Liu, Myle Ott, Naman Goyal, Jingfei Du, Mandar Joshi, Danqi Chen, Omer Levy, Mike Lewis, Luke Zettlemoyer, and Veselin Stoyanov.
+
+Roberta: A robustly optimized bert pretraining approach.
+
+arXiv preprint arXiv:1907.11692, 2019.
+
+(40)
+
+Peter W Battaglia, Jessica B Hamrick, Victor Bapst, Alvaro Sanchez-Gonzalez, Vinicius Zambaldi, Mateusz Malinowski, Andrea Tacchetti, David Raposo, Adam Santoro, Ryan Faulkner, et al.
+
+Relational inductive biases, deep learning, and graph networks.
+
+arXiv preprint arXiv:1806.01261, 2018.
+
+(41)
+
+Haixu Wu, Jiehui Xu, Jianmin Wang, and Mingsheng Long.
+
+Autoformer: Decomposition transformers with auto-correlation for long-term series forecasting.
+
+Advances in neural information processing systems, 34:22419–22430, 2021.
+
+(42)
+
+Haoyi Zhou, Shanghang Zhang, Jieqi Peng, Shuai Zhang, Jianxin Li, Hui Xiong, and Wancai Zhang.
+
+Informer: Beyond efficient transformer for long sequence time-series forecasting.
+
+In Proceedings of the AAAI conference on artificial intelligence, volume 35, pages 11106–11115, 2021.
+
+(43)
+
+Shiyang Li, Xiaoyong Jin, Yao Xuan, Xiyou Zhou, Wenhu Chen, Yu-Xiang Wang, and Xifeng Yan.
+
+Enhancing the locality and breaking the memory bottleneck of transformer on time series forecasting.
+
+Advances in neural information processing systems, 32, 2019.
+
+(44)
+
+Ladislav Rampášek, Michael Galkin, Vijay Prakash Dwivedi, Anh Tuan Luu, Guy Wolf, and Dominique Beaini.
+
+Recipe for a general, powerful, scalable graph transformer.
+
+Advances in Neural Information Processing Systems, 35:14501–14515, 2022.
+
+(45)
+
+Yu Shi, Shuxin Zheng, Guolin Ke, Yifei Shen, Jiacheng You, Jiyan He, Shengjie Luo, Chang Liu, Di He, and Tie-Yan Liu.
+
+Benchmarking graphormer on large-scale molecular modeling datasets.
+
+arXiv preprint arXiv:2203.04810, 2022.
+
+(46)
+
+Xiao Liu, Shiyu Zhao, Kai Su, Yukuo Cen, Jiezhong Qiu, Mengdi Zhang, Wei Wu, Yuxiao Dong, and Jie Tang.
+
+Mask and reason: Pre-training knowledge graph transformers for complex logical queries.
+
+In Proceedings of the 28th ACM SIGKDD Conference on Knowledge Discovery and Data Mining, pages 1120–1130, 2022.
+
+(47)
+
+Vijay Prakash Dwivedi and Xavier Bresson.
+
+A generalization of transformer networks to graphs.
+
+arXiv preprint arXiv:2012.09699, 2020.
+
+(48)
+
+Hanrui Wang, Pengyu Liu, Jinglei Cheng, Zhiding Liang, Jiaqi Gu, Zirui Li, Yongshan Ding, Weiwen Jiang, Yiyu Shi, Xuehai Qian, et al.
+
+Quest: Graph transformer for quantum circuit reliability estimation.
+
+arXiv preprint arXiv:2210.16724, 2022.
+
+(49)
+
+Srijan Kumar, Francesca Spezzano, VS Subrahmanian, and Christos Faloutsos.
+
+Edge weight prediction in weighted signed networks.
+
+In 2016 IEEE 16th International Conference on Data Mining (ICDM), pages 221–230. IEEE, 2016.
+
+(50)
+
+Pietro Panzarasa, Tore Opsahl, and Kathleen M Carley.
+
+Patterns and dynamics of users’ behavior and interaction: Network analysis of an online community.
+
+Journal of the American Society for Information Science and Technology, 60(5):911–932, 2009.
+
+(51)
+
+Srijan Kumar, William L Hamilton, Jure Leskovec, and Dan Jurafsky.
+
+Community interaction and conflict on the web.
+
+In Proceedings of the 2018 world wide web conference, pages 933–943, 2018.
+
+(52)
+
+Ashwin Paranjape, Austin R Benson, and Jure Leskovec.
+
+Motifs in temporal networks.
+
+In Proceedings of the tenth ACM international conference on web search and data mining, pages 601–610, 2017.
+
+    Experimental support, please
+    view the build logs
+    for errors. Generated by
+
+        L
+        A
+        T
+        E
+
+      xml
+
+    .
+
+Instructions for reporting errors
+
+We are continuing to improve HTML versions of papers, and your feedback helps enhance accessibility and mobile
+      support. To report errors in the HTML that will help us improve conversion and rendering, choose any of the
+      methods listed below:
+
+Click the "Report Issue" (
+
+          ) button, located in the page header.
+
+Tip: You can select the relevant text first, to include it in your report.
+
+Our team has already identified the following issues. We appreciate your time reviewing and reporting rendering errors we
+      may not have found yet. Your efforts will help us improve the HTML versions for all readers, because disability
+      should not be a barrier to accessing research. Thank you for your continued support in championing open access for
+      all.
+
+Have a free development cycle? Help support accessibility at arXiv! Our collaborators at LaTeXML maintain a list of packages that need conversion, and welcome developer contributions.
+
+        We gratefully acknowledge support from
+        our major funders,
+        member institutions, ,
+        and all contributors.
+
+        About
+        ·
+        Help
+        ·
+        Contact
+        ·
+        Subscribe
+        ·
+        Copyright
+        ·
+        Privacy
+        ·
+        Accessibility
+        ·
+        Operational Status (opens in new tab)
+
+Major funding support from
