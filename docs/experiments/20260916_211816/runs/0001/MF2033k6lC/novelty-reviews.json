@@ -1,0 +1,349 @@
+{
+  "paper_id": "MF2033k6lC",
+  "reviews": [
+    {
+      "novelty_point_id": "NP-1",
+      "status": "reviewed",
+      "verdict": "partially_novel",
+      "verdict_reason": "已核验的TGN文献与查新点存在局部重叠：其将动态图建模为时序事件序列并追求计算效率，但未使用图摘要压缩原始图，未采用图自编码器及基于原始图的重构误差训练节点表征，也未显式利用RNN学习时间依赖。因此TGN仅公开了查新点组合中的部分特征，未整体公开'图摘要压缩+图自编码器+重构误差+RNN时序依赖'的完整组合。单篇证据不足以判定该方法已被完整提出，故判定为部分新颖。",
+      "confidence": 0.75,
+      "highly_relevant_works": [
+        {
+          "work_id": "wrk_712252459ef2697739d75d40",
+          "card_ids": [
+            "card_d3ae4ea3ad208a4f19e5be7c"
+          ],
+          "evidence_ids": [
+            "ev_0176870881b372a5a88c0cce"
+          ],
+          "relevance_reason": "TGN是动态/时序图表示学习的代表性框架，与查新点目标（时序图表示学习、计算效率）及'时序事件序列'建模思路部分重叠，可作为对比基线，但未涉及图摘要压缩、图自编码器和重构误差机制。"
+        }
+      ],
+      "supplement_request": {
+        "reason": "仅核验TGN单篇文献，无法覆盖查新点的完整组合特征；需补充检索以区分'图摘要压缩+图自编码器+重构误差+RNN时序依赖'是否已被整体提出。",
+        "missing_aspects": [
+          "图摘要/图压缩在表示学习中的应用",
+          "图自编码器+重构误差训练节点表征",
+          "RNN在时序图上的时间特征依赖学习",
+          "大规模时序图低内存/低训练时间的目标"
+        ],
+        "suggested_focus": [
+          "graph summarization + graph autoencoder temporal representation learning",
+          "sequential graph representation learning with reconstruction loss",
+          "scalable dynamic graph embedding with recurrent networks"
+        ]
+      }
+    },
+    {
+      "novelty_point_id": "NP-2",
+      "status": "reviewed",
+      "verdict": "novel",
+      "verdict_reason": "综合4篇单卡证据：AGL、AliGraph、CGS和GraphSAINT均仅覆盖NP-2的单个或泛化特征（分布式GNN训练、图采样小批量、图摘要），没有任何一篇公开了'领导-工作者模式+基于边分割的图流划分+图摘要小批量训练+注意力层梯度聚合+同步更新'的完整组合。根据规则，多篇分别公开部分特征不能等同于单篇公开完整组合，因此该组合特征未被现有文献公开，本查新点相对于现有证据为novel。但证据覆盖有限，均为部分相关文献，且未发现直接组合的对照文献，置信度中等偏低。单卡AGL的not_novel结论基于其未覆盖核心组合，实际不构成否定性证据；GraphSAINT无work_id无法引用为高度相关文献。",
+      "confidence": 0.6,
+      "highly_relevant_works": [
+        {
+          "work_id": "wrk_ff5aa18cf0cfe7be1ba5e8bd",
+          "card_ids": [
+            "card_55686841fd4b42a31dadffda"
+          ],
+          "evidence_ids": [
+            "ev_3def6c3f125822f10d5b683c"
+          ],
+          "relevance_reason": "AGL是面向大规模图GNN训练的可扩展分布式系统，与DSGNN的分布式训练主题相关，但未采用领导-工作者模式、边分割图流划分、图摘要小批量或注意力梯度聚合，仅部分重叠，不覆盖核心组合。"
+        },
+        {
+          "work_id": "wrk_e59b8b7248dcc080455b8690",
+          "card_ids": [
+            "card_a26fed6b4e4dc766c41e615b"
+          ],
+          "evidence_ids": [
+            "ev_03b8a9267b53f8a648df9a97"
+          ],
+          "relevance_reason": "AliGraph是综合图神经网络平台，在分布式GNN训练维度部分相关，但未涉及NP-2的领导-工作者、边分割图流划分、图摘要小批量及注意力梯度聚合等特征，不构成组合公开。"
+        },
+        {
+          "work_id": "wrk_f3889b4c6601b1aba4aab33b",
+          "card_ids": [
+            "card_65f5c414f816399ee6798635"
+          ],
+          "evidence_ids": [
+            "ev_897e36e1474ae1bb27dba79f"
+          ],
+          "relevance_reason": "CGS是图摘要框架，仅与'图摘要'概念弱相关，未涉及分布式训练、领导-工作者模式或梯度聚合，非组合基线。"
+        }
+      ],
+      "supplement_request": {
+        "reason": "现有证据仅覆盖局部分散特征，未见组合公开，但检索范围有限，不足以高置信度确认全新，需补检更聚焦的分布式GNN训练和组合技术文献。",
+        "missing_aspects": [
+          "领导-工作者（leader-worker）分布式GNN训练架构的在先文献",
+          "基于边分割的图流（graph streaming）划分算法",
+          "基于图摘要（graph summarization）的小批量训练方法",
+          "通过注意力层聚合梯度的分布式训练机制"
+        ],
+        "suggested_focus": [
+          "检索DistGNN、PaGraph、ROP等分布式GNN系统",
+          "检索edge partition graph streaming GNN相关论文",
+          "检索graph summarization for GNN training",
+          "检索attention-based gradient aggregation in distributed GNN"
+        ]
+      }
+    },
+    {
+      "novelty_point_id": "NP-3",
+      "status": "reviewed",
+      "verdict": "partially_novel",
+      "verdict_reason": "单卡核验（card_aa25ed3e8470d10b41e76db6）表明 AGL 确实覆盖了'划分子图并分配给工作节点用于分布式 GNN 训练'以及'大规模图数据处理'（特征 3、4），但其划分依据为每个节点的 k-hop 邻域子图，而非基于边分割的图流划分；也未描述从流式数据中动态划分原图（特征 1、2）。该单篇文献未公开完整组合，仅部分特征重叠，不足以否定组合新颖性。因此判定为部分新颖，保留该文献作为部分相关引用。",
+      "confidence": 0.6,
+      "highly_relevant_works": [
+        {
+          "work_id": "wrk_ff5aa18cf0cfe7be1ba5e8bd",
+          "card_ids": [
+            "card_aa25ed3e8470d10b41e76db6"
+          ],
+          "evidence_ids": [
+            "ev_c4612bcf2124b98c7342c07f"
+          ],
+          "relevance_reason": "将大规模图划分为 k-hop 邻域子图并分配至工作节点用于分布式 GNN 训练，覆盖'划分子图+分配工作节点+大规模分布式处理'特征，与查新点部分重叠，但划分方式为 k-hop 而非边分割流式划分。"
+        }
+      ],
+      "supplement_request": {
+        "reason": "现有证据仅覆盖'子图划分+分布式 GNN 训练'共性，未出现'边分割+流式动态划分'组合。需补充检索以确认是否存在基于边分割的图流划分算法。",
+        "missing_aspects": [
+          "基于边分割的图流划分算法",
+          "从流式数据中动态划分原图的机制"
+        ],
+        "suggested_focus": [
+          "edge-segmentation graph partitioning",
+          "streaming graph partitioning",
+          "graph stream edge-cut partitioning"
+        ]
+      }
+    }
+  ],
+  "phase": "complete",
+  "card_reviews": [
+    {
+      "index": 1,
+      "card_id": "card_d3ae4ea3ad208a4f19e5be7c",
+      "novelty_point_id": "NP-1",
+      "status": "completed",
+      "review": {
+        "novelty_point_id": "NP-1",
+        "status": "reviewed",
+        "verdict": "partially_novel",
+        "verdict_reason": "TGN 与查新点在两点上部分重叠：将动态图建模为时序事件序列（近似于快照序列建模）以及追求计算效率、降低开销。但 TGN 采用记忆模块与图算子实现表征学习，未使用图摘要对原图进行压缩，未采用图自编码器及基于原始图的重构误差训练节点表征，也未用 RNN 显式学习时间依赖。因此该文献仅预见查新点的局部特征，未覆盖'图摘要压缩+图自编码器+重构误差+RNN时序'的完整组合，故相对于本查新点判定为部分新颖。",
+        "confidence": 0.75,
+        "highly_relevant_works": [
+          {
+            "work_id": "wrk_712252459ef2697739d75d40",
+            "card_ids": [
+              "card_d3ae4ea3ad208a4f19e5be7c"
+            ],
+            "evidence_ids": [
+              "ev_0176870881b372a5a88c0cce"
+            ],
+            "relevance_reason": "TGN 是动态/时序图表征学习的代表性框架，与查新点目标（时序图表征学习、高效率）及'时序事件序列'建模思路部分重叠，可作为图摘要压缩+图自编码器+RNN组合的对比基线，但未使用图摘要与重构误差机制。"
+          }
+        ],
+        "supplement_request": {
+          "reason": "当前仅核验 TGN 单篇文献，无法完整覆盖查新点的组合特征，需补充检索以区分'图摘要压缩+图自编码器+重构误差+RNN时序依赖'是否已被整体提出。",
+          "missing_aspects": [
+            "图摘要/图压缩在表征学习中的应用",
+            "图自编码器+重构误差训练节点表征",
+            "RNN在时序图上的时间特征依赖学习",
+            "大规模时序图低内存/低训练时间的目标"
+          ],
+          "suggested_focus": [
+            "graph summarization + graph autoencoder temporal representation learning",
+            "sequential graph representation learning with reconstruction loss",
+            "scalable dynamic graph embedding with recurrent networks"
+          ]
+        }
+      }
+    },
+    {
+      "index": 2,
+      "card_id": "card_55686841fd4b42a31dadffda",
+      "novelty_point_id": "NP-2",
+      "status": "completed",
+      "review": {
+        "novelty_point_id": "NP-2",
+        "status": "reviewed",
+        "verdict": "not_novel",
+        "verdict_reason": "AGL 与 DSGNN 高度相关：均针对大规模图 GNN 训练的可扩展分布式系统。AGL 采用基于 k-hop 邻居信息完备子图（图摘要思想）进行训练，以 MapReduce/参数服务器实现大规模分布式训练与推理。但 AGL 未采用领导-工作者模式、边分割图流划分或注意力层梯度聚合，也非图摘要小批量训练（其子图用于消除数据依赖而非小批量）。故不覆盖 DSGNN 的核心组合特征，属部分重叠而非破坏新颖性；仅该单篇不构成充分反例，本查新点仍判为 novel 的前提不足，需更多同类文献佐证。",
+        "confidence": 0.3,
+        "highly_relevant_works": [
+          {
+            "work_id": "wrk_ff5aa18cf0cfe7be1ba5e8bd",
+            "card_ids": [
+              "card_55686841fd4b42a31dadffda"
+            ],
+            "evidence_ids": [
+              "ev_3def6c3f125822f10d5b683c"
+            ],
+            "relevance_reason": "AGL 是面向大规模图 GNN 训练与推理的可扩展分布式系统，与 DSGNN 的分布式 GNN 训练主题相关，可作为对照基线，但未覆盖领导-工作者、边分割图流划分、图摘要小批量及注意力梯度聚合等核心特征组合。"
+          }
+        ],
+        "supplement_request": {
+          "reason": "单篇相关文献仅部分重叠（分布式大规模GNN训练），不足以支撑本查新点的组合新颖性判定。",
+          "missing_aspects": [
+            "领导-工作者分布式框架",
+            "基于边分割的图流划分算法",
+            "图摘要小批量训练",
+            "注意力层梯度聚合"
+          ],
+          "suggested_focus": [
+            "graph summarization based mini-batch GNN training",
+            "leader-worker distributed GNN",
+            "edge partitioning graph streaming GNN",
+            "attention-based gradient aggregation distributed GNN",
+            "DSGNN"
+          ]
+        }
+      }
+    },
+    {
+      "index": 3,
+      "card_id": "card_a26fed6b4e4dc766c41e615b",
+      "novelty_point_id": "NP-2",
+      "status": "completed",
+      "review": {
+        "novelty_point_id": "NP-2",
+        "status": "reviewed",
+        "verdict": "novel",
+        "verdict_reason": "本次仅核验一张 EvidenceCard（AliGraph，arXiv:1902.08730）。该文献是可验证的英文文献，其重叠点仅在于'大规模分布式GNN训练'这一泛化层面（分布式图存储、优化的采样算子与运行时）。AliGraph 未采用领导-工作者模式、未使用基于边分割的图流划分、未基于图摘要做小批量训练，也未通过注意力层进行梯度聚合。因此，该文献未覆盖 NP-2 的组合核心特征（领导-工作者 + 边分割图流划分 + 图摘要小批量 + 注意力梯度聚合 + 同步更新），不能否定本查新点的新颖性。该论文与查新点关系为'部分相关'（分布式训练背景基线），而非直接覆盖。由于仅单篇证据且只触及泛化方面，新颖性结论置信度中等偏低。",
+        "confidence": 0.6,
+        "highly_relevant_works": [
+          {
+            "work_id": "wrk_e59b8b7248dcc080455b8690",
+            "card_ids": [
+              "card_a26fed6b4e4dc766c41e615b"
+            ],
+            "evidence_ids": [
+              "ev_03b8a9267b53f8a648df9a97"
+            ],
+            "relevance_reason": "AliGraph 为分布式GNN训练平台，在'大规模分布式GNN训练'维度与DSGNN部分相关，可作背景基线；但未实现领导-工作者模式、边分割图流划分、图摘要小批量训练及注意力梯度聚合，未覆盖NP-2组合特征，故不构成否定性证据。"
+          }
+        ],
+        "supplement_request": {
+          "reason": "当前仅检索到一篇部分相关英文文献，仅覆盖泛化的分布式GNN训练，未触及本查新点的核心组合特征，证据覆盖不足，不足以稳妥支撑新颖性判定。",
+          "missing_aspects": [
+            "领导-工作者（leader-worker）分布式训练架构在GNN/图学习中的应用",
+            "基于边分割的图流（graph streaming）划分算法",
+            "基于图摘要（graph summarization）的小批量训练方法",
+            "注意力层（attention）聚合梯度的分布式训练方式"
+          ],
+          "suggested_focus": [
+            "检索GraphSAGE/DistGNN/ROP/PaGraph等分布式GNN系统及'graph summarization + GNN训练'文献",
+            "检索'edge partition graph streaming GNN'、'leader-worker graph learning'、'attention gradient aggregation distributed'相关论文"
+          ]
+        }
+      }
+    },
+    {
+      "index": 4,
+      "card_id": "card_65f5c414f816399ee6798635",
+      "novelty_point_id": "NP-2",
+      "status": "completed",
+      "review": {
+        "novelty_point_id": "NP-2",
+        "status": "reviewed",
+        "verdict": "novel",
+        "verdict_reason": "本 Card（CGS）仅与查新点 5 个技术特征中最泛化的\"图摘要\"概念存在弱重叠。回读摘要确认：CGS 聚焦于面向图查询的可配置图摘要框架（CGS-E/I/U 三变体），以常见邻域节点聚合为核心，用于压缩原始图并支持多类查询，未涉及：(1) 领导-工作者分布式训练模式；(2) 基于边分割的图流划分；(3) GNN 小批量训练；(4) 注意力层梯度汇总；(5) 分布式同步更新。故该文献不构成 DSGNN 组合（NP-2 联合特征）的可公开对照基线，不推翻其新颖性。但仅此单条文献（relevance 0.4、confidence 0.8）仅佐证\"图摘要\"单向特征，覆盖面过窄，无法为该组合提供充分证据支撑，故判定为相对该文献的 novel，并建议补检分布式 GNN 训练相关文献。Web 内容未使用。",
+        "confidence": 0.55,
+        "highly_relevant_works": [
+          {
+            "work_id": "wrk_f3889b4c6601b1aba4aab33b",
+            "card_ids": [
+              "card_65f5c414f816399ee6798635"
+            ],
+            "evidence_ids": [
+              "ev_897e36e1474ae1bb27dba79f"
+            ],
+            "relevance_reason": "仅在图摘要概念上与 DSGNN 的图摘要小批量训练特征弱相关（relevance 0.4）；未披露领导-工作者分布式模式、边分割图流划分、注意力梯度汇总及同步更新，非组合基线，予以保留作部分相关文献。"
+          }
+        ],
+        "supplement_request": {
+          "reason": "单条证据仅覆盖\"图摘要\"单项且为独立摘要框架，未触及分布式 GNN 训练组合，证据不足以支撑 NP-2 完整新颖性结论。",
+          "missing_aspects": [
+            "领导-工作者分布式 GNN 训练框架",
+            "基于边分割的图流划分",
+            "注意力层梯度聚合",
+            "分布式同步梯度更新"
+          ],
+          "suggested_focus": [
+            "检索 leader-worker 分布式图神经网络训练",
+            "edge-partition graph streaming 划分",
+            "attention-based gradient aggregation 的相关英文文献"
+          ]
+        }
+      }
+    },
+    {
+      "index": 5,
+      "card_id": "card_995831471e543f92580d798c",
+      "novelty_point_id": "NP-2",
+      "status": "completed",
+      "review": {
+        "novelty_point_id": "NP-2",
+        "status": "reviewed",
+        "verdict": "partially_novel",
+        "verdict_reason": "单篇证据（GraphSAINT）仅覆盖查新点的一个特征：采用图采样（而非图摘要）构建小批量训练以提升大规模图上的GNN训练效率。GraphSAINT与DSGNN在「大规模图上的高效小批量训练」维度存在重叠，但整体为部分相关——它未采用领导-工作者模式、基于边分割的图流划分、注意力层梯度汇总或按梯度同步更新模型。证据本身可靠（已回读原文验证，属实）。然而该文献不构成对DSGNN完整技术组合的现有技术公开，无法单独支撑或否定新颖性。当前有效证据仅1篇且为部分相关，核心特征组合（leader-worker + 边分割图流划分 + 图摘要小批量 + 注意力梯度聚合）在现有证据中均未覆盖或未找到直接对应在先文献，故裁定为部分新颖。",
+        "confidence": 0.6,
+        "highly_relevant_works": [],
+        "supplement_request": {
+          "reason": "当前仅有1篇部分相关证据，不足以对完整技术组合做出高置信度新颖性裁定。",
+          "missing_aspects": [
+            "以领导-工作者模式进行分布式GNN训练的在先文献",
+            "基于边分割对图流进行划分的算法",
+            "基于图摘要技术的小批量训练方法",
+            "通过注意力层聚合梯度/梯度的注意力式汇总机制"
+          ],
+          "suggested_focus": [
+            "GraphSAGE/Layer-wise 采样分布式方案（如 DistDGL、GCNLayer、Cluster-GCN）",
+            "图流/流式图划分与边划分（edge partition, streaming graph partitioning）",
+            "图摘要（graph summarization）用于GNN训练压缩",
+            "分布式GNN梯度聚合中的注意力机制"
+          ]
+        }
+      }
+    },
+    {
+      "index": 6,
+      "card_id": "card_aa25ed3e8470d10b41e76db6",
+      "novelty_point_id": "NP-3",
+      "status": "completed",
+      "review": {
+        "novelty_point_id": "NP-3",
+        "status": "reviewed",
+        "verdict": "partially_novel",
+        "verdict_reason": "AGL（card_aa25ed3e8470d10b41e76db6）确实将大规模图划分为子图并分配给工作节点用于分布式 GNN 训练（覆盖特征 3、4）。但其划分依据为\"每个节点的 k-hop 邻域子图\"，并基于 MapReduce 与参数服务器做训练，而非\"基于边分割的图流划分\"（特征 1），也未描述从流式数据中动态划分原图（特征 2）。因此部分特征与本查新点重叠，核心机制（边分割+流式动态划分）未覆盖。单篇文章不足以否定该组合的新颖性，故判部分新颖；保留为部分相关文献。",
+        "confidence": 0.6,
+        "highly_relevant_works": [
+          {
+            "work_id": "wrk_ff5aa18cf0cfe7be1ba5e8bd",
+            "card_ids": [
+              "card_aa25ed3e8470d10b41e76db6"
+            ],
+            "evidence_ids": [
+              "ev_c4612bcf2124b98c7342c07f"
+            ],
+            "relevance_reason": "将大规模图划分为 k-hop 邻域子图并分配至工作节点用于分布式 GNN 训练，覆盖\"划分子图+分配工作节点+大规模分布式处理\"特征，与查新点部分重叠，但划分方式为 k-hop 而非边分割流式划分。"
+          }
+        ],
+        "supplement_request": {
+          "reason": "现有证据仅覆盖\"子图划分+分布式 GNN 训练\"共性，未出现\"边分割+流式动态划分\"组合。需补充检索以确认是否存在基于边分割的图流划分算法。",
+          "missing_aspects": [
+            "基于边分割的图流划分算法",
+            "从流式数据中动态划分原图的机制"
+          ],
+          "suggested_focus": [
+            "edge-segmentation graph partitioning",
+            "streaming graph partitioning",
+            "graph stream edge-cut partitioning"
+          ]
+        }
+      }
+    }
+  ]
+}

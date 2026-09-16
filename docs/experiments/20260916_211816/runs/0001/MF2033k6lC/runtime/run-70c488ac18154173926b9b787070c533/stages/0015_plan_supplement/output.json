@@ -1,0 +1,140 @@
+{
+  "all_research_tasks": [
+    {
+      "attempt": 1,
+      "description": "针对该查新点执行英文文献检索。",
+      "language": "en",
+      "novelty_point_id": "NP-1",
+      "task_id": "T-1",
+      "task_type": "literature_search"
+    },
+    {
+      "attempt": 1,
+      "description": "针对该查新点执行英文文献检索。",
+      "language": "en",
+      "novelty_point_id": "NP-2",
+      "task_id": "T-1",
+      "task_type": "literature_search"
+    },
+    {
+      "attempt": 1,
+      "description": "针对该查新点执行英文文献检索。",
+      "language": "en",
+      "novelty_point_id": "NP-3",
+      "task_id": "T-1",
+      "task_type": "literature_search"
+    },
+    {
+      "attempt": 2,
+      "description": "Current valid evidence count for NP-2 is 0, below the required threshold of 1. This round aims to retrieve related English literature on distributed graph neural network training optimization based on graph summarization, specifically focusing on leader-worker distributed training frameworks, graph-stream partitioning with edge segmentation, and attention-based gradient aggregation, to establish sufficient evidence for the novelty claim.",
+      "language": "en",
+      "novelty_point_id": "NP-2",
+      "task_id": "T-R2-1",
+      "task_type": "literature_search"
+    }
+  ],
+  "brief": {
+    "keywords_en": [
+      "graph representation learning",
+      "deep learning",
+      "graph neural network",
+      "distributed"
+    ],
+    "keywords_zh": [
+      "图表示学习",
+      "深度学习",
+      "图神经网络",
+      "分布式技术"
+    ],
+    "novelty_points": [
+      {
+        "claim": "提出一种基于图摘要的大规模时序图表示学习方法GSAERU，通过图摘要压缩原始图并利用图自编码器与循环神经网络学习时序图的高质量表征，在保持性能的同时显著降低内存消耗和训练时间。",
+        "claim_en": "Proposed GSAERU, a large-scale sequential graph representation learning method based on graph summarization, which compresses the original graph via graph summarization and learns high-quality representations of sequential graphs using a graph autoencoder and a recurrent neural network, significantly reducing memory consumption and training time while maintaining performance.",
+        "point_id": "NP-1",
+        "source_locations": [
+          "论文摘要：GSAERU 模型",
+          "正文：GSAERU 模型的构成与训练方法"
+        ],
+        "technical_features": [
+          "将动态时序图建模为各时刻上原图快照的序列",
+          "通过图摘要技术对原图进行压缩并输入图自编码器",
+          "利用与原始图的重构误差训练原图节点表征",
+          "使用循环神经网络学习时间维度上的特征信息与依赖关系"
+        ],
+        "technical_features_en": [
+          "Model dynamic sequential graphs as a sequence of snapshots at each time step",
+          "Compress original graph via graph summarization and input into a graph autoencoder",
+          "Train node representations using reconstruction error with the original graph",
+          "Learn temporal features and dependencies via a recurrent neural network"
+        ]
+      },
+      {
+        "claim": "提出一种基于图摘要的分布式图神经网络优化训练算法DSGNN，采用领导-工作者模式，结合基于边分割的图流划分与图摘要小批量训练，并通过注意力层汇总梯度，加速大规模图流数据的GNN训练并提升链路预测性能。",
+        "claim_en": "Proposed DSGNN, a distributed graph neural network optimization training algorithm based on graph summarization, which adopts a leader-worker mode, combines edge-partition-based graph streaming partitioning with graph summarization based mini-batch training, and aggregates gradients through an attention layer, accelerating GNN training on large-scale graph streaming data and improving link prediction performance.",
+        "point_id": "NP-2",
+        "source_locations": [
+          "论文摘要：DSGNN 模型",
+          "正文：DSGNN 模型的分布式训练流程"
+        ],
+        "technical_features": [
+          "采用领导-工作者工作模式进行分布式训练",
+          "领导节点利用基于边分割的图流划分算法对原图进行划分",
+          "工作节点执行基于图摘要技术的小批量训练",
+          "训练结果通过注意力层返回给领导节点并计算梯度",
+          "根据梯度同步更新所有计算节点上的模型"
+        ],
+        "technical_features_en": [
+          "Adopt a leader-worker mode for distributed training",
+          "Leader partitions the original graph using an edge-segmentation-based graph streaming partitioning algorithm",
+          "Workers perform mini-batch training based on graph summarization technology",
+          "Training results are returned to the leader through an attention layer for gradient computation",
+          "Synchronously update models on all computing nodes according to the gradient"
+        ]
+      },
+      {
+        "claim": "提出一种基于边分割的图流划分算法，用于在大规模图数据中高效划分子图并分配给分布式计算节点，支持后续图神经网络训练。",
+        "claim_en": "Proposed an edge-segmentation-based graph streaming partitioning algorithm for efficiently partitioning large-scale graphs into subgraphs and assigning them to distributed computing nodes, supporting subsequent graph neural network training.",
+        "point_id": "NP-3",
+        "source_locations": [
+          "论文摘要：DSGNN 模型中提到的图流划分算法",
+          "正文：领导节点利用基于边分割的图流划分算法进行划分"
+        ],
+        "technical_features": [
+          "以边分割为基础进行图流划分",
+          "从流式数据中动态划分原图",
+          "将划分后的子图分配给各工作节点",
+          "适用于大规模图数据的分布式处理"
+        ],
+        "technical_features_en": [
+          "Partition graph stream based on edge segmentation",
+          "Dynamically partition the original graph from streaming data",
+          "Assign partitioned subgraphs to worker nodes",
+          "Suitable for distributed processing of large-scale graph data"
+        ]
+      }
+    ],
+    "paper_summary": "由于现实世界中的大多数数据都可以用图表示，因此近年来针对图表示学\n习的研究越来越受到关注。通过将高维图数据转化成低维的表征向量，图表示\n学习可以有效地对图的信息进行存储并快捷地访问图中实体的关键知识。利用\n学习到的图表征数据可以为社交网络行为分析、节点分类、链路预测和聚类等\n下游任务提供帮助。随着深度学习的快速发展，研究人员提出了基于图神经网\n络的图表示学习方法，其使图中的节点能够同时学习图的结构信息以及邻域节\n点的特征信息，从而得到高质量的低维表征。针对图神经网络上的图表示学\n习，本文主要关注两个问题：大规模时序图场景下的图表示学习方法和分布式\n场景下的大规模图的图神经网络优化训练方法。\n真实世界中的图数据规模往往十分庞大且处于动态变化的状态，而现有的\n图神经网络要么无法处理动态时序图上的图表征学习，要么面对大规模图数据\n集时训练效率低下。为了解决大规模动态图上的图表征学习问题，本文提出了\n一种基于图摘要的大规模时序图表示学习方法——GSAERU 模型。GSAERU 模\n型由“图表征学习模块”和“时序学习模块”两部分构成。首先将动态时序图\n建模为各时刻上原图快照的序列，接着在单时间步上将图快照输入图表征学习\n模块。该模块通过图摘要技术对原图进行压缩，并将压缩后的新图输入图自编\n码器，利用和原图的重构误差训练原图节点的表征。在获得单时间步上的图表\n征后将其输入时序学习模块，并通过一个循环神经网络学习原图在时间维度上\n的特征信息与依赖关系，从而得到大规模时序图的高质量表征。基于在四个真\n实世界的大规模图数据集上的大量实验表明，GSAERU 模型能够高效生成时序\n图的表征。与传统的图神经网络算法相比，其平均内存消耗和平均训练时长只\n有其9.86% 与13.27%，且与性能最好的算法在大部分指标下的差距都不超过\n3.5%。\n\nii\n使用分布式技术加速神经网络训练也是如今热门的研究课题，因为在处理\n大规模数据时，单个设备（如CPU，GPU）有限的内存和计算资源往往会成为\n训练瓶颈。而分布式技术可以提供更多的计算资源来提高训练效率。然而由于\n图数据的不规则性，传统分布式机器学习方法中的子任务划分和模型训练方法\n难以直接应用于图神经网络。针对大规模图流数据场景下的分布式图神经网络\n训练优化问题，本文提出了基于图摘要的分布式图神经网络优化训练算法——\nDSGNN 模型。DSGNN 模型采用“领导——工作者”工作模式，首先由领导节\n点利用一个基于边分割的图流划分算法对原图进行划分并将划分子图分配给各\n个工作节点。工作节点随后执行一个基于图摘要技术的小批量训练并将训练结\n果通过一个注意力层返回给领导节点，最后由领导节点汇总结果并计算梯度，\n并根据梯度同步更新所有计算节点上的模型。基于四个真实世界的大规模图数\n据集上的大量实验，结果表明DSGNN 模型可以大大加速GNN 模型的训练，\n并且在链路预测任务上的F1 分数显著高于其它分布式图神经网络模型。",
+    "research_problem": "面向大规模动态图的图神经网络优化机制研究",
+    "research_tasks": [
+      {
+        "attempt": 2,
+        "description": "Current valid evidence count for NP-2 is 0, below the required threshold of 1. This round aims to retrieve related English literature on distributed graph neural network training optimization based on graph summarization, specifically focusing on leader-worker distributed training frameworks, graph-stream partitioning with edge segmentation, and attention-based gradient aggregation, to establish sufficient evidence for the novelty claim.",
+        "language": "en",
+        "novelty_point_id": "NP-2",
+        "task_id": "T-R2-1",
+        "task_type": "literature_search"
+      }
+    ]
+  },
+  "research_tasks": [
+    {
+      "attempt": 2,
+      "description": "Current valid evidence count for NP-2 is 0, below the required threshold of 1. This round aims to retrieve related English literature on distributed graph neural network training optimization based on graph summarization, specifically focusing on leader-worker distributed training frameworks, graph-stream partitioning with edge segmentation, and attention-based gradient aggregation, to establish sufficient evidence for the novelty claim.",
+      "language": "en",
+      "novelty_point_id": "NP-2",
+      "task_id": "T-R2-1",
+      "task_type": "literature_search"
+    }
+  ],
+  "rounds": 2
+}

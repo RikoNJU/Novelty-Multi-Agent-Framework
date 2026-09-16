@@ -1,0 +1,1288 @@
+Unified Heterogeneous Graph Neural Network solver for Power Flow, Optimal Power Flow and State Estimation
+
+      Report GitHub Issue
+      ×
+
+      Title:
+
+Content selection saved. Describe the issue below:
+
+      Description:
+
+      Submit without GitHub
+      Submit in GitHub
+
+    arXiv is now an independent nonprofit!
+    Learn more
+    ×
+
+      Back to arXiv
+
+    Why HTML?
+
+      Report Issue
+
+      Back to Abstract
+
+      Download PDF
+
+Abstract
+
+I Introduction
+
+II Electrical Background
+
+II-A Power Flow
+
+II-B Optimal Power Flow
+
+II-C State Estimation
+
+III Graph Neural Network Background
+
+III-A ResGated GCN
+
+III-B Heterogeneous Graph Neural Networks for Power Systems
+
+IV Proposed Methodology
+
+IV-A Architectural Components
+
+IV-A1 Node Encoding and Feature Transformation
+
+IV-A2 Heterogeneous Message Passing
+
+IV-A3 Global Context and Residual Integration
+
+IV-A4 Multi-Head Decoding
+
+IV-B Unified Multi-Task Training Objective
+
+IV-C Data Generation and Pre-processing
+
+IV-D Evaluation and Generalization Metrics
+
+V Results and Discussion
+
+V-A Simulation Setup
+
+V-B Results
+
+V-C Discussion
+
+VI Conclusion
+
+VI-A Towards a Foundational Model for Power Systems
+
+References
+
+    License: CC BY-NC-ND 4.0
+
+arXiv:2609.16738v1 [eess.SY] 15 Sep 2026
+
+Unified Heterogeneous Graph Neural Network solver for Power Flow, Optimal Power Flow and State Estimation
+
+Ferran Bohigas-Daranas
+
+  
+Hamid Latif-Martínez
+
+  
+Eduardo Prieto-Araujo
+
+  
+Oriol Gomis-Bellmunt
+
+  
+Pere Barlet-Ros
+††thanks: The research has been funded by projects Daedalos(Horizon Europe research grant agreement No 101172829), GRAPHS4SEC (grant PCI2023-145974-2 funded by MICIU/AEI/10.13039/501100011033) and BLOSSOMS (grant PID2024-158530OB-I00, by MI-CIU/AEI/10.13039/501100011033/ and ERDF/EU). The work of P.Barlet, O.Gomis-Bellmunt and E.Prieto-Araujo was supported by the Agència de Gestió d’Ajuts Universitaris i de Recerca (AGAUR) through the ICREA Acadèmia programme, and by the Departament de Recerca i Universitats of the Generalitat de Catalunya. E. Prieto-Araujo is a member of the Serra Húnter Programme.
+
+Abstract
+
+Power Flow (PF), Optimal Power Flow (OPF), and State Estimation (SE) are fundamental problems in power system analysis, but solving them is computationally expensive. Graph Neural Networks (GNNs) have been proposed as fast surrogates, yet existing solvers are trained for a single problem at a time, producing narrow models that must be rebuilt for each new task.
+
+We propose a more general approach: a single Heterogeneous Residual Gated Graph Convolutional Network that solves all three problems with one shared backbone. Rather than learning one mapping, the model learns a reusable representation of how the network behaves, from which PF, OPF, and SE can each be estimated. Trained jointly on the three problems across diverse topologies and loading conditions, and evaluated on the IEEE 14-bus and 118-bus systems, the shared model matches the accuracy of task-specific GNN solvers and stays robust on unseen loading levels and topologies.
+
+These results show that a single model can capture the basic operation of a power network and serve several analysis tasks at once — a first step toward a foundation model for power systems.
+
+Index Terms: Power Flow, Optimal Power Flow, State Estimation, Graph Neural Network, Residual Gated Graph Convolutional Network, ResGated GCN, Foundational Models
+
+I Introduction
+
+The rapid transformation of modern power grids, driven by the integration of renewable energy sources and the deployment of advanced metering infrastructure, has significantly increased the complexity of grid monitoring and control. Fundamental power system tasks [1], namely Power Flow (PF), Optimal Power Flow (OPF), and State Estimation (SE), remain the cornerstones of grid operations. While traditional iterative methods such as Newton–Raphson (NR) [2], Interior Point (IP) [3], and Weighted Least Squares (WLS) [4] are mathematically robust, their computational burden scales super-linearly with system size [5]. Furthermore, the increasing variability of distributed energy resources (DERs) demands real-time or near-real-time solutions that traditional solvers struggle to provide under strict latency constraints.
+
+In recent years, Deep Learning (DL) has emerged as a promising alternative for approximating these complex power system mappings. Early applications utilized Multilayer Perceptron (MLP) and Convolutional Neural Networks (CNN)  [6, 7]. However, these architectures are fundamentally limited when applied to power systems: Multilayer Perceptrons (MLPs)fail to exploit the topological structure of the grid, while CNNs are restricted to regular, Euclidean data structures and cannot naturally represent the irregular connectivity of transmission networks.
+
+Given that power systems are inherently non-Euclidean graphs, defined by buses (nodes) and lines/transformers (edges), Graph Neural Networks (GNNs)[8, 9, 10] have emerged as a natural candidate for power system applications. The message-passing mechanism of GNNs directly mirrors the way physical laws such as Kirchhoff Current Law (KCL)propagate information across the network, introducing a topological inductive bias that aligns the learning process with the relational structure of the electrical grid. GNN-based approaches have since demonstrated strong results for individual power system tasks: PFsolvers based on GNNs
+[11, 12] have achieved near-NRaccuracy at a fraction of the computational cost; GNN-based OPFmethods [13, 14, 15, 16] have shown the ability to respect operational constraints while accelerating dispatch decisions; and GNN architectures for SE [17, 18] have demonstrated robustness to measurement noise and partial observability. Despite these advances, a key limitation persists: early and current GNN variants often lack the discriminative power required to handle the high-precision requirements of power system physics [19].
+This work addresses this limitation by utilizing the Residual Gated Graph Neural Network (ResGated GCN)[20], as the basic computational cell of the proposed architecture (Fig.3), providing stronger graph-distinguishing capability than prior Graph Convolutional Networks (GCN) and Graph Attention Networks (GAT) based approaches.
+
+Despite the progress in GNN-based power system solvers, existing literature consistently treats PF, OPF, and SEas isolated problems, with separate models trained and deployed for each task. This fragmentation ignores the shared underlying physics and topological constraints common to all three problems, results in redundant training pipelines, and prevents the development of a unified, grid-aware representation. The recent emergence of foundational model initiatives for power systems, notably the open-source initiatives GridFM [21] and AI.grids [22], and more recently by industry research groups [23] confirms that the community recognizes the need to move beyond task-specific architectures. However, to date no peer-reviewed architecture has demonstrated simultaneous solution of PF, OPF, and SEwithin a single trained model on standard benchmark systems. This paper directly addresses that gap.
+
+The primary contributions of this work are:
+
+•
+
+Unified multi-task architecture: A unified heterogeneous GNN architecture trained to solve PF, OPF, and SEsimultaneously, including topological perturbations, so that the model learns a generalized representation of power system physics rather than a task-specific input-output mapping, achieving accuracy comparable to task-specific GNNs while eliminating the need for separate per-task training pipelines. To the best of the authors’ knowledge, this is the first peer-reviewed architecture to demonstrate this on standard IEEE benchmark systems.
+
+•
+
+Multi-problem loss: A composite loss function for the three problems (PF, OPF, SE) simultaneously, with a problem-conditioned masking strategy that prevents cross-problem gradient interference.
+
+•
+
+Architectural hyperparameter tuning and ablation study: A systematic hyperparameter tuning and ablation that quantifies the individual contribution of each element of the propose architecture, providing evidence-based architectural guidance for future unified power system models.
+
+The remainder of this paper is organized as follows. Section II introduces the mathematical formulation of PF, OPFand SE. Section III reviews the GNN foundations underpinning the proposed architecture. Section IV describes the proposed architecture, training objective, and data generation pipeline. Section V presents the experimental setup, numerical results, and discussion on the IEEE 14-bus and 118-bus test systems [24], including an analysis of scalability and the path towards foundational power system models. Section VI concludes the paper.
+
+II Electrical Background
+
+The power system is modeled as a network of buses interconnected
+by transmission lines and transformers. Each bus is characterized
+by four electrical quantities: voltage magnitude |V|\left|V\right|,
+voltage phase angle δ\delta, net active power injection PP, and
+net reactive power injection QQ, where net denotes the
+algebraic difference between local generation and consumption.
+
+Buses are classified into three types according to which variables are specified as inputs and which are computed as outputs. The slack bus (or reference bus) is typically the terminal of the largest generating unit; its voltage magnitude and angle are held fixed, and it absorbs any residual active and reactive power mismatch in the system. PV buses correspond to generator terminals at which active power output and voltage magnitude are prescribed, while reactive power output and voltage angle are unknowns. PQ buses represent load nodes, where both active and reactive power demands are specified and the voltage phasor is to be determined.
+
+For each bus ii in an nn-bus system, the complex power injection is related to the nodal voltage phasor and the injected current by:
+
+Si=Pi+j​Qi=Vi​Ii∗,S_{i}=P_{i}+jQ_{i}=V_{i}I_{i}^{*},
+
+(1)
+
+where SiS_{i} is the bus power, PiP_{i} is the bus active power, QiQ_{i} is the bus reactive power, ViV_{i} is the bus voltage and Ii∗I_{i}^{*} is the complex conjugate of the current injection at bus ii.
+
+Applying Ohm’s law through the nodal admittance matrix Ybus{Y}_{\text{bus}}, whose
+(i,j)-th element is expressed in polar form as Yi​j=|Yi​j|​ej​θi​jY_{ij}=|Y_{ij}|e^{j\theta_{ij}}
+, with θi​j=arg⁡(Yi​jCLOSE\theta_{ij}=\arg(Y_{ij}):
+
+Ii=∑j=1nYi​j​Vj.I_{i}=\sum_{j=1}^{n}Y_{ij}\,V_{j}.
+
+(2)
+
+Substituting (2) into (1) and separating real and imaginary parts yields the fundamental power flow equations:
+
+Pi\displaystyle P_{i}
+=∑j=1n|Vi|​|Vj|​|Yi​j|​cos⁡(θi​j−δi+δj),\displaystyle=\sum_{j=1}^{n}\left|V_{i}\right|\left|V_{j}\right|\left|Y_{ij}\right|\cos\!\left(\theta_{ij}-\delta_{i}+\delta_{j}\right),
+
+(3)
+
+Qi\displaystyle Q_{i}
+=−∑j=1n|Vi||Vj||Yi​j|sin(θi​j−δi+δj),\displaystyle=-\sum_{j=1}^{n}\left|V_{i}\right|\left|V_{j}\right|\left|Y_{ij}\right|\sin\!\left(\theta_{ij}-\delta_{i}+\delta_{j}\right),
+
+(4)
+
+where Yi​jY_{ij} is the (i,j)(i,j)-th element of the admittance matrix and δi\delta_{i}, δj\delta_{j} are the voltage angles at buses ii and jj, respectively.
+
+Nodal power balance, derived from KCL, at each bus i∈𝒩i\in\mathcal{N}:
+
+PG​i−PD​i−Pi​(V,δ)\displaystyle P_{Gi}-P_{Di}-P_{i}(V,\delta)
+=0,∀i∈𝒩,\displaystyle=0,\quad\forall i\in\mathcal{N},
+
+(5)
+
+QG​i−QD​i−Qi​(V,δ)\displaystyle Q_{Gi}-Q_{Di}-Q_{i}(V,\delta)
+=0,∀i∈𝒩,\displaystyle=0,\quad\forall i\in\mathcal{N},
+
+(6)
+
+where PG​iP_{Gi}, QG​iQ_{Gi} are active and reactive generation, PD​iP_{Di}, QD​iQ_{Di} are the corresponding demands, and Pi​(V,δ)P_{i}(V,\delta), Qi​(V,δ)Q_{i}(V,\delta) are computed from (3)-(4).
+
+This set of nonlinear equations form the shared mathematical foundation of all three problems addressed in this work.
+
+II-A Power Flow
+
+Power flow (PF) analysis determines the steady-state distribution of voltages and power throughout the network for a given set of generation and load conditions. Specifically, it computes the voltage magnitude and phase angle at every bus and the active and reactive power flows on all transmission branches.
+
+PF analysis spans across a wide range of use cases, involving different time scales, like network planning and real-time operation, where it verifies that line loadings and bus voltages remain within security limits. PFis governed by a nonlinear system of equations, (3)-(4), which must be solved simultaneously for all buses.
+
+The industry-standard algorithm is the NR method, which linearizes the system around an initial operating point, conventionally a flat start (|V|=1\left|V\right|=1 p.u., δ=0\delta=0), and iteratively refines the state vector by solving a linear correction system governed by the Jacobian matrix 𝐉\mathbf{J}. Convergence is typically achieved in five iterations under normal operating conditions [2]. The principal computational bottleneck is the formation and sparse factorization of 𝐉\mathbf{J} at each iteration, an operation whose cost scales super-linearly with system size.
+
+This computational burden provides the primary motivation for the GNN-based approach proposed in this paper: once trained, the network approximates the mapping defined by (3)-(4) in a single forward pass, retaining topological awareness without repeated matrix factorizations or the sensitivity to initial conditions that can cause NR to diverge under stressed network conditions [2].
+
+II-B Optimal Power Flow
+
+Optimal Power Flow is a mathematical optimization problem that determines the optimal operating state of an electric power system. While conventional PFanalysis simply calculates the steady-state conditions for a given set of generation and load values, OPF finds the best generation dispatch, voltage settings, transformer tap positions, and other control variables to optimize a specified objective while enforcing the full set of physical and operational constraints.
+
+First formulated by Carpentier in [25], OPFhas become a fundamental tool in power system operation. The problem has evolved from simple economic dispatch considerations to complex multi-objective optimization problems that consider environmental factors, market operations, and the integration of renewable energy sources.
+
+The general OPF problem is formulated as:
+
+min𝐱,𝐮\displaystyle\min_{\mathbf{x},\mathbf{u}}\quad
+f⁡(𝐱,𝐮)\displaystyle f(\mathbf{x},\mathbf{u})
+
+(7)
+
+s.t.
+𝐠⁡(𝐱,𝐮)=𝟎\displaystyle\mathbf{g}(\mathbf{x},\mathbf{u})=\mathbf{0}
+
+(8)
+
+𝐡⁡(𝐱,𝐮)≤𝟎,\displaystyle\mathbf{h}(\mathbf{x},\mathbf{u})\leq\mathbf{0},
+
+(9)
+
+where 𝐱∈ℝ2​n\mathbf{x}\in\mathbb{R}^{2n} is the state vector (voltage
+magnitudes and angles), 𝐮\mathbf{u} is the vector of control
+variables, f⁡(𝐱,𝐮)f(\mathbf{x},\mathbf{u}) is the scalar objective. The equality constraint g⁡(𝐱,𝐮)=0g(\mathbf{x},\mathbf{u})=0 enforces nodal power balance at each bus, as defined by the KCL (5) and (6), while the inequality constraints h⁡(𝐱,𝐮)≤0h(\mathbf{x},\mathbf{u})\leq 0 capture physical and operational bounds, such as generator active and reactive power limits, nodal voltage bounds, and branch thermal capacity constraints.
+
+II-C State Estimation
+
+SEreconstructs the complete operating state of
+the network, the full set of voltage magnitudes and phase
+angles, from a limited and inherently noisy set of real-time
+measurements. It addresses three practical challenges that arise in
+operational grids:
+
+•
+
+Incomplete observability: Field instrumentation does
+not cover every bus and branch; the state at unmonitored locations
+must therefore be inferred from the available data.
+
+•
+
+Measurement noise: Readings from current and voltage
+transformers are corrupted by instrument error. SE filters these disturbances to provide the best
+statistical estimate of the true state.
+
+•
+
+Bad data detection: SE identifies and rejects gross
+measurement errors, caused by meter faults or data transmission
+failures, that would otherwise corrupt the state estimate.
+
+The most widely used SE method is the WLSestimator, which minimizes the weighted sum of squared
+measurement residuals, alternative methods include the
+Least Absolute Value (LAV) estimator, and Kalman filtering, applicable to dynamic state
+tracking.
+
+The operational SE workflow comprises four stages: (i) real-time
+measurement collection and validation; (ii) observability analysis
+to confirm that the available measurements uniquely determine the
+state; (iii) state computation via WLSor an equivalent method; and (iv) bad-data detection and identification through normalized residual testing.
+
+The output of SE, a clean, complete state vector, feeds all higher-level grid-management functions: SCADA, Energy Management Systems (EMS), OPF solvers, security assessment, automatic generation
+control (AGC), economic dispatch, and contingency analysis. Any degradation in SE accuracy therefore propagates directly into all downstream applications [26].
+
+III Graph Neural Network Background
+
+Power systems are inherently non-Euclidean: their behavior is governed by the admittance matrix and the adjacency structure of buses and lines/transformers, not by the Euclidean distance between nodes. GNNsovercome these limitations by operating directly on the graph structure through an iterative message-passing mechanism [9], which updates node features by aggregating information from their immediate neighborhood. Each bus (node) updates its latent representation by aggregating information from its immediate electrical neighbors, closely mirroring the way
+KCLpropagates information across the physical network. Because the same learned parameters are applied at every node and edge regardless of graph size or configuration, GNNs are permutation-invariant and can generalize across different topologies without retraining, properties that make them uniquely appropriate for the unified multi-task solver proposed in this work.
+
+A standard GNN layer is shown at Fig. 1, where hv{h_{v}} is the latent embedding of node vv and 𝒩⁡(i)\mathcal{N}(i) denotes the set of adjacent nodes.
+
+Early variants such as GCN and GAT demonstrated the viability of this paradigm for power system problems, but they suffer from limited discriminative power: it has been shown that these architectures cannot distinguish between certain non-isomorphic graph structures [19], meaning different electrical networks. In power grids, where even a single line trip can substantially alter the operating state, this limitation is particularly consequential.
+
+III-A ResGated GCN
+
+Introduced by Bresson and Laurent [20] (2018), the ResGated GCNaddresses the limitations of early graph neural network paradigms. While traditional Graph Recurrent Networks (GRNNs) offered complex memory but suffered from computational overhead, and early GCNs [27] provided speed but lacked depth scalability, ResGated GCNcombines dynamic gating and residual connections to enable deep, efficient graph learning.
+
+Fig. 1: GNN and ResGated GCN structure comparison.
+
+The ResGated GCN layer updates a node’s features by filtering neighbor messages through a dynamic, learned gate. The layer transformation is defined as (Fig.1), where the equation is extended to incorporate edge attributes, which is expressed as:
+
+hi(l+1)=hi(l)+ReLU​(BN​(W1l​hi(l)+∑j∈𝒩⁡(i)ηi​jl⊙(W2l​hj(l))))h_{i}^{(l+1)}=h_{i}^{(l)}+\text{ReLU}\Bigg(\text{BN}\Bigg(W_{1}^{l}h_{i}^{(l)}+\sum_{j\in\mathcal{N}(i)}\eta_{ij}^{l}\odot\left(W_{2}^{l}h_{j}^{(l)}\right)\Bigg)\Bigg)
+
+(10)
+
+ηi​jl=σ⁡(W3l​hi(l)+W4l​hj(l)+Wel​ei​j)\eta_{ij}^{l}=\sigma\left(W_{3}^{l}h_{i}^{(l)}+W_{4}^{l}h_{j}^{(l)}+W_{e}^{l}e_{ij}\right)
+
+(11)
+
+Let hi∈ℝdh_{i}\in\mathbb{R}^{d} and hj∈ℝdh_{j}\in\mathbb{R}^{d} denote the input features of the target node ii and a neighbouring node jj, respectively, where hih_{i} also serves as a linear residual connection. The edge between them is characterised by ei​j=[Ri​j,Xi​j,Bi​j]Te_{ij}=[R_{ij},X_{ij},B_{ij}]^{T}, which encodes the physical transmission line parameters, projected by the learnable matrix Weℓ∈ℝd′×deW_{e}^{\ell}\in\mathbb{R}^{d^{\prime}\times d_{e}}. Four learnable weight matrices govern the layer transformations: W1ℓ∈ℝd′×dW_{1}^{\ell}\in\mathbb{R}^{d^{\prime}\times d} applies a self-loop transform to the centre node hih_{i}, while W2ℓ∈ℝd′×dW_{2}^{\ell}\in\mathbb{R}^{d^{\prime}\times d} projects the neighbouring features hjh_{j}. The gating mechanism is controlled by W3ℓ,W4ℓ∈ℝd′×dW_{3}^{\ell},W_{4}^{\ell}\in\mathbb{R}^{d^{\prime}\times d}, which project the local topological states of hih_{i} and hjh_{j}, respectively, to compute the edge gate importance. The resulting gating coefficient ηi​j\eta_{ij}, where σ\sigma is the sigmoid activation, where σ⁡(x)=1/(1+e−x)\sigma(x)=1/(1+e^{-x}), constraining values smoothly to [0,1][0,1], acts as an element-wise filter, applied via the Hadamard product ⊙\odot, that tracks the semantic relationship between connected nodes and controls information flow from each neighbour j∈𝒩⁡(i)j\in\mathcal{N}(i). Finally, batch normalisation BN⁡(⋅)\mathrm{BN}(\cdot) and ReLU function, where R​e​L​U​(x)=m​a​x​(0,x)ReLU(x)=max(0,x) are applied to the aggregated output before the residual addition.
+
+The main innovations and advantages of ResGated GCN are:
+
+•
+
+Vector Edge Gating: Unlike scalar attention (e.g., GAT), the gate 𝜼i​j\bm{\eta}_{ij} is a vector of the same dimension as the hidden features, allowing independent modulation per dimension.
+
+•
+
+Residual Connections: The inclusion of a hard identity shortcut (+𝐡iℓ+\mathbf{h}_{i}^{\ell}) prevents vanishing gradients, enabling stable training of deeper architectures.
+
+•
+
+Dual Self-Connection: The model applies both an explicit linear projection (𝐖1​𝐡i\mathbf{W}_{1}\mathbf{h}_{i}) within the aggregation and a hard residual addition after the non-linearity.
+
+•
+
+Direction-Dependent Message Weighting: By incorporating both endpoint features and explicit edge attributes ei​je_{ij}, the network captures the full heterogeneity of transmission line parameters within the learned gate.
+
+III-B Heterogeneous Graph Neural Networks for Power Systems
+
+Standard GNNs are homogeneous: all nodes and edges share the same feature space and are updated by identical transformation functions. This assumption is incompatible with the structure of power systems, where buses represent physically distinct entities with different operational roles, boundary conditions, and sets of known and unknown variables.
+
+(a) IEEE 9-bus system
+
+(b) IEEE 9-bus graph
+
+Fig. 2: IEEE 9-bus system [28] represented as an electrical network and as a heterogeneous graph.
+
+In a homogeneous GNN, the distinct semantics of slack, PV, and PQ buses are flattened into a single feature representation, forcing the model to learn type-specific behavior purely from data rather than encoding it architecturally. This increases the effective learning difficulty and risks conflating physically distinct
+operating modes. Heterogeneous GNNs (HGNNs)resolve this limitation by associating each node and edge type with its own learnable parameters and message-passing logic, motivated by two principal considerations:
+
+•
+
+Bus-Type Specificity: Electrical buses are defined by which variables are known and unknown. A slack bus has a fixed voltage magnitude and angle (V,θV,\theta); a PV bus has fixed active power and voltage magnitude (P,VP,V); and a PQ bus has fixed active and reactive power (P,QP,Q). HGNNsallow the architecture to apply specific transformation matrices to each bus type, ensuring that the GNN respects these distinct boundary conditions during the feature aggregation process. An example based on the IEEE 9-bus is shown at Fig. 2
+
+•
+
+Edge Physics: Unlike social or citation networks, the edges in a power grid (transmission lines and transformers) carry critical physical parameters such as resistance (RR), reactance (XX), and shunt admittance (BB), for transmission lines, or transformation relation and phase shift for transformers.
+
+IV Proposed Methodology
+
+The proposed architecture (Fig. 3) is a deep HGNNsdesigned to solve PF, OPF, and SE within a single unified architecture, based on the Encoder-Processor-Decoder architecture proposed by [29], extended to heterogeneous graphs. By treating buses of different types (slack, PV, PQ) as distinct node sets 𝒱k\mathcal{V}_{k} with independent encoder and decoder parameters, the model enforces type-specific boundary conditions for each task while sharing a common physics-informed message-passing backbone across all three problems.
+
+IV-A Architectural Components
+
+IV-A1 Node Encoding and Feature Transformation
+
+To handle the heterogeneous and task-dependent input features across bus types, we employ a bank of type-specific linear encoders. For each node type
+k∈{slack,pv,pq}k\in\{\mathrm{slack},\mathrm{pv},\mathrm{pq}\}, the raw feature vector 𝐱i∈ℝdin\mathbf{x}_{i}\in\mathbb{R}^{d_{\mathrm{in}}} is projected into a shared latent space ℝdh\mathbb{R}^{d_{h}}, where dhd_{h} is the hidden size, via a
+type-specific affine transformation followed by Layer
+Normalization:
+
+hi(0)=LayerNorm⁡(𝐖k​𝐱i+𝐛k).h_{i}^{(0)}=\mathrm{LayerNorm}\!\left(\mathbf{W}_{k}\,\mathbf{x}_{i}+\mathbf{b}_{k}\right).
+
+(12)
+
+where 𝐖k\mathbf{W}_{k} are separate weight matrices for each bus type ensures that the model distinguishes the fixed-voltage boundary conditions of a slack bus from the power-injection inputs of a PQ bus from the first layer onward, and bkb_{k} is the bias term. Layer Normalization stabilizes training by preventing feature-scale disparities from propagating through the deep stack.
+
+IV-A2 Heterogeneous Message Passing
+
+The core of the architecture consists of LL stacked HGNNlayers, each applying separate transformation matrices to each directed relation type (e.g., slack-to-PQ, PV-to-PQ). At each layer, the edge attribute vector 𝐞i​j\mathbf{e}_{ij}, encoding the branch impedance parameters (R,X)(R,X) and shunt admittance (B)(B), is incorporated into message passing according to (10)-(11).
+By applying the non-linear activation to the sum of the neighbor embedding and the projected edge attributes before aggregation, the model learns the nonlinear relationships that Ohm’s and KCLimpose on nodal voltages and power injections.
+
+Fig. 3: Architecture of the proposed unified Heterogeneous ResGated GCN.
+
+IV-A3 Global Context and Residual Integration
+
+OPF requires awareness of global system constraints, such as total generation cost and network-wide reactive power balance, that local message passing alone cannot efficiently propagate in deep architectures. A global context vector, 𝐠\mathbf{g}, is therefore computed at each layer by mean-pooling
+the current node embeddings across all bus types, kk, and passing them through a shared MLP:
+
+𝐠=MLPg​l​o​b​a​l​(1∑k|𝒱k|​∑k∈Types∑i∈𝒱k𝐡i(l))\mathbf{g}=\text{MLP}_{global}\left(\frac{1}{\sum_{k}|\mathcal{V}_{k}|}\sum_{k\in\text{Types}}\sum_{i\in\mathcal{V}_{k}}\mathbf{h}_{i}^{(l)}\right)
+
+(13)
+
+where |𝒱|=∑k|𝒱k||\mathcal{V}|=\sum_{k}|\mathcal{V}_{k}| denotes the total number of nodes across all bus types, so that the mean-pooling normalizes over the full graph regardless of the type partition.
+
+The global vector is broadcast back to all nodes and combined with the per-node update via a multi-path residual connection:
+
+𝐡i(l)=𝐡i(l−1)+SiLU​(𝐡i,new(l))+𝐠+𝐡i(0)\mathbf{h}_{i}^{(l)}=\mathbf{h}_{i}^{(l-1)}+\text{SiLU}\!\left(\mathbf{h}_{i,\text{new}}^{(l)}\right)+\mathbf{g}+\mathbf{h}_{i}^{(0)}
+
+(14)
+
+where SiLU​(x)=x/(1+e−x)\text{SiLU}(x)=x/(1+e^{-x}) is applied element-wise. Note that SiLU​(⋅)\text{SiLU}(\cdot) is distinct from the sigmoid gate σ⁡(⋅)\sigma(\cdot) in (11), which is reserved exclusively for the ResGated GCN gating mechanism throughout this paper. The skip connection to the initial encoding hi(0)h_{i}^{(0)} is particularly important: it ensures that the task-specific and bus-type boundary conditions encoded in the input projection remain influential throughout the full network depth, preventing the model from losing track of the physical constraints of the problem as depth increases, due to oversmoothing, a well-known problem in GNNs.
+
+IV-A4 Multi-Head Decoding
+
+The final node embeddings 𝐡i(L)\mathbf{h}_{i}^{(L)} are decoded by task using variable-specific output heads, providing greater expressivity for quantities of different physical nature — notably voltage magnitude and voltage angle, which span different numerical ranges. The output biases of voltage magnitude and angle are initialized to physically meaningful values: 1.01.0 p.u. for voltage magnitude and 0.00.0 rad for voltage angle, corresponding to the flat-start initialization used in classical iterative solvers. This physics-informed initialization places the initial output distribution in a physically plausible region, reducing the number of training epochs required to reach the target accuracy regime.
+
+IV-B Unified Multi-Task Training Objective
+
+A central challenge in training a unified solver is the
+heterogeneous character of the three tasks: PF and SE are regression problems with smooth loss profile, while OPF is a constrained optimization problem in which constraint satisfaction is as operationally critical as prediction accuracy. To address this, we employ the mean squared error between predicted and ground-truth state variables, providing the primary gradient signal for all three tasks.
+
+M​S​E=1n​∑i=1n(yi−y^i)2MSE=\frac{1}{n}\sum_{i=1}^{n}(y_{i}-\hat{y}_{i})^{2}
+
+(15)
+
+where nn is the total number of observations, yiy_{i} represents the actual (observed) values and y^i\hat{y}_{i} represents the predicted (simulated) values.
+
+For each task, MSE\mathrm{MSE} is computed as a sum of per-variable terms, applied only to the state variables that are outputs for the corresponding bus type and task:
+
+ℒM​S​E=∑k∈𝒱(ℒV​m+ℒV​a+ℒP​g+ℒQ​g)\mathcal{L}_{MSE}=\sum_{k\in\mathcal{V}}(\mathcal{L}_{Vm}+\mathcal{L}_{Va}+\mathcal{L}_{Pg}+\mathcal{L}_{Qg})
+
+(16)
+
+For example, during a PF forward pass, ℒVm\mathcal{L}_{V_{m}} is applied only to PQ buses (for which |V|\left|V\right| is unknown), while ℒVa\mathcal{L}_{V_{a}} is applied to both PQ and PV buses. This task-conditioned masking ensures that the model is penalized only for quantities it is responsible for predicting, preventing
+spurious gradients from degrading the shared representation.
+
+IV-C Data Generation and Pre-processing
+
+The reliability of a GNN-based solver depends critically on the diversity and physical consistency of its training data. A model trained on a narrow distribution of operating conditions will
+exhibit poor generalization to scenarios outside that distribution, a phenomenon known as out-of-distribution (OOD) failure, which can manifest at the feature level (input values outside the training range) or at the topological level (changes in network connectivity, as arise in N-1 contingency
+analysis). To mitigate this risk, a comprehensive data generation pipeline was developed using the PandaPower[30] and VeraGrid[31] Python packages.
+
+The following randomization strategy was applied to four different dataset scenarios, to maximize the diversity of operating conditions (Table I):
+
+•
+
+Load variability: Active and reactive power demands (PLP_{L}, QLQ_{L}) were sampled uniformly over a defined range around the nominal values. This wide range, spanning both light-load off-peak and heavily stressed peak conditions, ensures that the model encounters the full extent of the feasible operating region, including near-voltage-collapse scenarios.
+
+•
+
+Generator and line parameter perturbation: Generator voltage setpoints (VgenV_{\mathrm{gen}}) and transmission line impedance (Zi​jZ_{ij}) were varied within ±5%\pm 5\% of their nominal values, simulating set-point uncertainty and parametric drift in aging infrastructure.
+
+•
+
+Topological augmentation: The network topology was modified by randomly removing existing branches or adding new ones. This structural diversity trains the GNNbackbone to recognize that the governing physics is encoded in the admittance matrix and line parameters, not in a fixed node ordering, improving robustness to grid reconfigurations and N-1 contingencies.
+
+•
+
+Measurement noise and masking for SE: State Estimation samples are further processed to replicate the conditions of a real-time operational environment. Each measurement is corrupted by additive zero-mean Gaussian noise, with a standard deviation drawn uniformly at random from the interval [1%,2%][1\%,2\%] of the corresponding measurement magnitude, simulating the accuracy class of typical current and voltage instrument transformers. In addition, 5% of measurements are masked (set to missing) per sample, with the masked subset selected uniformly at random across all available measurements, simulating partial observability due to communication failures or instrumentation gaps. These perturbations are applied exclusively to SE samples, ensuring that the GNN learns to reconstruct the full system state from incomplete and noisy observations, consistent with the operational role of a state estimator.
+
+To facilitate multi-task learning within a single shared model, we augmented the node feature matrix with a one-hot encoded task-indicator vector τ∈{0,1}3\tau\in\{0,1\}^{3}:
+
+τs={[1,0,0]Tif ​s∈Power Flow[0,1,0]Tif ​s∈OPF[0,0,1]Tif ​s∈State Estimation\tau_{s}=\begin{cases}[1,0,0]^{T}&\text{if }s\in\text{Power Flow}\\
+[0,1,0]^{T}&\text{if }s\in\text{OPF}\\
+[0,0,1]^{T}&\text{if }s\in\text{State Estimation}\end{cases}
+
+(17)
+
+This allows the heterogeneous encoders to condition the initial embeddings on the specific requirements of the objective task.
+
+TABLE I: Scenario Definitions.
+
+Dataset Name
+Power Ranges
+
+narrow
+50% to 150% nominal powers
+
+mid
+20% to 180% nominal powers
+
+wide
+0% to 200% nominal powers
+
+high-topo
+180% to 250% nominal powers and
+
+40% samples with topological changes
+
+TABLE II: Number of Rejected Samples Due to Infeasibility or Solver Non-Convergence During Data Generation for the IEEE 118-Bus Network.
+
+118-bus case
+narrow
+mid
+wide
+
+high-topo
+
+PF
+0
+0
+5
+542
+
+OPF
+0
+0
+1
+546
+
+SE
+0
+0
+9
+3045
+
+Table I defines the four load scenarios,
+from the most conservative (narrow) to the most
+heavily stressed (high-topo), the latter including
+40% of samples with random topological modifications. It is worth noting that the high-topo scenario operates near the boundary of the feasibility region: in some cases, more than ten candidate samples had to be discarded due to solver non-convergence before a feasible operating point was found (Table II).
+
+IV-D Evaluation and Generalization Metrics
+
+Mean Squared Error (MSE)serves as the primary training objective but is an insufficient standalone evaluation metric for power system applications, where worst-case performance and constraint satisfaction are operationally critical. The model is therefore evaluated using the following complementary metrics, as proposed in [32]:
+
+•
+
+Normalized Root Mean Square Error (NRMSE): Indicator based on MSE, which is normalized by the range of the ground truth output, allowing a correct comparison between different magnitudes.
+
+NRMSE=RMSEymax−ymin=1n​∑i=1n(yi−y^i)2ymax−ymin\text{NRMSE}=\frac{\text{RMSE}}{y_{\max}-y_{\min}}=\frac{\sqrt{\frac{1}{n}\displaystyle\sum_{i=1}^{n}(y_{i}-\hat{y}_{i})^{2}}}{y_{\max}-y_{\min}}
+
+(18)
+
+where ymaxy_{\max} and yminy_{\min} are the maximum and minimum actual values in the dataset, respectively.
+
+•
+
+Coefficient of determination (R2R^{2}):
+
+R2=1−∑i(yi−y^i)2∑i(yi−y¯)2,R^{2}=1-\frac{\sum_{i}(y_{i}-\hat{y}_{i})^{2}}{\sum_{i}(y_{i}-\bar{y})^{2}},
+
+(19)
+
+measures the proportion of variance in the target variables explained by the model. Values close to unity confirm a high goodness-of-fit across the full operating range.
+
+•
+
+Maximum Absolute Error (MaxAE):
+
+MaxAE=maxi⁡|yi−y^i|,\mathrm{MaxAE}=\max_{i}\left|y_{i}-\hat{y}_{i}\right|,
+
+(20)
+
+identifies the single largest prediction error across all buses and test samples. In operational contexts, worst-case accuracy is often more consequential than average accuracy,
+since a single large voltage or power error can violate security limits.
+
+V Results and Discussion
+
+V-A Simulation Setup
+
+A systematic study was conducted along two axes. First, a hyperparameter search varied the number of GNN layers over 2, 4, 6 and the hidden dimension over 32, 64, 128, 256. Second, an ablation study individually removed the residual skip connection h(0)h^{(0)}, global mean pooling, and Layer Normalization (NormLayer) to quantify the contribution of each architectural component.
+
+The selected configuration was then evaluated on both the IEEE 14-bus and 118-bus test systems, using a combined dataset of 3000 samples, 1000 samples for each problem (PF/OPF/SE ), drawn from the mid scenario and partitioned into 80% training, 10% validation, and 10% test sets. To assess out-of-distribution generalization, the trained model on the mid scenario was further evaluated on the narrow, wide, and high-topo datasets, which include unseen loading conditions and network topologies, where existing lines can be removed or new lines added.
+
+V-B Results
+
+Table III and Figs. 5-8 present the quantitative results of the hyperparameter search, ablation study, and generalization evaluation.
+
+Fig. 3 compares the average NRMSE, computed as the mean across all predicted quantities (Vm​a​gV_{mag}, Va​n​gV_{ang}, Pg​e​nP_{gen}, Qg​e​nQ_{gen}, PdP_{d} and QdQ_{d}), for seven GNN cell variants: GAT, Transformer, ResGated GCN, GraphSAGE, GPS, GiNE, and MPNN. All variants are evaluated within the proposed heterogeneous architecture, using a 300 samples dataset, for the 118-bus network under the mid scenario. ResGated GCN achieves the lowest average NRMSE and is therefore selected as the computational cell for all subsequent experiments.
+
+Fig. 4: GNN cell comparison showing average NRMSE.
+
+Fig. 5: Prediction vs. ground truth scatter plots for the OPF task (IEEE 14-bus network, top row) and the SE task (IEEE 118-bus network, bottom row), both trained and evaluated on their respective mid scenario datasets.
+
+Table III summarizes the hyperparameter search and ablation results for the 118-bus network, trained on the mid scenario and tested on both the mid and high-topo scenarios. Inference times are reported relative to the fastest configuration to remove hardware-dependent bias. Fig. 7 complements the table by showing the average NRMSE graphically for each ablated configuration. Fig 5 shows two prediction cases, which exemplify two problems, OPF and SE, using two different networks, IEEE 14-bus and IEEE 118-bus network, both trained and tested on the mid scenario. Fig. 6 shows the training and validation loss evolution over 250 epochs for the IEEE 118-bus network, trained on the mid scenario, the loss is plotted on a logarithmic scale, encompassing PF, OPF, and SE simultaneously. Both curves converge smoothly without signs of overfitting. Fig. 8 shows PF results for the 118-bus network evaluated across all four scenarios (narrow, mid, wide, high-topo), confirming that prediction errors remain small and tightly distributed around zero even under conditions not seen during training.
+
+Fig. 6: Training and validation loss evolution over 250 epochs for the IEEE 118-bus network, trained on the mid scenario.
+
+V-C Discussion
+
+Fig. 7: Ablation study results showing average NRMSE.
+
+TABLE III: Comparison of Prediction Metrics Across Configurations. Base Line: 4 GNN Layers and Hidden Dimension of 64.
+
+inference
+avg
+Vmag
+Vang
+Pgen
+Qgen
+Pd
+Qd
+
+Case
+time
+NRMSE
+NRMSE
+MAE
+R2
+MSE
+NRMSE
+NRMSE
+NRMSE
+NRMSE
+NRMSE
+
+Mid Scenario
+
+Base line
+11
+0.0031\bm{0.0031}
+0.0056±0.0000.0056\pm 0.000
+0.0010.001
+0.9980.998
+2.0587​e−062.0587e-06
+0.0033±0.0000.0033\pm 0.000
+0.0047±0.0000.0047\pm 0.000
+0.0024±0.0000.0024\pm 0.000
+0.0015±0.0000.0015\pm 0.000
+0.0011±0.0000.0011\pm 0.000
+
+2 GNN layers
+0.80.8
+0.00340.0034
+0.0058±0.0000.0058\pm 0.000
+0.0010.001
+0.9980.998
+2.1972​e−062.1972e-06
+0.0038±0.0000.0038\pm 0.000
+0.0052±0.0000.0052\pm 0.000
+0.0028±0.0000.0028\pm 0.000
+0.0016±0.0000.0016\pm 0.000
+0.0013±0.0000.0013\pm 0.000
+
+6 GNN layers
+1.731.73
+0.00300.0030
+0.0052±0.0010.0052\pm 0.001
+0.0010.001
+0.9990.999
+1.7727​e−061.7727e-06
+0.0034±0.0000.0034\pm 0.000
+0.0046±0.0000.0046\pm 0.000
+0.0023±0.0000.0023\pm 0.000
+0.0017±0.0000.0017\pm 0.000
+0.0011±0.0000.0011\pm 0.000
+
+32 hidden dim.
+0.860.86
+0.00370.0037
+0.0065±0.0000.0065\pm 0.000
+0.0010.001
+0.9980.998
+2.7967​e−062.7967e-06
+0.0041±0.0000.0041\pm 0.000
+0.0053±0.0000.0053\pm 0.000
+0.0028±0.0000.0028\pm 0.000
+0.0020±0.0000.0020\pm 0.000
+0.0015±0.0000.0015\pm 0.000
+
+128 hidden dim.
+1.21.2
+0.00290.0029
+0.0050±0.0000.0050\pm 0.000
+0.0010.001
+0.9990.999
+1.6324​e−061.6324e-06
+0.0029±0.0000.0029\pm 0.000
+0.0048±0.0000.0048\pm 0.000
+0.0023±0.0000.0023\pm 0.000
+0.0015±0.0000.0015\pm 0.000
+0.0010±0.0000.0010\pm 0.000
+
+256 hidden dim.
+1.661.66
+0.00290.0029
+0.0051±0.0000.0051\pm 0.000
+0.0010.001
+0.9990.999
+1.6871​e−061.6871e-06
+0.0029±0.0000.0029\pm 0.000
+0.0048±0.0000.0048\pm 0.000
+0.0023±0.0000.0023\pm 0.000
+0.0015±0.0000.0015\pm 0.000
+0.0010±0.0000.0010\pm 0.000
+
+no Global Pool
+0.930.93
+0.00360.0036
+0.0076±0.0000.0076\pm 0.000
+0.0010.001
+0.9970.997
+3.8088​e−063.8088e-06
+0.0033±0.0000.0033\pm 0.000
+0.0053±0.0000.0053\pm 0.000
+0.0025±0.0000.0025\pm 0.000
+0.0017±0.0000.0017\pm 0.000
+0.0012±0.0000.0012\pm 0.000
+
+no Residual
+0.970.97
+0.00310.0031
+0.0051±0.0000.0051\pm 0.000
+0.0010.001
+0.9990.999
+1.7124​e−061.7124e-06
+0.0031±0.0000.0031\pm 0.000
+0.0050±0.0000.0050\pm 0.000
+0.0026±0.0000.0026\pm 0.000
+0.0016±0.0000.0016\pm 0.000
+0.0009±0.0000.0009\pm 0.000
+
+no Root
+0.970.97
+0.00290.0029
+0.0050±0.0000.0050\pm 0.000
+0.0010.001
+0.9990.999
+1.6401​e−061.6401e-06
+0.0030±0.0000.0030\pm 0.000
+0.0047±0.0000.0047\pm 0.000
+0.0024±0.0000.0024\pm 0.000
+0.0015±0.0000.0015\pm 0.000
+0.0010±0.0000.0010\pm 0.000
+
+no NormLayer
+0.980.98
+0.00300.0030
+0.0053±0.0000.0053\pm 0.000
+0.0010.001
+0.9990.999
+1.8427​e−061.8427e-06
+0.0029±0.0000.0029\pm 0.000
+0.0050±0.0000.0050\pm 0.000
+0.0024±0.0000.0024\pm 0.000
+0.0015±0.0000.0015\pm 0.000
+0.0010±0.0000.0010\pm 0.000
+
+High-topo Scenario
+
+Base line
+
+0.0631\bm{0.0631}
+0.0523±0.0030.0523\pm 0.003
+0.0070.007
+0.8400.840
+1.6655​e−041.6655e-04
+0.1088±0.0030.1088\pm 0.003
+0.1026±0.0040.1026\pm 0.004
+0.0719±0.0020.0719\pm 0.002
+0.0218±0.0020.0218\pm 0.002
+0.0209±0.0020.0209\pm 0.002
+
+2 GNN layers
+
+0.06130.0613
+0.0519±0.0040.0519\pm 0.004
+0.0070.007
+0.8420.842
+1.6435​e−041.6435e-04
+0.1061±0.0020.1061\pm 0.002
+0.1090±0.0020.1090\pm 0.002
+0.0729±0.0040.0729\pm 0.004
+0.0149±0.0020.0149\pm 0.002
+0.0129±0.0010.0129\pm 0.001
+
+6 GNN layers
+
+0.06400.0640
+0.0572±0.0020.0572\pm 0.002
+0.0080.008
+0.8090.809
+1.9879​e−041.9879e-04
+0.1036±0.0080.1036\pm 0.008
+0.1075±0.0030.1075\pm 0.003
+0.0696±0.0030.0696\pm 0.003
+0.0233±0.0000.0233\pm 0.000
+0.0228±0.0020.0228\pm 0.002
+
+32 hidden dim.
+
+0.06350.0635
+0.0548±0.0020.0548\pm 0.002
+0.0070.007
+0.8240.824
+1.8273​e−041.8273e-04
+0.1039±0.0060.1039\pm 0.006
+0.1065±0.0100.1065\pm 0.010
+0.0742±0.0080.0742\pm 0.008
+0.0224±0.0010.0224\pm 0.001
+0.0191±0.0000.0191\pm 0.000
+
+128 hidden dim.
+
+0.06390.0639
+0.0539±0.0020.0539\pm 0.002
+0.0070.007
+0.8300.830
+1.7683​e−041.7683e-04
+0.1153±0.0040.1153\pm 0.004
+0.0987±0.0020.0987\pm 0.002
+0.0709±0.0020.0709\pm 0.002
+0.0214±0.0020.0214\pm 0.002
+0.0229±0.0010.0229\pm 0.001
+
+256 hidden dim.
+
+0.06400.0640
+0.0525±0.0010.0525\pm 0.001
+0.0070.007
+0.8390.839
+1.6731​e−041.6731e-04
+0.1210±0.0020.1210\pm 0.002
+0.0966±0.0020.0966\pm 0.002
+0.0696±0.0020.0696\pm 0.002
+0.0204±0.0010.0204\pm 0.001
+0.0239±0.0010.0239\pm 0.001
+
+no Global Pool
+
+0.06530.0653
+0.0504±0.0040.0504\pm 0.004
+0.0070.007
+0.8510.851
+1.5503​e−041.5503e-04
+0.1217±0.0050.1217\pm 0.005
+0.1091±0.0180.1091\pm 0.018
+0.0712±0.0060.0712\pm 0.006
+0.0201±0.0000.0201\pm 0.000
+0.0195±0.0010.0195\pm 0.001
+
+no Residual
+
+0.06460.0646
+0.0557±0.0040.0557\pm 0.004
+0.0070.007
+0.8180.818
+1.8895​e−041.8895e-04
+0.1036±0.0030.1036\pm 0.003
+0.1075±0.0060.1075\pm 0.006
+0.0732±0.0050.0732\pm 0.005
+0.0240±0.0020.0240\pm 0.002
+0.0238±0.0010.0238\pm 0.001
+
+no Root
+
+0.06620.0662
+0.0542±0.0020.0542\pm 0.002
+0.0070.007
+0.8280.828
+1.7866​e−041.7866e-04
+0.1130±0.0020.1130\pm 0.002
+0.1090±0.0040.1090\pm 0.004
+0.0741±0.0030.0741\pm 0.003
+0.0229±0.0020.0229\pm 0.002
+0.0239±0.0010.0239\pm 0.001
+
+no NormLayer
+
+0.06120.0612
+0.0510±0.0030.0510\pm 0.003
+0.0070.007
+0.8480.848
+1.5807​e−041.5807e-04
+0.1117±0.0040.1117\pm 0.004
+0.0997±0.0160.0997\pm 0.016
+0.0715±0.0050.0715\pm 0.005
+0.0154±0.0010.0154\pm 0.001
+0.0177±0.0020.0177\pm 0.002
+
+(a) narrow
+
+(b) mid
+
+(c) wide
+
+(d) high-topo
+
+Fig. 8: Voltage magnitude prediction vs. ground truth scatter plots for the IEEE 118-bus network, evaluated under four scenarios. The model was trained exclusively on the mid scenario.
+
+The ablation study demonstrates that not each architectural component contributes meaningfully to overall accuracy. Removal of global mean pooling produces the largest accuracy drop, increasing average NRMSE by approximately 16% relative to the baseline (from 0.0031 to 0.0036), underscoring its importance for tasks such as OPF that require awareness of system-wide constraints. The local residual connection has negligible effect on in-distribution accuracy but slightly improves generalization to unseen scenarios, approximately 2%. In contrast, removing the root residual h(0)h^{(0)}, the skip connection to the initial node encoding, reduces in-distribution accuracy, by 6.54%, while improving out-of-distribution performance, 4,9%. This confirms that residual connections are critical for mitigating the oversmoothing that degrades deep GNN representations, and that their benefit is most apparent when the model is evaluated on scenarios outside the training distribution. Contrary to expectation, removal of Layer Normalization marginally improves accuracy in both scenarios, despite its expected role in stabilizing training and preventing weight explosion. This suggests that, at the scale of the IEEE test systems used here, the regularization provided by Layer Normalization may be unnecessary, though it may become more important as the architecture is scaled to larger networks.
+
+Increasing the hidden dimension consistently improves prediction accuracy up to a size of 128, beyond which gains diminish while inference time continues to grow. The number of GNN layers has a less consistent effect: additional layers improve in-distribution accuracy but degrade generalization to unseen scenarios, likely due to overfitting, while also increasing inference time. These trade-offs motivate the selection of 4 layers and a hidden size of 128 as the optimal configuration.
+
+The relative inference time (test inference time/baseline inference time) reported in Table III scales moderately with model depth and hidden dimension, with the selected configuration (4 layers, hidden size 128) achieving a favorable accuracy–efficiency trade-off.
+
+The generalization results in Fig. 8 show that a model trained exclusively on the mid scenario retains acceptable accuracy, with MSE ranging from 1.34e-7 to 3.55e-6, when evaluated on the narrow, wide, and high-topo datasets, including load levels up to 250% of nominal and topologies modified by branch additions and removals, none of which were seen during training. This out-of-distribution robustness is a key property for operational deployment, where real-time grid conditions may deviate significantly from historical operating points. Notably, the unified model achieves accuracy comparable to, and in some cases surpassing, task-specific GNN solvers [12, 16, 33], despite being trained across three simultaneous tasks; however, direct comparison is complicated by differences in evaluation metrics (MSE, R², NRMSE, TRMAE) and benchmark networks across studies.
+
+VI Conclusion
+
+This paper has demonstrated that a single Heterogeneous ResGated GCN architecture can simultaneously solve PF, OPF, and SEto accuracy comparable to task-specific models, while requiring only one training pipeline. By integrating line impedance parameters (R,X,B) directly into the message-passing mechanism and augmenting node updates with a global context MLP, the architecture captures both local KCLphysics and system-wide optimization constraints within a unified representation.
+
+Our results demonstrate that this multi-task framework achieves high precision on PF and SE while producing feasible solutions within the constrained optimization setting of OPF. Specifically, the selected configuration achieves average NRMSE values below 0.004 (Table III) across all predicted quantities on the mid scenario, and generalizes to unseen loading conditions and topological configurations without retraining. The performance of the model is comparable to state-of-the-art task-specific GNNs, yet it offers superior versatility by eliminating the need for redundant, task-isolated architectures. Furthermore, the inclusion of topological perturbations and extreme load scaling (up to 250%) supports robustness to grid reconfigurations and stressed operating conditions.
+
+Future research is going to work to move the current implementation toward foundational models for power systems. This work establishes that a single GNN-based architecture can internalize shared physical principles, motivating future large-scale pre-training on global utility datasets. Such advancements will be critical for the autonomous operation and real-time control of the next generation of highly dynamic and decentralized power grids.
+
+VI-A Towards a Foundational Model for Power Systems
+
+The proposed GNN architecture demonstrates the capability to solve PF, OPF, and SE within a single unified model (Table III). We characterize this, however, not as a fully realized foundational model, but as an initial step which can internalize the shared physics of these three fundamental problems. This work advances three key prerequisites toward that goal:
+
+1.
+
+Multi-Task Consolidation: By merging descriptive tasks (PF, SE) with prescriptive optimization (OPF), we move away from specialized models toward a general-purpose grid solver.
+
+2.
+
+Topological Invariance via ResGated GCN: The use of edge-conditioned message-passing layers, with strong graph-discriminative power, ensures that the model learns the underlying physics of KCLrather than the specific geometry of a single test case, a prerequisite for foundational transfer learning.
+
+3.
+
+Physics-Informed Latent Space: The integration of global context and deep residual paths allows the model to handle the high-dimensional complexity inherent in the global energy landscape.
+
+Consequently, this research serves as a proof of concept for a unified foundational power system model. Scaling this framework to encompass thousands of heterogeneous utility-scale systems would represent a concrete step toward a truly foundational model for autonomous power system operations.
+
+References
+
+[1]
+J. J. Grainger and W. D. Stevenson (1994)
+
+Power system analysis.
+
+McGraw-Hill Series in Electrical and Computer Engineering,  McGraw-Hill, New York, NY, USA.
+
+Cited by: §I.
+
+[2]
+W. F. Tinney et al. (1967)
+
+Power flow solution by Newton’s method.
+
+IEEE Trans. Power App. Syst. PAS-86 (11), pp. 1449–1460.
+
+External Links: Document
+
+Cited by: §I,
+§II-A,
+§II-A.
+
+[3]
+F. Capitanescu (2016)
+
+Critical review of recent advances and further developments needed in AC optimal power flow.
+
+Electr. Power Syst. Res. 136, pp. 57–68.
+
+External Links: Document
+
+Cited by: §I.
+
+[4]
+F. C. Schweppe and J. Wildes (1970)
+
+Power system static-state estimation, part I: exact model.
+
+IEEE Trans. Power App. Syst. PAS-89 (1), pp. 120–125.
+
+External Links: Document
+
+Cited by: §I.
+
+[5]
+M. L. Crow (2015)
+
+Computational methods for electric power systems.
+
+3rd edition,  CRC Press, Boca Raton, FL, USA.
+
+Cited by: §I.
+
+[6]
+A. Marot et al. (2019)
+
+Learning to run a power network challenge for training topology controllers.
+
+Note: arXiv:1912.04211
+
+External Links: Document
+
+Cited by: §I.
+
+[7]
+T. Pham et al. (2022)
+
+Neural network-based power flow model.
+
+In Proc. IEEE Green Technol. Conf.,
+
+pp. 105–109.
+
+External Links: Document
+
+Cited by: §I.
+
+[8]
+F. Scarselli, M. Gori, Ah Chung Tsoi, M. Hagenbuchner, and G. Monfardini (2009)
+
+The graph neural network model.
+
+IEEE Trans. Neural Netw. 20 (1), pp. 61–80.
+
+External Links: Document
+
+Cited by: §I.
+
+[9]
+J. Gilmer O. Vinyals et al. (2017)
+
+Neural message passing for quantum chemistry.
+
+Note: arXiv:1704.01212
+
+Cited by: §I,
+§III.
+
+[10]
+P. W. Battaglia O. Vinyals et al. (2018)
+
+Relational inductive biases, deep learning, and graph networks.
+
+Note: arXiv:1806.01261
+
+Cited by: §I.
+
+[11]
+T. B. Lopez-Garcia et al. (2023)
+
+Power flow analysis via typed graph neural networks.
+
+Eng. Appl. Artif. Intell. 117, pp. 105567.
+
+External Links: Document
+
+Cited by: §I.
+
+[12]
+N. Lin et al. (2024)
+
+PowerFlowNet: power flow approximation using message passing graph neural networks.
+
+Int. J. Electr. Power Energy Syst. 160, pp. 110112.
+
+External Links: Document
+
+Cited by: §I,
+§V-C.
+
+[13]
+D. Owerko, F. Gama, and A. Ribeiro (2020)
+
+Optimal power flow using graph neural networks.
+
+In Proc. IEEE Int. Conf. Acoust., Speech, Signal Process. (ICASSP),
+
+pp. 5930–5934.
+
+External Links: Document
+
+Cited by: §I.
+
+[14]
+B. Donon et al. (2020)
+
+Neural networks for power flow: graph neural solver.
+
+Electr. Power Syst. Res. 189, pp. 106547.
+
+External Links: Document
+
+Cited by: §I.
+
+[15]
+T. B. Lopez-Garcia et al. (2024)
+
+Optimal power flow with physics-informed typed graph neural networks.
+
+IEEE Trans. Power Syst., pp. 1–14.
+
+External Links: Document
+
+Cited by: §I.
+
+[16]
+A. Varbella et al. (2024)
+
+Physics-informed GNN for non-linear constrained optimization: PINCO a solver for the AC-optimal power flow.
+
+Note: arXiv:2410.04818
+
+External Links: Document
+
+Cited by: §I,
+§V-C.
+
+[17]
+A. Saur (2024)
+
+Graph neural networks for electrical grid state estimation.
+
+Master’s Thesis, University of Freiburg.
+
+Cited by: §I.
+
+[18]
+O. Kundacina et al. (2022)
+
+State estimation in electric power systems leveraging graph neural networks.
+
+In Proc. 17th Int. Conf. Probab. Methods Appl. Power Syst. (PMAPS),
+
+pp. 1–6.
+
+External Links: Document
+
+Cited by: §I.
+
+[19]
+K. Xu et al. (2019)
+
+How powerful are graph neural networks?.
+
+Note: arXiv:1810.00826
+
+External Links: Document
+
+Cited by: §I,
+§III.
+
+[20]
+X. Bresson and T. Laurent (2018)
+
+Residual gated graph ConvNets.
+
+Note: arXiv:1711.07553
+
+External Links: Document
+
+Cited by: §I,
+§III-A.
+
+[21]
+GridFM (2025)
+
+GridFM.
+
+Note: [Online]Available: https://gridfm.org/
+
+Cited by: §I.
+
+[22]
+Cresym
+
+AI.grids.
+
+Note: [Online]Available: https://cresym.eu/ai-grids/
+
+Cited by: §I.
+
+[23]
+W. Yang and Andrea Britto Mattos Lima (2026)
+
+GridSFM: small foundation model boosts power grid optimization.
+
+Note: Microsoft Research Blog, [Online]Available: https://www.microsoft.com/en-us/research/blog/gridsfm-a-new-small-foundation-model-for-the-electric-grid/
+
+Cited by: §I.
+
+[24]
+Power Systems Test Case Archive (1993)
+
+IEEE power flow test case.
+
+Note: [Online]Available: https://labs.ece.uw.edu/pstca/
+
+Cited by: §I.
+
+[25]
+J. Carpentier (1962)
+
+Contribution à l’étude du dispatching économique.
+
+Note: Bull. Soc. Fr. Électr.
+
+Cited by: §II-B.
+
+[26]
+A. Monticelli (1999)
+
+State estimation in electric power systems.
+
+ Springer, Boston, MA, USA.
+
+External Links: Document
+
+Cited by: §II-C.
+
+[27]
+J. Bruna, W. Zaremba, A. Szlam, and Y. LeCun (2014)
+
+Spectral networks and locally connected networks on graphs.
+
+Note: arXiv:1312.6203
+
+External Links: Document
+
+Cited by: §III-A.
+
+[28]
+P. M. Anderson and A. A. Fouad (1977)
+
+Power system control and stability.
+
+1st edition,  Iowa State University Press, Ames, IA, USA.
+
+Cited by: Fig. 2.
+
+[29]
+A. Sanchez-Gonzalez et al. (2020)
+
+Learning to simulate complex physics with graph networks.
+
+In Proc. 37th Int. Conf. Mach. Learn. (ICML),
+
+pp. 8459–8468.
+
+Cited by: §IV.
+
+[30]
+pandapower
+
+pandapower.
+
+Note: [Online]Available: https://www.pandapower.org/
+
+Cited by: §IV-C.
+
+[31]
+VeraGrid
+
+VeraGrid.
+
+Note: [Online]Available: https://github.com/SanPen/VeraGrid
+
+Cited by: §IV-C.
+
+[32]
+S. Jadhav et al. (2025)
+
+Enhancing power flow estimation with topology-aware gated graph neural networks.
+
+Note: arXiv:2507.02078
+
+External Links: Document
+
+Cited by: §IV-D.
+
+[33]
+O. Arowolo and J. L. Cremer (2025)
+
+Towards generalization of graph neural networks for AC optimal power flow.
+
+Note: arXiv:2510.06860
+
+External Links: Document
+
+Cited by: §V-C.
+
+    Experimental support, please
+    view the build logs
+    for errors. Generated by
+
+        L
+        A
+        T
+        E
+
+      xml
+
+    .
+
+Instructions for reporting errors
+
+We are continuing to improve HTML versions of papers, and your feedback helps enhance accessibility and mobile
+      support. To report errors in the HTML that will help us improve conversion and rendering, choose any of the
+      methods listed below:
+
+Click the "Report Issue" (
+
+          ) button, located in the page header.
+
+Tip: You can select the relevant text first, to include it in your report.
+
+Our team has already identified the following issues. We appreciate your time reviewing and reporting rendering errors we
+      may not have found yet. Your efforts will help us improve the HTML versions for all readers, because disability
+      should not be a barrier to accessing research. Thank you for your continued support in championing open access for
+      all.
+
+Have a free development cycle? Help support accessibility at arXiv! Our collaborators at LaTeXML maintain a list of packages that need conversion, and welcome developer contributions.
+
+        We gratefully acknowledge support from
+        our major funders,
+        member institutions, ,
+        and all contributors.
+
+        About
+        ·
+        Help
+        ·
+        Contact
+        ·
+        Subscribe
+        ·
+        Copyright
+        ·
+        Privacy
+        ·
+        Accessibility
+        ·
+        Operational Status (opens in new tab)
+
+Major funding support from

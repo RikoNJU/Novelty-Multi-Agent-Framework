@@ -1,0 +1,2472 @@
+Learning Implicit Causal World Models from Multi-Agent Demonstrations
+
+      Report GitHub Issue
+      ×
+
+      Title:
+
+Content selection saved. Describe the issue below:
+
+      Description:
+
+      Submit without GitHub
+      Submit in GitHub
+
+    arXiv is now an independent nonprofit!
+    Learn more
+    ×
+
+      Back to arXiv
+
+    Why HTML?
+
+      Report Issue
+
+      Back to Abstract
+
+      Download PDF
+
+Abstract
+
+1 Introduction
+
+2 Related Work
+
+3 background
+
+3.1 Structural Causal Model for MAS
+
+3.2 Longitudinal Causal Decision Graph for MAS
+
+3.3 Stochastic Soft Interventions
+
+3.3.1 Stochastic Soft Intervention via Policy
+
+3.3.2 Interventional Signal via Policy Entropy
+
+3.4 Causal Identifiability and the Sequential Backdoor Condition
+
+3.5 Recovering a Causal World model
+
+4 Framework and Methodology
+
+4.1 The Multi-Agent Sequential Backdoor Condition
+
+4.2 Identifiability via the MAS-SBC
+
+4.3 Generalization Error Bound
+
+4.4 Causal Structure Discovery
+
+4.5 Causal Masked World Model Architecture
+
+5 Experimentation
+
+6 CONCLUSION AND LIMITATIONS
+
+References
+
+A Impact of the paper
+
+B Structural Causal Model Formalization
+
+B.1 Exogenous and Endogenous Partitioning
+
+B.2 Structural Functions and Dependencies
+
+B.3 The Role of P⁡(U)P(U)
+
+C Causal decision graph
+
+C.1 MDP Regimes (Full Observability)
+
+C.2 POMDP Regimes (Partial Observability)
+
+C.3 The Observation Space and Information Bottleneck
+
+D Formalizing Policy Mixtures as Causal Interventions
+
+D.1 Mapping the Mixture to a Structural Mechanism Shift
+
+D.2 The Role of Entropy in Structural Discovery
+
+E Theoretical Foundations of the Sequential Backdoor Condition
+
+E.1 The Manipulated Causal Decision Graph
+
+E.2 Formal Definition of the Sequential Backdoor Criterion
+
+E.3 The Structural Violation in Multi-Agent Environments
+
+F Formal Proof of the MAS Sequential Backdoor Condition
+
+F.1 Structural Axioms of the Multi-Agent System
+
+F.2 Step 1: Graphical d-Separation via Induction
+
+F.3 Step 2: Algebraic Reduction via do-Calculus
+
+G Motivation Study in Tic-Tac-Toe
+
+H Generalization Error Bound of the ICWM
+
+H.1 Discussion of Proven Implications
+
+I Theoretical Guarantees and Algorithmic Selection for Causal Discovery
+
+I.1 Completeness of the Lagged Causal Skeleton in PCMCI+
+
+I.1.1 Theoretical Setup and the MCI Test
+
+I.1.2 Proof of Lagged Skeleton Completeness
+
+I.1.3 A Principled Heuristic Backed by Causal Decision Graphs
+
+I.2 Algorithmic Selection: PCMCI+ vs. Latent Discovery (LPCMCI)
+
+I.2.1 Architectural Infeasibility of Partial Ancestral Graphs (PAGs)
+
+I.2.2 Continuous Edge Integration via Fuzzy Masking
+
+J Contextual Bandit Formulation of Decision-Making
+
+J.1 The Intractability of Expected Information Gain
+
+J.2 Surrogate Objectives
+
+K MAS Environment Visualization
+
+L State Representation of Different environments
+
+L.1 Two-Door Coordination
+
+L.2 Giveway Corridor
+
+L.3 Multi-Agent Navigation
+
+M Action Space Representation
+
+M.1 Continuous Force-Based Action Space (VMAS)
+
+M.2 Discrete Categorical Action Space (MiniGrid)
+
+M.3 Comparative Summary
+
+N Shifted environments
+
+How each layout differs from its default.
+
+O Ground Truth Causal Adjacency Matrices
+
+P Neural Architecture Design and Baselines
+
+P.1 Summary of Model Properties
+
+P.2 Causal Structural Masking and AMLS
+
+P.3 Baseline Architectures
+
+P.4 Optimization and Loss Functions
+
+Q Evaluation Metrics
+
+Q.1 Toy Study: Validating Δvariance\Delta_{\text{variance}}
+
+Q.1.1 Design
+
+Q.1.2 Experiments
+
+Q.1.3 Reading the Figure
+
+Q.2 Toy evaluation: density metrics vs. the variance metric
+
+Toy world (Fig. a).
+
+Evaluation protocol (Fig. b).
+
+Spatial localization (Fig. c).
+
+Why Δvariance\Delta_{\text{variance}} is blind (Fig. d).
+
+Detection power vs. sampling budget (Fig. e).
+
+Takeaway.
+
+Q.3 Causal Metric Stress Tests
+
+Analysis of Metric Properties
+
+R MAPPO Training and Evaluation Performance of Expert Policy
+
+S Dataset Cardinality and Evaluation
+
+S.1 Scaling Dynamics and Cardinality Bounds
+
+S.2 Evaluation Dataset Configuration
+
+S.3 Quality of the Collected datasets (𝒟σN\mathcal{D}^{N}_{\sigma})
+
+S.4 Evaluation Dataset Configuration: two, three, four agent navigation
+
+T Causal Discovery Setup and Results
+
+T.1 Causal Discovery Experimental Parameters
+
+T.2 Evaluation Results: on three primary enviorments
+
+T.3 Evaluation Results: High sample complexity experiments
+
+T.4 Evaluation Results: two, three, four agent navigation
+
+U World Model Setup and Results
+
+U.1 Evaluation Results: on three primary environments
+
+U.2 Evaluation Results: High sample complexity experiments
+
+U.3 Evaluation Results: two, three, four agent navigation
+
+V Causal-Mask Ablation Study
+
+W Uncertainty and Neural density measuring Setup and Results
+
+W.1 Grid World: Two-Door
+
+W.2 Continuous Control: Give-Way
+
+W.3 Two-Agent Navigation
+
+W.4 Multi-Agent Navigation without LIDAR
+
+W.5 Quantitative Uncertainty Metrics
+
+X World-Model Spatial Error Density
+
+X.1 Setup
+
+X.2 Figures
+
+X.3 Quantitative summary
+
+X.4 Discussion
+
+Y Generalization under layout shift
+
+Y.1 Setup
+
+Y.2 Figures: space-rearranging shifts
+
+Y.3 Figures: controlled single-factor shifts
+
+Y.4 Quantitative summary
+
+Y.5 Discussion
+
+Y.6 Where the shift actually bites: subtracting the source error surface
+
+Y.7 Splitting the velocity channel: where recurrence pays off
+
+Y.8 Overall takeaway
+
+Z Towards Pearl’s framework to evaluate counterfactual queries
+
+Z.1 Setup
+
+Z.2 The pooled correlation is confounded
+
+Z.3 Intervention strength is the common cause
+
+Z.4 The null replicates under layout shift
+
+Z.5 A localized, conditional exception
+
+Z.6 Why stretch benefits and rotation does not
+
+Z.7 Figures
+
+Z.8 Three controlled shifts that separate what earlier layouts confounded
+
+Wrap bounds the alignment claim.
+
+Anti-Causal reveals a distinct mechanism: containment, not accuracy.
+
+The firewall is learned from intervention, and differs by model family.
+
+Easy Give-Way is a clean control.
+
+Pulling the five two-door shifts together: what moved, not how much.
+
+Z.9 Summary
+
+    License: arXiv.org perpetual non-exclusive license
+
+arXiv:2607.26336v1 [cs.LG] 28 Jul 2026
+
+Learning Implicit Causal World Models from Multi-Agent Demonstrations
+
+Jasorsi Ghosh
+
+Affiliation: Department of Computer Science
+
+Affiliation: Purdue University
+
+Affiliation: West Lafayette, Indiana, USA
+
+Email: ghosh117@purdue.edu
+
+Abstract
+
+In model-based reinforcement learning, world models exist as internal simulators, but their training often conflates statistical correlations with causal mechanisms. This problem is exacerbated in multi-agent systems where physical transitions are intertwined with strategic agent intents, causing world models to fail under distribution shift. We introduce Implicit Causal World Models to recover environmental dynamics from offline demonstrations without requiring pre-defined causal graphs. By incorporating policy variance, we render world models discoverable via the sequential backdoor condition. Evaluations across coordination tasks (Two-Door, Navigation, and Giveway) demonstrate that these models provide interpretable causal representations under both full and partial observability, with model accuracy scaling directly with interventional strength.
+
+1 Introduction
+
+In the evolution of model-based reinforcement learning (Moerland et al., 2022), world models have progressed from early predictive systems (Sutton, 1991) to sophisticated generative architectures (Hafner et al., 2024; Hafner et al., 2019; LeCun and others, 2022) that utilize latent state-space models to simulate future trajectories. We frame these world models as an agent’s ”internal simulators,” representing its belief about the environment. While world models improve sample efficiency (Ha and Schmidhuber, 2018b) in controlled settings , they remain fundamentally limited by their reliance on statistical correlations rather than causal underlying mechanisms (Kipf et al., 2020). In high-stakes environments, this leads to the spurious correlation problem, where models incorrectly attribute state transitions to non-causal features present during expert demonstrations.
+
+Figure 1: A learned causal dynamics transfers to states the model has never
+seen. The region below the dashed line is unseen in training. Full details in Appendix Z
+
+This challenge is compounded in multi-agent systems, where environmental physics are intertwined (Lowe et al., 2020; Dasgupta et al., 2019) with the strategic, often confounded, intents of other agents. For example, an autonomous vehicle model might incorrectly learn to accelerate because an adjacent car moves, rather than because the traffic light turned green. In this scenario, the physics of the green light correlates perfectly with another agent’s intent to move, leading to causal confusion.
+
+Causal World Models (Ahmed et al., 2020; Nam et al., 2026) redefine internal simulators by replacing black-box transition functions with a structured network of causal links representing the environment’s governing mechanisms. While prior work (Richens and Everitt, 2024) highlights the theoretical robustness of agents that learn causal models, this structural approach explicitly resolves distorted dynamics (Xia et al., 2022) introduced by selection bias or unobserved confounders in offline data. By utilizing structured world models , this grounding in environmental physics ensures that transition dynamics remain invariant (Peters et al., 2015), even under distributional shifts (Deng et al., 2025; Arjovsky et al., 2020) in the observational space.
+
+Figure 2: Overview of the ICWM Framework: (a) Stochastic Demonstrations: Expert multi-agent trajectories collected via soft interventions. (b) Feature Extraction: Temporal features (r,a,s)(r,a,s) processed for causal discovery. (c) Causal Structure Discovery: Learned world model showing reward and transition physics across temporal lags (Lag 1: t−1→tt-1\rightarrow t,  Lag 2: t−2→tt-2\rightarrow t). (d) Benchmarking: Stress testing under exploratory (πr​a​n​d​o​m\pi_{random}), adversarial (πa​d​v​e​r​s​a​r​i​a​l\pi_{adversarial}), and distributional (πb​i​a​s​e​d−o​p​t​i​m​a​l\pi_{biased-optimal}) policy shifts.
+
+We propose Implicit Causal World Models (ICWM), which leverage neural architectures to approximate structural causal models (Schölkopf et al., 2021; Pawlowski et al., 2020) without requiring the hand-engineered directed acyclic graphs often rendered intractable by the combinatorial complexity of multi-agent systems. Discovering true enviornment dynamics from policy rollouts requires overcoming temporal dependencies that violate the independent and identically distributed assumptions central to standard causal discovery (Peters et al., 2017). We address this by framing sequential trajectories as a vector autoregressive process (Runge et al., 2019) and utilizing the PCMCI+ algorithm (Runge, 2022) to account for both time-lagged and contemporaneous dependencies.
+
+Adhering to the Pearl Causal Hierarchy (Pearl, 2019), achieving the identifiability of a true causal world model requires Layer 2 (Intervention) understanding. However, active hard interventions in multi-agent systems are often computationally or prohibitively costly (Kallus and Zhou, 2020). We propose bypassing this constraint by collecting demonstrations with varying degrees of stochastic interventional strength applied exclusively to agent actions via the expert’s policy. This method, parallels the implications of soft interventions described in the literature (Correa and Bareinboim, 2020), allows the Causal World Model to discover the true causal parents of environment dynamics from the spurious confounders present in the demonstrations.
+
+In the framework of Causal Imitation Learning (Kumor et al., 2022), agent actions in multi-agent systems are treated as sequential interventions upon the environment by the expert policy. While behavioral cloning (Pomerleau, 1988) is the standard approach for imitating expert policies, it fails to discover the underlying environmental physics when demonstrations are influenced by unobserved confounders (de Haan et al., 2019). For the learned world model to be identifiable, the sequential backdoor condition (Zhang and Bareinboim, 2016) must be satisfied. This requires that the observed state history effectively d-separates agent actions from future states along all non-causal backdoor paths. We present a motivation study on the board game Tic-Tac-Toe in Appendix G.
+
+In this paper (Figure 2), we address the limitations of model-based reinforcement learning in multi-agent settings by introducing a framework for discovering causal mechanisms from biased offline data. Our contributions as follows:
+
+1.
+
+Stochastic Interventional Data Collection (C1): We introduce a demonstration collection strategy that applies soft interventions through policy variance, satisfying the Pearl Causal Hierarchy requirements for identifiability without costly hard interventions.
+
+2.
+
+Multi-Agent Sequential Backdoor Condition (C2): We formalize and prove the Multi-Agent Sequential Backdoor Condition, establishing that interventional dynamics are recoverable from observational multi-agent data despite unobserved strategic confounding, and use it to decouple environmental physics from agent intent.
+
+3.
+
+Interventional Strength Recovers Causal Structure (C3): Across three coordination domains (Two-Door (Fickinger, 2020), Navigation (Bettini et al., 2022), and Giveway (Bettini et al., 2022)), under both full and partial observability and scaling to 2/3/42/3/4 agents, we show that discovery error falls monotonically as the interventional strength σ\sigma grows.
+
+4.
+
+Generalization Error Bound (C4): We establish, and confirm empirically, that the out-of-distribution policy evaluation error of the learned world model scales inversely with the interventional strength, falling by up to two orders of magnitude under adversarial policies.
+
+5.
+
+Intervention, Not Graph Quality, Is the Lever (C5): Pooling 1,2401{,}240 trained models, we show that the association between recovered-graph quality and predictive accuracy is a common-cause artefact of σ\sigma: conditioning on σ\sigma removes it, and a graph-free model matches the masked model at matched data. The causal mask earns its keep specifically under partial observation and layout extrapolation, and as a structural prior whose corruption is worse than no prior at all.
+
+6.
+
+Calibrated Out-of-Distribution Uncertainty (C6): We show that the learned models localize their predictive uncertainty to a minority of state dimensions under distribution shift, rather than degrading uniformly.
+
+Impact of this work (Figure 6) seen as advances Model-Based Reinforcement Learning toward out-of-distribution robustness and structural interpretability, ensuring autonomous systems remain reliable even when surrounding agent behaviors deviate from training distributions. This framework facilitates verifiable safety, fault attribution, agent alignment, and making precise credit assignment to agent actions feasible.
+
+2 Related Work
+
+In our literature review, we identify practical bottlenecks in related problems and describe the gaps.
+
+Limitations of Associative World Models: Model-Based Reinforcement Learning often relies on associative world models (DreamerV3, PlaNet, MuZero (Schrittwieser et al., 2020)) that predict future states by matching statistical distributions. Operating at Layer 1 of the Pearl Causal Hierarchy, these models are prone to causal confusion (de Haan et al., 2019), failing to distinguish between functional environment transitions and spurious correlations.
+
+In multi-agent systems world models (Zhu et al., 2026; Zhang et al., 2025b; Zhang et al., 2025a), this manifest as an objective mismatch where models conflate invariant physical laws with the strategic intents of other agents. When dynamics are ”intertwined,” the world model develops a policy-dependent bias; consequently, shifting from expert to exploratory or adversarial policies causes catastrophic failure because the model expects environment physics to follow the expert’s specific behavior. We address this by treating agent intent as a formal confounder UU, adopting an interventional framework (Schölkopf et al., 2021) to ensure out-of-distribution robustness.
+
+FOCUS (Zhu et al., 2022) prunes transitions using Kernel-based Conditional Independence tests (Zhang et al., 2012). These methods assume causal sufficiency. Multi-agent systems violate this assumption. Unobserved agent intents act as persistent confounders. Observational discovery yields fully-connected graphs in dense settings. We address this by treating intent as a formal confounder UU. We use an interventional framework (Schölkopf et al., 2021).
+
+Scalability of Neural Causal Architectures: GNNs (Kipf et al., 2020; Scarselli et al., 2009), C-VAEs (Yang et al., 2023), and Neural SCMs (Pawlowski et al., 2020) approximate causal structures. Their message-passing requirements scale as O⁡(N2)O(N^{2}). This requirement makes them computationally prohibitive for dense multi-agent dynamics. Furthermore, true counterfactual reasoning remains intractable (Schölkopf et al., 2021).
+
+Temporal Gaps in Causal Discovery:
+Causal discovery is divided into constraint-based (Spirtes et al., 2000) methods, which use statistical independence tests, and score-based (Chickering, 2002) methods, which maximize a fit criterion (Verma and Pearl, 1990). Both paradigms are complicated by agent demonstrations that violate i.i.d. assumptions. While PCMCI+ (Runge, 2022) addresses autocorrelated and contemporaneous dependencies in time series, it has not been integrated into reinforcement learning transition models. We bridge this gap by using these techniques to inform the structural constraints of our world model.
+
+The Intervention-Observation Paradox:
+The reliance on costly hard interventions bottlenecks causal discovery (Eberhardt, 2008) and causal reinforcement learning algorithms (Zhang and Bareinboim, 2016). We bypass this by demonstrating that multi-agent policy variance provides sufficient interventional strength for Layer 2 identifiability. This parallels Causal Imitation Learning (CIL) theory, where the sequential backdoor condition (Zhang and Bareinboim, 2016) (SBC) is used to identify robust policies. We shift this focus, applying the SBC directly to the world model to ensure transition dynamics are identifiable even when agent intents act as unobserved confounders.
+
+Comparison to Existing MAS Models:
+Current multi-agent system frameworks (Ahmed et al., 2020; Madumal et al., 2019) often focus on emergent representations or communication protocols. Our framework differentiates itself by explicitly discovering environmental physics from agent strategy. Models that treat transitions as deterministic finite automata (Hopcroft et al., 2001) (DFA) to learn the system transition (Li et al., 2024; Vafa et al., 2024; Vafa et al., 2025b), and our work overlaps with these approaches in how structural constraints are integrated and learned alongside a generative model
+Generative
+
+Generative Video World Models: High-fidelity video models use diffusion and transformer processes to synthesize visually coherent states (Ha and Schmidhuber, 2018a; Bruce et al., 2024). By prioritizing visual plausibility over causal grounding, these architectures are prone to physical hallucinations under policy shifts (Li et al., 2024; Tragoudaras et al., 2026). Over pixel space based world modeling (Assran et al., 2023; Zhou et al., 2025), our framework instead prioritizes the discovery of invariant structural mechanisms to ensure robustness against spurious correlations inherent in training demonstrations.
+
+3 background
+
+3.1 Structural Causal Model for MAS
+
+We formalize multi-agent transition dynamics as an Structural Causal Model (Pearl, 2009) (SCM) ℳ=⟨𝐔,𝐕,ℱ,P⁡(𝐔)⟩\mathcal{M}=\langle\mathbf{U},\mathbf{V},\mathcal{F},P(\mathbf{U})\rangle, with exogenous variables 𝐔\mathbf{U} (environment noise ue​n​vu_{env}, latent agent intents ui​n​t​e​n​tiu^{i}_{intent}) and endogenous variables 𝐕\mathbf{V} (state sts_{t}, joint actions 𝐚𝐭\mathbf{a_{t}}, reward rtr_{t}, successor st+1s_{t+1}). The structural mappings ℱ\mathcal{F} are:
+
+Environment Physics:
+st+1←fs​(st,𝐚t,ue​n​v)\displaystyle s_{t+1}\leftarrow f_{s}(s_{t},\mathbf{a}_{t},u_{env})
+
+(1)
+
+Reward Model:
+rt←fr​(st,𝐚t,ue​n​v)\displaystyle r_{t}\leftarrow f_{r}(s_{t},\mathbf{a}_{t},u_{env})
+
+(2)
+
+Agent Policies:
+ati←fai​(st,ui​n​t​e​n​ti)\displaystyle a^{i}_{t}\leftarrow f_{a^{i}}(s_{t},u^{i}_{intent})
+
+(3)
+
+In this formulation, fsf_{s} represents the invariant physical laws we aim to recover. The dependence of actions atia^{i}_{t} on latent intents ui​n​t​e​n​tiu^{i}_{intent} introduces persistent confounding, as ui​n​t​e​n​tiu^{i}_{intent} typically correlates with sts_{t} in expert demonstrations, necessitating an interventional approach for discovery. Equation 3 has basis in prior work (Lowe et al., 2020; Dasgupta et al., 2019) (See Appendix B for a detailed breakdown of these components.)
+
+3.2 Longitudinal Causal Decision Graph for MAS
+
+We represent sequential multi-agent system using a Causal decision graph 𝒢\mathcal{G} (Figure 7) (Zhang and Bareinboim, 2021), which encodes the structural dependencies of Eqs. 1, 2, 3 over time. (See Appendix C for a detailed analysis of these topological structures.)
+
+In multi-agent demonstrations, unobserved strategic intent acts as a confounder UU that induces non-causal backdoor paths. Under full observability, introducing UU makes it a common cause of both actions and transitions, producing causal confusion; under partial observability the same intent-driven actions are additionally filtered through an observation bottleneck (Fig. 7a–d). Appendix C analyzes all four topological regimes.
+
+3.3 Stochastic Soft Interventions
+
+Hard interventions, such as d​o​(𝐚t=𝐚^)do(\mathbf{a}_{t}=\hat{\mathbf{a}}) or d​o​(𝐬t=𝐬^)do(\mathbf{s}_{t}=\hat{\mathbf{s}}), isolate causal effects by entirely severing incoming edges to a target variable (Pearl, 2009). We execute stochastic soft interventions. We perturb the underlying mechanisms by injecting controlled variance directly into the behavioral data (Appendix J).
+
+3.3.1 Stochastic Soft Intervention via Policy
+
+In observational data, latent intent ui​n​t​e​n​tiu^{i}_{intent} persistently confounds agent actions. We break this confounding by applying a soft intervention to the agent’s policy (claim C1). We replace the original (Eqn. 3) conditional distribution P⁡(ati∣st,ui​n​t​e​n​t)P(a^{i}_{t}\mid s_{t},u_{intent}) with an interventional distribution Pσ​(ati∣st)P^{\sigma}(a^{i}_{t}\mid s_{t}). Let πe​x​pi\pi^{i}_{exp} denote the deterministic expert policy yielding demonstrations 𝒟\mathcal{D}. We enforce a stationary mixture distribution:
+
+Pσ​(ati∣st)=(1−σ)​πe​x​pi​(ati∣st)+σ​ζ​(ati)P^{\sigma}(a^{i}_{t}\mid s_{t})=(1-\sigma)\pi^{i}_{exp}(a^{i}_{t}\mid s_{t})+\sigma\zeta(a^{i}_{t})
+
+(4)
+
+where σ∈[0,1]\sigma\in[0,1] dictates the interventional strength, and ζ\zeta is a strictly independent stochastic process (e.g., a uniform distribution over 𝒜i\mathcal{A}^{i}). Structurally, this operates as a definitive causal soft intervention (Eberhardt, 2008) by fundamentally altering the data-generating mechanism (see Appendix D).
+
+3.3.2 Interventional Signal via Policy Entropy
+
+We quantify this interventional capacity via the Shannon Entropy of PσP^{\sigma} at state ss:
+
+H(Pσ∣s)=−∫𝒜iPσ(a∣s)logPσ(a∣s)daH(P^{\sigma}\mid s)=-\int_{\mathcal{A}^{i}}P^{\sigma}(a\mid s)\log P^{\sigma}(a\mid s)da
+
+(5)
+
+The identifiability of the transition function fsf_{s} demands aggregate entropy in 𝒟\mathcal{D}. Deterministic demonstrations (σ=0\sigma=0, H=0H=0) permanently conflate invariant physics with hidden intent. High entropy forces natural experiments. By varying actions in identical states, we break backdoor paths and isolate the environmental physics.
+
+3.4 Causal Identifiability and the Sequential Backdoor Condition
+
+A causal query P⁡(y∣d​o​(x))P(y\mid do(x)) is identifiable if it is computable from the observed joint distribution given the causal graph (Pearl, 2009). We apply this to sequential decision-making to extract invariant dynamics from biased demonstrations.
+
+Under the manipulated causal decision graph, when the Sequential Backdoor Criterion (SBC) (Zhang and Bareinboim, 2016) is satisfied, we estimate the causal effect of the action history 𝐚1:t\mathbf{a}_{1:t} on the subsequent state st+1s_{t+1} as P(st+1∣do(𝐚1:t))P(s_{t+1}\mid do(\mathbf{a}_{1:t})). is reducible to an observational expression. Therefore, the causal identifiability of the world model is asserted directly from the demonstrations.While this theorem guarantees identifiability for an isolated agent, the introduction of contemporaneous agents structurally violates the standard SBC. We detail the foundational criteria, the sequential graph surgery, and the strict necessity for a multi-agent extension in Appendix E.
+
+3.5 Recovering a Causal World model
+
+Following Vafa et al. (2024), we formalize environmental physics as a DFA 𝒲=(Q,Σ,δ,q0,F)\mathcal{W}=(Q,\Sigma,\delta,q_{0},F), where QQ is the state space, Σ\Sigma is the action alphabet, and δ:Q×Σ→Q\delta:Q\times\Sigma\to Q is the transition function. We define qrejectq_{\text{reject}} as a sink state for impossible transitions, with F=Q∖{qreject}F=Q\setminus\{q_{\text{reject}}\} as the set of valid states. A generative model (proxy for world model) m⁡(⋅):Σ∗→Δ⁡(Σ)m(\cdot):\Sigma^{*}\to\Delta(\Sigma) recovers 𝒲\mathcal{W} if it satisfies exact next-token prediction for any sequence s∈S⁡(q)s\in S(q) leading to state qq:
+
+∀q∈F,∀s∈S⁡(q),∀a∈Σ:m⁡(a∣s)>0⇔δ⁡(q,a)≠qreject\forall q\in F,\forall s\in S(q),\forall a\in\Sigma:m(a\mid s)>0\iff\delta(q,a)\neq q_{\text{reject}}
+
+(6)
+
+While DFA recovery ensures a model honors environmental rules via their support, it does not guarantee recovery of the invariant causal mechanism fsf_{s} in MAS, where ui​n​t​e​n​tu_{intent} acts as a confounder.
+
+To bridge this, we assert that robust recovery requires satisfying the SBC. By conditioning on a history HkH_{k} that d-separates the current action 𝐚k\mathbf{a}_{k} from the intent ui​n​t​e​n​tu_{intent} within the manipulated graph 𝒢𝐚1:k−1¯𝐚k+1:t¯\mathcal{G}_{\underline{\mathbf{a}_{1:k-1}}\overline{\mathbf{a}_{k+1:t}}}, the model identifies the transition physics fsf_{s} independently of the expert policy or demonstrations.
+
+4 Framework and Methodology
+
+4.1 The Multi-Agent Sequential Backdoor Condition
+
+To establish the structural identifiability of our Implicit Causal World Model (claim C2), we must demonstrate that the interventional distribution of the environmental transition can be uniquely computed from observational multi-agent data. Let Hk=(𝐬0:k,𝐚0:k−1)H_{k}=(\mathbf{s}_{0:k},\mathbf{a}_{0:k-1}) represent the observed history, UU the unobserved latent intent, AtiA^{i}_{t} the action of the target agent, and At−iA^{-i}_{t} the joint actions of all other agents.
+
+We formalize the Multi-Agent Sequential Backdoor Condition (MAS-SBC) under the premise that agents operate via decentralized policies and transitions are Markovian with respect to the state-action space.
+
+Theorem 1 (MAS-SBC).
+
+Given the multi-agent causal decision graph 𝒢\mathcal{G}, the interventional transition dynamics P⁡(st+1∣d​o​(ati),Hk)P(s_{t+1}\mid do(a^{i}_{t}),H_{k}) can be resolved strictly through observational distributions via the sequential backdoor adjustment:
+
+P⁡(st+1∣d​o​(ati),Hk)=∑at−iP⁡(st+1∣ati,at−i,Hk)​P​(at−i∣Hk)P(s_{t+1}\mid do(a^{i}_{t}),H_{k})=\sum_{a^{-i}_{t}}P(s_{t+1}\mid a^{i}_{t},a^{-i}_{t},H_{k})P(a^{-i}_{t}\mid H_{k})
+
+(7)
+
+The complete formal proof (claim C5) using Pearl’s do-calculus on the mutilated graph 𝒢A1:k−1i¯Ak+1:ti¯\mathcal{G}_{\overline{A_{1:k-1}^{i}}\underline{A_{k+1:t}^{i}}} is provided in Appendix F.
+
+4.2 Identifiability via the MAS-SBC
+
+Decoupling fsf_{s} from UU requires two things. Structural identifiability: Theorem 1 extends sequential adjustment by marginalizing over contemporaneous peer actions, blocking the multi-agent backdoor path Aki←U→Ak−i→sk+1A^{i}_{k}\leftarrow U\rightarrow A^{-i}_{k}\rightarrow s_{k+1}. Causal support: the adjustment cannot be evaluated on deterministic expert data, where atia^{i}_{t} is a deterministic function of UU and the two are collinear. Stochastic soft interventions (σ>0\sigma>0) break this collinearity and guarantee the positivity needed to compute interventional queries. In practice we apply these interventions independently and simultaneously to all agents, with ζ⁡(ati)⟂ζ⁡(atj)\zeta(a^{i}_{t})\perp\zeta(a^{j}_{t}).
+
+4.3 Generalization Error Bound
+
+To formalize the necessity of stochastic soft interventions, we establish a theoretical bound on the out-of-distribution policy evaluation error. We mathematically prove that the generalization error of the learned causal world model scales inversely with the square root of the interventional strength (σ\sigma) applied during data collection. The formal theorem (claim C4), the step-by-step derivation using the Simulation Lemma, and the discussion of its theoretical implications are provided in Appendix H.
+
+4.4 Causal Structure Discovery
+
+Assumptions. Our MAS formulation violates causal sufficiency by construction, since ui​n​t​e​n​tu_{intent} is unobserved. We therefore assume: (i) Strict temporal lag : the physical mechanism fsf_{s} acts with lag τ≥1\tau\geq 1, so no true causal interaction is instantaneous (Figure 7); and (ii) Contemporaneous confounding isolation : ui​n​t​e​n​tu_{intent} coordinates actions strictly at time tt and has no direct lagged effect on st+1s_{t+1} outside 𝐚t\mathbf{a}_{t}.
+
+Structure Discovery. Under above assumptions, we treat the MAS trajectories in 𝒟σ\mathcal{D}_{\sigma} as a Vector Autoregressive (VAR) process. Since the sampled histories ℋtτ\mathcal{H}_{t}^{\tau} are almost IID across the dataset, we define the conditioning set as the state-action-reward history (ℋtτ)(\mathcal{H}_{t}^{\tau}) up to a maximum lag τ\tau:
+
+ℋtτ={(st−k,𝐚t−k,rt−k)∣1≤k≤τ}\mathcal{H}_{t}^{\tau}=\{(s_{t-k},\mathbf{a}_{t-k},r_{t-k})\mid 1\leq k\leq\tau\}
+
+(8)
+
+We utilize the PCMCI+ algorithm to evaluate the Conditional Mutual Information (CMI) (Wyner, 1978) and identify the directed edge set EE of the skeleton 𝒢f​u​l​l\mathcal{G}_{full}. The discovery yields two sub-graphs: Lagged discovery (El​a​gE_{lag}: edges Vt−k→VtV_{t-k}\to V_{t} spanning time steps) and contemporaneous discovery (Ec​o​n​t​e​m​pE_{contemp}: edges Vi,t→Vj,tV_{i,t}\to V_{j,t} within the same step). Under Assumption (i), invariant physical transitions lie in El​a​gE_{lag}. Assumption (ii) restricts spurious intent correlations to Ec​o​n​t​e​m​pE_{contemp}. We recover the unconfounded causal skeleton 𝒢s​k​e​l​e​t​o​n=(V,Es​k​e​l​e​t​o​n)\mathcal{G}_{skeleton}=(V,E_{skeleton}) by discarding contemporaneous dependencies:
+
+Es​k​e​l​e​t​o​n={(Vt−k→Vt)∈El​a​g∣1≤k≤τ}E_{skeleton}=\{(V_{t-k}\to V_{t})\in E_{lag}\mid 1\leq k\leq\tau\}
+
+Conditional independence tests in PCMCI+ assign a pp-value to each candidate edge. This yields an adjacency tensor 𝒞∈ℝ|V|×|V|×τ\mathcal{C}\in\mathbb{R}^{|V|\times|V|\times\tau} encoding these significance values (see Appendix I):
+
+𝒟σ→PCMCI+𝒢s​k​e​l​e​t​o​n⟹𝒞∈ℝ|V|×|V|×τ\mathcal{D}_{\sigma}\xrightarrow{\text{PCMCI}^{+}}\mathcal{G}_{skeleton}\implies\mathcal{C}\in\mathbb{R}^{|V|\times|V|\times\tau}
+
+4.5 Causal Masked World Model Architecture
+
+We instantiate the Implicit Causal World Model (ICWM) by translating 𝒢s​k​e​l​e​t​o​n\mathcal{G}_{skeleton} edges into a tensor mask 𝐂\mathbf{C} that structurally enforces the learned SCM.
+
+Neural Masking. Let transition function fsf_{s} be parameterized by neural network Φ\Phi with parameters θ\theta. Given input tensor 𝐱t=ℋtτ\mathbf{x}_{t}=\mathcal{H}^{\tau}_{t} (history up to lag τ\tau), we satisfy the SBC/MAS-SBC by applying mask 𝐂\mathbf{C} via the Hadamard product:
+s^t+1=Φ⁡(𝐱t⊙𝐂,θ)\hat{s}_{t+1}=\Phi(\mathbf{x}_{t}\odot\mathbf{C};\theta).
+This restricts the receptive field so each prediction s^i,t+1\hat{s}_{i,t+1} depends strictly on its unconfounded parents P​a​(si,t+1)∈𝒢s​k​e​l​e​t​o​nPa(s_{i,t+1})\in\mathcal{G}_{skeleton}, isolating invariant physics.
+
+5 Experimentation
+
+Figure 3: Interventional strength drives both causal-structure recovery and out-of-distribution transfer.
+(A) Graph error vs σ\sigma (dashed: navigation 2/3/42/3/4 agents).
+(B) Adversarial error (MSE/Var) vs σ\sigma.
+(C) Per-axis OOD/ID density-width inflation, dimensions sorted.
+(D) Adversarial error vs graph error; broken lines trace the σ=0.99→0.01\sigma\!=\!0.99{\to}0.01 trajectory.
+(E) σ\sigma lowers both errors together (common cause, not a direct link).
+Details in Appendix Z, V, Figure 49.
+
+Figure 4: What actually breaks a world model under shift, and what the mask is worth.
+(A) All seven shifted layouts on the dynamics/position plane, scored against
+each frozen model’s own error on the layout it trained on, so smaller is better.
+ρ=1\rho\!=\!1 is lossless and the green region is ρ≤1.5\rho\!\leq\!1.5 on both axes.
+Marker shape and colour give the kind of change, the tinted band groups layouts that
+probe the same question, and marker fill goes hollow, black, then family-colour as
+σ\sigma rises from 0.010.01 to 0.990.99.
+(B) Corrupting the causal mask inflates error in all six environment groups
+(bar: median, whisker: IQR over 5050 paired runs).
+(C) That damage grows with σ\sigma (line: median, band: geometric s.e.).
+(D) Adversarial error on 2/3/42/3/4-agent navigation (log axis). Coloured
+squares mark the mean per intervention level; the line follows each model’s geometric
+mean across team sizes. ICWM and AWM stay near 10−310^{-3}, well below C-VAE.
+(E,F) Per-cell error of the best ICWM against the training layout, for the
+two shifts that hold geometry fixed, drawn in the environment’s own frame. Each map
+has its own log2 scale. Wrap stays near parity (1.11×1.11\times); Anti-Causal is
+easier than the source (0.16×0.16\times) because shutting the red door confines the
+agent. Appendix Y tables every condition,
+Appendix V the ablation, Appendix N the layouts.
+
+Setup. We evaluate ICWM against five baselines (Appendix P): the associative world model AWM, the causal-pruning method FOCUS, a behavior-cloning world model BC-WM, a recurrent variant R-ICWM, and a generative C-VAE. AWM is the only graph-free architecture; every other model, ICWM included, receives the same soft PCMCI mask, a differentiable gate that weighs each input by the significance of its discovered causal links (Appendix P.2). Throughout, σ\sigma is the interventional strength of a dataset: σ=0\sigma\!=\!0 is purely observational expert data, σ→1\sigma\!\to\!1 is near-random exploration. We use two errors (Appendix Q): prediction error, the next-state MSE, divided by the next-state variance (MSE/Var) whenever we compare across environments; and graph error, the normalized spectral distance between the discovered and ground-truth causal graphs.
+
+Domains. We use three multi-agent coordination domains (Figure 24) with high inter-agent confounding:
+
+•
+
+Two-Door: a room with a red and a blue door; agents must open the red door then the blue door, in order, and are rewarded for fast joint completion.
+
+•
+
+Navigation: multi-agent pathfinding where collision avoidance and reaching shared goals couple the agents strategically.
+
+•
+
+Giveway: two agents on opposite ends of a corridor too narrow to pass; they must negotiate a recessed notch to reach opposing goals without colliding.
+
+Models train on datasets 𝒟σN\mathcal{D}^{N}_{\sigma} of NN episodes at interventional strength σ\sigma (Appendix S, R), and are evaluated on held-out biased-optimal (σ=0.5\sigma\!=\!0.5), random (σ=0.9\sigma\!=\!0.9), and adversarial policies.
+
+We organize the results around five questions. Figure 3 answers the first three: (i) do soft interventions recover the true causal structure (claim C3), (ii) does the learnt model transfer out of distribution (claim C6), and (iii) what is responsible for that transfer (claim C5)? Figure 4 and Figure 5 answers the remaining two: (iv) where does the lever stop working and what exactly breaks?, and (v) does memory help, and where?
+
+Q(i)(i). Figure 3A scores PC and PCMCI discovery against the ground-truth graph as σ\sigma grows. Graph error falls steadily in every environment, under both full and partial observation, and the trend survives scaling: with 22, 33, and 44 navigation agents the recovered graphs improve in the same way. In simple terms, adding randomness to the demonstrations is what turns observational data into an identifiable causal graph; without it (σ≈0\sigma\!\approx\!0) discovery is at its worst everywhere. Detailed per-metric results are in Appendix Z.
+
+Q(i​i)(ii). We evaluate every trained model on an adversarial policy far outside the demonstration distribution (Figure 3B). On all three environments the variance-normalized error falls monotonically as training σ\sigma grows, by up to two orders of magnitude on navigation, matching our bound that OOD error scales inversely with intervention. The causal world models (ICWM, AWM) beat the generative C-VAE by a wide margin throughout.
+
+The models also reason sensibly under this shift. Fitting a predictive density around each frozen model and comparing its per-axis widths OOD against in-distribution (Figure 3C), uncertainty inflates on only a minority of state dimensions while most stay at their in-distribution width: the models localize what they no longer know instead of becoming uniformly uncertain. The full cloud-width study is in Figure 49.
+
+Q(i​i​i)(iii). Across every environment and both sample regimes, models handed better graphs also predict better out of distribution (Figure 3D; pooled within-cell Spearman ρ=+0.62\rho\!=\!+0.62). It is tempting to read this as “better graph ⇒\Rightarrow better model.” The data say otherwise (Figure 3E): σ\sigma drives graph error and OOD error down together, and once we condition on σ\sigma the correlation vanishes (ρ≈0\rho\!\approx\!0), with the graph-free AWM matching ICWM at matched data. The average-intervention trajectories in Figure 3D make this concrete: moving from σ=0.01\sigma\!=\!0.01 to σ=0.99\sigma\!=\!0.99 slides each model down and to the left, improving graph error and OOD error jointly. The interventional richness of the demonstrations is the lever; the recovered graph is its by-product. The graph still earns its keep where information is missing, under partial observation and layout extrapolation (Appendix Z), and as a prior that must not be wrong: corrupting it inflates error in every environment group (Appendix V).
+
+Q(i​v)(iv). Where does the lever stop? Here we move the environment instead of the policy. We run the frozen models, without retraining, on seven altered layouts (Appendix N) and score each against its own error on the training layout, where ρ=1\rho\!=\!1 means lossless transfer (Figure 4A). The headline now inverts. On the three layouts that rearrange space, ρdyn\rho_{\mathrm{dyn}} rises with intervention, from a median of 1.9×1.9\times at σ=0.01\sigma\!=\!0.01 to 5.3×5.3\times at σ=0.99\sigma\!=\!0.99 (n=96n\!=\!96 paired conditions, 93%93\% worse, Wilcoxon p<10−14p\!<\!10^{-14}), and this holds for every architecture, ICWM and graph-free AWM alike. The reason is simple: exploratory data widens coverage only within the training geometry, so it buys nothing once the geometry itself moves. Three shifts isolate what breaks, each holding the geometry fixed and changing one factor. Wrap changes only the transition rule and stays at ≈1.0×\approx\!1.0\times for every σ\sigma (Mann–Whitney p<10−6p\!<\!10^{-6} against the space family). This is the decisive control: it shows the large ratios come from unfamiliar coordinates, not from a fragile dynamics model. Easy Give-Way lifts position error while its dynamics error falls (ρpos/ρdyn=4.2\rho_{\mathrm{pos}}/\rho_{\mathrm{dyn}}\!=\!4.2), and Anti-Causal leaves both near 1.01.0 (p<10−24p\!<\!10^{-24} between the two); it is in fact easier than the source, because shutting the red door confines the agent (Figure 4E,F).
+
+Figure 5: Velocity error, R-ICWM minus ICWM (log10). Below 00 means R-ICWM is
+better. Its edge grows as the trained speed of a region drops, in all three layouts (Source, Easy, Mirror).
+
+Being off-manifold is not automatically harder. What matters is whether the changed mechanism is one the model has to predict. The mask still earns its keep here: corrupting it inflates error in all six groups (median 1.161.16 to 17.9×17.9\times, worst as σ→1\sigma\!\to\!1; Figure 4B,C). Scale is not the obstacle either. On 2/3/42/3/4-agent navigation, ICWM and AWM hold a ∼10−3\sim\!10^{-3} adversarial error as agents are added (Figure 4D), orders below C-VAE. The honest boundary is this: soft intervention identifies dynamics within a geometry, but not spatial extrapolation.
+
+Q(v)(v). R-ICWM is ICWM plus a recurrent state, so it
+should pay off where a single frame says least. We split the give-way corridor into three
+regions and measure how fast agents actually moved there in training: the Wall is
+fastest, the Connector at the bay’s mouth slower, and the Notch inside the
+bay slowest, since agents only pause there to let the other pass. Comparing the two models
+on the velocity part of the error alone (Figure 5), the gap tracks speed,
+not the layout: in the fast Wall the models are even, and R-ICWM’s edge grows
+through the Connector to the slow Notch, where it is one to three orders
+of magnitude better. The pattern survives both give-way shifts, and is largest under
+Mirror. Memory buys little when motion is fast and smooth, and a lot where it is
+slow and stop-start. This is visible only in the velocity channel; the mixed dynamics error
+averages it away (Appendix Y.7).
+
+6 CONCLUSION AND LIMITATIONS
+
+We introduce ICWM, which learns world models from multi-agent demonstrations collected under soft interventions. Our central finding is that interventional strength σ\sigma, small purposeful randomness in agent actions, is the lever on both causal-structure recovery and out-of-distribution accuracy: as it grows, discovered graphs sharpen and adversarial error falls by orders of magnitude, persisting as agents are added. The graph pays off where information is missing: on the stretched two-door layout (partial observation), ICWM reaches 0.53×0.53\times the graph-free AWM error, BC-WM 0.76×0.76\times, and FOCUS 0.80×0.80\times, while a corrupted graph is worse than none (Appendices Z, V). The lever has a precise boundary: rearranging the layout makes transfer error grow with σ\sigma (1.9×1.9\times to 5.3×5.3\times), while changing only the transition rule transfers at ≈1.0×\approx\!1.0\times, so σ\sigma identifies dynamics within a geometry, not spatial extrapolation (Figure 4, Appendix Y). Two limitations follow. First, the requirement for random actions can break the very cooperation the model needs to observe in tightly coordinated settings (most visibly in Giveway), motivating targeted rather than uniform interventions (Appendix J). Second, our guarantees do not extend to layout changes, and the model alone cannot tell a practitioner which regime a new deployment falls into.
+
+Future work. Connecting these justified world models to causal imitation and causal Q-learning (Méndez-Molina et al., 2020), and to the steerability gap of associative models (Vafa et al., 2025a), is a natural next step. Beyond this, causally grounded world models are a prerequisite for runtime verification and self-correcting agentic systems: a model correct about which variables drive a transition can both screen proposed actions before execution, in the spirit of shielding (Alshiekh et al., 2017), and supply the error signal for gradient-free self-revision (Shinn et al., 2023).
+
+Reproducibility Statement
+
+All of our results come from simulated environments with seeded pipelines. We
+describe the environments and their state and action representations in
+Appendices K, L,
+and M, and the expert policies used to generate
+demonstrations in Appendix R. We give the causal
+discovery procedure and its theoretical grounding in
+Appendix I, and the soft-mask rule in
+Appendix P.2. We describe the architectures and all
+baselines in Appendix P, and our evaluation metrics
+in Appendix Q. Every reported number is averaged over multiple
+seeds. For the cell-paired comparisons behind our main claims, we hold the
+model, environment, observability, σ\sigma, and seed fixed and vary only the
+factor we are studying. We specify the shifted layouts in
+Appendix N and the corresponding transfer results in
+Appendix Y, and the mask-corruption procedure in
+Appendix V.
+
+Ethics Statement
+
+This work studies learned
+world models in simulated multi-agent environments. It involves no human
+subjects, no personally identifiable information, and no real-world data, since
+all demonstrations are generated programmatically in open-source simulators.
+One point is worth stating clearly. Our method collects data under soft
+interventions, which means deliberately adding randomness to an agent’s actions.
+This is harmless in simulation, but in a robotic or safety-critical setting it
+would mean perturbing a system whose failures carry real cost. We therefore do
+not recommend applying uniform interventions outside simulation without a
+separate safety layer, and we treat reducing the required intervention budget as
+a safety concern and not only a question of efficiency. We declare no conflicts
+of interest or sponsorship that influenced this work.
+
+LLM Usage
+
+We used large language models only as assistive tools, for editing prose that we
+wrote ourselves and for help with implementation and plotting code. We did not
+use them to generate research ideas, design experiments, produce or analyse
+results, or find citations. We reviewed all text and code written with LLM
+assistance. Every reported number comes from the executed pipeline, and we
+checked every citation against its primary source. The authors take full
+responsibility for the contents of this paper.
+
+References
+
+Ahmed et al. (2020)
+O. Ahmed, F. Träuble, A. Goyal, A. Neitz, Y. Bengio, B. Schölkopf, M. Wüthrich, and S. Bauer
+
+CausalWorld: a robotic manipulation benchmark for causal structure and transfer learning.
+
+External Links: 2010.04296,
+Link
+
+Cited by: §1,
+§2.
+
+Alshiekh et al. (2017)
+M. Alshiekh, R. Bloem, R. Ehlers, B. Könighofer, S. Niekum, and U. Topcu
+
+Safe reinforcement learning via shielding.
+
+External Links: 1708.08611,
+Link
+
+Cited by: §6.
+
+Andrieu et al. (2003)
+C. Andrieu, N. De Freitas, A. Doucet, and M. I. Jordan
+
+An introduction to mcmc for machine learning.
+
+Machine learning 50 (1), pp. 5–43.
+
+Cited by: 1st item.
+
+Arjovsky et al. (2020)
+M. Arjovsky, L. Bottou, I. Gulrajani, and D. Lopez-Paz
+
+Invariant risk minimization.
+
+External Links: 1907.02893,
+Link
+
+Cited by: §1.
+
+Assran et al. (2023)
+M. Assran, Q. Duval, I. Misra, P. Bojanowski, P. Vincent, M. Rabbat, Y. LeCun, and N. Ballas
+
+Self-supervised learning from images with a joint-embedding predictive architecture.
+
+External Links: 2301.08243,
+Link
+
+Cited by: §2.
+
+Atari, Inc. (1973)
+Gotcha
+
+Note: Arcade video game
+
+Cited by: §D.2.
+
+Bellemare et al. (2016)
+M. Bellemare, S. Srinivasan, G. Ostrovski, T. Schaul, D. Saxton, and R. Munos
+
+Unifying count-based exploration and intrinsic motivation.
+
+Advances in neural information processing systems 29.
+
+Cited by: Appendix J.
+
+Bettini et al. (2022)
+M. Bettini, R. Kortvelesy, J. Blumenkamp, and A. Prorok
+
+VMAS: a vectorized multi-agent simulator for collective robot learning.
+
+External Links: 2207.03530,
+Link
+
+Cited by: item 3.
+
+Bou et al. (2023)
+A. Bou, M. Bettini, S. Dittert, V. Kumar, S. Sodhani, X. Yang, G. D. Fabritiis, and V. Moens
+
+TorchRL: a data-driven decision-making library for pytorch.
+
+External Links: 2306.00577,
+Link
+
+Cited by: §S.1.
+
+Bruce et al. (2024)
+J. Bruce, M. Dennis, A. Edwards, J. Parker-Holder, Y. Shi, E. Hughes, M. Lai, A. Mavalankar, R. Steigerwald, C. Apps, Y. Aytar, S. Bechtle, F. Behbahani, S. Chan, N. Heess, L. Gonzalez, S. Osindero, S. Ozair, S. Reed, J. Zhang, K. Zolna, J. Clune, N. de Freitas, S. Singh, and T. Rocktäschel
+
+Genie: generative interactive environments.
+
+External Links: 2402.15391,
+Link
+
+Cited by: §2.
+
+Chakrabarti et al. (2008)
+D. Chakrabarti, R. Kumar, F. Radlinski, and E. Upfal
+
+Mortal multi-armed bandits.
+
+Advances in neural information processing systems 21.
+
+Cited by: Appendix J.
+
+Chickering (2002)
+D. M. Chickering
+
+Optimal structure identification with greedy search.
+
+Journal of machine learning research 3 (Nov), pp. 507–554.
+
+Cited by: §2.
+
+Correa and Bareinboim (2020)
+J. Correa and E. Bareinboim
+
+General transportability of soft interventions: completeness results.
+
+In Advances in Neural Information Processing Systems,  H. Larochelle, M. Ranzato, R. Hadsell, M.F. Balcan, and H. Lin (Eds.),
+
+Vol. 33, pp. 10902–10912.
+
+External Links: Link
+
+Cited by: §1.
+
+Dasgupta et al. (2019)
+I. Dasgupta, J. Wang, S. Chiappa, J. Mitrovic, P. Ortega, D. Raposo, E. Hughes, P. Battaglia, M. Botvinick, and Z. Kurth-Nelson
+
+Causal reasoning from meta-reinforcement learning.
+
+External Links: 1901.08162,
+Link
+
+Cited by: 2nd item,
+§1,
+§3.1.
+
+de Haan et al. (2019)
+P. de Haan, D. Jayaraman, and S. Levine
+
+Causal confusion in imitation learning.
+
+External Links: 1905.11979,
+Link
+
+Cited by: §1,
+§2.
+
+Deng et al. (2025)
+Z. Deng, J. Ghosh, F. Xie, Y. Lu, K. Sycara, and J. Campbell
+
+Energy-based transfer for reinforcement learning.
+
+External Links: 2506.16590,
+Link
+
+Cited by: §1.
+
+Eberhardt (2008)
+F. Eberhardt
+
+Almost optimal intervention sets for causal discovery.
+
+In Proceedings of the Twenty-Fourth Conference on Uncertainty in Artificial Intelligence,
+
+UAI’08, Arlington, Virginia, USA, pp. 161–168.
+
+External Links: ISBN 0974903949
+
+Cited by: §2,
+§3.3.1.
+
+ElGazzar and van Gerven (2024)
+A. ElGazzar and M. van Gerven
+
+Generative modeling of neural dynamics via latent stochastic differential equations.
+
+arXiv preprint arXiv:2412.12112.
+
+Cited by: Appendix G.
+
+Fickinger (2020)
+A. Fickinger
+
+Multi-agent gridworld environment for openai gym.
+
+ GitHub.
+
+Note: https://github.com/ArnaudFickinger/gym-multigrid
+
+Cited by: item 3.
+
+Freund et al. (1992)
+Y. Freund, H. S. Seung, E. Shamir, and N. Tishby
+
+Information, prediction, and query by committee.
+
+Advances in neural information processing systems 5.
+
+Cited by: 2nd item.
+
+Gretton et al. (2012)
+A. Gretton, K. M. Borgwardt, M. J. Rasch, B. Schölkopf, and A. Smola
+
+A kernel two-sample test.
+
+Journal of Machine Learning Research 13 (25), pp. 723–773.
+
+Cited by: 7th item,
+7th item.
+
+Ha and Schmidhuber (2018a)
+D. Ha and J. Schmidhuber
+
+Recurrent world models facilitate policy evolution.
+
+External Links: 1809.01999,
+Link
+
+Cited by: §2.
+
+Ha and Schmidhuber (2018b)
+D. Ha and J. Schmidhuber
+
+World models.
+
+External Links: Document,
+Link
+
+Cited by: §1.
+
+Hafner et al. (2019)
+D. Hafner, T. Lillicrap, I. Fischer, R. Villegas, D. Ha, H. Lee, and J. Davidson
+
+Learning latent dynamics for planning from pixels.
+
+External Links: 1811.04551,
+Link
+
+Cited by: §1.
+
+Hafner et al. (2024)
+D. Hafner, J. Pasukonis, J. Ba, and T. Lillicrap
+
+Mastering diverse domains through world models.
+
+External Links: 2301.04104,
+Link
+
+Cited by: §1.
+
+Hopcroft et al. (2001)
+J. E. Hopcroft, R. Motwani, and J. D. Ullman
+
+Introduction to automata theory, languages, and computation, 2nd edition.
+
+SIGACT News 32 (1), pp. 60–65.
+
+External Links: ISSN 0163-5700,
+Link,
+Document
+
+Cited by: §2.
+
+Iwatani and Namco (1980)
+Pac-man
+
+Note: Arcade video game
+
+Cited by: §D.2.
+
+Jang et al. (2017)
+E. Jang, S. Gu, and B. Poole
+
+Categorical reparameterization with gumbel-softmax.
+
+External Links: 1611.01144,
+Link
+
+Cited by: §P.2.
+
+Kaelbling et al. (1998)
+L. P. Kaelbling, M. L. Littman, and A. R. Cassandra
+
+Planning and acting in partially observable stochastic domains.
+
+Artificial Intelligence 101 (1), pp. 99–134.
+
+External Links: ISSN 0004-3702,
+Document,
+Link
+
+Cited by: 1st item.
+
+Kakade and Langford (2002)
+S. Kakade and J. Langford
+
+Approximately optimal approximate reinforcement learning.
+
+In Proceedings of the Nineteenth International Conference on Machine Learning,
+
+ICML ’02, San Francisco, CA, USA, pp. 267–274.
+
+External Links: ISBN 1558608737
+
+Cited by: Appendix H.
+
+Kakade (2003)
+S. M. Kakade
+
+On the sample complexity of reinforcement learning.
+
+Ph.D. Thesis, University College London.
+
+External Links: Link
+
+Cited by: Appendix H,
+Appendix H.
+
+Kallus and Zhou (2020)
+N. Kallus and A. Zhou
+
+Confounding-robust policy evaluation in infinite-horizon reinforcement learning.
+
+External Links: 2002.04518,
+Link
+
+Cited by: §1.
+
+Kearns and Singh (2002)
+M. Kearns and S. Singh
+
+Near-optimal reinforcement learning in polynomial time.
+
+Machine Learning 49 (2), pp. 209–232.
+
+External Links: Document,
+Link
+
+Cited by: Appendix H.
+
+Kipf et al. (2020)
+T. Kipf, E. van der Pol, and M. Welling
+
+Contrastive learning of structured world models.
+
+External Links: 1911.12247,
+Link
+
+Cited by: §1,
+§2.
+
+Kumor et al. (2022)
+D. Kumor, J. Zhang, and E. Bareinboim
+
+Sequential causal imitation learning with unobserved confounders.
+
+External Links: 2208.06276,
+Link
+
+Cited by: §1.
+
+LeCun et al. (2022)
+Y. LeCun et al.
+
+A path towards autonomous machine intelligence version 0.9. 2, 2022-06-27.
+
+Open Review 62 (1), pp. 1–62.
+
+Cited by: §1.
+
+Li et al. (2024)
+K. Li, A. K. Hopkins, D. Bau, F. Viégas, H. Pfister, and M. Wattenberg
+
+Emergent world representations: exploring a sequence model trained on a synthetic task.
+
+External Links: 2210.13382,
+Link
+
+Cited by: §2,
+§2.
+
+Lowe et al. (2020)
+R. Lowe, Y. Wu, A. Tamar, J. Harb, P. Abbeel, and I. Mordatch
+
+Multi-agent actor-critic for mixed cooperative-competitive environments.
+
+External Links: 1706.02275,
+Link
+
+Cited by: 2nd item,
+§1,
+§3.1.
+
+Lu et al. (2023)
+Y. Lu, Y. Qin, R. Zhai, A. Shen, K. Chen, Z. Wang, S. Kolouri, S. Stepputtis, J. Campbell, and K. Sycara
+
+Characterizing out-of-distribution error via optimal transport.
+
+Advances in Neural Information Processing Systems 36, pp. 17602–17622.
+
+Cited by: Appendix G.
+
+Maddison et al. (2017)
+C. J. Maddison, A. Mnih, and Y. W. Teh
+
+The concrete distribution: a continuous relaxation of discrete random variables.
+
+External Links: 1611.00712,
+Link
+
+Cited by: §P.2.
+
+Madumal et al. (2019)
+P. Madumal, T. Miller, L. Sonenberg, and F. Vetere
+
+Explainable reinforcement learning through a causal lens.
+
+In AAAI Conference on Artificial Intelligence,
+
+External Links: Link
+
+Cited by: §2.
+
+Margossian and Blei (2023)
+C. C. Margossian and D. M. Blei
+
+Amortized variational inference: when and why?.
+
+arXiv preprint arXiv:2307.11018.
+
+Cited by: Appendix G.
+
+Méndez-Molina et al. (2020)
+A. Méndez-Molina, I. Feliciano-Avelino, E. F. Morales, and L. E. Sucar
+
+Causal based q-learning.
+
+Res. Comput. Sci. 149, pp. 95–104.
+
+External Links: Link
+
+Cited by: §6.
+
+Moerland et al. (2022)
+T. M. Moerland, J. Broekens, A. Plaat, and C. M. Jonker
+
+Model-based reinforcement learning: a survey.
+
+External Links: 2006.16712,
+Link
+
+Cited by: §1.
+
+Nam et al. (2026)
+H. Nam, Q. L. Lidec, L. Maes, Y. LeCun, and R. Balestriero
+
+Causal-jepa: learning world models through object-level latent masking.
+
+arXiv preprint arXiv:2602.11389.
+
+Cited by: §1.
+
+Papamakarios et al. (2021)
+G. Papamakarios, E. Nalisnick, D. J. Rezende, S. Mohamed, and B. Lakshminarayanan
+
+Normalizing flows for probabilistic modeling and inference.
+
+Journal of Machine Learning Research 22 (57), pp. 1–64.
+
+Cited by: Appendix G.
+
+Parzen (1962)
+E. Parzen
+
+On estimation of a probability density function and mode.
+
+Annals of Mathematical Statistics 33 (3), pp. 1065–1076.
+
+Cited by: 8th item.
+
+Pathak et al. (2017)
+D. Pathak, P. Agrawal, A. A. Efros, and T. Darrell
+
+Curiosity-driven exploration by self-supervised prediction.
+
+In International conference on machine learning,
+
+pp. 2778–2787.
+
+Cited by: Appendix J.
+
+Pawlowski et al. (2020)
+N. Pawlowski, D. C. Castro, and B. Glocker
+
+Deep structural causal models for tractable counterfactual inference.
+
+External Links: 2006.06485,
+Link
+
+Cited by: §1,
+§2.
+
+Pearl (2009)
+J. Pearl
+
+Causality: models, reasoning, and inference.
+
+2nd edition,  Cambridge University Press, New York, NY, USA.
+
+External Links: ISBN 978-0-521-89560-6
+
+Cited by: 6th item,
+§3.1,
+§3.3,
+§3.4.
+
+Pearl (2019)
+J. Pearl
+
+The seven tools of causal inference, with reflections on machine learning.
+
+Commun. ACM 62 (3), pp. 54–60.
+
+External Links: ISSN 0001-0782,
+Link,
+Document
+
+Cited by: §1.
+
+Peters et al. (2015)
+J. Peters, P. Bühlmann, and N. Meinshausen
+
+Causal inference using invariant prediction: identification and confidence intervals.
+
+External Links: 1501.01332,
+Link
+
+Cited by: §1.
+
+Peters et al. (2017)
+J. Peters, D. Janzing, and B. Schölkopf
+
+Elements of causal inference: foundations and learning algorithms.
+
+External Links: Link
+
+Cited by: §1.
+
+Pomerleau (1988)
+D. A. Pomerleau
+
+ALVINN: an autonomous land vehicle in a neural network.
+
+In Advances in Neural Information Processing Systems,  D. Touretzky (Ed.),
+
+Vol. 1, pp. .
+
+External Links: Link
+
+Cited by: §1.
+
+Reiser (2022)
+C. Reiser
+
+Causal discovery for time series with latent confounders.
+
+External Links: 2209.03427,
+Link
+
+Cited by: Appendix I.
+
+Richardson and Spirtes (2002)
+T. Richardson and P. Spirtes
+
+Ancestral graph Markov models.
+
+The Annals of Statistics 30 (4), pp. 962 – 1030.
+
+External Links: Document,
+Link
+
+Cited by: §I.2.1.
+
+Richens and Everitt (2024)
+J. Richens and T. Everitt
+
+Robust agents learn causal world models.
+
+External Links: 2402.10877,
+Link
+
+Cited by: §1.
+
+Rosenblatt (1956)
+M. Rosenblatt
+
+Remarks on some nonparametric estimates of a density function.
+
+Annals of Mathematical Statistics 27 (3), pp. 832–837.
+
+Cited by: 8th item.
+
+Ross and Ward (1959)
+Mouse in the maze
+
+Note: MIT TX-0 computer simulation
+
+Cited by: §D.2.
+
+Runge et al. (2019)
+J. Runge, S. Bathiany, E. M. Bollt, G. Camps-Valls, D. Coumou, E. R. Deyle, C. Glymour, M. Kretschmer, M. D. Mahecha, J. Muñoz-Marí, E. H. van Nes, J. Peters, R. Quax, M. Reichstein, M. Scheffer, B. Scholkopf, P. Spirtes, G. Sugihara, J. Sun, K. Zhang, and J. Zscheischler
+
+Inferring causation from time series in earth system sciences.
+
+Nature Communications 10.
+
+External Links: Link
+
+Cited by: §1.
+
+Runge (2022)
+J. Runge
+
+Discovering contemporaneous and lagged causal relations in autocorrelated nonlinear time series datasets.
+
+External Links: 2003.03685,
+Link
+
+Cited by: §1,
+§2.
+
+Scarselli et al. (2009)
+F. Scarselli, M. Gori, A. C. Tsoi, M. Hagenbuchner, and G. Monfardini
+
+The graph neural network model.
+
+Trans. Neur. Netw. 20 (1), pp. 61–80.
+
+External Links: ISSN 1045-9227,
+Link,
+Document
+
+Cited by: §2.
+
+Schlegel et al. (2019)
+M. Schlegel, W. Chung, D. Graves, J. Qian, and M. White
+
+Importance resampling for off-policy prediction.
+
+External Links: 1906.04328,
+Link
+
+Cited by: §E.2.
+
+Schölkopf et al. (2021)
+B. Schölkopf, F. Locatello, S. Bauer, N. R. Ke, N. Kalchbrenner, A. Goyal, and Y. Bengio
+
+Towards causal representation learning.
+
+External Links: 2102.11107,
+Link
+
+Cited by: §1,
+§2,
+§2,
+§2.
+
+Schölkopf and Smola (2002)
+B. Schölkopf and A. J. Smola
+
+Learning with kernels.
+
+ MIT Press.
+
+Cited by: 7th item.
+
+Schrittwieser et al. (2020)
+J. Schrittwieser, I. Antonoglou, T. Hubert, K. Simonyan, L. Sifre, S. Schmitt, A. Guez, E. Lockhart, D. Hassabis, T. Graepel, T. Lillicrap, and D. Silver
+
+Mastering atari, go, chess and shogi by planning with a learned model.
+
+Nature 588 (7839), pp. 604–609.
+
+External Links: ISSN 1476-4687,
+Link,
+Document
+
+Cited by: §2.
+
+Shinn et al. (2023)
+N. Shinn, F. Cassano, E. Berman, A. Gopinath, K. Narasimhan, and S. Yao
+
+Reflexion: language agents with verbal reinforcement learning.
+
+External Links: 2303.11366,
+Link
+
+Cited by: §6.
+
+Silverman (1986)
+B. W. Silverman
+
+Density estimation for statistics and data analysis.
+
+ Chapman and Hall.
+
+Cited by: 8th item.
+
+Spirtes et al. (2000)
+P. Spirtes, C. Glymour, and R. Scheines
+
+Causation, prediction, and search.
+
+2nd edition,  MIT press.
+
+External Links: Review PC algorithm
+
+Cited by: §2.
+
+Stern et al. (2019)
+R. Stern, N. Sturtevant, A. Felner, S. Koenig, H. Ma, T. Walker, J. Li, D. Atzmon, L. Cohen, T. K. S. Kumar, E. Boyarski, and R. Bartak
+
+Multi-agent pathfinding: definitions, variants, and benchmarks.
+
+External Links: 1906.08291,
+Link
+
+Cited by: §D.2.
+
+Sutton and Barto (2018)
+R. S. Sutton and A. G. Barto
+
+Reinforcement learning: an introduction.
+
+2nd edition,  MIT Press, Cambridge, MA.
+
+External Links: ISBN 978-0-262-03924-6
+
+Cited by: 1st item.
+
+Sutton (1991)
+R. S. Sutton
+
+Dyna, an integrated architecture for learning, planning, and reacting.
+
+SIGART Bull. 2 (4), pp. 160–163.
+
+External Links: ISSN 0163-5719,
+Link,
+Document
+
+Cited by: §1.
+
+Terry et al. (2021)
+J. Terry, B. Black, N. Grammel, M. Jayakumar, A. Hari, R. Sullivan, L. S. Santos, C. Dieffendahl, C. Horsch, R. Perez-Vicente, et al.
+
+Pettingzoo: gym for multi-agent reinforcement learning.
+
+Advances in Neural Information Processing Systems 34, pp. 15032–15043.
+
+Cited by: Appendix G.
+
+Tong and Koller (2001)
+S. Tong and D. Koller
+
+Active learning for structure in bayesian networks.
+
+In International joint conference on artificial intelligence,
+
+Vol. 17, pp. 863–869.
+
+Cited by: 1st item.
+
+Tragoudaras et al. (2026)
+A. Tragoudaras, C. Zhang, D. Cherniavskii, A. Vozikis, T. Nijdam, D. W. E. Prinzhorn, M. Bodracska, N. Sebe, A. Zadaianchuk, and E. Gavves
+
+Evaluating newtonian mechanics in video generative models with real physical systems.
+
+External Links: 2504.02918,
+Link
+
+Cited by: §2.
+
+Vafa et al. (2025a)
+K. Vafa, S. Bentley, J. Kleinberg, and S. Mullainathan
+
+What’s producible may not be reachable: measuring the steerability of generative models.
+
+External Links: 2503.17482,
+Link
+
+Cited by: §6.
+
+Vafa et al. (2025b)
+K. Vafa, P. G. Chang, A. Rambachan, and S. Mullainathan
+
+What has a foundation model found? using inductive bias to probe for world models.
+
+External Links: 2507.06952,
+Link
+
+Cited by: §2.
+
+Vafa et al. (2024)
+K. Vafa, J. Y. Chen, A. Rambachan, J. Kleinberg, and S. Mullainathan
+
+Evaluating the world model implicit in a generative model.
+
+External Links: 2406.03689,
+Link
+
+Cited by: §2,
+§3.5.
+
+Verma and Pearl (1990)
+T. Verma and J. Pearl
+
+Equivalence and synthesis of causal models.
+
+In Proceedings of the Sixth Annual Conference on Uncertainty in Artificial Intelligence,
+
+UAI ’90, USA, pp. 255–270.
+
+External Links: ISBN 0444892648
+
+Cited by: §2.
+
+Von Neumann and Morgenstern (1944)
+J. Von Neumann and O. Morgenstern
+
+Theory of games and economic behavior.
+
+ Princeton University Press, Princeton, NJ.
+
+Cited by: Appendix G.
+
+Weissman et al. (2003)
+T. Weissman, E. Ordentlich, G. Seroussi, S. Verdú, and M. J. Weinberger
+
+Inequalities for the l1 deviation of the empirical distribution.
+
+External Links: Link
+
+Cited by: Appendix H.
+
+Wyner (1978)
+A.D. Wyner
+
+The rate-distortion function for source coding with side information at the decoder 3-ii: general sources.
+
+Information and Control 38 (1), pp. 60–80.
+
+External Links: ISSN 0019-9958,
+Document,
+Link
+
+Cited by: §4.4.
+
+Xia et al. (2022)
+K. Xia, Y. Pan, and E. Bareinboim
+
+Neural causal models for counterfactual identification and estimation.
+
+External Links: 2210.00035,
+Link
+
+Cited by: §1.
+
+Yang et al. (2023)
+M. Yang, F. Liu, Z. Chen, X. Shen, J. Hao, and J. Wang
+
+CausalVAE: structured causal disentanglement in variational autoencoder.
+
+External Links: 2004.08697,
+Link
+
+Cited by: item 6,
+§2.
+
+Yu et al. (2022)
+C. Yu, A. Velu, E. Vinitsky, J. Gao, Y. Wang, A. Bayen, and Y. Wu
+
+The surprising effectiveness of ppo in cooperative, multi-agent games.
+
+External Links: 2103.01955,
+Link
+
+Cited by: §S.1.
+
+Zhang et al. (2025a)
+H. Zhang, Z. Wang, Q. Lyu, Z. Zhang, S. Chen, T. Shu, B. Dariush, K. Lee, Y. Du, and C. Gan
+
+COMBO: compositional world models for embodied multi-agent cooperation.
+
+External Links: 2404.10775,
+Link
+
+Cited by: §2.
+
+Zhang and Bareinboim (2016)
+J. Zhang and E. Bareinboim
+
+Markov decision processes with unobserved confounders : a causal approach.
+
+External Links: Link
+
+Cited by: §1,
+§2,
+§3.4.
+
+Zhang and Bareinboim (2021)
+J. Zhang and E. Bareinboim
+
+Bounding causal effects on continuous outcome.
+
+Proceedings of the AAAI Conference on Artificial Intelligence 35 (13), pp. 12207–12215.
+
+External Links: Link,
+Document
+
+Cited by: §3.2.
+
+Zhang et al. (2012)
+K. Zhang, J. Peters, D. Janzing, and B. Schoelkopf
+
+Kernel-based conditional independence test and application in causal discovery.
+
+External Links: 1202.3775,
+Link
+
+Cited by: §2.
+
+Zhang et al. (2025b)
+Y. Zhang, X. Li, J. Ye, S. Qiu, D. Qu, X. Li, C. Zhang, and C. Bai
+
+Revisiting multi-agent world modeling from a diffusion-inspired perspective.
+
+External Links: 2505.20922,
+Link
+
+Cited by: §2.
+
+Zheng et al. (2018)
+X. Zheng, B. Aragam, P. Ravikumar, and E. P. Xing
+
+DAGs with no tears: continuous optimization for structure learning.
+
+External Links: 1803.01422,
+Link
+
+Cited by: §P.2.
+
+Zhou et al. (2025)
+G. Zhou, H. Pan, Y. LeCun, and L. Pinto
+
+DINO-wm: world models on pre-trained visual features enable zero-shot planning.
+
+External Links: 2411.04983,
+Link
+
+Cited by: §2.
+
+Zhu et al. (2026)
+J. Zhu, J. Zhang, Y. Yang, W. Cheng, and X. Yuan
+
+ShareVerse: multi-agent consistent video generation for shared world modeling.
+
+External Links: 2603.02697,
+Link
+
+Cited by: §2.
+
+Zhu et al. (2022)
+Z. Zhu, X. Chen, H. Tian, K. Zhang, and Y. Yu
+
+Offline reinforcement learning with causal structured world models.
+
+External Links: 2206.01474,
+Link
+
+Cited by: item 2,
+§2.
+
+Learning Implicit Causal World Models from Multi-Agent Demonstrations
+
+(Supplementary Material)
+
+Index of Contents (Supplementary Material)
+
+This appendix provides extended formalisms, mathematical proofs, and detailed experimental configurations supporting the findings in the main text.
+
+•
+
+Appendix A: Impact of the Paper
+
+•
+
+Appendix B: Structural Causal Model Formalization
+
+–
+
+Exogenous and Endogenous Partitioning
+
+–
+
+Structural Functions and Dependencies
+
+–
+
+The Role of P⁡(U)P(U)
+
+•
+
+Appendix C: Causal Decision Graph
+
+–
+
+MDP Regimes (Full Observability)
+
+–
+
+POMDP Regimes (Partial Observability)
+
+–
+
+The Observation Space and Information Bottleneck
+
+•
+
+Appendix D: Formalizing Policy Mixtures as Causal Interventions
+
+–
+
+Mapping the Mixture to a Structural Mechanism Shift
+
+–
+
+The Role of Entropy in Structural Discovery
+
+•
+
+Appendix E: Theoretical Foundations of the Sequential Backdoor Condition
+
+–
+
+The Manipulated Causal Decision Graph
+
+–
+
+Formal Definition of the Sequential Backdoor Criterion
+
+–
+
+The Structural Violation in Multi-Agent Environments
+
+•
+
+Appendix F: Formal Proof of the MAS Sequential Backdoor Condition
+
+–
+
+Structural Axioms of the Multi-Agent System
+
+–
+
+Step 1: Graphical d-Separation via Induction
+
+–
+
+Step 2: Algebraic Reduction via do-Calculus
+
+•
+
+Appendix G: Motivation Study in Tic-Tac-Toe
+
+•
+
+Appendix H: Generalization Error Bound of the ICWM
+
+–
+
+Discussion of Proven Implications
+
+•
+
+Appendix I: Theoretical Guarantees and Algorithmic Selection for Causal Discovery
+
+–
+
+Completeness of the Lagged Causal Skeleton in PCMCI
+
+–
+
+Algorithmic Selection: PCMCI vs. Latent Discovery (LPCMCI)
+
+•
+
+Appendix J: Contextual Bandit Formulation of Decision-Making
+
+–
+
+The Intractability of Expected Information Gain
+
+–
+
+Surrogate Objectives
+
+•
+
+Appendix K: MAS Environment Visualization
+
+•
+
+Appendix L: State Representation of Different Environments
+
+–
+
+Two-Door Coordination
+
+–
+
+Giveway Corridor
+
+–
+
+Multi-Agent Navigation
+
+•
+
+Appendix M: Action Space Representation
+
+–
+
+Continuous Force-Based Action Space (VMAS)
+
+–
+
+Discrete Categorical Action Space (MiniGrid)
+
+–
+
+Comparative Summary
+
+–
+
+Shifted Environments
+
+•
+
+Appendix O: Ground Truth Causal Adjacency Matrices
+
+•
+
+Appendix P: Neural Architecture Design and Baselines
+
+–
+
+Summary of Model Properties
+
+–
+
+Causal Structural Masking and AMLS
+
+–
+
+Baseline Architectures
+
+–
+
+Optimization and Loss Functions
+
+•
+
+Appendix Q: Evaluation Metrics
+
+–
+
+Toy Study: Validating Δvariance\Delta_{\text{variance}}
+
+–
+
+Toy Evaluation: Density Metrics vs. the Variance Metric
+
+–
+
+Causal Metric Stress Tests
+
+•
+
+Appendix R: MAPPO Training and Evaluation Performance of Expert Policy
+
+•
+
+Appendix S: Dataset Cardinality and Evaluation
+
+–
+
+Scaling Dynamics and Cardinality Bounds
+
+–
+
+Evaluation Dataset Configuration
+
+–
+
+Quality of the Collected Datasets (𝒟σN\mathcal{D}^{N}_{\sigma})
+
+–
+
+Evaluation Dataset Configuration: Two, Three, Four Agent Navigation
+
+•
+
+Appendix E.3: Causal Discovery Setup and Results
+
+–
+
+Causal Discovery Experimental Parameters
+
+–
+
+Evaluation Results: Three Primary Environments
+
+–
+
+Evaluation Results: High Sample Complexity Experiments
+
+–
+
+Evaluation Results: Two, Three, Four Agent Navigation
+
+•
+
+Appendix U: World Model Setup and Results
+
+–
+
+Evaluation Results: Three Primary Environments (U.1)
+
+–
+
+Evaluation Results: High Sample Complexity (U.2)
+
+–
+
+Evaluation Results: Two, Three, Four Agent Navigation (U.3)
+
+•
+
+Appendix V: Causal-Mask Ablation Study
+
+•
+
+Appendix W: Uncertainty and Neural Density Measurement
+
+–
+
+Grid World: Two-Door
+
+–
+
+Continuous Control: Give-Way
+
+–
+
+Two-Agent Navigation
+
+–
+
+Multi-Agent Navigation without LIDAR
+
+–
+
+Quantitative Uncertainty Metrics (W.5)
+
+•
+
+Appendix X: World-Model Spatial Error Density
+
+–
+
+Setup, Figures, Quantitative Summary, Discussion
+
+•
+
+Appendix Y: Generalization under Layout Shift
+
+–
+
+Setup, Figures, Quantitative Summary, Discussion
+
+–
+
+Where the Shift Actually Bites: Subtracting the Source Error Surface (Y.6)
+
+–
+
+Splitting the Velocity Channel: Where Recurrence Pays Off (Y.7)
+
+–
+
+Overall Takeaway
+
+•
+
+Appendix Z: Towards Pearl’s Framework for Counterfactual Queries
+
+–
+
+The Pooled Correlation is Confounded
+
+–
+
+Intervention Strength is the Common Cause
+
+–
+
+The Null Replicates under Layout Shift
+
+–
+
+A Localized, Conditional Exception
+
+–
+
+Why Stretch Benefits and Rotation Does Not
+
+Notation Glossary
+
+The following tables summarize the mathematical notation used throughout the paper, categorized by their respective methodological sections (see Tables 1, 2, 3, 4, and 5).
+
+Symbol
+Definition
+
+Evaluation Metrics and Generalization Bounds
+
+Dd​i​mD_{dim}
+Dimensionality of state vector
+
+𝒟σ\mathcal{D}_{\sigma}
+Demonstration dataset
+
+MSE
+Mean Squared Error
+
+RSE
+Relative System Error
+
+SHD
+Structural Hamming Distance
+
+Δi​n​v\Delta_{inv}
+Policy Invariance Gap
+
+Δs​p​e​c\Delta_{spec}
+Spectral Distance
+
+Δvariance\Delta_{\text{variance}}
+Variance-normalized relative error, MSE/σ𝒟2\text{MSE}/\sigma^{2}_{\mathcal{D}}
+
+σ𝒟2\sigma^{2}_{\mathcal{D}}
+Target-variance floor
+
+s¯\bar{s}
+Input-agnostic mean successor state
+
+R2R^{2}
+Coefficient of determination
+
+𝒞p​r​e​d,𝒞t​r​u​e\mathcal{C}_{pred},\mathcal{C}_{true}
+Predicted and ground-truth causal tensors
+
+λi​(⋅)\lambda_{i}(\cdot)
+ii-th eigenvalue of an adjacency representation
+
+MMD^2\widehat{\mathrm{MMD}}^{2}
+Unbiased squared MMD (RBF kernel)
+
+k⁡(u,v)k(u,v)
+RBF kernel, exp⁡(−γ​∥u−v∥2)\exp(-\gamma\lVert u-v\rVert^{2})
+
+γ−1\gamma^{-1}
+MMD kernel bandwidth (median heuristic)
+
+p^​(z)\hat{p}(z)
+Kernel density estimate at query point zz
+
+hh
+KDE bandwidth
+
+𝒢\mathcal{G}
+Query grid for density evaluation
+
+p^norm,p^adv\hat{p}_{\text{norm}},\hat{p}_{\text{adv}}
+Normal and adversarial next-state densities
+
+DistT​V\text{Dist}_{TV}
+Total Variation distance
+
+JJ
+Complexity constant
+
+ϵe​n​v\epsilon_{env}
+Irreducible stochasticity / error
+
+Table 1: Evaluation Metrics and Generalization Bounds
+
+Symbol
+Definition
+
+Causal Discovery and Neural Masking
+
+τ\tau
+Temporal lag limit
+
+El​a​g,Ec​o​n​t​e​m​pE_{lag},E_{contemp}
+Discovered edge sets
+
+𝒢s​k​e​l​e​t​o​n\mathcal{G}_{skeleton}
+Unconfounded causal skeleton
+
+𝒞\mathcal{C}
+Adjacency Matrix with Lagged Structure
+
+pi​jp_{ij}
+Causal discovery pp-value
+
+α\alpha
+Significance threshold
+
+ψi​j\psi_{ij}
+Log-Significance Transform value
+
+κ\kappa
+Temperature parameter
+
+Γ\Gamma
+Differentiable soft mask tensor
+
+MM
+Binary causal mask tensor
+
+Φ,θ\Phi,\theta
+Neural transition model parameters
+
+Table 2: Causal Discovery and Neural Masking
+
+Symbol
+Definition
+
+Soft Interventions and Sequential Backdoor
+
+σ\sigma
+Interventional strength (σ∈[0,1]\sigma\in[0,1])
+
+πe​x​pi\pi^{i}_{exp}
+Deterministic expert policy for agent ii
+
+ζ\zeta
+Independent stochastic process
+
+PσP^{\sigma}
+Interventional stationary mixture policy
+
+HkH_{k}
+Observed historical trajectory up to step kk
+
+d​o​(⋅)do(\cdot)
+Pearl’s intervention operator
+
+At−i,at−iA^{-i}_{t},a^{-i}_{t}
+Joint actions excluding agent ii
+
+𝒢A¯​A¯\mathcal{G}_{\overline{A}\underline{A}}
+Mutilated causal graph
+
+Table 3: Soft Interventions and Sequential Backdoor
+
+Symbol
+Definition
+
+Uncertainty, Error Density, and Shift
+
+σID,σOOD\sigma_{\text{ID}},\sigma_{\text{OOD}}
+Predictive cloud width per dimension
+
+σOOD/σID\sigma_{\text{OOD}}/\sigma_{\text{ID}}
+Dimensionless OOD width-inflation ratio
+
+err¯dyn\overline{\mathrm{err}}_{\mathrm{dyn}}
+Mean squared residual on dynamic dimensions
+
+err¯pos\overline{\mathrm{err}}_{\mathrm{pos}}
+Mean squared residual on position dimensions
+
+ρ\rho
+Shift-transfer ratio
+
+𝒟\mathcal{D}
+Set of dynamic state dimensions
+
+Δspecnorm\Delta_{\text{spec}}^{\text{norm}}
+Normalized binary spectral distance
+
+𝒟σN\mathcal{D}^{N}_{\sigma}
+Training dataset of NN episodes
+
+𝒟σ‡\mathcal{D}^{\ddagger}_{\sigma}
+Held-out evaluation dataset
+
+Table 4: Uncertainty, Error Density, and Shift
+
+Symbol
+Definition
+
+SCM and Decision Graph
+
+ℳ\mathcal{M}
+SCM tuple ⟨𝐔,𝐕,ℱ,P⁡(𝐔)⟩\langle\mathbf{U},\mathbf{V},\mathcal{F},P(\mathbf{U})\rangle
+
+𝐔,𝐕\mathbf{U},\mathbf{V}
+Sets of exogenous/endogenous variables
+
+ue​n​vu_{env}
+Unobserved environmental noise
+
+ui​n​t​e​n​tiu^{i}_{intent}
+Unobserved latent intent of agent ii
+
+st,Sts_{t},S_{t}
+Environment state at time tt
+
+𝐚t,𝐀t\mathbf{a}_{t},\mathbf{A}_{t}
+Joint action of all agents at time tt
+
+ati,Atia^{i}_{t},A^{i}_{t}
+Specific action of agent ii at time tt
+
+rtr_{t}
+Reward received at time tt
+
+ot,Oto_{t},O_{t}
+Partial observation at time tt
+
+fs,fr,faif_{s},f_{r},f_{a^{i}}
+Deterministic structural functions
+
+Table 5: SCM and Decision Graph
+
+Appendix A Impact of the paper
+
+Figure 6: The Synergistic Vertical Framework for Reliable Agentic Systems. The architecture partitions system design into three critical pillars: behavioral coordination (Vertical I), structural understanding (Vertical II), and cross-domain scalability (Vertical III). This paper addresses Vertical II (Rules of Engagement), establishing the deconfounded causal world model as the essential physical foundation. By resolving invariant environment mechanisms from strategic agent intent, our work provides the identifiable internal simulator required for precise credit assignment in Vertical I and zero-shot knowledge transportability in Vertical III.
+
+Appendix B Structural Causal Model Formalization
+
+The transition dynamics of a Multi-Agent System are governed by the interplay between invariant environment rules and adaptive agent strategies. We formalize this via an SCM ℳ=⟨𝐔,𝐕,ℱ,P⁡(𝐔)⟩\mathcal{M}=\langle\mathbf{U},\mathbf{V},\mathcal{F},P(\mathbf{U})\rangle:
+
+B.1 Exogenous and Endogenous Partitioning
+
+The variables in our system are partitioned into two sets:
+
+1.
+
+Exogenous Variables (𝐔\mathbf{U}): These are variables determined outside the model. In our framework, we distinguish between Environmental Stochasticity (ue​n​v∼Ue​n​vu_{env}\sim U_{env}), which captures irreducible noise in physics (e.g., sensor noise or friction or stochastic in environment properties), and Unobserved Strategic Intents for agent ii, (ui​n​t​e​n​ti∼Ui​n​t​e​n​tu^{i}_{intent}\sim U_{intent}), which represent the high-level goals or coordination signals that drive agent behaviors but are not explicitly captured in the state space.
+
+2.
+
+Endogenous Variables (𝐕\mathbf{V}): These are the observable variables determined by the structural functions. For a single transition step (t)(t), these include the current environment state st∈𝒮=𝒮1×⋯×𝒮ns_{t}\in\mathcal{S}=\mathcal{S}^{1}\times\dots\times\mathcal{S}^{n}, the joint action at∈𝒜=𝒜1×⋯×𝒜na_{t}\in\mathcal{A}=\mathcal{A}^{1}\times\dots\times\mathcal{A}^{n}, the reward rt∈ℛ=ℛ1×⋯×ℛnr_{t}\in\mathcal{R}=\mathcal{R}^{1}\times\dots\times\mathcal{R}^{n}, and the resulting next state st+1∈𝒮s_{t+1}\in\mathcal{S}. Where 𝒮\mathcal{S} is the state space, 𝒮i\mathcal{S}^{i} is the state space for agent ii, 𝒜\mathcal{A} is the action space, 𝒜i\mathcal{A}^{i} is the action space for agent ii, ℛ\mathcal{R} is the reward space, ℛi\mathcal{R}^{i} is the reward space for agent ii, and nn number of agents in the multi agent system.
+
+B.2 Structural Functions and Dependencies
+
+The set ℱ\mathcal{F} ={fs,fr​fa1,…,fan}=\{f_{s},f_{r}f_{a^{1}},\dots,f_{a^{n}}\} defines the causal mechanisms of the world. By expressing these as deterministic functions of their parents and noise, we can model the system as a directed graph where edges represent functional dependencies:
+
+1.
+
+Environment Physics (fsf_{s}): This function is the primary target of our world model. It maps the current state and joint actions to the next state. Critically, fsf_{s} is policy-invariant; it represents the underlying ”rules of the game” that remain constant regardless of whether the agents are acting optimally, randomly, or adversarially.
+
+•
+
+Quantity: P⁡(st+1∣st,𝐚t)P(s_{t+1}\mid s_{t},\mathbf{a}_{t})
+
+•
+
+Relationship: st+1←fs​(st,𝐚t,ue​n​v)s_{t+1}\leftarrow f_{s}(s_{t},\mathbf{a}_{t},u_{env})
+
+2.
+
+Reward Model (frf_{r}): This maps the state-action pair to a feedback signal. In MAS, rewards are often highly confounded because expert agents only receive high rewards by following specific, intent-driven trajectories.
+
+•
+
+Quantity: P⁡(rt+1∣st,𝐚t)P(r_{t+1}\mid s_{t},\mathbf{a}_{t})
+
+•
+
+Relationship: rt+1←fr​(st,𝐚t,ue​n​v)r_{t+1}\leftarrow f_{r}(s_{t},\mathbf{a}_{t},u_{env})
+
+3.
+
+Agent Policies (faif_{a^{i}}): Unlike fsf_{s}, the policy functions are agent-dependent. They are conditioned on the state sts_{t} and the latent intent ui​n​t​e​n​tiu^{i}_{intent}. This structure is the root of causal confusion: in expert data, the correlation between sts_{t}, ui​n​t​e​n​tiu^{i}_{intent}, and st+1s_{t+1} is often so strong that standard associative models cannot determine if st+1s_{t+1} was caused by the physics of sts_{t} or the specific intent-driven choice of atia^{i}_{t}.
+
+•
+
+Quantity: πi​(ai|st)\pi^{i}(a^{i}|s_{t}), where πi\pi^{i} is it​hi^{th} agents policy.
+
+•
+
+Relationship: ati←fai​(st,ui​n​t​e​n​ti)a^{i}_{t}\leftarrow f_{a^{i}}(s_{t},u^{i}_{intent}), the following relation is estabished from prior work (Lowe et al., 2020; Dasgupta et al., 2019)
+
+B.3 The Role of P⁡(U)P(U)
+
+The joint probability distribution P⁡(𝐔)P(\mathbf{U}) induces the statistical distributions in the demonstration dataset. We distinguish between these exogenous variables as follows:
+
+1.
+
+Environmental Stochasticity (ue​n​vu_{env}): Represents irreducible noise (e.g., friction, jitter, weather conditions). We assume ue​n​v⟂⟂ui​n​t​e​n​tu_{env}\perp\!\!\perp u_{intent}. This term dictates predictive variance (kernel thickness or uncertainty in the model’s output), which we do not explicitly deconfound. We assume ue​n​vu_{env} is captured by dataset variance and offer no solution for shifts in its distribution, focusing solely on structural invariance. Our position is that under a significant distribution shift of ue​n​vu_{env}, the world dynamics themselves have likely shifted so fundamentally that knowledge reuse from the previous model would yield diminishing returns.
+
+2.
+
+Strategic Confounding (ui​n​t​e​n​tiu^{i}_{intent}): Represents unobserved coordination signals that correlate with sts_{t} in expert data, creating backdoor paths (st←ui​n​t​e​n​ti→ati→st+1s_{t}\leftarrow u^{i}_{intent}\rightarrow a^{i}_{t}\rightarrow s_{t+1}) that cause associative models to mistake agent choice for physical law. We address this by leveraging policy variance (soft interventions) to satisfy the Sequential Backdoor Condition discovering true transition rules fsf_{s}.
+
+Appendix C Causal decision graph
+
+Figure 7: Causal Decision Graph for MAS (a) MDP (b) MDP with Confounding (c) Partially Observable MDP (d) Partially Observable MDP with Confounding
+
+The Causal Decision Graph (CDG) allows us to visualize how structural dependencies evolve and where unobserved variables interfere with transition discernibility.
+
+C.1 MDP Regimes (Full Observability)
+
+•
+
+Standard MDP (Fig. 7a): (Sutton and Barto, 2018) : Actions are a direct functional child of the observed state (St→AtS_{t}\to A_{t}). The transition St+1←fs​(St,At,ue​n​v)S_{t+1}\leftarrow f_{s}(S_{t},A_{t},u_{env}) is identifiable because no unobserved common causes exist between AtA_{t} and St+1S_{t+1}.
+
+•
+
+Confounded MDP (Fig. 7b): We introduce unobserved intent UU. As shown by the dashed lines, UU influences AtA_{t} while being correlated with the state sequence. This creates a backdoor path (St←U→At→St+1S_{t}\leftarrow U\to A_{t}\to S_{t+1}). Associative models fail here because they cannot distinguish if St+1S_{t+1} resulted from the physical action AtA_{t} or the latent intent UU.
+
+C.2 POMDP Regimes (Partial Observability)
+
+•
+
+Standard POMDP (Fig. 7c): (Kaelbling et al., 1998) : The state StS_{t} is latent. Agents perceive OtO_{t}, creating an information bottleneck (St→Ot→AtS_{t}\to O_{t}\to A_{t}). While the physics fsf_{s} still depend on StS_{t}, the policy is constrained by the observation.
+
+•
+
+Confounded POMDP (Fig. 7d): This represents the most realistic MAS scenario. The unobserved intent UU influences the action AtA_{t}, which is already limited by the partial observation OtO_{t}. Recovering the invariant physics fsf_{s} in this regime requires ICWM to utilize the Sequential Backdoor Condition to d-separate the interventional influence of actions from the latent confounding of UU.
+
+C.3 The Observation Space and Information Bottleneck
+
+In partially observable settings, we formally introduce the Observation Space 𝒪\mathcal{O}. This space acts as a non-invertible, lossy mapping from the latent state:
+
+•
+
+Formal Mapping: The observation ot∈𝒪o_{t}\in\mathcal{O} is generated by an observation function fof_{o}:
+
+ot←fo​(st,ue​n​v)o_{t}\leftarrow f_{o}(s_{t},u_{env})
+
+(9)
+
+•
+
+The Information Bottleneck: This regime imposes a critical constraint: while the environment physics fsf_{s} remain dependent on the full physical configuration sts_{t}, the agent’s policy is restricted to the information contained in oto_{t}. This creates a bottleneck where the agent lacks the state-transparency needed to determine its own causal influence.
+
+•
+
+Structural Challenge: Because fof_{o} is often a many-to-one mapping, multiple physical states sts_{t} can map to the same oto_{t}. This aliasing exacerbates causal confusion, as the world model must not only deconfound strategic intent but also infer the underlying state sts_{t} from the observation history to correctly isolate the physical laws of the transition.
+
+Appendix D Formalizing Policy Mixtures as Causal Interventions
+
+D.1 Mapping the Mixture to a Structural Mechanism Shift
+
+In a Structural Causal Model (ff as process equation), variables (AA) are deterministic functions of causal parents (P​AAPA_{A}) and exogenous noise (UAU_{A}): A←f⁡(P​AA,UA)A\leftarrow f(PA_{A},U_{A}). A hard intervention replaces ff with a constant. A soft intervention modifies the equation to a new mechanism f′f^{\prime} without fully severing parental dependence.
+
+Our stochastic policy mixture operates strictly as a soft intervention. Probabilistically, we define this mixture as the interventional distribution:
+
+Pσ​(ati∣st)=(1−σ)​πe​x​pi​(ati∣st)+σ​ζ​(ati)P^{\sigma}(a^{i}_{t}\mid s_{t})=(1-\sigma)\pi^{i}_{exp}(a^{i}_{t}\mid s_{t})+\sigma\zeta(a^{i}_{t})
+
+(10)
+
+where πe​x​pi\pi^{i}_{exp} is the deterministic expert policy, σ∈[0,1]\sigma\in[0,1] dictates the interventional strength, and ζ\zeta is an independent stochastic process defined over the agent’s discrete or continuous action space 𝒜i\mathcal{A}^{i}.
+
+Structurally, in purely observational data, actions follow the expert mechanism: ati←fai​(st,ui​n​t​e​n​ti)a^{i}_{t}\leftarrow f_{a^{i}}(s_{t},u^{i}_{intent}). The mixture replaces faif_{a^{i}} with a modified function fai′f^{\prime}_{a^{i}} by introducing an independent exogenous noise variable ur​a​n​d∼ζu_{rand}\sim\zeta:
+
+ati←fai′​(st,ui​n​t​e​n​ti,ur​a​n​d)={fai​(st,ui​n​t​e​n​ti)with probability ​1−σur​a​n​dwith probability ​σa^{i}_{t}\leftarrow f^{\prime}_{a^{i}}(s_{t},u^{i}_{intent},u_{rand})=\begin{cases}f_{a^{i}}(s_{t},u^{i}_{intent})&\text{with probability }1-\sigma\\
+u_{rand}&\text{with probability }\sigma\end{cases}
+
+(11)
+
+Because ur​a​n​d⟂⟂ui​n​t​e​n​tu_{rand}\perp\!\!\!\perp u_{intent}, this piecewise assignment redefines the data-generating mechanism. The target variable atia^{i}_{t} retains its functional dependence on sts_{t}, fulfilling the soft intervention criteria, while the structural influence of the confounding parent ui​n​t​e​n​tiu^{i}_{intent} degrades proportionally to σ\sigma.
+
+D.2 The Role of Entropy in Structural Discovery
+
+Figure 8: Navigation trajectories from source to goal for a single agent (left) and two agents (right). Optimal path and uncertainty bands are highlighted separately. Only deterministic optimal actions create spurious correlations between agent trajectories, and this confounding effect is strictly higher in multi-agent settings.
+
+Figure 8 illustrates the formal research problem of structural discovery in maze navigation games (Stern et al., 2019; Iwatani and Namco, 1980; Atari, Inc., 1973; Ross and Ward, 1959). The Shannon entropy HH of the policy quantifies the interventional strength introduced by the mixture parameter σ\sigma, defining the identifiability of the transition function fsf_{s}. In a purely deterministic expert dataset (σ=0\sigma=0, H=0H=0), the absolute lack of action diversity perfectly aligns the unobserved intent ui​n​t​e​n​tiu^{i}_{intent} with the selected action atia^{i}_{t}. This zero-entropy regime creates a persistent backdoor path (st←ui​n​t​e​n​ti→ati→st+1s_{t}\leftarrow u^{i}_{intent}\rightarrow a^{i}_{t}\rightarrow s_{t+1}) where environment dynamics remain entirely conflated with agent strategy, rendering fsf_{s} structurally unidentifiable. As σ\sigma increases toward 1, the injected independent variance raises the dataset entropy. This variance guarantees causal positivity by ensuring all legally valid actions retain a non-zero probability of selection, which inherently generates the natural experiments required to observe alternative state transitions.
+
+The primary motivation for resolving this zero-entropy confounding is to enable the extraction of invariant environmental laws from biased observational data. While a partial policy mixture (0<σ<10<\sigma<1) does not completely sever the structural backdoor path, the induced entropy provides the unconfounded state and action support strictly necessary to compute unbiased sequential backdoor adjustments. By achieving causal positivity, the model can structurally decouple the agents’ strategic intents from the physical environment. Isolating the true physical gradient of the transition function fsf_{s} ensures that the learned internal simulator remains accurate and robust even when surrounding agents deviate from their optimal training distributions.
+
+Appendix E Theoretical Foundations of the Sequential Backdoor Condition
+
+To establish the formal requirement for our Multi-Agent Sequential Backdoor Condition (MAS-SBC) in Theorem 1, we first detail the structural mechanisms of the baseline single-agent SBC framework.
+
+Figure 9: Manipulated Causal Decision Graph for a single agent (a) MDP with SBC at k=3k=3 (b) Partially Observable MDP with SBC at k=3k=3
+
+E.1 The Manipulated Causal Decision Graph
+
+To evaluate the causal impact of actions over a trajectory, we perform graph surgery of the causal decision graph 𝒢\mathcal{G} to create a manipulated graph 𝒢𝐚¯1:k−1,𝐚¯k+1:t\mathcal{G}_{\overline{\mathbf{a}}_{1:k-1},\underline{\mathbf{a}}_{k+1:t}} (Figure 9). For a specific time step kk, the graph is modified as follows:
+
+•
+
+Past Actions (𝐚¯1:k−1\overline{\mathbf{a}}_{1:k-1}): The incoming edges to previous actions are removed. This isolates past actions from their historical confounders (such as latent intent UU), simulating a strict sequence of prior hard interventions.
+
+•
+
+Future Actions (𝐚¯k+1:t\underline{\mathbf{a}}_{k+1:t}): The outgoing edges from future actions are removed. This renders future decisions independent of their causal descendants in the graph, preventing downstream planned actions from statistically polluting the current transition gradient.
+
+This graph surgery isolates the forward-directed causal effect of the current action on the environment from backward-flowing statistical correlations.
+
+E.2 Formal Definition of the Sequential Backdoor Criterion
+
+The Sequential Backdoor Criterion (SBC) provides the exact graph-theoretic test to determine if an interventional query can be resolved using purely observational data. The interventional distribution for an outcome Y∈{st+1,rt}Y\in\{s_{t+1},r_{t}\} given a sequence of actions d​o​(𝐚1,…,𝐚t)do(\mathbf{a}_{1},\dots,\mathbf{a}_{t}) is identifiable if, for every k∈{1,…,t}k\in\{1,\dots,t\}, there exists a set of covariates 𝐙k⊆𝐕\mathbf{Z}_{k}\subseteq\mathbf{V} satisfying:
+
+•
+
+𝐙k\mathbf{Z}_{k} are non-descendants of any future action in {𝐚k,…,𝐚t}\{\mathbf{a}_{k},\dots,\mathbf{a}_{t}\}.
+
+•
+
+(Y⟂𝐚k∣𝐚1,…,𝐚k−1,𝐙1,…,𝐙k)(Y\perp\mathbf{a}_{k}\mid\mathbf{a}_{1},\dots,\mathbf{a}_{k-1},\mathbf{Z}_{1},\dots,\mathbf{Z}_{k}) in the manipulated graph 𝒢𝐚¯1:k−1,𝐚¯k+1:t\mathcal{G}_{\overline{\mathbf{a}}_{1:k-1},\underline{\mathbf{a}}_{k+1:t}}.
+
+To bridge this foundational theory to our specific world model formulation, the outcome YY represents our fundamental learning targets: the physical state transition (st+1s_{t+1}) and the environment reward (rtr_{t}). The theoretical sequence of covariates 𝐙1:k\mathbf{Z}_{1:k} maps directly to our observable trajectory history Hk=(𝐬0:k,𝐚0:k−1)H_{k}=(\mathbf{s}_{0:k},\mathbf{a}_{0:k-1}).When these structural conditions hold, the interventional distribution for the outcome mechanism is mathematically identified by:
+
+P(Y∣do(𝐚1:t))=∑𝐳1:tP(Y∣𝐳1:t,𝐚1:t)∏k=1tP(𝐳k∣𝐳1:k−1,𝐚1:k−1)P(Y\mid do(\mathbf{a}_{1:t}))=\sum_{\mathbf{z}_{1:t}}P(Y\mid\mathbf{z}_{1:t},\mathbf{a}_{1:t})\prod_{k=1}^{t}P(\mathbf{z}_{k}\mid\mathbf{z}_{1:k-1},\mathbf{a}_{1:k-1})
+
+(12)
+
+This formulation confirms that estimating the causal effect of the action history 𝐚1:t\mathbf{a}_{1:t} on the transition to state st+1s_{t+1} or reward rtr_{t} is possible. The history HkH_{k} acts as a sufficient statistic to block confounding paths from the unobserved intent UU, rendering the physical mechanisms structurally identifiable for a single agent.
+
+Intuitively, the Sequential Backdoor Condition ensures we have observed enough history (𝐙k\mathbf{Z}_{k}) to decouple an agent’s actions from their hidden strategic intent. Equation 12 then acts as a re-weighting formula that uses this history to simulate a “fair experiment” (Schlegel et al., 2019). This allows us to calculate the environment’s true response as if we were directly controlling the agents, rather than simply observing their coordinated behavior. The conditions of the SBC are illustrated in Figure 9, which demonstrates that past actions are fixed and future actions cannot be influenced by the current decision.
+
+E.3 The Structural Violation in Multi-Agent Environments
+
+Figure 10: The dynamic confounding path in multi-agent systems. Contemporaneous actions (ak−ia^{-i}_{k}) driven by shared intent (UU) create an unblocked backdoor path (aki←U→ak−i→Ya^{i}_{k}\leftarrow U\rightarrow a^{-i}_{k}\rightarrow Y). The standard historical conditioning set (HkH_{k}) fails to d-separate the target action from the latent intent, necessitating the MAS-SBC.
+
+The baseline SBC fundamentally assumes an isolated decision process. When applied to a multi-agent system, the structural conditions formally fail (Figure 10). The actions of other agents ak−ia^{-i}_{k} exist contemporaneously with the target agent’s action akia^{i}_{k}. Both sets of actions are driven by a shared or correlated latent intent UU. This topology creates a secondary, dynamic backdoor path: aki←U→ak−i→Ya^{i}_{k}\leftarrow U\rightarrow a^{-i}_{k}\rightarrow Y. Because the contemporaneous actions ak−ia^{-i}_{k} occur exactly at time kk, they cannot be included in the historical covariate set 𝐙k\mathbf{Z}_{k} (our history HkH_{k}) prior to the action akia^{i}_{k}. Consequently, the observed history fails to d-separate akia^{i}_{k} from UU, directly violating Condition 2 of the SBC definition within the manipulated graph 𝒢𝐚¯1:k−1,𝐚¯k+1:t\mathcal{G}_{\overline{\mathbf{a}}_{1:k-1},\underline{\mathbf{a}}_{k+1:t}}.
+
+The path through UU and ak−ia^{-i}_{k} remains open, meaning the interventional distribution fails to reduce to the observational expression. The environment physics remain permanently entangled with the intent of the surrounding agents. This mathematical failure establishes the strict necessity for extending the framework to the Multi-Agent Sequential Backdoor Condition (MAS-SBC), which executes the backdoor adjustment over the complete contemporaneous action profile.
+
+Appendix F Formal Proof of the MAS Sequential Backdoor Condition
+
+Figure 11: Mutilated Causal Decision Graph 𝒢Ai¯\mathcal{G}_{\overline{A^{i}}} for MAS-SBC Identifiability. The hammer indicates the intervention d​o​(aki)do(a^{i}_{k}), which severs incoming edges from HkH_{k} and UU. Conditioning on the intact peer actions (ak−ia^{-i}_{k}) blocks the contemporaneous backdoor path.
+
+To establish the structural identifiability of the world model, we utilize Pearl’s do-calculus to evaluate the causal dynamics within the mutilated graph 𝒢A1:k−1i¯Ak+1:ti¯\mathcal{G}_{\overline{A_{1:k-1}^{i}}\underline{A_{k+1:t}^{i}}}, isolating the specific intervention on AtiA^{i}_{t} by severing its relevant sequential dependencies.
+
+F.1 Structural Axioms of the Multi-Agent System
+
+We establish the true Data Generating Process using three strict structural axioms:
+
+•
+
+Axiom 1: Transition Markovianity: St+1⟂⟂U|(Hk,Ati,At−i)S_{t+1}\perp\!\!\!\perp U\mid(H_{k},A^{i}_{t},A^{-i}_{t}). The physical transition mechanism fsf_{s} depends exclusively on the observed history and realized joint actions.
+
+•
+
+Axiom 2: Decentralized Policy: Ati⟂⟂At−i|(Hk,U)A^{i}_{t}\perp\!\!\!\perp A^{-i}_{t}\mid(H_{k},U). Agents act simultaneously without direct causal influence on one another (Ati↛At−iA^{i}_{t}\nrightarrow A^{-i}_{t}). The only connections between contemporaneous actions are backdoor paths through shared history HkH_{k} and overarching strategic intent UU.
+
+•
+
+Axiom 3: Confounding Structure: U→AtiU\rightarrow A^{i}_{t} and U→At−iU\rightarrow A^{-i}_{t}. The latent intent acts as an unobserved contemporaneous confounder, coordinating all agent actions.
+
+F.2 Step 1: Graphical d-Separation via Induction
+
+To apply do-calculus, we must first prove that our chosen covariate set Zk={Hk,ak−i}Z_{k}=\{H_{k},a^{-i}_{k}\} successfully blocks all non-causal paths pointing into akia^{i}_{k}. We require the assumption of Sufficiency of History: The observed history HkH_{k} acts as a sufficient statistic for the latent intent UU, meaning sk+1⟂⟂U|(Hk,aki,ak−i)s_{k+1}\perp\!\!\!\perp U\mid(H_{k},a^{i}_{k},a^{-i}_{k}).
+
+Inductive Proof of MAS d-Separation.
+
+Base Case (Single-Agent): Assume peer agents ak−ia^{-i}_{k} are removed. The only backdoor path is historical: aki←U→sk+1a^{i}_{k}\leftarrow U\rightarrow s_{k+1}. Under the sufficiency of history, conditioning on Zk={Hk}Z_{k}=\{H_{k}\} screens off UU and blocks this path, satisfying the single-agent Sequential Backdoor Criterion.
+
+Inductive Step (Multi-Agent Extension): Reintroducing peer agents ak−ia^{-i}_{k} creates a new, contemporaneous backdoor path: aki←U→ak−i→sk+1a^{i}_{k}\leftarrow U\rightarrow a^{-i}_{k}\rightarrow s_{k+1}. The base case set {Hk}\{H_{k}\} is historical and cannot block this instantaneous path. We expand the set to Zk={Hk,ak−i}Z_{k}=\{H_{k},a^{-i}_{k}\}. By Axiom 2, peer action ak−ia^{-i}_{k} acts as a chain node on the confounding path, not a collider. Therefore, explicitly conditioning on ak−ia^{-i}_{k} mathematically blocks the new multi-agent backdoor path.
+
+Conclusion: Conditioning on ak−ia^{-i}_{k} reduces the unblocked topology back to the single-agent base case. Conditioning on HkH_{k} subsequently clears the remaining historical path. Because no unblocked paths remain, the conditional independence (sk+1⟂⟂aki∣Hk,ak−i)(s_{k+1}\perp\!\!\!\perp a^{i}_{k}\mid H_{k},a^{-i}_{k}) holds in the mutilated graph 𝒢aki¯\mathcal{G}_{\overline{a^{i}_{k}}}.
+∎
+
+F.3 Step 2: Algebraic Reduction via do-Calculus
+
+With graphical d-separation proven, we resolve the interventional query to purely observational data.
+
+Proof of Theorem 1.
+
+We expand the target interventional distribution P⁡(st+1∣d​o​(ati),Hk)P(s_{t+1}\mid do(a^{i}_{t}),H_{k}) by marginalizing over the peer actions At−iA^{-i}_{t} and the unobserved confounder UU:
+
+=∑at−i∑UP⁡(st+1∣d​o​(ati),at−i,Hk,U)​P​(at−i∣d​o​(ati),Hk,U)​P​(U∣d​o​(ati),Hk)=\sum_{a^{-i}_{t}}\sum_{U}P(s_{t+1}\mid do(a^{i}_{t}),a^{-i}_{t},H_{k},U)P(a^{-i}_{t}\mid do(a^{i}_{t}),H_{k},U)P(U\mid do(a^{i}_{t}),H_{k})
+
+Applying the rules of do-calculus based on our established axioms and d-separation:
+
+1.
+
+Isolating the Intervention: d​o​(ati)do(a^{i}_{t}) removes edges into AtiA^{i}_{t}. It cannot backward-influence UU or HkH_{k}. Thus, P⁡(U∣d​o​(ati),Hk)=P⁡(U∣Hk)P(U\mid do(a^{i}_{t}),H_{k})=P(U\mid H_{k}).
+
+2.
+
+Applying Axiom 2: At−iA^{-i}_{t} is not a descendant of AtiA^{i}_{t}. Intervening on AtiA^{i}_{t} does not trigger a simultaneous reaction. Thus, P⁡(at−i∣d​o​(ati),Hk,U)=P⁡(at−i∣Hk,U)P(a^{-i}_{t}\mid do(a^{i}_{t}),H_{k},U)=P(a^{-i}_{t}\mid H_{k},U).
+
+3.
+
+Applying Axiom 1: The transition is fully determined by observed variables. Because AtiA^{i}_{t} is now a fixed parent, we drop the do-operator. St+1S_{t+1} is independent of UU given the actions. Thus, P⁡(st+1∣d​o​(ati),at−i,Hk,U)=P⁡(st+1∣ati,at−i,Hk)P(s_{t+1}\mid do(a^{i}_{t}),a^{-i}_{t},H_{k},U)=P(s_{t+1}\mid a^{i}_{t},a^{-i}_{t},H_{k}).
+
+Substituting these reductions back yields:
+
+=∑at−iP⁡(st+1∣ati,at−i,Hk)​∑UP⁡(at−i∣Hk,U)​P​(U∣Hk)=\sum_{a^{-i}_{t}}P(s_{t+1}\mid a^{i}_{t},a^{-i}_{t},H_{k})\sum_{U}P(a^{-i}_{t}\mid H_{k},U)P(U\mid H_{k})
+
+By the Law of Total Probability, the inner summation over UU reduces exactly to the marginal observational probability of the other agents’ actions:
+
+P⁡(st+1∣d​o​(ati),Hk)=∑at−iP⁡(st+1∣ati,at−i,Hk)​P​(at−i∣Hk)P(s_{t+1}\mid do(a^{i}_{t}),H_{k})=\sum_{a^{-i}_{t}}P(s_{t+1}\mid a^{i}_{t},a^{-i}_{t},H_{k})P(a^{-i}_{t}\mid H_{k})
+
+This concludes the proof, demonstrating structural identifiability.
+∎
+
+Appendix G Motivation Study in Tic-Tac-Toe
+
+This study establishes the necessity of causal world models by analyzing failure modes within a controlled Tic-Tac-Toe environment, demonstrating that standard architectures collapse under interventional uncertainty. We show that integrating causal discovery and normalizing flows provides the structural alignment required for resilient state recovery beyond the optimal training distribution.
+
+Figure 12: Motivation study in Tic-Tac-Toe. (a) Environment representation with initial agent moves. (b) A winning configuration for Agent 1 and a Draw. (c) The ground-truth causal graph defining state transitions and dependencies between moves. (d) The environment modeled as a turn-based Markov Decision Process, illustrating state transitions, expert policy actions, and unobserved agent intent.
+
+Tic-Tac-Toe (Terry et al., 2021) serves as our motivation study environment. This domain provides a controlled setting where we can formally define the causal relationships governing game transitions. The environment dynamics are fully observable and computationally tractable. Figure 12 illustrates the core components of this study. Panel (a) and (b) show the grid configuration and a terminal winning state for Agent 1 including another draw configuration by both agents. Panel (c) presents the ground-truth causal graph, detailing the d
