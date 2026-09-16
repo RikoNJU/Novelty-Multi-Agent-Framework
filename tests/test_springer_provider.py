@@ -134,6 +134,77 @@ def test_search_maps_meta_v2_record_and_does_not_leak_key() -> None:
     )
 
 
+def test_search_caps_page_size_at_basic_tier_limit() -> None:
+    """Basic 档 Meta API 每页上限 25 条；p>25 会 403（premium feature）。
+
+    历史行为是 ``min(limit, 100)``，调用方传入 26..100 会让整个源以 403 失败。
+    这里锁定硬截断语义：超过上限收敛到 25，未超过则原样透传。
+    """
+
+    seen: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.path == "/meta/v2/json"
+        seen.append(request.url.params["p"])
+        return httpx.Response(200, json={"records": []})
+
+    transport = _transport(handler)
+    article_client = SpringerNatureArticleClient(
+        transport,
+        base_url=BASE_URL,
+        meta_api_key="meta-key",
+        open_access_api_key="open-access-key",
+        full_text_mode="openaccess",
+    )
+    tool = SpringerNatureSearchTool(
+        transport,
+        article_client,
+        base_url=BASE_URL,
+        meta_api_key="meta-key",
+    )
+
+    tool.search("keyword:example", limit=26)
+    tool.search("keyword:example", limit=100)
+    tool.search("keyword:example", limit=10)
+
+    assert seen == ["25", "25", "10"]
+
+
+def test_search_treats_http_404_as_no_results() -> None:
+    """Meta API 用 404 表达“查询无结果”，必须返回空命中而不是抛错。
+
+    检索层把 provider 异常视为故障并 break 整条放宽链：一旦 404 抛错，
+    “严格检索式零命中”就会直接变成“任务零候选、零证据”，S1-fb1/S2/S3
+    这些降级检索式一次都不会执行。
+    """
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.path == "/meta/v2/json"
+        return httpx.Response(
+            404,
+            json={
+                "status": "Fail",
+                "message": "No data was found for the given query.",
+            },
+        )
+
+    transport = _transport(handler)
+    tool = SpringerNatureSearchTool(
+        transport,
+        SpringerNatureArticleClient(
+            transport,
+            base_url=BASE_URL,
+            meta_api_key="meta-key",
+            open_access_api_key="open-access-key",
+            full_text_mode="openaccess",
+        ),
+        base_url=BASE_URL,
+        meta_api_key="meta-key",
+    )
+
+    assert list(tool.search("no such phrase 12345", limit=8)) == []
+
+
 def test_open_access_full_text_parses_jats_and_truncates() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         assert request.url.path == "/openaccess/jats"

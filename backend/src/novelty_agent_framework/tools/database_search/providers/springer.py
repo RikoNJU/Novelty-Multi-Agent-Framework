@@ -27,6 +27,12 @@ OPEN_ACCESS_PATH = "/openaccess/jats"
 TDM_PATH = "/xmldata/jats"
 _VALID_FULL_TEXT_MODES = frozenset({"disabled", "openaccess", "tdm"})
 
+# Basic 档 Meta API 的每页上限。实测 p=25 返回 200，p=26 起返回
+# 403 "Access to this resource is restricted. This is a premium feature"。
+# 必须硬截断：调用方一旦传入更大的 limit，整个源会以 403 直接失败，
+# 而不是被截断成较少的候选。若要超过 25 条，需用 s 参数翻页（Basic 档可用）。
+MAX_META_PAGE_SIZE = 25
+
 
 class SpringerNatureQueryAdapter(QueryAdapter):
     """Compile a source-independent plan into Springer Nature query syntax."""
@@ -163,11 +169,17 @@ class SpringerNatureSearchTool(SearchTool):
             params={
                 "q": query,
                 "s": 1,
-                "p": min(limit, 100),
+                "p": min(limit, MAX_META_PAGE_SIZE),
                 "api_key": self.meta_api_key,
             },
             headers={"Accept": "application/json"},
         )
+        if response.status_code == 404:
+            # Meta API 用 404 + "No data was found for the given query."
+            # 表达"查询无结果"，是正常业务信号而不是提供方故障。
+            # 在这里抛异常会被检索层判定为 provider_failed 并 break 掉整条
+            # 放宽链，使"严格检索式零命中"直接变成"任务零候选、零证据"。
+            return ()
         raise_for_provider_status(response, provider="Springer Nature")
         payload = response.json()
         if not isinstance(payload, Mapping):
