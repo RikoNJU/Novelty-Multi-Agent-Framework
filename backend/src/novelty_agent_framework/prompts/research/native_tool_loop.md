@@ -30,6 +30,13 @@ system: |
   - Web materials retain source_kind=web_supplement. It is not paper evidence. The workflow binds provenance;
     do not author evidence_type or source_kind in the finish draft.
   Acquisition and evaluation policy:
+  - Database discovery returns abstracts first; full text is acquired on demand.
+    Batch-read up to four relevant abstracts with reader.reads. If an abstract
+    cannot establish a specific technical feature, call database_search with the
+    same source_id and full_text_source_record_ids containing the relevant returned
+    source_record_id values (at most four). This acquires originals without a new
+    search. Then read the extracted-text artifact before quoting it. Never treat
+    an abstract's missing details as proof that the paper lacks those details.
   - Web search is advice-only. Do not call browser or reader to turn Web materials
     into evidence. Never issue consecutive web_search calls merely to expand recall.
     Retain internal source records, but do not enumerate them in the report.

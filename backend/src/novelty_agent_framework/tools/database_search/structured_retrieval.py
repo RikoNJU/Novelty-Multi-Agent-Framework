@@ -6,6 +6,7 @@ import asyncio
 import hashlib
 import inspect
 import re
+import weakref
 from collections.abc import Awaitable, Callable, Mapping, Sequence
 from dataclasses import dataclass, replace
 from datetime import datetime, timezone
@@ -140,6 +141,7 @@ class StructuredRetrievalAdapter:
             observed_at=observed_at,
             provenance={
                 "adapter": "structured_retrieval",
+                "document_id": hit.document_id,
                 "identity_basis": work_key.split(":", 1)[0],
             },
         )
@@ -178,6 +180,63 @@ class StructuredSourceRetrievalTool:
         self.max_concurrency = max_concurrency
         self.source_id = source.source_id
         self.adapter = StructuredRetrievalAdapter()
+        self._full_text_states = weakref.WeakKeyDictionary()
+
+    async def acquire_full_texts(self, request, record_ids: list[str]) -> ResearchBundle:
+        """Acquire only previously discovered database records; never execute a search."""
+        manifest = self.reference_store.load_manifest(request.subject_paper_id)
+        records = {r.source_record_id: r for r in manifest.source_records}
+        works = {w.work_id: w for w in manifest.works}
+        selected = []
+        for record_id in dict.fromkeys(record_ids):
+            record = records.get(record_id)
+            if (record is None or record.source_id != self.source_id
+                    or record.source_kind != SourceKind.STRUCTURED_DATABASE
+                    or not record.external_id or record.work_id not in works):
+                raise ValueError(f"unknown or invalid database source record: {record_id}")
+            selected.append(record)
+        artifacts = [a for a in manifest.artifacts if a.source_record_id in record_ids]
+        ready = {a.source_record_id for a in artifacts if a.role == ArtifactRole.EXTRACTED_TEXT}
+        hits = [(r.source_record_id, SearchHit(document_id=r.provenance.get("document_id") or r.external_id,
+                 source_id=self.source_id, title=r.title)) for r in selected
+                if r.source_record_id not in ready]
+        from .providers.arxiv_scheduler import provider_task_id
+        token = provider_task_id.set(request.research_task.task_id)
+        try:
+            full_texts, warnings = await self._fetch_full_texts(hits)
+        finally:
+            provider_task_id.reset(token)
+        for record in selected:
+            full_text = full_texts.get(record.source_record_id)
+            if full_text is None or not full_text.text.strip():
+                continue
+            try:
+                extent = ContentExtent(full_text.content_extent)
+            except ValueError:
+                extent = ContentExtent.UNKNOWN
+                warnings.append(f"full text {full_text.document_id}: unknown content extent")
+            artifact = self._try_save_artifact(
+                request.subject_paper_id, work=works[record.work_id], record=record,
+                role=ArtifactRole.EXTRACTED_TEXT, content=full_text.text,
+                extent=extent,
+                version_label=full_text.version_label,
+                provenance={"source": "full_text_tool", "source_url": full_text.source_url,
+                            "media_type_received": full_text.media_type}, warnings=warnings)
+            if artifact is not None:
+                artifacts.append(artifact)
+                ready.add(record.source_record_id)
+        selected = [r.model_copy(update={"access_status": AccessStatus.FULL_TEXT_ACQUIRED})
+                    if r.source_record_id in ready else r for r in selected]
+        if self.source.full_text_tool is None:
+            warnings.append("full_text_tool unavailable; existing abstracts retained")
+        self.reference_store.merge_manifest(request.subject_paper_id,
+            source_records=selected, artifacts=artifacts)
+        return ResearchBundle(
+            bundle_id=self.adapter.stable_id("bnd", request.subject_paper_id,
+                                            "full_text", *record_ids),
+            producer=f"{self.name}:{self.source_id}",
+            works=[works[r.work_id] for r in selected], source_records=selected,
+            artifacts=artifacts, warnings=warnings)
 
     async def ainvoke(
         self, request: StructuredSourceRetrievalRequest
@@ -532,18 +591,30 @@ class StructuredSourceRetrievalTool:
     ) -> tuple[dict[str, FullText], list[str]]:
         if self.source.full_text_tool is None:
             return {}, []
-        semaphore = asyncio.Semaphore(self.max_concurrency)
+        loop = asyncio.get_running_loop()
+        if loop not in self._full_text_states:
+            self._full_text_states[loop] = (asyncio.Semaphore(self.max_concurrency), {})
+        semaphore, pending = self._full_text_states[loop]
+
+        async def acquire(document_id):
+            async with semaphore:
+                return await _invoke_provider(self.source.full_text_tool.fetch, document_id)
 
         async def fetch(key: str, hit: SearchHit) -> tuple[str, FullText | None, str | None]:
-            async with semaphore:
-                try:
-                    value = await _invoke_provider(
-                        self.source.full_text_tool.fetch,
-                        hit.document_id,
-                    )
-                    return key, value, None
-                except Exception as exc:
-                    return key, None, f"full text {hit.document_id}: {_safe_error(exc)}"
+            document_id = hit.document_id
+            if document_id not in pending:
+                task = asyncio.create_task(acquire(document_id))
+                pending[document_id] = task
+                def done(completed, document_id=document_id):
+                    pending.pop(document_id, None)
+                    if not completed.cancelled():
+                        completed.exception()
+                task.add_done_callback(done)
+            try:
+                value = await asyncio.shield(pending[document_id])
+                return key, value, None
+            except Exception as exc:
+                return key, None, f"full text {document_id}: {_safe_error(exc)}"
 
         results = await asyncio.gather(*(fetch(key, hit) for key, hit in hits))
         return (

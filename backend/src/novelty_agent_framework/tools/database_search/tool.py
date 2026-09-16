@@ -77,6 +77,9 @@ class DatabaseSearchTool:
             "同一任务的检索计划固定；重复调用相同 source_id 仅复用完整成功结果（含零命中）。"
             "失败或部分成功不缓存；临时错误按 provider 退避重试，其他错误优先换库。"
             "成功后优先批量读取已有候选；新一轮任务可重新检索。"
+            "默认先返回候选摘要。如摘要不足以核验具体特征，可传入"
+            "full_text_source_record_ids（至多4个已返回的同库文献句柄）按需获取全文；"
+            "此模式不重新检索。获取后必须通过 reader 读取原文，才能作为证据。"
         )
 
     async def ainvoke(
@@ -95,8 +98,7 @@ class DatabaseSearchTool:
             ) from exc
 
         started = time.monotonic()
-        bundle = await retrieval.ainvoke(
-            StructuredSourceRetrievalRequest(
+        request = StructuredSourceRetrievalRequest(
                 subject_paper_id=scope.subject_paper_id,
                 run_id=scope.run_id,
                 source_id=source_id,
@@ -104,7 +106,9 @@ class DatabaseSearchTool:
                 research_task=scope.research_task,
                 search_plan=scope.search_plan,
             )
-        )
+        acquisition = bool(arguments.full_text_source_record_ids)
+        bundle = (await retrieval.acquire_full_texts(request, arguments.full_text_source_record_ids)
+                  if acquisition else await retrieval.ainvoke(request))
         artifacts_by_record: dict[str, list[str]] = {}
         for artifact in bundle.artifacts:
             if artifact.source_record_id is not None:
@@ -128,10 +132,15 @@ class DatabaseSearchTool:
                     source_id=record.source_id,
                     access_status=record.access_status,
                     artifact_ids=sorted(artifacts_by_record.get(record.source_record_id, [])),
+                    full_text_artifact_ids=[a.artifact_id for a in bundle.artifacts
+                        if a.source_record_id == record.source_record_id and a.role.value == "extracted_text"],
                     abstract_preview=preview,
                 )
             )
         execution_summary = _summarize_search_executions(bundle.search_executions)
+        if acquisition:
+            # No search was attempted: retain real execution history without inventing queries.
+            execution_summary["no_execution"] = False
         warnings = list(bundle.warnings)
         if execution_summary["degraded"]:
             warnings.append(
@@ -158,6 +167,8 @@ class DatabaseSearchTool:
             error = f"all {total} search executions failed"
         else:
             summary = f"数据库检索召回 {len(items)} 个候选作品"
+            if acquisition:
+                summary = f"按需全文获取完成，返回 {len(items)} 篇文献的可用制品；全文不可用时保留摘要"
             error = None
             if execution_summary["degraded"]:
                 summary += (

@@ -24,6 +24,7 @@ class DatabaseSearchArguments(StrictModel):
     """Select one configured database; task and query scope stay runtime-owned."""
 
     source_id: NonEmptyStr
+    full_text_source_record_ids: list[NonEmptyStr] = Field(default_factory=list, max_length=4)
 
     @field_validator("source_id")
     @classmethod
@@ -40,6 +41,7 @@ class DatabaseSearchItem(StrictModel):
     source_id: NonEmptyStr
     access_status: AccessStatus
     artifact_ids: list[NonEmptyStr] = Field(default_factory=list)
+    full_text_artifact_ids: list[NonEmptyStr] = Field(default_factory=list)
     abstract_preview: str | None = None
 
 
