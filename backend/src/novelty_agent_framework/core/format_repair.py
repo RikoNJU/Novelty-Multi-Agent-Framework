@@ -16,7 +16,9 @@ async def repair_json(client, content, schema, options=None):
         ChatMessage(role="user", content=json.dumps({
             "previous_output": content, "schema": schema,
         }, ensure_ascii=False)),
-    ], options=replace(options or ModelCallOptions(), tools=(), tool_choice="none"))
+    ], options=replace(options or ModelCallOptions(), tools=(), tool_choice="none",
+        timeout_seconds=min((options.timeout_seconds if options else None) or 60, 60),
+        extra_body={**((options.extra_body if options else None) or {}), "enable_thinking": False}))
     if response.tool_calls:
         raise ValueError("format repair attempted a tool call")
     return response.content

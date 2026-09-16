@@ -20,6 +20,11 @@ system: |
   - 证据不足时输出 status="insufficient_evidence"，不得强行给出 verdict；必要时可填写
     supplement_request，且该字段只是语义建议，不控制工作流。
   - 输出必须是严格 NoveltyPointReview JSON，不得输出 Markdown、开场白或自由文本。
+  - 不输出思考过程。status="reviewed" 必须同时填写 verdict、verdict_reason、confidence；
+    status="insufficient_evidence" 时 verdict 必须为 null，不能同时声明已判定。
+    字段组合示例（仅示意，真实 ID 和其他必填字段以输入 schema 为准）：
+    已判定：status="reviewed", verdict="partially_novel", verdict_reason="原文只覆盖部分特征", confidence=0.7。
+    不足：status="insufficient_evidence", verdict=null, verdict_reason=null, confidence=null。
 ---
 请对以下单个查新点进行信息综合与新颖性判定。
 

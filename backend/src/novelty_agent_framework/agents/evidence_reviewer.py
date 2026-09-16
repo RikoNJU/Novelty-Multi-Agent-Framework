@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import asyncio
 import re
+import time
 from datetime import datetime, timezone
 from collections.abc import Sequence
 from dataclasses import dataclass, replace
@@ -31,6 +32,22 @@ from ..schemas import (
     ReviewVerdict,
 )
 from ..tools.researcher_registry import ResearcherToolRegistry
+
+
+class _BudgetedClient:
+    """Apply the remaining card budget to both async waiting and HTTP I/O."""
+
+    def __init__(self, client, seconds):
+        self.client = client
+        self.deadline = time.monotonic() + seconds
+
+    async def acomplete(self, messages, *, options=None):
+        remaining = self.deadline - time.monotonic()
+        if remaining <= 0:
+            raise TimeoutError("review budget exhausted")
+        options = options or ModelCallOptions()
+        options = replace(options, timeout_seconds=min(options.timeout_seconds or 90, remaining))
+        return await asyncio.wait_for(self.client.acomplete(messages, options=options), remaining)
 
 _ALLOWED_ISSUE_CODES = frozenset(
     {
@@ -159,8 +176,10 @@ class NoveltyEvidenceReviewer(EvidenceReviewer):
             )
         try:
             harness = self.harness
+            client = self._client()
             if card_only:
-                harness = ToolCallHarness(self._client(), self.tools, config=replace(
+                client = _BudgetedClient(client, self.config.card_timeout_seconds)
+                harness = ToolCallHarness(client, self.tools, config=replace(
                     self.harness.config, max_turns=min(self.config.max_steps, 6),
                     max_tool_calls=min(self.config.max_tool_calls, 4),
                     per_tool_limits={"reader": min(self.config.max_tool_calls, 4)},
@@ -178,7 +197,7 @@ class NoveltyEvidenceReviewer(EvidenceReviewer):
             try:
                 review = NoveltyPointReview.model_validate_json(_extract_json(result.final_content))
             except (ValidationError, ValueError):
-                repaired = await repair_json(self._client(), result.final_content,
+                repaired = await repair_json(client, result.final_content,
                                              NoveltyPointReview.model_json_schema(), self.model_options)
                 review = NoveltyPointReview.model_validate_json(_extract_json(repaired))
             return _validate_review_references(review, request)
