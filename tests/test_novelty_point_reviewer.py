@@ -277,3 +277,30 @@ def test_workflow_persists_point_reviews_without_filtering_or_routing(tmp_path, 
             {**state, **reviewed, "insufficient_final_evidence_points": []}
         )
     ) == "synthesize"
+def test_point_review_retries_once_when_model_returns_non_object_json():
+    """run 0007 实测：模型返回「自然语言 + JSON 数组」时不得直接降级为证据不足。"""
+
+    client = ScriptedClient(
+        ModelResponse(
+            content='I have verified the full text.\n["asynchronous model update"]'
+        ),
+        ModelResponse(content=_review_json()),
+    )
+    result = asyncio.run(_reviewer(client, RecordingReader()).review(_request()))
+    assert result.status.value == "reviewed"
+    assert result.verdict.value == "partially_novel"
+    assert len(client.calls) == 2
+    assert "合法 JSON 对象" in client.calls[1][0][-1].content
+
+
+def test_point_review_still_fails_closed_after_repair_attempt():
+    """两次都非法时仍按 fail_closed 退回证据不足，并把原因写进 supplement_request。"""
+
+    client = ScriptedClient(
+        ModelResponse(content='I have verified the full text.\n["asynchronous model update"]'),
+        ModelResponse(content="still not json"),
+    )
+    result = asyncio.run(_reviewer(client, RecordingReader()).review(_request()))
+    assert result.status.value == "insufficient_evidence"
+    assert len(client.calls) == 2
+    assert "非法 JSON" in result.supplement_request.reason

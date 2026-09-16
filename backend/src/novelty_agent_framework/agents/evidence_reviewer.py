@@ -144,19 +144,7 @@ class NoveltyEvidenceReviewer(EvidenceReviewer):
 
         system, user = self._render_point_prompt(request)
         try:
-            result = await self.harness.run(
-                system_prompt=system,
-                initial_user_message=user,
-                scope=request,
-                options=self.model_options
-                or ModelCallOptions(
-                    temperature=self.config.temperature,
-                    tool_choice="auto",
-                ),
-            )
-            review = NoveltyPointReview.model_validate_json(
-                _extract_json(result.final_content)
-            )
+            review = await self._run_point_review(system, user, request)
             return _validate_review_references(review, request)
         except Exception as exc:
             if not self.config.fail_closed:
@@ -165,6 +153,46 @@ class NoveltyEvidenceReviewer(EvidenceReviewer):
                 request.novelty_point.point_id,
                 f"Reviewer 无法完成可靠判定：{type(exc).__name__}: {exc}"[:500],
             )
+
+    async def _run_point_review(
+        self,
+        system: str,
+        user: str,
+        request: NoveltyPointReviewRequest,
+    ) -> NoveltyPointReview:
+        """要求 Reviewer 最终输出 JSON 对象；解析失败时追加修复指令重试一次。
+
+        2026-09-15 live run 0007 实测：模型会返回「自然语言 + JSON 数组」这类
+        非对象输出（如 "I have verified the full ... model update"]"），
+        直接 fail_closed 会让本已被证据卡支撑的查新点退化成 insufficient_evidence，
+        等于白跑一轮检索。候选更稳的做法是给 Reviewer 加 response_format，
+        但该 Harness 会先走带工具的中间轮次，把 response_format=json_object 压在
+        中间轮次上会让模型提前停止工具调用（见
+        `experiments/evidence_card_builder_live_smoke.py` 的失败记录），
+        故这里只在解析失败后重试一次，命中解析的正常路径行为不变。
+        """
+
+        last_error: Exception | None = None
+        for attempt in range(2):
+            result = await self.harness.run(
+                system_prompt=system,
+                initial_user_message=(
+                    user if attempt == 0 else f"{user}\n\n{_JSON_REPAIR_INSTRUCTION}"
+                ),
+                scope=request,
+                options=self.model_options
+                or ModelCallOptions(
+                    temperature=self.config.temperature,
+                    tool_choice="auto",
+                ),
+            )
+            try:
+                return NoveltyPointReview.model_validate_json(
+                    _extract_json(result.final_content)
+                )
+            except (ValidationError, ValueError) as exc:
+                last_error = exc
+        raise ValueError(f"Reviewer 连续返回非法 JSON：{last_error}")
 
     def _render_point_prompt(
         self, request: NoveltyPointReviewRequest
@@ -428,6 +456,12 @@ def _fallback_point_system_prompt() -> str:
         "回读结果综合多个 Work；不得搜索或使用模型记忆补充事实。证据充分时输出 "
         "NoveltyPointReview；证据不足时输出 insufficient_evidence，不能猜测。"
     )
+
+
+_JSON_REPAIR_INSTRUCTION = (
+    "上一次响应不是合法 JSON 对象，无法解析。请只输出一个符合 NoveltyPointReview "
+    "schema 的 JSON 对象，不要输出任何自然语言说明，也不要用 JSON 数组包裹。"
+)
 
 
 def _extract_json(content: str | None) -> str:
