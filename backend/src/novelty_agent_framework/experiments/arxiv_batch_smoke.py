@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor
+from contextvars import copy_context
 from typing import Any
 
 from .arxiv_rate_smoke import DEFAULT_CASES, probe_case
@@ -43,7 +44,8 @@ def run_batch_smoke(
     if b["classification"] == "VALID_HIT":
         try:
             with ThreadPoolExecutor(max_workers=len(KNOWN_METADATA_IDS)) as executor:
-                values = list(executor.map(metadata.resolve, KNOWN_METADATA_IDS))
+                futures = [executor.submit(copy_context().run, metadata.resolve, doc_id) for doc_id in KNOWN_METADATA_IDS]
+                values = [future.result() for future in futures]
             resolved = sum(value is not None for value in values)
             d = {
                 "case": "D",
@@ -93,3 +95,70 @@ def _skipped(case_id: str, purpose: str) -> dict[str, Any]:
 
 
 __all__ = ["KNOWN_METADATA_IDS", "run_batch_smoke"]
+
+
+WEB_THEME_QUERIES = (
+    'ti:"graph neural network"',
+    'ti:"music structure"',
+    'ti:"attention"',
+    'ti:"time series"',
+    'ti:"contrastive learning"',
+    'ti:"image classification"',
+    'ti:"language model"',
+    'ti:"molecular representation"',
+)
+
+
+def run_web_smoke(*, session, queries=WEB_THEME_QUERIES, max_concurrency=1):
+    """Web counterpart of the existing provider smoke; no model calls."""
+    import time
+    from dataclasses import asdict
+    from ..tools.database_search.providers.arxiv_web import ArxivWebSearchTool
+    from ..tools.database_search.providers.arxiv_scheduler import provider_task_id
+
+    search = ArxivWebSearchTool(session=session)
+    def probe(item):
+        index, query = item
+        token = provider_task_id.set(f"web-smoke-{index + 1}")
+        started = time.monotonic()
+        try:
+            hits = list(search.search(query, limit=5))
+            return {"query": query, "classification": "VALID_HIT" if hits else "ZERO_RESULT",
+                    "hits": [asdict(hit) for hit in hits], "elapsed_seconds": time.monotonic() - started}
+        except Exception as exc:
+            return {"query": query, "classification": "PROVIDER_FAILED",
+                    "error_type": type(exc).__name__, "error": str(exc),
+                    "elapsed_seconds": time.monotonic() - started}
+        finally:
+            provider_task_id.reset(token)
+    if max_concurrency == 1:
+        cases = [probe(item) for item in enumerate(queries)]
+    else:
+        with ThreadPoolExecutor(max_workers=max_concurrency) as executor:
+            futures = [executor.submit(copy_context().run, probe, item) for item in enumerate(queries)]
+            cases = [future.result() for future in futures]
+    return {"transport": "web", "max_concurrency": max_concurrency,
+            "cases": cases, "scheduler_metrics": session.stats()}
+
+
+def run_api_parallel_smoke(*, scheduler):
+    """Four concurrent logical calls, including metadata, even on a blocked exit."""
+    from ..tools.database_search.providers.arxiv_scheduler import provider_task_id
+    search = ArxivSearchTool(scheduler=scheduler)
+    def probe(index):
+        token = provider_task_id.set(f"api-smoke-{index + 1}")
+        try:
+            if index < 2:
+                value = scheduler.resolve_metadata(KNOWN_METADATA_IDS[index])
+                count = int(value is not None)
+            else:
+                count = len(search.search(WEB_THEME_QUERIES[index], limit=3))
+            return {"task_id": provider_task_id.get(), "classification": "VALID_HIT" if count else "ZERO_RESULT", "count": count}
+        except Exception as exc:
+            return {"task_id": provider_task_id.get(), "classification": "PROVIDER_FAILED", "error_type": type(exc).__name__, "error": str(exc)}
+        finally:
+            provider_task_id.reset(token)
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        futures = [executor.submit(copy_context().run, probe, index) for index in range(4)]
+        cases = [future.result() for future in futures]
+    return {"max_concurrency": 4, "cases": cases, "scheduler_metrics": scheduler.snapshot_metrics(include_events=True)}

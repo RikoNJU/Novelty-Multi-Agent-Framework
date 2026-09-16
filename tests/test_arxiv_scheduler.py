@@ -283,3 +283,20 @@ def test_runtime_artifacts_include_logical_physical_and_summary(tmp_path):
         assert len(provider_files) == 2
     finally:
         scheduler.shutdown()
+
+
+def test_runtime_records_api_search_logical_requests(tmp_path):
+    import json
+    scheduler = ArxivRequestScheduler(client=_client(lambda req: httpx.Response(200, text=_feed([]))), min_interval=0)
+    manager = RuntimeArtifactManager('api-search-runtime', config=RuntimeDebugConfig(
+        output_root=tmp_path / 'outputs', archive_root=tmp_path / 'archive'), diagnostics=())
+    try:
+        with manager:
+            scheduler.search('all:test', limit=1)
+            scheduler.request_url('https://export.arxiv.org/api/query?id_list=1706.03762')
+        path, _ = manager.finish_run('SUCCESS')
+        metrics = json.loads(path.read_text())['provider_requests']
+        assert metrics['logical_api_requests'] == metrics['physical_api_requests'] == 2
+        assert metrics['by_transport']['api']['http_200_count'] == 2
+    finally:
+        scheduler.shutdown()

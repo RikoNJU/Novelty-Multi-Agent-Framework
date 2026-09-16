@@ -258,6 +258,7 @@ def test_execution_summary_counts_provider_neutral_statuses():
         "requires_human": 1,
         "degraded": True,
         "all_failed": False,
+        "provider_failed": True,
         "no_execution": False,
     }
 
@@ -278,6 +279,7 @@ def test_execution_summary_all_failed_is_structured_failure(tmp_path):
         "requires_human": 0,
         "degraded": False,
         "all_failed": True,
+        "provider_failed": True,
         "no_execution": False,
     }
     projected = tool.project_model_context(observation)
