@@ -1,0 +1,126 @@
+{
+  "classification_counts": {
+    "NEVER_PERSISTED": 1,
+    "OTHER": 3,
+    "WRONG_NAMESPACE": 2
+  },
+  "counts": {
+    "failed": 6,
+    "incomplete": 0,
+    "reader_calls": 32,
+    "succeeded": 26
+  },
+  "diagnostic_name": "reader",
+  "errors": [],
+  "findings": [
+    {
+      "actual_namespace": "subject_reference",
+      "agent_tool_call_id": "01a0a6338ff1a0a1c360c021411b8fb5",
+      "artifact_id": "art_ddbf15eb9a5ec9bb00fc65f8",
+      "error_message": "reader required after database_search returned artifact_ids",
+      "error_type": "HarnessPolicyError",
+      "execution_status": "FAILED",
+      "file_presence": true,
+      "manifest_presence": [
+        "subject_reference"
+      ],
+      "namespace": null,
+      "reason_code": "OTHER",
+      "recommended_action": "查看结构化异常类型与脱敏错误信息",
+      "stage_name": "run_research_task",
+      "tool_call_id": "tool_0012"
+    },
+    {
+      "actual_namespace": null,
+      "agent_tool_call_id": "01a0a633e3fe97b91de9cd75f464ddbe",
+      "artifact_id": "art_ff0d7a2a0bbbd54e5062bb",
+      "error_message": "unknown artifact_id 'art_ff0d7a2a0bbbd54e5062bb' in the research or subject reference manifest",
+      "error_type": "ValueError",
+      "execution_status": "FAILED",
+      "file_presence": false,
+      "manifest_presence": [],
+      "namespace": null,
+      "reason_code": "NEVER_PERSISTED",
+      "recommended_action": "检查上游落盘失败或模型臆造 ID",
+      "stage_name": "run_research_task",
+      "tool_call_id": "tool_0021"
+    },
+    {
+      "actual_namespace": "research_reference",
+      "agent_tool_call_id": "01a0a635f277ba07c6542c330f4e2122",
+      "artifact_id": "art_95b24f1691e91e3c80091956",
+      "error_message": "reader tool-call budget exhausted",
+      "error_type": "HarnessPolicyError",
+      "execution_status": "FAILED",
+      "file_presence": true,
+      "manifest_presence": [
+        "research_reference"
+      ],
+      "namespace": null,
+      "reason_code": "OTHER",
+      "recommended_action": "查看结构化异常类型与脱敏错误信息",
+      "stage_name": "run_research_task",
+      "tool_call_id": "tool_0041"
+    },
+    {
+      "actual_namespace": null,
+      "agent_tool_call_id": "01a0a63662ef0d73647b5ea47801a916",
+      "artifact_id": "x",
+      "error_message": "artifact 'x' is outside reviewer scope",
+      "error_type": "PermissionError",
+      "execution_status": "FAILED",
+      "file_presence": false,
+      "manifest_presence": [],
+      "namespace": null,
+      "reason_code": "OTHER",
+      "recommended_action": "查看结构化异常类型与脱敏错误信息",
+      "stage_name": "review_evidence",
+      "tool_call_id": "tool_0044"
+    },
+    {
+      "actual_namespace": "subject_reference",
+      "agent_tool_call_id": "01a0a636ae38d698102ff2f204b9d000",
+      "artifact_id": "art_a2682f8373e4e077b6056a06",
+      "error_message": "unknown artifact_id 'art_a2682f8373e4e077b6056a06' in the research manifest",
+      "error_type": "ValueError",
+      "execution_status": "FAILED",
+      "file_presence": true,
+      "manifest_presence": [
+        "subject_reference"
+      ],
+      "namespace": null,
+      "reason_code": "WRONG_NAMESPACE",
+      "recommended_action": "检查 namespace 自动定位及调用链",
+      "stage_name": "review_evidence",
+      "tool_call_id": "tool_0045"
+    },
+    {
+      "actual_namespace": "subject_reference",
+      "agent_tool_call_id": "01a0a636d787e0144c044f9077d11b95",
+      "artifact_id": "art_a2682f8373e4e077b6056a06",
+      "error_message": "unknown artifact_id 'art_a2682f8373e4e077b6056a06' in the research manifest",
+      "error_type": "ValueError",
+      "execution_status": "FAILED",
+      "file_presence": true,
+      "manifest_presence": [
+        "subject_reference"
+      ],
+      "namespace": null,
+      "reason_code": "WRONG_NAMESPACE",
+      "recommended_action": "检查 namespace 自动定位及调用链",
+      "stage_name": "review_evidence",
+      "tool_call_id": "tool_0046"
+    }
+  ],
+  "schema_version": "1.0",
+  "scope": {
+    "paper_id": "MG19333vrw",
+    "run_id": "run-ace0a2e4dcb648dca9b61efff84461f5"
+  },
+  "status": "WARNING",
+  "verdict": {
+    "primary_code": "WRONG_NAMESPACE",
+    "summary": "存在 Reader 命名空间定位错误"
+  },
+  "warnings": []
+}

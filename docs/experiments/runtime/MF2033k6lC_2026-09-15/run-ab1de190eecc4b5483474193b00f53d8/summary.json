@@ -1,0 +1,902 @@
+{
+  "diagnostics": [
+    {
+      "artifact": "diagnostics/reader.json",
+      "classification_counts": {
+        "OTHER": 1
+      },
+      "counts": {
+        "failed": 1,
+        "incomplete": 0,
+        "reader_calls": 22,
+        "succeeded": 21
+      },
+      "diagnostic_name": "reader",
+      "primary_code": "OTHER",
+      "schema_version": "1.0",
+      "status": "WARNING"
+    },
+    {
+      "artifact": "diagnostics/reference_namespace.json",
+      "classification_counts": {},
+      "counts": {
+        "errors": 42,
+        "evidence_bindings": 4,
+        "namespace_integrity_failures": 0,
+        "reader_calls": 22,
+        "warnings": 0
+      },
+      "diagnostic_name": "reference_namespace",
+      "primary_code": null,
+      "schema_version": "1.0",
+      "status": "ERROR"
+    },
+    {
+      "artifact": "diagnostics/reviewer.json",
+      "classification_counts": {},
+      "counts": {
+        "evidence": 4,
+        "novelty_points": 3,
+        "reviewer_reader_calls": 4,
+        "reviews": 3,
+        "runtime_review_stages": 1,
+        "validator_accepted_cards": 2
+      },
+      "diagnostic_name": "reviewer",
+      "primary_code": null,
+      "schema_version": "1.0",
+      "status": "WARNING"
+    }
+  ],
+  "environment": {
+    "git_branch": "hyl",
+    "git_commit": "44d7a1b045333d448bea63b77876fd11ae91ead2",
+    "model_name": "deepseek-ai/DeepSeek-V4-Flash",
+    "model_provider": "openai_compatible",
+    "python_version": "3.11.16"
+  },
+  "errors": [
+    {
+      "error_id": "error_0001",
+      "message": "reader tool-call budget exhausted",
+      "stage": "run_research_task",
+      "timestamp": "2026-09-15T14:03:54.403892+00:00",
+      "tool_call_id": "tool_0027",
+      "traceback": "",
+      "type": "HarnessPolicyError"
+    }
+  ],
+  "final_evidence_sufficiency_checks": [
+    {
+      "actual_next_stage": "synthesize_report",
+      "calculated_insufficient_final_evidence_points": [
+        {
+          "novelty_point_id": "NP-1",
+          "reason": "insufficient_final_evidence",
+          "required_card_count": 1,
+          "valid_card_count": 0
+        }
+      ],
+      "calculated_insufficient_point_ids": [
+        "NP-1"
+      ],
+      "calculated_status": "INSUFFICIENT",
+      "check_status": "INSUFFICIENT",
+      "configured_cut": 1,
+      "counted_final_valid_card_count": 2,
+      "ignored_card_count": 0,
+      "input_final_valid_card_count": 2,
+      "max_rounds": 1,
+      "output_matches_calculation": true,
+      "point_results": [
+        {
+          "novelty_point_id": "NP-1",
+          "required_card_count": 1,
+          "status": "INSUFFICIENT",
+          "valid_card_count": 0
+        },
+        {
+          "novelty_point_id": "NP-2",
+          "required_card_count": 1,
+          "status": "PASS",
+          "valid_card_count": 1
+        },
+        {
+          "novelty_point_id": "NP-3",
+          "required_card_count": 1,
+          "status": "PASS",
+          "valid_card_count": 1
+        }
+      ],
+      "reported_insufficient_final_evidence_points": [
+        {
+          "novelty_point_id": "NP-1",
+          "reason": "insufficient_final_evidence",
+          "required_card_count": 1,
+          "valid_card_count": 0
+        }
+      ],
+      "round": 1,
+      "round_limit_allows_supplement": false,
+      "stage_id": "stage_0015",
+      "stage_status": "SUCCESS"
+    }
+  ],
+  "integrity_gates": [
+    {
+      "accepted_card_count": 2,
+      "accepted_card_ids": [
+        "card_c9df5cebed1a5d107db62a1b",
+        "card_2180a1f421db0c145b16552a"
+      ],
+      "checked_card_count": 2,
+      "rejected_card_count": 0,
+      "rejected_card_ids": [],
+      "rejected_cards": [],
+      "stage_name": "validate_synthesis_input",
+      "validation_passed": true
+    },
+    {
+      "checked_conclusion_count": 3,
+      "conclusion_count": 3,
+      "issues": [],
+      "matched_count": 3,
+      "mismatch_count": 0,
+      "mismatched_point_ids": [],
+      "reference_occurrence_count": 1,
+      "referenced_card_count": 1,
+      "review_count": 3,
+      "stage_name": "validate_report_integrity",
+      "validation_passed": true
+    }
+  ],
+  "last_completed_stage": "render_report",
+  "llm_usage": {
+    "by_model": [
+      {
+        "amount_rmb": 0.5761116,
+        "cached_input_tokens": 334592,
+        "calls": 46,
+        "failed_calls": 0,
+        "free_calls": 0,
+        "input_tokens": 420915,
+        "model": "deepseek-ai/DeepSeek-V4-Flash",
+        "output_tokens": 24085,
+        "priced_calls": 46,
+        "reasoning_tokens": 9836,
+        "successful_calls": 46,
+        "total_tokens": 445000,
+        "unpriced_calls": 0,
+        "usage_unavailable_calls": 0
+      }
+    ],
+    "totals": {
+      "amount_rmb": 0.5761116,
+      "cached_input_tokens": 334592,
+      "calls": 46,
+      "cost_completeness": "COMPLETE",
+      "currency": "RMB",
+      "failed_calls": 0,
+      "free_calls": 0,
+      "input_tokens": 420915,
+      "output_tokens": 24085,
+      "priced_calls": 46,
+      "reasoning_tokens": 9836,
+      "successful_calls": 46,
+      "total_tokens": 445000,
+      "unpriced_calls": 0,
+      "usage_unavailable_calls": 0
+    }
+  },
+  "outcome": null,
+  "provider_requests": {
+    "api_elapsed_ms": 0,
+    "average_batch_size": 0.0,
+    "batch_count": 0,
+    "dedup_count": 0,
+    "http_200_count": 0,
+    "http_429_count": 0,
+    "logical_api_requests": 0,
+    "max_batch_size": 0,
+    "metadata_batch_ratio": 0.0,
+    "metadata_logical_requests": 0,
+    "metadata_physical_requests": 0,
+    "physical_api_requests": 0,
+    "queue_wait_ms": 0,
+    "read_timeout_count": 0,
+    "request_compression_ratio": 0.0,
+    "retry_count": 0,
+    "status_counts": {},
+    "total_arxiv_elapsed_ms": 0.0,
+    "unique_metadata_ids": 0
+  },
+  "retrieval_coverage_checks": [
+    {
+      "actual_next_stage": "validate_synthesis_input",
+      "coverages": [
+        {
+          "degraded_sources": [
+            "springer"
+          ],
+          "failed_sources": [],
+          "not_attempted_sources": [],
+          "novelty_point_id": "NP-1",
+          "reason": "部分必要来源未成功执行（必要来源：springer；失败：无；降级：springer；未执行：无）。",
+          "required_sources": [
+            "springer"
+          ],
+          "sources": [
+            {
+              "attempts": 4,
+              "degraded": 1,
+              "empty": 2,
+              "failed": 0,
+              "required": true,
+              "source_id": "springer",
+              "state": "degraded",
+              "succeeded": 3
+            }
+          ],
+          "state": "partial",
+          "zero_hit_sources": []
+        },
+        {
+          "degraded_sources": [],
+          "failed_sources": [],
+          "not_attempted_sources": [],
+          "novelty_point_id": "NP-2",
+          "reason": "必要来源全部成功执行（必要来源：springer；零命中来源：无）。",
+          "required_sources": [
+            "springer"
+          ],
+          "sources": [
+            {
+              "attempts": 1,
+              "degraded": 0,
+              "empty": 0,
+              "failed": 0,
+              "required": true,
+              "source_id": "springer",
+              "state": "ok",
+              "succeeded": 1
+            }
+          ],
+          "state": "complete",
+          "zero_hit_sources": []
+        },
+        {
+          "degraded_sources": [],
+          "failed_sources": [],
+          "not_attempted_sources": [],
+          "novelty_point_id": "NP-3",
+          "reason": "必要来源全部成功执行（必要来源：springer；零命中来源：springer）。",
+          "required_sources": [
+            "springer"
+          ],
+          "sources": [
+            {
+              "attempts": 5,
+              "degraded": 0,
+              "empty": 4,
+              "failed": 0,
+              "required": true,
+              "source_id": "springer",
+              "state": "ok",
+              "succeeded": 5
+            }
+          ],
+          "state": "complete",
+          "zero_hit_sources": [
+            "springer"
+          ]
+        }
+      ],
+      "stage_id": "stage_0013",
+      "stage_status": "SUCCESS"
+    }
+  ],
+  "reviewer_information_adjudication_checks": [
+    {
+      "actual_next_stage": "validate_synthesis_input",
+      "cards_preserved": true,
+      "duplicate_review_point_ids": [],
+      "expected_point_ids": [
+        "NP-1",
+        "NP-2",
+        "NP-3"
+      ],
+      "input_card_ids": [
+        "card_c9df5cebed1a5d107db62a1b",
+        "card_2180a1f421db0c145b16552a"
+      ],
+      "missing_review_point_ids": [],
+      "output_card_ids": [
+        "card_c9df5cebed1a5d107db62a1b",
+        "card_2180a1f421db0c145b16552a"
+      ],
+      "point_scopes": [
+        {
+          "allowed_artifact_ids": [],
+          "card_ids": [],
+          "novelty_point_id": "NP-1",
+          "referenced_evidence_ids": [],
+          "unresolved_evidence_ids": []
+        },
+        {
+          "allowed_artifact_ids": [
+            "art_bac33037a38d070d4cd61be1"
+          ],
+          "card_ids": [
+            "card_c9df5cebed1a5d107db62a1b"
+          ],
+          "novelty_point_id": "NP-2",
+          "referenced_evidence_ids": [
+            "ev_42c3ac642719053c684512a6",
+            "ev_c2e1f8b2efb47d46dcac7c64"
+          ],
+          "unresolved_evidence_ids": []
+        },
+        {
+          "allowed_artifact_ids": [
+            "art_eacf9fc298f1f3c311896604"
+          ],
+          "card_ids": [
+            "card_2180a1f421db0c145b16552a"
+          ],
+          "novelty_point_id": "NP-3",
+          "referenced_evidence_ids": [
+            "ev_4ff3e18ca9d2d1bb3877c614",
+            "ev_eef54a8fd79fb0945797a1c8"
+          ],
+          "unresolved_evidence_ids": []
+        }
+      ],
+      "review_results": [
+        {
+          "confidence": null,
+          "has_supplement_request": true,
+          "highly_relevant_work_count": 0,
+          "novelty_point_id": "NP-1",
+          "status": "insufficient_evidence",
+          "supplement_reason": "检索覆盖不完整；部分必要来源未成功执行（必要来源：springer；失败：无；降级：springer；未执行：无）。该情形无法判定是否存在相关文献。",
+          "verdict": null
+        },
+        {
+          "confidence": 0.55,
+          "has_supplement_request": true,
+          "highly_relevant_work_count": 1,
+          "novelty_point_id": "NP-2",
+          "status": "reviewed",
+          "supplement_reason": "现有证据仅包含 1 篇相关文献（第二次任务单次英文检索），不足以充分支撑对『图摘要+图自编码器+时序图』这一复合组合的新颖性判定。查新点的核心区分要素（图摘要压缩时序图、量化内存/训练时长优势 9.86%/13.27%）在当前证据中缺乏更贴近的近邻现有技术做完整比对。",
+          "verdict": "partially_novel"
+        },
+        {
+          "confidence": null,
+          "has_supplement_request": true,
+          "highly_relevant_work_count": 0,
+          "novelty_point_id": "NP-3",
+          "status": "insufficient_evidence",
+          "supplement_reason": "Reviewer 无法完成可靠判定：ValidationError: 1 validation error for NoveltyPointReview\n  Invalid JSON: expected ident at line 1 column 2 [type=json_invalid, input_value='I have verified the full...chronous model update\"]', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/json_invalid",
+          "verdict": null
+        }
+      ],
+      "reviewed_point_ids": [
+        "NP-1",
+        "NP-2",
+        "NP-3"
+      ],
+      "stage_id": "stage_0013",
+      "stage_status": "SUCCESS",
+      "supplement_requests_control_route": false,
+      "unexpected_review_point_ids": [],
+      "unresolved_evidence_ids": []
+    }
+  ],
+  "run": {
+    "duration_ms": 402969,
+    "end_time": "2026-09-15T14:07:12.060432+00:00",
+    "entrypoint": "paper_input",
+    "input_identity": {
+      "novelty_point_id": null,
+      "paper_json": "outputs/MF2033k6lC/paper-input/others/paper.json",
+      "paper_sha256": "430dc1a41d55724e42a21b10e28d25146e931ed1c06e68a712de60006f4f3768",
+      "search_plan_id": null,
+      "task_id": null
+    },
+    "paper_id": "MF2033k6lC",
+    "run_id": "run-ab1de190eecc4b5483474193b00f53d8",
+    "start_time": "2026-09-15T14:00:29.384242+00:00",
+    "status": "SUCCESS"
+  },
+  "stages": [
+    {
+      "duration": 113.125,
+      "duration_ms": 113125,
+      "error": null,
+      "finished_at": "2026-09-15T14:02:22.588779+00:00",
+      "stage_id": "stage_0001",
+      "stage_name": "extract_points",
+      "started_at": "2026-09-15T14:00:29.457305+00:00",
+      "status": "SUCCESS",
+      "validation_result": null
+    },
+    {
+      "duration": 0.0,
+      "duration_ms": 0,
+      "error": null,
+      "finished_at": "2026-09-15T14:02:22.607013+00:00",
+      "stage_id": "stage_0002",
+      "stage_name": "resolve_subject_references",
+      "started_at": "2026-09-15T14:02:22.592802+00:00",
+      "status": "SUCCESS",
+      "validation_result": null
+    },
+    {
+      "duration": 0.0,
+      "duration_ms": 0,
+      "error": null,
+      "finished_at": "2026-09-15T14:02:22.623915+00:00",
+      "stage_id": "stage_0003",
+      "stage_name": "plan",
+      "started_at": "2026-09-15T14:02:22.611129+00:00",
+      "status": "SUCCESS",
+      "validation_result": null
+    },
+    {
+      "duration": 0.0,
+      "duration_ms": 0,
+      "error": null,
+      "finished_at": "2026-09-15T14:02:22.642283+00:00",
+      "stage_id": "stage_0004",
+      "stage_name": "dispatch_planning_tasks",
+      "started_at": "2026-09-15T14:02:22.629015+00:00",
+      "status": "SUCCESS",
+      "validation_result": null
+    },
+    {
+      "duration": 14.016,
+      "duration_ms": 14016,
+      "error": null,
+      "finished_at": "2026-09-15T14:02:36.675226+00:00",
+      "stage_id": "stage_0005",
+      "stage_name": "plan_research_task",
+      "started_at": "2026-09-15T14:02:22.646299+00:00",
+      "status": "SUCCESS",
+      "validation_result": null
+    },
+    {
+      "duration": 3.406,
+      "duration_ms": 3405,
+      "error": null,
+      "finished_at": "2026-09-15T14:02:40.098950+00:00",
+      "stage_id": "stage_0006",
+      "stage_name": "plan_research_task",
+      "started_at": "2026-09-15T14:02:36.678757+00:00",
+      "status": "SUCCESS",
+      "validation_result": null
+    },
+    {
+      "duration": 10.078,
+      "duration_ms": 10078,
+      "error": null,
+      "finished_at": "2026-09-15T14:02:50.187173+00:00",
+      "stage_id": "stage_0007",
+      "stage_name": "plan_research_task",
+      "started_at": "2026-09-15T14:02:40.103249+00:00",
+      "status": "SUCCESS",
+      "validation_result": null
+    },
+    {
+      "duration": 0.0,
+      "duration_ms": 0,
+      "error": null,
+      "finished_at": "2026-09-15T14:02:50.204895+00:00",
+      "stage_id": "stage_0008",
+      "stage_name": "dispatch_research_tasks",
+      "started_at": "2026-09-15T14:02:50.190474+00:00",
+      "status": "SUCCESS",
+      "validation_result": null
+    },
+    {
+      "duration": 64.203,
+      "duration_ms": 64203,
+      "error": null,
+      "finished_at": "2026-09-15T14:03:54.419857+00:00",
+      "stage_id": "stage_0009",
+      "stage_name": "run_research_task",
+      "started_at": "2026-09-15T14:02:50.210723+00:00",
+      "status": "SUCCESS",
+      "validation_result": null
+    },
+    {
+      "duration": 72.156,
+      "duration_ms": 72155,
+      "error": null,
+      "finished_at": "2026-09-15T14:04:02.378922+00:00",
+      "stage_id": "stage_0010",
+      "stage_name": "run_research_task",
+      "started_at": "2026-09-15T14:02:50.215846+00:00",
+      "status": "SUCCESS",
+      "validation_result": null
+    },
+    {
+      "duration": 38.188,
+      "duration_ms": 38188,
+      "error": null,
+      "finished_at": "2026-09-15T14:03:28.428785+00:00",
+      "stage_id": "stage_0011",
+      "stage_name": "run_research_task",
+      "started_at": "2026-09-15T14:02:50.232357+00:00",
+      "status": "SUCCESS",
+      "validation_result": null
+    },
+    {
+      "duration": 0.0,
+      "duration_ms": 0,
+      "error": null,
+      "finished_at": "2026-09-15T14:04:02.460352+00:00",
+      "stage_id": "stage_0012",
+      "stage_name": "validate_evidence",
+      "started_at": "2026-09-15T14:04:02.399350+00:00",
+      "status": "SUCCESS",
+      "validation_result": null
+    },
+    {
+      "debug_details": {
+        "retrieval_coverage": [
+          {
+            "degraded_sources": [
+              "springer"
+            ],
+            "failed_sources": [],
+            "not_attempted_sources": [],
+            "novelty_point_id": "NP-1",
+            "reason": "部分必要来源未成功执行（必要来源：springer；失败：无；降级：springer；未执行：无）。",
+            "required_sources": [
+              "springer"
+            ],
+            "sources": [
+              {
+                "attempts": 4,
+                "degraded": 1,
+                "empty": 2,
+                "failed": 0,
+                "required": true,
+                "source_id": "springer",
+                "state": "degraded",
+                "succeeded": 3
+              }
+            ],
+            "state": "partial",
+            "zero_hit_sources": []
+          },
+          {
+            "degraded_sources": [],
+            "failed_sources": [],
+            "not_attempted_sources": [],
+            "novelty_point_id": "NP-2",
+            "reason": "必要来源全部成功执行（必要来源：springer；零命中来源：无）。",
+            "required_sources": [
+              "springer"
+            ],
+            "sources": [
+              {
+                "attempts": 1,
+                "degraded": 0,
+                "empty": 0,
+                "failed": 0,
+                "required": true,
+                "source_id": "springer",
+                "state": "ok",
+                "succeeded": 1
+              }
+            ],
+            "state": "complete",
+            "zero_hit_sources": []
+          },
+          {
+            "degraded_sources": [],
+            "failed_sources": [],
+            "not_attempted_sources": [],
+            "novelty_point_id": "NP-3",
+            "reason": "必要来源全部成功执行（必要来源：springer；零命中来源：springer）。",
+            "required_sources": [
+              "springer"
+            ],
+            "sources": [
+              {
+                "attempts": 5,
+                "degraded": 0,
+                "empty": 4,
+                "failed": 0,
+                "required": true,
+                "source_id": "springer",
+                "state": "ok",
+                "succeeded": 5
+              }
+            ],
+            "state": "complete",
+            "zero_hit_sources": [
+              "springer"
+            ]
+          }
+        ],
+        "reviewer_information_adjudication": {
+          "cards_preserved": true,
+          "duplicate_review_point_ids": [],
+          "expected_point_ids": [
+            "NP-1",
+            "NP-2",
+            "NP-3"
+          ],
+          "input_card_ids": [
+            "card_c9df5cebed1a5d107db62a1b",
+            "card_2180a1f421db0c145b16552a"
+          ],
+          "missing_review_point_ids": [],
+          "output_card_ids": [
+            "card_c9df5cebed1a5d107db62a1b",
+            "card_2180a1f421db0c145b16552a"
+          ],
+          "point_scopes": [
+            {
+              "allowed_artifact_ids": [],
+              "card_ids": [],
+              "novelty_point_id": "NP-1",
+              "referenced_evidence_ids": [],
+              "unresolved_evidence_ids": []
+            },
+            {
+              "allowed_artifact_ids": [
+                "art_bac33037a38d070d4cd61be1"
+              ],
+              "card_ids": [
+                "card_c9df5cebed1a5d107db62a1b"
+              ],
+              "novelty_point_id": "NP-2",
+              "referenced_evidence_ids": [
+                "ev_42c3ac642719053c684512a6",
+                "ev_c2e1f8b2efb47d46dcac7c64"
+              ],
+              "unresolved_evidence_ids": []
+            },
+            {
+              "allowed_artifact_ids": [
+                "art_eacf9fc298f1f3c311896604"
+              ],
+              "card_ids": [
+                "card_2180a1f421db0c145b16552a"
+              ],
+              "novelty_point_id": "NP-3",
+              "referenced_evidence_ids": [
+                "ev_4ff3e18ca9d2d1bb3877c614",
+                "ev_eef54a8fd79fb0945797a1c8"
+              ],
+              "unresolved_evidence_ids": []
+            }
+          ],
+          "review_results": [
+            {
+              "confidence": null,
+              "has_supplement_request": true,
+              "highly_relevant_work_count": 0,
+              "novelty_point_id": "NP-1",
+              "status": "insufficient_evidence",
+              "supplement_reason": "检索覆盖不完整；部分必要来源未成功执行（必要来源：springer；失败：无；降级：springer；未执行：无）。该情形无法判定是否存在相关文献。",
+              "verdict": null
+            },
+            {
+              "confidence": 0.55,
+              "has_supplement_request": true,
+              "highly_relevant_work_count": 1,
+              "novelty_point_id": "NP-2",
+              "status": "reviewed",
+              "supplement_reason": "现有证据仅包含 1 篇相关文献（第二次任务单次英文检索），不足以充分支撑对『图摘要+图自编码器+时序图』这一复合组合的新颖性判定。查新点的核心区分要素（图摘要压缩时序图、量化内存/训练时长优势 9.86%/13.27%）在当前证据中缺乏更贴近的近邻现有技术做完整比对。",
+              "verdict": "partially_novel"
+            },
+            {
+              "confidence": null,
+              "has_supplement_request": true,
+              "highly_relevant_work_count": 0,
+              "novelty_point_id": "NP-3",
+              "status": "insufficient_evidence",
+              "supplement_reason": "Reviewer 无法完成可靠判定：ValidationError: 1 validation error for NoveltyPointReview\n  Invalid JSON: expected ident at line 1 column 2 [type=json_invalid, input_value='I have verified the full...chronous model update\"]', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/json_invalid",
+              "verdict": null
+            }
+          ],
+          "reviewed_point_ids": [
+            "NP-1",
+            "NP-2",
+            "NP-3"
+          ],
+          "supplement_requests_control_route": false,
+          "unexpected_review_point_ids": [],
+          "unresolved_evidence_ids": []
+        }
+      },
+      "duration": 136.954,
+      "duration_ms": 136954,
+      "error": null,
+      "finished_at": "2026-09-15T14:06:19.483589+00:00",
+      "stage_id": "stage_0013",
+      "stage_name": "review_evidence",
+      "started_at": "2026-09-15T14:04:02.464877+00:00",
+      "status": "SUCCESS",
+      "validation_result": null
+    },
+    {
+      "duration": 0.016,
+      "duration_ms": 15,
+      "error": null,
+      "finished_at": "2026-09-15T14:06:19.557603+00:00",
+      "stage_id": "stage_0014",
+      "stage_name": "validate_synthesis_input",
+      "started_at": "2026-09-15T14:06:19.488698+00:00",
+      "status": "SUCCESS",
+      "validation_result": {
+        "accepted_card_count": 2,
+        "accepted_card_ids": [
+          "card_c9df5cebed1a5d107db62a1b",
+          "card_2180a1f421db0c145b16552a"
+        ],
+        "checked_card_count": 2,
+        "rejected_card_count": 0,
+        "rejected_card_ids": [],
+        "rejected_cards": [],
+        "validation_passed": true
+      }
+    },
+    {
+      "debug_details": {
+        "final_evidence_sufficiency": {
+          "calculated_insufficient_final_evidence_points": [
+            {
+              "novelty_point_id": "NP-1",
+              "reason": "insufficient_final_evidence",
+              "required_card_count": 1,
+              "valid_card_count": 0
+            }
+          ],
+          "calculated_insufficient_point_ids": [
+            "NP-1"
+          ],
+          "calculated_status": "INSUFFICIENT",
+          "check_status": "INSUFFICIENT",
+          "configured_cut": 1,
+          "counted_final_valid_card_count": 2,
+          "ignored_card_count": 0,
+          "input_final_valid_card_count": 2,
+          "max_rounds": 1,
+          "output_matches_calculation": true,
+          "point_results": [
+            {
+              "novelty_point_id": "NP-1",
+              "required_card_count": 1,
+              "status": "INSUFFICIENT",
+              "valid_card_count": 0
+            },
+            {
+              "novelty_point_id": "NP-2",
+              "required_card_count": 1,
+              "status": "PASS",
+              "valid_card_count": 1
+            },
+            {
+              "novelty_point_id": "NP-3",
+              "required_card_count": 1,
+              "status": "PASS",
+              "valid_card_count": 1
+            }
+          ],
+          "reported_insufficient_final_evidence_points": [
+            {
+              "novelty_point_id": "NP-1",
+              "reason": "insufficient_final_evidence",
+              "required_card_count": 1,
+              "valid_card_count": 0
+            }
+          ],
+          "round": 1,
+          "round_limit_allows_supplement": false
+        }
+      },
+      "duration": 0.0,
+      "duration_ms": 0,
+      "error": null,
+      "finished_at": "2026-09-15T14:06:19.619389+00:00",
+      "stage_id": "stage_0015",
+      "stage_name": "check_final_evidence_sufficiency",
+      "started_at": "2026-09-15T14:06:19.562196+00:00",
+      "status": "SUCCESS",
+      "validation_result": null
+    },
+    {
+      "duration": 52.125,
+      "duration_ms": 52125,
+      "error": null,
+      "finished_at": "2026-09-15T14:07:11.804697+00:00",
+      "stage_id": "stage_0016",
+      "stage_name": "synthesize_report",
+      "started_at": "2026-09-15T14:06:19.623580+00:00",
+      "status": "SUCCESS",
+      "validation_result": null
+    },
+    {
+      "duration": 0.0,
+      "duration_ms": 0,
+      "error": null,
+      "finished_at": "2026-09-15T14:07:11.876013+00:00",
+      "stage_id": "stage_0017",
+      "stage_name": "validate_report_integrity",
+      "started_at": "2026-09-15T14:07:11.808738+00:00",
+      "status": "SUCCESS",
+      "validation_result": {
+        "checked_conclusion_count": 3,
+        "conclusion_count": 3,
+        "issues": [],
+        "matched_count": 3,
+        "mismatch_count": 0,
+        "mismatched_point_ids": [],
+        "reference_occurrence_count": 1,
+        "referenced_card_count": 1,
+        "review_count": 3,
+        "validation_passed": true
+      }
+    },
+    {
+      "duration": 0.0,
+      "duration_ms": 0,
+      "error": null,
+      "finished_at": "2026-09-15T14:07:11.950885+00:00",
+      "stage_id": "stage_0018",
+      "stage_name": "persist_report",
+      "started_at": "2026-09-15T14:07:11.879545+00:00",
+      "status": "SUCCESS",
+      "validation_result": null
+    },
+    {
+      "duration": 0.032,
+      "duration_ms": 32,
+      "error": null,
+      "finished_at": "2026-09-15T14:07:12.056874+00:00",
+      "stage_id": "stage_0019",
+      "stage_name": "render_report",
+      "started_at": "2026-09-15T14:07:11.954251+00:00",
+      "status": "SUCCESS",
+      "validation_result": null
+    },
+    {
+      "duration": null,
+      "duration_ms": null,
+      "error": null,
+      "finished_at": null,
+      "stage_id": null,
+      "stage_name": "plan_supplement",
+      "started_at": null,
+      "status": "NOT_RUN"
+    }
+  ],
+  "tool_calls": [
+    {
+      "calls": 5,
+      "empty": 5,
+      "failed": 0,
+      "success": 5,
+      "tool_name": "reference_search"
+    },
+    {
+      "calls": 5,
+      "empty": 0,
+      "failed": 0,
+      "success": 5,
+      "tool_name": "database_search"
+    },
+    {
+      "calls": 22,
+      "empty": 0,
+      "failed": 1,
+      "success": 21,
+      "tool_name": "reader"
+    }
+  ]
+}
