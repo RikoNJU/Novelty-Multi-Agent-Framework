@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 from pydantic import ValidationError
-from backend.env import ModelResponse, ModelToolCall
+from backend.env import ModelResponse, ModelToolCall, PromptLibrary
 from novelty_agent_framework.agents import NoveltyEvidenceReviewer
 from novelty_agent_framework.agents import (
     DemoCoordinator,
@@ -233,6 +233,29 @@ def test_insufficient_evidence_does_not_require_a_verdict():
     assert result.verdict is None
     assert result.confidence is None
     assert result.supplement_request is not None
+
+
+def test_review_card_and_summary_receive_evidence_boundary_templates():
+    root = Path(__file__).resolve().parents[1] / "backend/src/novelty_agent_framework/prompts"
+    client = ScriptedClient(ModelResponse(content=_review_json()),
+                            ModelResponse(content=_review_json("insufficient_evidence")))
+    reviewer = NoveltyEvidenceReviewer(
+        client, prompts=PromptLibrary(root),
+        tool_registry=ResearcherToolRegistry([ReviewerReaderTool(RecordingReader())]),
+    )
+    card = asyncio.run(reviewer.review_card(_request()))
+    summary = asyncio.run(reviewer.summarize_reviews(_request(), [_indexed_review()]))
+    assert card.status.value == "reviewed"
+    assert summary.status.value == "insufficient_evidence"
+    card_system = client.calls[0][0][0].content
+    summary_system = client.calls[1][0][0].content
+    for system in (card_system, summary_system):
+        assert "摘要、局部片段或截短引文未提及" in system
+        assert "status=insufficient_evidence" in system
+    assert "本轮只核验一张 Card" in card_system
+    assert "quote_truncated=true" in summary_system
+    assert "review_schema" in client.calls[1][0][1].content
+    assert client.calls[1][1].tool_choice == "none"
 
 
 class PointReviewer:

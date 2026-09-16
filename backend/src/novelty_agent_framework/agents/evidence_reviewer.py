@@ -69,6 +69,33 @@ _ALLOWED_ISSUE_CODES = frozenset(
     }
 )
 
+_EVIDENCE_BOUNDARY = (
+    "区分原文明确支持的事实与未核验的特征。摘要、局部片段或截短引文未提及某特征，"
+    "不能证明文献未采用该特征；取得全文也不等于已读到关键段落。"
+    "若最终裁定依赖尚未核验的关键差异，返回 status=insufficient_evidence，"
+    "说明缺少的比较证据，不得仅降低 confidence 后继续裁定。"
+    "保留已证实的局部重合；多篇分别覆盖部分特征不等于单篇公开完整组合。"
+    "检索或获取失败、零命中、未展示证据均不能支持新颖性。"
+    "不影响当前有限结论的次要未知可以作为局限保留。"
+)
+
+_CARD_FALLBACK = (
+    "本轮只核验一张 Card 对应的一篇论文，是中间结果，不作最终查新裁定。"
+    "复用 NoveltyPointReview 格式；verdict 仅描述该文献与查新点的关系。"
+    "记录已覆盖特征、差异、引用可靠性和证据局限；部分相关文献也必须保留。"
+    "优先使用输入 Evidence 原文，仅在具体疑问时回读。理由不超过300字。"
+)
+
+_SUMMARY_FALLBACK = (
+    "你是查新点级汇总 Reviewer。综合带索引的单卡核验结果和已核验关键引文，"
+    "输出 NoveltyPointReview。单卡结果是派生分析，不是原始证据。"
+    "单卡失败、证据不足及 quote_truncated=true 的局限必须保留。"
+    "本轮不可调用工具，不得用模型记忆填补缺口；只能引用输入已核验的 "
+    "work_id、card_id 和 evidence_id。网页补充资料不得用于裁定。"
+    "必要时返回 insufficient_evidence，并在 supplement_request 中列明待复核索引。"
+    "理由简洁，只输出严格 JSON。"
+)
+
 
 @dataclass(frozen=True)
 class EvidenceReviewerConfig:
@@ -167,13 +194,8 @@ class NoveltyEvidenceReviewer(EvidenceReviewer):
 
         system, user = self._render_point_prompt(request)
         if card_only:
-            system += (
-                "\n本轮只核验一张 Card 对应的一篇论文，是中间结果，不作最终查新裁定。"
-                "复用 NoveltyPointReview 格式；verdict 仅描述该文献与查新点的关系。"
-                "记录已覆盖特征、差异、引用可靠性和证据局限；部分相关文献也必须保留。"
-                "不得因单篇未覆盖完整组合而丢弃它。优先使用输入 Evidence 原文，"
-                "仅在存在具体疑问时回读，避免重复读取相同片段。理由简洁，不超过300字。"
-            )
+            system += "\n" + self._render_instruction("reviewer/review_card", _CARD_FALLBACK)
+        system += "\n" + _EVIDENCE_BOUNDARY
         try:
             harness = self.harness
             client = self._client()
@@ -222,19 +244,8 @@ class NoveltyEvidenceReviewer(EvidenceReviewer):
 
     async def summarize_reviews(self, request, card_reviews) -> NoveltyPointReview:
         """Synthesize compact card reviews; validate against originals locally."""
-        system = (
-            "你是查新点级汇总 Reviewer。综合带索引的单卡核验结果和已核验关键引文，"
-            "输出一个 NoveltyPointReview。单卡结果是派生分析，不是原始证据。"
-            "必须区分单篇公开完整组合与多篇分别公开部分特征，不能将后者等同于前者。"
-            "保留部分相关文献；单卡失败或证据不足必须体现在结论局限中。"
-            "本轮不可调用工具，不得用模型记忆填补缺口；不能据获取失败裁定新颖。"
-            "只能引用输入已核验的 work_id、card_id 和 evidence_id。"
-            "只使用论文证据，网页补充资料不得用于裁定。"
-            "关键引文可能截短，quote_truncated=true 表示未提供完整引文；"
-            "不得将未展示内容视为不存在。遇到矛盾或关键缺口，明确标记不确定性，"
-            "必要时返回 insufficient_evidence 并在 supplement_request 中列明待复核索引。"
-            "理由简洁，不重复逐卡全文；只输出严格 JSON。"
-        )
+        system = self._render_instruction("reviewer/summarize_reviews", _SUMMARY_FALLBACK)
+        system += "\n" + _EVIDENCE_BOUNDARY
         try:
             rows, validated_ids = _compact_summary_rows(request, card_reviews)
             user = json.dumps({
@@ -295,6 +306,11 @@ class NoveltyEvidenceReviewer(EvidenceReviewer):
         return _fallback_point_system_prompt(), "\n".join(
             f"{key}: {value}" for key, value in variables.items()
         )
+
+    def _render_instruction(self, name: str, fallback: str) -> str:
+        if self._prompts is None:
+            return fallback
+        return self._prompts.render(name).system
 
     def _review_cards_legacy(
         self,
