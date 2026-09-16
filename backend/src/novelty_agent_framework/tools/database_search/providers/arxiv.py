@@ -36,6 +36,13 @@ from .arxiv_scheduler import (
     reset_shared_arxiv_scheduler,
     retry_delay as _retry_delay,
 )
+from .arxiv_web import (
+    ArxivWebMetadataTool,
+    ArxivWebSearchTool,
+    build_arxiv_web_metadata_tool,
+    build_arxiv_web_search_tool,
+    build_arxiv_web_session,
+)
 
 ARXIV_ABS_URL = "https://arxiv.org/abs/"
 ARXIV_HTML_URL = "https://arxiv.org/html/"
@@ -53,6 +60,37 @@ _LAST_REQUEST_AT = 0.0
 DEFAULT_MIN_INTERVAL_SECONDS = 5.0
 #: 429 表示已超出配额：重试前必须等更久，否则只会把限流窗口拖长。
 DEFAULT_RATE_LIMIT_WAIT_SECONDS = 30.0
+
+#: 检索通道选择：
+#: - ``api``：export.arxiv.org 官方 API（默认；响应快、语法完整、有 ANDNOT）；
+#: - ``web``：arxiv.org 主站页面（API 被出口 IP 限流时的替代通道）。
+#: 本项目网络（南京移动）自 2026-08 起对 API 持续 429，主站可用。
+DEFAULT_SEARCH_TRANSPORT = "api"
+SEARCH_TRANSPORTS = ("api", "web")
+
+
+def resolve_search_transport(config: Mapping[str, Any] | None = None) -> str:
+    """读取并校验 ``search_transport``。
+
+    取值非法时直接抛错而不是静默退回 API —— 打错一个字母就悄悄走另一条通道，
+    比启动即失败更难排查。
+    """
+
+    raw = (
+        str((config or {}).get("search_transport", DEFAULT_SEARCH_TRANSPORT))
+        .strip()
+        .lower()
+    )
+    if raw not in SEARCH_TRANSPORTS:
+        raise ValueError(
+            f"未知的 arxiv search_transport：{raw!r}；"
+            f"可选：{', '.join(SEARCH_TRANSPORTS)}"
+        )
+    return raw
+
+
+def search_transport_is_web(config: Mapping[str, Any] | None = None) -> bool:
+    return resolve_search_transport(config) == "web"
 
 
 def _wait_for_request_slot(min_interval: float, *, deadline: float) -> bool:
@@ -492,7 +530,12 @@ class ArxivMetadataTool(MetadataTool):
 
 
 def build_arxiv_source(config: Mapping[str, Any]) -> RetrievalSource:
-    """从来源专用配置构建自洽的 arXiv 能力包。"""
+    """从来源专用配置构建自洽的 arXiv 能力包。
+
+    ``search_transport="web"`` 时检索与元数据改走主站页面，且**不构造**
+    export API 的 scheduler —— 那条链路在限流网络里只会白等重试。
+    全文工具本来就走主站（HTML/PDF），两种通道共用。
+    """
 
     enabled = bool(config.get("enabled", False))
     render_v2 = bool(config.get("render_v2", True))
@@ -502,6 +545,24 @@ def build_arxiv_source(config: Mapping[str, Any]) -> RetrievalSource:
             query_adapter=ArxivQueryAdapter(render_v2=render_v2),
         )
     timeout_seconds = float(config["timeout_seconds"])
+    full_text_client = httpx.Client(timeout=timeout_seconds, follow_redirects=True)
+    full_text_tool = ArxivFullTextTool(
+        client=full_text_client, max_chars=int(config["full_text_max_chars"])
+    )
+    if search_transport_is_web(config):
+        session = build_arxiv_web_session(config)
+        search_tool = build_arxiv_web_search_tool(config, session=session)
+        return RetrievalSource(
+            source_id="arxiv",
+            query_adapter=ArxivQueryAdapter(render_v2=render_v2),
+            search_tool=search_tool,
+            full_text_tool=full_text_tool,
+            # 复用检索工具的 /abs/ 缓存：同一 work_id 先被检索链解析、再被元数据
+            # 核验时不再重复打主站。
+            metadata_tool=build_arxiv_web_metadata_tool(
+                config, session=session, search=search_tool
+            ),
+        )
     scheduler = get_shared_arxiv_scheduler(
         min_interval=float(
             config.get("api_min_interval_seconds", config["min_interval_seconds"])
@@ -521,16 +582,13 @@ def build_arxiv_source(config: Mapping[str, Any]) -> RetrievalSource:
         metadata_batch_max_size=int(config.get("metadata_batch_max_size", 32)),
     )
     client = httpx.Client(timeout=timeout_seconds, follow_redirects=True)
-    full_text_client = httpx.Client(timeout=timeout_seconds, follow_redirects=True)
     return RetrievalSource(
         source_id="arxiv",
         query_adapter=ArxivQueryAdapter(render_v2=render_v2),
         search_tool=build_arxiv_search_tool(
             config, client=client, scheduler=scheduler
         ),
-        full_text_tool=ArxivFullTextTool(
-            client=full_text_client, max_chars=int(config["full_text_max_chars"])
-        ),
+        full_text_tool=full_text_tool,
         metadata_tool=ArxivMetadataTool(
             client=client,
             scheduler=scheduler,
@@ -546,14 +604,20 @@ def build_arxiv_search_tool(
     *,
     client: httpx.Client | None = None,
     scheduler: ArxivRequestScheduler | None = None,
-) -> ArxivSearchTool:
+) -> SearchTool:
     """按配置构造 arXiv 检索工具，供工作流、bootstrap 与诊断共用。
 
     bootstrap 曾直接用默认值（3 秒间隔、熔断阈值 2），比工作流自身更激进，
     两条链路叠加时很容易触发 429。现在两边都从同一份配置取值。
+
+    返回类型取决于 ``search_transport``：``api`` → ``ArxivSearchTool``，
+    ``web`` → ``ArxivWebSearchTool``（两者接口一致，bootstrap 与检索链都按
+    鸭子类型使用）。
     """
 
     config = dict(options or {})
+    if search_transport_is_web(config):
+        return build_arxiv_web_search_tool(config)
     timeout = float(config.get("timeout_seconds", 20.0))
     return ArxivSearchTool(
         client=client or httpx.Client(timeout=timeout, follow_redirects=True),

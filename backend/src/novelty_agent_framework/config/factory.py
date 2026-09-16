@@ -720,6 +720,7 @@ def _normalized_retrieval_config(config: Mapping[str, Any]) -> dict[str, Any]:
             "max_concurrency",
             int(config.get("workflow", {}).get("max_concurrency", 4)),
         )
+        _inherit_arxiv_transport(retrieval, config)
         _adapt_legacy_arxiv_provider(retrieval)
         return retrieval
     arxiv = dict(config.get("tools", {}).get("arxiv", {}))
@@ -734,8 +735,44 @@ def _normalized_retrieval_config(config: Mapping[str, Any]) -> dict[str, Any]:
         "max_concurrency": int(config.get("workflow", {}).get("max_concurrency", 4)),
         "sources": {"arxiv": arxiv},
     }
+    _inherit_arxiv_transport(retrieval, config)
     _adapt_legacy_arxiv_provider(retrieval)
     return retrieval
+
+
+#: 从 ``researcher.tools.database_search.providers.arxiv`` 继承到检索来源的键。
+#: 生产路径（typed config）直接用 provider 段构造来源，而这条 legacy 路径过去
+#: 只认 ``tools.arxiv`` / ``retrieval.sources.arxiv``，导致写在 provider 段里的
+#: 参数对工作流检索静默无效。这里把通道选择相关键继承过来，让同一个开关同时
+#: 覆盖「工作流检索」与「参考文献 bootstrap」两条链路。
+_INHERITED_ARXIV_KEYS = (
+    "search_transport",
+    "web_min_interval_seconds",
+    "web_timeout_seconds",
+    "web_max_retries",
+    "web_max_consecutive_failures",
+    "web_page_size",
+)
+
+
+def _inherit_arxiv_transport(
+    retrieval: dict[str, Any], config: Mapping[str, Any]
+) -> None:
+    """把 provider 段的检索通道参数并入来源配置；来源里已显式设置的键优先。"""
+
+    provider = (
+        config.get("researcher", {})
+        .get("tools", {})
+        .get("database_search", {})
+        .get("providers", {})
+        .get("arxiv")
+    )
+    source = retrieval.get("sources", {}).get("arxiv")
+    if not isinstance(provider, Mapping) or not isinstance(source, dict):
+        return
+    for key in _INHERITED_ARXIV_KEYS:
+        if key in provider and key not in source:
+            source[key] = provider[key]
 
 
 def _adapt_legacy_arxiv_provider(retrieval: dict[str, Any]) -> None:
@@ -744,6 +781,7 @@ def _adapt_legacy_arxiv_provider(retrieval: dict[str, Any]) -> None:
     arxiv = retrieval.get("sources", {}).get("arxiv")
     if not isinstance(arxiv, dict):
         return
+    arxiv.setdefault("search_transport", "api")
     arxiv.setdefault("min_interval_seconds", arxiv.pop("min_interval", 4.0))
     arxiv.setdefault("api_min_interval_seconds", arxiv["min_interval_seconds"])
     arxiv.setdefault("timeout_seconds", arxiv.pop("timeout", 20.0))
