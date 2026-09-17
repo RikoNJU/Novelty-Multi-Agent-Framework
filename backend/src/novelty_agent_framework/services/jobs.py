@@ -28,9 +28,6 @@ class RunStage(StrEnum):
     RENDER_REPORT = "render_report"
 
 
-_STAGE_ORDER = {stage: index for index, stage in enumerate(RunStage)}
-
-
 class RunProgress(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -111,16 +108,13 @@ class InMemoryRunStore:
             if current is None:
                 raise KeyError(task_id)
             previous = current.progress
-            effective_stage = stage
-            if previous and _STAGE_ORDER[stage] < _STAGE_ORDER[previous.stage]:
-                effective_stage = previous.stage
             effective_round = max(
                 (value for value in (previous.round if previous else None, round) if value),
                 default=None,
             )
             return self._update_locked(
                 task_id,
-                progress=RunProgress(stage=effective_stage, round=effective_round),
+                progress=RunProgress(stage=stage, round=effective_round),
             )
 
     def mark_succeeded(

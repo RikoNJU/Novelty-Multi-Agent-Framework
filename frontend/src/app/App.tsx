@@ -12,8 +12,10 @@ export default function App() {
   const [localPhase, setPhase] = useState<Phase>('landing');
   const [paper, setPaper] = useState<File | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null); const submitting = useRef(false);
+  const [submissionUncertain, setSubmissionUncertain] = useState(false);
   const controller = useRef<AbortController | null>(null);
   const { snapshot, error, reconnecting, retry } = useRun(id);
+  const unfinished = snapshot?.result?.report.conclusions.some(c => c.incomplete_reason && c.incomplete_reason !== 'semantic_evidence') ?? false;
   const phase: Phase = id ? error ? 'failed' : snapshot?.status === 'succeeded' && params.get('view') === 'report' ? 'previewing' : snapshot?.status ?? 'running' : localPhase;
   const main = useRef<HTMLElement>(null);
   const celebrated = useRef(new Set<string>());
@@ -21,22 +23,23 @@ export default function App() {
   useEffect(() => { if (phase === 'succeeded' && id) celebrated.current.add(id); }, [phase, id]);
   useEffect(() => { main.current?.focus(); }, [phase]);
   useEffect(() => () => controller.current?.abort(), []);
-  const restart = () => { setParams({}); setPhase('editing'); setSubmitError(null); };
+  const restart = () => { setParams({}); setPhase('editing'); setSubmitError(null); setSubmissionUncertain(false); };
   const returnHome = () => {
     controller.current?.abort(); submitting.current = false;
-    setParams({}); setPaper(null); setSubmitError(null); setPhase('landing');
+    setParams({}); setPaper(null); setSubmitError(null); setSubmissionUncertain(false); setPhase('landing');
   };
   const submit = async () => {
-    if (!paper || submitting.current) return;
+    if (!paper || submitting.current || submissionUncertain) return;
     const requestController = new AbortController();
     submitting.current = true; setPhase('submitting'); setSubmitError(null); controller.current = requestController;
     try {
-      const next = await api.createRun(paper, requestController.signal);
+      const next = await api.createRun(paper, requestController.signal, crypto.randomUUID());
       if (requestController.signal.aborted) return;
-      setParams({ run: next.task_id }); setPhase('editing'); setPaper(null);
+      setParams({ run: next.task_id }); setPhase('editing'); setPaper(null); setSubmissionUncertain(false);
     } catch (cause) {
       if (!requestController.signal.aborted) {
         const failure = normalizeError(cause);
+        if (failure.code === 'timeout' || failure.code === 'network') setSubmissionUncertain(true);
         setSubmitError(failure.code === 'timeout' || failure.code === 'network' ? '未能确认提交结果。任务可能已创建，请联系服务管理员确认后再提交，以免重复。' : failure.message); setPhase('editing');
       }
     } finally { submitting.current = false; }
@@ -46,9 +49,9 @@ export default function App() {
     {(phase === 'editing' || phase === 'submitting') && <button type="button" className="page-back" aria-label="返回首页" onClick={returnHome}><ArrowLeft size={18}/><span>返回</span></button>}
     <main ref={main} tabIndex={-1} className={phase === 'landing' ? 'landing-main' : 'workspace'}>
       {phase === 'landing' && <section className="landing"><h1>睿文查新</h1><p>上传论文原文，自动完成查新点提取、文献检索和证据核验，<br className="desktop-break"/>生成可追溯的查新报告。</p><button className="primary start" onClick={() => setPhase('editing')}>开始<ArrowRight size={21}/></button></section>}
-      {(phase === 'editing' || phase === 'submitting') && <UploadView paper={paper} references={[]} onFiles={(p) => { setPaper(p); setSubmitError(null); }} onSubmit={() => void submit()} busy={phase === 'submitting'} error={submitError}/>}
+      {(phase === 'editing' || phase === 'submitting') && <UploadView paper={paper} references={[]} onFiles={(p) => { setPaper(p); if (!submissionUncertain) setSubmitError(null); }} onSubmit={() => void submit()} busy={phase === 'submitting'} submitBlocked={submissionUncertain} error={submitError}/>}
       {(phase === 'queued' || phase === 'running') && <ProgressView snapshot={snapshot} reconnecting={reconnecting}/>}
-      {phase === 'succeeded' && <section className="panel completion"><div className={`success-mark ${animateSuccess ? 'animate-success' : ''}`}><Check size={40}/></div><p className="eyebrow">本次查新已结束</p><h1>查新完成</h1><button className="primary" onClick={() => setParams({ run: id!, view: 'report' })}>查看查新报告<ArrowRight size={18}/></button><button className="text-button" onClick={restart}>开始新的查新</button></section>}
+      {phase === 'succeeded' && <section className="panel completion"><div className={`success-mark ${animateSuccess ? 'animate-success' : ''}`}><Check size={40}/></div><p className="eyebrow">本次查新流程已结束</p><h1>{unfinished ? '部分核验未完成' : '查新完成'}</h1>{unfinished && <p>报告包含未完成的核验，请查看各查新点的原因与证据范围。</p>}<button className="primary" onClick={() => setParams({ run: id!, view: 'report' })}>查看查新报告<ArrowRight size={18}/></button><button className="text-button" onClick={restart}>开始新的查新</button></section>}
       {phase === 'previewing' && snapshot && <ReportView run={snapshot} onClose={() => setParams({ run: id! })}/>}
       {phase === 'failed' && <section className="panel failure"><p className="eyebrow">本次查新未能完成</p><h1>{error?.status === 404 ? '任务已失效' : '暂时遇到问题'}</h1><p role="alert">{error?.message ?? '查新运行失败。请检查文件后重新开始，或联系服务管理员。'}</p><p className="task-id">任务编号 {id}</p><button className="primary" onClick={restart}>重新开始<RotateCcw size={18}/></button>{error && error.status !== 404 && <button className="text-button" onClick={retry}>重新查询任务</button>}</section>}
     </main>

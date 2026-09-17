@@ -9,7 +9,7 @@ export function ProgressView({ snapshot, reconnecting }: { snapshot: RunSnapshot
       <div className="lyrics-window"><ol className="lyrics" style={{ transform: `translateY(${112 - current * 56}px)` }}>
         {stageLabels.map((label, index) => <li key={label} className={index === current ? 'current' : index < current ? 'done' : ''} aria-current={index === current ? 'step' : undefined}>{index < current ? <Check size={18}/> : <span className="step-number">{String(index + 1).padStart(2, '0')}</span>}{label}</li>)}
       </ol></div>
-      <p role="status">第 {current + 1} / 6 阶段{(snapshot.progress?.round ?? 0) > 1 && current === 4 ? ` · 正在补充检索 · 第 ${snapshot.progress?.round} 轮` : ''}</p>
+      <p role="status">第 {current + 1} / 6 阶段{(snapshot.progress?.round ?? 0) > 1 && current >= 2 && current <= 4 ? ` · 正在补充检索 · 第 ${snapshot.progress?.round} 轮` : ''}</p>
     </> : <div className="indeterminate"><Clock3 size={34}/><p>任务状态将自动更新</p></div>}
     <p className="connection" role="status">{reconnecting ? '连接中断，正在重连' : '离开页面后，任务仍会继续运行'}</p>
     {snapshot && <p className="task-id">任务编号 {snapshot.task_id}</p>}

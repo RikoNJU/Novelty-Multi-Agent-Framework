@@ -3,14 +3,18 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import logging
 import os
 import tempfile
 from collections.abc import Callable
+from decimal import Decimal
 from pathlib import Path
+from threading import RLock
 from typing import Any
 
 from fastapi import UploadFile
+from backend.env import ModelCallBudgetExceeded, reset_model_call_budget, set_model_call_budget
 
 from novelty_agent_framework.config import (
     NoveltyWebSettings,
@@ -27,6 +31,7 @@ from novelty_agent_framework.services.jobs import (
     RunStage,
 )
 from novelty_agent_framework.workflows import NoveltyWorkflow
+from .model_budget import RunModelBudget
 
 logger = logging.getLogger(__name__)
 WorkflowFactory = Callable[[Path], NoveltyWorkflow]
@@ -71,12 +76,18 @@ class NoveltyWorkflowService:
         processor: Any | None = None,
         store: InMemoryRunStore | None = None,
         max_upload_bytes: int = 30 * 1024 * 1024,
+        run_model_budget_rmb: Decimal | None = None,
+        run_model_max_attempts: int = 80,
     ) -> None:
         self.workflow_factory = workflow_factory
         self.processor = processor
         self.store = store or InMemoryRunStore()
+        self._submission_lock = RLock()
+        self._submissions: dict[str, tuple[str, str]] = {}
         self.runs_root = Path(runs_root).resolve()
         self.max_upload_bytes = max_upload_bytes
+        self.run_model_budget_rmb = run_model_budget_rmb
+        self.run_model_max_attempts = run_model_max_attempts
         self.runs_root.mkdir(parents=True, exist_ok=True)
         (self.runs_root / ".uploads").mkdir(exist_ok=True)
 
@@ -85,7 +96,9 @@ class NoveltyWorkflowService:
         self._run_dir(snapshot.task_id).mkdir(parents=True, exist_ok=False)
         return snapshot
 
-    async def create_file_run(self, upload: UploadFile) -> tuple[RunSnapshot, Path]:
+    async def create_file_run(
+        self, upload: UploadFile, *, submission_id: str | None = None
+    ) -> tuple[RunSnapshot, Path, bool]:
         self._validate_upload_metadata(upload)
         temporary_path: Path | None = None
         try:
@@ -95,6 +108,7 @@ class NoveltyWorkflowService:
             os.close(descriptor)
             temporary_path = Path(raw_path)
             total = 0
+            digest = hashlib.sha256()
             first_kib = bytearray()
             with temporary_path.open("wb") as destination:
                 while chunk := await upload.read(1024 * 1024):
@@ -107,6 +121,7 @@ class NoveltyWorkflowService:
                         )
                     if len(first_kib) < 1024:
                         first_kib.extend(chunk[: 1024 - len(first_kib)])
+                    digest.update(chunk)
                     destination.write(chunk)
             if total == 0:
                 raise UploadValidationError("empty_file", "不能上传空文件。")
@@ -115,23 +130,60 @@ class NoveltyWorkflowService:
                     "invalid_pdf_signature", "文件内容不是有效的 PDF。"
                 )
 
-            snapshot = self.create_run()
-            input_dir = self._run_dir(snapshot.task_id) / "input"
-            input_dir.mkdir()
-            destination = input_dir / "paper.pdf"
-            os.replace(temporary_path, destination)
-            temporary_path = None
-            return snapshot, destination
+            with self._submission_lock:
+                previous = self._submissions.get(submission_id) if submission_id else None
+                if previous is not None:
+                    prior_digest, task_id = previous
+                    if prior_digest != digest.hexdigest():
+                        raise UploadValidationError(
+                            "submission_conflict", "同一提交编号对应不同的论文文件。", status_code=409
+                        )
+                    snapshot = self.store.get(task_id)
+                    if snapshot is None:
+                        raise UploadValidationError(
+                            "submission_unavailable", "原任务已失效，无法确认提交状态。", status_code=409
+                        )
+                    return snapshot, self._run_dir(task_id) / "input" / "paper.pdf", False
+                snapshot = self.create_run()
+                input_dir = self._run_dir(snapshot.task_id) / "input"
+                input_dir.mkdir()
+                destination = input_dir / "paper.pdf"
+                os.replace(temporary_path, destination)
+                temporary_path = None
+                if submission_id:
+                    self._submissions[submission_id] = (digest.hexdigest(), snapshot.task_id)
+            return snapshot, destination, True
         finally:
             await upload.close()
             if temporary_path is not None:
                 temporary_path.unlink(missing_ok=True)
 
     async def execute(self, task_id: str, paper: PaperInput) -> None:
-        self.store.mark_running(task_id, stage=RunStage.EXTRACT_POINTS)
-        await self._execute_workflow(task_id, paper)
+        token = self._activate_budget(task_id)
+        try:
+            self.store.mark_running(task_id, stage=RunStage.EXTRACT_POINTS)
+            await self._execute_workflow(task_id, paper)
+        finally:
+            if token is not None:
+                reset_model_call_budget(token)
 
     async def execute_file(self, task_id: str, path: Path) -> None:
+        token = self._activate_budget(task_id)
+        try:
+            await self._execute_file(task_id, path)
+        finally:
+            if token is not None:
+                reset_model_call_budget(token)
+
+    def _activate_budget(self, task_id: str):
+        if self.run_model_budget_rmb is None:
+            return None
+        budget = RunModelBudget(self._run_dir(task_id) / "budget-ledger.json",
+                                cap_rmb=self.run_model_budget_rmb,
+                                max_attempts=self.run_model_max_attempts)
+        return set_model_call_budget(budget)
+
+    async def _execute_file(self, task_id: str, path: Path) -> None:
         self.store.mark_running(task_id, stage=RunStage.PARSE_PAPER)
         if self.processor is None:
             self.store.mark_failed(
@@ -148,13 +200,15 @@ class NoveltyWorkflowService:
                 self.processor.process, path, paper_id=task_id
             )
             paper = self.processor.to_paper_input(document)
-        except Exception:  # noqa: BLE001 - public errors must be normalized
+        except Exception as exc:  # noqa: BLE001 - public errors must be normalized
             logger.exception("paper parsing failed for task %s", task_id)
             self.store.mark_failed(
                 task_id,
                 RunError(
-                    code="paper_parse_failed",
-                    message="论文解析失败，请确认 PDF 可正常打开且包含可识别内容。",
+                    code=("model_budget_exhausted" if isinstance(exc, ModelCallBudgetExceeded)
+                          else "paper_parse_failed"),
+                    message=("模型调用预算已用尽，论文解析未完成。" if isinstance(exc, ModelCallBudgetExceeded)
+                             else "论文解析失败，请确认 PDF 可正常打开且包含可识别内容。"),
                     retryable=False,
                 ),
             )
@@ -192,14 +246,16 @@ class NoveltyWorkflowService:
                 report=report,
                 report_path=report_path,
             )
-        except Exception:  # noqa: BLE001 - public errors must be normalized
+        except Exception as exc:  # noqa: BLE001 - public errors must be normalized
             logger.exception("novelty workflow failed for task %s", task_id)
             self.store.mark_failed(
                 task_id,
                 RunError(
-                    code="workflow_failed",
-                    message="查新工作流未能完成，请稍后重新提交或联系服务管理员。",
-                    retryable=True,
+                    code=("model_budget_exhausted" if isinstance(exc, ModelCallBudgetExceeded)
+                          else "workflow_failed"),
+                    message=("模型调用预算已用尽，查新流程未完成。" if isinstance(exc, ModelCallBudgetExceeded)
+                             else "查新工作流未能完成，请稍后重新提交或联系服务管理员。"),
+                    retryable=not isinstance(exc, ModelCallBudgetExceeded),
                 ),
             )
 
@@ -319,6 +375,9 @@ def build_real_workflow_service(settings: NoveltyWebSettings) -> NoveltyWorkflow
         processor=processor,
         runs_root=settings.runs_root,
         max_upload_bytes=settings.max_upload_bytes,
+        run_model_budget_rmb=(Decimal(os.environ["NOVELTY_RUN_MODEL_BUDGET_RMB"])
+                              if os.getenv("NOVELTY_RUN_MODEL_BUDGET_RMB") else None),
+        run_model_max_attempts=int(os.getenv("NOVELTY_RUN_MODEL_MAX_ATTEMPTS", "80")),
     )
 
 

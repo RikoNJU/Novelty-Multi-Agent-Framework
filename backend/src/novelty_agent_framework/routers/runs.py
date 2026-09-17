@@ -7,6 +7,7 @@ from fastapi import (
     BackgroundTasks,
     Depends,
     File,
+    Header,
     HTTPException,
     Query,
     Request,
@@ -51,9 +52,11 @@ async def create_run(
     "/files", response_model=RunSnapshot, status_code=status.HTTP_202_ACCEPTED
 )
 async def create_file_run(
+    request: Request,
     background_tasks: BackgroundTasks,
     paper: UploadFile = File(...),
     references: list[UploadFile] | None = File(default=None),
+    submission_id: str | None = Header(default=None, alias="X-Submission-Id", min_length=1, max_length=128),
     service: NoveltyWorkflowService = Depends(get_novelty_workflow_service),
 ) -> RunSnapshot:
     if references:
@@ -67,14 +70,21 @@ async def create_file_run(
                 "message": "参考文献上传尚未开放。",
             },
         )
+    items = list((await request.form()).multi_items())
+    if len(items) != 1 or items[0][0] != "paper":
+        await paper.close()
+        raise HTTPException(status_code=422, detail={
+            "code": "single_pdf_required", "message": "必须且只能上传一个 paper 字段的 PDF。",
+        })
     try:
-        snapshot, path = await service.create_file_run(paper)
+        snapshot, path, created = await service.create_file_run(paper, submission_id=submission_id)
     except UploadValidationError as exc:
         raise HTTPException(
             status_code=exc.status_code,
             detail={"code": exc.code, "message": exc.message},
         ) from exc
-    background_tasks.add_task(service.execute_file, snapshot.task_id, path)
+    if created:
+        background_tasks.add_task(service.execute_file, snapshot.task_id, path)
     return snapshot
 
 

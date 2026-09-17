@@ -16,7 +16,9 @@ from .model_client import (
     ModelToolCall,
     OpenAICompatibleChatClient,
     reset_model_call_observer,
+    reset_model_call_budget,
     set_model_call_observer,
+    set_model_call_budget,
     ToolDefinition,
     build_model_client,
 )
@@ -53,5 +55,7 @@ __all__ = [
     "build_model_client",
     "parse_front_matter",
     "reset_model_call_observer",
+    "reset_model_call_budget",
     "set_model_call_observer",
+    "set_model_call_budget",
 ]

@@ -2,8 +2,8 @@ import { useRef, useState } from 'react';
 import { ArrowRight, FileText, Upload, X, Eye } from 'lucide-react';
 import { accepts, limits, size, validateFiles } from './validation';
 import { FilePreview } from '../report/FilePreview';
-interface Props { paper: File | null; references: File[]; onFiles: (paper: File | null, references: File[]) => void; onSubmit: () => void; busy: boolean; error: string | null }
-export function UploadView({ paper, references, onFiles, onSubmit, busy, error }: Props) {
+interface Props { paper: File | null; references: File[]; onFiles: (paper: File | null, references: File[]) => void; onSubmit: () => void; busy: boolean; submitBlocked?: boolean; error: string | null }
+export function UploadView({ paper, references, onFiles, onSubmit, busy, submitBlocked = false, error }: Props) {
   const [validation, setValidation] = useState<{kind: 'paper' | 'references'; text: string} | null>(null);
   const [preview, setPreview] = useState<File | null>(null);
   const paperButton = useRef<HTMLButtonElement>(null);
@@ -37,7 +37,7 @@ export function UploadView({ paper, references, onFiles, onSubmit, busy, error }
     <p className="limits">论文文件 ≤ {size(limits.fileBytes)} · 仅支持 PDF</p>
     {import.meta.env.VITE_FILE_API_ENABLED === 'false' && <p className="notice">当前服务尚未开放文件查新。可选择并预览文件，暂不能提交。</p>}
     {error && <p className="error" role="alert">{error}</p>}
-    <div className="upload-footer"><p>文件仅在点击“开始查新”后发送至服务端。</p><button className="primary" onClick={submit} disabled={busy}>{busy ? '正在提交…' : '开始查新'}<ArrowRight size={18}/></button></div>
+    <div className="upload-footer"><p>文件仅在点击“开始查新”后发送至服务端。</p><button className="primary" onClick={submit} disabled={busy || submitBlocked}>{busy ? '正在提交…' : submitBlocked ? '提交状态待确认' : '开始查新'}<ArrowRight size={18}/></button></div>
   </section>;
 }
 function Dropzone({ kind, disabled, onSelect, buttonRef, invalid, replacing }: {kind: 'paper' | 'references'; disabled: boolean; onSelect: (files: File[]) => void; buttonRef?: React.Ref<HTMLButtonElement>; invalid: boolean; replacing: boolean}) {

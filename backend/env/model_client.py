@@ -78,6 +78,9 @@ ModelCallObserver = Callable[[ModelCallEvent], None]
 _model_call_observer: contextvars.ContextVar[ModelCallObserver | None] = (
     contextvars.ContextVar("novelty_model_call_observer", default=None)
 )
+_model_call_budget: contextvars.ContextVar[ModelCallObserver | None] = (
+    contextvars.ContextVar("novelty_model_call_budget", default=None)
+)
 _async_call_id: contextvars.ContextVar[str | None] = contextvars.ContextVar(
     "novelty_async_model_call_id", default=None
 )
@@ -97,7 +100,18 @@ def reset_model_call_observer(
     _model_call_observer.reset(token)
 
 
+def set_model_call_budget(budget: ModelCallObserver) -> contextvars.Token[ModelCallObserver | None]:
+    return _model_call_budget.set(budget)
+
+
+def reset_model_call_budget(token: contextvars.Token[ModelCallObserver | None]) -> None:
+    _model_call_budget.reset(token)
+
+
 def _emit_model_call(event: ModelCallEvent) -> None:
+    budget = _model_call_budget.get()
+    if budget is not None:
+        budget(event)
     observer = _model_call_observer.get()
     if observer is None:
         return

@@ -72,14 +72,14 @@ def test_real_mode_fails_closed_without_credentials(tmp_path: Path, monkeypatch)
         assert unavailable.json()["detail"]["code"] == "workflow_unavailable"
 
 
-def test_progress_never_moves_backwards_during_supplement() -> None:
+def test_progress_shows_actual_research_stage_during_supplement() -> None:
     store = InMemoryRunStore()
     task_id = store.create().task_id
     store.mark_running(task_id, stage=RunStage.RESEARCH)
     store.mark_progress(task_id, RunStage.VALIDATE_EVIDENCE, round=1)
     snapshot = store.mark_progress(task_id, RunStage.RESEARCH, round=2)
     assert snapshot.progress is not None
-    assert snapshot.progress.stage is RunStage.VALIDATE_EVIDENCE
+    assert snapshot.progress.stage is RunStage.RESEARCH
     assert snapshot.progress.round == 2
 
 
@@ -125,3 +125,54 @@ def test_file_run_and_references_boundary(tmp_path: Path) -> None:
         )
         assert invalid.status_code == 422
         assert invalid.json()["detail"]["code"] == "invalid_pdf_signature"
+
+
+def test_same_file_submission_id_does_not_start_second_business_run(tmp_path: Path) -> None:
+    settings = NoveltyWebSettings(workflow_mode="demo", runs_root=tmp_path)
+    service = NoveltyWorkflowService(
+        workflow_factory=lambda root: NoveltyWorkflow.default(output_root=root),
+        processor=FakeProcessor(), runs_root=tmp_path,
+    )
+    executions: list[str] = []
+
+    async def count_execution(task_id: str, _path: Path) -> None:
+        executions.append(task_id)
+
+    service.execute_file = count_execution  # type: ignore[method-assign]
+    with TestClient(create_app(settings, service=service)) as client:
+        def submit(content: bytes):
+            return client.post("/api/novelty/runs/files",
+                headers={"X-Submission-Id": "same-user-intent"},
+                files={"paper": ("paper.pdf", content, "application/pdf")})
+
+        first = submit(b"%PDF-1.4\nfirst")
+        repeat = submit(b"%PDF-1.4\nfirst")
+        assert first.status_code == repeat.status_code == 202
+        assert first.json()["task_id"] == repeat.json()["task_id"]
+        assert executions == [first.json()["task_id"]]
+        assert len(list(tmp_path.glob("*/input/paper.pdf"))) == 1
+        conflict = submit(b"%PDF-1.4\nother")
+        assert conflict.status_code == 409
+        assert conflict.json()["detail"]["code"] == "submission_conflict"
+        assert executions == [first.json()["task_id"]]
+
+
+def test_file_upload_rejects_empty_oversize_mime_and_multiple_papers(tmp_path: Path) -> None:
+    settings = NoveltyWebSettings(workflow_mode="demo", runs_root=tmp_path)
+    service = NoveltyWorkflowService(
+        workflow_factory=lambda root: NoveltyWorkflow.default(output_root=root),
+        processor=FakeProcessor(), runs_root=tmp_path, max_upload_bytes=10,
+    )
+    with TestClient(create_app(settings, service=service)) as client:
+        cases = [
+            ([('paper', ('paper.pdf', b'', 'application/pdf'))], 'empty_file'),
+            ([('paper', ('paper.pdf', b'%PDF-1.4\n123', 'application/pdf'))], 'file_too_large'),
+            ([('paper', ('paper.pdf', b'%PDF-1.4', 'text/plain'))], 'mime_mismatch'),
+            ([('paper', ('a.pdf', b'%PDF-1.4', 'application/pdf')),
+              ('paper', ('b.pdf', b'%PDF-1.4', 'application/pdf'))], 'single_pdf_required'),
+        ]
+        for files, code in cases:
+            response = client.post('/api/novelty/runs/files', files=files)
+            assert response.status_code in {413, 422}
+            assert response.json()['detail']['code'] == code
+        assert not list(tmp_path.glob('*/input/paper.pdf'))

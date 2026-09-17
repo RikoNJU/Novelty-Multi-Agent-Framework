@@ -54,11 +54,27 @@ test('提交 422 后保留文件，允许修改重试', async ({page}) => {
   await page.getByLabel('论文文件',{exact:true}).setInputFiles({name:'论文.pdf',mimeType:'application/pdf',buffer:Buffer.from('%PDF')});
   await page.getByRole('button',{name:'开始查新'}).click(); await expect(page.getByText('文件或请求未通过校验，请检查后重新提交。')).toBeVisible(); await expect(page.getByRole('button',{name:'删除 论文.pdf'})).toBeEnabled();
 });
+test('提交响应丢失时阻止同一页面再次创建任务', async ({page}) => {
+  let posts = 0;
+  await page.route('**/api/novelty/runs/files', route => { posts++; return route.abort(); });
+  await page.goto('/'); await page.getByRole('button',{name:'开始',exact:true}).click();
+  await page.getByLabel('论文文件',{exact:true}).setInputFiles({name:'论文.pdf',mimeType:'application/pdf',buffer:Buffer.from('%PDF-1.4')});
+  await page.getByRole('button',{name:'开始查新'}).click();
+  await expect(page.getByRole('button',{name:'提交状态待确认'})).toBeDisabled();
+  expect(posts).toBe(1);
+});
 test('服务端阶段驱动进度，失败异常不暴露原文', async ({page}) => {
   let failed = false;
   await page.route('**/api/novelty/runs/test-run', route => route.fulfill({json:failed ? {...snapshot('failed'),error:'API_KEY=secret'} : {...snapshot('running'),progress:{stage:'validate_evidence',round:2}}}));
   await page.goto('/?run=test-run'); await expect(page.getByText('第 5 / 6 阶段 · 正在补充检索 · 第 2 轮')).toBeVisible();
   failed=true; await expect(page.getByRole('heading',{name:'暂时遇到问题'})).toBeVisible(); await expect(page.getByText('API_KEY=secret')).toHaveCount(0);
+});
+test('补查回环展示后台实际研究阶段与轮次', async ({page}) => {
+  await page.route('**/api/novelty/runs/test-run', route => route.fulfill({json:{
+    ...snapshot('running'), progress:{stage:'research',round:2},
+  }}));
+  await page.goto('/?run=test-run');
+  await expect(page.getByText('第 4 / 6 阶段 · 正在补充检索 · 第 2 轮')).toBeVisible();
 });
 test('原有结构化结果可预览，不显示不存在的下载',async ({page}) => {
   await page.route('**/api/novelty/runs/test-run',route=>route.fulfill({json:{...snapshot('succeeded'),result:{report:{paper_id:'P-001',conclusions:[{novelty_point_id:'NP-1',review_status:'insufficient_evidence',summary:'证据不足，无法裁定。'}],limitations:['检索范围有限']}}}}));
