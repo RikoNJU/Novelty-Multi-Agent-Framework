@@ -30,11 +30,11 @@ def _bundle(root: Path, *, count: int = 3) -> Path:
                           confidence=.8) for i, point in enumerate(points)]
     reviews = [NoveltyPointReview(
         novelty_point_id=point.point_id,
-        status=ReviewStatus.INSUFFICIENT_EVIDENCE if i == 0 else ReviewStatus.REVIEWED,
-        verdict=None if i == 0 else NoveltyVerdict.NOVEL,
-        verdict_reason=None if i == 0 else "original judgment",
-        confidence=None if i == 0 else .8,
-        incomplete_reason="technical_error" if i == 0 else None,
+        status=ReviewStatus.INSUFFICIENT_EVIDENCE if i in ({0, 2} if count >= 3 else {0}) else ReviewStatus.REVIEWED,
+        verdict=None if i in ({0, 2} if count >= 3 else {0}) else NoveltyVerdict.NOVEL,
+        verdict_reason=None if i in ({0, 2} if count >= 3 else {0}) else "original judgment",
+        confidence=None if i in ({0, 2} if count >= 3 else {0}) else .8,
+        incomplete_reason="technical_error" if i == 0 else "semantic_evidence" if i == 2 else None,
     ) for i, point in enumerate(points)]
     draft_data = {"conclusions": [{"novelty_point_id": point.point_id,
         "summary": "short", "supporting_card_ids": [cards[i].card_id],
@@ -66,8 +66,9 @@ def _bundle(root: Path, *, count: int = 3) -> Path:
                   "source_run_status": "FAILED", "live_recovery_id": "live-answer",
                   "assembly_id": "captured-assembly", "report_kind": "captured_response_reassembly",
                   "paper_id": "paper-X", "upstream_recomputed": False,
-                  "source_issues": [{"point_id": "P-0", "review_status": "insufficient_evidence",
-                                     "incomplete_reason": "technical_error"}]}
+                  "source_issues": [{"point_id": r.novelty_point_id,
+                                     "review_status": r.status.value,
+                                     "incomplete_reason": r.incomplete_reason} for r in reviews]}
     (root / "provenance.json").write_text(json.dumps(provenance))
     files = {name: {"sha256": _sha((root / name).read_bytes()),
                     "bytes": (root / name).stat().st_size, "mime": mime}

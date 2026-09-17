@@ -16,7 +16,7 @@ from novelty_agent_framework.core.integrity_gates import validate_report_integri
 from novelty_agent_framework.core.report_binding import assemble_report_from_draft
 from novelty_agent_framework.schemas import EvidenceCard, NoveltyPoint, NoveltyPointReview, NoveltyReport, ReportNarrativeDraft
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("uvicorn.error.report_resources")
 _ID = re.compile(r"^rr-[0-9a-f]{32}$")
 _FILES = {"report.md": "text/markdown", "report.json": "application/json", "provenance.json": "application/json"}
 

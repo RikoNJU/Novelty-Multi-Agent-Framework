@@ -11,7 +11,7 @@ from fastapi.responses import Response
 
 from ..services.report_resources import ReportResourceError, ReportResourceStore
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("uvicorn.error.report_resources")
 router = APIRouter(prefix="/report-artifacts", tags=["report-artifacts"])
 
 
