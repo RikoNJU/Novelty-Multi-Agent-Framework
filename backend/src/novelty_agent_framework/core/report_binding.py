@@ -51,9 +51,16 @@ def bind_reviews_to_report(
             verdict_reason=review.verdict_reason,
             confidence=review.confidence,
             highly_relevant_works=list(review.highly_relevant_works),
+            review_evidence=list(review.review_evidence),
+            feature_comparisons=list(review.feature_comparisons),
+            incomplete_reason=review.incomplete_reason,
         )
         if review.status.value == "insufficient_evidence":
-            values["summary"] = "该查新点的关键比较证据不足，尚不能作出新颖性裁定。"
+            values["summary"] = (
+                "Reviewer 核验未完成，尚不能作出新颖性裁定。"
+                if review.incomplete_reason in {"budget_exhausted", "technical_error", "material_unavailable"}
+                else "该查新点的关键比较证据不足，尚不能作出新颖性裁定。"
+            )
         conclusions.append(NoveltyConclusion.model_validate(values))
     values = draft.model_dump(mode="python")
     values["conclusions"] = conclusions

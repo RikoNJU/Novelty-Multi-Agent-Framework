@@ -294,6 +294,46 @@ class SupplementRequest(StrictModel):
     suggested_focus: list[str] = Field(default_factory=list)
 
 
+class ReviewReadCitation(StrictModel):
+    """Model-selected read; the harness resolves its exact quote and evidence ID."""
+
+    read_id: str = Field(min_length=1)
+    char_start: int | None = Field(default=None, ge=0)
+    char_end: int | None = Field(default=None, ge=0)
+
+
+class ReviewEvidence(StrictModel):
+    # Exact slice coordinates require retaining leading and trailing whitespace.
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=False)
+
+    evidence_id: str = Field(min_length=1)
+    review_id: str = Field(min_length=1)
+    origin_card_id: str = Field(min_length=1)
+    novelty_point_id: str = Field(min_length=1)
+    work_id: str = Field(min_length=1)
+    source_record_id: str | None = None
+    artifact_id: str = Field(min_length=1)
+    namespace: str = Field(min_length=1)
+    artifact_hash: str = Field(min_length=1)
+    read_id: str = Field(min_length=1)
+    char_start: int = Field(ge=0)
+    char_end: int = Field(ge=0)
+    exact_quote: str = Field(min_length=1)
+    role: str = Field(min_length=1)
+    content_extent: str = Field(min_length=1)
+    version_label: str | None = None
+
+
+class FeatureComparison(StrictModel):
+    feature_id: str = Field(min_length=1)
+    work_id: str = Field(min_length=1)
+    relation: Literal["supported", "partially_supported", "contradicted", "unknown"]
+    basis_type: Literal["direct_statement", "semantic_equivalence", "grounded_inference", "insufficient"]
+    evidence_refs: list[str] = Field(default_factory=list)
+    reason: str = Field(min_length=1)
+    source_context: Literal["author_method", "related_work", "baseline", "ablation", "unknown"] = "unknown"
+
+
 class NoveltyPointReview(StrictModel):
     """一个 NoveltyPoint 的结构化信息判定结果。"""
 
@@ -304,6 +344,10 @@ class NoveltyPointReview(StrictModel):
     confidence: float | None = Field(default=None, ge=0.0, le=1.0)
     highly_relevant_works: list[RelevantWork] = Field(default_factory=list)
     supplement_request: SupplementRequest | None = None
+    read_citations: list[ReviewReadCitation] = Field(default_factory=list)
+    review_evidence: list[ReviewEvidence] = Field(default_factory=list)
+    feature_comparisons: list[FeatureComparison] = Field(default_factory=list)
+    incomplete_reason: Literal["semantic_evidence", "material_unavailable", "budget_exhausted", "technical_error"] | None = None
 
     @model_validator(mode="after")
     def validate_review_semantics(self) -> "NoveltyPointReview":
@@ -331,6 +375,9 @@ class NoveltyConclusion(StrictModel):
     supporting_card_ids: list[str] = Field(default_factory=list)
     counter_card_ids: list[str] = Field(default_factory=list)
     highly_relevant_works: list[RelevantWork] = Field(default_factory=list)
+    review_evidence: list[ReviewEvidence] = Field(default_factory=list)
+    feature_comparisons: list[FeatureComparison] = Field(default_factory=list)
+    incomplete_reason: Literal["semantic_evidence", "material_unavailable", "budget_exhausted", "technical_error"] | None = None
 
     @model_validator(mode="after")
     def validate_review_semantics(self) -> "NoveltyConclusion":

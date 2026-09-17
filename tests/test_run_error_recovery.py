@@ -32,7 +32,7 @@ def test_reviewer_rejects_namespace_collision_before_reading():
     request.evidence.append(request.evidence[0].model_copy(update={'evidence_id': 'E-2', 'provenance': {'artifact_namespace': 'subject_reference'}}))
     request.cards[0].evidence_ids.append('E-2')
     reader = AddressReader()
-    with pytest.raises(PermissionError, match='ambiguous'):
+    with pytest.raises(PermissionError, match='outside reviewer scope'):
         asyncio.run(ReviewerReaderTool(reader).ainvoke(ReaderArguments(artifact_id='artifact-1'), scope=request))
     assert not reader.requests
 

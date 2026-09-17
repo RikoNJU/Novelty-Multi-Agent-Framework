@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import asyncio
+import hashlib
 import re
 import time
 from datetime import datetime, timezone
@@ -32,6 +33,9 @@ from ..schemas import (
     ReviewVerdict,
 )
 from ..tools.researcher_registry import ResearcherToolRegistry
+from ..tools.reader import ReviewerReaderTool
+from ..schemas.domain import ReviewEvidence
+from ..core.runtime_artifacts import current_runtime_artifacts
 
 
 class _BudgetedClient:
@@ -136,6 +140,7 @@ class DemoEvidenceReviewer:
         return _insufficient_review(
             request.novelty_point.point_id,
             "Demo Reviewer 不执行新颖性语义判定。",
+            cause="technical_error",
         )
 
 
@@ -190,9 +195,14 @@ class NoveltyEvidenceReviewer(EvidenceReviewer):
             return _insufficient_review(
                 request.novelty_point.point_id,
                 "当前查新点没有可供可靠判定的已绑定证据。",
+                cause="material_unavailable",
             )
 
         system, user = self._render_point_prompt(request)
+        reader_tool = self.tools.get("reader") if "reader" in self.tools.names else None
+        catalog = reader_tool.material_catalog(request) if isinstance(reader_tool, ReviewerReaderTool) else []
+        user += "\n已授权材料目录（只可读取这些 Artifact）：\n" + json.dumps(catalog, ensure_ascii=False)
+        user += "\n固定特征 ID：\n" + json.dumps(_feature_catalog(request.novelty_point), ensure_ascii=False)
         if card_only:
             system += "\n" + self._render_instruction("reviewer/review_card", _CARD_FALLBACK)
         system += "\n" + _EVIDENCE_BOUNDARY
@@ -222,13 +232,29 @@ class NoveltyEvidenceReviewer(EvidenceReviewer):
                 repaired = await repair_json(client, result.final_content,
                                              NoveltyPointReview.model_json_schema(), self.model_options)
                 review = NoveltyPointReview.model_validate_json(_extract_json(repaired))
-            return _guard_unsupported_absence(_validate_review_references(review, request), request)
+            if review.review_evidence:
+                raise ValueError("model cannot assign review_evidence")
+            review = review.model_copy(update={"incomplete_reason":
+                "semantic_evidence" if review.status is ReviewStatus.INSUFFICIENT_EVIDENCE else None})
+            review = _register_review_reads(review, request, result.trace, catalog)
+            review = _validate_review_references(review, request)
+            _record_review_event("single_card_result", request, {
+                "material_catalog": catalog, "actual_model_input": {"system": system, "user": user},
+                "review": review.model_dump(mode="json"),
+                "read_registration": [{"read_id": item.read_id,
+                    "evidence_id": item.evidence_id, "status": "validated"}
+                    for item in review.review_evidence],
+                "raw_model_output": result.final_content,
+                "legacy_guard_shadow": _legacy_guard_shadow(review, request),
+            })
+            return review
         except Exception as exc:
             if not self.config.fail_closed:
                 raise
             return _insufficient_review(
                 request.novelty_point.point_id,
                 f"Reviewer 无法完成可靠判定：{type(exc).__name__}: {exc}"[:500],
+                cause="budget_exhausted" if isinstance(exc, TimeoutError) else "technical_error",
             )
 
     async def review_card(self, request: NoveltyPointReviewRequest) -> NoveltyPointReview:
@@ -240,7 +266,7 @@ class NoveltyEvidenceReviewer(EvidenceReviewer):
                 self._review_point(request, card_only=True), self.config.card_timeout_seconds
             )
         except TimeoutError:
-            return _insufficient_review(request.novelty_point.point_id, "单卡评审超过时间预算，核验未完成。")
+            return _insufficient_review(request.novelty_point.point_id, "单卡评审超过时间预算，核验未完成。", cause="budget_exhausted")
 
     async def summarize_reviews(self, request, card_reviews) -> NoveltyPointReview:
         """Synthesize compact card reviews; validate against originals locally."""
@@ -251,7 +277,7 @@ class NoveltyEvidenceReviewer(EvidenceReviewer):
             user = json.dumps({
                 "today": datetime.now(timezone.utc).date().isoformat(),
                 "novelty_point": request.novelty_point.model_dump(mode="json"),
-                "card_reviews": rows,
+                "card_reviews": _summary_model_rows(rows),
                 "review_schema": NoveltyPointReview.model_json_schema(),
             }, ensure_ascii=False)
             response = await asyncio.wait_for(self._client().acomplete(
@@ -262,16 +288,30 @@ class NoveltyEvidenceReviewer(EvidenceReviewer):
             if response.tool_calls:
                 raise ValueError("summary attempted a tool call")
             review = NoveltyPointReview.model_validate_json(_extract_json(response.content))
+            if review.review_evidence or review.read_citations:
+                raise ValueError("summary cannot create new read evidence")
+            review = review.model_copy(update={"incomplete_reason":
+                _summary_incomplete_reason(rows) if review.status is ReviewStatus.INSUFFICIENT_EVIDENCE else None})
+            incremental = [ReviewEvidence.model_validate(item) for row in rows
+                           for item in row.get("review_evidence", [])]
+            review = review.model_copy(update={"review_evidence": incremental})
             if any(evidence_id not in validated_ids for work in review.highly_relevant_works
                    for evidence_id in work.evidence_ids):
                 raise ValueError("summary cites evidence not verified by a card review")
-            return _guard_unsupported_absence(_validate_review_references(review, request), request)
+            review = _validate_review_references(review, request)
+            _record_review_event("summary_result", request, {
+                "rows": rows, "actual_model_input": user,
+                "raw_model_output": response.content, "review": review.model_dump(mode="json"),
+                "legacy_guard_shadow": _legacy_guard_shadow(review, request),
+            })
+            return review
         except Exception as exc:
             if not self.config.fail_closed:
                 raise
             return _insufficient_review(
                 request.novelty_point.point_id,
                 f"Reviewer 汇总失败：{type(exc).__name__}: {exc}"[:500],
+                cause="budget_exhausted" if isinstance(exc, TimeoutError) else "technical_error",
             )
 
     def _render_point_prompt(
@@ -554,11 +594,12 @@ def _extract_json(content: str | None) -> str:
     return text[start : end + 1] if start != -1 and end > start else text
 
 
-def _insufficient_review(point_id: str, reason: str) -> NoveltyPointReview:
+def _insufficient_review(point_id: str, reason: str, *, cause: str = "semantic_evidence") -> NoveltyPointReview:
     return NoveltyPointReview(
         novelty_point_id=point_id,
         status=ReviewStatus.INSUFFICIENT_EVIDENCE,
         supplement_request=SupplementRequest(reason=reason),
+        incomplete_reason=cause,
     )
 
 
@@ -607,12 +648,103 @@ def _guard_unsupported_absence(
     )
 
 
-def _compact_summary_rows(request, card_reviews):
-    """Project existing indexed results; never serialize full Card/Evidence objects.
+def _legacy_guard_shadow(review, request) -> dict[str, Any]:
+    """Report the old lexical decision without affecting the formal review."""
+    previous = _guard_unsupported_absence(review, request)
+    assertions = "\n".join([review.verdict_reason or "", *(
+        work.relevance_reason for work in review.highly_relevant_works)])
+    matches = [{"rule": name, "start": match.start(), "end": match.end(),
+                "text": match.group()}
+               for name, pattern in (("strong_absence", _STRONG_ABSENCE),
+                                     ("novel_absence", _NOVEL_ABSENCE))
+               for match in pattern.finditer(assertions)]
+    quote_matches = [{"evidence_id": item.evidence_id, "start": match.start(),
+                      "end": match.end(), "text": match.group()}
+                     for item in request.evidence
+                     for match in _EXPLICIT_NEGATION.finditer(item.quote)]
+    return {"variant_id": "G0_shadow", "would_change": previous.status != review.status,
+            "old_status": previous.status.value, "formal_status": review.status.value,
+            "old_verdict": previous.verdict.value if previous.verdict else None,
+            "old_relevance_reasons": [work.relevance_reason for work in previous.highly_relevant_works],
+            "assertion_matches": matches, "input_quote_matches": quote_matches}
 
-    At most two exact quote prefixes (600 characters each) accompany each card.
-    All verified evidence IDs remain available even when their quotes are omitted.
-    """
+
+def _record_review_event(phase: str, request, payload: dict[str, Any]) -> None:
+    runtime = current_runtime_artifacts()
+    if runtime is not None:
+        runtime.record_reviewer_event({"phase": phase,
+            "point_id": request.novelty_point.point_id,
+            "card_ids": [c.card_id for c in request.cards], **payload})
+
+
+def _feature_catalog(point) -> list[dict[str, str]]:
+    return [{"feature_id": f"F{i}", "text": value,
+             "sha256": hashlib.sha256(value.encode()).hexdigest()}
+            for i, value in enumerate(point.technical_features, 1)]
+
+
+def _register_review_reads(review, request, trace, catalog):
+    reads = {}
+    for event in trace:
+        observation = getattr(event, "observation", None)
+        if getattr(event, "kind", None) != "tool_result" or observation is None \
+                or observation.tool_name != "reader" or not observation.succeeded:
+            continue
+        payload = observation.payload
+        for raw in ([payload["read_result"]] if "read_result" in payload else payload.get("read_results", [])):
+            if raw.get("char_end", 0) > raw.get("char_start", 0):
+                reads[raw["read_id"]] = raw
+    requested = {cite.read_id: cite for cite in review.read_citations}
+    requested.update({ref: None for work in review.highly_relevant_works
+                      for ref in work.evidence_ids if ref.startswith("read_") and ref not in requested})
+    requested.update({ref: None for comparison in review.feature_comparisons
+                      for ref in comparison.evidence_refs if ref.startswith("read_") and ref not in requested})
+    bound_work = {item.work_id for item in request.evidence
+                  if any(item.evidence_id in card.evidence_ids for card in request.cards)}
+    registered, id_map = [], {}
+    for read_id, cite in requested.items():
+        raw = reads.get(read_id)
+        if raw is None:
+            raise ValueError(f"unread or empty read_id {read_id}")
+        entry = next((item for item in catalog if item["artifact_id"] == raw["artifact_id"]
+                      and item["namespace"] == raw["namespace"]
+                      and item["work_id"] == raw["work_id"]), None)
+        if entry is None or raw["work_id"] not in bound_work \
+                or (entry["content_hash"] is not None and entry["content_hash"] != raw["sha256"]):
+            raise ValueError("read citation is outside the authorized material catalog")
+        start = raw["char_start"] if cite is None or cite.char_start is None else cite.char_start
+        end = raw["char_end"] if cite is None or cite.char_end is None else cite.char_end
+        if not raw["char_start"] <= start < end <= raw["char_end"]:
+            raise ValueError("read citation range is outside the returned text")
+        quote = raw["text"][start - raw["char_start"]:end - raw["char_start"]]
+        cards = [card for card in request.cards if any(
+            item.work_id == raw["work_id"] and item.evidence_id in card.evidence_ids
+            for item in request.evidence)]
+        if len(cards) != 1:
+            raise ValueError("read citation must bind one Card and Work")
+        card = cards[0]
+        digest = hashlib.sha256(f"{card.card_id}\x1f{read_id}\x1f{start}\x1f{end}".encode()).hexdigest()
+        evidence_id = "rev_ev_" + digest[:24]
+        id_map[read_id] = evidence_id
+        registered.append(ReviewEvidence(
+            evidence_id=evidence_id, review_id="review_" + hashlib.sha256(card.card_id.encode()).hexdigest()[:20],
+            origin_card_id=card.card_id, novelty_point_id=request.novelty_point.point_id,
+            work_id=raw["work_id"], source_record_id=entry["source_record_id"],
+            artifact_id=raw["artifact_id"], namespace=raw["namespace"],
+            artifact_hash=raw["sha256"], read_id=read_id, char_start=start, char_end=end,
+            exact_quote=quote, role=entry["role"], content_extent=entry["content_extent"],
+            version_label=entry["version_label"],
+        ))
+    works = [work.model_copy(update={"evidence_ids": [id_map.get(eid, eid) for eid in work.evidence_ids]})
+             for work in review.highly_relevant_works]
+    comparisons = [item.model_copy(update={"evidence_refs": [id_map.get(ref, ref) for ref in item.evidence_refs]})
+                   for item in review.feature_comparisons]
+    return review.model_copy(update={"highly_relevant_works": works,
+                             "feature_comparisons": comparisons, "review_evidence": registered})
+
+
+def _compact_summary_rows(request, card_reviews):
+    """Carry cited original and registered Reviewer quotes into a bounded summary."""
     cards = {card.card_id: card for card in request.cards}
     evidence = {item.evidence_id: item for item in request.evidence}
     rows, validated_ids = [], set()
@@ -636,17 +768,58 @@ def _compact_summary_rows(request, card_reviews):
         ids = list(dict.fromkeys(
             eid for work in review.highly_relevant_works for eid in work.evidence_ids
         ))
+        ids = list(dict.fromkeys(ids + [eid for item in review.feature_comparisons
+                                        for eid in item.evidence_refs]))
         validated_ids.update(ids)
         compact["review"] = review.model_dump(mode="json")
-        compact["key_quotes"] = [{
-            "evidence_id": eid, "work_id": evidence[eid].work_id,
-            "artifact_id": evidence[eid].artifact_id,
-            "quote": evidence[eid].quote[:600],
-            "quote_truncated": len(evidence[eid].quote) > 600,
-        } for eid in ids[:2]]
-        compact["omitted_quote_count"] = max(0, len(ids) - 2)
+        additions = {item.evidence_id: item for item in review.review_evidence}
+        ids.sort(key=lambda eid: eid not in additions)
+        compact["review_evidence"] = [item.model_dump(mode="json") for item in review.review_evidence]
+        budget = 12_000
+        quotes = []
+        for eid in ids:
+            item = additions.get(eid) or evidence.get(eid)
+            if item is None:
+                raise ValueError("summary cites an unknown evidence_id")
+            quote = item.exact_quote if isinstance(item, ReviewEvidence) else item.quote
+            if len(quote) > budget:
+                quotes.append({"evidence_id": eid, "work_id": item.work_id,
+                    "artifact_id": item.artifact_id, "quote": quote[:max(0,budget)],
+                    "quote_truncated": True, "original_chars": len(quote)})
+                budget = 0
+            else:
+                quotes.append({"evidence_id": eid, "work_id": item.work_id,
+                    "artifact_id": item.artifact_id, "quote": quote,
+                    "quote_truncated": False, "original_chars": len(quote)})
+                budget -= len(quote)
+        compact["key_quotes"] = quotes
+        compact["omitted_quote_count"] = sum(not item["quote"] for item in quotes)
+        compact["summary_input_complete"] = all(not item["quote_truncated"] for item in quotes)
         rows.append(compact)
     return rows, validated_ids
+
+
+def _summary_model_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Send each exact quote once, through the bounded key_quotes projection."""
+    projected = []
+    for row in rows:
+        item = {key: value for key, value in row.items() if key != "review_evidence"}
+        if "review" in item:
+            item["review"] = {key: value for key, value in item["review"].items()
+                              if key not in {"review_evidence", "read_citations"}}
+        projected.append(item)
+    return projected
+
+
+def _summary_incomplete_reason(rows: list[dict[str, Any]]) -> str:
+    reasons = [row.get("review", {}).get("incomplete_reason")
+               for row in rows if row.get("status") == "completed"]
+    if any(row.get("status") == "failed" for row in rows):
+        reasons.append("technical_error")
+    for cause in ("budget_exhausted", "technical_error", "material_unavailable"):
+        if cause in reasons:
+            return cause
+    return "semantic_evidence"
 
 
 def _validate_review_references(
@@ -657,20 +830,42 @@ def _validate_review_references(
         raise ValueError("review novelty_point_id is outside request scope")
     cards = {item.card_id: item for item in request.cards}
     evidence = {item.evidence_id: item for item in request.evidence}
+    additions = {item.evidence_id: item for item in review.review_evidence}
+    if len(additions) != len(review.review_evidence):
+        raise ValueError("duplicate review evidence ID")
+    for item in additions.values():
+        card = cards.get(item.origin_card_id)
+        if card is None or item.novelty_point_id != request.novelty_point.point_id \
+                or not any(e.work_id == item.work_id and e.evidence_id in card.evidence_ids
+                           for e in request.evidence):
+            raise ValueError("review evidence is outside Card and Work scope")
     for work in review.highly_relevant_works:
         if any(card_id not in cards for card_id in work.card_ids):
             raise ValueError("relevant work cites an unknown card_id")
         cited_evidence = []
         for evidence_id in work.evidence_ids:
-            item = evidence.get(evidence_id)
+            item = evidence.get(evidence_id) or additions.get(evidence_id)
             if item is None:
                 raise ValueError("relevant work cites an unknown evidence_id")
             if item.work_id != work.work_id:
                 raise ValueError("relevant work_id does not match cited evidence")
             cited_evidence.append(evidence_id)
-        if any(
-            not set(cards[card_id].evidence_ids).intersection(cited_evidence)
-            for card_id in work.card_ids
-        ):
+        if any(not (set(cards[card_id].evidence_ids) |
+                    {item.evidence_id for item in additions.values() if item.origin_card_id == card_id}
+                   ).intersection(cited_evidence) for card_id in work.card_ids):
             raise ValueError("relevant work card_ids are not linked to cited evidence")
+    feature_ids = {item["feature_id"] for item in _feature_catalog(request.novelty_point)}
+    authorized_works = {item.work_id for item in request.evidence
+                        if any(item.evidence_id in card.evidence_ids for card in request.cards)}
+    for item in review.feature_comparisons:
+        if item.feature_id not in feature_ids:
+            raise ValueError("feature comparison cites an unknown feature_id")
+        if item.work_id not in authorized_works:
+            raise ValueError("feature comparison Work is outside request scope")
+        if item.relation != "unknown" and not item.evidence_refs:
+            raise ValueError("non-unknown feature comparison requires evidence")
+        for evidence_id in item.evidence_refs:
+            cited = evidence.get(evidence_id) or additions.get(evidence_id)
+            if cited is None or cited.work_id != item.work_id:
+                raise ValueError("feature comparison evidence is missing or from another Work")
     return review

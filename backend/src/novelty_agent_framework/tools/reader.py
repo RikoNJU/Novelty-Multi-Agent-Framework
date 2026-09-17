@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import time
+import re
 from typing import TypeAlias
 from pydantic import Field, create_model
 
@@ -15,6 +16,7 @@ from ..schemas import (
     TaskResearchRequest,
 )
 from .reference_reader import ReferenceArtifactReaderTool
+from ..persistence import reference_store_for_artifact_namespace
 from ..schemas.research_tools import ReaderCallArguments
 
 
@@ -82,13 +84,14 @@ class ReaderTool:
 
     async def _read_batch(self, arguments, *, scope) -> ResearcherToolObservation:
         started = time.monotonic()
-        results, errors = [], []
+        results, errors, statuses = [], [], []
         # Local reads are bounded; batching removes model round trips, without
         # weakening the single-tool policy or creating unbounded I/O concurrency.
         for index, request in enumerate(arguments.reads):
             try:
                 observation = await self.ainvoke(request, scope=scope)
                 results.append(observation.payload["read_result"])
+                statuses.append(observation.payload.get("read_status", "content"))
             except Exception as exc:
                 errors.append({"index": index, "artifact_id": request.artifact_id,
                                "error_type": type(exc).__name__, "message": str(exc)[:500]})
@@ -96,7 +99,10 @@ class ReaderTool:
             tool_name=self.name, arguments=arguments.model_dump(mode="json"),
             succeeded=bool(results),
             summary=f"批量读取：成功 {len(results)} 段，失败 {len(errors)} 段",
-            payload={"read_results": results, "read_errors": errors},
+            payload={"read_results": results, "read_errors": errors,
+                     "read_statuses": statuses,
+                     **({"read_status": "artifact_eof"} if statuses and
+                        all(status == "artifact_eof" for status in statuses) else {})},
             elapsed_ms=int((time.monotonic() - started) * 1000),
         )
 
@@ -124,11 +130,17 @@ class ReaderTool:
         if "read_results" in observation.payload:
             return {"succeeded": observation.succeeded, "summary": observation.summary,
                     "read_results": observation.payload["read_results"],
-                    "read_errors": observation.payload["read_errors"]}
+                    "read_errors": observation.payload["read_errors"],
+                    "read_statuses": observation.payload.get("read_statuses", []),
+                    **({"read_status": observation.payload["read_status"]}
+                       if "read_status" in observation.payload else {})}
         read = observation.payload["read_result"]
         return {
             "succeeded": observation.succeeded,
             "summary": observation.summary,
+            **({"read_status": observation.payload["read_status"],
+                "material_catalog": observation.payload.get("material_catalog", [])}
+               if "read_status" in observation.payload else {}),
             "read_result": {
                 key: read[key]
                 for key in (
@@ -147,9 +159,70 @@ class ReaderTool:
 
 
 class ReviewerReaderTool(ReaderTool):
-    """只允许 Reviewer 回读当前查新点 Evidence 可达的 Artifact。"""
+    """Read verified materials belonging to the Card's bound Work."""
 
-    description = "仅回读当前查新点 Evidence 可达的 Artifact。" + ReaderTool.description
+    description = "仅回读当前 Card 所绑定 Work 的已验证材料。" + ReaderTool.description
+
+    def material_catalog(self, scope: NoveltyPointReviewRequest) -> list[dict[str, object]]:
+        """Resolve both the displayed catalog and the permission set from one source."""
+        cited = {eid for card in scope.cards for eid in card.evidence_ids}
+        bound = [item for item in scope.evidence if item.evidence_id in cited]
+        addresses = {(item.work_id,
+                      ArtifactNamespace(item.provenance.get("artifact_namespace", "research_reference")))
+                     for item in bound}
+        if not addresses:
+            return []
+        entries: list[dict[str, object]] = []
+        root = getattr(getattr(self.reader, "reference_store", None), "output_root", None)
+        if root is not None:
+            for work_id, namespace in sorted(addresses, key=lambda x: (x[0], x[1].value)):
+                store = reference_store_for_artifact_namespace(namespace, output_root=root)
+                try:
+                    manifest = store.load_manifest(scope.subject_paper_id)
+                except FileNotFoundError:
+                    continue
+                cited_versions = {
+                    artifact.version_label for artifact in manifest.artifacts
+                    if artifact.artifact_id in {item.artifact_id for item in bound if item.work_id == work_id}
+                    and artifact.version_label is not None
+                }
+                for artifact in manifest.artifacts:
+                    if artifact.work_id != work_id or artifact.media_type not in {
+                        "text/plain", "text/markdown", "text/html", "application/json",
+                    }:
+                        continue
+                    if cited_versions and artifact.version_label is not None \
+                            and artifact.version_label not in cited_versions:
+                        continue
+                    try:
+                        _, _, raw = store.verify_artifact_file(scope.subject_paper_id, artifact.artifact_id)
+                        content = raw.decode("utf-8")
+                        chars = len(content)
+                    except (OSError, ValueError, UnicodeDecodeError):
+                        continue
+                    entries.append({
+                        "work_id": work_id, "artifact_id": artifact.artifact_id,
+                        "namespace": namespace.value, "source_record_id": artifact.source_record_id,
+                        "role": artifact.role.value, "content_extent": artifact.content_extent.value,
+                        "content_hash": artifact.sha256, "readable_chars": chars,
+                        "version_label": artifact.version_label, "readable": True,
+                        "section_hints": [
+                            {"char_start": match.start(), "heading": match.group().strip()}
+                            for match in list(re.finditer(
+                                r"(?im)^(?:\d+(?:\.\d+)*[. ]+)?[^\n]{0,45}"
+                                r"(?:method|methods|approach|algorithm|related work|方法|算法|模型)"
+                                r"[^\n]{0,40}$", content))[:12]
+                        ],
+                    })
+        # Test adapters without a manifest retain the old evidence-only scope.
+        if root is None:
+            for item in bound:
+                entries.append({"work_id": item.work_id, "artifact_id": item.artifact_id,
+                    "namespace": item.provenance.get("artifact_namespace", "research_reference"),
+                    "source_record_id": item.provenance.get("source_record_id"),
+                    "role": "unknown", "content_extent": "unknown", "content_hash": None,
+                    "readable_chars": None, "version_label": None, "readable": True})
+        return list({(e["namespace"], e["artifact_id"]): e for e in entries}.values())
 
     async def ainvoke(
         self,
@@ -159,28 +232,14 @@ class ReviewerReaderTool(ReaderTool):
     ) -> ResearcherToolObservation:
         if getattr(arguments, "reads", None) is not None:
             return await self._read_batch(arguments, scope=scope)
-        referenced_evidence_ids = {
-            evidence_id
-            for card in scope.cards
-            for evidence_id in card.evidence_ids
-        }
-        allowed_artifact_ids = {
-            item.artifact_id
-            for item in scope.evidence
-            if item.evidence_id in referenced_evidence_ids
-        }
-        if arguments.artifact_id not in allowed_artifact_ids:
+        catalog = self.material_catalog(scope)
+        matches = [item for item in catalog if item["artifact_id"] == arguments.artifact_id]
+        if len(matches) != 1:
             raise PermissionError(
                 f"artifact {arguments.artifact_id!r} is outside reviewer scope"
             )
-        addresses = {
-            (ArtifactNamespace(item.provenance.get("artifact_namespace", "research_reference")), item.work_id)
-            for item in scope.evidence
-            if item.evidence_id in referenced_evidence_ids and item.artifact_id == arguments.artifact_id
-        }
-        if len(addresses) != 1:
-            raise PermissionError("ambiguous reviewer artifact address")
-        namespace, work_id = next(iter(addresses))
+        entry = matches[0]
+        namespace, work_id = ArtifactNamespace(entry["namespace"]), entry["work_id"]
         started = time.monotonic()
         result = await self.reader.ainvoke(
             ReferenceReadRequest(
@@ -192,17 +251,20 @@ class ReviewerReaderTool(ReaderTool):
             )
         )
         if (result.artifact_id != arguments.artifact_id
-                or result.namespace != namespace or result.work_id != work_id):
+                or result.namespace != namespace or result.work_id != work_id
+                or (entry["content_hash"] is not None and result.sha256 != entry["content_hash"])):
             raise PermissionError("reader returned an artifact outside reviewer scope")
+        read_status = "content" if result.char_end > result.char_start else "artifact_eof"
         return ResearcherToolObservation(
             tool_name=self.name,
             arguments=arguments.model_dump(mode="json", exclude_none=True),
             succeeded=True,
             summary=(
-                f"读取 artifact {result.artifact_id} 字符 "
-                f"[{result.char_start}, {result.char_end})"
+                f"读取 artifact {result.artifact_id} 字符 [{result.char_start}, {result.char_end})；"
+                + ("当前制品 EOF，可查材料目录中的其他已授权制品" if read_status == "artifact_eof" else "有内容")
             ),
-            payload={"read_result": result.model_dump(mode="json")},
+            payload={"read_result": result.model_dump(mode="json"), "read_status": read_status,
+                     "material_catalog": catalog if read_status == "artifact_eof" else []},
             elapsed_ms=int((time.monotonic() - started) * 1000),
         )
 

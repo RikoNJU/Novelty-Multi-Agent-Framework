@@ -329,6 +329,19 @@ class RuntimeArtifactManager:
             path = self.run_dir / "retrieval_events" / f"{self._retrieval_event_counter:04d}.json"
             self._write_json(path, record)
 
+    def record_reviewer_event(self, event: Mapping[str, Any]) -> None:
+        """Persist Reviewer materials, registered reads, shadows and summary inputs."""
+        if not self.config.enabled or self.run_dir is None:
+            return
+        with self._lock:
+            directory = self.run_dir / "reviewer_events"
+            directory.mkdir(parents=True, exist_ok=True)
+            index = len(list(directory.glob("*.json"))) + 1
+            record = {"reviewer_event_id": f"reviewer_{index:04d}", "run_id": self.run_id,
+                      "parent_stage_id": _current_stage_id.get(), "scope": _current_scope.get(),
+                      "recorded_at": _iso(_now()), **dict(event)}
+            self._write_json(directory / f"{index:04d}.json", record)
+
     def record_model_call(self, event: ModelCallEvent) -> None:
         """Persist one model call and its normalized token/cost accounting."""
 
@@ -615,7 +628,10 @@ class RuntimeArtifactManager:
                 result_count = _infer_result_count(normalized_result)
             if business_status is None:
                 retrieval_status = normalized_result.get("retrieval_status") if isinstance(normalized_result, Mapping) else None
-                business_status = retrieval_status or ("EMPTY" if succeeded and result_count == 0 else "NORMAL")
+                read_status = (normalized_result or {}).get("read_status") if isinstance(normalized_result, dict) else None
+                business_status = retrieval_status or (
+                    "ARTIFACT_EOF" if read_status == "artifact_eof" else
+                    "EMPTY" if succeeded and result_count == 0 else "NORMAL")
             record.update(
                 finished_at=_iso(_now()),
                 duration=_elapsed_seconds(handle.monotonic_started),

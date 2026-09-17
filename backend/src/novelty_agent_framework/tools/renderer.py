@@ -334,7 +334,9 @@ def _format_conclusions(
         status = conclusion.get("review_status")
         verdict = conclusion.get("verdict")
         label = (
-            "证据不足，无法裁定"
+            ("核验未完成，无法裁定" if conclusion.get("incomplete_reason") in {
+                "budget_exhausted", "technical_error", "material_unavailable"}
+             else "证据不足，无法裁定")
             if status == "insufficient_evidence"
             else labels.get(verdict, verdict or "—")
         )
@@ -346,6 +348,12 @@ def _format_conclusions(
             f"(cards: {', '.join(item.get('card_ids', [])) or '—'})"
             for item in relevant
         ) or "  - 无"
+        verification_text = "\n".join(
+            f"  - {item.get('evidence_id', '—')} · {item.get('work_id', '—')} · "
+            f"{item.get('artifact_id', '—')} [{item.get('char_start', 0)}, "
+            f"{item.get('char_end', 0)}): {item.get('exact_quote', '')}"
+            for item in conclusion.get("review_evidence", [])
+        ) or "  - 无"
         sections.append(
             f"### {point_id} · {label}\n\n"
             f"{claim}\n\n"
@@ -353,7 +361,9 @@ def _format_conclusions(
             f"**裁定理由：** {conclusion.get('verdict_reason') or '—'}  \n"
             f"**置信度：** {confidence_text}  \n"
             f"**报告摘要：** {conclusion.get('summary', '—')}  \n"
-            f"**高度相关 Work：**\n{relevant_text}"
+            f"**未完成原因：** {conclusion.get('incomplete_reason') or '—'}  \n"
+            f"**高度相关 Work：**\n{relevant_text}\n\n"
+            f"**原文核验证据：**\n{verification_text}"
         )
     return "\n\n".join(sections)
 

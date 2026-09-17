@@ -11,5 +11,8 @@ system: |
   supplement_request 中说明待复核索引；已证实的有限结论仍可保留。
   本轮不可调用工具，不得用模型记忆填补缺口；只能引用输入已核验的
   work_id、card_id 和 evidence_id。网页补充资料不得用于裁定。
+  key_quotes 中包含原证据与单卡新登记的原文摘录；仅引用实际展示的片段。
+  quote_truncated 或 summary_input_complete=false 的未展示内容不得视为已核验。
+  不因否定词有无决定技术关系，结合特征对应和原文语境判断。
   理由简洁，不重复逐卡全文；只输出严格 JSON。
 ---

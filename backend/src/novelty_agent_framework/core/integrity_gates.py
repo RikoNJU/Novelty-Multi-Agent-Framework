@@ -347,6 +347,12 @@ def validate_report_integrity(
             mismatches.append("confidence")
         if conclusion.highly_relevant_works != review.highly_relevant_works:
             mismatches.append("highly_relevant_works")
+        if conclusion.review_evidence != review.review_evidence:
+            mismatches.append("review_evidence")
+        if conclusion.feature_comparisons != review.feature_comparisons:
+            mismatches.append("feature_comparisons")
+        if conclusion.incomplete_reason != review.incomplete_reason:
+            mismatches.append("incomplete_reason")
         if mismatches:
             issues.append(
                 f"review/conclusion mismatch: {point_id} fields={','.join(mismatches)}"
