@@ -16,6 +16,7 @@ Business tool implementations do not belong here.
 from __future__ import annotations
 
 import json
+import time
 from dataclasses import dataclass, field, replace
 from typing import Any, Literal
 
@@ -74,6 +75,10 @@ class ToolCallHarnessConfig:
     max_tool_calls: int = 10
     per_tool_limits: dict[str, int] = field(default_factory=dict)
     max_total_read_chars: int | None = None
+    finalization_instruction: str | None = None
+    reserve_final_turn: bool = False
+    report_budget: bool = False
+    allow_one_read_budget_correction: bool = False
 
     def __post_init__(self) -> None:
         if self.max_turns < 1:
@@ -141,13 +146,13 @@ class ToolCallHarness:
                 content=json.dumps({"succeeded": False, "error": str(error)}),
             )))
         log.append(ToolCallHarnessEvent(kind="initial_user_message", message=ChatMessage(
-            role="user", content=(
+            role="user", content=(self.config.finalization_instruction or (
                 f"Research stopped: {error}. No further tool calls are allowed. "
                 "This is the single reserved finalization turn. Return the required "
                 "final JSON using only observations already received. Preserve exact "
                 "Reader quotes, including mathematical markup. If no text supports "
                 "evidence, return cards=[] with a concrete no_evidence_reason."
-            ),
+            )) + f"\nStop reason: {error}",
         )))
         try:
             response = await self.model_client.acomplete(
@@ -185,20 +190,34 @@ class ToolCallHarness:
         tool_calls_used = 0
         per_tool_counts: dict[str, int] = {}
         total_read_chars = 0
+        read_budget_rejections = 0
         required_reader_artifact_ids: set[str] = set()
         database_results = {}  # Per invocation: never crosses task/plan/run scopes.
 
-        for turn in range(1, self.config.max_turns + 1):
+        exploration_turns = self.config.max_turns - int(self.config.reserve_final_turn)
+        if exploration_turns < 1:
+            raise ValueError("reserved final turn requires at least two total turns")
+        for turn in range(1, exploration_turns + 1):
+            if self.config.finalize_on_budget and self.config.reserve_final_turn \
+                    and tool_calls_used >= self.config.max_tool_calls:
+                raise ToolCallBudgetExhausted("tool-call exploration limit reached", trace=tuple(log))
             context = _build_context(system_prompt, tuple(log))
-            if self.config.finalize_on_budget:
+            if self.config.finalize_on_budget or self.config.report_budget:
                 context[0] = replace(context[0], content=context[0].content + "\nBudget context: " + json.dumps({
-                    "remaining_research_turns": self.config.max_turns - turn + 1,
+                    "remaining_research_turns": exploration_turns - turn + 1,
+                    "remaining_exploration_turns": exploration_turns - turn + 1,
                     "remaining_tool_calls": self.config.max_tool_calls - tool_calls_used,
+                    "remaining_read_chars": (None if self.config.max_total_read_chars is None
+                                             else self.config.max_total_read_chars - total_read_chars),
+                    "remaining_exploration_seconds": (
+                        max(0, round(self.model_client.deadline - time.monotonic(), 1))
+                        if isinstance(getattr(self.model_client, "deadline", None), (int, float)) else None),
+                    "finalization_reserved": self.config.finalize_on_budget and self.config.reserve_final_turn,
                     "remaining_per_tool": {
                         name: max(0, limit - per_tool_counts.get(name, 0))
                         for name, limit in self.config.per_tool_limits.items()
                     },
-                    "instruction": "Prioritize already discovered readable candidates; finish before budgets expire.",
+                    "instruction": "Finish within the remaining exploration budget; a reserved tool-free final turn follows if needed.",
                 }))
             try:
                 response = await self.model_client.acomplete(
@@ -375,17 +394,27 @@ class ToolCallHarness:
                              else getattr(validated_arguments, "max_chars"))
                 remaining = self.config.max_total_read_chars - total_read_chars
                 if requested > remaining:
-                    detail = "reader cumulative character budget exhausted"
+                    detail = "reader cumulative character budget exhausted: request exceeds remaining"
                     _append_error(log, detail)
+                    rejection = {"succeeded": False, "reason": "read_budget_exceeded",
+                                 "requested_chars": requested, "remaining_chars": remaining,
+                                 "instruction": "Shrink the request to the remaining limit or finish with the evidence already read."}
                     if runtime is not None and runtime_call is not None:
                         runtime.finish_tool_call(
                             runtime_call,
                             raw_result=None,
-                            normalized_result=None,
+                            normalized_result=rejection,
                             succeeded=False,
                             error={"type": "HarnessPolicyError", "message": detail},
                             failure_phase="PRE_TOOL",
                         )
+                    log.append(ToolCallHarnessEvent(kind="tool_result", tool_call=tool_call,
+                        message=ChatMessage(role="tool", tool_call_id=tool_call.id,
+                                            content=json.dumps(rejection))))
+                    read_budget_rejections += 1
+                    if (self.config.allow_one_read_budget_correction
+                            and read_budget_rejections == 1 and turn < exploration_turns):
+                        continue
                     raise ToolCallBudgetExhausted(detail, trace=tuple(log))
             log.append(
                 ToolCallHarnessEvent(kind="tool_call", tool_call=tool_call)
@@ -485,8 +514,10 @@ class ToolCallHarness:
                 )
             )
 
-        _append_error(log, "turn budget exhausted")
-        raise ToolCallBudgetExhausted("turn budget exhausted", trace=tuple(log))
+        detail = ("tool-call exploration limit reached" if tool_calls_used >= self.config.max_tool_calls
+                  else "exploration turn budget exhausted")
+        _append_error(log, detail)
+        raise ToolCallBudgetExhausted(detail, trace=tuple(log))
 
 
 def _reader_artifact_ids(arguments):

@@ -552,7 +552,21 @@ def test_summary_invalid_json_fails_closed_without_an_extra_model_call():
     client = ScriptedClient(ModelResponse(content="invalid JSON"))
     result = asyncio.run(_reviewer(client, RecordingReader()).summarize_reviews(_request(), []))
     assert result.status.value == "insufficient_evidence"
-    assert len(client.calls) == 1
+    assert len(client.calls) == 0  # No valid card results, so synthesis is skipped.
+
+
+def test_summary_repairs_its_own_strict_draft_once():
+    invalid = json.loads(_review_json())
+    invalid["review_evidence"] = [{"evidence_id": "fabricated"}]
+    client = ScriptedClient(ModelResponse(content=json.dumps(invalid)),
+                            ModelResponse(content=_review_json()))
+    result = asyncio.run(_reviewer(client, RecordingReader()).summarize_reviews(
+        _request(), [_indexed_review()]))
+    assert result.status.value == "reviewed"
+    assert len(client.calls) == 2
+    repair_schema = json.loads(client.calls[1][0][1].content)["schema"]
+    assert "review_evidence" not in json.dumps(repair_schema)
+    assert client.calls[1][1].tools == ()
 
 
 def test_card_and_summary_timeouts_are_bounded():

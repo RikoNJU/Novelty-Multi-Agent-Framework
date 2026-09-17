@@ -14,11 +14,12 @@ from typing import Any
 
 from pydantic import ValidationError
 
-from backend.env import ChatMessage, ModelCallOptions, ModelClient, ModelRegistry, PromptLibrary
+from backend.env import ChatMessage, ModelCallBudgetExceeded, ModelCallOptions, ModelClient, ModelRegistry, PromptLibrary
 
 from ..ports import EvidenceReviewer, ReviewResult
 from ..core.format_repair import repair_json
 from ..core import ToolCallHarness, ToolCallHarnessConfig
+from ..core.tool_call_harness import ToolCallBudgetExhausted
 from ..schemas import (
     EvidenceCard,
     EvidenceReviewDecision,
@@ -26,6 +27,8 @@ from ..schemas import (
     IssueSeverity,
     NoveltyPoint,
     NoveltyPointReview,
+    ReviewerCardDraft,
+    ReviewerSummaryDraft,
     NoveltyPointReviewRequest,
     ReviewStatus,
     SupplementRequest,
@@ -38,6 +41,10 @@ from ..schemas.domain import ReviewEvidence
 from ..core.runtime_artifacts import current_runtime_artifacts
 
 
+class ReviewDeadlineExceeded(TimeoutError):
+    """The local single-card deadline expired."""
+
+
 class _BudgetedClient:
     """Apply the remaining card budget to both async waiting and HTTP I/O."""
 
@@ -48,10 +55,15 @@ class _BudgetedClient:
     async def acomplete(self, messages, *, options=None):
         remaining = self.deadline - time.monotonic()
         if remaining <= 0:
-            raise TimeoutError("review budget exhausted")
+            raise ReviewDeadlineExceeded("review deadline exhausted")
         options = options or ModelCallOptions()
         options = replace(options, timeout_seconds=min(options.timeout_seconds or 90, remaining))
-        return await asyncio.wait_for(self.client.acomplete(messages, options=options), remaining)
+        try:
+            return await asyncio.wait_for(self.client.acomplete(messages, options=options), remaining)
+        except TimeoutError as exc:
+            if time.monotonic() >= self.deadline:
+                raise ReviewDeadlineExceeded("review deadline exhausted") from exc
+            raise
 
 _ALLOWED_ISSUE_CODES = frozenset(
     {
@@ -85,14 +97,14 @@ _EVIDENCE_BOUNDARY = (
 
 _CARD_FALLBACK = (
     "本轮只核验一张 Card 对应的一篇论文，是中间结果，不作最终查新裁定。"
-    "复用 NoveltyPointReview 格式；verdict 仅描述该文献与查新点的关系。"
+    "使用 ReviewerCardDraft 格式；verdict 仅描述该文献与查新点的关系。"
     "记录已覆盖特征、差异、引用可靠性和证据局限；部分相关文献也必须保留。"
     "优先使用输入 Evidence 原文，仅在具体疑问时回读。理由不超过300字。"
 )
 
 _SUMMARY_FALLBACK = (
     "你是查新点级汇总 Reviewer。综合带索引的单卡核验结果和已核验关键引文，"
-    "输出 NoveltyPointReview。单卡结果是派生分析，不是原始证据。"
+    "输出 ReviewerSummaryDraft。单卡结果是派生分析，不是原始证据。"
     "单卡失败、证据不足及 quote_truncated=true 的局限必须保留。"
     "本轮不可调用工具，不得用模型记忆填补缺口；只能引用输入已核验的 "
     "work_id、card_id 和 evidence_id。网页补充资料不得用于裁定。"
@@ -212,34 +224,63 @@ class NoveltyEvidenceReviewer(EvidenceReviewer):
             if card_only:
                 client = _BudgetedClient(client, self.config.card_timeout_seconds)
                 harness = ToolCallHarness(client, self.tools, config=replace(
-                    self.harness.config, max_turns=min(self.config.max_steps, 6),
-                    max_tool_calls=min(self.config.max_tool_calls, 4),
-                    per_tool_limits={"reader": min(self.config.max_tool_calls, 4)},
+                    self.harness.config, finalize_on_budget=True,
+                    reserve_final_turn=True, report_budget=True,
+                    allow_one_read_budget_correction=True,
+                    finalization_instruction=(
+                        "Reviewer 单卡预算收尾。不得再调用工具；仅使用已返回的 Reader 片段和原 Evidence。"
+                        "按单卡 ReviewerCardDraft schema 输出严格 JSON；真实 read_id 可放入 read_citations，"
+                        "不得生成 review_evidence、证据 ID、原文摘录或运行原因。"
+                        "保留已支持的有限特征对应，未核验的关键项应为 unknown 或证据不足。"
+                    ),
                 ))
+            call_options = replace(self.model_options or ModelCallOptions(
+                    temperature=self.config.temperature, tool_choice="auto"),
+                response_format=None)
+            _record_review_event("reviewer_case_start", request, {
+                "material_catalog": catalog,
+                "actual_model_input": {"system": system, "user": user},
+                "draft_schema": ReviewerCardDraft.model_json_schema(),
+                "draft_schema_sha256": hashlib.sha256(json.dumps(
+                    ReviewerCardDraft.model_json_schema(), sort_keys=True).encode()).hexdigest(),
+                "requested_budget": {"max_steps": self.config.max_steps,
+                    "max_tool_calls": self.config.max_tool_calls,
+                    "max_total_read_chars": self.config.max_total_read_chars,
+                    "card_timeout_seconds": self.config.card_timeout_seconds},
+                "effective_budget": {"max_turns": harness.config.max_turns,
+                    "exploration_turns": harness.config.max_turns - int(harness.config.reserve_final_turn),
+                    "max_tool_calls": harness.config.max_tool_calls,
+                    "max_total_read_chars": harness.config.max_total_read_chars,
+                    "finalization_reserved": harness.config.reserve_final_turn},
+            })
             result = await harness.run(
                 system_prompt=system,
                 initial_user_message=user,
                 scope=request,
-                options=self.model_options
-                or ModelCallOptions(
-                    temperature=self.config.temperature,
-                    tool_choice="auto",
-                ),
+                options=call_options,
             )
             try:
-                review = NoveltyPointReview.model_validate_json(_extract_json(result.final_content))
-            except (ValidationError, ValueError):
+                draft = ReviewerCardDraft.model_validate_json(_extract_json(result.final_content))
+            except (ValidationError, ValueError) as parse_error:
+                _record_review_event("model_output_contract_violation", request, {
+                    "error": str(parse_error), "raw_model_output": result.final_content,
+                    "draft_schema": ReviewerCardDraft.model_json_schema(),
+                })
                 repaired = await repair_json(client, result.final_content,
-                                             NoveltyPointReview.model_json_schema(), self.model_options)
-                review = NoveltyPointReview.model_validate_json(_extract_json(repaired))
-            if review.review_evidence:
-                raise ValueError("model cannot assign review_evidence")
+                                             ReviewerCardDraft.model_json_schema(), call_options)
+                draft = ReviewerCardDraft.model_validate_json(_extract_json(repaired))
+            review = NoveltyPointReview.model_validate(draft.model_dump(mode="json"))
             review = review.model_copy(update={"incomplete_reason":
                 "semantic_evidence" if review.status is ReviewStatus.INSUFFICIENT_EVIDENCE else None})
             review = _register_review_reads(review, request, result.trace, catalog)
             review = _validate_review_references(review, request)
             _record_review_event("single_card_result", request, {
                 "material_catalog": catalog, "actual_model_input": {"system": system, "user": user},
+                "draft_schema": ReviewerCardDraft.model_json_schema(),
+                "raw_draft": draft.model_dump(mode="json"),
+                "stop_reason": result.stop_reason,
+                "execution_status": "completed", "finalization_attempted": result.stop_reason is not None,
+                "read_ledger": _review_read_ledger(result.trace),
                 "review": review.model_dump(mode="json"),
                 "read_registration": [{"read_id": item.read_id,
                     "evidence_id": item.evidence_id, "status": "validated"}
@@ -249,12 +290,19 @@ class NoveltyEvidenceReviewer(EvidenceReviewer):
             })
             return review
         except Exception as exc:
+            _record_review_event("single_card_incomplete", request, {
+                "error_type": type(exc).__name__, "error": str(exc),
+                "cause": _review_failure_cause(exc),
+                "execution_status": "incomplete", "stop_stage": "single_card",
+                "read_ledger": _review_read_ledger(getattr(exc, "trace", ())),
+                "trace": [str(item) for item in getattr(exc, "trace", ())],
+            })
             if not self.config.fail_closed:
                 raise
             return _insufficient_review(
                 request.novelty_point.point_id,
                 f"Reviewer 无法完成可靠判定：{type(exc).__name__}: {exc}"[:500],
-                cause="budget_exhausted" if isinstance(exc, TimeoutError) else "technical_error",
+                cause=_review_failure_cause(exc),
             )
 
     async def review_card(self, request: NoveltyPointReviewRequest) -> NoveltyPointReview:
@@ -270,26 +318,49 @@ class NoveltyEvidenceReviewer(EvidenceReviewer):
 
     async def summarize_reviews(self, request, card_reviews) -> NoveltyPointReview:
         """Synthesize compact card reviews; validate against originals locally."""
+        usable = [row for row in card_reviews if row.get("status") == "completed"
+                  and row.get("review", {}).get("incomplete_reason") not in
+                  {"technical_error", "budget_exhausted"}]
+        if not usable:
+            causes = [row.get("review", {}).get("incomplete_reason") for row in card_reviews]
+            cause = "budget_exhausted" if causes and all(x == "budget_exhausted" for x in causes) else "technical_error"
+            _record_review_event("summary_skipped", request, {
+                "reason": "all_card_reviews_incomplete", "card_causes": causes})
+            return _insufficient_review(request.novelty_point.point_id,
+                "全部单卡核验因运行错误或预算限制未完成；未调用模型汇总。", cause=cause)
         system = self._render_instruction("reviewer/summarize_reviews", _SUMMARY_FALLBACK)
         system += "\n" + _EVIDENCE_BOUNDARY
+        deadline = time.monotonic() + self.config.summary_timeout_seconds
         try:
             rows, validated_ids = _compact_summary_rows(request, card_reviews)
             user = json.dumps({
                 "today": datetime.now(timezone.utc).date().isoformat(),
                 "novelty_point": request.novelty_point.model_dump(mode="json"),
                 "card_reviews": _summary_model_rows(rows),
-                "review_schema": NoveltyPointReview.model_json_schema(),
+                "review_schema": ReviewerSummaryDraft.model_json_schema(),
             }, ensure_ascii=False)
+            summary_options = replace(self.model_options or ModelCallOptions(), tools=(), tool_choice="none",
+                                      response_format=None, timeout_seconds=self.config.summary_timeout_seconds)
             response = await asyncio.wait_for(self._client().acomplete(
                 [ChatMessage(role="system", content=system), ChatMessage(role="user", content=user)],
-                options=replace(self.model_options or ModelCallOptions(), tools=(), tool_choice="none",
-                                timeout_seconds=self.config.summary_timeout_seconds),
-            ), self.config.summary_timeout_seconds)
+                options=summary_options,
+            ), max(0.001, deadline - time.monotonic()))
             if response.tool_calls:
                 raise ValueError("summary attempted a tool call")
-            review = NoveltyPointReview.model_validate_json(_extract_json(response.content))
-            if review.review_evidence or review.read_citations:
-                raise ValueError("summary cannot create new read evidence")
+            try:
+                draft = ReviewerSummaryDraft.model_validate_json(_extract_json(response.content))
+            except (ValidationError, ValueError) as parse_error:
+                _record_review_event("model_output_contract_violation", request, {
+                    "stage": "summary", "error": str(parse_error),
+                    "raw_model_output": response.content,
+                    "draft_schema": ReviewerSummaryDraft.model_json_schema(),
+                })
+                repaired = await asyncio.wait_for(repair_json(
+                    self._client(), response.content, ReviewerSummaryDraft.model_json_schema(),
+                    replace(summary_options, timeout_seconds=max(0.001, deadline - time.monotonic()))),
+                    max(0.001, deadline - time.monotonic()))
+                draft = ReviewerSummaryDraft.model_validate_json(_extract_json(repaired))
+            review = NoveltyPointReview.model_validate(draft.model_dump(mode="json"))
             review = review.model_copy(update={"incomplete_reason":
                 _summary_incomplete_reason(rows) if review.status is ReviewStatus.INSUFFICIENT_EVIDENCE else None})
             incremental = [ReviewEvidence.model_validate(item) for row in rows
@@ -301,6 +372,8 @@ class NoveltyEvidenceReviewer(EvidenceReviewer):
             review = _validate_review_references(review, request)
             _record_review_event("summary_result", request, {
                 "rows": rows, "actual_model_input": user,
+                "draft_schema": ReviewerSummaryDraft.model_json_schema(),
+                "raw_draft": draft.model_dump(mode="json"),
                 "raw_model_output": response.content, "review": review.model_dump(mode="json"),
                 "legacy_guard_shadow": _legacy_guard_shadow(review, request),
             })
@@ -311,7 +384,8 @@ class NoveltyEvidenceReviewer(EvidenceReviewer):
             return _insufficient_review(
                 request.novelty_point.point_id,
                 f"Reviewer 汇总失败：{type(exc).__name__}: {exc}"[:500],
-                cause="budget_exhausted" if isinstance(exc, TimeoutError) else "technical_error",
+                cause=("budget_exhausted" if isinstance(exc, TimeoutError)
+                       and time.monotonic() >= deadline else _review_failure_cause(exc)),
             )
 
     def _render_point_prompt(
@@ -335,7 +409,7 @@ class NoveltyEvidenceReviewer(EvidenceReviewer):
                 ensure_ascii=False,
             ),
             "review_schema": json.dumps(
-                NoveltyPointReview.model_json_schema(), ensure_ascii=False
+                ReviewerCardDraft.model_json_schema(), ensure_ascii=False
             ),
         }
         if self._prompts is not None:
@@ -592,6 +666,51 @@ def _extract_json(content: str | None) -> str:
         text = fence.group(1).strip()
     start, end = text.find("{"), text.rfind("}")
     return text[start : end + 1] if start != -1 and end > start else text
+
+
+def _review_failure_cause(exc: BaseException) -> str:
+    """Classify by exception identity, including a harness-wrapped cause."""
+    current: BaseException | None = exc
+    seen: set[int] = set()
+    while current is not None and id(current) not in seen:
+        seen.add(id(current))
+        if isinstance(current, (ToolCallBudgetExhausted, ModelCallBudgetExceeded, ReviewDeadlineExceeded)):
+            return "budget_exhausted"
+        current = current.__cause__
+    return "technical_error"
+
+
+def _review_read_ledger(trace) -> dict[str, Any]:
+    ranges: dict[str, list[tuple[int, int]]] = {}
+    returned = 0
+    for event in trace:
+        observation = getattr(event, "observation", None)
+        if event.kind != "tool_result" or observation is None or observation.tool_name != "reader":
+            continue
+        payload = observation.payload
+        reads = payload.get("read_results", []) + ([payload["read_result"]] if "read_result" in payload else [])
+        for read in reads:
+            start, end = read.get("char_start"), read.get("char_end")
+            if not isinstance(start, int) or not isinstance(end, int) or end <= start:
+                continue
+            returned += end - start
+            ranges.setdefault(read["artifact_id"], []).append((start, end))
+    covered = 0
+    for items in ranges.values():
+        last_start = last_end = None
+        for start, end in sorted(items):
+            if last_end is None:
+                last_start, last_end = start, end
+            elif start <= last_end:
+                last_end = max(last_end, end)
+            else:
+                covered += last_end - last_start
+                last_start, last_end = start, end
+        if last_end is not None:
+            covered += last_end - last_start
+    return {"returned_chars": returned, "unique_covered_chars": covered,
+            "ranges": {artifact: [[start, end] for start, end in items]
+                       for artifact, items in ranges.items()}}
 
 
 def _insufficient_review(point_id: str, reason: str, *, cause: str = "semantic_evidence") -> NoveltyPointReview:

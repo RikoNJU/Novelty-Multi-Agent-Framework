@@ -31,7 +31,7 @@ system: |
   - 证据充分时输出 verdict、verdict_reason、confidence，并选出高度相关 Work。
   - 证据不足时输出 status="insufficient_evidence"，不得强行给出 verdict；必要时可填写
     supplement_request，且该字段只是语义建议，不控制工作流。
-  - 输出必须是严格 NoveltyPointReview JSON，不得输出 Markdown、开场白或自由文本。
+  - 输出必须是严格 ReviewerCardDraft JSON，不得输出 review_evidence、incomplete_reason、exact_quote、review_id、Markdown、开场白或自由文本。
   - 不输出思考过程。status="reviewed" 必须同时填写 verdict、verdict_reason、confidence；
     status="insufficient_evidence" 时 verdict 必须为 null，不能同时声明已判定。
     字段组合示例（仅示意，真实 ID 和其他必填字段以输入 schema 为准）：

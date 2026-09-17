@@ -363,6 +363,51 @@ class NoveltyPointReview(StrictModel):
         return self
 
 
+class ReviewerCardDraft(StrictModel):
+    """Model-owned single-card judgment; provenance is registered by the harness."""
+
+    novelty_point_id: str = Field(min_length=1)
+    status: ReviewStatus
+    verdict: NoveltyVerdict | None = None
+    verdict_reason: str | None = None
+    confidence: float | None = Field(default=None, ge=0.0, le=1.0)
+    highly_relevant_works: list[RelevantWork] = Field(default_factory=list)
+    supplement_request: SupplementRequest | None = None
+    read_citations: list[ReviewReadCitation] = Field(default_factory=list)
+    feature_comparisons: list[FeatureComparison] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def validate_review_semantics(self) -> "ReviewerCardDraft":
+        if self.status is ReviewStatus.REVIEWED:
+            if self.verdict is None or not self.verdict_reason or self.confidence is None:
+                raise ValueError("reviewed result requires verdict, verdict_reason and confidence")
+        elif self.verdict is not None:
+            raise ValueError("insufficient_evidence result cannot have verdict")
+        return self
+
+
+class ReviewerSummaryDraft(StrictModel):
+    """Model-owned point synthesis; it cannot introduce reads or evidence objects."""
+
+    novelty_point_id: str = Field(min_length=1)
+    status: ReviewStatus
+    verdict: NoveltyVerdict | None = None
+    verdict_reason: str | None = None
+    confidence: float | None = Field(default=None, ge=0.0, le=1.0)
+    highly_relevant_works: list[RelevantWork] = Field(default_factory=list)
+    supplement_request: SupplementRequest | None = None
+    feature_comparisons: list[FeatureComparison] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def validate_review_semantics(self) -> "ReviewerSummaryDraft":
+        if self.status is ReviewStatus.REVIEWED:
+            if self.verdict is None or not self.verdict_reason or self.confidence is None:
+                raise ValueError("reviewed result requires verdict, verdict_reason and confidence")
+        elif self.verdict is not None:
+            raise ValueError("insufficient_evidence result cannot have verdict")
+        return self
+
+
 class NoveltyConclusion(StrictModel):
     """单个查新点的最终结论；新颖性字段直接继承 Reviewer。"""
 

@@ -536,6 +536,93 @@ def test_reader_budget_rejects_canonical_request_before_execution(arguments) -> 
     assert tool.received == []
 
 
+def test_reviewer_read_budget_rejects_once_then_accepts_smaller_request() -> None:
+    class BatchArguments(ReaderBudgetArguments):
+        reads: list[ReaderBudgetArguments] | None = None
+
+    class BatchReader(ReaderBudgetTool):
+        args_schema = BatchArguments
+
+    tool = BatchReader(actual_chars=3397)
+    model = ScriptedModelClient(
+        ModelResponse(content=None, tool_calls=(ModelToolCall("r1", "reader", {"max_chars": 3397}),)),
+        ModelResponse(content=None, tool_calls=(ModelToolCall("r2", "reader", {"reads": [
+            {"max_chars": 3000}, {"max_chars": 3000}]}),)),
+        ModelResponse(content=None, tool_calls=(ModelToolCall("r3", "reader", {"max_chars": 4603}),)),
+        ModelResponse(content="finished"),
+    )
+    harness = ToolCallHarness(model, ResearcherToolRegistry([tool]), config=ToolCallHarnessConfig(
+        max_turns=5, max_tool_calls=4, max_total_read_chars=8000,
+        finalize_on_budget=True, reserve_final_turn=True, report_budget=True,
+        allow_one_read_budget_correction=True, finalization_instruction="Reviewer final only",
+    ))
+    result = run_harness(harness, system_prompt="system", initial_user_message="task")
+    assert result.final_content == "finished"
+    assert [item.max_chars for item in tool.received] == [3397, 4603]
+    rejected = [json.loads(event.message.content) for event in result.trace
+                if event.kind == "tool_result" and event.message and event.message.tool_call_id == "r2"]
+    assert rejected[0]["requested_chars"] == 6000
+    assert rejected[0]["remaining_chars"] == 4603
+    assert '"remaining_read_chars": 4603' in model.calls[1][0][0].content
+
+
+def test_reviewer_tool_limit_finalizes_without_fifth_tool_request() -> None:
+    tool = ReaderBudgetTool(actual_chars=1)
+    calls = [ModelResponse(content=None, tool_calls=(ModelToolCall(f"r{i}", "reader", {"max_chars": 1}),))
+             for i in range(4)]
+    model = ScriptedModelClient(*calls, ModelResponse(content="review draft"))
+    harness = ToolCallHarness(model, ResearcherToolRegistry([tool]), config=ToolCallHarnessConfig(
+        max_turns=5, max_tool_calls=4, max_total_read_chars=8000,
+        finalize_on_budget=True, reserve_final_turn=True,
+        finalization_instruction="Reviewer final only",
+    ))
+    result = run_harness(harness, system_prompt="system", initial_user_message="task")
+    assert len(tool.received) == 4
+    assert len(model.calls) == 5
+    assert model.calls[-1][1].tools == ()
+    assert model.calls[-1][1].tool_choice == "none"
+    assert "Reviewer final only" in model.calls[-1][0][-1].content
+    assert "cards=[]" not in model.calls[-1][0][-1].content
+    assert result.stop_reason == "tool-call exploration limit reached"
+
+
+def test_reviewer_second_oversized_read_goes_straight_to_finalization() -> None:
+    tool = ReaderBudgetTool(actual_chars=3397)
+    model = ScriptedModelClient(
+        ModelResponse(content=None, tool_calls=(ModelToolCall("r1", "reader", {"max_chars": 3397}),)),
+        ModelResponse(content=None, tool_calls=(ModelToolCall("r2", "reader", {"max_chars": 6000}),)),
+        ModelResponse(content=None, tool_calls=(ModelToolCall("r3", "reader", {"max_chars": 6000}),)),
+        ModelResponse(content="limited result"),
+    )
+    harness = ToolCallHarness(model, ResearcherToolRegistry([tool]), config=ToolCallHarnessConfig(
+        max_turns=5, max_tool_calls=4, max_total_read_chars=8000,
+        finalize_on_budget=True, reserve_final_turn=True,
+        allow_one_read_budget_correction=True,
+        finalization_instruction="Reviewer final only",
+    ))
+    result = run_harness(harness, system_prompt="system", initial_user_message="task")
+    assert [item.max_chars for item in tool.received] == [3397]
+    assert len(model.calls) == 4
+    assert result.final_content == "limited result"
+    assert result.stop_reason.startswith("reader cumulative character budget")
+    assert model.calls[-1][1].tools == ()
+
+
+def test_reviewer_finalization_does_not_execute_requested_tool() -> None:
+    tool = ReaderBudgetTool(actual_chars=1)
+    model = ScriptedModelClient(
+        ModelResponse(content=None, tool_calls=(ModelToolCall("r1", "reader", {"max_chars": 1}),)),
+        ModelResponse(content=None, tool_calls=(ModelToolCall("r2", "reader", {"max_chars": 1}),)),
+    )
+    harness = ToolCallHarness(model, ResearcherToolRegistry([tool]), config=ToolCallHarnessConfig(
+        max_turns=2, max_tool_calls=1, finalize_on_budget=True,
+        reserve_final_turn=True, finalization_instruction="Reviewer final only",
+    ))
+    with pytest.raises(ToolCallHarnessError, match="budget finalization failed"):
+        run_harness(harness, system_prompt="system", initial_user_message="task")
+    assert len(tool.received) == 1
+
+
 def test_reader_budget_accumulates_actual_characters() -> None:
     tool = ReaderBudgetTool(actual_chars=2500)
     responses = (

@@ -1,0 +1,709 @@
+{
+  "source_stage_input": "docs/experiments/20260917_214820_retrieval_repair/runs/full/0001/MF2033k6lC/runtime/run-d606cd37534a47349b905d42c6141768/stages/0012_review_evidence/input.json",
+  "source_sha256": "1a7007a7c9dc4f112d4b306e81064b51f676142e63c3eace64519c1071ee919e",
+  "variants": [
+    "L0_prime",
+    "L1_prime"
+  ],
+  "model": "deepseek-ai/DeepSeek-V4-Flash",
+  "destination": "https://api.siliconflow.cn/v1",
+  "live_authorized": false,
+  "card_schema": {
+    "$defs": {
+      "FeatureComparison": {
+        "additionalProperties": false,
+        "properties": {
+          "feature_id": {
+            "minLength": 1,
+            "title": "Feature Id",
+            "type": "string"
+          },
+          "work_id": {
+            "minLength": 1,
+            "title": "Work Id",
+            "type": "string"
+          },
+          "relation": {
+            "enum": [
+              "supported",
+              "partially_supported",
+              "contradicted",
+              "unknown"
+            ],
+            "title": "Relation",
+            "type": "string"
+          },
+          "basis_type": {
+            "enum": [
+              "direct_statement",
+              "semantic_equivalence",
+              "grounded_inference",
+              "insufficient"
+            ],
+            "title": "Basis Type",
+            "type": "string"
+          },
+          "evidence_refs": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Evidence Refs",
+            "type": "array"
+          },
+          "reason": {
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          },
+          "source_context": {
+            "default": "unknown",
+            "enum": [
+              "author_method",
+              "related_work",
+              "baseline",
+              "ablation",
+              "unknown"
+            ],
+            "title": "Source Context",
+            "type": "string"
+          }
+        },
+        "required": [
+          "feature_id",
+          "work_id",
+          "relation",
+          "basis_type",
+          "reason"
+        ],
+        "title": "FeatureComparison",
+        "type": "object"
+      },
+      "NoveltyVerdict": {
+        "description": "Reviewer 对单个查新点给出的新颖性评价。",
+        "enum": [
+          "novel",
+          "partially_novel",
+          "not_novel"
+        ],
+        "title": "NoveltyVerdict",
+        "type": "string"
+      },
+      "RelevantWork": {
+        "additionalProperties": false,
+        "description": "对查新点结论高度相关、且仅以可信句柄引用的 Work。",
+        "properties": {
+          "work_id": {
+            "minLength": 1,
+            "title": "Work Id",
+            "type": "string"
+          },
+          "card_ids": {
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "title": "Card Ids",
+            "type": "array"
+          },
+          "evidence_ids": {
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "title": "Evidence Ids",
+            "type": "array"
+          },
+          "relevance_reason": {
+            "minLength": 1,
+            "title": "Relevance Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "work_id",
+          "card_ids",
+          "evidence_ids",
+          "relevance_reason"
+        ],
+        "title": "RelevantWork",
+        "type": "object"
+      },
+      "ReviewReadCitation": {
+        "additionalProperties": false,
+        "description": "Model-selected read; the harness resolves its exact quote and evidence ID.",
+        "properties": {
+          "read_id": {
+            "minLength": 1,
+            "title": "Read Id",
+            "type": "string"
+          },
+          "char_start": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Char Start"
+          },
+          "char_end": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Char End"
+          }
+        },
+        "required": [
+          "read_id"
+        ],
+        "title": "ReviewReadCitation",
+        "type": "object"
+      },
+      "ReviewStatus": {
+        "description": "查新点级 Reviewer 的完成状态。",
+        "enum": [
+          "reviewed",
+          "insufficient_evidence"
+        ],
+        "title": "ReviewStatus",
+        "type": "string"
+      },
+      "SupplementRequest": {
+        "additionalProperties": false,
+        "description": "Reviewer 的补检语义建议；V0 不拥有工作流路由权。",
+        "properties": {
+          "reason": {
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          },
+          "missing_aspects": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Missing Aspects",
+            "type": "array"
+          },
+          "suggested_focus": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Suggested Focus",
+            "type": "array"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "title": "SupplementRequest",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "description": "Model-owned single-card judgment; provenance is registered by the harness.",
+    "properties": {
+      "novelty_point_id": {
+        "minLength": 1,
+        "title": "Novelty Point Id",
+        "type": "string"
+      },
+      "status": {
+        "$ref": "#/$defs/ReviewStatus"
+      },
+      "verdict": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/NoveltyVerdict"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "verdict_reason": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Verdict Reason"
+      },
+      "confidence": {
+        "anyOf": [
+          {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "type": "number"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Confidence"
+      },
+      "highly_relevant_works": {
+        "items": {
+          "$ref": "#/$defs/RelevantWork"
+        },
+        "title": "Highly Relevant Works",
+        "type": "array"
+      },
+      "supplement_request": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/SupplementRequest"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "read_citations": {
+        "items": {
+          "$ref": "#/$defs/ReviewReadCitation"
+        },
+        "title": "Read Citations",
+        "type": "array"
+      },
+      "feature_comparisons": {
+        "items": {
+          "$ref": "#/$defs/FeatureComparison"
+        },
+        "title": "Feature Comparisons",
+        "type": "array"
+      }
+    },
+    "required": [
+      "novelty_point_id",
+      "status"
+    ],
+    "title": "ReviewerCardDraft",
+    "type": "object"
+  },
+  "summary_schema": {
+    "$defs": {
+      "FeatureComparison": {
+        "additionalProperties": false,
+        "properties": {
+          "feature_id": {
+            "minLength": 1,
+            "title": "Feature Id",
+            "type": "string"
+          },
+          "work_id": {
+            "minLength": 1,
+            "title": "Work Id",
+            "type": "string"
+          },
+          "relation": {
+            "enum": [
+              "supported",
+              "partially_supported",
+              "contradicted",
+              "unknown"
+            ],
+            "title": "Relation",
+            "type": "string"
+          },
+          "basis_type": {
+            "enum": [
+              "direct_statement",
+              "semantic_equivalence",
+              "grounded_inference",
+              "insufficient"
+            ],
+            "title": "Basis Type",
+            "type": "string"
+          },
+          "evidence_refs": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Evidence Refs",
+            "type": "array"
+          },
+          "reason": {
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          },
+          "source_context": {
+            "default": "unknown",
+            "enum": [
+              "author_method",
+              "related_work",
+              "baseline",
+              "ablation",
+              "unknown"
+            ],
+            "title": "Source Context",
+            "type": "string"
+          }
+        },
+        "required": [
+          "feature_id",
+          "work_id",
+          "relation",
+          "basis_type",
+          "reason"
+        ],
+        "title": "FeatureComparison",
+        "type": "object"
+      },
+      "NoveltyVerdict": {
+        "description": "Reviewer 对单个查新点给出的新颖性评价。",
+        "enum": [
+          "novel",
+          "partially_novel",
+          "not_novel"
+        ],
+        "title": "NoveltyVerdict",
+        "type": "string"
+      },
+      "RelevantWork": {
+        "additionalProperties": false,
+        "description": "对查新点结论高度相关、且仅以可信句柄引用的 Work。",
+        "properties": {
+          "work_id": {
+            "minLength": 1,
+            "title": "Work Id",
+            "type": "string"
+          },
+          "card_ids": {
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "title": "Card Ids",
+            "type": "array"
+          },
+          "evidence_ids": {
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "title": "Evidence Ids",
+            "type": "array"
+          },
+          "relevance_reason": {
+            "minLength": 1,
+            "title": "Relevance Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "work_id",
+          "card_ids",
+          "evidence_ids",
+          "relevance_reason"
+        ],
+        "title": "RelevantWork",
+        "type": "object"
+      },
+      "ReviewStatus": {
+        "description": "查新点级 Reviewer 的完成状态。",
+        "enum": [
+          "reviewed",
+          "insufficient_evidence"
+        ],
+        "title": "ReviewStatus",
+        "type": "string"
+      },
+      "SupplementRequest": {
+        "additionalProperties": false,
+        "description": "Reviewer 的补检语义建议；V0 不拥有工作流路由权。",
+        "properties": {
+          "reason": {
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          },
+          "missing_aspects": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Missing Aspects",
+            "type": "array"
+          },
+          "suggested_focus": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Suggested Focus",
+            "type": "array"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "title": "SupplementRequest",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "description": "Model-owned point synthesis; it cannot introduce reads or evidence objects.",
+    "properties": {
+      "novelty_point_id": {
+        "minLength": 1,
+        "title": "Novelty Point Id",
+        "type": "string"
+      },
+      "status": {
+        "$ref": "#/$defs/ReviewStatus"
+      },
+      "verdict": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/NoveltyVerdict"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "verdict_reason": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Verdict Reason"
+      },
+      "confidence": {
+        "anyOf": [
+          {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "type": "number"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Confidence"
+      },
+      "highly_relevant_works": {
+        "items": {
+          "$ref": "#/$defs/RelevantWork"
+        },
+        "title": "Highly Relevant Works",
+        "type": "array"
+      },
+      "supplement_request": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/SupplementRequest"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "feature_comparisons": {
+        "items": {
+          "$ref": "#/$defs/FeatureComparison"
+        },
+        "title": "Feature Comparisons",
+        "type": "array"
+      }
+    },
+    "required": [
+      "novelty_point_id",
+      "status"
+    ],
+    "title": "ReviewerSummaryDraft",
+    "type": "object"
+  },
+  "material_preflight": [
+    {
+      "card_id": "card_055dcd710a45194158c1d5ba",
+      "catalog": [
+        {
+          "work_id": "wrk_b77f32398f578aa48e68b57c",
+          "artifact_id": "art_082358a7cb0efe62d471f7fb",
+          "namespace": "research_reference",
+          "source_record_id": "src_185d339c2255a694e06b5cd3",
+          "role": "abstract",
+          "content_extent": "full",
+          "content_hash": "649df801788d99ce4c549514e1cf6e624ba9cb64b4c62f455a1e490d8f77c82c",
+          "readable_chars": 1397,
+          "version_label": null,
+          "readable": true,
+          "section_hints": []
+        },
+        {
+          "work_id": "wrk_b77f32398f578aa48e68b57c",
+          "artifact_id": "art_ebc47b0e70f5b363f3d871f2",
+          "namespace": "research_reference",
+          "source_record_id": "src_185d339c2255a694e06b5cd3",
+          "role": "extracted_text",
+          "content_extent": "unknown",
+          "content_hash": "7336b7d0a936c5b8259a8f64c834d9643567ae5e4c98f516cd65479880ba5089",
+          "readable_chars": 70116,
+          "version_label": null,
+          "readable": true,
+          "section_hints": [
+            {
+              "char_start": 620,
+              "heading": "3.1.1 Streaming Clustering Algorithm"
+            },
+            {
+              "char_start": 925,
+              "heading": "6 Related Work"
+            },
+            {
+              "char_start": 12841,
+              "heading": "Figure 3: 2PS: Approach Overview."
+            },
+            {
+              "char_start": 16701,
+              "heading": "3.1.1 Streaming Clustering Algorithm"
+            },
+            {
+              "char_start": 16739,
+              "heading": "Algorithm 1  2PS Phase 1: Clustering"
+            },
+            {
+              "char_start": 21921,
+              "heading": "Algorithm 2  2PS Phase 2: Streaming Partitioning"
+            },
+            {
+              "char_start": 53687,
+              "heading": "6 Related Work"
+            },
+            {
+              "char_start": 61783,
+              "heading": "A streaming algorithm for graph clustering."
+            },
+            {
+              "char_start": 66833,
+              "heading": "Parallel multilevel algorithms for hypergraph partitioning."
+            },
+            {
+              "char_start": 68980,
+              "heading": "methods listed below:"
+            }
+          ]
+        }
+      ],
+      "prompt_sha256": "58929aa72d6ebf43bb9486ee7d41ef733cf206464dd710d8f6a2f513bf0a858f",
+      "card_draft_schema_sha256": "e4fadcdc55bd822336a442e52ca8f3faab8b32f70d901aacffb862ea8394bc9d"
+    },
+    {
+      "card_id": "card_927caf724042beff967b2231",
+      "catalog": [
+        {
+          "work_id": "wrk_dd602dc2d2b07d7e69e6724c",
+          "artifact_id": "art_044b624240993e16c40f3537",
+          "namespace": "research_reference",
+          "source_record_id": "src_14307f6656b2a10b7a5ab99c",
+          "role": "abstract",
+          "content_extent": "full",
+          "content_hash": "9d985bcceed6aa75968f58f3c30446f83206e732512037047482dbab84afef67",
+          "readable_chars": 1313,
+          "version_label": null,
+          "readable": true,
+          "section_hints": []
+        },
+        {
+          "work_id": "wrk_dd602dc2d2b07d7e69e6724c",
+          "artifact_id": "art_239d9f203a9c73612f1cbbaa",
+          "namespace": "research_reference",
+          "source_record_id": "src_14307f6656b2a10b7a5ab99c",
+          "role": "extracted_text",
+          "content_extent": "unknown",
+          "content_hash": "76cbf1943e5b391bf5762d967db2db17e51ea2923993fefd1d3e479a0654e1e3",
+          "readable_chars": 50452,
+          "version_label": null,
+          "readable": true,
+          "section_hints": [
+            {
+              "char_start": 0,
+              "heading": "Window-based Streaming Graph Partitioning Algorithm"
+            },
+            {
+              "char_start": 417,
+              "heading": "2 Related Work"
+            },
+            {
+              "char_start": 489,
+              "heading": "3 Proposed Algorithm"
+            },
+            {
+              "char_start": 591,
+              "heading": "3.4 WStream Algorithm"
+            },
+            {
+              "char_start": 1070,
+              "heading": "Window-based Streaming Graph Partitioning Algorithm"
+            },
+            {
+              "char_start": 7310,
+              "heading": "2 Related Work"
+            },
+            {
+              "char_start": 14640,
+              "heading": "Algorithm"
+            },
+            {
+              "char_start": 16004,
+              "heading": "3 Proposed Algorithm"
+            },
+            {
+              "char_start": 20423,
+              "heading": "Algorithm 1  WStream Algorithm"
+            },
+            {
+              "char_start": 20932,
+              "heading": "Algorithm 2  Greedy Strategy"
+            },
+            {
+              "char_start": 20962,
+              "heading": "3.4 WStream Algorithm"
+            },
+            {
+              "char_start": 44277,
+              "heading": "Streaming balanced graph partitioning algorithms for random graphs."
+            }
+          ]
+        }
+      ],
+      "prompt_sha256": "e130df815c25b7312367e7d1d6bf0f3880988f4d7f912cff404eddac326e3298",
+      "card_draft_schema_sha256": "e4fadcdc55bd822336a442e52ca8f3faab8b32f70d901aacffb862ea8394bc9d"
+    }
+  ],
+  "model_call_limit_pair": 24,
+  "max_request_bytes": 60000,
+  "max_output_tokens_per_call": 2048,
+  "max_tool_calls_per_card": 4,
+  "max_read_chars_per_card": 8000,
+  "card_timeout_seconds": 240,
+  "summary_timeout_seconds": 180,
+  "format_retries": "at most one per card; no recursive repair",
+  "cost_cap_rmb_pair": 1.0
+}
