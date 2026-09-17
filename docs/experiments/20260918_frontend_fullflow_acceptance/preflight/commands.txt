@@ -13,3 +13,7 @@ PATH=/tmp/novelty-e2e-bin:$PATH LD_LIBRARY_PATH=/tmp/novelty-browser-libs/usr/li
 # repo root: NOVELTY_WORKFLOW_MODE=real NOVELTY_RUN_MODEL_BUDGET_RMB=<approved> NOVELTY_RUN_MODEL_MAX_ATTEMPTS=<approved> python -m novelty_agent_framework.main
 # frontend/: pnpm dev; browser http://127.0.0.1:5173 ; API http://127.0.0.1:8010
 # This candidate startup has not been run as a connected browser+real backend session.
+
+# Same-origin read-only check actually run with frozen dist (server stopped afterward).
+# repo root: PYTHONPATH=/tmp/novelty-web-deps:/tmp/nstab-python-deps:backend/src:. NOVELTY_HOST=127.0.0.1 NOVELTY_PORT=8010 NOVELTY_WORKFLOW_MODE=real NOVELTY_RUNS_ROOT=outputs/e2e-acceptance-20260918 NOVELTY_FRONTEND_DIST=frontend/dist python3 -m novelty_agent_framework.main
+# Chromium navigated to http://127.0.0.1:8010/ and GET /api/novelty/health; no POST.

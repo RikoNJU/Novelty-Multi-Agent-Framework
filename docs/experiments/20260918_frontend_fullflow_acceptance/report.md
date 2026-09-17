@@ -1,10 +1,10 @@
 # E2E-ACCEPT-20260918: preflight result
 
-**What ran:** zero-business-call local integration preflight in WSL2, including FastAPI substitute tests, production build, 17 Playwright browser tests, in-process real-mode health check, and a read-only archived Markdown display/download. **What did not run:** a new real PDF business task. This task document proposes, but does not grant, a new paid budget; the previous Reviewer-only cap has ended. No business run ID, fresh report, provider charge or live demonstration candidate exists yet.
+**What ran:** zero-business-call local integration preflight in WSL2, including FastAPI substitute tests, production build, 17 Playwright browser tests, in-process and connected-browser real-mode health checks, and a read-only archived Markdown display/download. **What did not run:** a new real PDF business task. This task document proposes, but does not grant, a new paid budget; the previous Reviewer-only cap has ended. No business run ID, fresh report, provider charge or live demonstration candidate exists yet.
 
 | Acceptance layer | Current result | Evidence and limit |
 |---|---|---|
-| Local preflight | `passed_limited_scope` | 8/8 frontend component tests, TypeScript/build, 17/17 browser tests, 9/9 API + budget tests, 30/30 Runtime/usage/Reviewer regression tests. The browser used cached Chromium and a test-only Vite server; the target demo computer and connected production proxy were not exercised. |
+| Local preflight | `passed_limited_scope` | 8/8 frontend component tests, TypeScript/build, 17/17 browser tests, 9/9 API + budget tests, 30/30 Runtime/usage/Reviewer regression tests. The browser used cached Chromium; a test-only Vite server and a real-mode backend serving frozen static files were each checked. The target demo computer and production proxy were not exercised. |
 | One real execution | `not_run` | No new paid authorization or frozen live trial cap. Proposed mode A and candidate PDF are indexed; neither was submitted. |
 | Retrieval/evidence transfer | `not_assessed` | There is no current real run trace. Existing historical Reviewer concerns remain open. |
 | Actual page display | `passed_limited_scope` for intercepted browser behavior and archived Markdown; `not_run` for current backend | Historical source/download SHA matched. Stage business content is not exposed by the page's `/api/novelty` API. |
@@ -13,7 +13,7 @@
 
 ## Integration findings
 
-The current React page uses `/api/novelty/runs/files` (`paper` field, 30 MiB). The repository also mounts `/api/runs` with a different 25 MiB PDF contract and restart behavior; `docs/frontend/deployment.md` refers to that other stack. `preflight/interface-map.md` records the exact mapping. The page has six progress stages and an authoritative Markdown report path, but no stage-detail endpoint for its task IDs.
+A real-mode backend served the frozen frontend on `127.0.0.1:8010`; the browser loaded the page and health endpoint with zero POSTs and no script error, then the server was stopped. This is a connected read-only preflight, not a business run. The current React page uses `/api/novelty/runs/files` (`paper` field, 30 MiB). The repository also mounts `/api/runs` with a different 25 MiB PDF contract and restart behavior; `docs/frontend/deployment.md` refers to that other stack. `preflight/interface-map.md` records the exact mapping. The page has six progress stages and an authoritative Markdown report path, but no stage-detail endpoint for its task IDs.
 
 Minimal fixes before any paid run added same-intent upload deduplication, rejection of extra PDF parts, a run-scoped pre-dispatch model budget option, actual progress on supplement loops, and correct distinction between semantic evidence insufficiency and execution failure in structured fallback. A lost POST response now blocks another click on the same page. These changes were tested with local substitutes and no real model/search/parser requests. The model budget does not yet account for possible external MinerU billing; this must be resolved before mode A is launched.
 
