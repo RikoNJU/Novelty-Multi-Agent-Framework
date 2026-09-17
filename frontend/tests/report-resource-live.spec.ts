@@ -19,11 +19,16 @@ for (const item of cases) test(`${item.label} 真实后端只读报告预览和�
   await expect(page.getByText('原完整运行失败', { exact: false })).toBeVisible();
   await expect(page.getByText('资源完整性：passed', { exact: false })).toBeVisible();
   await expect(page.getByRole('heading', { name: `recovery-report-${id}.md` })).toBeVisible();
-  await expect(page.getByText('NP-1：', { exact: false }).first()).toBeVisible();
+  for (const pointId of ['NP-1', 'NP-2', 'NP-3']) {
+    await expect(page.getByText(`${pointId}：`, { exact: false }).first()).toBeVisible();
+  }
   if (item.label === 'L1') await expect(page.getByText('technical_error', { exact: false }).first()).toBeVisible();
   const metadata = await request.get(`http://127.0.0.1:5187/api/novelty/report-artifacts/${id}`);
   expect(metadata.status()).toBe(200);
   expect((await metadata.json()).files['report.md'].sha256).toBe(hash);
+  const provenance = await request.get(`http://127.0.0.1:5187/api/novelty/report-artifacts/${id}/provenance`);
+  expect(provenance.status()).toBe(200);
+  expect((await provenance.json()).source_run_status).toBe('FAILED');
   const direct = await request.get(`http://127.0.0.1:5187/api/novelty/report-artifacts/${id}/download`);
   expect(direct.status()).toBe(200);
   expect(direct.headers()['content-type']).toContain('text/markdown');
