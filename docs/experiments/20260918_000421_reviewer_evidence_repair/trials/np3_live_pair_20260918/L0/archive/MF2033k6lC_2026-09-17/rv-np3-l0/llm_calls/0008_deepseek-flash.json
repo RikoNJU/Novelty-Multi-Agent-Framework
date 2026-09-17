@@ -1,0 +1,77 @@
+{
+  "alias": "deepseek-flash",
+  "billing": {
+    "amount": 0.012639,
+    "currency": "RMB",
+    "pricing_table": "/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/config/llm_pricing.json",
+    "rate_name": "default",
+    "rates_per_unit": {
+      "cached_input": 0.3,
+      "input": 3.0,
+      "output": 9.0
+    },
+    "status": "PRICED",
+    "unit_tokens": 1000000
+  },
+  "client_call_id": "6bb1d071367f4c7aa1d78e78e2d3245f",
+  "duration_ms": 3971,
+  "error": null,
+  "llm_call_id": "llm_0008",
+  "message_count": 2,
+  "model": "deepseek-ai/DeepSeek-V4-Flash",
+  "parent_stage_id": "stage_0003",
+  "provider": "openai_compatible",
+  "provider_usage": {
+    "completion_tokens": 394,
+    "completion_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "prompt_cache_hit_tokens": 0,
+    "prompt_cache_miss_tokens": 3031,
+    "prompt_tokens": 3031,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "total_tokens": 3425
+  },
+  "request_id": "01a0b030ddad331609c43597dfc07c21",
+  "request_options": {
+    "endpoint": "https://api.siliconflow.cn/v1/chat/completions",
+    "timeout_seconds": 180
+  },
+  "request_payload": {
+    "enable_thinking": false,
+    "max_tokens": 2048,
+    "messages": [
+      {
+        "content": "你是查新点级汇总 Reviewer。综合带索引的单卡核验结果和已核验关键引文，\n输出 NoveltyPointReview。单卡结果是派生分析，不是原始证据。\n必须区分单篇公开完整组合与多篇分别公开部分特征，保留部分相关文献。\n单卡失败、证据不足及 quote_truncated=true 的局限必须保留；截短引文\n未展示的内容不能当作不存在。摘要未说明机制不能改写为文献未采用机制。\n若裁定依赖未核验的关键差异，返回 insufficient_evidence，在\nsupplement_request 中说明待复核索引；已证实的有限结论仍可保留。\n本轮不可调用工具，不得用模型记忆填补缺口；只能引用输入已核验的\nwork_id、card_id 和 evidence_id。网页补充资料不得用于裁定。\nkey_quotes 中包含原证据与单卡新登记的原文摘录；仅引用实际展示的片段。\nquote_truncated 或 summary_input_complete=false 的未展示内容不得视为已核验。\n不因否定词有无决定技术关系，结合特征对应和原文语境判断。\n理由简洁，不重复逐卡全文；只输出严格 JSON。\n区分原文明确支持的事实与未核验的特征。摘要、局部片段或截短引文未提及某特征，不能证明文献未采用该特征；取得全文也不等于已读到关键段落。若最终裁定依赖尚未核验的关键差异，返回 status=insufficient_evidence，说明缺少的比较证据，不得仅降低 confidence 后继续裁定。保留已证实的局部重合；多篇分别覆盖部分特征不等于单篇公开完整组合。检索或获取失败、零命中、未展示证据均不能支持新颖性。不影响当前有限结论的次要未知可以作为局限保留。",
+        "role": "system"
+      },
+      {
+        "content": "{\"today\": \"2026-09-17\", \"novelty_point\": {\"point_id\": \"NP-3\", \"claim\": \"提出一种基于边分割的图流划分算法Sketch-DBH，利用Count-Min Sketch存储节点度数信息，并使用最小堆维护高频节点信息，实现常数时间内返回查询结果并生成子图编号，确保负载均衡。\", \"claim_en\": \"Propose an edge-segmentation-based graph stream partitioning algorithm Sketch-DBH, which uses Count-Min Sketch to store node degree information and a min-heap to maintain high-frequency node information, enabling constant-time query results and generating subgraph IDs to ensure load balancing.\", \"technical_features\": [\"使用Count-Min Sketch概率数据结构存储每个节点的度数信息\", \"使用最小堆维护图流数据中的高频节点信息\", \"在常数时间内返回查询结果\", \"根据节点度数信息生成单条图流数据即将被分配到的子图编号\", \"高效完成大规模图流数据的划分且确保负载均衡\"], \"technical_features_en\": [\"Use Count-Min Sketch probabilistic data structure to store degree information of each node\", \"Use a min-heap to maintain high-frequency node information in graph stream data\", \"Return query results in constant time\", \"Generate the subgraph ID to which a single graph stream data item will be assigned based on node degree information\", \"Efficiently partition large-scale graph stream data and ensure load balancing\"], \"source_locations\": [\"作者贡献段2：提出了一种新的基于边分割的图流划分算法——Sketch-DBH，用于处理大规模图流数据下的子图划分问题。该算法通过Count-Min Sketch 这一概率数据结构存储每个节点的度数信息，并使用一个最小堆维护图流数据中的高频节点信息，使其可以在常数时间内返回查询结果并以此根据节点度数信息生成单条图流数据即将被分配到的子图编号。Sketch-DBH 算法可以高效完成大规模图流数据的划分且确保负载均衡\"]}, \"card_reviews\": [{\"index\": 0, \"card_id\": \"card_055dcd710a45194158c1d5ba\", \"novelty_point_id\": \"NP-3\", \"status\": \"completed\", \"document_title\": \"2PS: High-Quality Edge Partitioning with Two-Phase Streaming\", \"review\": {\"novelty_point_id\": \"NP-3\", \"status\": \"insufficient_evidence\", \"verdict\": null, \"verdict_reason\": null, \"confidence\": null, \"highly_relevant_works\": [], \"supplement_request\": {\"reason\": \"Reviewer 无法完成可靠判定：ValueError: model cannot assign review_evidence\", \"missing_aspects\": [], \"suggested_focus\": []}, \"feature_comparisons\": [], \"incomplete_reason\": \"technical_error\"}, \"key_quotes\": [], \"omitted_quote_count\": 0, \"summary_input_complete\": true}, {\"index\": 1, \"card_id\": \"card_927caf724042beff967b2231\", \"novelty_point_id\": \"NP-3\", \"status\": \"completed\", \"document_title\": \"Window-based Streaming Graph Partitioning Algorithm\", \"review\": {\"novelty_point_id\": \"NP-3\", \"status\": \"insufficient_evidence\", \"verdict\": null, \"verdict_reason\": null, \"confidence\": null, \"highly_relevant_works\": [], \"supplement_request\": {\"reason\": \"Reviewer 无法完成可靠判定：ValueError: model cannot assign review_evidence\", \"missing_aspects\": [], \"suggested_focus\": []}, \"feature_comparisons\": [], \"incomplete_reason\": \"technical_error\"}, \"key_quotes\": [], \"omitted_quote_count\": 0, \"summary_input_complete\": true}], \"review_schema\": {\"$defs\": {\"FeatureComparison\": {\"additionalProperties\": false, \"properties\": {\"feature_id\": {\"minLength\": 1, \"title\": \"Feature Id\", \"type\": \"string\"}, \"work_id\": {\"minLength\": 1, \"title\": \"Work Id\", \"type\": \"string\"}, \"relation\": {\"enum\": [\"supported\", \"partially_supported\", \"contradicted\", \"unknown\"], \"title\": \"Relation\", \"type\": \"string\"}, \"basis_type\": {\"enum\": [\"direct_statement\", \"semantic_equivalence\", \"grounded_inference\", \"insufficient\"], \"title\": \"Basis Type\", \"type\": \"string\"}, \"evidence_refs\": {\"items\": {\"type\": \"string\"}, \"title\": \"Evidence Refs\", \"type\": \"array\"}, \"reason\": {\"minLength\": 1, \"title\": \"Reason\", \"type\": \"string\"}, \"source_context\": {\"default\": \"unknown\", \"enum\": [\"author_method\", \"related_work\", \"baseline\", \"ablation\", \"unknown\"], \"title\": \"Source Context\", \"type\": \"string\"}}, \"required\": [\"feature_id\", \"work_id\", \"relation\", \"basis_type\", \"reason\"], \"title\": \"FeatureComparison\", \"type\": \"object\"}, \"NoveltyVerdict\": {\"description\": \"Reviewer 对单个查新点给出的新颖性评价。\", \"enum\": [\"novel\", \"partially_novel\", \"not_novel\"], \"title\": \"NoveltyVerdict\", \"type\": \"string\"}, \"RelevantWork\": {\"additionalProperties\": false, \"description\": \"对查新点结论高度相关、且仅以可信句柄引用的 Work。\", \"properties\": {\"work_id\": {\"minLength\": 1, \"title\": \"Work Id\", \"type\": \"string\"}, \"card_ids\": {\"items\": {\"type\": \"string\"}, \"minItems\": 1, \"title\": \"Card Ids\", \"type\": \"array\"}, \"evidence_ids\": {\"items\": {\"type\": \"string\"}, \"minItems\": 1, \"title\": \"Evidence Ids\", \"type\": \"array\"}, \"relevance_reason\": {\"minLength\": 1, \"title\": \"Relevance Reason\", \"type\": \"string\"}}, \"required\": [\"work_id\", \"card_ids\", \"evidence_ids\", \"relevance_reason\"], \"title\": \"RelevantWork\", \"type\": \"object\"}, \"ReviewEvidence\": {\"additionalProperties\": false, \"properties\": {\"evidence_id\": {\"minLength\": 1, \"title\": \"Evidence Id\", \"type\": \"string\"}, \"review_id\": {\"minLength\": 1, \"title\": \"Review Id\", \"type\": \"string\"}, \"origin_card_id\": {\"minLength\": 1, \"title\": \"Origin Card Id\", \"type\": \"string\"}, \"novelty_point_id\": {\"minLength\": 1, \"title\": \"Novelty Point Id\", \"type\": \"string\"}, \"work_id\": {\"minLength\": 1, \"title\": \"Work Id\", \"type\": \"string\"}, \"source_record_id\": {\"anyOf\": [{\"type\": \"string\"}, {\"type\": \"null\"}], \"default\": null, \"title\": \"Source Record Id\"}, \"artifact_id\": {\"minLength\": 1, \"title\": \"Artifact Id\", \"type\": \"string\"}, \"namespace\": {\"minLength\": 1, \"title\": \"Namespace\", \"type\": \"string\"}, \"artifact_hash\": {\"minLength\": 1, \"title\": \"Artifact Hash\", \"type\": \"string\"}, \"read_id\": {\"minLength\": 1, \"title\": \"Read Id\", \"type\": \"string\"}, \"char_start\": {\"minimum\": 0, \"title\": \"Char Start\", \"type\": \"integer\"}, \"char_end\": {\"minimum\": 0, \"title\": \"Char End\", \"type\": \"integer\"}, \"exact_quote\": {\"minLength\": 1, \"title\": \"Exact Quote\", \"type\": \"string\"}, \"role\": {\"minLength\": 1, \"title\": \"Role\", \"type\": \"string\"}, \"content_extent\": {\"minLength\": 1, \"title\": \"Content Extent\", \"type\": \"string\"}, \"version_label\": {\"anyOf\": [{\"type\": \"string\"}, {\"type\": \"null\"}], \"default\": null, \"title\": \"Version Label\"}}, \"required\": [\"evidence_id\", \"review_id\", \"origin_card_id\", \"novelty_point_id\", \"work_id\", \"artifact_id\", \"namespace\", \"artifact_hash\", \"read_id\", \"char_start\", \"char_end\", \"exact_quote\", \"role\", \"content_extent\"], \"title\": \"ReviewEvidence\", \"type\": \"object\"}, \"ReviewReadCitation\": {\"additionalProperties\": false, \"description\": \"Model-selected read; the harness resolves its exact quote and evidence ID.\", \"properties\": {\"read_id\": {\"minLength\": 1, \"title\": \"Read Id\", \"type\": \"string\"}, \"char_start\": {\"anyOf\": [{\"minimum\": 0, \"type\": \"integer\"}, {\"type\": \"null\"}], \"default\": null, \"title\": \"Char Start\"}, \"char_end\": {\"anyOf\": [{\"minimum\": 0, \"type\": \"integer\"}, {\"type\": \"null\"}], \"default\": null, \"title\": \"Char End\"}}, \"required\": [\"read_id\"], \"title\": \"ReviewReadCitation\", \"type\": \"object\"}, \"ReviewStatus\": {\"description\": \"查新点级 Reviewer 的完成状态。\", \"enum\": [\"reviewed\", \"insufficient_evidence\"], \"title\": \"ReviewStatus\", \"type\": \"string\"}, \"SupplementRequest\": {\"additionalProperties\": false, \"description\": \"Reviewer 的补检语义建议；V0 不拥有工作流路由权。\", \"properties\": {\"reason\": {\"minLength\": 1, \"title\": \"Reason\", \"type\": \"string\"}, \"missing_aspects\": {\"items\": {\"type\": \"string\"}, \"title\": \"Missing Aspects\", \"type\": \"array\"}, \"suggested_focus\": {\"items\": {\"type\": \"string\"}, \"title\": \"Suggested Focus\", \"type\": \"array\"}}, \"required\": [\"reason\"], \"title\": \"SupplementRequest\", \"type\": \"object\"}}, \"additionalProperties\": false, \"description\": \"一个 NoveltyPoint 的结构化信息判定结果。\", \"properties\": {\"novelty_point_id\": {\"minLength\": 1, \"title\": \"Novelty Point Id\", \"type\": \"string\"}, \"status\": {\"$ref\": \"#/$defs/ReviewStatus\"}, \"verdict\": {\"anyOf\": [{\"$ref\": \"#/$defs/NoveltyVerdict\"}, {\"type\": \"null\"}], \"default\": null}, \"verdict_reason\": {\"anyOf\": [{\"type\": \"string\"}, {\"type\": \"null\"}], \"default\": null, \"title\": \"Verdict Reason\"}, \"confidence\": {\"anyOf\": [{\"maximum\": 1.0, \"minimum\": 0.0, \"type\": \"number\"}, {\"type\": \"null\"}], \"default\": null, \"title\": \"Confidence\"}, \"highly_relevant_works\": {\"items\": {\"$ref\": \"#/$defs/RelevantWork\"}, \"title\": \"Highly Relevant Works\", \"type\": \"array\"}, \"supplement_request\": {\"anyOf\": [{\"$ref\": \"#/$defs/SupplementRequest\"}, {\"type\": \"null\"}], \"default\": null}, \"read_citations\": {\"items\": {\"$ref\": \"#/$defs/ReviewReadCitation\"}, \"title\": \"Read Citations\", \"type\": \"array\"}, \"review_evidence\": {\"items\": {\"$ref\": \"#/$defs/ReviewEvidence\"}, \"title\": \"Review Evidence\", \"type\": \"array\"}, \"feature_comparisons\": {\"items\": {\"$ref\": \"#/$defs/FeatureComparison\"}, \"title\": \"Feature Comparisons\", \"type\": \"array\"}, \"incomplete_reason\": {\"anyOf\": [{\"enum\": [\"semantic_evidence\", \"material_unavailable\", \"budget_exhausted\", \"technical_error\"], \"type\": \"string\"}, {\"type\": \"null\"}], \"default\": null, \"title\": \"Incomplete Reason\"}}, \"required\": [\"novelty_point_id\", \"status\"], \"title\": \"NoveltyPointReview\", \"type\": \"object\"}}",
+        "role": "user"
+      }
+    ],
+    "model": "deepseek-ai/DeepSeek-V4-Flash",
+    "temperature": 0,
+    "tool_choice": "none"
+  },
+  "response": {
+    "content": "{\n  \"novelty_point_id\": \"NP-3\",\n  \"status\": \"insufficient_evidence\",\n  \"verdict\": null,\n  \"verdict_reason\": null,\n  \"confidence\": null,\n  \"highly_relevant_works\": [],\n  \"supplement_request\": {\n    \"reason\": \"两张单卡均因技术错误（ValueError: model cannot assign review_evidence）未能完成核验，无任何已核验证据可支持裁定。需重新核验以下索引：card_055dcd710a45194158c1d5ba（2PS: High-Quality Edge Partitioning with Two-Phase Streaming）和 card_927caf724042beff967b2231（Window-based Streaming Graph Partitioning Algorithm），重点比较其是否公开了Count-Min Sketch存储节点度数、最小堆维护高频节点、常数时间查询及基于度数生成子图编号的完整组合。\",\n    \"missing_aspects\": [\n      \"两篇文献是否使用Count-Min Sketch存储节点度数信息\",\n      \"两篇文献是否使用最小堆维护高频节点信息\",\n      \"两篇文献是否实现常数时间查询并基于度数生成子图编号\",\n      \"两篇文献是否公开了上述特征的完整组合\"\n    ],\n    \"suggested_focus\": [\n      \"重新核验card_055dcd710a45194158c1d5ba和card_927caf724042beff967b2231，提取关键引文并完成证据分配\",\n      \"若单篇文献公开完整组合，则判定not_novel；若多篇分别覆盖部分特征，则保留部分相关文献并评估组合新颖性\"\n    ]\n  },\n  \"read_citations\": [],\n  \"review_evidence\": [],\n  \"feature_comparisons\": [],\n  \"incomplete_reason\": \"technical_error\"\n}",
+    "tool_calls": []
+  },
+  "run_id": "rv-np3-l0",
+  "scope": {},
+  "stage_name": "summarize_reviews",
+  "started_at": "2026-09-17T16:26:27.618628+00:00",
+  "status": "SUCCESS",
+  "tokens": {
+    "available": true,
+    "billable_breakdown_available": true,
+    "cached_input_tokens": 0,
+    "input_tokens": 3031,
+    "output_tokens": 394,
+    "reasoning_tokens": 0,
+    "total_tokens": 3425
+  }
+}
