@@ -14,6 +14,7 @@ from novelty_agent_framework.agents.evidence_reviewer import (
     EvidenceReviewerConfig, NoveltyEvidenceReviewer, _compact_summary_rows, _extract_json, _guard_unsupported_absence,
     _legacy_guard_shadow, _register_review_reads, _review_failure_cause,
     _validate_review_references, _summary_incomplete_reason, _summary_model_rows,
+    _verify_summary_payload,
 )
 from novelty_agent_framework.persistence import ReferenceStore
 from novelty_agent_framework.core import RuntimeArtifactManager, RuntimeDebugConfig
@@ -102,6 +103,63 @@ def test_selected_read_quote_reaches_summary_without_repeated_feature_ref() -> N
     assert any(q["evidence_id"] == new_id and q["quote"] == read["text"]
                for q in rows[0]["key_quotes"])
     assert new_id in json.dumps(_summary_model_rows(rows), ensure_ascii=False)
+    summary = {"novelty_point_id": "NP-3", "status": "insufficient_evidence",
+               "supplement_request": {"reason": "Synthetic: further comparison required"}}
+    summary_client = _ScriptedClient(ModelResponse(content=json.dumps(summary)))
+    asyncio.run(NoveltyEvidenceReviewer(summary_client).summarize_reviews(request, [
+        {"index": 0, "card_id": CARD_ID, "novelty_point_id": "NP-3",
+         "status": "completed", "review": review.model_dump(mode="json")}]))
+    sent = summary_client.calls[0][0][1].content
+    assert any(q["evidence_id"] == new_id and q["quote"] == read["text"]
+               for q in json.loads(sent)["card_reviews"][0]["key_quotes"])
+    assert any(item["evidence_id"] == new_id and item["display_status"] == "full"
+               for item in _verify_summary_payload(rows, sent))
+    broken = json.loads(sent)
+    broken["card_reviews"][0]["key_quotes"] = []
+    with pytest.raises(ValueError, match="lost selected evidence"):
+        _verify_summary_payload(rows, json.dumps(broken))
+
+
+def test_omitted_quote_is_not_a_summary_citable_reference() -> None:
+    request = fixed_request()
+    base = request.evidence[0]
+    second = base.model_copy(update={"evidence_id": "ev_synthetic_second"})
+    long_evidence = base.model_copy(update={"quote": "x" * 12_000})
+    card = request.cards[0].model_copy(update={"evidence_ids": [base.evidence_id, second.evidence_id]})
+    request = request.model_copy(update={"cards": [card], "evidence": [long_evidence, second]})
+    review = NoveltyPointReview(novelty_point_id="NP-3", status="insufficient_evidence",
+        highly_relevant_works=[{"work_id": base.work_id, "card_ids": [CARD_ID],
+            "evidence_ids": [base.evidence_id, second.evidence_id], "relevance_reason": "synthetic"}])
+    rows, ids = _compact_summary_rows(request, [{"index": 0, "card_id": CARD_ID,
+        "novelty_point_id": "NP-3", "status": "completed", "review": review.model_dump(mode="json")}])
+    quote = next(item for item in rows[0]["key_quotes"] if item["evidence_id"] == second.evidence_id)
+    assert quote["display_status"] == "omitted" and quote["displayed_chars"] == 0
+    assert second.evidence_id not in ids
+    assert base.evidence_id in ids
+
+
+def test_summary_assembly_survives_synchronized_identity_remap() -> None:
+    request = fixed_request()
+    old_card, old_evidence = request.cards[0], request.evidence[0]
+    new_point = request.novelty_point.model_copy(update={"point_id": "NP-91"})
+    new_evidence = old_evidence.model_copy(update={"evidence_id": "ev_remapped_91",
+                                           "work_id": "wrk_remapped_91",
+                                           "novelty_point_id": "NP-91"})
+    new_card = old_card.model_copy(update={"card_id": "card_remapped_91",
+                                    "novelty_point_id": "NP-91",
+                                    "evidence_ids": ["ev_remapped_91"]})
+    request = request.model_copy(update={"subject_paper_id": "paper_remapped_91",
+        "novelty_point": new_point,
+        "tasks": [task.model_copy(update={"novelty_point_id": "NP-91"}) for task in request.tasks],
+        "cards": [new_card], "evidence": [new_evidence]})
+    review = NoveltyPointReview(novelty_point_id="NP-91", status="insufficient_evidence",
+        highly_relevant_works=[{"work_id": "wrk_remapped_91", "card_ids": ["card_remapped_91"],
+            "evidence_ids": ["ev_remapped_91"], "relevance_reason": "synthetic"}])
+    rows, ids = _compact_summary_rows(request, [{"index": 7, "card_id": "card_remapped_91",
+        "novelty_point_id": "NP-91", "status": "completed", "review": review.model_dump(mode="json")}])
+    assert ids == {"ev_remapped_91"}
+    assert rows[0]["key_quotes"][0]["quote"] == old_evidence.quote
+    assert rows[0]["key_quotes"][0]["semantic_support"] == "unassessed"
 
 
 def test_reviewer_contract_violation_gets_one_strict_repair() -> None:

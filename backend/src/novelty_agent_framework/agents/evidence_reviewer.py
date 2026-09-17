@@ -100,6 +100,8 @@ _CARD_FALLBACK = (
     "使用 ReviewerCardDraft 格式；verdict 仅描述该文献与查新点的关系。"
     "记录已覆盖特征、差异、引用可靠性和证据局限；部分相关文献也必须保留。"
     "优先使用输入 Evidence 原文，仅在具体疑问时回读。理由不超过300字。"
+    "每项特征判断引用直接支持它的 Evidence ID 或真实 read_id，说明机制、范围和归属。"
+    "导航片段不充当技术依据；未提及属于未知，冲突须有同一条件下不相容的依据。"
 )
 
 _SUMMARY_FALLBACK = (
@@ -109,6 +111,8 @@ _SUMMARY_FALLBACK = (
     "本轮不可调用工具，不得用模型记忆填补缺口；只能引用输入已核验的 "
     "work_id、card_id 和 evidence_id。网页补充资料不得用于裁定。"
     "必要时返回 insufficient_evidence，并在 supplement_request 中列明待复核索引。"
+    "只引用 key_quotes 中实际展示的非空片段，部分展示仅支持已展示范围。"
+    "逐项核对特征判断与原文；单卡结论不能直接扩大为整体证明。"
     "理由简洁，只输出严格 JSON。"
 )
 
@@ -333,18 +337,29 @@ class NoveltyEvidenceReviewer(EvidenceReviewer):
         deadline = time.monotonic() + self.config.summary_timeout_seconds
         try:
             rows, validated_ids = _compact_summary_rows(request, card_reviews)
+            projected = _summary_model_rows(rows)
             user = json.dumps({
                 "today": datetime.now(timezone.utc).date().isoformat(),
                 "novelty_point": request.novelty_point.model_dump(mode="json"),
-                "card_reviews": _summary_model_rows(rows),
+                "card_reviews": projected,
                 "review_schema": ReviewerSummaryDraft.model_json_schema(),
             }, ensure_ascii=False)
+            lineage = _verify_summary_payload(rows, user)
+            _record_review_event("summary_payload_prepared", request, {
+                "sent_to_model": False, "payload_sha256": hashlib.sha256(user.encode()).hexdigest(),
+                "evidence_lineage": lineage})
             summary_options = replace(self.model_options or ModelCallOptions(), tools=(), tool_choice="none",
                                       response_format=None, timeout_seconds=self.config.summary_timeout_seconds)
+            _record_review_event("summary_request_dispatched", request, {
+                "payload_sha256": hashlib.sha256(user.encode()).hexdigest(),
+                "actual_model_input": user, "evidence_lineage": lineage})
             response = await asyncio.wait_for(self._client().acomplete(
                 [ChatMessage(role="system", content=system), ChatMessage(role="user", content=user)],
                 options=summary_options,
             ), max(0.001, deadline - time.monotonic()))
+            _record_review_event("summary_response_received", request, {
+                "payload_sha256": hashlib.sha256(user.encode()).hexdigest(),
+                "raw_model_output": response.content})
             if response.tool_calls:
                 raise ValueError("summary attempted a tool call")
             try:
@@ -366,9 +381,10 @@ class NoveltyEvidenceReviewer(EvidenceReviewer):
             incremental = [ReviewEvidence.model_validate(item) for row in rows
                            for item in row.get("review_evidence", [])]
             review = review.model_copy(update={"review_evidence": incremental})
-            if any(evidence_id not in validated_ids for work in review.highly_relevant_works
-                   for evidence_id in work.evidence_ids):
-                raise ValueError("summary cites evidence not verified by a card review")
+            summary_refs = [eid for work in review.highly_relevant_works for eid in work.evidence_ids]
+            summary_refs += [eid for item in review.feature_comparisons for eid in item.evidence_refs]
+            if any(evidence_id not in validated_ids for evidence_id in summary_refs):
+                raise ValueError("summary cites evidence not verified in card stage or without a displayed quote")
             review = _validate_review_references(review, request)
             _record_review_event("summary_result", request, {
                 "rows": rows, "actual_model_input": user,
@@ -893,10 +909,12 @@ def _compact_summary_rows(request, card_reviews):
         # registered by the harness. Carry their quotes even when the model
         # neglected to repeat the new IDs in work or feature references.
         ids = list(dict.fromkeys(ids + [item.evidence_id for item in review.review_evidence]))
-        validated_ids.update(ids)
         compact["review"] = review.model_dump(mode="json")
         additions = {item.evidence_id: item for item in review.review_evidence}
-        ids.sort(key=lambda eid: eid not in additions)
+        # Explicit argument references take precedence over selected background reads.
+        cited = {eid for work in review.highly_relevant_works for eid in work.evidence_ids}
+        cited.update(eid for item in review.feature_comparisons for eid in item.evidence_refs)
+        ids.sort(key=lambda eid: eid not in cited)
         compact["review_evidence"] = [item.model_dump(mode="json") for item in review.review_evidence]
         budget = 12_000
         quotes = []
@@ -905,16 +923,24 @@ def _compact_summary_rows(request, card_reviews):
             if item is None:
                 raise ValueError("summary cites an unknown evidence_id")
             quote = item.exact_quote if isinstance(item, ReviewEvidence) else item.quote
-            if len(quote) > budget:
-                quotes.append({"evidence_id": eid, "work_id": item.work_id,
-                    "artifact_id": item.artifact_id, "quote": quote[:max(0,budget)],
-                    "quote_truncated": True, "original_chars": len(quote)})
-                budget = 0
-            else:
-                quotes.append({"evidence_id": eid, "work_id": item.work_id,
-                    "artifact_id": item.artifact_id, "quote": quote,
-                    "quote_truncated": False, "original_chars": len(quote)})
-                budget -= len(quote)
+            shown = quote[:budget]
+            status = "omitted" if not shown else "full" if len(shown) == len(quote) else "partial"
+            payload = {"evidence_id": eid, "work_id": item.work_id,
+                "artifact_id": item.artifact_id, "quote": shown,
+                "quote_truncated": status != "full", "display_status": status,
+                "displayed_chars": len(shown), "original_chars": len(quote),
+                "quote_sha256": hashlib.sha256(quote.encode()).hexdigest(),
+                "displayed_sha256": hashlib.sha256(shown.encode()).hexdigest(),
+                "selected": eid in additions, "cited_by_card": eid in cited,
+                "semantic_support": "unassessed"}
+            for field in ("source_record_id", "role", "content_extent", "version_label",
+                          "char_start", "char_end", "read_id", "artifact_hash"):
+                if hasattr(item, field):
+                    payload[field] = getattr(item, field)
+            quotes.append(payload)
+            if shown:
+                validated_ids.add(eid)
+            budget -= len(shown)
         compact["key_quotes"] = quotes
         compact["omitted_quote_count"] = sum(not item["quote"] for item in quotes)
         compact["summary_input_complete"] = all(not item["quote_truncated"] for item in quotes)
@@ -932,6 +958,26 @@ def _summary_model_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
                               if key not in {"review_evidence", "read_citations"}}
         projected.append(item)
     return projected
+
+
+def _verify_summary_payload(rows: list[dict[str, Any]], user: str) -> list[dict[str, Any]]:
+    """Check the serialized user message, the last local boundary before dispatch."""
+    actual = json.loads(user)["card_reviews"]
+    if len(actual) != len(rows):
+        raise ValueError("summary payload lost a card review")
+    lineage = []
+    for original, sent in zip(rows, actual):
+        if original["card_id"] != sent["card_id"]:
+            raise ValueError("summary payload changed card order")
+        expected = original.get("key_quotes", [])
+        displayed = sent.get("key_quotes", [])
+        if len(expected) != len(displayed):
+            raise ValueError("summary payload lost selected evidence")
+        for source, item in zip(expected, displayed):
+            if source != item or hashlib.sha256(item["quote"].encode()).hexdigest() != item["displayed_sha256"]:
+                raise ValueError("summary payload changed a displayed quote")
+            lineage.append({"card_id": sent["card_id"], **item})
+    return lineage
 
 
 def _summary_incomplete_reason(rows: list[dict[str, Any]]) -> str:

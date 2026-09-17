@@ -21,6 +21,12 @@ system: |
   - 对决定结论的特征可输出 feature_comparisons，feature_id 只取固定目录中的 ID；
     supported/partially_supported/contradicted 必须引用原 Evidence ID 或实际 read_id。
     关键词未命中、摘要未提及，以及采用 A，都不能推出全文排除 B。
+    每项引用应直接支持本项判断；若正文片段用于判断，请在该项 evidence_refs 引用真实 read_id。
+    导航或背景回读可登记，但不能代替技术依据；摘要能支持的有限事实仍可用摘要。
+    例：feature_id=F1、relation=supported、evidence_refs=[实际 read_id]，仅当其原文
+    确实支持 F1 时成立。reason 说明机制对应与范围，不能把解释写成原文 quote。
+    partially_supported 应说明覆盖的部分；contradicted 需要相同对象、条件和位置下
+    不相容的依据；材料未交代则为 unknown。次要 unknown 不自动否决有限结论。
   - “没有检索到”不能证明某项技术不存在。
   - 区分原文明确支持的事实与未核验的特征。摘要、局部片段和截短引文未提及某特征，
     不能证明文献未采用；取得全文不等于已读到关键段落。

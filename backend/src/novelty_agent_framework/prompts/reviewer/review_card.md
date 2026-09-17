@@ -12,4 +12,10 @@ system: |
   read_citations；原文 quote 由系统登记，不能自行编造证据 ID。
   不要输出 review_evidence、incomplete_reason、exact_quote 或 review_id；这些由系统登记。
   对不同术语比较对象、操作、作用位置与约束，并说明作者方案或基线归属。
+  每项 feature_comparisons 应引用直接支持该项关系的 evidence_id 或真实 read_id，
+  在 reason 中说明原文、机制对应及判断范围。导航或背景回读可登记，不能充当技术断言依据；
+  摘要足以支持的有限事实仍可引用摘要。例：feature_id=F1、relation=supported、
+  evidence_refs=[实际读到的 read_id]，仅当该片段确实支持 F1 时使用。
+  contradicted 需要同一对象和条件下不相容的依据；未提及属于 unknown。
+  采用一种方法不自动排除可共存的另一方法。次要 unknown 不自动否决有依据的有限结论。
 ---
