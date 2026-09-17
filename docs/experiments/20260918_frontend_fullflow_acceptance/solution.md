@@ -8,3 +8,7 @@
 - Added a browser-only historical report replay test using the real archived Markdown. The test explicitly labels the screenshot as a replay and asserts zero new business POSTs; this is not a production archive endpoint.
 
 No prompt, research source, Reviewer semantic rule, sampling parameter or per-paper branch was changed. Local tests and build commands are in `preflight/commands.txt`.
+
+## 真实运行结果（冻结代码未变）
+
+预检后以冻结版本和 15 元 / 80 次请求上限启动了一次模式 A 运行。没有追加产品代码修改。运行至报告合成时，Coordinator 两次 4096 内容 token 截断导致 JSON 解析失败；本轮只归档诊断，不热改 Prompt/输出上限，也不新建第二次付费 run。后续若修此问题，应单列任务、重新估算模型预算，并在新批准范围内验证，不能将本轮失败产物改记为成功。

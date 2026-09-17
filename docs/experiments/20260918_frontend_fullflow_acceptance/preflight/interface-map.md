@@ -12,3 +12,5 @@
 | Documentation | `frontend/README.md` describes page stack and `/api/novelty/runs/files`; `docs/frontend/deployment.md` describes the separate `/api/runs` stack and npm/Node 22.16. Repository lock is `frontend/pnpm-lock.yaml`; actual installed local Node is 24.18.1, no pnpm executable on PATH. | Use this map for this trial. Do not combine the two API contracts. |
 
 Health check was `GET /api/novelty/health → 200 ready/real`; `GET /api/novelty/runs/no-such-task → 404`. The other stack's `GET /api/health → 200` advertises 25 MiB, and is not the page's upload limit. All three were in-process read-only checks with a temporary runs directory. A real-mode backend served the frozen page for a read-only browser check and was then stopped. A production proxy and real task creation were not exercised.
+
+Post-preflight note: the authorized single live run subsequently exercised `/api/novelty/runs/files` and returned one task ID; its failure and output are documented in `../report.md`. The paragraph above records the earlier zero-business-call preflight only.
