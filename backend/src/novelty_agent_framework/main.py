@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import os
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -15,9 +16,23 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .config import NoveltyWebSettings
 from .routers import health_router, runs_router
+from .services import (
+    NoveltyWorkflowService,
+    build_demo_workflow_service,
+    build_real_workflow_service,
+)
+
+logger = logging.getLogger(__name__)
 
 
-def create_app(settings: NoveltyWebSettings | None = None, *, runs_root: Path | None = None, runner=None, static_root: Path | None = None) -> FastAPI:
+def create_app(
+    settings: NoveltyWebSettings | None = None,
+    *,
+    service: NoveltyWorkflowService | None = None,
+    runs_root: Path | None = None,
+    runner=None,
+    static_root: Path | None = None,
+) -> FastAPI:
     settings = settings or NoveltyWebSettings.from_env()
     @asynccontextmanager
     async def lifespan(app):
@@ -36,6 +51,18 @@ def create_app(settings: NoveltyWebSettings | None = None, *, runs_root: Path | 
         description="Evidence-grounded novelty research workflow API",
     )
     application.state.settings = settings
+    application.state.workflow_service = service
+    application.state.workflow_error = None
+    if service is None:
+        try:
+            application.state.workflow_service = (
+                build_real_workflow_service(settings)
+                if settings.workflow_mode == "real"
+                else build_demo_workflow_service(settings)
+            )
+        except Exception as exc:  # noqa: BLE001 - keep app available for health checks
+            application.state.workflow_error = type(exc).__name__
+            logger.error("workflow initialization failed: %s", type(exc).__name__)
     application.add_middleware(
         CORSMiddleware,
         allow_origins=list(settings.cors_origins),
