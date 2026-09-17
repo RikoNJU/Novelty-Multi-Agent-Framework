@@ -7,3 +7,5 @@
 5. The optional Web model budget covers requests through the shared model client. MinerU's local subprocess and any external parser pricing have not been established; model usage estimates are not invoices. A live trial requires an explicit new budget and parser-cost decision.
 6. On ambiguous POST failure, the current page blocks another submit until navigation; it cannot recover the task ID after a lost first response. The backend idempotency key prevents duplicate execution only when the same ID is reused during the same service lifetime.
 7. The candidate demo computer, production same-origin proxy, backend restart behavior under a paid run, and live browser download were not tested. Cached Chromium plus temporary shared libraries enabled local test-browser preflight only.
+
+8. Automatic approval rejected the first browser observer launch before any POST. It requires explicit consent for PDF-derived text sent to SiliconFlow and enabled retrieval services; no alternative route was attempted.
