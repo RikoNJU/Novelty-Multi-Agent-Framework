@@ -3,6 +3,13 @@ import AxeBuilder from '@axe-core/playwright';
 const snapshot = (status: string) => ({task_id:'test-run', status, created_at:'2026-09-16', updated_at:'2026-09-16', result:null, error:null});
 const report = { available_formats:['md'], preview_url:'/api/novelty/runs/test-run/report?disposition=inline', downloads:{md:'/api/novelty/runs/test-run/report?disposition=attachment'} };
 test.beforeEach(async ({page}) => { await page.route('https://box.nju.edu.cn/**', route => route.abort()); });
+test('上传页仅显示论文上传框，并可返回首页', async ({page}) => {
+  await page.goto('/'); await page.getByRole('button',{name:'开始',exact:true}).click();
+  await expect(page.getByRole('button',{name:'选择论文 PDF'})).toBeVisible();
+  await expect(page.getByText('上传参考文献')).toHaveCount(0);
+  await page.getByRole('button',{name:'返回首页',exact:true}).click();
+  await expect(page.getByRole('button',{name:'开始',exact:true})).toBeVisible();
+});
 test('上传 → 真实契约轮询 → 完成 → Markdown 预览与下载，并刷新恢复', async ({page}) => {
   let posts = 0; let polls = 0;
   await page.route('**/api/novelty/runs/files', async route => { posts++; expect(route.request().postDataBuffer()?.toString()).toContain('论文.pdf'); await route.fulfill({status:202,json:snapshot('queued')}); });

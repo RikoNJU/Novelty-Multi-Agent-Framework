@@ -29,7 +29,7 @@ pnpm test:e2e      # 自动启动专用测试服务器，使用测试内的接�
 ## 当前后端边界
 
 - `POST /api/novelty/runs/files` 接收 multipart `paper` 单个 PDF，校验扩展名、MIME、空文件、30 MB 限额和 PDF 签名；参考文献字段尚未开放。
-- 参考文献窗口保留但禁用，后端收到 `references` 会返回 `references_not_supported`，不会静默忽略。
+- 前端不渲染参考文献上传框；相关接口契约保留，后端收到 `references` 会返回 `references_not_supported`，不会静默忽略。
 - `/?run=<任务编号>` 轮询真实 `queued/running/succeeded/failed` 和六阶段进度。断线指数退避至 30 秒，页面隐藏时至少间隔 15 秒，终态停止轮询。
 - 成功任务优先读取后端 Renderer 生成的 Markdown 报告，并提供同源下载；旧任务仍可回退展示结构化报告。
 - 服务端默认装配真实工作流。缺少模型凭据时健康检查为 `degraded`，提交返回 503，不会回退 Demo。

@@ -42,8 +42,8 @@ it('缺失论文时阻止提交，播报错误并聚焦上传框', async () => {
   await userEvent.click(screen.getByRole('button', { name:'开始查新' }));
   expect(screen.getByText('请先上传论文 PDF')).toBeVisible();
   expect(screen.getByRole('button', {name:'选择论文 PDF'})).toHaveFocus(); expect(submit).not.toHaveBeenCalled();
-  expect(screen.getByRole('button', {name:'选择参考文献'})).toBeDisabled();
-  expect(screen.getByText('参考文献上传入口暂时保留，当前版本尚不可用。')).toBeVisible();
+  expect(screen.queryByRole('button', {name:'选择参考文献'})).not.toBeInTheDocument();
+  expect(screen.queryByText('上传参考文献')).not.toBeInTheDocument();
 });
 it('键盘文件入口和拖放均可选择文件', async () => {
   const onFiles = vi.fn(); render(<UploadView paper={null} references={[]} onFiles={onFiles} onSubmit={vi.fn()} busy={false} error={null}/>);

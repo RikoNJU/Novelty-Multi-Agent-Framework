@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { ArrowRight, Check, RotateCcw } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, RotateCcw } from 'lucide-react';
 import { api, normalizeError } from '../api/client';
 import type { Phase } from '../api/contracts';
 import { UploadView } from '../features/upload/UploadView';
@@ -22,15 +22,20 @@ export default function App() {
   useEffect(() => { main.current?.focus(); }, [phase]);
   useEffect(() => () => controller.current?.abort(), []);
   const restart = () => { setParams({}); setPhase('editing'); setSubmitError(null); };
+  const returnHome = () => {
+    controller.current?.abort(); submitting.current = false;
+    setParams({}); setPaper(null); setSubmitError(null); setPhase('landing');
+  };
   const submit = async () => {
     if (!paper || submitting.current) return;
-    submitting.current = true; setPhase('submitting'); setSubmitError(null); controller.current = new AbortController();
+    const requestController = new AbortController();
+    submitting.current = true; setPhase('submitting'); setSubmitError(null); controller.current = requestController;
     try {
-      const next = await api.createRun(paper, controller.current.signal);
-      if (controller.current.signal.aborted) return;
+      const next = await api.createRun(paper, requestController.signal);
+      if (requestController.signal.aborted) return;
       setParams({ run: next.task_id }); setPhase('editing'); setPaper(null);
     } catch (cause) {
-      if (!controller.current.signal.aborted) {
+      if (!requestController.signal.aborted) {
         const failure = normalizeError(cause);
         setSubmitError(failure.code === 'timeout' || failure.code === 'network' ? '未能确认提交结果。任务可能已创建，请联系服务管理员确认后再提交，以免重复。' : failure.message); setPhase('editing');
       }
@@ -38,6 +43,7 @@ export default function App() {
   };
   return <div className="app-shell" onDragOver={e => e.preventDefault()} onDrop={e => e.preventDefault()}>
     {phase !== 'landing' && <header className="brand">睿文查新</header>}
+    {(phase === 'editing' || phase === 'submitting') && <button type="button" className="page-back" aria-label="返回首页" onClick={returnHome}><ArrowLeft size={18}/><span>返回</span></button>}
     <main ref={main} tabIndex={-1} className={phase === 'landing' ? 'landing-main' : 'workspace'}>
       {phase === 'landing' && <section className="landing"><h1>睿文查新</h1><p>上传论文原文，自动完成查新点提取、文献检索和证据核验，<br className="desktop-break"/>生成可追溯的查新报告。</p><button className="primary start" onClick={() => setPhase('editing')}>开始<ArrowRight size={21}/></button></section>}
       {(phase === 'editing' || phase === 'submitting') && <UploadView paper={paper} references={[]} onFiles={(p) => { setPaper(p); setSubmitError(null); }} onSubmit={() => void submit()} busy={phase === 'submitting'} error={submitError}/>}

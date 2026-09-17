@@ -23,17 +23,16 @@ export function UploadView({ paper, references, onFiles, onSubmit, busy, error }
     <p className="eyebrow">从一篇论文开始</p><h1 id="upload-title">让创新，有据可循。</h1>
     <p className="intro">添加论文原文，开启本次查新。</p>
     <div className="upload-grid">
-      {(['paper', 'references'] as const).map(kind => <div className="upload-column" key={kind}>
-        <div className="field-label"><h2>{kind === 'paper' ? '上传论文原文' : '上传参考文献'}</h2><span>{kind === 'paper' ? '必填 · 1 篇' : '尚未开放'}</span></div>
-        <Dropzone kind={kind} disabled={busy || kind === 'references'} onSelect={files => select(files, kind)} buttonRef={kind === 'paper' ? paperButton : undefined} invalid={validation?.kind === kind} replacing={kind === 'paper' && !!paper}/>
-        <ul className="file-list">{(kind === 'paper' ? paper ? [paper] : [] : references).map((file, index) => <li key={`${file.name}-${index}`}>
+      <div className="upload-column">
+        <div className="field-label"><h2>上传论文原文</h2><span>必填 · 1 篇</span></div>
+        <Dropzone kind="paper" disabled={busy} onSelect={files => select(files, 'paper')} buttonRef={paperButton} invalid={validation?.kind === 'paper'} replacing={!!paper}/>
+        <ul className="file-list">{(paper ? [paper] : []).map((file, index) => <li key={`${file.name}-${index}`}>
           <FileText size={20}/><div className="file-meta"><span className="file-name" title={file.name}>{file.name}</span><small>{file.name.split('.').pop()?.toUpperCase()} · {size(file.size)} · {busy ? '上传中' : '待上传'}</small></div>
           <button className="icon-button" disabled={busy} onClick={() => setPreview(file)} aria-label={`预览 ${file.name}`}><Eye size={18}/></button>
-          <button className="icon-button" disabled={busy} aria-label={`删除 ${file.name}`} onClick={() => { setValidation(null); onFiles(kind === 'paper' ? null : paper, kind === 'references' ? references.filter((_, i) => i !== index) : references); }}><X size={18}/></button>
+          <button className="icon-button" disabled={busy} aria-label={`删除 ${file.name}`} onClick={() => { setValidation(null); onFiles(null, references); }}><X size={18}/></button>
         </li>)}</ul>
-        <p className="field-error" id={`${kind}-error`} role="alert">{validation?.kind === kind ? validation.text : ''}</p>
-        {kind === 'references' && <p className="notice">参考文献上传入口暂时保留，当前版本尚不可用。</p>}
-      </div>)}
+        <p className="field-error" id="paper-error" role="alert">{validation?.kind === 'paper' ? validation.text : ''}</p>
+      </div>
     </div>
     <p className="limits">论文文件 ≤ {size(limits.fileBytes)} · 仅支持 PDF</p>
     {import.meta.env.VITE_FILE_API_ENABLED === 'false' && <p className="notice">当前服务尚未开放文件查新。可选择并预览文件，暂不能提交。</p>}
