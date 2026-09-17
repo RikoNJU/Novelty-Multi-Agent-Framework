@@ -98,6 +98,17 @@ def test_draft_schema_and_extra_fields_exclude_authority():
         ReportNarrativeDraft.model_validate(payload)
 
 
+def test_unverified_model_limitations_do_not_enter_authoritative_report():
+    points, cards, reviews, draft = _case(1)
+    draft = draft.model_copy(update={"limitations": ["检索已覆盖全部中文数据库，零命中。"]})
+    report = assemble_report_from_draft(
+        draft, paper_id="paper", novelty_points=points,
+        novelty_reviews=reviews, evidence_cards=cards,
+    )
+    assert all("零命中" not in item for item in report.limitations)
+    assert "检索覆盖状态未知" in report.limitations[-1]
+
+
 @pytest.mark.parametrize("mutation,error", [
     ("missing", "missing conclusion"), ("duplicate", "duplicate conclusion"),
     ("unknown", "unknown conclusion"), ("cross_card", "cross-point reference"),

@@ -37,7 +37,9 @@ def assemble_report_from_draft(
     reviews_by_id = {item.novelty_point_id: item for item in novelty_reviews}
     narrative_by_id = {item.novelty_point_id: item for item in draft.conclusions}
     conclusions = []
-    limitations = list(draft.limitations)
+    # Free-form model limitations can imply unrecorded search coverage or causes.
+    # Keep the draft in the raw response, but publish only traceable state here.
+    limitations: list[str] = []
     for point in novelty_points:
         review = reviews_by_id[point.point_id]
         narrative = narrative_by_id[point.point_id]

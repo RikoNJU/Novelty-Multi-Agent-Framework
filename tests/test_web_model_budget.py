@@ -79,3 +79,20 @@ def test_failed_transport_keeps_unknown_charge_reserved(tmp_path, monkeypatch):
     assert ledger["attempts"][0]["status"] == "failed_billing_unknown"
     assert ledger["attempts"][0]["actual_bill_rmb"] is None
     assert ledger["reserved_total_rmb"] > 0
+
+
+def test_budget_resume_preserves_prior_unknown_attempt(tmp_path):
+    path = tmp_path / "budget-ledger.json"
+    path.write_text(json.dumps({
+        "cap_rmb": 4.0, "max_attempts": 4, "reserved_total_rmb": 0.35817,
+        "attempts": [{"attempt": 1, "reserved_rmb": 0.35817,
+                      "status": "failed_billing_unknown", "actual_bill_rmb": None}],
+    }))
+    budget = RunModelBudget(path, cap_rmb=Decimal("4"), max_attempts=4, resume=True)
+    assert budget._reserved == Decimal("0.35817")
+    assert len(budget._attempts) == 1
+    assert json.loads(path.read_text())["attempts"][0]["status"] == "failed_billing_unknown"
+    with pytest.raises(ValueError, match="caps do not match"):
+        RunModelBudget(path, cap_rmb=Decimal("5"), max_attempts=4, resume=True)
+    with pytest.raises(FileExistsError):
+        RunModelBudget(path, cap_rmb=Decimal("4"), max_attempts=4)

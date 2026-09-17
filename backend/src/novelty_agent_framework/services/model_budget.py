@@ -15,7 +15,7 @@ from novelty_agent_framework.diagnostics.llm_usage import LlmPricingCatalog
 
 class RunModelBudget:
     def __init__(self, path: Path, *, cap_rmb: Decimal, max_attempts: int,
-                 pricing: LlmPricingCatalog | None = None) -> None:
+                 pricing: LlmPricingCatalog | None = None, resume: bool = False) -> None:
         if cap_rmb <= 0 or max_attempts < 1:
             raise ValueError("model budget caps must be positive")
         self.path = path
@@ -23,9 +23,27 @@ class RunModelBudget:
         self.max_attempts = max_attempts
         self.pricing = pricing or LlmPricingCatalog.load()
         self._lock = RLock()
-        self._attempts: dict[str, dict] = {}
-        self._reserved = Decimal(0)
-        self._write()
+        if resume:
+            existing = json.loads(path.read_text())
+            if (Decimal(str(existing["cap_rmb"])) != cap_rmb
+                    or existing["max_attempts"] != max_attempts):
+                raise ValueError("existing run budget caps do not match")
+            self._attempts = {
+                f"prior-{index}": entry
+                for index, entry in enumerate(existing["attempts"])
+            }
+            self._reserved = Decimal(str(existing["reserved_total_rmb"]))
+            if self._reserved < sum(
+                (Decimal(str(entry["reserved_rmb"])) for entry in self._attempts.values()),
+                Decimal(0),
+            ):
+                raise ValueError("existing run budget reserve is inconsistent")
+        else:
+            if path.exists():
+                raise FileExistsError(f"run budget ledger already exists: {path}")
+            self._attempts = {}
+            self._reserved = Decimal(0)
+            self._write()
 
     def __call__(self, event: ModelCallEvent) -> None:
         if event.phase not in {"START", "COMPLETE", "CANCELLED"}:

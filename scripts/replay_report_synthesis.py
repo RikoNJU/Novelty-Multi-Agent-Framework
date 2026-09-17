@@ -42,6 +42,23 @@ class OfflineDraftClient:
         }, ensure_ascii=False))
 
 
+class CapturedDraftClient:
+    """Replay a stored real response without any external model call."""
+
+    def __init__(self, response_file: Path):
+        record = json.loads(response_file.read_text())
+        if record.get("status") != "SUCCESS" or not record.get("response", {}).get("content"):
+            raise ValueError(f"captured response is unavailable: {response_file}")
+        self.content = record["response"]["content"]
+        self.finish_reason = record.get("finish_reason")
+        self.calls = 0
+
+    def complete(self, messages, *, options=None):
+        self.calls += 1
+        return ModelResponse(content=self.content,
+                             raw={"choices": [{"finish_reason": self.finish_reason}]})
+
+
 def _sha(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
@@ -84,7 +101,7 @@ def _timeout_handler(signum, frame):
     raise TimeoutError("report_node_deadline_exceeded")
 
 
-async def _one(row: dict, mode: str, deadline_seconds: int) -> dict:
+async def _one(row: dict, mode: str, deadline_seconds: int, captured_tag: str | None = None) -> dict:
     source = Path(row["synthesize_stage_input"])
     if _sha(source) != row["synthesize_stage_input_sha256"]:
         raise ValueError(f"source input hash mismatch: {row['label']}")
@@ -103,8 +120,17 @@ async def _one(row: dict, mode: str, deadline_seconds: int) -> dict:
     output_root.mkdir(parents=True)
     _copy_renderer_inputs(source, row["source_run_id"], output_root, row["paper_id"])
     workflow = build_workflow(output_root=output_root)
-    if mode == "offline":
-        fixture = OfflineDraftClient([point.point_id for point in state["novelty_points"]])
+    if mode in {"offline", "captured"}:
+        if mode == "offline":
+            fixture = OfflineDraftClient([point.point_id for point in state["novelty_points"]])
+        else:
+            source_root = Path(row["recovery_output_root"].rsplit("-captured-reassembly", 1)[0]
+                               + "-" + str(captured_tag))
+            response_file = (source_root / row["paper_id"] / "runtime"
+                             / (row["recovery_id"].rsplit("-captured-reassembly", 1)[0]
+                                + "-" + str(captured_tag))
+                             / "llm_calls" / "0001_deepseek-flash.json")
+            fixture = CapturedDraftClient(response_file)
         configured = workflow.services.coordinator
         workflow.services = replace(workflow.services, coordinator=NoveltyCoordinatorAgent(
             model_client=fixture, prompts=configured._prompts,
@@ -147,7 +173,7 @@ async def _one(row: dict, mode: str, deadline_seconds: int) -> dict:
         result.update(status="SUCCESS", report_json=str(report_json), report_json_sha256=_sha(report_json),
                       report_markdown=str(report_md), report_markdown_sha256=_sha(report_md),
                       point_ids=[item.novelty_point_id for item in state["report"].conclusions],
-                      offline_fixture_calls=fixture.calls if fixture else None)
+                      local_response_replay_calls=fixture.calls if fixture else None)
         manager.finish_run("SUCCESS")
     except BaseException as exc:
         result.update(status="FAILED", error_type=type(exc).__name__, error=str(exc)[:1000])
@@ -163,15 +189,22 @@ async def _one(row: dict, mode: str, deadline_seconds: int) -> dict:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--source-manifest", required=True, type=Path)
-    parser.add_argument("--mode", choices=("offline", "live"), required=True)
+    parser.add_argument("--mode", choices=("offline", "captured", "live"), required=True)
     parser.add_argument("--sources", nargs="+", default=["L1", "L2"])
     parser.add_argument("--budget-rmb", type=Decimal)
     parser.add_argument("--max-attempts", type=int)
     parser.add_argument("--deadline-seconds", type=int, default=240)
     parser.add_argument("--offline-tag", default="offline", help="append-only local output suffix")
+    parser.add_argument("--resume-live", action="store_true", help="reuse an existing total budget ledger")
+    parser.add_argument("--live-tag", help="new append-only output identity when resuming live")
+    parser.add_argument("--captured-tag", help="source live output suffix for zero-call reassembly")
     args = parser.parse_args()
     if args.mode == "live" and (args.budget_rmb is None or args.max_attempts is None):
         parser.error("live mode requires an explicitly approved total budget and attempt limit")
+    if args.resume_live and (args.mode != "live" or not args.live_tag):
+        parser.error("--resume-live requires live mode and a new --live-tag")
+    if args.mode == "captured" and not args.captured_tag:
+        parser.error("captured mode requires --captured-tag")
     manifest = json.loads(args.source_manifest.read_text())
     rows = {row["label"]: dict(row) for row in manifest["sources"]}
     for label in args.sources:
@@ -179,17 +212,25 @@ def main() -> None:
             parser.error(f"unknown source {label}")
         if args.mode == "offline":
             rows[label]["recovery_output_root"] += "-" + args.offline_tag
+        elif args.mode == "captured":
+            rows[label]["recovery_output_root"] += "-captured-reassembly"
+            rows[label]["recovery_id"] += "-captured-reassembly"
+        elif args.resume_live:
+            rows[label]["recovery_output_root"] += "-" + args.live_tag
+            rows[label]["recovery_id"] += "-" + args.live_tag
     token = None
     if args.mode == "live":
         ledger_path = Path("outputs/report-node-recovery-20260918/model-budget-ledger.json")
-        if ledger_path.exists():
+        if ledger_path.exists() and not args.resume_live:
             parser.error(f"live budget ledger already exists; refusing a reset: {ledger_path}")
         budget = RunModelBudget(ledger_path,
-                                cap_rmb=args.budget_rmb, max_attempts=args.max_attempts)
+                                cap_rmb=args.budget_rmb, max_attempts=args.max_attempts,
+                                resume=args.resume_live)
         token = set_model_call_budget(budget)
     try:
         for label in args.sources:
-            result = asyncio.run(_one(rows[label], args.mode, args.deadline_seconds))
+            result = asyncio.run(_one(rows[label], args.mode, args.deadline_seconds,
+                                      captured_tag=args.captured_tag))
             print(json.dumps(result, ensure_ascii=False))
             if result["status"] != "SUCCESS":
                 break
