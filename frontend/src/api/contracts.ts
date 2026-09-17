@@ -1,7 +1,7 @@
 import { z } from 'zod';
 export const stages = ['parse_paper', 'extract_points', 'plan_research', 'research', 'validate_evidence', 'render_report'] as const;
 export const stageLabels = ['解析论文', '提取查新点', '规划检索任务', '检索并阅读文献', '核验文献证据', '生成查新报告'];
-const conclusion = z.object({ novelty_point_id: z.string(), review_status: z.string(), verdict: z.string().nullable().optional(), verdict_reason: z.string().nullable().optional(), summary: z.string() });
+const conclusion = z.object({ novelty_point_id: z.string(), review_status: z.string(), incomplete_reason: z.string().nullable().optional(), verdict: z.string().nullable().optional(), verdict_reason: z.string().nullable().optional(), summary: z.string() });
 export const snapshotSchema = z.object({
   task_id: z.string().min(1), status: z.enum(['queued', 'running', 'succeeded', 'failed']),
   created_at: z.string(), updated_at: z.string(),

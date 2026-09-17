@@ -169,6 +169,7 @@ class RuntimeArtifactManager:
         self._tool_counter = 0
         self._llm_call_counter = 0
         self._llm_call_paths: dict[str, Path] = {}
+        self._archived_run_dir: Path | None = None
         self._error_counter = 0
         self._provider_request_counter = 0
         self._provider_dispatch_count = 0
@@ -371,7 +372,24 @@ class RuntimeArtifactManager:
             call_key = event.call_id or uuid.uuid4().hex
             existing = next((item for item in self._llm_call_records
                              if item.get("client_call_id") == call_key), None)
+            milestone_phases = {"TRANSPORT_INVOKED", "RESPONSE_HEADERS",
+                                "RESPONSE_BODY_COMPLETE", "RESPONSE_PARSED"}
+            if existing is not None and event.phase in milestone_phases:
+                existing.setdefault("timeline", []).append({
+                    "phase": event.phase, "at": _iso(event.started_at),
+                    **dict(event.details)})
+                self._write_model_record(call_key, existing)
+                return
             if existing is not None and existing["status"] == "CANCELLED" and event.phase != "CANCELLED":
+                existing["late_completion"] = {
+                    "at": _iso(_now()), "status": "FAILED" if event.error else "SUCCESS",
+                    "response_id": (event.response.raw.get("id") if event.response
+                                    and isinstance(event.response.raw, Mapping) else None),
+                    "usage": dict(usage), "billing": accounting["billing"],
+                    "error": (f"{type(event.error).__name__}: {event.error}" if event.error else None),
+                }
+                existing["transport_inflight_unknown"] = False
+                self._write_model_record(call_key, existing)
                 return
             if (existing is None and event.phase == "START"
                     and self._llm_call_counter >= self.config.max_model_calls):
@@ -418,14 +436,34 @@ class RuntimeArtifactManager:
                     if event.error is not None
                     else None
                 ),
+                "timeline": existing.get("timeline", []) if existing else [],
+                "transport_inflight_unknown": (
+                    event.phase == "CANCELLED" and existing is not None
+                    and any(item["phase"] == "TRANSPORT_INVOKED"
+                            for item in existing.get("timeline", []))
+                    and not any(item["phase"] == "RESPONSE_PARSED"
+                                for item in existing.get("timeline", []))
+                ),
             }
+            if existing is not None and event.phase == "CANCELLED" and existing["status"] in {"SUCCESS", "FAILED"}:
+                record["transport_completion_before_cancel"] = {
+                    "status": existing["status"], "response": existing["response"],
+                    "request_id": existing["request_id"], "usage": existing["provider_usage"],
+                    "billing": existing["billing"], "error": existing["error"],
+                }
             prior = next((i for i, item in enumerate(self._llm_call_records)
                           if item["client_call_id"] == call_key), None)
             if prior is None:
                 self._llm_call_records.append(record)
             else:
                 self._llm_call_records[prior] = record
-            self._write_json(path, record)
+            self._write_model_record(call_key, record)
+
+    def _write_model_record(self, call_key: str, record: Mapping[str, Any]) -> None:
+        path = self._llm_call_paths[call_key]
+        self._write_json(path, record)
+        if self._archived_run_dir is not None:
+            self._write_json(self._archived_run_dir / "llm_calls" / path.name, record)
 
     def start_stage(self, stage_name: str, stage_input: Any) -> StageHandle:
         started = _now()
@@ -705,6 +743,7 @@ class RuntimeArtifactManager:
             )
             archive.mkdir(parents=True, exist_ok=False)
             shutil.copytree(self.run_dir, archive, dirs_exist_ok=True)
+            self._archived_run_dir = archive
             workspace = Path(self.config.output_root) / _safe_segment(self.paper_id)
             if workspace.is_dir():
                 shutil.copytree(

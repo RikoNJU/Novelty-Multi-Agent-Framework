@@ -7,7 +7,7 @@ import asyncio
 import hashlib
 import re
 import time
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from collections.abc import Sequence
 from dataclasses import dataclass, replace
 from typing import Any
@@ -64,6 +64,13 @@ class _BudgetedClient:
             if time.monotonic() >= self.deadline:
                 raise ReviewDeadlineExceeded("review deadline exhausted") from exc
             raise
+
+
+def _summary_remaining(deadline: float) -> float:
+    remaining = deadline - time.monotonic()
+    if remaining <= 0:
+        raise ReviewDeadlineExceeded("summary deadline exhausted before dispatch")
+    return remaining
 
 _ALLOWED_ISSUE_CODES = frozenset(
     {
@@ -132,6 +139,7 @@ class EvidenceReviewerConfig:
     prompt_name: str = "reviewer/review_evidence"
     card_timeout_seconds: float = 240.0
     summary_timeout_seconds: float = 180.0
+    summary_input_date: str | None = None
 
     def __post_init__(self) -> None:
         if not 0.0 <= self.temperature <= 2.0:
@@ -144,6 +152,8 @@ class EvidenceReviewerConfig:
             raise ValueError("reviewer timeouts must be positive")
         if not self.prompt_name.strip():
             raise ValueError("prompt_name 不能为空")
+        if self.summary_input_date is not None:
+            date.fromisoformat(self.summary_input_date)
 
 
 class DemoEvidenceReviewer:
@@ -322,6 +332,7 @@ class NoveltyEvidenceReviewer(EvidenceReviewer):
 
     async def summarize_reviews(self, request, card_reviews) -> NoveltyPointReview:
         """Synthesize compact card reviews; validate against originals locally."""
+        deadline = time.monotonic() + self.config.summary_timeout_seconds
         usable = [row for row in card_reviews if row.get("status") == "completed"
                   and row.get("review", {}).get("incomplete_reason") not in
                   {"technical_error", "budget_exhausted"}]
@@ -334,12 +345,11 @@ class NoveltyEvidenceReviewer(EvidenceReviewer):
                 "全部单卡核验因运行错误或预算限制未完成；未调用模型汇总。", cause=cause)
         system = self._render_instruction("reviewer/summarize_reviews", _SUMMARY_FALLBACK)
         system += "\n" + _EVIDENCE_BOUNDARY
-        deadline = time.monotonic() + self.config.summary_timeout_seconds
         try:
             rows, validated_ids = _compact_summary_rows(request, card_reviews)
             projected = _summary_model_rows(rows)
             user = json.dumps({
-                "today": datetime.now(timezone.utc).date().isoformat(),
+                "today": self.config.summary_input_date or datetime.now(timezone.utc).date().isoformat(),
                 "novelty_point": request.novelty_point.model_dump(mode="json"),
                 "card_reviews": projected,
                 "review_schema": ReviewerSummaryDraft.model_json_schema(),
@@ -348,15 +358,18 @@ class NoveltyEvidenceReviewer(EvidenceReviewer):
             _record_review_event("summary_payload_prepared", request, {
                 "sent_to_model": False, "payload_sha256": hashlib.sha256(user.encode()).hexdigest(),
                 "evidence_lineage": lineage})
+            remaining = _summary_remaining(deadline)
+            transport_timeout = max(0.001, remaining - min(1.0, remaining * 0.1))
             summary_options = replace(self.model_options or ModelCallOptions(), tools=(), tool_choice="none",
-                                      response_format=None, timeout_seconds=self.config.summary_timeout_seconds)
-            _record_review_event("summary_request_dispatched", request, {
+                                      response_format=None, timeout_seconds=transport_timeout)
+            _record_review_event("summary_client_entered", request, {
                 "payload_sha256": hashlib.sha256(user.encode()).hexdigest(),
-                "actual_model_input": user, "evidence_lineage": lineage})
+                "actual_model_input": user, "evidence_lineage": lineage,
+                "remaining_seconds": remaining, "transport_timeout_seconds": transport_timeout})
             response = await asyncio.wait_for(self._client().acomplete(
                 [ChatMessage(role="system", content=system), ChatMessage(role="user", content=user)],
                 options=summary_options,
-            ), max(0.001, deadline - time.monotonic()))
+            ), _summary_remaining(deadline))
             _record_review_event("summary_response_received", request, {
                 "payload_sha256": hashlib.sha256(user.encode()).hexdigest(),
                 "raw_model_output": response.content})
@@ -370,10 +383,12 @@ class NoveltyEvidenceReviewer(EvidenceReviewer):
                     "raw_model_output": response.content,
                     "draft_schema": ReviewerSummaryDraft.model_json_schema(),
                 })
+                remaining = _summary_remaining(deadline)
+                repair_timeout = max(0.001, remaining - min(1.0, remaining * 0.1))
                 repaired = await asyncio.wait_for(repair_json(
                     self._client(), response.content, ReviewerSummaryDraft.model_json_schema(),
-                    replace(summary_options, timeout_seconds=max(0.001, deadline - time.monotonic()))),
-                    max(0.001, deadline - time.monotonic()))
+                    replace(summary_options, timeout_seconds=repair_timeout)),
+                    _summary_remaining(deadline))
                 draft = ReviewerSummaryDraft.model_validate_json(_extract_json(repaired))
             review = NoveltyPointReview.model_validate(draft.model_dump(mode="json"))
             review = review.model_copy(update={"incomplete_reason":
@@ -386,6 +401,7 @@ class NoveltyEvidenceReviewer(EvidenceReviewer):
             if any(evidence_id not in validated_ids for evidence_id in summary_refs):
                 raise ValueError("summary cites evidence not verified in card stage or without a displayed quote")
             review = _validate_review_references(review, request)
+            _summary_remaining(deadline)
             _record_review_event("summary_result", request, {
                 "rows": rows, "actual_model_input": user,
                 "draft_schema": ReviewerSummaryDraft.model_json_schema(),
@@ -393,17 +409,22 @@ class NoveltyEvidenceReviewer(EvidenceReviewer):
                 "raw_model_output": response.content, "review": review.model_dump(mode="json"),
                 "legacy_guard_shadow": _legacy_guard_shadow(review, request),
             })
+            _summary_remaining(deadline)
             return review
         except Exception as exc:
             if not self.config.fail_closed:
                 raise
+            cause = ("budget_exhausted" if isinstance(exc, TimeoutError)
+                     and time.monotonic() >= deadline else _review_failure_cause(exc))
+            _record_review_event("summary_fallback_returned", request, {
+                "reason": cause, "error_type": type(exc).__name__,
+                "response_received": "response" in locals(),
+                "model_draft_valid": False})
             return _insufficient_review(
                 request.novelty_point.point_id,
                 f"Reviewer 汇总失败：{type(exc).__name__}: {exc}"[:500],
-                cause=("budget_exhausted" if isinstance(exc, TimeoutError)
-                       and time.monotonic() >= deadline else _review_failure_cause(exc)),
+                cause=cause,
             )
-
     def _render_point_prompt(
         self, request: NoveltyPointReviewRequest
     ) -> tuple[str, str]:

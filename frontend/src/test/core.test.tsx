@@ -7,6 +7,7 @@ import { snapshotSchema, stageIndex } from '../api/contracts';
 import { retryDelay } from '../features/run-progress/useRun';
 import { UploadView } from '../features/upload/UploadView';
 import { Markdown } from '../features/report/Markdown';
+import { ReportView } from '../features/report/ReportView';
 const pdf = () => new File(['%PDF-1.4'], '论文.pdf', { type: 'application/pdf' });
 describe('文件校验', () => {
   it('校验类型、空文件、数量、MIME 和大小', () => {
@@ -55,4 +56,16 @@ it('键盘文件入口和拖放均可选择文件', async () => {
 it('Markdown 支持表格、禁止原始 HTML、危险链接和外部图片', () => {
   const {container} = render(<Markdown text={'# 报告\n\n| A | B |\n|---|---|\n| 1 | 2 |\n\n<script>alert(1)</script>\n\n[x](javascript:alert(1))\n\n![tracking](https://example.com/pixel)'}/>);
   expect(screen.getByRole('table')).toBeVisible(); expect(container.querySelector('script')).toBeNull(); expect(container.querySelector('img')).toBeNull(); expect(container.querySelector('a')?.getAttribute('href')).not.toContain('javascript:');
+});
+it('结构化报告回放区分运行超时与模型判断证据不足', () => {
+  const run = snapshotSchema.parse({task_id:'replay', status:'succeeded', created_at:'x', updated_at:'x', error:null, report:null,
+    result:{report:{paper_id:'paper', conclusions:[
+      {novelty_point_id:'NP-1', review_status:'insufficient_evidence', incomplete_reason:'budget_exhausted', verdict:null, summary:'核验未完成'},
+      {novelty_point_id:'NP-2', review_status:'insufficient_evidence', incomplete_reason:'semantic_evidence', verdict:null, summary:'现有材料不足'},
+      {novelty_point_id:'NP-3', review_status:'reviewed', verdict:'partially_novel', summary:'已完成'},
+    ], limitations:[], missing_references:[], missing_baselines:[], citation_issues:[]}}});
+  render(<ReportView run={run} onClose={vi.fn()}/>);
+  expect(screen.getByText(/NP-1 · 核验超时或预算耗尽，尚未完成/)).toBeVisible();
+  expect(screen.getByText(/NP-2 · 现有证据不足，无法裁定/)).toBeVisible();
+  expect(screen.getByText(/NP-3 · 部分新颖/)).toBeVisible();
 });

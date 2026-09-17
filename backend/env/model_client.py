@@ -6,10 +6,12 @@
 from __future__ import annotations
 
 import asyncio
+import concurrent.futures
 import contextvars
 import json
 import os
 import time
+import threading
 import uuid
 import urllib.error
 import urllib.request
@@ -41,6 +43,10 @@ class ModelClientError(RuntimeError):
     """模型客户端调用失败。"""
 
 
+class ModelTransportTimeout(ModelClientError):
+    """The HTTP transport timed out before a complete model response."""
+
+
 class ModelTraceError(RuntimeError):
     """Runtime trace failed; stop before another paid model request."""
 
@@ -65,6 +71,7 @@ class ModelCallEvent:
     phase: str = "COMPLETE"
     request_payload: Mapping[str, Any] | None = None
     request_options: Mapping[str, Any] | None = None
+    details: Mapping[str, Any] = field(default_factory=dict)
 
 
 ModelCallObserver = Callable[[ModelCallEvent], None]
@@ -269,6 +276,7 @@ class OpenAICompatibleChatClient:
                       message_count=len(messages), call_id=call_id,
                       request_payload=request_payload, request_options=request_options)
         _emit_model_call(ModelCallEvent(**common, duration_ms=0, phase="START"))
+        call_token = _async_call_id.set(call_id)
         try:
             response = self._complete(messages, options=options)
         except BaseException as exc:
@@ -284,6 +292,8 @@ class OpenAICompatibleChatClient:
                 )
             )
             raise
+        finally:
+            _async_call_id.reset(call_token)
         _emit_model_call(
             ModelCallEvent(
                 **common,
@@ -320,12 +330,34 @@ class OpenAICompatibleChatClient:
             method="POST",
         )
 
+        def milestone(phase: str, **details: Any) -> None:
+            _emit_model_call(ModelCallEvent(
+                alias=self.profile.alias, provider=self.profile.provider,
+                model=self.profile.model, started_at=datetime.now(timezone.utc),
+                duration_ms=0, message_count=len(messages),
+                call_id=_async_call_id.get() or "", phase=phase, details=details,
+            ))
+
         try:
+            milestone("TRANSPORT_INVOKED", timeout_seconds=timeout)
             with urllib.request.urlopen(request, timeout=timeout) as response:
-                raw = json.loads(response.read().decode("utf-8"))
+                headers = getattr(response, "headers", None)
+                milestone("RESPONSE_HEADERS", http_status=getattr(response, "status", None),
+                          provider_request_id=(headers.get("x-request-id") if headers else None))
+                body = response.read()
+                milestone("RESPONSE_BODY_COMPLETE", body_bytes=len(body))
+                raw = json.loads(body.decode("utf-8"))
+                milestone("RESPONSE_PARSED", response_id=raw.get("id") if isinstance(raw, Mapping) else None,
+                          usage_available=isinstance(raw, Mapping) and bool(raw.get("usage")))
         except urllib.error.HTTPError as exc:
             detail = exc.read().decode("utf-8", errors="replace")
             raise ModelClientError(f"模型 HTTP 调用失败: {exc.code} {detail}") from exc
+        except TimeoutError as exc:
+            raise ModelTransportTimeout(f"模型传输超时: {exc}") from exc
+        except urllib.error.URLError as exc:
+            if isinstance(exc.reason, TimeoutError):
+                raise ModelTransportTimeout(f"模型传输超时: {exc.reason}") from exc
+            raise ModelClientError(f"模型网络调用失败: {exc}") from exc
         except OSError as exc:
             raise ModelClientError(f"模型网络调用失败: {exc}") from exc
 
@@ -412,7 +444,25 @@ class OpenAICompatibleChatClient:
         token = _async_call_id.set(call_id)
         started_at = datetime.now(timezone.utc)
         try:
-            return await asyncio.to_thread(self.complete, messages, options=options)
+            # Poll a daemon transport thread. Some hosted event loops do not wake
+            # reliably from the cross-thread callback used by asyncio.to_thread().
+            # The synchronous transport still runs after coroutine cancellation;
+            # its observer records any late result under the same call_id.
+            result: concurrent.futures.Future[ModelResponse] = concurrent.futures.Future()
+            context = contextvars.copy_context()
+
+            def invoke() -> None:
+                if not result.set_running_or_notify_cancel():
+                    return
+                try:
+                    result.set_result(context.run(self.complete, messages, options=options))
+                except BaseException as exc:
+                    result.set_exception(exc)
+
+            threading.Thread(target=invoke, name=f"model-call-{call_id[:8]}", daemon=True).start()
+            while not result.done():
+                await asyncio.sleep(0.02)
+            return result.result()
         except asyncio.CancelledError as exc:
             effective_options = options or ModelCallOptions()
             _emit_model_call(ModelCallEvent(

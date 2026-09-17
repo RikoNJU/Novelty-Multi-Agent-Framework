@@ -38,6 +38,11 @@ def sha256(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
+def summary_execution_status(review) -> str:
+    return ("FAILED" if review.incomplete_reason in
+            {"technical_error", "budget_exhausted", "material_unavailable"} else "SUCCESS")
+
+
 class BudgetedClient:
     def __init__(self, inner, ledger_path: Path):
         self.inner, self.ledger_path = inner, ledger_path
@@ -122,7 +127,8 @@ async def run(*, live: bool) -> None:
         raise RuntimeError("SILICONFLOW_API_KEY unavailable")
     client = BudgetedClient(inner, OUTPUT / "budget-ledger.json")
     reviewer = NoveltyEvidenceReviewer(model_client=client, prompts=prompts,
-        config=EvidenceReviewerConfig(enabled=True, summary_timeout_seconds=180),
+        config=EvidenceReviewerConfig(enabled=True, summary_timeout_seconds=180,
+                                      summary_input_date=expected["today"]),
         model_options=ModelCallOptions(temperature=0, max_tokens=MAX_OUTPUT_TOKENS,
             timeout_seconds=90, tool_choice="none", extra_body={"enable_thinking": False}))
     manager = RuntimeArtifactManager(request.subject_paper_id,
@@ -138,8 +144,7 @@ async def run(*, live: bool) -> None:
         result = await reviewer.summarize_reviews(request, card_reviews)
         save(OUTPUT / "summary-review.json", result.model_dump(mode="json"))
         manager.finish_stage(handle, result.model_dump(mode="json"))
-        manager.finish_run("FAILED" if result.incomplete_reason in
-                           {"technical_error", "budget_exhausted"} else "SUCCESS")
+        manager.finish_run(summary_execution_status(result))
     except BaseException as exc:
         manager.finish_run("FAILED", error=exc)
         raise
