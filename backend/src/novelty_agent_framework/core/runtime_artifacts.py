@@ -423,6 +423,15 @@ class RuntimeArtifactManager:
                 "response": ({"content": event.response.content,
                               "tool_calls": event.response.tool_calls}
                              if event.response is not None else None),
+                "finish_reason": (
+                    event.response.raw["choices"][0].get("finish_reason")
+                    if event.response is not None
+                    and isinstance(event.response.raw, Mapping)
+                    and isinstance(event.response.raw.get("choices"), list)
+                    and event.response.raw["choices"]
+                    and isinstance(event.response.raw["choices"][0], Mapping)
+                    else None
+                ),
                 "request_id": (
                     event.response.raw.get("id")
                     if event.response is not None

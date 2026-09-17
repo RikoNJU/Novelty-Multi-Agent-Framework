@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from enum import StrEnum
-from typing import Any, Literal
+from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -434,6 +434,24 @@ class NoveltyConclusion(StrictModel):
         elif self.verdict is not None:
             raise ValueError("insufficient_evidence conclusion cannot have verdict")
         return self
+
+
+class ConclusionNarrativeDraft(StrictModel):
+    """Model-owned prose and card grouping, without Reviewer authority fields."""
+
+    novelty_point_id: str = Field(min_length=1)
+    summary: str = Field(min_length=1, max_length=600)
+    supporting_card_ids: list[str] = Field(default_factory=list, max_length=24)
+    counter_card_ids: list[str] = Field(default_factory=list, max_length=24)
+
+
+class ReportNarrativeDraft(StrictModel):
+    """The complete model output contract for report synthesis."""
+
+    conclusions: list[ConclusionNarrativeDraft] = Field(min_length=1, max_length=32)
+    limitations: list[Annotated[str, Field(min_length=1, max_length=400)]] = Field(
+        default_factory=list, max_length=12
+    )
 
 
 class NoveltyReport(StrictModel):

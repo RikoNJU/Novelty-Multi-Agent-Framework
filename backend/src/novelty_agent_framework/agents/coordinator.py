@@ -19,6 +19,8 @@ from backend.env import (
     ChatMessage,
     ModelCallOptions,
     ModelClient,
+    ModelCallBudgetExceeded,
+    ModelTransportTimeout,
     ModelRegistry,
     PromptLibrary,
 )
@@ -29,10 +31,12 @@ from ..schemas import (
     NoveltyPoint,
     NoveltyPointReview,
     NoveltyReport,
+    ReportNarrativeDraft,
     PaperInput,
     ResearchTask,
 )
 from ..ports import NoveltyCoordinator
+from ..core.report_binding import assemble_report_from_draft
 
 
 class NoveltyCoordinatorAgent(NoveltyCoordinator):
@@ -219,10 +223,7 @@ class NoveltyCoordinatorAgent(NoveltyCoordinator):
                 for item in insufficient_final_evidence_points
             ],
         }
-        data = self._complete_json(
-            prompt_name="coordinator/synthesize",
-            max_attempts=2,
-            variables={
+        variables = {
                 "paper_json": json.dumps(payload["paper"], ensure_ascii=False),
                 "brief_json": json.dumps(payload["brief"], ensure_ascii=False),
                 "evidence_json": json.dumps(payload["evidence"], ensure_ascii=False),
@@ -235,25 +236,75 @@ class NoveltyCoordinatorAgent(NoveltyCoordinator):
                 "insufficient_final_evidence_points_json": json.dumps(
                     payload["insufficient_final_evidence_points"], ensure_ascii=False
                 ),
-                "report_schema": json.dumps(
-                    NoveltyReport.model_json_schema(), ensure_ascii=False
+                "draft_schema": json.dumps(
+                    ReportNarrativeDraft.model_json_schema(), ensure_ascii=False
                 ),
-            },
-            payload=payload,
-            system_prompt=self._system_prompt(),
-            fallback_user_prompt=(
-                "Reviewer 是新颖性裁定唯一权威来源。请逐字段复制 Reviewer 的"
-                " review_status、verdict、verdict_reason、confidence 和"
-                " highly_relevant_works，并基于有效 EvidenceCard 生成最终"
-                " NoveltyReport JSON。每个结论必须"
-                "绑定 supporting_card_ids 或明确标记证据不足，不得编造文献。"
-                "若 accepted 证据为空但有 rejected_evidence，请在 limitations 说明拒绝原因，"
-                "不要把“技术性拒绝”写成“未检索到文献”。"
-            ),
+            }
+        if self._prompts is not None:
+            rendered = self._prompts.render("coordinator/synthesize", **variables)
+            system, user = rendered.system, rendered.user
+        else:
+            system = self._system_prompt()
+            user = (
+                "只输出 ReportNarrativeDraft JSON：每点一段简短 summary、已授权卡片 ID 分组和"
+                "有限的表达性 limitations。不要输出 paper_id、Reviewer 裁定、证据对象或原文。"
+                "严格覆盖输入的全部查新点；检索覆盖未知时不要推断零命中。\n"
+                f"Draft schema: {variables['draft_schema']}\n"
+                f"输入数据：{json.dumps(payload, ensure_ascii=False)}"
+            )
+        options = replace(
+            self.model_options or ModelCallOptions(temperature=self.temperature),
+            response_format={"type": "json_object"},
         )
-        if not isinstance(data, dict):
-            raise ValueError("Coordinator synthesize 输出顶层必须是对象")
-        return self._validate_report(data, paper_id=paper.paper_id)
+        permitted_points = [point.point_id for point in brief.novelty_points]
+        permitted_cards = [card.card_id for card in evidence]
+        messages = [ChatMessage(role="system", content=system), ChatMessage(role="user", content=user)]
+        for attempt in range(2):
+            try:
+                response = self._client().complete(messages, options=options)
+            except ModelCallBudgetExceeded:
+                raise
+            except ModelTransportTimeout as exc:
+                raise ValueError("response_unavailable: report narrative transport timeout") from exc
+            finish = _finish_reason(response.raw)
+            if finish == "length":
+                raise ValueError("output_truncated: report narrative reached provider length limit")
+            if not response.content:
+                raise ValueError("response_unavailable: report narrative content missing")
+            try:
+                draft = ReportNarrativeDraft.model_validate(
+                    json.loads(_complete_report_json(response.content))
+                )
+                return assemble_report_from_draft(
+                    draft,
+                    paper_id=paper.paper_id,
+                    novelty_reviews=novelty_reviews,
+                    novelty_points=brief.novelty_points,
+                    evidence_cards=evidence,
+                    rejected_evidence=rejected_evidence,
+                )
+            except (json.JSONDecodeError, ValidationError, ValueError) as exc:
+                if _suspected_report_truncation(response, options.max_tokens, exc):
+                    raise ValueError(
+                        "suspected_output_truncation: report narrative ended near output limit"
+                    ) from exc
+                if attempt:
+                    raise ValueError(f"draft_contract_error: {exc}") from exc
+                messages = [
+                    *messages,
+                    ChatMessage(role="assistant", content=response.content or ""),
+                    ChatMessage(
+                        role="user",
+                        content=(
+                            "上次 ReportNarrativeDraft 无效，请只按同一 Draft schema 重新输出完整 JSON。"
+                            f"错误：{type(exc).__name__}: {str(exc)[:500]}。"
+                            f"允许的 point ID：{json.dumps(permitted_points, ensure_ascii=False)}；"
+                            f"允许的 card ID：{json.dumps(permitted_cards, ensure_ascii=False)}。"
+                            f"Draft schema：{variables['draft_schema']}"
+                        ),
+                    ),
+                ]
+        raise AssertionError("unreachable report draft loop")
 
     def _complete_json(
         self,
@@ -358,6 +409,46 @@ def _extract_json_object(content: str | None) -> str:
     if start >= 0 and end > start:
         text = text[start : end + 1]
     return text
+
+
+def _complete_report_json(content: str | None) -> str:
+    """Accept a whole JSON object (or one complete fence), never a prefix."""
+
+    text = (content or "").strip()
+    fence = re.fullmatch(r"```(?:json)?\s*(.*?)\s*```", text, re.DOTALL)
+    return fence.group(1).strip() if fence else text
+
+
+def _finish_reason(raw: Any) -> str | None:
+    if not isinstance(raw, dict):
+        return None
+    choices = raw.get("choices")
+    if isinstance(choices, list) and choices and isinstance(choices[0], dict):
+        value = choices[0].get("finish_reason")
+        return value if isinstance(value, str) else None
+    return None
+
+
+def _suspected_report_truncation(response, max_tokens: int | None, error: Exception) -> bool:
+    """A local hint, not a cross-provider definition of billable output tokens."""
+
+    if not isinstance(error, json.JSONDecodeError):
+        return False
+    if error.pos < len(error.doc) - 64:
+        return False
+    if error.msg.startswith("Unterminated string"):
+        return True
+    if not max_tokens:
+        return False
+    usage = response.usage if isinstance(response.usage, dict) else {}
+    details = usage.get("completion_tokens_details") or {}
+    completion = usage.get("completion_tokens")
+    reasoning = details.get("reasoning_tokens", 0)
+    return (
+        isinstance(completion, int)
+        and isinstance(reasoning, int)
+        and completion - reasoning >= max_tokens
+    )
 
 def _normalize_task_list(data: Any) -> Any:
     """兼容模型输出包装形态：单任务对象或含 research_tasks 键的对象 → 列表。"""

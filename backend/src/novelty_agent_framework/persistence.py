@@ -764,7 +764,7 @@ def persist_report(
 
     workspace = paper_workspace(paper, output_root=output_root)
     path = workspace / "report.json"
-    _write_json(path, report.model_dump(mode="json"))
+    _atomic_write_json(path, report.model_dump(mode="json"))
     return path
 
 

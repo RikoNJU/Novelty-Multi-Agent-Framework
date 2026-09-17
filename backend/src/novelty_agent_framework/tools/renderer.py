@@ -204,7 +204,7 @@ def _build_markdown_context(
         or "- 未提供关键词",
         "search_queries": _format_query_plans(plans),
         "search_summary": (
-            f"共执行 {data['plans'].get('rounds', 0)} 轮检索计划，"
+            f"记录 {data['plans'].get('rounds', 0)} 轮检索计划，"
             f"生成 {len(evidence.get('raw_evidence_cards', []))} 张原始证据卡；"
             f"通过 {len(accepted)} 张，拒绝 {len(rejected)} 张。"
         ),
@@ -380,7 +380,8 @@ def _format_attachments(report: Mapping[str, Any], rejected: list[Mapping[str, A
     ]
     sections = []
     for title, items in parts:
-        sections.append(f"### {title}\n\n{_format_list(items)}")
+        content = _format_list(items) if items else "本节点输入未记录该类条目；不代表已核实为无。"
+        sections.append(f"### {title}\n\n{content}")
     return "\n\n".join(sections)
 
 

@@ -53,22 +53,14 @@ def _brief() -> NoveltyBrief:
 def _report_json() -> str:
     return json.dumps(
         {
-            "paper_id": "paper-1",
             "conclusions": [
                 {
                     "novelty_point_id": "NP-1",
-                    "review_status": "reviewed",
-                    "verdict": "partially_novel",
-                    "verdict_reason": "存在已知重合，但完整组合仍有差异。",
                     "summary": "存在部分技术差异",
-                    "supporting_card_ids": ["C1"],
+                    "supporting_card_ids": [],
                     "counter_card_ids": [],
-                    "confidence": 0.8,
                 }
             ],
-            "missing_references": [],
-            "missing_baselines": [],
-            "citation_issues": [],
             "limitations": [],
         },
         ensure_ascii=False,
@@ -93,7 +85,7 @@ def _agent(client: SequenceClient) -> NoveltyCoordinatorAgent:
 
 
 def test_synthesize_accepts_markdown_fenced_json() -> None:
-    prefix = "下面是报告：\n\n```json\n"
+    prefix = "```json\n"
     suffix = "\n```"
     client = SequenceClient(prefix + _report_json() + suffix)
     report = _agent(client).synthesize(
@@ -127,7 +119,7 @@ def test_synthesize_retries_once_when_first_response_is_not_json() -> None:
 def test_synthesize_fails_after_both_attempts() -> None:
     client = SequenceClient("still not json", "still not json")
     agent = _agent(client)
-    with pytest.raises(ValueError, match="不是合法 JSON"):
+    with pytest.raises(ValueError, match="draft_contract_error"):
         agent.synthesize(
             _paper(),
             brief=_brief(),
