@@ -309,6 +309,7 @@ def build_runtime_plan(
         novelty_point_id=task.novelty_point_id,
         concepts=concepts,
         strategies=strategies,
+        protected_concept_ids=[anchor_id] if task.task_type == "literature_search" else [],
     )
 
 
@@ -427,7 +428,9 @@ class FallbackVariant:
     drop_reason: str = ""
 
 
-def build_fallback_chain(plan: SearchPlan) -> list[FallbackVariant]:
+def build_fallback_chain(
+    plan: SearchPlan, *, preserve_protected: bool = True,
+) -> list[FallbackVariant]:
     """为运行时 SearchPlan 生成有序放宽链（纯函数，可单测）。
 
     每个基础策略至多一个放宽变体：strict/medium 丢弃最低 importance 概念，
@@ -436,6 +439,9 @@ def build_fallback_chain(plan: SearchPlan) -> list[FallbackVariant]:
     """
 
     by_id = {concept.concept_id: concept for concept in plan.concepts}
+    protected = set(plan.protected_concept_ids) if preserve_protected else set()
+    if protected - by_id.keys():
+        raise SearchPlanCompilationError("保护概念引用了未定义概念")
     chain: list[FallbackVariant] = []
     for strategy in plan.strategies:
         ids = CONCEPT_ID_PATTERN.findall(strategy.expression)
@@ -461,8 +467,17 @@ def build_fallback_chain(plan: SearchPlan) -> list[FallbackVariant]:
                     drop_reason="移除 exclude 排除词（最后兜底）",
                 )
             )
-        elif len(ids) > 1:
-            dropped = _lowest_importance_concept(ids, by_id)
+        elif len(ids) > 1 and (not preserve_protected or
+                               _required_concepts(strategy.expression, set(by_id)) >= protected):
+            # Dropping a term is only defined for a flat conjunction. Rejoining
+            # tokens from an OR tree would silently change its meaning.
+            if (preserve_protected and not re.fullmatch(
+                    r"C\d+(?:\s+AND\s+C\d+)+", strategy.expression.strip())):
+                continue
+            removable = [cid for cid in ids if cid not in protected]
+            if not removable:
+                continue
+            dropped = _lowest_importance_concept(removable, by_id)
             rest = [cid for cid in ids if cid != dropped]
             joiner = " AND "
             chain.append(
@@ -477,6 +492,40 @@ def build_fallback_chain(plan: SearchPlan) -> list[FallbackVariant]:
                 )
             )
     return chain
+
+
+def _required_concepts(expression: str, defined: set[str]) -> set[str]:
+    """Return concepts required by every satisfying branch of the existing DSL."""
+    tokens = parse_search_plan_expression(expression, defined_concepts=defined)
+    position = 0
+
+    def atom() -> set[str]:
+        nonlocal position
+        token = tokens[position]
+        position += 1
+        if token == "(":
+            result = disjunction()
+            position += 1  # closing parenthesis was validated by the parser
+            return result
+        return {token}
+
+    def conjunction() -> set[str]:
+        nonlocal position
+        result = atom()
+        while position < len(tokens) and tokens[position] == "AND":
+            position += 1
+            result |= atom()
+        return result
+
+    def disjunction() -> set[str]:
+        nonlocal position
+        result = conjunction()
+        while position < len(tokens) and tokens[position] == "OR":
+            position += 1
+            result &= conjunction()
+        return result
+
+    return disjunction()
 
 
 def _lowest_importance_concept(

@@ -694,6 +694,10 @@ class ArxivWebSession:
                 error = None
                 delay = 0.0
                 try:
+                    recorder = _runtime_recorder()
+                    if recorder is not None:
+                        recorder.reserve_provider_request(provider="arxiv_web",
+                                                          operation=operation)
                     response = self._client.get(url, params=params,
                         timeout=min(self._timeout, max(0.001, deadline - dispatched)),
                         follow_redirects=False)

@@ -30,3 +30,8 @@ def test_audit_generates_six_local_compiler_units(tmp_path: Path) -> None:
     assert c1["input_kind"] == "derived_projection"
     assert len(c1["strategies"]) == 16
     assert (output / "compiler-comparison/P6_C0/query-pool.json").is_file()
+    findings = json.loads((output / "analysis/evidence-findings.json").read_text())
+    assert all(item["c0_strategy_count"] == 3 and item["c0_dsl_count"] == 2
+               for item in findings["findings"])
+    report = (output / "report.md").read_text()
+    assert "策略表达式不同" not in report

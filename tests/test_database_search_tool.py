@@ -255,11 +255,13 @@ def test_execution_summary_counts_provider_neutral_statuses():
         "succeeded": 1,
         "partial": 1,
         "failed": 1,
+        "not_run": 0,
         "requires_human": 1,
         "degraded": True,
         "all_failed": False,
         "provider_failed": True,
         "no_execution": False,
+        "retrieval_incomplete_budget": False,
     }
 
 
@@ -276,16 +278,28 @@ def test_execution_summary_all_failed_is_structured_failure(tmp_path):
         "succeeded": 0,
         "partial": 0,
         "failed": 3,
+        "not_run": 0,
         "requires_human": 0,
         "degraded": False,
         "all_failed": True,
         "provider_failed": True,
         "no_execution": False,
+        "retrieval_incomplete_budget": False,
     }
     projected = tool.project_model_context(observation)
     assert projected["succeeded"] is False
     assert projected["error"] == observation.error
     assert projected["execution_summary"]["failed"] == 3
+
+
+def test_failed_request_with_unrun_followups_remains_failure():
+    summary = _summarize_search_executions([
+        execution(SearchExecutionStatus.FAILED, 1),
+        execution(SearchExecutionStatus.NOT_RUN, 2),
+    ])
+    assert summary["all_failed"] is True
+    assert summary["no_execution"] is False
+    assert summary["not_run"] == 1
 
 
 def test_successful_empty_is_not_execution_failure(tmp_path):

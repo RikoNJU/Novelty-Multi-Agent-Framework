@@ -10,6 +10,7 @@ import contextvars
 import json
 import os
 import time
+import uuid
 import urllib.error
 import urllib.request
 from collections.abc import Mapping, Sequence
@@ -40,9 +41,17 @@ class ModelClientError(RuntimeError):
     """模型客户端调用失败。"""
 
 
+class ModelTraceError(RuntimeError):
+    """Runtime trace failed; stop before another paid model request."""
+
+
+class ModelCallBudgetExceeded(RuntimeError):
+    """A run has reached its model-call cap before dispatch."""
+
+
 @dataclass(frozen=True)
 class ModelCallEvent:
-    """One completed model request, emitted without prompt or credential data."""
+    """A model request boundary; the recorder redacts before persistence."""
 
     alias: str
     provider: str
@@ -52,11 +61,18 @@ class ModelCallEvent:
     message_count: int
     response: ModelResponse | None = None
     error: BaseException | None = None
+    call_id: str = ""
+    phase: str = "COMPLETE"
+    request_payload: Mapping[str, Any] | None = None
+    request_options: Mapping[str, Any] | None = None
 
 
 ModelCallObserver = Callable[[ModelCallEvent], None]
 _model_call_observer: contextvars.ContextVar[ModelCallObserver | None] = (
     contextvars.ContextVar("novelty_model_call_observer", default=None)
+)
+_async_call_id: contextvars.ContextVar[str | None] = contextvars.ContextVar(
+    "novelty_async_model_call_id", default=None
 )
 
 
@@ -80,9 +96,10 @@ def _emit_model_call(event: ModelCallEvent) -> None:
         return
     try:
         observer(event)
-    except Exception:
-        # Debug accounting must never change the result of a model request.
-        return
+    except ModelCallBudgetExceeded:
+        raise
+    except Exception as exc:
+        raise ModelTraceError("trace_incomplete: model call recording failed") from exc
 
 
 @dataclass(frozen=True)
@@ -238,33 +255,41 @@ class OpenAICompatibleChatClient:
     ) -> ModelResponse:
         started_at = datetime.now(timezone.utc)
         monotonic_started = time.monotonic()
+        call_id = _async_call_id.get() or uuid.uuid4().hex
+        effective_options = options or ModelCallOptions()
+        request_payload = self._build_payload(messages, effective_options)
+        request_options = {
+            "timeout_seconds": (effective_options.timeout_seconds
+                                if effective_options.timeout_seconds is not None
+                                else self.profile.defaults.get("timeout_seconds", 60.0)),
+            "endpoint": f"{self.profile.base_url.rstrip('/')}/chat/completions",
+        }
+        common = dict(alias=self.profile.alias, provider=self.profile.provider,
+                      model=self.profile.model, started_at=started_at,
+                      message_count=len(messages), call_id=call_id,
+                      request_payload=request_payload, request_options=request_options)
+        _emit_model_call(ModelCallEvent(**common, duration_ms=0, phase="START"))
         try:
             response = self._complete(messages, options=options)
-        except Exception as exc:
+        except BaseException as exc:
             _emit_model_call(
                 ModelCallEvent(
-                    alias=self.profile.alias,
-                    provider=self.profile.provider,
-                    model=self.profile.model,
-                    started_at=started_at,
+                    **common,
+                    phase=("CANCELLED" if isinstance(exc, (KeyboardInterrupt, asyncio.CancelledError))
+                           else "COMPLETE"),
                     duration_ms=max(
                         0, int((time.monotonic() - monotonic_started) * 1000)
                     ),
-                    message_count=len(messages),
                     error=exc,
                 )
             )
             raise
         _emit_model_call(
             ModelCallEvent(
-                alias=self.profile.alias,
-                provider=self.profile.provider,
-                model=self.profile.model,
-                started_at=started_at,
+                **common,
                 duration_ms=max(
                     0, int((time.monotonic() - monotonic_started) * 1000)
                 ),
-                message_count=len(messages),
                 response=response,
             )
         )
@@ -383,7 +408,29 @@ class OpenAICompatibleChatClient:
         *,
         options: ModelCallOptions | None = None,
     ) -> ModelResponse:
-        return await asyncio.to_thread(self.complete, messages, options=options)
+        call_id = uuid.uuid4().hex
+        token = _async_call_id.set(call_id)
+        started_at = datetime.now(timezone.utc)
+        try:
+            return await asyncio.to_thread(self.complete, messages, options=options)
+        except asyncio.CancelledError as exc:
+            effective_options = options or ModelCallOptions()
+            _emit_model_call(ModelCallEvent(
+                alias=self.profile.alias, provider=self.profile.provider,
+                model=self.profile.model, started_at=started_at,
+                duration_ms=max(0, int((datetime.now(timezone.utc) - started_at).total_seconds() * 1000)),
+                message_count=len(messages), call_id=call_id, phase="CANCELLED",
+                request_payload=self._build_payload(messages, effective_options),
+                request_options={
+                    "timeout_seconds": (effective_options.timeout_seconds
+                                        if effective_options.timeout_seconds is not None
+                                        else self.profile.defaults.get("timeout_seconds", 60.0)),
+                    "endpoint": f"{self.profile.base_url.rstrip('/')}/chat/completions",
+                }, error=exc,
+            ))
+            raise
+        finally:
+            _async_call_id.reset(token)
 
 
 def _serialize_message(message: ChatMessage) -> dict[str, Any]:

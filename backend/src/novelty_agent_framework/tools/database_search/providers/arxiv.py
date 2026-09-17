@@ -427,6 +427,11 @@ class ArxivFullTextTool(FullTextTool):
 
     def _try_get(self, url: str) -> httpx.Response | None:
         try:
+            from ....core.runtime_artifacts import current_runtime_artifacts
+            runtime = current_runtime_artifacts()
+            if runtime is not None:
+                runtime.reserve_provider_request(provider="arxiv_auxiliary",
+                                                 operation="GET")
             response = self._client.get(url)
             response.raise_for_status()
             return response

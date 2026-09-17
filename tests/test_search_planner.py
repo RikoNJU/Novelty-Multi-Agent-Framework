@@ -12,7 +12,9 @@ from types import SimpleNamespace
 
 import pytest
 
-from backend.env import ModelClientError, ModelResponse, PromptLibrary
+from backend.env import (ModelClientError, ModelProfile, ModelResponse,
+                         OpenAICompatibleChatClient, PromptLibrary)
+from novelty_agent_framework.core import RuntimeArtifactManager, RuntimeDebugConfig
 from novelty_agent_framework.agents import (
     SearchPlannerAgent,
     SearchPlannerExhaustedError,
@@ -117,6 +119,51 @@ def test_plans_normal_chinese_task_and_renders_prompt() -> None:
     assert '"language": "zh"' in messages[1].content
     assert "SearchPlanDraft" in messages[0].content
     assert options.response_format == {"type": "json_object"}
+
+
+def test_planner_trace_links_model_json_draft_and_plan(tmp_path: Path) -> None:
+    task = make_task()
+    client = OpenAICompatibleChatClient(ModelProfile(
+        alias="planner", model="local", api_key="stub"))
+    client._complete = lambda _messages, *, options=None: ModelResponse(
+        content=json.dumps(valid_draft(task)))
+    manager = RuntimeArtifactManager("paper", config=RuntimeDebugConfig(
+        output_root=tmp_path / "outputs", archive_root=tmp_path / "archive"))
+    manager.activate()
+    stage = manager.start_stage("plan_research_task", {
+        "current_point": make_point(), "current_task": task,
+    })
+    plan = SearchPlannerAgent(model_client=client).plan(make_point(), task)
+    manager.finish_stage(stage, {"search_plans": [plan]})
+    manager.deactivate()
+    events = [json.loads(path.read_text()) for path in sorted(
+        (manager.run_dir / "planner_events").glob("*.json"))]
+    assert [item["step"] for item in events] == [
+        "parsed_model_json", "validated_draft", "compiled_plan"]
+    assert events[0]["parent_llm_call_id"] == "llm_0001"
+    assert events[1]["payload"]["concepts"][0]["role"] == "object"
+    assert events[2]["payload"]["protected_concept_ids"] == ["C1"]
+
+
+def test_planner_retry_trace_keeps_attempt_and_call_link(tmp_path: Path) -> None:
+    task = make_task()
+    responses = iter(["not json", json.dumps(valid_draft(task))])
+    client = OpenAICompatibleChatClient(ModelProfile(
+        alias="planner", model="local", api_key="stub"))
+    client._complete = lambda _messages, *, options=None: ModelResponse(content=next(responses))
+    manager = RuntimeArtifactManager("paper", config=RuntimeDebugConfig(
+        output_root=tmp_path / "outputs", archive_root=tmp_path / "archive"))
+    manager.activate()
+    stage = manager.start_stage("plan_research_task", {
+        "current_point": make_point(), "current_task": task,
+    })
+    plan = SearchPlannerAgent(model_client=client, max_attempts=2).plan(make_point(), task)
+    manager.finish_stage(stage, {"search_plans": [plan]})
+    manager.deactivate()
+    events = [json.loads(path.read_text()) for path in sorted(
+        (manager.run_dir / "planner_events").glob("*.json"))]
+    assert events[0]["attempt"] == 1 and events[0]["parent_llm_call_id"] == "llm_0001"
+    assert events[-1]["attempt"] == 2 and events[-1]["parent_llm_call_id"] == "llm_0002"
 
 
 def test_custom_prompt_name_is_used_for_rendering() -> None:

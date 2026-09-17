@@ -34,9 +34,15 @@ from ...schemas import (
 )
 from .adapter import CompiledQuery
 from ...agents.search_plan_compiler import FallbackVariant, build_fallback_chain
+from ...core.runtime_artifacts import (ProviderPhysicalBudgetExceeded,
+                                       current_runtime_artifacts)
 from .retrieval_sources import RetrievalSource
 
 T = TypeVar("T")
+
+
+class ReplayMissError(LookupError):
+    """An offline response snapshot has no exact match for this request."""
 
 
 async def _invoke_provider(
@@ -160,6 +166,10 @@ class StructuredSourceRetrievalTool:
         source: RetrievalSource,
         reference_store: ReferenceStore | None = None,
         candidate_limit: int = 8,
+        per_query_limit: int | None = None,
+        max_provider_requests: int = 6,
+        fallback_protection: bool = True,
+        legacy_candidate_stop: bool = False,
         full_text_limit: int = 8,
         max_concurrency: int = 4,
     ) -> None:
@@ -167,7 +177,9 @@ class StructuredSourceRetrievalTool:
             raise ValueError("RetrievalSource.query_adapter is required")
         if source.search_tool is None:
             raise ValueError("RetrievalSource.search_tool is required")
-        if candidate_limit < 1 or full_text_limit < 0 or max_concurrency < 1:
+        if (candidate_limit < 1 or full_text_limit < 0 or max_concurrency < 1
+                or (per_query_limit is not None and per_query_limit < 1)
+                or max_provider_requests < 1):
             raise ValueError("retrieval limits and concurrency are invalid")
         # LEGACY / UNUSED: 旧版会在数据库检索阶段再次调用 Planner。
         # 当前正式链由 TaskResearchRequest.search_plan 注入唯一计划。
@@ -176,6 +188,10 @@ class StructuredSourceRetrievalTool:
         self.source = source
         self.reference_store = reference_store or ReferenceStore()
         self.candidate_limit = candidate_limit
+        self.per_query_limit = per_query_limit or candidate_limit
+        self.max_provider_requests = max_provider_requests
+        self.fallback_protection = fallback_protection
+        self.legacy_candidate_stop = legacy_candidate_stop
         self.full_text_limit = full_text_limit
         self.max_concurrency = max_concurrency
         self.source_id = source.source_id
@@ -259,8 +275,23 @@ class StructuredSourceRetrievalTool:
                 f"tool source_id {self.source_id!r}"
             )
         plan = request.search_plan
-        chain = build_fallback_chain(plan)
+        chain = build_fallback_chain(plan, preserve_protected=self.fallback_protection)
         pending, failed, unique_hits, chain_warnings = await self._search(chain, request)
+        runtime = current_runtime_artifacts()
+        if runtime is not None:
+            runtime.record_retrieval_event({
+                "phase": "candidate_selection", "source_id": self.source_id,
+                "point_id": request.research_task.novelty_point_id,
+                "task_id": request.research_task.task_id,
+                "attempt": request.research_task.attempt,
+                "candidate_limit": self.candidate_limit,
+                "selected_keys": list(unique_hits),
+                "observed_by_execution": [
+                    {"execution_id": item.execution_id,
+                     "observed_keys": [_candidate_key(hit) for hit in item.hits]}
+                    for item in pending
+                ],
+            })
         warnings = list(chain_warnings)
         enriched_hits, acquisition_warnings = await self._enrich_metadata(unique_hits)
         warnings.extend(acquisition_warnings)
@@ -310,9 +341,19 @@ class StructuredSourceRetrievalTool:
                     tool_name=self.name,
                     source_id=self.source_id,
                     query=item.query.query,
-                        parameters=_query_parameters(
-                            item.query, self.candidate_limit, variant=item.variant
-                        ),
+                    parameters={
+                        **_query_parameters(item.query, self.per_query_limit,
+                                            variant=item.variant),
+                        "requests_budget": self.max_provider_requests,
+                        "candidate_output_limit": self.candidate_limit,
+                        "observed_hits": [
+                            {"rank": rank, "document_id": hit.document_id,
+                             "candidate_key": _candidate_key(hit),
+                             "selection": ("selected" if _candidate_key(hit) in mapped
+                                           else "not_selected_or_unmapped")}
+                            for rank, hit in enumerate(item.hits, start=1)
+                        ],
+                    },
                     status=(
                         SearchExecutionStatus.PARTIAL
                         if partial
@@ -323,6 +364,8 @@ class StructuredSourceRetrievalTool:
                     results=results,
                 )
             )
+
+        executions.sort(key=lambda item: (item.started_at, item.execution_id))
 
         artifacts: dict[str, Artifact] = {}
         for key, hit in enriched_hits.items():
@@ -461,24 +504,41 @@ class StructuredSourceRetrievalTool:
         dict[str, SearchHit],
         list[str],
     ]:
-        """沿放宽链执行检索：基础策略命中则跳过其放宽变体，零命中自动降级。"""
+        """Run base directions first, then eligible fallbacks under a request budget."""
 
         pending: list[_PendingExecution] = []
         failed: list[SearchExecution] = []
-        unique: dict[str, SearchHit] = {}
         warnings: list[str] = []
         base_hit: dict[str, bool] = {}
         execution_index = 0
         provider_failed = False
+        physical_budget_exhausted = False
 
-        for variant in chain:
-            if len(unique) >= self.candidate_limit:
+        ordered = list(chain) if self.legacy_candidate_stop else [
+            v for v in chain if v.variant_id == v.base_strategy_id
+        ] + [v for v in chain if v.variant_id != v.base_strategy_id]
+        fallback_bases = {v.base_strategy_id for v in chain
+                          if v.variant_id != v.base_strategy_id}
+        for variant in ordered:
+            if (variant.variant_id == variant.base_strategy_id
+                    and variant.level != "broad"
+                    and variant.base_strategy_id not in fallback_bases):
+                warnings.append(
+                    f"{variant.base_strategy_id}: fallback_not_applicable; "
+                    "no safe removable concept"
+                )
+        requests_used = 0
+        legacy_unique: dict[str, SearchHit] = {}
+        runtime = current_runtime_artifacts()
+        for variant in ordered:
+            if self.legacy_candidate_stop and len(legacy_unique) >= self.candidate_limit:
                 break
             if (
                 variant.variant_id != variant.base_strategy_id
                 and base_hit.get(variant.base_strategy_id)
             ):
-                continue  # 基础策略已命中，放宽变体不再需要
+                warnings.append(f"{variant.variant_id}: fallback_not_applicable; base strategy hit")
+                continue
             compiled = self._compile_variant(variant, request.search_plan)
             if not compiled:
                 warnings.append(
@@ -496,19 +556,97 @@ class StructuredSourceRetrievalTool:
                     query.query,
                     str(execution_index),
                 )
+                if provider_failed or physical_budget_exhausted or requests_used >= self.max_provider_requests:
+                    reason = ("retrieval_incomplete_budget" if physical_budget_exhausted
+                              or requests_used >= self.max_provider_requests
+                              else "provider_failed")
+                    failed.append(SearchExecution(
+                        execution_id=execution_id, run_id=request.run_id,
+                        tool_name=self.name, source_id=self.source_id,
+                        query=query.query,
+                        parameters={**_query_parameters(query, self.per_query_limit, variant=variant),
+                                    "not_run_reason": reason,
+                                    "requests_used": requests_used,
+                                    "max_provider_requests": self.max_provider_requests},
+                        status=SearchExecutionStatus.NOT_RUN,
+                        started_at=started, completed_at=started,
+                    ))
+                    if runtime is not None:
+                        runtime.record_retrieval_event({
+                            "phase": "provider_query", "execution_id": execution_id,
+                            "status": "NOT_RUN", "reason": reason,
+                            "query": query.query, "limit": self.per_query_limit,
+                        })
+                    continue
+                requests_used += 1
+                if runtime is not None:
+                    runtime.record_retrieval_event({
+                        "phase": "provider_query", "execution_id": execution_id,
+                        "status": "START", "query": query.query,
+                        "limit": self.per_query_limit,
+                        "strategy_id": query.strategy_id,
+                        "requests_used": requests_used,
+                        "max_provider_requests": self.max_provider_requests,
+                    })
                 try:
                     raw_hits = list(
                         await _invoke_provider(
                             self.source.search_tool.search,
                             query.query,
-                            limit=self.candidate_limit,
+                            limit=self.per_query_limit,
                         )
                     )
                     hits = [
                         hit if isinstance(hit, SearchHit) else SearchHit(**hit)
                         for hit in raw_hits
                     ]
+                except ProviderPhysicalBudgetExceeded:
+                    requests_used -= 1
+                    physical_budget_exhausted = True
+                    failed.append(SearchExecution(
+                        execution_id=execution_id, run_id=request.run_id,
+                        tool_name=self.name, source_id=self.source_id,
+                        query=query.query,
+                        parameters={**_query_parameters(query, self.per_query_limit,
+                                                        variant=variant),
+                                    "not_run_reason": "retrieval_incomplete_budget",
+                                    "budget_unit": "physical_provider_request"},
+                        status=SearchExecutionStatus.NOT_RUN,
+                        started_at=started,
+                        completed_at=datetime.now(timezone.utc),
+                    ))
+                    if runtime is not None:
+                        runtime.record_retrieval_event({
+                            "phase": "provider_query", "execution_id": execution_id,
+                            "status": "NOT_RUN", "reason": "retrieval_incomplete_budget",
+                            "budget_unit": "physical_provider_request",
+                        })
+                    continue
+                except ReplayMissError:
+                    requests_used -= 1
+                    failed.append(SearchExecution(
+                        execution_id=execution_id, run_id=request.run_id,
+                        tool_name=self.name, source_id=self.source_id,
+                        query=query.query,
+                        parameters={**_query_parameters(query, self.per_query_limit,
+                                                        variant=variant),
+                                    "not_run_reason": "replay_miss"},
+                        status=SearchExecutionStatus.NOT_RUN,
+                        started_at=started,
+                        completed_at=datetime.now(timezone.utc),
+                    ))
+                    if runtime is not None:
+                        runtime.record_retrieval_event({
+                            "phase": "provider_query", "execution_id": execution_id,
+                            "status": "REPLAY_MISS", "capture_boundary": "offline_fixture",
+                        })
+                    continue
                 except Exception as exc:
+                    if runtime is not None:
+                        runtime.record_retrieval_event({
+                            "phase": "provider_query", "execution_id": execution_id,
+                            "status": "FAILED", "error": _safe_error(exc),
+                        })
                     failed.append(
                         SearchExecution(
                             execution_id=execution_id,
@@ -517,7 +655,7 @@ class StructuredSourceRetrievalTool:
                             source_id=self.source_id,
                             query=query.query,
                             parameters=_query_parameters(
-                                query, self.candidate_limit, variant=variant
+                                query, self.per_query_limit, variant=variant
                             ),
                             status=SearchExecutionStatus.FAILED,
                             started_at=started,
@@ -526,7 +664,7 @@ class StructuredSourceRetrievalTool:
                         )
                     )
                     provider_failed = True
-                    break
+                    continue
                 pending.append(
                     _PendingExecution(
                         execution_id=execution_id,
@@ -537,19 +675,44 @@ class StructuredSourceRetrievalTool:
                         variant=variant,
                     )
                 )
+                if runtime is not None:
+                    runtime.record_retrieval_event({
+                        "phase": "provider_query", "execution_id": execution_id,
+                        "status": "SUCCEEDED", "capture_boundary": "SearchTool.search",
+                        "raw_result": raw_hits, "normalized_hits": hits,
+                    })
                 if hits:
                     base_hit[variant.base_strategy_id] = True
-                for hit in hits:
+                if self.legacy_candidate_stop:
+                    for hit in hits:
+                        legacy_unique.setdefault(_candidate_key(hit), hit)
+                    if len(legacy_unique) >= self.candidate_limit:
+                        break
+        # Rotate among base directions, then their fallbacks. A fast or early
+        # response cannot monopolize the bounded final candidate set.
+        groups: dict[str, list[SearchHit]] = {}
+        for item in pending:
+            group = groups.setdefault(item.variant.base_strategy_id, [])
+            group.extend(item.hits)
+        unique: dict[str, SearchHit] = {}
+        while any(groups.values()) and len(unique) < self.candidate_limit:
+            for group in groups.values():
+                if group:
+                    hit = group.pop(0)
                     unique.setdefault(_candidate_key(hit), hit)
-                if len(unique) >= self.candidate_limit:
-                    break
-            if provider_failed:
-                break
+                    if len(unique) >= self.candidate_limit:
+                        break
+        if requests_used >= self.max_provider_requests and any(
+            item.status == SearchExecutionStatus.NOT_RUN for item in failed
+        ):
+            warnings.append("retrieval_incomplete_budget")
+        if self.legacy_candidate_stop:
+            unique = dict(list(legacy_unique.items())[:self.candidate_limit])
 
         return (
             pending,
             failed,
-            dict(list(unique.items())[: self.candidate_limit]),
+            unique,
             warnings,
         )
 

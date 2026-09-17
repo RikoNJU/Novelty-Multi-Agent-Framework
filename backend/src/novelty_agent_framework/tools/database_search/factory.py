@@ -87,6 +87,9 @@ def build_structured_source_retrieval_tool(
         source=source,
         reference_store=reference_store,
         candidate_limit=int(retrieval.get("candidate_limit_per_task", 8)),
+        per_query_limit=(int(retrieval["per_query_limit"])
+                         if retrieval.get("per_query_limit") is not None else None),
+        max_provider_requests=int(retrieval.get("max_provider_requests", 6)),
         full_text_limit=int(retrieval.get("full_text_limit_per_task", 8)),
         max_concurrency=max_concurrency,
     )

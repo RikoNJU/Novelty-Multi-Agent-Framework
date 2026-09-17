@@ -4,7 +4,8 @@ import asyncio
 import json
 from pathlib import Path
 
-from backend.env import ModelResponse, ModelToolCall
+from backend.env import (ChatMessage, ModelProfile, ModelResponse, ModelToolCall,
+                         OpenAICompatibleChatClient)
 from novelty_agent_framework.core import (
     RuntimeArtifactManager,
     RuntimeDebugConfig,
@@ -135,7 +136,7 @@ def test_run_identity_is_written_to_manifest_and_summary(tmp_path: Path) -> None
     manager = RuntimeArtifactManager(
         "paper", config=_config(tmp_path), run_id="identity-run", run_identity=identity
     )
-    manager.finish_run("SUCCESS")
+    _, archive = manager.finish_run("SUCCESS")
 
     manifest = json.loads((manager.run_dir / "manifest.json").read_text(encoding="utf-8"))
     summary = json.loads((manager.run_dir / "summary.json").read_text(encoding="utf-8"))
@@ -182,7 +183,7 @@ def test_recursive_redaction_and_large_value_reference(tmp_path: Path) -> None:
     )
     stage = manager.start_stage("reader", {"password": secret, "text": "x" * 100})
     manager.finish_stage(stage, {"cookie": secret})
-    manager.finish_run("SUCCESS")
+    _, archive = manager.finish_run("SUCCESS")
 
     all_text = "\n".join(
         path.read_text(encoding="utf-8")
@@ -193,7 +194,51 @@ def test_recursive_redaction_and_large_value_reference(tmp_path: Path) -> None:
     stage_input = json.loads((stage.directory / "input.json").read_text(encoding="utf-8"))
     assert stage_input["password"] == "***REDACTED***"
     assert stage_input["text"]["type"] == "content_reference"
+    blob = manager.run_dir / stage_input["text"]["path"]
+    assert blob.is_file()
+    assert len(blob.read_bytes()) == stage_input["text"]["size"]
+    assert (archive / stage_input["text"]["path"]).read_bytes() == blob.read_bytes()
     assert stage_input["text"]["size"] == 100
+
+
+def test_concurrent_points_keep_distinct_task_scope(tmp_path: Path) -> None:
+    manager = RuntimeArtifactManager("paper", config=_config(tmp_path), run_id="two-points")
+    client = OpenAICompatibleChatClient(ModelProfile(
+        alias="local", model="local", api_key="stub"))
+    client._complete = lambda _messages, *, options=None: ModelResponse(
+        content="ok", tool_calls=(ModelToolCall(id="same-call", name="search", arguments={}),))
+
+    async def worker(point_id: str) -> None:
+        stage = manager.start_stage("run_research_task", {
+            "current_point": {"point_id": point_id},
+            "current_task": {"task_id": "T-1", "novelty_point_id": point_id,
+                             "attempt": 1},
+        })
+        await asyncio.sleep(0)
+        client.complete([ChatMessage(role="user", content=point_id)])
+        handle = manager.start_tool_call("search", agent_arguments={},
+                                         resolved_arguments={}, agent_tool_call_id="same-call")
+        manager.finish_tool_call(handle, raw_result=[], normalized_result=[])
+        manager.finish_stage(stage, {})
+
+    manager.activate()
+    async def run_both() -> None:
+        await asyncio.gather(worker("NP-1"), worker("NP-2"))
+    asyncio.run(run_both())
+    manager.deactivate()
+    records = [json.loads(path.read_text()) for path in
+               (manager.run_dir / "tools").glob("*.json")]
+    assert {item["scope"]["point_id"] for item in records} == {"NP-1", "NP-2"}
+    assert {item["scope"]["task_id"] for item in records} == {"T-1"}
+    assert all(item["parent_stage_id"] for item in records)
+    model_records = [json.loads(path.read_text()) for path in
+                     (manager.run_dir / "llm_calls").glob("*.json")]
+    assert {item["scope"]["point_id"] for item in model_records} == {"NP-1", "NP-2"}
+    assert all(item["parent_stage_id"] for item in model_records)
+    models_by_point = {item["scope"]["point_id"]: item["llm_call_id"]
+                       for item in model_records}
+    assert all(item["parent_llm_call_id"] == models_by_point[item["scope"]["point_id"]]
+               for item in records)
 
 
 def test_disabled_recorder_has_no_filesystem_side_effect(tmp_path: Path) -> None:

@@ -1,0 +1,77 @@
+{
+  "alias": "deepseek-flash",
+  "billing": {
+    "amount": 0.010962,
+    "currency": "RMB",
+    "pricing_table": "/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/config/llm_pricing.json",
+    "rate_name": "default",
+    "rates_per_unit": {
+      "cached_input": 0.3,
+      "input": 3.0,
+      "output": 9.0
+    },
+    "status": "PRICED",
+    "unit_tokens": 1000000
+  },
+  "client_call_id": "86c4ee4f8aac46469b44d1ca76c227c3",
+  "duration_ms": 2933,
+  "error": null,
+  "llm_call_id": "llm_0074",
+  "message_count": 2,
+  "model": "deepseek-ai/DeepSeek-V4-Flash",
+  "parent_stage_id": "stage_0012",
+  "provider": "openai_compatible",
+  "provider_usage": {
+    "completion_tokens": 443,
+    "completion_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "prompt_cache_hit_tokens": 0,
+    "prompt_cache_miss_tokens": 2325,
+    "prompt_tokens": 2325,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "total_tokens": 2768
+  },
+  "request_id": "01a0afcf476bab5290202f6bbd395be2",
+  "request_options": {
+    "endpoint": "https://api.siliconflow.cn/v1/chat/completions",
+    "timeout_seconds": 180.0
+  },
+  "request_payload": {
+    "enable_thinking": false,
+    "max_tokens": 8192,
+    "messages": [
+      {
+        "content": "你是查新点级汇总 Reviewer。综合带索引的单卡核验结果和已核验关键引文，\n输出 NoveltyPointReview。单卡结果是派生分析，不是原始证据。\n必须区分单篇公开完整组合与多篇分别公开部分特征，保留部分相关文献。\n单卡失败、证据不足及 quote_truncated=true 的局限必须保留；截短引文\n未展示的内容不能当作不存在。摘要未说明机制不能改写为文献未采用机制。\n若裁定依赖未核验的关键差异，返回 insufficient_evidence，在\nsupplement_request 中说明待复核索引；已证实的有限结论仍可保留。\n本轮不可调用工具，不得用模型记忆填补缺口；只能引用输入已核验的\nwork_id、card_id 和 evidence_id。网页补充资料不得用于裁定。\n理由简洁，不重复逐卡全文；只输出严格 JSON。\n区分原文明确支持的事实与未核验的特征。摘要、局部片段或截短引文未提及某特征，不能证明文献未采用该特征；取得全文也不等于已读到关键段落。若最终裁定依赖尚未核验的关键差异，返回 status=insufficient_evidence，说明缺少的比较证据，不得仅降低 confidence 后继续裁定。保留已证实的局部重合；多篇分别覆盖部分特征不等于单篇公开完整组合。检索或获取失败、零命中、未展示证据均不能支持新颖性。不影响当前有限结论的次要未知可以作为局限保留。",
+        "role": "system"
+      },
+      {
+        "content": "{\"today\": \"2026-09-17\", \"novelty_point\": {\"point_id\": \"NP-3\", \"claim\": \"提出一种基于边分割的图流划分算法Sketch-DBH，利用Count-Min Sketch存储节点度数信息，并使用最小堆维护高频节点信息，实现常数时间内返回查询结果并生成子图编号，确保负载均衡。\", \"claim_en\": \"Propose an edge-segmentation-based graph stream partitioning algorithm Sketch-DBH, which uses Count-Min Sketch to store node degree information and a min-heap to maintain high-frequency node information, enabling constant-time query results and generating subgraph IDs to ensure load balancing.\", \"technical_features\": [\"使用Count-Min Sketch概率数据结构存储每个节点的度数信息\", \"使用最小堆维护图流数据中的高频节点信息\", \"在常数时间内返回查询结果\", \"根据节点度数信息生成单条图流数据即将被分配到的子图编号\", \"高效完成大规模图流数据的划分且确保负载均衡\"], \"technical_features_en\": [\"Use Count-Min Sketch probabilistic data structure to store degree information of each node\", \"Use a min-heap to maintain high-frequency node information in graph stream data\", \"Return query results in constant time\", \"Generate the subgraph ID to which a single graph stream data item will be assigned based on node degree information\", \"Efficiently partition large-scale graph stream data and ensure load balancing\"], \"source_locations\": [\"作者贡献段2：提出了一种新的基于边分割的图流划分算法——Sketch-DBH，用于处理大规模图流数据下的子图划分问题。该算法通过Count-Min Sketch 这一概率数据结构存储每个节点的度数信息，并使用一个最小堆维护图流数据中的高频节点信息，使其可以在常数时间内返回查询结果并以此根据节点度数信息生成单条图流数据即将被分配到的子图编号。Sketch-DBH 算法可以高效完成大规模图流数据的划分且确保负载均衡\"]}, \"card_reviews\": [{\"index\": 4, \"card_id\": \"card_055dcd710a45194158c1d5ba\", \"novelty_point_id\": \"NP-3\", \"status\": \"completed\", \"document_title\": \"2PS: High-Quality Edge Partitioning with Two-Phase Streaming\", \"review\": {\"novelty_point_id\": \"NP-3\", \"status\": \"insufficient_evidence\", \"verdict\": null, \"verdict_reason\": null, \"confidence\": null, \"highly_relevant_works\": [{\"work_id\": \"wrk_b77f32398f578aa48e68b57c\", \"card_ids\": [\"card_055dcd710a45194158c1d5ba\"], \"evidence_ids\": [\"ev_c8d31bd880ce2c28d6c3e196\"], \"relevance_reason\": \"该文献与查新点存在局部相关性；具体技术差异尚待原文核验。\"}], \"supplement_request\": {\"reason\": \"裁定依赖文献未采用特征的断言，但输入引文没有直接支持该否定；需核验原文。\", \"missing_aspects\": [\"核验被声称未采用的关键特征\"], \"suggested_focus\": []}}, \"key_quotes\": [{\"evidence_id\": \"ev_c8d31bd880ce2c28d6c3e196\", \"work_id\": \"wrk_b77f32398f578aa48e68b57c\", \"artifact_id\": \"art_082358a7cb0efe62d471f7fb\", \"quote\": \"In this paper, we propose 2PS, a novel two-phase streaming algorithm for high-quality edge partitioning. In the first phase, vertices are separated into clusters by a lightweight streaming clustering algorithm. In the second phase, the graph is re-streamed and edge partitioning is performed while taking into account the clustering of the vertices from the first phase.\", \"quote_truncated\": false}], \"omitted_quote_count\": 0}, {\"index\": 5, \"card_id\": \"card_927caf724042beff967b2231\", \"novelty_point_id\": \"NP-3\", \"status\": \"completed\", \"document_title\": \"Window-based Streaming Graph Partitioning Algorithm\", \"review\": {\"novelty_point_id\": \"NP-3\", \"status\": \"insufficient_evidence\", \"verdict\": null, \"verdict_reason\": null, \"confidence\": null, \"highly_relevant_works\": [{\"work_id\": \"wrk_dd602dc2d2b07d7e69e6724c\", \"card_ids\": [\"card_927caf724042beff967b2231\"], \"evidence_ids\": [\"ev_6c078063949967ee95518dc2\"], \"relevance_reason\": \"该文献与查新点存在局部相关性；具体技术差异尚待原文核验。\"}], \"supplement_request\": {\"reason\": \"裁定依赖文献未采用特征的断言，但输入引文没有直接支持该否定；需核验原文。\", \"missing_aspects\": [\"核验被声称未采用的关键特征\"], \"suggested_focus\": []}}, \"key_quotes\": [{\"evidence_id\": \"ev_6c078063949967ee95518dc2\", \"work_id\": \"wrk_dd602dc2d2b07d7e69e6724c\", \"artifact_id\": \"art_044b624240993e16c40f3537\", \"quote\": \"This paper proposes an efficient window-based streaming graph partitioning algorithm called WStream. The WStream algorithm is an edge-cut partitioning algorithm, which distributes a vertex among the partitions. Our results suggest that the WStream algorithm is able to partition large graph data efficiently while keeping the load balanced across different partitions, and communication to a minimum.\", \"quote_truncated\": false}], \"omitted_quote_count\": 0}], \"review_schema\": {\"$defs\": {\"NoveltyVerdict\": {\"description\": \"Reviewer 对单个查新点给出的新颖性评价。\", \"enum\": [\"novel\", \"partially_novel\", \"not_novel\"], \"title\": \"NoveltyVerdict\", \"type\": \"string\"}, \"RelevantWork\": {\"additionalProperties\": false, \"description\": \"对查新点结论高度相关、且仅以可信句柄引用的 Work。\", \"properties\": {\"work_id\": {\"minLength\": 1, \"title\": \"Work Id\", \"type\": \"string\"}, \"card_ids\": {\"items\": {\"type\": \"string\"}, \"minItems\": 1, \"title\": \"Card Ids\", \"type\": \"array\"}, \"evidence_ids\": {\"items\": {\"type\": \"string\"}, \"minItems\": 1, \"title\": \"Evidence Ids\", \"type\": \"array\"}, \"relevance_reason\": {\"minLength\": 1, \"title\": \"Relevance Reason\", \"type\": \"string\"}}, \"required\": [\"work_id\", \"card_ids\", \"evidence_ids\", \"relevance_reason\"], \"title\": \"RelevantWork\", \"type\": \"object\"}, \"ReviewStatus\": {\"description\": \"查新点级 Reviewer 的完成状态。\", \"enum\": [\"reviewed\", \"insufficient_evidence\"], \"title\": \"ReviewStatus\", \"type\": \"string\"}, \"SupplementRequest\": {\"additionalProperties\": false, \"description\": \"Reviewer 的补检语义建议；V0 不拥有工作流路由权。\", \"properties\": {\"reason\": {\"minLength\": 1, \"title\": \"Reason\", \"type\": \"string\"}, \"missing_aspects\": {\"items\": {\"type\": \"string\"}, \"title\": \"Missing Aspects\", \"type\": \"array\"}, \"suggested_focus\": {\"items\": {\"type\": \"string\"}, \"title\": \"Suggested Focus\", \"type\": \"array\"}}, \"required\": [\"reason\"], \"title\": \"SupplementRequest\", \"type\": \"object\"}}, \"additionalProperties\": false, \"description\": \"一个 NoveltyPoint 的结构化信息判定结果。\", \"properties\": {\"novelty_point_id\": {\"minLength\": 1, \"title\": \"Novelty Point Id\", \"type\": \"string\"}, \"status\": {\"$ref\": \"#/$defs/ReviewStatus\"}, \"verdict\": {\"anyOf\": [{\"$ref\": \"#/$defs/NoveltyVerdict\"}, {\"type\": \"null\"}], \"default\": null}, \"verdict_reason\": {\"anyOf\": [{\"type\": \"string\"}, {\"type\": \"null\"}], \"default\": null, \"title\": \"Verdict Reason\"}, \"confidence\": {\"anyOf\": [{\"maximum\": 1.0, \"minimum\": 0.0, \"type\": \"number\"}, {\"type\": \"null\"}], \"default\": null, \"title\": \"Confidence\"}, \"highly_relevant_works\": {\"items\": {\"$ref\": \"#/$defs/RelevantWork\"}, \"title\": \"Highly Relevant Works\", \"type\": \"array\"}, \"supplement_request\": {\"anyOf\": [{\"$ref\": \"#/$defs/SupplementRequest\"}, {\"type\": \"null\"}], \"default\": null}}, \"required\": [\"novelty_point_id\", \"status\"], \"title\": \"NoveltyPointReview\", \"type\": \"object\"}}",
+        "role": "user"
+      }
+    ],
+    "model": "deepseek-ai/DeepSeek-V4-Flash",
+    "temperature": 0.0,
+    "tool_choice": "none"
+  },
+  "response": {
+    "content": "{\n  \"novelty_point_id\": \"NP-3\",\n  \"status\": \"insufficient_evidence\",\n  \"verdict\": null,\n  \"verdict_reason\": null,\n  \"confidence\": null,\n  \"highly_relevant_works\": [\n    {\n      \"work_id\": \"wrk_b77f32398f578aa48e68b57c\",\n      \"card_ids\": [\"card_055dcd710a45194158c1d5ba\"],\n      \"evidence_ids\": [\"ev_c8d31bd880ce2c28d6c3e196\"],\n      \"relevance_reason\": \"该文献提出两阶段流式边分割算法，与查新点同属边分割图流划分领域，但未展示是否采用Count-Min Sketch或最小堆，需核验原文以确认技术差异。\"\n    },\n    {\n      \"work_id\": \"wrk_dd602dc2d2b07d7e69e6724c\",\n      \"card_ids\": [\"card_927caf724042beff967b2231\"],\n      \"evidence_ids\": [\"ev_6c078063949967ee95518dc2\"],\n      \"relevance_reason\": \"该文献提出基于窗口的流式图划分算法，强调负载均衡，与查新点目标相关，但未展示是否采用Count-Min Sketch或最小堆，需核验原文以确认技术差异。\"\n    }\n  ],\n  \"supplement_request\": {\n    \"reason\": \"裁定依赖文献未采用关键特征的断言，但输入引文未直接支持该否定；需核验原文以确认是否采用Count-Min Sketch和最小堆。\",\n    \"missing_aspects\": [\n      \"核验wrk_b77f32398f578aa48e68b57c是否采用Count-Min Sketch或最小堆\",\n      \"核验wrk_dd602dc2d2b07d7e69e6724c是否采用Count-Min Sketch或最小堆\"\n    ],\n    \"suggested_focus\": []\n  }\n}",
+    "tool_calls": []
+  },
+  "run_id": "run-d606cd37534a47349b905d42c6141768",
+  "scope": {},
+  "stage_name": "review_evidence",
+  "started_at": "2026-09-17T14:39:52.028153+00:00",
+  "status": "SUCCESS",
+  "tokens": {
+    "available": true,
+    "billable_breakdown_available": true,
+    "cached_input_tokens": 0,
+    "input_tokens": 2325,
+    "output_tokens": 443,
+    "reasoning_tokens": 0,
+    "total_tokens": 2768
+  }
+}

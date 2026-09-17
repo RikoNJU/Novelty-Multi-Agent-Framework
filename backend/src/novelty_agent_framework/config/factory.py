@@ -458,6 +458,10 @@ def build_workflow(
                 max_inline_bytes=int(
                     raw.get("runtime_debug", {}).get("max_inline_bytes", 256_000)
                 ),
+                max_physical_provider_requests=int(
+                    raw.get("runtime_debug", {}).get("max_physical_provider_requests", 48)
+                ),
+                max_model_calls=int(raw.get("runtime_debug", {}).get("max_model_calls", 80)),
                 llm_pricing_path=Path(
                     raw.get("runtime_debug", {}).get("llm_pricing_path")
                     or RuntimeDebugConfig().llm_pricing_path
@@ -554,6 +558,8 @@ def _build_workflow_from_application_config(
     retrieval = {
         "active_source": database.active_source,
         "candidate_limit_per_task": database.candidate_limit_per_task,
+        "per_query_limit": database.per_query_limit,
+        "max_provider_requests": database.max_provider_requests,
         "candidate_excerpt_chars": database.candidate_excerpt_chars,
         "full_text_limit_per_task": database.full_text_limit_per_task,
         "max_concurrency": database.max_concurrency,
@@ -680,6 +686,8 @@ def _build_workflow_from_application_config(
                 output_root=resolved_output_root,
                 archive_root=Path(runtime_debug.archive_root),
                 max_inline_bytes=runtime_debug.max_inline_bytes,
+                max_physical_provider_requests=runtime_debug.max_physical_provider_requests,
+                max_model_calls=runtime_debug.max_model_calls,
                 llm_pricing_path=(
                     Path(runtime_debug.llm_pricing_path)
                     if runtime_debug.llm_pricing_path

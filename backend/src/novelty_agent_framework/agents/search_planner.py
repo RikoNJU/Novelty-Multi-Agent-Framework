@@ -103,26 +103,46 @@ class SearchPlannerAgent(SearchPlanner):
         last_error: Exception | None = None
         failure_category = "unknown"
         retry_reason = ""
+        from ..core.runtime_artifacts import current_runtime_artifacts
+        runtime = current_runtime_artifacts()
+
+        def record(attempt: int, step: str, payload: Any) -> None:
+            if runtime is not None:
+                runtime.record_planner_event({
+                    "point_id": point.point_id, "task_id": task.task_id,
+                    "attempt": attempt, "step": step, "payload": payload,
+                })
+
         for attempt_index in range(self.max_attempts):
+            attempt = attempt_index + 1
             try:
                 data = self._complete_json(
                     point=point,
                     task=task,
                     retry_reason=retry_reason,
                 )
+                record(attempt, "parsed_model_json", data)
                 draft = _validate_draft_data(data)
-                return build_runtime_plan(
+                record(attempt, "validated_draft", draft)
+                plan = build_runtime_plan(
                     draft, task=task, limits=self.semantic_limits
                 )
+                record(attempt, "compiled_plan", plan)
+                return plan
             except SearchPlanCompilationError as exc:
+                record(attempt, "compilation_failed", {
+                    "error": str(exc), "issues": exc.issues,
+                })
                 last_error = exc
                 failure_category = "plan_compilation_error"
                 retry_reason = _format_compilation_feedback(exc)
             except ModelClientError as exc:
+                record(attempt, "model_call_failed", {"error": str(exc)})
                 last_error = exc
                 failure_category = "model_client_error"
                 retry_reason = f"模型网络调用失败：{exc}（将重试）"
             except ValueError as exc:
+                record(attempt, "draft_validation_failed", {"error": str(exc)})
                 last_error = exc
                 failure_category = "invalid_model_output"
                 retry_reason = f"格式校验失败：{exc}"

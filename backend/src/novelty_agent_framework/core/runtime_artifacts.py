@@ -26,6 +26,7 @@ from pathlib import Path
 from typing import Any, Mapping, Sequence
 
 from backend.env import (
+    ModelCallBudgetExceeded,
     ModelCallEvent,
     reset_model_call_observer,
     set_model_call_observer,
@@ -45,6 +46,12 @@ except ImportError:  # pragma: no cover - the application depends on pydantic
 
 
 RUN_STATUSES = {"RUNNING", "SUCCESS", "FAILED", "INTERRUPTED"}
+
+
+class ProviderPhysicalBudgetExceeded(RuntimeError):
+    """A run would exceed its physical database-provider request cap."""
+
+
 _REDACTED = "***REDACTED***"
 _SENSITIVE_KEYS = {
     "apikey",
@@ -63,12 +70,22 @@ _SENSITIVE_TEXT = re.compile(
     r"(?i)\b(api[_-]?key|token|secret|password|authorization|cookie)"
     r"\s*[:=]\s*([^\s,;]+)"
 )
+_SENSITIVE_URL_VALUE = re.compile(
+    r"(?i)([?&][^=&#\s]*(?:signature|credential|token|secret|key|password|auth)[^=&#\s]*=)[^&#\s]+"
+)
+_URL_USERINFO = re.compile(r"(?i)(https?://)[^/@\s]+:[^/@\s]+@")
 
 _current_run: contextvars.ContextVar[RuntimeArtifactManager | None] = (
     contextvars.ContextVar("novelty_runtime_artifact_manager", default=None)
 )
 _current_stage: contextvars.ContextVar[str | None] = contextvars.ContextVar(
     "novelty_runtime_stage", default=None
+)
+_current_stage_id: contextvars.ContextVar[str | None] = contextvars.ContextVar(
+    "novelty_runtime_stage_id", default=None
+)
+_current_scope: contextvars.ContextVar[dict[str, Any]] = contextvars.ContextVar(
+    "novelty_runtime_scope", default={}
 )
 
 
@@ -80,11 +97,17 @@ class RuntimeDebugConfig:
     output_root: Path = Path("outputs")
     archive_root: Path = Path("docs/experiments/runtime")
     max_inline_bytes: int = 256_000
+    max_physical_provider_requests: int = 48
+    max_model_calls: int = 80
     llm_pricing_path: Path = DEFAULT_PRICING_PATH
 
     def __post_init__(self) -> None:
         if self.max_inline_bytes < 1:
             raise ValueError("max_inline_bytes must be positive")
+        if self.max_physical_provider_requests < 1:
+            raise ValueError("max_physical_provider_requests must be positive")
+        if self.max_model_calls < 1:
+            raise ValueError("max_model_calls must be positive")
 
 
 @dataclasses.dataclass(frozen=True)
@@ -95,6 +118,8 @@ class StageHandle:
     started_at: datetime
     monotonic_started: float
     context_token: contextvars.Token[str | None] | None = None
+    stage_id_token: contextvars.Token[str | None] | None = None
+    scope_token: contextvars.Token[dict[str, Any]] | None = None
 
 
 @dataclasses.dataclass(frozen=True)
@@ -143,8 +168,12 @@ class RuntimeArtifactManager:
         self._stage_counter = 0
         self._tool_counter = 0
         self._llm_call_counter = 0
+        self._llm_call_paths: dict[str, Path] = {}
         self._error_counter = 0
         self._provider_request_counter = 0
+        self._provider_dispatch_count = 0
+        self._planner_event_counter = 0
+        self._retrieval_event_counter = 0
         self._stage_records: list[dict[str, Any]] = []
         self._tool_records: list[dict[str, Any]] = []
         self._llm_call_records: list[dict[str, Any]] = []
@@ -166,8 +195,13 @@ class RuntimeArtifactManager:
                 / "runtime"
                 / _safe_segment(self.run_id)
             )
-            for child in ("stages", "tools", "llm_calls", "errors", "provider_requests"):
+            for child in ("stages", "tools", "llm_calls", "errors", "provider_requests",
+                          "planner_events", "retrieval_events", "provider_budget",
+                          "blobs", "config"):
                 (self.run_dir / child).mkdir(parents=True, exist_ok=False)
+            if self.config.llm_pricing_path.is_file():
+                shutil.copy2(self.config.llm_pricing_path,
+                             self.run_dir / "config" / "llm_pricing.json")
             try:
                 self._pricing_catalog = LlmPricingCatalog.load(
                     self.config.llm_pricing_path
@@ -221,7 +255,10 @@ class RuntimeArtifactManager:
             self._provider_request_counter += 1
             record = {
                 "provider_event_id": f"provider_{self._provider_request_counter:04d}",
+                "run_id": self.run_id,
                 "stage_name": _current_stage.get(),
+                "parent_stage_id": _current_stage_id.get(),
+                "scope": _current_scope.get(),
                 "recorded_at": _iso(_now()),
                 **dict(event),
             }
@@ -232,6 +269,65 @@ class RuntimeArtifactManager:
                 / f"{self._provider_request_counter:04d}_{_safe_segment(str(event.get('operation', 'request')))}.json",
                 record,
             )
+
+    def reserve_provider_request(self, *, provider: str, operation: str) -> int:
+        """Reserve one physical HTTP dispatch before any database network I/O."""
+        if not self.config.enabled or self.run_dir is None:
+            return 0
+        with self._lock:
+            if self._provider_dispatch_count >= self.config.max_physical_provider_requests:
+                raise ProviderPhysicalBudgetExceeded(
+                    "retrieval_incomplete_budget: physical provider request cap reached"
+                )
+            next_count = self._provider_dispatch_count + 1
+            self._write_json(self.run_dir / "provider_budget" / f"{next_count:04d}.json", {
+                "run_id": self.run_id, "dispatch_index": next_count,
+                "provider": provider, "operation": operation,
+                "scope": _current_scope.get(), "parent_stage_id": _current_stage_id.get(),
+                "reserved_at": _iso(_now()),
+                "max_physical_provider_requests": self.config.max_physical_provider_requests,
+            })
+            self._provider_dispatch_count = next_count
+            return next_count
+
+    def record_planner_event(self, event: Mapping[str, Any]) -> None:
+        """Persist draft validation and compilation steps beside model calls."""
+        if not self.config.enabled or self.run_dir is None:
+            return
+        with self._lock:
+            self._planner_event_counter += 1
+            scope = _current_scope.get()
+            parent = next((item["llm_call_id"] for item in reversed(self._llm_call_records)
+                           if item.get("scope") == scope
+                           and item.get("parent_stage_id") == _current_stage_id.get()), None)
+            record = {
+                "planner_event_id": f"planner_{self._planner_event_counter:04d}",
+                "run_id": self.run_id,
+                "parent_stage_id": _current_stage_id.get(),
+                "parent_llm_call_id": parent,
+                "scope": scope,
+                "recorded_at": _iso(_now()),
+                **dict(event),
+            }
+            path = self.run_dir / "planner_events" / f"{self._planner_event_counter:04d}.json"
+            self._write_json(path, record)
+
+    def record_retrieval_event(self, event: Mapping[str, Any]) -> None:
+        """Persist provider-boundary objects and candidate-selection decisions."""
+        if not self.config.enabled or self.run_dir is None:
+            return
+        with self._lock:
+            self._retrieval_event_counter += 1
+            record = {
+                "retrieval_event_id": f"retrieval_{self._retrieval_event_counter:04d}",
+                "run_id": self.run_id,
+                "parent_stage_id": _current_stage_id.get(),
+                "scope": _current_scope.get(),
+                "recorded_at": _iso(_now()),
+                **dict(event),
+            }
+            path = self.run_dir / "retrieval_events" / f"{self._retrieval_event_counter:04d}.json"
+            self._write_json(path, record)
 
     def record_model_call(self, event: ModelCallEvent) -> None:
         """Persist one model call and its normalized token/cost accounting."""
@@ -259,18 +355,43 @@ class RuntimeArtifactManager:
                 },
             }
         with self._lock:
-            self._llm_call_counter += 1
-            call_id = f"llm_{self._llm_call_counter:04d}"
+            call_key = event.call_id or uuid.uuid4().hex
+            existing = next((item for item in self._llm_call_records
+                             if item.get("client_call_id") == call_key), None)
+            if existing is not None and existing["status"] == "CANCELLED" and event.phase != "CANCELLED":
+                return
+            if (existing is None and event.phase == "START"
+                    and self._llm_call_counter >= self.config.max_model_calls):
+                raise ModelCallBudgetExceeded("model_call_budget_exhausted")
+            path = self._llm_call_paths.get(call_key)
+            if path is None:
+                self._llm_call_counter += 1
+                path = self.run_dir / "llm_calls" / (
+                    f"{self._llm_call_counter:04d}_{_safe_segment(event.alias)}.json"
+                )
+                self._llm_call_paths[call_key] = path
+            call_id = f"llm_{int(path.name.split('_', 1)[0]):04d}"
             record = {
                 "llm_call_id": call_id,
+                "client_call_id": call_key,
+                "run_id": self.run_id,
                 "stage_name": _current_stage.get(),
+                "parent_stage_id": _current_stage_id.get(),
+                "scope": _current_scope.get(),
                 "alias": event.alias,
                 "provider": event.provider,
                 "model": event.model,
                 "started_at": _iso(event.started_at),
                 "duration_ms": event.duration_ms,
                 "message_count": event.message_count,
-                "status": "FAILED" if event.error is not None else "SUCCESS",
+                "status": ("RUNNING" if event.phase == "START" else
+                           "CANCELLED" if event.phase == "CANCELLED" else
+                           "FAILED" if event.error is not None else "SUCCESS"),
+                "request_payload": event.request_payload,
+                "request_options": event.request_options,
+                "response": ({"content": event.response.content,
+                              "tool_calls": event.response.tool_calls}
+                             if event.response is not None else None),
                 "request_id": (
                     event.response.raw.get("id")
                     if event.response is not None
@@ -285,22 +406,27 @@ class RuntimeArtifactManager:
                     else None
                 ),
             }
-            self._llm_call_records.append(record)
-            path = self.run_dir / "llm_calls" / (
-                f"{self._llm_call_counter:04d}_{_safe_segment(event.alias)}.json"
-            )
+            prior = next((i for i, item in enumerate(self._llm_call_records)
+                          if item["client_call_id"] == call_key), None)
+            if prior is None:
+                self._llm_call_records.append(record)
+            else:
+                self._llm_call_records[prior] = record
             self._write_json(path, record)
 
     def start_stage(self, stage_name: str, stage_input: Any) -> StageHandle:
         started = _now()
         token = _current_stage.set(stage_name)
+        scope_token = _current_scope.set(_scope_from_stage_input(stage_input))
         if not self.config.enabled:
             return StageHandle(
-                "", stage_name, None, started, time.monotonic(), token
+                "", stage_name, None, started, time.monotonic(), token,
+                None, scope_token,
             )
         with self._lock:
             self._stage_counter += 1
             stage_id = f"stage_{self._stage_counter:04d}"
+            stage_id_token = _current_stage_id.set(stage_id)
             directory = self.run_dir / "stages" / (
                 f"{self._stage_counter:04d}_{_safe_segment(stage_name)}"
             )
@@ -314,6 +440,8 @@ class RuntimeArtifactManager:
             record = {
                 "stage_id": stage_id,
                 "stage_name": stage_name,
+                "scope": _current_scope.get(),
+                "parent_stage_id": stage_id_token.old_value if isinstance(stage_id_token.old_value, str) else None,
                 "status": "RUNNING",
                 "started_at": _iso(started),
                 "finished_at": None,
@@ -330,10 +458,15 @@ class RuntimeArtifactManager:
             self._write_json(directory / "input.json", stage_input)
             self._write_json(directory / "meta.json", _public_record(record))
             return StageHandle(
-                stage_id, stage_name, directory, started, time.monotonic(), token
+                stage_id, stage_name, directory, started, time.monotonic(), token,
+                stage_id_token, scope_token,
             )
 
     def finish_stage(self, handle: StageHandle, stage_output: Any) -> None:
+        if handle.stage_id_token is not None:
+            _current_stage_id.reset(handle.stage_id_token)
+        if handle.scope_token is not None:
+            _current_scope.reset(handle.scope_token)
         if handle.context_token is not None:
             _current_stage.reset(handle.context_token)
         if not self.config.enabled or handle.directory is None:
@@ -364,6 +497,10 @@ class RuntimeArtifactManager:
             self._write_json(handle.directory / "meta.json", _public_record(record))
 
     def fail_stage(self, handle: StageHandle, exc: BaseException) -> None:
+        if handle.stage_id_token is not None:
+            _current_stage_id.reset(handle.stage_id_token)
+        if handle.scope_token is not None:
+            _current_scope.reset(handle.scope_token)
         if handle.context_token is not None:
             _current_stage.reset(handle.context_token)
         if not self.config.enabled or handle.directory is None:
@@ -407,7 +544,11 @@ class RuntimeArtifactManager:
             record = {
                 "tool_name": tool_name,
                 "tool_call_id": tool_call_id,
+                "run_id": self.run_id,
+                "parent_stage_id": _current_stage_id.get(),
+                "scope": _current_scope.get(),
                 "agent_tool_call_id": agent_tool_call_id,
+                "parent_llm_call_id": self._model_parent_for_tool_call(agent_tool_call_id),
                 "stage_name": stage,
                 "started_at": _iso(started),
                 "finished_at": None,
@@ -435,6 +576,19 @@ class RuntimeArtifactManager:
                 time.monotonic(),
                 agent_tool_call_id,
             )
+
+    def _model_parent_for_tool_call(self, agent_tool_call_id: str | None) -> str | None:
+        if not agent_tool_call_id:
+            return None
+        scope = _current_scope.get()
+        for record in reversed(self._llm_call_records):
+            if record.get("scope") != scope:
+                continue
+            response = record.get("response") or {}
+            if any(getattr(call, "id", None) == agent_tool_call_id
+                   for call in response.get("tool_calls", ())):
+                return record["llm_call_id"]
+        return None
 
     def finish_tool_call(
         self,
@@ -534,11 +688,18 @@ class RuntimeArtifactManager:
                 / _safe_segment(self.run_id)
             )
             archive.mkdir(parents=True, exist_ok=False)
-            shutil.copy2(summary_json, archive / "summary.json")
-            shutil.copy2(summary_md, archive / "summary.md")
-            diagnostics_dir = self.run_dir / "diagnostics"
-            if diagnostics_dir.is_dir():
-                shutil.copytree(diagnostics_dir, archive / "diagnostics")
+            shutil.copytree(self.run_dir, archive, dirs_exist_ok=True)
+            workspace = Path(self.config.output_root) / _safe_segment(self.paper_id)
+            if workspace.is_dir():
+                shutil.copytree(
+                    workspace, archive / "workspace" / _safe_segment(self.paper_id),
+                    ignore=shutil.ignore_patterns("runtime"),
+                )
+            self._write_json(archive / "archive-layout.json", {
+                "runtime_root": ".",
+                "workspace_root": f"workspace/{_safe_segment(self.paper_id)}",
+                "capture_boundary": "finish_run",
+            })
             return summary_json, archive
 
     def _run_diagnostics(self, terminal_status: str) -> None:
@@ -622,7 +783,12 @@ class RuntimeArtifactManager:
             "python_version": platform.python_version(),
             "os": platform.platform(),
             "runtime_debug_enabled": self.config.enabled,
-            "llm_pricing_path": self.config.llm_pricing_path,
+            "max_physical_provider_requests": self.config.max_physical_provider_requests,
+            "physical_provider_requests_reserved": self._provider_dispatch_count,
+            "max_model_calls": self.config.max_model_calls,
+            "llm_pricing_path": ("config/llm_pricing.json"
+                                 if (self.run_dir / "config" / "llm_pricing.json").is_file()
+                                 else None),
             "model_provider": self.model_provider,
             "model_name": self.model_name,
             "enabled_tools": self.enabled_tools,
@@ -818,10 +984,22 @@ class RuntimeArtifactManager:
         self._write_json(path, payload)
 
     def _write_json(self, path: Path, value: Any) -> None:
-        serializable = _prepare_value(value, max_inline_bytes=self.config.max_inline_bytes)
+        serializable = _prepare_value(
+            value, max_inline_bytes=self.config.max_inline_bytes,
+            blob_writer=self._store_blob,
+        )
         _atomic_write_text(
             path, json.dumps(serializable, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
         )
+
+    def _store_blob(self, payload: bytes) -> dict[str, Any]:
+        digest = hashlib.sha256(payload).hexdigest()
+        relative = Path("blobs") / digest
+        path = self.run_dir / relative
+        if not path.exists():
+            path.write_bytes(payload)
+        return {"type": "content_reference", "path": relative.as_posix(),
+                "size": len(payload), "sha256": digest}
 
     @staticmethod
     def _find_record(records: list[dict[str, Any]], key: str, value: str) -> dict[str, Any]:
@@ -874,7 +1052,27 @@ def _public_record(record: Mapping[str, Any]) -> dict[str, Any]:
     }
 
 
-def _prepare_value(value: Any, *, max_inline_bytes: int, key: str | None = None) -> Any:
+def _scope_from_stage_input(value: Any) -> dict[str, Any]:
+    scope = dict(_current_scope.get())
+    if not isinstance(value, Mapping):
+        return scope
+    point = value.get("current_point") or value.get("novelty_point")
+    task = value.get("current_task") or value.get("research_task")
+    if point is not None:
+        scope["point_id"] = (point.get("point_id") if isinstance(point, Mapping)
+                             else getattr(point, "point_id", None))
+    if task is not None:
+        for target, field in (("task_id", "task_id"),
+                              ("attempt", "attempt"),
+                              ("point_id", "novelty_point_id")):
+            candidate = task.get(field) if isinstance(task, Mapping) else getattr(task, field, None)
+            if candidate is not None:
+                scope[target] = candidate
+    return scope
+
+
+def _prepare_value(value: Any, *, max_inline_bytes: int, key: str | None = None,
+                   blob_writer: Any = None) -> Any:
     if key is not None and _is_sensitive_key(key):
         return _REDACTED
     if isinstance(value, BaseModel):
@@ -884,19 +1082,24 @@ def _prepare_value(value: Any, *, max_inline_bytes: int, key: str | None = None)
     if isinstance(value, Mapping):
         return {
             str(item_key): _prepare_value(
-                item_value, max_inline_bytes=max_inline_bytes, key=str(item_key)
+                item_value, max_inline_bytes=max_inline_bytes, key=str(item_key),
+                blob_writer=blob_writer,
             )
             for item_key, item_value in value.items()
         }
     if isinstance(value, (list, tuple, set, frozenset)):
-        return [_prepare_value(item, max_inline_bytes=max_inline_bytes) for item in value]
+        return [_prepare_value(item, max_inline_bytes=max_inline_bytes,
+                               blob_writer=blob_writer) for item in value]
     if isinstance(value, Path):
         return _path_reference(value)
     if isinstance(value, (datetime, date)):
         return value.isoformat()
     if isinstance(value, Enum):
-        return _prepare_value(value.value, max_inline_bytes=max_inline_bytes)
+        return _prepare_value(value.value, max_inline_bytes=max_inline_bytes,
+                              blob_writer=blob_writer)
     if isinstance(value, bytes):
+        if blob_writer is not None:
+            return blob_writer(value)
         return {
             "type": "content_reference",
             "size": len(value),
@@ -905,8 +1108,12 @@ def _prepare_value(value: Any, *, max_inline_bytes: int, key: str | None = None)
         }
     if isinstance(value, str):
         redacted = _SENSITIVE_TEXT.sub(lambda match: f"{match.group(1)}={_REDACTED}", value)
+        redacted = _SENSITIVE_URL_VALUE.sub(lambda match: f"{match.group(1)}{_REDACTED}", redacted)
+        redacted = _URL_USERINFO.sub(lambda match: f"{match.group(1)}{_REDACTED}@", redacted)
         encoded = redacted.encode("utf-8")
         if len(encoded) > max_inline_bytes:
+            if blob_writer is not None:
+                return blob_writer(encoded)
             return {
                 "type": "content_reference",
                 "size": len(encoded),
@@ -916,7 +1123,8 @@ def _prepare_value(value: Any, *, max_inline_bytes: int, key: str | None = None)
         return redacted
     if value is None or isinstance(value, (bool, int, float)):
         return value
-    return _prepare_value(repr(value), max_inline_bytes=max_inline_bytes)
+    return _prepare_value(repr(value), max_inline_bytes=max_inline_bytes,
+                          blob_writer=blob_writer)
 
 
 def _is_sensitive_key(key: str) -> bool:

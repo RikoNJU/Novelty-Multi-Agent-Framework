@@ -56,6 +56,7 @@ def make_draft(*, concepts=None, strategies=None) -> SearchPlanDraft:
 
 def test_runtime_plan_injects_identity_and_ids() -> None:
     plan = build_runtime_plan(make_draft(), task=make_task())
+    assert plan.protected_concept_ids == ["C1"]
     assert plan.task_id == "T-1"
     assert plan.novelty_point_id == "NP-1"
     assert [c.concept_id for c in plan.concepts] == ["C1", "C2", "C3"]
@@ -75,7 +76,7 @@ def test_template_expression_shapes() -> None:
     plan = build_runtime_plan(make_draft(), task=make_task())
     assert plan.strategies[0].expression == "C1 AND C2"  # strict: 高重要概念
     assert plan.strategies[1].expression == "C1 AND C2"  # medium: 前 2 高重要
-    assert plan.strategies[2].expression == "C1 OR C2 OR C3"  # broad: 全概念
+    assert plan.strategies[2].expression == "C1"  # broad: 仅保留 anchor
     assert [s.use_alias for s in plan.strategies] == [False, True, True]
 
 
@@ -90,8 +91,8 @@ def test_importance_ordering_shapes_pools() -> None:
     )
     plan = build_runtime_plan(draft, task=make_task())
     assert plan.strategies[0].expression == "C1"  # 仅 importance=3
-    assert plan.strategies[1].expression == "C1 AND C3"  # importance>=2 前 2
-    assert plan.strategies[2].expression == "C1 OR C3 OR C4 OR C2"  # 按 importance 降序
+    assert plan.strategies[1].expression == "C1"
+    assert plan.strategies[2].expression == "C1"
 
 
 def test_focus_concepts_override_default_pool() -> None:
@@ -101,14 +102,14 @@ def test_focus_concepts_override_default_pool() -> None:
         {"level": "broad"},
     ])
     plan = build_runtime_plan(draft, task=make_task())
-    assert plan.strategies[0].expression == "C3"
-    assert plan.strategies[1].expression == "C2 AND C3"
+    assert plan.strategies[0].expression == "C1 AND C3"
+    assert plan.strategies[1].expression == "C1 AND C3"
 
 
 def test_description_uses_concept_names() -> None:
     plan = build_runtime_plan(make_draft(), task=make_task())
     assert plan.strategies[0].description == "图自编码器 AND 循环神经网络"
-    assert plan.strategies[2].description == "图自编码器 OR 循环神经网络 OR 动态时序图处理"
+    assert plan.strategies[2].description == "图自编码器"
 
 
 def test_terms_are_normalized() -> None:
@@ -238,8 +239,8 @@ def test_custom_semantic_limits_override_defaults() -> None:
     assert not any(issue.code == "too_many_concepts" for issue in loose_issues)
 
 
-def test_focus_concepts_do_not_trigger_monotonicity_assertion() -> None:
-    """focus_concepts 是显式覆盖，允许突破默认池的单调梯度（M5 实测 bug）。"""
+def test_focus_concepts_preserve_anchor_and_monotonicity() -> None:
+    """显式 focus 仍保留编译阶段选定的 anchor。"""
 
     draft = make_draft(
         concepts=[
@@ -254,7 +255,7 @@ def test_focus_concepts_do_not_trigger_monotonicity_assertion() -> None:
         ],
     )
     plan = build_runtime_plan(draft, task=make_task())
-    assert plan.strategies[0].expression == "C3"
+    assert plan.strategies[0].expression == "C1 AND C3"
 
 def test_semantic_limits_defaults_match_config_file() -> None:
     """代码默认值与配置文件必须一致，防止 prompt/配置/代码三处漂移。"""

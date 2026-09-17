@@ -311,6 +311,10 @@ class ArxivRequestScheduler:
                 retry_after: float | None = None
                 backoff = 0.0
                 try:
+                    for recorder in {id(item): item for item in recorders
+                                     if item is not None}.values():
+                        recorder.reserve_provider_request(provider="arxiv_api",
+                                                          operation=operation)
                     response = self._client.get(
                         self._base_url,
                         params=params,

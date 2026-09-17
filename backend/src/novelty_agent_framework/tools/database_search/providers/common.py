@@ -17,6 +17,8 @@ from typing import Any
 
 import httpx
 
+from ....core.runtime_artifacts import current_runtime_artifacts
+
 
 class ProviderConfigurationError(ValueError):
     """A provider cannot be built from the supplied non-secret configuration."""
@@ -108,6 +110,10 @@ class ResilientHttpClient:
         response: httpx.Response | None = None
         for attempt in range(self.policy.max_retries + 1):
             self._throttle()
+            runtime = current_runtime_artifacts()
+            if runtime is not None:
+                runtime.reserve_provider_request(provider="authenticated_database",
+                                                 operation=method.upper())
             try:
                 response = self.client.request(method, url, **kwargs)
             except httpx.RequestError as exc:

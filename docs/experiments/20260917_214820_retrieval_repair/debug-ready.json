@@ -1,0 +1,54 @@
+{
+  "experiment_id": "NSTAB-REPAIR-20260917-V2",
+  "checked_at": "2026-09-17T22:45:49+08:00",
+  "ready": true,
+  "checks": [
+    {
+      "id": 1,
+      "status": "passed",
+      "evidence": "tests/test_llm_usage_tracking.py covers success, failure, synchronous interruption and asynchronous cancellation; tests/test_search_planner.py checks retry-to-call linkage"
+    },
+    {
+      "id": 2,
+      "status": "passed",
+      "evidence": "tests/test_search_planner.py::test_planner_trace_links_model_json_draft_and_plan"
+    },
+    {
+      "id": 3,
+      "status": "passed",
+      "evidence": "tests/test_retrieval_debug_smoke.py::test_production_path_exports_search_read_card_review_and_report"
+    },
+    {
+      "id": 4,
+      "status": "passed",
+      "evidence": "tests/test_runtime_artifacts.py::test_recursive_redaction_and_large_value_reference; archived blob bytes match source"
+    },
+    {
+      "id": 5,
+      "status": "passed",
+      "evidence": "tests/test_runtime_artifacts.py::test_concurrent_points_keep_distinct_task_scope; same local T-1 and model tool-call ID retain distinct point and parent IDs"
+    },
+    {
+      "id": 6,
+      "status": "passed",
+      "evidence": "Provider success-empty, failure, not-run budget, async cancellation, strict offline replay miss, and trace-failure stop tests"
+    },
+    {
+      "id": 7,
+      "status": "passed",
+      "evidence": "tests/test_retrieval_debug_smoke.py compares integrated search queries, reader arguments and card identities with tracing on/off; tests/test_llm_usage_tracking.py compares actual model request bytes"
+    },
+    {
+      "id": 8,
+      "status": "passed",
+      "evidence": "tests/test_retrieval_debug_smoke.py exports the business workspace and verifies all JSON references; tests/test_retrieval_repair.py rebuilds a point request and a provider hit from export"
+    }
+  ],
+  "commands": [
+    "PYTHONPATH=/tmp/nstab-python-deps:backend/src:. python3 -m pytest tests/test_fallback_chain.py tests/test_retrieval_repair.py tests/test_retrieval_debug_smoke.py tests/test_structured_retrieval_tool.py tests/test_structured_retrieval_async.py tests/test_database_search_tool.py tests/test_search_planner.py tests/test_plan_compiler.py tests/test_runtime_artifacts.py tests/test_llm_usage_tracking.py tests/test_single_point_stability_audit.py tests/test_config_loader.py tests/test_factory.py tests/test_runtime_config_injection.py tests/test_task_researcher_workflow.py tests/test_workflow.py tests/test_workflow_reviewer.py tests/test_report_binding.py tests/test_provider_common.py tests/test_arxiv_scheduler.py tests/test_arxiv_web_provider.py tests/test_arxiv_web_limits.py tests/test_arxiv_tools.py tests/test_sciencedirect_provider.py tests/test_springer_provider.py tests/test_ieee_xplore_provider.py -q"
+  ],
+  "result_log": "tests/validated-pytest.log",
+  "full_live_run_allowed": true,
+  "live_gate_reason": "All eight local checks and hard request caps passed; user explicitly authorized the archived paper external dispatch. The single bounded full run then completed successfully as run-d606cd37534a47349b905d42c6141768.",
+  "full_live_run_result": "runs/full/0001/run.json"
+}

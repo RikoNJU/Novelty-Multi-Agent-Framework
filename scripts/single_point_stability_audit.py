@@ -235,7 +235,16 @@ def build(repo: Path, output: Path) -> None:
         c1_expressions = {item["expression"] for item in c1["strategies"]}
         comparisons.append({
             "historical_input": f"P{run[-1]}", "input_kind": "derived_projection",
-            "c0_count": len(c0_expressions), "c1_count": len(c1_expressions),
+            "c0_strategy_count": len(plan["strategies"]),
+            "c0_dsl_count": len(c0_expressions),
+            "c1_strategy_count": len(c1["strategies"]),
+            "c1_dsl_count": len(c1_expressions),
+            "c0_requests": "not_adapted",
+            "c1_requests": "not_adapted",
+            "executed_requests": "not_measured",
+            "deduplicated_works": "not_measured",
+            "concept_payload_hash": _canonical_hash(plan["concepts"]),
+            "strategy_payload_hash": _canonical_hash(plan["strategies"]),
             "c0_only": sorted(c0_expressions - c1_expressions),
             "c1_only": sorted(c1_expressions - c0_expressions),
             "shared": sorted(c0_expressions & c1_expressions),
@@ -311,14 +320,24 @@ def build(repo: Path, output: Path) -> None:
                         "C1 不使用 `importance` 进行选池，不新增词项，也没有应用数据库语法适配。", ""]
     for item in comparisons:
         comparison_lines.extend([f"## {item['historical_input']}", "",
-            f"- C0 unique expressions: {item['c0_count']}; C1: {item['c1_count']}.",
+            f"- C0 strategies: {item['c0_strategy_count']}; unique DSL expressions: {item['c0_dsl_count']}.",
+            f"- C1 strategies: {item['c1_strategy_count']}; unique DSL expressions: {item['c1_dsl_count']}.",
+            "- Adapted and executed request counts were not measured in this local comparison.",
             f"- Only C0: `{'; '.join(item['c0_only']) or 'none'}`.",
             f"- Only C1: `{'; '.join(item['c1_only']) or 'none'}`.",
             "- This establishes changed query opportunities only; it says nothing about live recall.", ""])
     (output / "compiler-comparison/compiler-comparison.md").write_text("\n".join(comparison_lines), encoding="utf-8")
+    concept_variation = len({item["concept_payload_hash"] for item in comparisons}) > 1
+    strategy_variation = len({item["strategy_payload_hash"] for item in comparisons}) > 1
+    differences = []
+    if concept_variation:
+        differences.append("概念载荷")
+    if strategy_variation:
+        differences.append("策略完整载荷（含 expression、alias/exclude 开关）")
+    observed = "、".join(differences) if differences else "无已测字段差异"
     (output / "report.md").write_text(
         "# 单查新点稳定性定位报告（Part 0–2）\n\n"
-        "最早可核验的分叉在已归档的编译计划：run 4–6 的 NP-2/T-1 概念词项和 C0 策略表达式不同。"
+        f"已归档编译计划的字段差分：{observed}。"
         "这是一项直接观察，尚不能归因于 Planner，因为原始 Draft 和完整 Planner 输入未归档。\n\n"
         "C1 对每份派生计划确定性生成 16 条（6 概念时）组合，保留了 C0 选池未提供的组合机会。"
         "没有为这些新表达式补造响应；Executor、阅读、成卡和任何 live 单元均为 `not_run`。\n\n"

@@ -171,6 +171,7 @@ class SearchPlan(StrictModel):
     novelty_point_id: str = Field(min_length=1)
     concepts: list[SearchConcept] = Field(min_length=1)
     strategies: list[SearchStrategy] = Field(min_length=1)
+    protected_concept_ids: list[str] = Field(default_factory=list)
 
 
 class NoveltyBrief(StrictModel):

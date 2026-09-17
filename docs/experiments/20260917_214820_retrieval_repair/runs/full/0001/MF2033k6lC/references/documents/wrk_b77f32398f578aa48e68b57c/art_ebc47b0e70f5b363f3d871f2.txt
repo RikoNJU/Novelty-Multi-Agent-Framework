@@ -1,0 +1,1206 @@
+2PS: High-Quality Edge Partitioning with Two-Phase Streaming
+
+      Report GitHub Issue
+      ×
+
+      Title:
+
+Content selection saved. Describe the issue below:
+
+      Description:
+
+      Submit without GitHub
+      Submit in GitHub
+
+    arXiv is now an independent nonprofit!
+    Learn more
+    ×
+
+      Back to arXiv
+
+    Why HTML?
+
+      Report Issue
+
+      Back to Abstract
+
+      Download PDF
+
+Abstract
+
+1 Introduction
+
+2 Problem Analysis
+
+2.1 Edge Partitioning Problem
+
+2.2 Streaming Edge Partitioning
+
+2.3 Shortcomings of Streaming Partitioning
+
+3 Two-Phase Streaming Edge Partitioning
+
+3.1 Phase 1: Clustering
+
+3.1.1 Streaming Clustering Algorithm
+
+3.2 Phase 2: Partitioning
+
+3.3 Discussion of Design Choices
+
+4 Theoretical Analysis
+
+4.1 Time Complexity
+
+4.2 Space Complexity
+
+4.3 Replication Factor
+
+5 Evaluations
+
+5.1 Setup
+
+5.2 Performance on Real-World Graphs
+
+Main Observations
+
+5.3 Impact of Power-Law Degree
+
+6 Related Work
+
+7 Conclusions
+
+References
+
+    License: arXiv.org perpetual non-exclusive license
+
+arXiv:2001.07086v1 [cs.DC] 20 Jan 2020
+
+2PS: High-Quality Edge Partitioning with Two-Phase Streaming
+
+Ruben Mayer
+††thanks: Both authors contributed equally to this paper.
+Affiliation: Technical University of Munich
+
+  
+Kamil Orujzade11footnotemark:
+          1
+
+Affiliation: Technical University of Munich
+
+  
+Hans-Arno Jacobsen
+
+Affiliation: Technical University of Munich
+
+Abstract
+
+Graph partitioning is an important preprocessing step to distributed graph processing. In edge partitioning, the edge set of a given graph is split into kk equally-sized partitions, such that the replication of vertices across partitions is minimized. Streaming is a viable approach to partition graphs that exceed the memory capacities of a single server. The graph is ingested as a stream of edges, and one edge at a time is immediately and irrevocably assigned to a partition based on a scoring function. However, streaming partitioning suffers from the uninformed assignment problem: At the time of partitioning early edges in the stream, there is no information available about the rest of the edges. As a consequence, edge assignments are often driven by balancing considerations, and the achieved replication factor is comparably high. In this paper, we propose 2PS, a novel two-phase streaming algorithm for high-quality edge partitioning. In the first phase, vertices are separated into clusters by a lightweight streaming clustering algorithm. In the second phase, the graph is re-streamed and edge partitioning is performed while taking into account the clustering of the vertices from the first phase. Our evaluations show that 2PS can achieve a replication factor that is comparable to heavy-weight random access partitioners while inducing orders of magnitude lower memory overhead.
+
+1 Introduction
+
+In recent years, distributed graph processing frameworks, such as Pregel [24], Giraph [1], GPS [33] and PowerGraph [12], have emerged as a way to perform complex graph analytics on massive real-world graphs on a cluster of servers. In a distributed graph processing framework, the graph analytics algorithms are provided in form of a vertex function (“think-like-a-vertex”), which is then executed iteratively until a convergence criterion is met [24]. In doing so, the different servers execute the vertex function on disjoint parts of the graph, which are called graph partitions. While executing the vertex function, on each server, updates on vertex states are computed. If such updates refer to a vertex that is part of a different partition, communication between servers is initiated in order to synchronize the state, which is costly and increases the run-time of the graph processing task.
+To minimize the required communication between servers that perform distributed graph processing, the goal of edge partitioning is to divide the edges of the graph into kk equally-sized partitions such that the number of vertex replications is minimized. The graph partitioning problem is known to be NP-hard, and hence, can only be solved heuristically for large graphs [43].
+
+The current approaches to solve the edge partitioning problem can be categorized into two groups. Random-access partitioners [18, 34, 25, 43, 15] load the complete graph into memory and then perform partitioning on it. In contrast to this, streaming partitioners [36, 41, 32, 28] ingest the graph as a stream of edges, i.e., edge by edge, and assign each edge of the stream immediately and irrevocably to a partition. The streaming approach has the advantage that graphs can be partitioned with low memory overhead, as the edge set does not need to be kept in memory completely at any time. This way, the monetary costs of graph partitioning can be reduced, as smaller machines can be used for partitioning very large graphs.
+
+However, streaming edge partitioning yields a higher vertex replication than random-access approaches. We attribute this shortcoming to the uninformed assignment problem [28]: A streaming partitioner only has a partial view of the graph structure. In particular, when processing an edge eie_{i} in the graph stream, the partitioner does not know the subsequent edges ei+1,ei+2,…e_{i+1},e_{i+2},..., but still has to decide to which partition it shall assign eie_{i}. Current approaches to overcome the uninformed assignment problem either do not apply to the edge partitioning problem [31] or require locality in the edge stream [28].
+
+In this paper, we provide a method for streaming edge partitioning that overcomes the uninformed assignment problem and yields a significantly lower replication factor than existing streaming solutions. Our contributions are threefold:
+
+1.
+
+We propose 2PS, a novel two-phase streaming algorithm for edge partitioning. In the first phase, 2PS gathers information about the global graph structure by performing streaming clustering. In the second phase, clustering information is exploited to perform high-quality edge partitioning decisions. By combining two different algorithms, we exploit the flexibility of graph clustering and at the same time solve the more rigid edge partitioning problem.
+
+2.
+
+We provide a thorough theoretical analysis of 2PS regarding time and space complexity. Further, we prove that, on power-law graphs, the replication factor obtained with 2PS is strictly better than competing streaming partitioners.
+
+3.
+
+We perform extensive evaluations on large real-world graphs, showing the superior performance of 2PS compared to other streaming algorithms. On web graphs, 2PS yields a comparable replication factor to resource intensive random-access partitioners.
+
+The rest of the paper is organized as follows. In Section 2, we formalize the problem of edge partitioning and introduce a model of stateful streaming partitioning. In Section 3, we introduce our novel 2PS algorithm for high-quality stateful streaming edge partitioning. In Section 4, we perform a thorough theoretical analysis of 2PS regarding time and space complexity as well as replication factor on power-law graphs. In Section 5, we perform extensive evaluations of 2PS on a variety of real-world graphs. Finally, in Section 6 we discuss related work and then conclude the paper in Section 7.
+
+2 Problem Analysis
+
+Figure 1: Edge partitioning vs. vertex partitioning.
+
+2.1 Edge Partitioning Problem
+
+Formalization. The problem of edge partitioning is commonly specified as follows (cf. also [43, 7]). The G=(V,E)G=(V,E) is undirected or directed and consists of a set of vertices VV and a set of edges E⊆V×VE\subseteq V\times V. Now, EE shall be split into k>1,k∈ℕk>1,k\in\mathbb{N} partitions P={p1,…,pk}P=\{p_{1},...,p_{k}\} such that ⋃i=1,…,kpi=E\bigcup_{i=1,...,k}p_{i}=E and pi∩pj=∅,i≠jp_{i}\cap p_{j}=\emptyset,i\neq j, while a balancing constraint is met: ∀pi∈P:|pi|≤α∗|E|k\forall p_{i}\in P:|p_{i}|\leq\alpha*\frac{|E|}{k} for a given α≥1,α∈ℝ\alpha\geq 1,\alpha\in\mathbb{R}. The balancing constraint ensures that the largest partition does not exceed the expected number of edges multiplied by an imbalance factor α\alpha that limits the acceptable imbalance. We define V(pi)={x∈V|∃y∈V:(x,y)∈pi∨(y,x)∈pi}V(p_{i})=\{x\in V|\exists y\in V:(x,y)\in p_{i}\lor(y,x)\in p_{i}\} as the set of vertices covered by a partition pi∈Pp_{i}\in P, i.e., the set of vertices that are incident to an edge in pip_{i}. The optimization objective of edge partitioning is to minimize the replication factor RF(p1,…,pkp_{1},\dots,p_{k})=1|V|​∑i=1,…,k|V⁡(pi)|\ =\frac{1}{|V|}\sum_{i=1,...,k}{|V(p_{i})|}.11
+              1
+
+            “Communication volume” [25] is an alternative metric that can directly be computed from the replication factor by subtracting 1.
+
+Interpretation. The replication of a vertex on multiple partitions induces synchronization overhead in distributed graph processing. In particular, vertex state needs to be synchronized between distributed compute nodes that hold different partitions. The lower the replication factor, the lower is the synchronization overhead in distributed graph processing. Numerous studies [43, 15] prove that there is a direct correlation between replication factor in edge partitioning and run-time of distributed graph processing.
+
+Figure 1 depicts an example of a graph that is divided into k=2k=2 partitions with edge partitioning (left side) vs. vertex partitioning (right side). Contrary to edge partitioning, in vertex partitioning, the vertex set of the graph is divided into partitions and edges are cut [36]. For graphs with a power-law distributed vertex degree, edge partitioning is considered more communication-efficient than vertex partitioning (cf. Bourse et al. [7]). This is because power-law graphs have a small number of vertices with a very high degree; cutting through these vertices via edge partitioning is very effective in separating the graph with a low replication factor.
+
+Figure 2: A model of stateful streaming edge partitioning.
+
+2.2 Streaming Edge Partitioning
+
+Streaming edge partitioning promises to reduce the memory overhead of edge partitioning. In particular, space complexity of streaming partitioning is independent of the number of edges in the graph. To do so, in streaming edge partitioning, the graph is ingested edge by edge (one edge at a time), and each edge is immediately assigned to a partition (cf. Figure 2). The decision to assign an edge to a partition is performed based on a scoring function that can take into account graph properties (e.g., the known or estimated degrees of the incident vertices of the edge [41, 32]) as well as partitioning state (e.g., the vertex cover sets of the partitions and the current size of the partitions [32]). For stateful streaming partitioning, the size of the partitioning state is limited to 𝒪⁡(|V|)\mathcal{O}(|V|), i.e., only vertex-related information, to avoid that the memory overhead grows with the number of edges in the graph.
+
+As a practical example, HDRF [32] is a streaming partitioner that assigns an edge e=(u,v)e=(u,v) to the partition pp which maximizes a scoring function C𝐻𝐷𝑅𝐹​(u,v,p)=C𝑅𝐸𝑃​(u,v,p)+C𝐵𝐴𝐿​(p)C^{\mathit{HDRF}}(u,v,p)=C_{\mathit{REP}}(u,v,p)+C_{\mathit{BAL}}(p), where C𝑅𝐸𝑃​(u,v,p)C_{\mathit{REP}}(u,v,p) is a degree-weighted replication score and C𝐵𝐴𝐿​(p)C_{\mathit{BAL}}(p) is a balancing score. C𝑅𝐸𝑃​(u,v,p)C_{\mathit{REP}}(u,v,p) is highest if both vertices uu and vv incident to an edge ee are in the vertex cover set of the same partition pp; C𝐵𝐴𝐿​(p)C_{\mathit{BAL}}(p) is highest when pp is the smallest partition (i.e., contains least number of edges).
+
+2.3 Shortcomings of Streaming Partitioning
+
+In stateful streaming partitioning, partitioning state contains the information about which vertex is already replicated on which partition. When partitioning the ii-th edge in the stream, the partitioning state considers the assignments of all previous edges eh,h<ie_{h},h<i in the graph stream to partitions. However, it does not encompass information about future edges that have not been visited in the graph stream yet. Hence, “early” edges in the stream are assigned to partitions with only little partitioning state available, which may lead to poor quality of such assignments, i.e., a high replication factor. We introduced this problem in Section 1 as the uninformed assignment problem.
+
+Furthermore, streaming partitioning may be sensitive to the ordering of the graph stream. In HDRF [32], the authors observe that balancing can be negatively influenced if the stream order exposes a high locality of vertices. They advise to shuffle the graph before ingestion. While shuffling mitigates adverse stream ordering, it induces the problem of poor memory access locality on the vertex-based partitioning state which may slow down the execution (cf. also [40]).
+
+3 Two-Phase Streaming Edge Partitioning
+
+Figure 3: 2PS: Approach Overview.
+
+In our work, we tackle the uninformed assignment problem while staying faithful to the streaming paradigm. We achieve this by introducing a novel two-phase streaming algorithm, called 2PS (cf. Figure 3).
+
+The two phases of 2PS consist of (1) a streaming clustering phase, in which vertices are assigned to clusters based on their neighborhood relationships, and (2) a streaming edge partitioning phase, where clustering information is exploited to achieve a low replication factor.
+
+3.1 Phase 1: Clustering
+
+The aim of the clustering phase is to gather information about the graph structure in order to guide the subsequent streaming edge partitioning phase. We observe that a group of vertices should be replicated on the same partition if there are many edges between vertices of that group, i.e., the group is densely connected. This way, many edges can be assigned to a partition while only few vertices are added to the vertex cover set of that partition, leading to a low overall replication factor.
+
+Finding sets of vertices that are densely connected to each other, while only having few connections to other vertices that are outside of that group, is a graph problem that is well known as clustering or community detection [30, 11]. Formally, the goal of clustering is to maximize modularity: Q=12∗|E|​∑u∈V∑v∈V(wu​v−du∗dv2∗|E|)∗δ⁡(u,v)Q=\frac{1}{2*|E|}\sum_{u\in V}\sum_{v\in V}(w_{uv}-\frac{d_{u}*d_{v}}{2*|E|})*\delta(u,v), where wu​vw_{uv} denotes the number of edges between vertices uu and vv, dud_{u} the degree (number of incident edges) of a vertex uu, and δ⁡(u,v)=1\delta(u,v)=1 if uu and vv belong to the same cluster, and 0 otherwise [16].22
+              2
+
+            An intuitive explanation of modularity is provided by Newman [30]: “The modularity is, up to a multiplicative constant, the number of edges falling within groups minus the expected number in an equivalent network with edges placed at random.”
+
+Despite of some similarities, clustering and edge partitioning have a different nature and, hence, are addressed with different algorithms [30]. In particular, clustering is a less constrained problem than partitioning. First, the size of the different clusters does not have to be balanced, i.e., clusters are allowed to have different sizes (although they may have to adhere to a maximum size). Contrary to this, in edge partitioning, every partition has to cover an equal (up to the imbalance factor α\alpha) number of edges.
+The second difference between clustering and edge partitioning is that the number of clusters is not predetermined, but originates from the structure of the graph. Contrary to this, in edge partitioning, the number of partitions is determined by the user. The less constrained nature of clustering allows for divising a more efficient and flexible streaming algorithm.
+
+Another advantage of clustering over edge partitioning is the possibility to change the assignment of a vertex to a cluster multiple times in one single pass through the edge stream. A vertex of degree dd is incident to dd edges, and therefore, is visited dd times in one single pass through the edge stream. Every time a vertex is visited, its assignment to a cluster can be refined, taking into account new information that has been gathered since the last time the vertex was visited. Contrary to this, in edge partitioning, in a single pass through the edge list, every edge is only visited once and is immediately assigned to a partition. It is not trivially possible to revoke an edge-to-partition assignment at a later point in time when more information about the graph structure is accumulated. To re-assign edges to different partitions would require to track the mapping of edges to partitions. Such mapping, however, can not be kept in memory for graphs with a large edge set.
+
+3.1.1 Streaming Clustering Algorithm
+
+Algorithm 1  2PS Phase 1: Clustering
+
+                1:
+
+              int[] d ⊳\triangleright vertex degrees
+
+                2:
+
+              int[] vol ⊳\triangleright cluster volumes
+
+                3:
+
+              int[] v2c ⊳\triangleright map of vertex_id to cluster_id
+
+                4:
+
+              int max_vol ⊳\triangleright maximum cluster volume
+
+                5:
+
+              int next_id ←\leftarrow 0 ⊳\triangleright id of next new cluster
+
+                6:
+
+              procedure streamingClustering
+
+                7:
+
+                max_vol ←\leftarrow 2∗|E|k∗0.5\frac{2*|E|}{k}*0.5
+
+                8:
+
+                performStreamingPass() ⊳\triangleright first pass
+
+                9:
+
+                max_vol ←\leftarrow max_vol ∗2*2
+
+                10:
+
+                performStreamingPass() ⊳\triangleright second pass
+
+                11:
+
+              procedure performStreamingPass
+
+                12:
+
+                for each e∈e\in edge_stream do
+
+                13:
+
+                 for each v∈ev\in e do
+
+                14:
+
+                   if v2c[v] = NULL then
+
+                15:
+
+                    v2c[vv] ←\leftarrow next_id
+
+                16:
+
+                    vol[next_id] ←\leftarrow vol[next_id] + d[vv]
+
+                17:
+
+                    next_id ←\leftarrow next_id + 1
+        
+
+                18:
+
+                 if vol[v2c[vv]] ≤\leq max_vol ∀v∈e\forall v\in e then
+
+                19:
+
+                   vs←v_{\mathit{s}}\leftarrow vi∈e:v_{i}\in e:vol[v2c[viv_{i}]] ≤\leq vol[v2c[vjv_{j}]], vj∈ev_{j}\in e
+
+                20:
+
+                   vl←v_{\mathit{l}}\leftarrow vj∈e:vj≠vsv_{j}\in e:v_{j}\neq v_{\mathit{s}}
+
+                21:
+
+                   if vol[v2c[vlv_{l}]] ++ d[vsv_{s}] ≤\leq max_vol then
+
+                22:
+
+                    v2c[vsv_{s}] ←\leftarrow v2c[vlv_{l}]
+
+                23:
+
+                    vol[v2c[vlv_{l}]] ←\leftarrow vol[v2c[vlv_{l}]] ++ d[vsv_{s}]]
+
+                24:
+
+                    vol[v2c[vsv_{s}]] ←\leftarrow vol[v2c[vsv_{s}]] −- d[vsv_{s}]]
+          
+
+In clustering, every vertex is assigned to a cluster id, with the number of clusters not being predetermined. The aim of clustering in 2PS is to later pre-partition edges that are incident to two vertices of the same cluster, i.e., to find intra-cluster edges. For this reason, in our clustering algorithm, we limit the cluster size such that the number of intra-cluster edges does not exceed the maximum size of a partition. To further improve clustering quality, we apply re-streaming [31], i.e., we perform two subsequent passes through the edge list; in each pass, we execute the same streaming clustering algorithm, allowing clustering decisions from the first stream pass to be revised in the second pass. Between the first and the second pass, we relax the cluster volume constraint to achieve both balanced cluster sizes and high clustering quality33
+                3
+
+              We observed in our experiments that performing more than two stream passes does not significantly improve the quality of clustering..
+
+Our streaming clustering algorithm (Algorithm 1) is an extension of an algorithm proposed by Hollocou et al. [16]. The algorithm consumes the edge stream, processing it edge by edge (line 12). It first checks for each incident vertex of the current edge ee if it already is assigned to a cluster. If this is not the case, a new cluster is created and the vertex is assigned to it (lines 13–17). In other words, clusters are constructed in a bottom-up manner, starting with small clusters that only contain a single vertex. Now, the algorithm compares the cluster volumes of the incident vertices of ee. The cluster volume is defined as the sum of degrees of all vertices of a cluster. The incident vertex of ee that is currently assigned to the cluster with the lower volume is moved to the cluster of the incident vertex of ee with the higher volume. In other words, when processing an edge, an incident vertex migrates from a smaller cluster to a larger cluster (lines 18–24). However, such migration is only allowed if the new volume of the larger cluster does not exceed a volume bound (line 21).
+
+Compared to Hollocou’s original algorithm [16], our extensions are the following. First of all, Hollocou’s algorithm requires to ingest a shuffled input edge streaming order to avoid that all vertices are assigned to the same cluster. Second, despite of ingesting a shuffled edge list, Hollocou’s algorithm does not guarantee that a maximum number of intra-cluster edges per cluster is kept. In 2PS, we compute the degree of each vertex upfront (if not already known) and use the actual vertex degree instead of the partial degree in order to compute cluster volumes. This way, the adverse effect of sorted edge streams is mitigated; high-degree vertices get a higher volume from the start, avoiding that all vertices are “sucked” into one giant cluster. Furthermore, we enforce an explicit volume cap on the clusters. As we consider the actual degree of vertices instead of the partial degree, we can enforce such volume cap effectively.
+
+Algorithm 2  2PS Phase 2: Streaming Partitioning
+
+                1:
+
+              int[] d ⊳\triangleright vertex degrees (from Phase 1)
+
+                2:
+
+              int[] vol ⊳\triangleright cluster volumes (from Phase 1)
+
+                3:
+
+              int[] v2c ⊳\triangleright map of vertex_id to cluster_id (from Phase 1)
+
+                4:
+
+              int[] c2p ⊳\triangleright map of cluster_id to partition_id
+
+                5:
+
+              int[] vol_p ⊳\triangleright sum of volumes of clusters per partition
+
+                6:
+
+              int[][] v2p ⊳\triangleright vertex_id to partition_id replication bit matrix
+
+                7:
+
+              procedure streamingPartitioning
+
+                8:
+
+                mapClustersToPartitions()
+
+                9:
+
+                prepartitionEdges()
+
+                10:
+
+                partitionRemainingEdges()
+
+                11:
+
+              procedure mapClustersToPartitions
+
+                12:
+
+                sort clusters by volume (descending)
+
+                13:
+
+                for each cluster cc do (from largest to smallest)
+
+                14:
+
+                 target_p ←\leftarrow arg​minpi∈P\argmin_{p_{i}\in P}vol_p[pip_{i}]
+
+                15:
+
+                 c2p[cc] ←\leftarrow target_p
+  
+
+                16:
+
+              procedure prepartitionEdges
+
+                17:
+
+                for each e∈e\in edge_stream do
+
+                18:
+
+                 c_1 ←\leftarrow v2c[ee.first]
+
+                19:
+
+                 c_2 ←\leftarrow v2c[ee.sec]
+
+                20:
+
+                 if c_1 = c_2 OR c2p[c_1] = c2p[c_2] then
+
+                21:
+
+                   target_p ←\leftarrow c2p[c_1]
+
+                22:
+
+                   if |target_p| ≥α∗|E|k\geq\alpha*\frac{|E|}{k} then
+
+                23:
+
+                    for each pi∈P:|pi|<α∗|E|kp_{i}\in P:|p_{i}|<\alpha*\frac{|E|}{k} do
+
+                24:
+
+                      score ←\leftarrow 𝑠𝑐𝑜𝑟𝑖𝑛𝑔​_​𝑓𝑢𝑛𝑐𝑡𝑖𝑜𝑛\mathit{scoring\_function}(ee, pip_{i})
+
+                25:
+
+                      if score >> bestScore then
+
+                26:
+
+                       bestScore ←\leftarrow score
+
+                27:
+
+                       target_p ←pi\leftarrow p_{i}
+                   
+
+                28:
+
+                   v2p[ee.first][target_p] ←\leftarrow true
+
+                29:
+
+                   v2p[ee.sec][target_p] ←\leftarrow true
+
+                30:
+
+                   output: ee assigned to target_p
+     
+
+                31:
+
+              procedure partitionRemainingEdges
+
+                32:
+
+                for each e∈e\in edge_stream do
+
+                33:
+
+                 c_1 ←\leftarrow v2c[ee.first]
+
+                34:
+
+                 c_2 ←\leftarrow v2c[ee.sec]
+
+                35:
+
+                 if c_1 = c_2 OR c2p[c_1] = c2p[c_2] then
+
+                36:
+
+                   continue ⊳\triangleright skip pre-partitioned edge
+   
+
+                37:
+
+                 bestScore ←0\leftarrow 0
+
+                38:
+
+                 target_p ←\leftarrow NULL
+
+                39:
+
+                 for each pi∈P:|pi|<α∗|E|kp_{i}\in P:|p_{i}|<\alpha*\frac{|E|}{k} do
+
+                40:
+
+                   score ←\leftarrow 𝑠𝑐𝑜𝑟𝑖𝑛𝑔​_​𝑓𝑢𝑛𝑐𝑡𝑖𝑜𝑛\mathit{scoring\_function}(ee, pip_{i})
+
+                41:
+
+                   if score >> bestScore then
+
+                42:
+
+                    bestScore ←\leftarrow score
+
+                43:
+
+                    target_p ←pi\leftarrow p_{i}
+        
+
+                44:
+
+                 v2p[ee.first][target_p] ←\leftarrow true
+
+                45:
+
+                 v2p[ee.sec][target_p] ←\leftarrow true
+
+                46:
+
+                 output: ee is assigned to target_p
+  
+
+3.2 Phase 2: Partitioning
+
+The edge partitioning algorithm (Algorithm 2) consists of three subsequent steps. First, clusters are mapped to partitions. Second, a subset of edges are pre-partitioned by exploiting the clustering of their incident vertices. Third, remaining edges are partitioned by stateful streaming edge partitioning. In the following, we describe each step in detail.
+
+Step 1: Mapping Clusters to Partitions. Our objective in the first step is to map clusters to partitions, such that the total volume of clusters across partitions is balanced. We model this problem as an instance of the classical Makespan Scheduling Problem on Identical Machines (MSP-IM). The problem can be defined as follows [14]:
+
+Given a set of kk machines M1,…,MkM_{1},...,M_{k} and a list of nn jobs j1,…,jnj_{1},...,j_{n} with corresponding run-time a1,…,ana_{1},...,a_{n}, assign each job to a machine such that the makespan is minimized44
+                4
+
+              The makespan is the time taken until all jobs have been completed..
+
+We apply our cluster assignment problem to MSP-IM as follows. Partitions are corresponding to “machines”, clusters are corresponding to “jobs” and volumes of the clusters are corresponding to “run-times” of the jobs. The optimization goal is to minimize the cumulative volume of the largest partition.
+
+MSP-IM is NP-hard [39], so that we solve it by approximation. The sorted list scheduling algorithm by Graham [14] is a 43\frac{4}{3}-approximation of MSP-IM, i.e., its result is at most 43\frac{4}{3} times as large as the true optimum. Sorted list scheduling works as follows: First, sort the jobs by decreasing runtime, then assign job by job from the sorted list to the least loaded machine. Applied to our cluster assignment problem, this means that the clusters are sorted by decreasing volume (Algorithm 2, line 12) and then assigned one by one to the currently least loaded partition (lines 13 to 15). Now, it is guaranteed that the most loaded partition is at most 43\frac{4}{3} as large as it would be in the true optimal assignment.
+
+Step 2: Pre-Partition Edges by Exploiting Vertex Clusters.
+In the second step, we exploit the clustering of vertices to partition a subset of edges. Our goal is to perform pre-partitioning perfectly, i.e., after pre-partitioning, every vertex incident to a pre-partitioned edge shall, if possible, only be covered by one single partition. To do so, the pre-partitioning algorithm performs one pass through the complete edge stream (Algorithm 2, line 17). For each edge e=(eCLOSE.e=(e.first,e.,e.second)), it checks if both incident vertices ee.first and ee.second are either in the same cluster or their clusters are assigned to the same partition pp (cf. Step 1 discussed above). In this case, ee is applicable to pre-partitioning and shall be assigned to pp (lines 18 to 21). If pp is already occupied to its maximum capacity α∗|E|k\alpha*\frac{|E|}{k}, ee is assigned to a different partition instead, using stateful streaming edge partitioning.
+
+Step 3: Partition Remaining Edges.
+Partitioning the remaining edges is done via stateful streaming edge partitioning. Remaining edges are all edges not assigned to partitions in the pre-partitioning step. These are edges between vertices of different clusters that are mapped to different partitions. After pre-partitioning, the partitioning state is already filled with information on vertex covers of the different partitions for the pre-partitioned edges. This state is exploited in the partitioning of the remaining edges to improve their placement. We enforce a hard balancing cap, i.e., we guarantee that no partition gets more than α∗|E|k\alpha*\frac{|E|}{k} edges assigned55
+              5
+
+            Remarkably, such strict balancing guarantee is not provided or implemented in many of the existing edge partitioners, e.g., NE/SNE [43], DNE [15] and HDRF [32].. In our implementation of 2PS, we adopt the scoring function from HDRF [32] to perform stateful streaming partitioning.
+
+For partitioning the remaining edges, the algorithm performs a pass through the edge stream (Algorithm 2, line 32), processing it edge by edge. First, it determines whether the edge has already been pre-partitioned by checking the conditions for pre-partitioning (incident vertices are in the same cluster or in clusters that are mapped to the same partition). If the conditions for pre-partitioning are met, the edge is skipped (lines 33 to 36). Else, stateful streaming partitioning is applied (lines 37 to 46). In doing so, partitions that have already reached their maximum capacity of α∗|E|k\alpha*\frac{|E|}{k} edges are ignored (line 39).
+
+After Step 3 is finished, all edges have been assigned to partitions and none of the partitions has more than α∗|E|k\alpha*\frac{|E|}{k} edges. This concludes the 2PS algorithm.
+
+3.3 Discussion of Design Choices
+
+Here, we discuss our design choices and compare them to possible alternatives.
+
+First, we could have attempted to devise a simpler re-streaming approach for edge partitioning, where the same partitioning function is used in multiple streaming passes through the edge set. In each streaming pass, edge assignments from the previous pass could be revised while exploiting the partitioning state. This idea has been proposed and analyzed for the vertex partitioning problem by Nishimura and Ugander [31]. However, for edge partitioning, re-streaming would be more complex. When reassigning an edge e=(u,v)e=(u,v), i.e., changing its partition from a previous stream pass, we would need to remember the “old” partition p​_​o​l​dp\_{old} of ee to be able to update the partitioning state, which involves testing if uu or vv should be removed from the vertex replication set of p​_​o​l​dp\_{old}. However, remembering all edge-to-partition assignments implies a space complexity of 𝒪⁡(|E|)\mathcal{O}(|E|). Our solution of applying different techniques in different streaming phases does not suffer from this problem; our space complexity is independent of the number of edges (see Section 4.2).
+
+Second, instead of using the actual degree of vertices, we could have relied on a partial vertex degree in the clustering phase, which avoids the need for an additional pass through the stream in case the vertex degrees are not known a priori. However, relying on partial degrees only works if the edge stream is shuffled, as Hollocou et al. [16] report. The problem of shuffled edge lists is that access to vertex state would have low locality, leading to many cache misses, which induces a higher run-time. Indeed, we found that it is faster to make an additional stream pass to compute the real vertex degrees instead of using a shuffled edge list.
+
+4 Theoretical Analysis
+
+4.1 Time Complexity
+
+We analyze each phase of 2PS separately. Phase 1, specified in Algorithm 1, performs two passes through the edge set. In each pass, a constant number of operations is performed on each edge. Hence, the time complexity of the first phase is in 𝒪⁡(|E|)\mathcal{O}(|E|). Phase 2, specified in Algorithm 2, consists of three steps. First, clusters are mapped to partitions in decreasing volume order. To sort clusters by volume is in 𝒪⁡(|V|∗log⁡|V|)\mathcal{O}(|V|*\log|V|), as in the worst case, there are as many clusters as vertices (note that, in natural graphs, we can expect the number of clusters to be orders of magnitude smaller than the number of vertices). Each cluster is assigned to the currently least loaded partition, which can be performed in 𝒪⁡(|V|∗log⁡k)\mathcal{O}(|V|*\log k) time, provided that we keep the kk partitions sorted by their accumulated volume while assigning clusters to them. Second, edges are pre-partitioned, such that edges whose incident vertices both are in clusters of the same partition are assigned to that partition. This is a constant-time operation per edge, resulting in 𝒪⁡(|E|)\mathcal{O}(|E|) time complexity. Third, the remaining edges are partitioned using HDRF scoring, which is done in 𝒪⁡(|E|∗k)\mathcal{O}(|E|*k) time. In summary, the second phase of 2PS has a time complexity of 𝒪⁡(|E|∗k)\mathcal{O}(|E|*k), as |E|>>|V||E|>>|V|. Summing up, the total time complexity of 2PS is in 𝒪⁡(|E|∗k)\mathcal{O}(|E|*k), i.e., linear in the number of edges and in the number of partitions.
+
+4.2 Space Complexity
+
+We analyze the data structures used in 2PS. In Algorithm 1, we use arrays to store the vertex degrees, cluster volumes and a mapping of vertices to clusters. Each of these data structures has a space complexity of 𝒪⁡(|V|)\mathcal{O}(|V|). In Algorithm 2, besides these arrays, we use additional arrays to map the clusters to partitions and to keep the volumes of clusters per partition. These arrays all have a space complexity of 𝒪⁡(|V|)\mathcal{O}(|V|). Finally, we use a vertex-to-partition replication matrix, which has a space complexity of OPEN𝒪⁡(|V|)∗k)\mathcal{O}(|V|)*k). Hence, the overall 2PS algorithm has a space complexity of OPEN𝒪⁡(|V|)∗k)\mathcal{O}(|V|)*k). In particular, the space complexity is independent of the number of edges in the graph.
+
+4.3 Replication Factor
+
+We prove that the average replication factor of 2PS is strictly lower than the average replication factor of HDRF according to Petroni et al. [32]. HDRF is currently the partitioning algorithm with the lowest proven bound on average replication factor among streaming partitioners.
+
+We construct our proof as follows. Let the set of edges |E||E| be separated into two disjoint subsets Ep​pE_{pp} and EH​D​R​FE_{HDRF}, such that E=Ep​p∪EH​D​R​FE=E_{pp}\cup E_{HDRF} and Ep​p∩EH​D​R​F=∅E_{pp}\cap E_{HDRF}=\emptyset. Ep​pE_{pp} is the set of edges assigned to partitions via pre-partitioning based on vertex clustering and EH​D​R​FE_{HDRF} is the set of edges assigned to partitions based on HDRF scoring. Now, we extend the notation of vertex cover sets as follows. Let Vp​p={x∈V|∃y∈V:(x,y)∈Ep​p∨(y,x)∈Ep​p}V_{pp}=\{x\in V|\exists y\in V:(x,y)\in E_{pp}\lor(y,x)\in E_{pp}\} the set of vertices covered by Ep​pE_{pp}, and analogously, VH​D​R​F={x∈V|∃y∈V:(x,y)∈EH​D​R​F∨(y,x)∈EH​D​R​F}V_{HDRF}=\{x\in V|\exists y\in V:(x,y)\in E_{HDRF}\lor(y,x)\in E_{HDRF}\} the set of vertices covered by EH​D​R​FE_{HDRF}. We analyze the average replication factor of three different, disjoint vertex sets. Let VAV_{A} be the set of vertices that are in Vp​pV_{pp}, but not in VH​D​R​FV_{HDRF}: VA=Vp​p∖VH​D​R​FV_{A}=V_{pp}\setminus V_{HDRF}. Further, let VBV_{B} be the set of vertices that are in VH​D​R​FV_{HDRF}, but not in Vp​pV_{pp}: VB=VH​D​R​F∖Vp​pV_{B}=V_{HDRF}\setminus V_{pp}. Finally, let VCV_{C} be the set of vertices that are both in Vp​pV_{pp} and in VH​D​R​FV_{HDRF}: VC=Vp​p∩VH​D​R​FV_{C}=V_{pp}\cap V_{HDRF}. Notice that VAV_{A}, VBV_{B}, and VCV_{C} are pairwise disjoint. Now, we prove that for each set VAV_{A}, VBV_{B}, and VCV_{C}, the average replication factor achieved with 2PS is equal or better than the average replication factor achieved with HDRF.
+
+VAV_{A}: Pre-partitoning only replicates every vertex in VAV_{A} one single time to one single target partition, which is the partition the corresponding cluster of the vertex is mapped to. These vertices have a perfect replication factor of 1, which is lower than the replication factor that is guaranteed by HDRF partitioning.
+
+VBV_{B}: Vertices in VBV_{B} are only touched by HDRF partitioning in the last streaming phase of 2PS. Hence, their average replication factor will be the same.
+
+VCV_{C}: Vertices in VCV_{C} are both touched by pre-partitioning as well as by HDRF partitioning (first and second pass, respectively, of the 2PS partitioning phase). Along the lines of the proof provided by Petroni et al. [32], we differentiate whether a vertex v∈VCv\in V_{C} is a high-degree vertex (hub vertex) or a low-degree (non-hub) vertex. If vv is a hub vertex, it will be replicated by HDRF partitioning to every partition. The replication of vv by 2PS pre-partitioning, hence, does not have any effect on the replication factor. If vv is a non-hub vertex and HDRF processes an edge between vv and a hub vertex uhu_{h}, HDRF would only replicate vv if it is the first time it observes vv. Now, because v∈Vp​pv\in V_{pp}, there must already be partitioning state of vv gathered from the pre-partitioning pass, i.e., vv cannot be observed for the first time, and hence, will not be replicated by HDRF. If vv is a non-hub vertex and HDRF processes an edge between vv and another non-hub vertex ulu_{l}, HDRF may replicate vv. As pre-partitioning has also replicated vv, the replication factor of HDRF could not have been better than pre-partitioning in 2PS.
+
+Summing up, the average replication factor of vertices in VAV_{A} is strictly lower than the bounds provided by HDRF, while the average replication factor of vertices in VBV_{B} and VCV_{C} is equal to the bounds of HDRF. Hence, 2PS achieves a lower bound on average replication factor than HDRF, given that there are vertices in VAV_{A}—in particular, vertices that have only intra-cluster edges and no inter-cluster edges.
+ ∎
+
+5 Evaluations
+
+5.1 Setup
+
+Data Sets. We perform a set of performance evaluations on real-world graphs (cf. Table 1) of different scales and origin. TW66
+              6
+
+            https://snap.stanford.edu/data/twitter-2010.html [20, 22] and FR77
+              7
+
+            https://snap.stanford.edu/data/com-Friendster.html [42, 22] are social networks; IT88
+              8
+
+            http://law.di.unimi.it/webdata/it-2004/ [4, 5, 6], UK99
+              9
+
+            http://law.di.unimi.it/webdata/uk-2007-05/ [4, 5, 6], GSH1010
+              10
+
+            http://law.di.unimi.it/webdata/gsh-2015/ [4, 5, 6] and WDC1111
+              11
+
+            http://webdatacommons.org/hyperlinkgraph/ are web graphs.
+
+Name
+|V||V|
+|E||E|
+Size
+Type
+
+it-2004 (IT)
+41 M
+1.2 B
+9 GiB
+Web
+
+twitter-2010 (TW)
+42 M
+1.5 B
+11 GiB
+Social
+
+com-friendster (FR)
+66 M
+1.8 B
+14 GiB
+Social
+
+uk-2007-05 (UK)
+106 M
+3.7 B
+28 GiB
+Web
+
+gsh-2015 (GSH)
+988 M
+33 B
+248 GiB
+Web
+
+wdc-2014 (WDC)
+1.7 B
+64 B
+478 GiB
+Web
+
+Table 1: Real-world graph datasets. Size refers to the graph representation as binary edge list with 32-bit vertex ids.
+
+Baselines. From the group of streaming partitioners, we compare to HDRF [32], DBH [41] and SNE (a streaming version of the random-access partitioning algorithm NE [43]). We chose these baselines for the following reasons. HDRF delivers low replication factor at modest run-time and memory overhead. DBH is based on hashing and is the fastest streaming partitioner with the lowest memory overhead. Finally, SNE delivers a lower replication factor than HDRF, albeit at a significantly higher run-time and memory overhead. Other streaming partitioners (Greedy [12]) are outperformed by our chosen baseline partitioners, or they are too slow to partition large graphs in a reasonable time (ADWISE [28]).
+
+While random-access partitioners generally induce a large memory overhead, they are a challenging baseline in terms of replication factor and run-time. From the group of random-access partitioners, we compare to NE [43] and DNE [15]. These are currently the partitioners that achieve the lowest replication factor (NE) and the best scalability (DNE). Other random-access partitioners take too much memory or run-time to partition the real-world graphs on our evaluation platform (KaHiP [34]) or they are outperformed by DNE in terms of replication factor and run-time (Spinner [26], ParMetis [18], XtraPulp [35], Sheep [25]).
+
+For a fair comparison, we re-implemented the HDRF algorithm in C++ and use the same implementation of HDRF also for edge partitioning in the second phase of 2PS. We also re-implemented DBH, using the same framework that we developed for HDRF and 2PS. For NE, SNE and DNE, we use the reference implementation of the respective authors. All implementations that we use, except for DNE, ingest the graph in the same binary input format (i.e., binary edge list with 32-bit vertex ids). DNE ingests an ASCII edge list—there is no option for binary input provided in the reference implementation of DNE.
+
+Evaluation Platform. We perform all experiments on a server with 4 x 16 Intel(R) Xeon(R) CPU E5-4650 0@2.70GHz, 503 GiB of main memory and 1 x 4.4 TB HDD disk. The operating system is Ubuntu 18.04.2 LTS.
+
+Experimental Settings. We used the following settings throughout all experiments. The balancing constraint α\alpha was set to 1.05. Further, we configured the system parameters of the baseline partitioner according to the authors’ recommendations as follows. We configured HDRF with a setting of λ=1.1\lambda=1.1. For SNE, we used a cache size of 2∗|V|2*|V|. For DNE, we set an expansion ratio of 0.1.
+
+For each experiment, we re-compiled the partitioners with optimal settings, as far as compilation flags were offered. For 2PS, HDRF and DNE, we set the maximum number of partitions to the numbers used in the corresponding experiment. Further, we compiled DNE with 32-bit vertex ids. This way, the memory overhead of the partitioners was minimized as far as possible.
+
+Finally, for DNE, we adapted the number of threads per process as follows. In DNE, for each partition, a separate process is spawned. As our evaluation machine offers 64 hardware threads, we tried to reach a total number of 64 threads, if possible. This means that each process gets ⌈64k⌉\lceil\frac{64}{k}\rceil threads.
+
+5.2 Performance on Real-World Graphs
+
+We perform our experiments for k={4,32,128,256}k=\{4,32,128,256\} partitions. We repeat each experiment 3 times and report the mean value along with error bars that show the standard deviation. For each set of experiments, we perform an initial warm-up run which does not count into the results. To use our limited server time efficiently, we aborted experiments (reporting an out of time error) when a partitioner used more than 6 times the run-time of 2PS.
+
+The key performance metrics we report are replication factor, partitioning run-time, and memory overhead. We also track balancing. In most cases, the balancing constraint is met by all partitioners; if this is not the case, we report the measured imbalance factor α\alpha in the plot.
+
+(a) IT: Replication factor.
+
+(b) IT: Run-time.
+
+(c) IT: Memory overhead.
+
+(d) TW: Replication factor.
+
+(e) TW: Run-time.
+
+(f) TW: Memory overhead.
+
+(g) FR: Replication factor.
+
+(h) FR: Run-time.
+
+(i) FR: Memory overhead.
+
+(j) UK: Replication factor.
+
+(k) UK: Run-time.
+
+(l) UK: Memory overhead.
+
+(m) GSH: Replication factor.
+
+(n) GSH: Run-time.
+
+(o) GSH: Memory overhead.
+
+(p) WDC: Replication factor.
+
+(q) WDC: Run-time.
+
+(r) WDC: Memory overhead.
+
+Figure 4: Performance results on real-world graphs. OOT = out of time; OOM = out of memory.
+
+Main Observations
+
+In Figure 4, we depict all performance measurements. Our main observations are as follows.
+
+(1) 2PS outperforms HDRF in terms of replication factor and run-time. Throughout all graphs and all numbers of partitions, 2PS yields a significantly lower replication factor than HDRF. This is in line with our theoretical result (see Section 4.3). The advantage of 2PS is particularly pronounced on the web graphs (IT, UK, GSH and WDC). In terms of run-time, 2PS performs similar to HDRF on social network graphs (TW and FR) and is significantly faster on web graphs (IT, UK, GSH and WDC), even though 2PS performs multiple passes through the edge list, while HDRF only performs a single pass. This has two reasons. First, the clustering and pre-partitioning passes of 2PS are very lightweight. In particular, they do not involve computing a scoring function. Second, the more edges are pre-partitioned in 2PS, the fewer edges need to be partitioned via stateful streaming partitioning, which is more heavyweight due to the computation of a scoring function for every partition. In terms of memory overhead, the clustering state in 2PS requires a moderate amount of additional memory. However, this overhead is independent of the number of edges and the number of partitions. With a growing number of partitions, the relative memory overhead of 2PS compared to HDRF is diminishing. In comparison to NE and DNE, the overall memory overhead of 2PS is still negligible.
+
+(2) 2PS outperforms SNE in terms of replication factor, run-time and memory overhead. Compared to 2PS, SNE induces a much larger run-time, which explodes when the number of partitions is high. For 128 or more partitions, we were not able to obtain results from SNE. Different from 2PS, SNE is not a real streaming algorithm, but instead implements a random-access partitioner (NE) with a partial view of the graph (i.e., it ingests and partitions subsequent chunks of the edge set). For every chunk of edges, an internal graph representation is built. This slows down the partitioning process. Only in one experiment (FR with 32 partitions), SNE could achieve a better replication factor than 2PS. However, in this specific case, the balancing constraint was severely violated, i.e., SNE built a heavily imbalanced partitioning. In the web graphs, despite of using more memory and inducing more run-time, the replication factor of SNE was always higher than the replication factor of 2PS. Finally, for GSH and WDC, we were not able to obtain results from SNE due to excessive run-time.
+
+(a) Modularity after streaming clustering.
+
+(b) Ratio of pre-partitioned edges.
+
+(c) Replication factor.
+
+Figure 5: Evaluations on synthetic graphs with different power-law degree exponent alpha for k=128k=128 partitions.
+
+(3) On web graphs, the replication factor of 2PS is competitive to the random-access partitioners NE and DNE, but at a lower run-time and a lower memory overhead. 2PS is capable of achieving a replication factor that is competitive to NE and DNE on web graphs (IT and UK), even though it is a streaming partitioner with an extremely low memory overhead. Moreover, 2PS is faster than NE on all graphs, and faster than DNE on the web graphs. Finally, due to its high memory efficiency, 2PS could successfully partition the large web graphs GSH and WDC, while NE and DNE ran out of memory.
+
+Further Discussion
+
+DBH produced the highest replication factor among all partitioners. On the other hand, DBH was also the fastest partitioner and induced the lowest memory overhead. Does this make DBH a good choice? Related studies show that investing some additional run-time into high-quality partitioning with low replication factor (compared to simple hashing, like in DBH) pays off when considering the total run-time of both graph partitioning and subsequent graph processing [43, 28]. Hence, using DBH is not the best option, especially when subsequent distributed graph processing is performed for many iterations. Different from DBH, which is fast but induces a high replication factor, 2PS truly improves the state of the art in streaming edge partitioning by being faster and inducing a lower replication factor than its main competitor HDRF, as discussed above.
+
+There were a couple of experiments that failed for some of the baseline partitioners. These failures either originate in excessive memory consumption (out of memory error) or excessive run-time (out of time error). On all graphs, when the number of partitions is large, NE and SNE show excessive run-time while DNE induces a large memory overhead. For the large web graphs GSH and WDC, NE and DNE both run out of memory, while SNE shows excessive run-time. In comparison to these baselines, the performance of 2PS is relatively stable. There is only a moderate increase of run-time and memory overhead with a growing number of partitions. Besides HDRF and DBH, 2PS is the only partitioner that could successfully partition all graphs with all numbers of partitions on our evaluation platform.
+
+Finally, balancing was a surprisingly big challenge for some of the baseline partitioners. Especially for larger numbers of partitions, HDRF, NE, DNE and SNE had problems to keep the balancing constraint, even though NE, DNE and SNE explicitly offer a parameter to configure the maximum allowed imbalance. For HDRF, stricter balancing could potentially be achieved by setting a higher value of the parameter λ\lambda which weighs in the balancing score in the scoring function. However, it is unclear what setting of λ\lambda would work in which case. Different from these baselines, 2PS implements an explicit, hard volume cap for partitions. In other words, regardless of the shape and properties of the input graph, 2PS will always keep the configured balancing constraint.
+
+In summary, 2PS is a major improvement of streaming edge partitioning. Different from other works, like ADWISE [28], that just trade more run-time for a lower replication factor, we could reduce both replication factor and run-time of streaming partitioning at the same time. Finally, by overcoming the uninformed assignment problem, 2PS proves to be a serious competitor in terms of replication factor even for random-access partitioners. At the same time, 2PS shows high efficiency, an aspect of data processing systems that is often overlooked [29].
+
+5.3 Impact of Power-Law Degree
+
+We further perform a set of experiments on synthetic graphs generated with the SNAP system1212
+              12
+
+            https://snap.stanford.edu/snap/download.html (100.000 vertices, using the “random-power law” graph generator). In particular, we explore how the power-law degree exponent alpha of a random power-law graph1313
+              13
+
+            By convention, both the power-law degree exponent and the imbalance factor are often denoted α\alpha in the literature. To differentiate them without introducing divergent notation, we denote the imbalance factor α\alpha and the power-law degree exponent of graphs alpha. relates to the partitioning quality achieved with 2PS. We measure (a) the modularity of graph clustering achieved by the first phase of 2PS, (b) the ratio of pre-partitioned edges (i.e., edges assigned to partitions because of the clustering of their incident vertices), and (c) the overall replication factor.
+
+Figure 5 depicts the results. We make the following three observations:
+
+(1) The higher the power-law degree exponent alpha of the graph, the better streaming clustering works. In a graph with 𝚊𝚕𝚙𝚑𝚊=4.0\mathtt{alpha}=4.0, the modularity achieved with streaming clustering is almost 1, which is the maximum possible modularity. This indicates that the graph is strongly clustered, and that the clustering algorithm has found these clusters.
+
+(2) There is a direct relation between the modularity of streaming clustering and the ratio of pre-partitioned edges. In other words, the better the clustering works, the more edges can be assigned to partitions based on the clustering information, and the fewer edges have to be assigned to partitions based on stateful streaming partitioning. At 𝚊𝚕𝚙𝚑𝚊=4.0\mathtt{alpha}=4.0, almost 100 % of the edges are assigned to partitions based on the clusters of their incident vertices. Therefore, the approach of applying modularity-based clustering in the first phase of 2PS is well justified.
+
+(3) The higher the modularity of clustering and the ratio of pre-partitioned edges, the lower is the replication factor. At 𝚊𝚕𝚙𝚑𝚊=4.0\mathtt{alpha}=4.0, the achieved replication factor of 2PS is almost at 1.0, which is the best possible replication factor in edge partitioning.
+
+Our study on synthetic graphs indicates that the power-law degree exponent is an important factor in the effectiveness of 2PS partitioning. According to a meta study by Aiello et al. [2], the observed power-law degree exponents of real-world web graphs have been reported to be between 2.1 and 2.7 in different studies. Hence, web graphs are expected to be in a range of power-law degree exponents where moderate modularity can be achieved by 2PS clustering. Indeed, our performance results (cf. Section 5.2) indicate a high effectiveness of 2PS on power-law graphs.
+
+6 Related Work
+
+Graph partitioning is a problem with a long history in research [8]. It has numerous applications in solving optimization problems, e.g., in VLSI design [18] and operator placement in stream processing systems [19]. In this paper, we focus on the edge partitioning problem. In particular, edge partitioning has gained a lot of attention as a preprocessing step for distributed graph processing systems, e.g., PowerGraph [12] and Spark/GraphX [13].
+
+Random-access partitioners [43, 25, 15] require full information about the graph structure, i.e., the complete graph is loaded into memory of either a single machine [43] or a cluster of multiple machines [25, 15] before partitioning is performed. The major shortcoming of such partitioners is that they consume a lot of memory. However, memory is a scarce and expensive resource. While a single machine may not have sufficient memory capacities to keep a large graph, employing a cluster of machines to perform graph partitioning induces a higher monetary cost. Streaming edge partitioning is a common approach to reduce the memory overhead of edge partitioning.
+
+There are a number of approaches to streaming edge partitioning. Besides stateless partitioning based on hashing (e.g., DBH [41]), stateful partitioners have received growing attention. The basic idea is that by gathering state about past assignment decisions, future edges in the stream can be partitioned with a lower replication degree. In this regard, the main differentiation between streaming partitioners so far has been in the formulation of the scoring function. Different such functions have been proposed, e.g., Greedy [12] and HDRF [32]. However, all of these approaches suffer from the uninformed assignment problem. An earlier approach to overcome this problem has been proposed in ADWISE [28], which allows for dynamically re-ordering the edge stream such that the assignment of uninformed edges can be delayed. This way, locality in the edge stream can be exploited. However, the gains in replication factor depend on the window size, and a larger window imposes a larger run-time. Opposed to that, 2PS can reduce both replication factor and run-time compared to stateful streaming partitioning because the pre-partitioning based on vertex clustering is extremely lightweight and does not involve the computation of a scoring function.
+
+Stanton and Kliot [36] proposed a streaming model for vertex partitioning; the difference to streaming edge partitioning is that in streaming vertex partitioning, adjacency lists of vertices are ingested and vertices are assigned to partitions. FENNEL [38] is a more recent partitioner that follows the vertex partitioning model. Bourse et al. [7] describe a method to transform vertex partitioning into edge partitioning. However, it requires significant preprocessing to create adjacency lists from an input edge list, as well as significant postprocessing to transform vertex partitioning into edge partitioning. These costs are avoided when the edge partitioning problem is solved directly, as we do in 2PS.
+
+Some graph processing systems employ special execution models that require a specific style of graph partitioning different from edge partitioning or vertex partitioning. PowerLyra [9] is a hybrid distributed graph processing system that uses a combination of vertex-centric and edge-centric processing. Therefore, it also employs its own hybrid partitioning strategy that combines vertex partitioning and edge partitioning. Out-of-core graph processing systems like GraphChi [21], GridGraph [44] and Mosaic [23] employ different graph preprocessing methods that involve specific graph partitioning problems.
+
+A related problem is the partitioning of hypergraphs. In hypergraphs, an edge (sometimes called hyperedge) can connect more than only two vertices. This way, group relationships can be modeled. The problem of partitioning hypergraphs into multiple components while minimizing the cut size has also been tackled by streaming [3] as well as random-access algorithms [10, 37, 17, 27].
+
+7 Conclusions
+
+In this paper, we tackle the uninformed assignment problem of stateful streaming edge partitioning and propose a new two-phase streaming approach. We make use of the great flexibility of graph clustering in the first phase, before we finalize and materialize the actual partitioning in the second phase. This way, we achieve state-of-the-art results in replication factor while staying faithful to a streaming model that does not require to keep the complete graph in memory at any time.
+
+References
+
+[1]
+
+Apache Giraph.
+
+https://giraph.apache.org/.
+
+[2]
+
+William Aiello, Fan Chung, and Linyuan Lu.
+
+Random evolution in massive graphs.
+
+In Handbook of massive data sets, pages 97–122. Springer,
+2002.
+
+[3]
+
+Dan Alistarh, Jennifer Iglesias, and Milan Vojnovic.
+
+Streaming min-max hypergraph partitioning.
+
+In Proceedings of the 28th International Conference on Neural
+Information Processing Systems - Volume 2, NIPS’15, pages 1900–1908,
+Cambridge, MA, USA, 2015. MIT Press.
+
+[4]
+
+Paolo Boldi, Andrea Marino, Massimo Santini, and Sebastiano Vigna.
+
+BUbiNG: Massive crawling for the masses.
+
+In Proceedings of the Companion Publication of the 23rd
+International Conference on World Wide Web, pages 227–228. International
+World Wide Web Conferences Steering Committee, 2014.
+
+[5]
+
+Paolo Boldi, Marco Rosa, Massimo Santini, and Sebastiano Vigna.
+
+Layered label propagation: A multiresolution coordinate-free ordering
+for compressing social networks.
+
+In Sadagopan Srinivasan, Krithi Ramamritham, Arun Kumar, M. P.
+Ravindra, Elisa Bertino, and Ravi Kumar, editors, Proceedings of the
+20th international conference on World Wide Web, pages 587–596. ACM Press,
+2011.
+
+[6]
+
+Paolo Boldi and Sebastiano Vigna.
+
+The WebGraph framework I: Compression techniques.
+
+In Proc. of the Thirteenth International World Wide Web
+Conference (WWW 2004), pages 595–601, Manhattan, USA, 2004. ACM.
+
+[7]
+
+Florian Bourse, Marc Lelarge, and Milan Vojnovic.
+
+Balanced graph edge partition.
+
+In Proceedings of the 20th ACM SIGKDD International Conference
+on Knowledge Discovery and Data Mining, KDD ’14, pages 1456–1465, New York,
+NY, USA, 2014. ACM.
+
+[8]
+
+Aydın Buluç, Henning Meyerhenke, Ilya Safro, Peter Sanders, and
+Christian Schulz.
+
+Recent Advances in Graph Partitioning, pages 117–158.
+
+Springer International Publishing, Cham, 2016.
+
+[9]
+
+Rong Chen, Jiaxin Shi, Yanzhe Chen, and Haibo Chen.
+
+Powerlyra: Differentiated graph computation and partitioning on
+skewed graphs.
+
+In Proceedings of the Tenth European Conference on Computer
+Systems, EuroSys ’15, pages 1:1–1:15, New York, NY, USA, 2015. ACM.
+
+[10]
+
+Karen D. Devine, Erik G. Boman, Robert T. Heaphy, Rob H. Bisseling, and Umit V.
+Catalyurek.
+
+Parallel hypergraph partitioning for scientific computing.
+
+In Proceedings 20th IEEE International Parallel Distributed
+Processing Symposium, pages 10 pp.–, April 2006.
+
+[11]
+
+Santo Fortunato.
+
+Community detection in graphs.
+
+Physics Reports, 486(3):75 – 174, 2010.
+
+[12]
+
+Joseph E. Gonzalez, Yucheng Low, Haijie Gu, Danny Bickson, and Carlos Guestrin.
+
+Powergraph: Distributed graph-parallel computation on natural graphs.
+
+In Presented as part of the 10th USENIX Symposium on Operating
+Systems Design and Implementation (OSDI 12), pages 17–30, Hollywood, CA,
+2012. USENIX.
+
+[13]
+
+Joseph E. Gonzalez, Reynold S. Xin, Ankur Dave, Daniel Crankshaw, Michael J.
+Franklin, and Ion Stoica.
+
+Graphx: Graph processing in a distributed dataflow framework.
+
+In 11th USENIX Symposium on Operating Systems Design and
+Implementation (OSDI 14), pages 599–613, Broomfield, CO, 2014. USENIX
+Association.
+
+[14]
+
+Ronald L. Graham.
+
+Bounds on multiprocessing timing anomalies.
+
+SIAM journal on Applied Mathematics, 17(2):416–429, 1969.
+
+[15]
+
+Masatoshi Hanai, Toyotaro Suzumura, Wen Jun Tan, Elvis Liu, Georgios
+Theodoropoulos, and Wentong Cai.
+
+Distributed edge partitioning for trillion-edge graphs.
+
+Proc. VLDB Endow., 12(13):2379–2392, September 2019.
+
+[16]
+
+Alexandre Hollocou, Julien Maudet, Thomas Bonald, and Marc Lelarge.
+
+A streaming algorithm for graph clustering.
+
+In NIPS 2017-Wokshop on Advances in Modeling and Learning
+Interactions from Complex Data, pages 1–10, 2017.
+
+[17]
+
+Igor Kabiljo, Brian Karrer, Mayank Pundir, Sergey Pupyrev, and Alon Shalita.
+
+Social hash partitioner: A scalable distributed hypergraph
+partitioner.
+
+Proc. VLDB Endow., 10(11):1418–1429, August 2017.
+
+[18]
+
+George Karypis and Vipin Kumar.
+
+A fast and high quality multilevel scheme for partitioning irregular
+graphs.
+
+SIAM J. Sci. Comput., 20(1):359–392, December 1998.
+
+[19]
+
+Rohit Khandekar, Kirsten Hildrum, Sujay Parekh, Deepak Rajan, Joel Wolf,
+Kun-Lung Wu, Henrique Andrade, and Buğra Gedik.
+
+Cola: Optimizing stream processing applications via graph
+partitioning.
+
+In Jean M. Bacon and Brian F. Cooper, editors, Middleware 2009,
+pages 308–327, Berlin, Heidelberg, 2009. Springer Berlin Heidelberg.
+
+[20]
+
+Haewoon Kwak, Changhyun Lee, Hosung Park, and Sue Moon.
+
+What is twitter, a social network or a news media?
+
+In Proceedings of the 19th International Conference on World
+Wide Web, WWW ’10, pages 591–600, New York, NY, USA, 2010. ACM.
+
+[21]
+
+Aapo Kyrola, Guy Blelloch, and Carlos Guestrin.
+
+Graphchi: Large-scale graph computation on just a PC.
+
+In Presented as part of the 10th USENIX Symposium on Operating
+Systems Design and Implementation (OSDI 12), pages 31–46, Hollywood, CA,
+2012. USENIX.
+
+[22]
+
+Jure Leskovec and Andrej Krevl.
+
+SNAP Datasets: Stanford large network dataset collection.
+
+http://snap.stanford.edu/data, June 2014.
+
+[23]
+
+Steffen Maass, Changwoo Min, Sanidhya Kashyap, Woonhak Kang, Mohan Kumar, and
+Taesoo Kim.
+
+Mosaic: Processing a trillion-edge graph on a single machine.
+
+In Proceedings of the Twelfth European Conference on Computer
+Systems, EuroSys ’17, pages 527–543, New York, NY, USA, 2017. ACM.
+
+[24]
+
+Grzegorz Malewicz, Matthew H. Austern, Aart J.C Bik, James C. Dehnert, Ilan
+Horn, Naty Leiser, and Grzegorz Czajkowski.
+
+Pregel: A system for large-scale graph processing.
+
+In Proceedings of the 2010 ACM SIGMOD International Conference
+on Management of Data, SIGMOD ’10, pages 135–146, New York, NY, USA, 2010.
+ACM.
+
+[25]
+
+Daniel Margo and Margo Seltzer.
+
+A scalable distributed graph partitioner.
+
+Proc. VLDB Endow., 8(12):1478–1489, August 2015.
+
+[26]
+
+Claudio Martella, Dionysios Logothetis, Andreas Loukas, and Georgos Siganos.
+
+Spinner: Scalable graph partitioning in the cloud.
+
+In 2017 IEEE 33rd International Conference on Data Engineering
+(ICDE), pages 1083–1094, April 2017.
+
+[27]
+
+Christian Mayer, Ruben Mayer, Sukanya Bhowmik, Lukas Epple, and Kurt Rothermel.
+
+Hype: Massive hypergraph partitioning with neighborhood expansion.
+
+In 2018 IEEE International Conference on Big Data (Big Data),
+pages 458–467, Dec 2018.
+
+[28]
+
+Christian Mayer, Ruben Mayer, Muhammad Adnan Tariq, Heiko Geppert, Larissa
+Laich, Lukas Rieger, and Kurt Rothermel.
+
+Adwise: Adaptive window-based streaming edge partitioning for
+high-speed graph processing.
+
+In 2018 IEEE 38th International Conference on Distributed
+Computing Systems (ICDCS), pages 685–695, July 2018.
+
+[29]
+
+Frank McSherry, Michael Isard, and Derek G. Murray.
+
+Scalability! but at what COST?
+
+In 15th Workshop on Hot Topics in Operating Systems (HotOS
+XV), Kartause Ittingen, Switzerland, 2015. USENIX Association.
+
+[30]
+
+Mark E. J. Newman.
+
+Modularity and community structure in networks.
+
+Proceedings of the National Academy of Sciences,
+103(23):8577–8582, 2006.
+
+[31]
+
+Joel Nishimura and Johan Ugander.
+
+Restreaming graph partitioning: Simple versatile algorithms for
+advanced balancing.
+
+In Proceedings of the 19th ACM SIGKDD International Conference
+on Knowledge Discovery and Data Mining, KDD ’13, pages 1106–1114, New York,
+NY, USA, 2013. ACM.
+
+[32]
+
+Fabio Petroni, Leonardo Querzoni, Khuzaima Daudjee, Shahin Kamali, and Giorgio
+Iacoboni.
+
+Hdrf: Stream-based partitioning for power-law graphs.
+
+In Proceedings of the 24th ACM International on Conference on
+Information and Knowledge Management, CIKM ’15, pages 243–252, New York,
+NY, USA, 2015. ACM.
+
+[33]
+
+Semih Salihoglu and Jennifer Widom.
+
+Gps: A graph processing system.
+
+In Proceedings of the 25th International Conference on
+Scientific and Statistical Database Management, SSDBM, pages 22:1–22:12,
+New York, NY, USA, 2013. ACM.
+
+[34]
+
+Sebastian Schlag, Christian Schulz, Daniel Seemaier, and Darren Strash.
+
+Scalable edge partitioning.
+
+In 2019 Proceedings of the Twenty-First Workshop on Algorithm
+Engineering and Experiments (ALENEX), pages 211–225. SIAM, 2019.
+
+[35]
+
+George M. Slota, Sivasankaran Rajamanickam, Karen Devine, and Kamesh Madduri.
+
+Partitioning trillion-edge graphs in minutes.
+
+In 2017 IEEE International Parallel and Distributed Processing
+Symposium (IPDPS), pages 646–655, May 2017.
+
+[36]
+
+Isabelle Stanton and Gabriel Kliot.
+
+Streaming graph partitioning for large distributed graphs.
+
+In Proceedings of the 18th ACM SIGKDD International Conference
+on Knowledge Discovery and Data Mining, KDD ’12, pages 1222–1230, New York,
+NY, USA, 2012. ACM.
+
+[37]
+
+Aleksandar Trifunović and William J. Knottenbelt.
+
+Parallel multilevel algorithms for hypergraph partitioning.
+
+Journal of Parallel and Distributed Computing, 68(5):563 –
+581, 2008.
+
+[38]
+
+Charalampos Tsourakakis, Christos Gkantsidis, Bozidar Radunovic, and Milan
+Vojnovic.
+
+Fennel: Streaming graph partitioning for massive scale graphs.
+
+In Proceedings of the 7th ACM International Conference on Web
+Search and Data Mining, WSDM ’14, pages 333–342, New York, NY, USA, 2014.
+ACM.
+
+[39]
+
+Jeffrey D. Ullman.
+
+Np-complete scheduling problems.
+
+J. Comput. Syst. Sci., 10(3):384–393, June 1975.
+
+[40]
+
+Hao Wei, Jeffrey Xu Yu, Can Lu, and Xuemin Lin.
+
+Speedup graph processing by graph ordering.
+
+In Proceedings of the 2016 International Conference on
+Management of Data, SIGMOD ’16, pages 1813–1828, New York, NY, USA, 2016.
+ACM.
+
+[41]
+
+Cong Xie, Ling Yan, Wu-Jun Li, and Zhihua Zhang.
+
+Distributed power-law graph computing: Theoretical and empirical
+analysis.
+
+In Advances in Neural Information Processing Systems 27, pages
+1673–1681. 2014.
+
+[42]
+
+Jaewon Yang and Jure Leskovec.
+
+Defining and evaluating network communities based on ground-truth.
+
+In 2012 IEEE 12th International Conference on Data Mining,
+pages 745–754, Dec 2012.
+
+[43]
+
+Chenzi Zhang, Fan Wei, Qin Liu, Zhihao Gavin Tang, and Zhenguo Li.
+
+Graph edge partitioning via neighborhood heuristic.
+
+In Proceedings of the 23rd ACM SIGKDD International Conference
+on Knowledge Discovery and Data Mining, KDD ’17, pages 605–614, New York,
+NY, USA, 2017. ACM.
+
+[44]
+
+Xiaowei Zhu, Wentao Han, and Wenguang Chen.
+
+Gridgraph: Large-scale graph processing on a single machine using
+2-level hierarchical partitioning.
+
+In 2015 USENIX Annual Technical Conference (USENIX ATC
+15), pages 375–386, Santa Clara, CA, July 2015. USENIX Association.
+
+    Experimental support, please
+    view the build logs
+    for errors. Generated by
+
+        L
+        A
+        T
+        E
+
+      xml
+
+    .
+
+Instructions for reporting errors
+
+We are continuing to improve HTML versions of papers, and your feedback helps enhance accessibility and mobile
+      support. To report errors in the HTML that will help us improve conversion and rendering, choose any of the
+      methods listed below:
+
+Click the "Report Issue" (
+
+          ) button, located in the page header.
+
+Tip: You can select the relevant text first, to include it in your report.
+
+Our team has already identified the following issues. We appreciate your time reviewing and reporting rendering errors we
+      may not have found yet. Your efforts will help us improve the HTML versions for all readers, because disability
+      should not be a barrier to accessing research. Thank you for your continued support in championing open access for
+      all.
+
+Have a free development cycle? Help support accessibility at arXiv! Our collaborators at LaTeXML maintain a list of packages that need conversion, and welcome developer contributions.
+
+        We gratefully acknowledge support from
+        our major funders,
+        member institutions, ,
+        and all contributors.
+
+        About
+        ·
+        Help
+        ·
+        Contact
+        ·
+        Subscribe
+        ·
+        Copyright
+        ·
+        Privacy
+        ·
+        Accessibility
+        ·
+        Operational Status (opens in new tab)
+
+Major funding support from

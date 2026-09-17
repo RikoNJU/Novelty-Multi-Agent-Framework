@@ -159,6 +159,8 @@ def legacy_shape(config: ApplicationConfig) -> dict[str, Any]:
         "retrieval": {
             "active_source": db.active_source,
             "candidate_limit_per_task": db.candidate_limit_per_task,
+            "per_query_limit": db.per_query_limit,
+            "max_provider_requests": db.max_provider_requests,
             "candidate_excerpt_chars": db.candidate_excerpt_chars,
             "full_text_limit_per_task": db.full_text_limit_per_task,
             "max_concurrency": db.max_concurrency,

@@ -29,21 +29,29 @@ def _summarize_search_executions(
     counts = Counter(execution.status for execution in executions)
     total = len(executions)
     failed = counts[SearchExecutionStatus.FAILED]
+    not_run = counts[SearchExecutionStatus.NOT_RUN]
     usable = (
         counts[SearchExecutionStatus.SUCCEEDED]
         + counts[SearchExecutionStatus.PARTIAL]
     )
-    all_failed = total > 0 and failed == total
+    attempted = total - not_run
+    all_failed = attempted > 0 and failed == attempted
     return {
         "total": total,
         "succeeded": counts[SearchExecutionStatus.SUCCEEDED],
         "partial": counts[SearchExecutionStatus.PARTIAL],
         "failed": failed,
+        "not_run": not_run,
         "requires_human": counts[SearchExecutionStatus.REQUIRES_HUMAN],
         "degraded": failed > 0 and usable > 0,
         "all_failed": all_failed,
         "provider_failed": failed > 0,
-        "no_execution": total == 0,
+        "no_execution": attempted == 0,
+        "retrieval_incomplete_budget": any(
+            item.status == SearchExecutionStatus.NOT_RUN
+            and item.parameters.get("not_run_reason") == "retrieval_incomplete_budget"
+            for item in executions
+        ),
     }
 
 
@@ -160,7 +168,7 @@ class DatabaseSearchTool:
             summary = "数据库检索执行失败：没有产生 search execution"
             error = "no_search_execution: database search produced no search executions"
         elif execution_summary["all_failed"]:
-            total = execution_summary["total"]
+            total = execution_summary["total"] - execution_summary["not_run"]
             summary = (
                 f"数据库检索执行失败：{total}/{total} search executions failed"
             )

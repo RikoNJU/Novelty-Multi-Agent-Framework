@@ -20,6 +20,7 @@ from novelty_agent_framework.agents import (
     build_paper_digest,
 )
 from novelty_agent_framework.core.errors import WorkflowExecutionError
+from novelty_agent_framework.core import RuntimeDebugConfig
 from novelty_agent_framework.ports import ValidationResult
 from novelty_agent_framework.persistence import ReferenceStore
 from novelty_agent_framework.schemas import (
@@ -571,3 +572,39 @@ def test_default_demo_runs_offline():
     result = NoveltyWorkflow.default().run(make_paper())
     assert result.rounds == 1
     assert result.evidence_cards
+
+
+def test_trace_switch_keeps_offline_workflow_business_result(tmp_path):
+    results = []
+    for enabled in (False, True):
+        root = tmp_path / str(enabled)
+        workflow, _ = build_workflow(
+            output_root=root,
+            runtime_debug=RuntimeDebugConfig(
+                enabled=enabled, output_root=root,
+                archive_root=tmp_path / f"archive-{enabled}"),
+        )
+        results.append(workflow.run(make_paper()))
+    assert [card.card_id for card in results[0].evidence_cards] == [
+        card.card_id for card in results[1].evidence_cards]
+    assert results[0].rounds == results[1].rounds
+    assert results[0].report.model_dump(exclude={"generated_at"}) == results[1].report.model_dump(exclude={"generated_at"})
+    archives = list((tmp_path / "archive-True").glob("paper-test_*/run-*"))
+    assert len(archives) == 1
+    archive = archives[0]
+    assert list((archive / "stages").glob("*_run_research_task/input.json"))
+
+    def check_refs(value):
+        if isinstance(value, dict):
+            if value.get("type") == "content_reference" and "path" in value:
+                path = archive / value["path"]
+                assert path.is_file()
+                assert hashlib.sha256(path.read_bytes()).hexdigest() == value["sha256"]
+            for child in value.values():
+                check_refs(child)
+        elif isinstance(value, list):
+            for child in value:
+                check_refs(child)
+
+    for path in archive.rglob("*.json"):
+        check_refs(json.loads(path.read_text()))

@@ -168,11 +168,12 @@ def test_zero_hit_strategy_falls_back_and_audits_variants(tmp_path) -> None:
     bundle = asyncio.run(tool.ainvoke(make_request()))
 
     executed = [item for item in bundle.search_executions]
-    assert [item.parameters.get("strategy_id") for item in executed][:2] == ["S1", "S1-fb1"]
+    assert [item.parameters.get("strategy_id") for item in executed][:3] == ["S1", "S2", "S3"]
     assert executed[0].results == []  # 零命中
-    assert [rank for item in executed[1].results for rank in [item.rank]] == [1]
-    assert executed[1].parameters.get("base_strategy") == "S1"
-    assert "丢弃概念" in executed[1].parameters.get("fallback_reason", "")
+    fallback = next(item for item in executed if item.parameters.get("strategy_id") == "S1-fb1")
+    assert [rank for item in fallback.results for rank in [item.rank]] == [1]
+    assert fallback.parameters.get("base_strategy") == "S1"
+    assert "丢弃概念" in fallback.parameters.get("fallback_reason", "")
     assert bundle.source_records  # 放宽变体命中的文献进入结果池
     # 唯一命中数 1 < candidate_limit 5，链继续走到 S3-fb1 耗尽
     assert len(searcher.calls) == 6
@@ -191,7 +192,7 @@ def test_hit_base_strategy_skips_its_fallback_variant(tmp_path) -> None:
     assert len(searcher.calls) == 4
 
 
-def test_candidate_limit_stops_chain_early(tmp_path) -> None:
+def test_candidate_limit_does_not_stop_base_directions(tmp_path) -> None:
     q_s1 = _query("C1 AND C2")
     tool, searcher = build_tool(
         tmp_path, {q_s1: [hit("a")]}, candidate_limit=1
@@ -199,8 +200,10 @@ def test_candidate_limit_stops_chain_early(tmp_path) -> None:
 
     bundle = asyncio.run(tool.ainvoke(make_request()))
 
-    assert [item.parameters.get("strategy_id") for item in bundle.search_executions] == ["S1"]
-    assert len(searcher.calls) == 1
+    ids = [item.parameters.get("strategy_id") for item in bundle.search_executions]
+    assert {"S1", "S2", "S3"} <= set(ids)
+    assert len(searcher.calls) >= 3
+    assert len(bundle.source_records) == 1
 
 
 def test_all_zero_hits_exhausts_chain_without_error(tmp_path) -> None:
@@ -250,7 +253,7 @@ def test_search_failure_stops_chain_and_keeps_audit(tmp_path, failure) -> None:
     bundle = asyncio.run(tool.ainvoke(make_request()))
 
     assert bundle.search_executions[0].status.value == "failed"
-    assert len(bundle.search_executions) == 1
+    assert bundle.search_executions[0].status.value == "failed"
     assert len(searcher.calls) == 1
 
 
@@ -278,9 +281,40 @@ def test_empty_then_provider_failure_stops_remaining_chain(tmp_path) -> None:
 
     bundle = asyncio.run(tool.ainvoke(make_request()))
 
-    assert [item.status.value for item in bundle.search_executions] == [
-        "succeeded",
-        "failed",
+    assert [item.status.value for item in bundle.search_executions[:2]] == [
+        "succeeded", "failed",
     ]
     assert bundle.search_executions[0].results == []
     assert len(searcher.calls) == 2
+
+
+def test_explicit_anchor_survives_importance_tie_and_renaming() -> None:
+    for anchor, other in (("C1", "C2"), ("C2", "C1")):
+        plan = SearchPlan(
+            task_id="T1", novelty_point_id="NP1",
+            concepts=[
+                SearchConcept(concept_id=anchor, name="object", terms=["graph training"], importance=3),
+                SearchConcept(concept_id=other, name="feature", terms=["summary"], importance=3),
+            ],
+            strategies=[SearchStrategy(strategy_id="S1", level="strict",
+                                       expression=f"{anchor} AND {other}")],
+            protected_concept_ids=[anchor],
+        )
+        assert build_fallback_chain(plan)[1].expression == anchor
+
+
+def test_or_branch_does_not_claim_protected_concept_is_required() -> None:
+    plan = make_plan(strategies=[SearchStrategy(
+        strategy_id="S1", level="strict", expression="C1 OR C2")])
+    plan.protected_concept_ids = ["C1"]
+    assert [variant.variant_id for variant in build_fallback_chain(plan)] == ["S1"]
+
+
+def test_request_budget_marks_unrun_base_directions(tmp_path) -> None:
+    tool, searcher = build_tool(tmp_path, {})
+    tool.max_provider_requests = 1
+    bundle = asyncio.run(tool.ainvoke(make_request()))
+    statuses = {item.parameters.get("strategy_id"): item for item in bundle.search_executions}
+    assert len(searcher.calls) == 1
+    assert statuses["S2"].status.value == "not_run"
+    assert statuses["S2"].parameters["not_run_reason"] == "retrieval_incomplete_budget"

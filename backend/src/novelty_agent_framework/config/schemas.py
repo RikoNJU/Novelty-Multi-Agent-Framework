@@ -48,6 +48,8 @@ class HarnessConfig(ConfigModel):
 class DatabaseSearchConfig(ConfigModel):
     active_source: str = Field(min_length=1)
     candidate_limit_per_task: int = Field(gt=0)
+    per_query_limit: int | None = Field(default=None, gt=0)
+    max_provider_requests: int = Field(default=6, gt=0)
     candidate_excerpt_chars: int = Field(gt=0)
     full_text_limit_per_task: int = Field(ge=0)
     max_concurrency: int = Field(gt=0)
@@ -180,6 +182,8 @@ class RuntimeDebugSettingsConfig(ConfigModel):
     output_root: str = "outputs"
     archive_root: str = "docs/experiments/runtime"
     max_inline_bytes: int = Field(default=256_000, gt=0)
+    max_physical_provider_requests: int = Field(default=48, gt=0)
+    max_model_calls: int = Field(default=80, gt=0)
     llm_pricing_path: str | None = None
 
 

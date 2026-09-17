@@ -93,6 +93,7 @@ class SearchExecutionStatus(StrEnum):
     PARTIAL = "partial"
     REQUIRES_HUMAN = "requires_human"
     FAILED = "failed"
+    NOT_RUN = "not_run"
 
 
 def _aware(value: datetime, field_name: str) -> datetime:

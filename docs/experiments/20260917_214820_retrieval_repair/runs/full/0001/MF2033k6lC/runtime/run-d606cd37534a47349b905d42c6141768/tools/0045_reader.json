@@ -1,0 +1,75 @@
+{
+  "agent_arguments": {
+    "artifact_id": "art_ebc47b0e70f5b363f3d871f2",
+    "char_start": 4000,
+    "max_chars": 6000
+  },
+  "agent_tool_call_id": "01a0afcd93afb192b56ac6361a288ee5",
+  "business_status": "NORMAL",
+  "duration": 0.003933,
+  "duration_ms": 3,
+  "error": null,
+  "execution_status": "SUCCESS",
+  "failure_phase": null,
+  "finished_at": "2026-09-17T14:38:00.629625+00:00",
+  "normalized_result": {
+    "read_result": {
+      "artifact_id": "art_ebc47b0e70f5b363f3d871f2",
+      "char_end": 10000,
+      "char_start": 4000,
+      "has_more": true,
+      "namespace": "research_reference",
+      "read_id": "read_c189238683d6319af3d8683f",
+      "role": "extracted_text",
+      "text": " problem is known to be NP-hard, and hence, can only be solved heuristically for large graphs [43].\n\nThe current approaches to solve the edge partitioning problem can be categorized into two groups. Random-access partitioners [18, 34, 25, 43, 15] load the complete graph into memory and then perform partitioning on it. In contrast to this, streaming partitioners [36, 41, 32, 28] ingest the graph as a stream of edges, i.e., edge by edge, and assign each edge of the stream immediately and irrevocably to a partition. The streaming approach has the advantage that graphs can be partitioned with low memory overhead, as the edge set does not need to be kept in memory completely at any time. This way, the monetary costs of graph partitioning can be reduced, as smaller machines can be used for partitioning very large graphs.\n\nHowever, streaming edge partitioning yields a higher vertex replication than random-access approaches. We attribute this shortcoming to the uninformed assignment problem [28]: A streaming partitioner only has a partial view of the graph structure. In particular, when processing an edge eie_{i} in the graph stream, the partitioner does not know the subsequent edges ei+1,ei+2,…e_{i+1},e_{i+2},..., but still has to decide to which partition it shall assign eie_{i}. Current approaches to overcome the uninformed assignment problem either do not apply to the edge partitioning problem [31] or require locality in the edge stream [28].\n\nIn this paper, we provide a method for streaming edge partitioning that overcomes the uninformed assignment problem and yields a significantly lower replication factor than existing streaming solutions. Our contributions are threefold:\n\n1.\n\nWe propose 2PS, a novel two-phase streaming algorithm for edge partitioning. In the first phase, 2PS gathers information about the global graph structure by performing streaming clustering. In the second phase, clustering information is exploited to perform high-quality edge partitioning decisions. By combining two different algorithms, we exploit the flexibility of graph clustering and at the same time solve the more rigid edge partitioning problem.\n\n2.\n\nWe provide a thorough theoretical analysis of 2PS regarding time and space complexity. Further, we prove that, on power-law graphs, the replication factor obtained with 2PS is strictly better than competing streaming partitioners.\n\n3.\n\nWe perform extensive evaluations on large real-world graphs, showing the superior performance of 2PS compared to other streaming algorithms. On web graphs, 2PS yields a comparable replication factor to resource intensive random-access partitioners.\n\nThe rest of the paper is organized as follows. In Section 2, we formalize the problem of edge partitioning and introduce a model of stateful streaming partitioning. In Section 3, we introduce our novel 2PS algorithm for high-quality stateful streaming edge partitioning. In Section 4, we perform a thorough theoretical analysis of 2PS regarding time and space complexity as well as replication factor on power-law graphs. In Section 5, we perform extensive evaluations of 2PS on a variety of real-world graphs. Finally, in Section 6 we discuss related work and then conclude the paper in Section 7.\n\n2 Problem Analysis\n\nFigure 1: Edge partitioning vs. vertex partitioning.\n\n2.1 Edge Partitioning Problem\n\nFormalization. The problem of edge partitioning is commonly specified as follows (cf. also [43, 7]). The G=(V,E)G=(V,E) is undirected or directed and consists of a set of vertices VV and a set of edges E⊆V×VE\\subseteq V\\times V. Now, EE shall be split into k>1,k∈ℕk>1,k\\in\\mathbb{N} partitions P={p1,…,pk}P=\\{p_{1},...,p_{k}\\} such that ⋃i=1,…,kpi=E\\bigcup_{i=1,...,k}p_{i}=E and pi∩pj=∅,i≠jp_{i}\\cap p_{j}=\\emptyset,i\\neq j, while a balancing constraint is met: ∀pi∈P:|pi|≤α∗|E|k\\forall p_{i}\\in P:|p_{i}|\\leq\\alpha*\\frac{|E|}{k} for a given α≥1,α∈ℝ\\alpha\\geq 1,\\alpha\\in\\mathbb{R}. The balancing constraint ensures that the largest partition does not exceed the expected number of edges multiplied by an imbalance factor α\\alpha that limits the acceptable imbalance. We define V(pi)={x∈V|∃y∈V:(x,y)∈pi∨(y,x)∈pi}V(p_{i})=\\{x\\in V|\\exists y\\in V:(x,y)\\in p_{i}\\lor(y,x)\\in p_{i}\\} as the set of vertices covered by a partition pi∈Pp_{i}\\in P, i.e., the set of vertices that are incident to an edge in pip_{i}. The optimization objective of edge partitioning is to minimize the replication factor RF(p1,…,pkp_{1},\\dots,p_{k})=1|V|​∑i=1,…,k|V⁡(pi)|\\ =\\frac{1}{|V|}\\sum_{i=1,...,k}{|V(p_{i})|}.11\n              1\n\n            “Communication volume” [25] is an alternative metric that can directly be computed from the replication factor by subtracting 1.\n\nInterpretation. The replication of a vertex on multiple partitions induces synchronization overhead in distributed graph processing. In particular, vertex state needs to be synchronized between distributed compute nodes that hold different partitions. The lower the replication factor, the lower is the synchronization overhead in distributed graph processing. Numerous studies [43, 15] prove that there is a direct correlation between replication factor in edge partitioning and run-time of distributed graph processing.\n\nFigure 1 depicts an example of a graph that is divided into k=2k=2 partitions with edge partitioning (left side) vs. vertex partitioning (right side). Contrary to edge partitioning, in vertex partitioning, the vertex set of the graph is divided into partitions and edges are cut [36]. For graphs with a power-law distributed vertex degree, edge partitioning is considered more communication-efficient than vertex partitioning (cf. Bourse et al. [7]). This is because power-law graphs have a small number of vertices with a very high degree; cutting through these vertices via edge partitioning is very effective in separating the graph with a low replication factor.\n\nFigure 2: A model of stateful streaming edge partitioning.\n\n2.2 Streaming Edge Partitioning\n\nStreami",
+      "work_id": "wrk_b77f32398f578aa48e68b57c"
+    },
+    "succeeded": true,
+    "summary": "读取 artifact art_ebc47b0e70f5b363f3d871f2 字符 [4000, 10000)"
+  },
+  "parent_llm_call_id": "llm_0054",
+  "parent_stage_id": "stage_0010",
+  "raw_result": {
+    "arguments": {
+      "artifact_id": "art_ebc47b0e70f5b363f3d871f2",
+      "char_start": 4000,
+      "max_chars": 6000
+    },
+    "elapsed_ms": 2,
+    "error": null,
+    "payload": {
+      "read_result": {
+        "artifact_id": "art_ebc47b0e70f5b363f3d871f2",
+        "char_end": 10000,
+        "char_start": 4000,
+        "has_more": true,
+        "namespace": "research_reference",
+        "read_id": "read_c189238683d6319af3d8683f",
+        "role": "extracted_text",
+        "sha256": "7336b7d0a936c5b8259a8f64c834d9643567ae5e4c98f516cd65479880ba5089",
+        "text": " problem is known to be NP-hard, and hence, can only be solved heuristically for large graphs [43].\n\nThe current approaches to solve the edge partitioning problem can be categorized into two groups. Random-access partitioners [18, 34, 25, 43, 15] load the complete graph into memory and then perform partitioning on it. In contrast to this, streaming partitioners [36, 41, 32, 28] ingest the graph as a stream of edges, i.e., edge by edge, and assign each edge of the stream immediately and irrevocably to a partition. The streaming approach has the advantage that graphs can be partitioned with low memory overhead, as the edge set does not need to be kept in memory completely at any time. This way, the monetary costs of graph partitioning can be reduced, as smaller machines can be used for partitioning very large graphs.\n\nHowever, streaming edge partitioning yields a higher vertex replication than random-access approaches. We attribute this shortcoming to the uninformed assignment problem [28]: A streaming partitioner only has a partial view of the graph structure. In particular, when processing an edge eie_{i} in the graph stream, the partitioner does not know the subsequent edges ei+1,ei+2,…e_{i+1},e_{i+2},..., but still has to decide to which partition it shall assign eie_{i}. Current approaches to overcome the uninformed assignment problem either do not apply to the edge partitioning problem [31] or require locality in the edge stream [28].\n\nIn this paper, we provide a method for streaming edge partitioning that overcomes the uninformed assignment problem and yields a significantly lower replication factor than existing streaming solutions. Our contributions are threefold:\n\n1.\n\nWe propose 2PS, a novel two-phase streaming algorithm for edge partitioning. In the first phase, 2PS gathers information about the global graph structure by performing streaming clustering. In the second phase, clustering information is exploited to perform high-quality edge partitioning decisions. By combining two different algorithms, we exploit the flexibility of graph clustering and at the same time solve the more rigid edge partitioning problem.\n\n2.\n\nWe provide a thorough theoretical analysis of 2PS regarding time and space complexity. Further, we prove that, on power-law graphs, the replication factor obtained with 2PS is strictly better than competing streaming partitioners.\n\n3.\n\nWe perform extensive evaluations on large real-world graphs, showing the superior performance of 2PS compared to other streaming algorithms. On web graphs, 2PS yields a comparable replication factor to resource intensive random-access partitioners.\n\nThe rest of the paper is organized as follows. In Section 2, we formalize the problem of edge partitioning and introduce a model of stateful streaming partitioning. In Section 3, we introduce our novel 2PS algorithm for high-quality stateful streaming edge partitioning. In Section 4, we perform a thorough theoretical analysis of 2PS regarding time and space complexity as well as replication factor on power-law graphs. In Section 5, we perform extensive evaluations of 2PS on a variety of real-world graphs. Finally, in Section 6 we discuss related work and then conclude the paper in Section 7.\n\n2 Problem Analysis\n\nFigure 1: Edge partitioning vs. vertex partitioning.\n\n2.1 Edge Partitioning Problem\n\nFormalization. The problem of edge partitioning is commonly specified as follows (cf. also [43, 7]). The G=(V,E)G=(V,E) is undirected or directed and consists of a set of vertices VV and a set of edges E⊆V×VE\\subseteq V\\times V. Now, EE shall be split into k>1,k∈ℕk>1,k\\in\\mathbb{N} partitions P={p1,…,pk}P=\\{p_{1},...,p_{k}\\} such that ⋃i=1,…,kpi=E\\bigcup_{i=1,...,k}p_{i}=E and pi∩pj=∅,i≠jp_{i}\\cap p_{j}=\\emptyset,i\\neq j, while a balancing constraint is met: ∀pi∈P:|pi|≤α∗|E|k\\forall p_{i}\\in P:|p_{i}|\\leq\\alpha*\\frac{|E|}{k} for a given α≥1,α∈ℝ\\alpha\\geq 1,\\alpha\\in\\mathbb{R}. The balancing constraint ensures that the largest partition does not exceed the expected number of edges multiplied by an imbalance factor α\\alpha that limits the acceptable imbalance. We define V(pi)={x∈V|∃y∈V:(x,y)∈pi∨(y,x)∈pi}V(p_{i})=\\{x\\in V|\\exists y\\in V:(x,y)\\in p_{i}\\lor(y,x)\\in p_{i}\\} as the set of vertices covered by a partition pi∈Pp_{i}\\in P, i.e., the set of vertices that are incident to an edge in pip_{i}. The optimization objective of edge partitioning is to minimize the replication factor RF(p1,…,pkp_{1},\\dots,p_{k})=1|V|​∑i=1,…,k|V⁡(pi)|\\ =\\frac{1}{|V|}\\sum_{i=1,...,k}{|V(p_{i})|}.11\n              1\n\n            “Communication volume” [25] is an alternative metric that can directly be computed from the replication factor by subtracting 1.\n\nInterpretation. The replication of a vertex on multiple partitions induces synchronization overhead in distributed graph processing. In particular, vertex state needs to be synchronized between distributed compute nodes that hold different partitions. The lower the replication factor, the lower is the synchronization overhead in distributed graph processing. Numerous studies [43, 15] prove that there is a direct correlation between replication factor in edge partitioning and run-time of distributed graph processing.\n\nFigure 1 depicts an example of a graph that is divided into k=2k=2 partitions with edge partitioning (left side) vs. vertex partitioning (right side). Contrary to edge partitioning, in vertex partitioning, the vertex set of the graph is divided into partitions and edges are cut [36]. For graphs with a power-law distributed vertex degree, edge partitioning is considered more communication-efficient than vertex partitioning (cf. Bourse et al. [7]). This is because power-law graphs have a small number of vertices with a very high degree; cutting through these vertices via edge partitioning is very effective in separating the graph with a low replication factor.\n\nFigure 2: A model of stateful streaming edge partitioning.\n\n2.2 Streaming Edge Partitioning\n\nStreami",
+        "work_id": "wrk_b77f32398f578aa48e68b57c"
+      }
+    },
+    "succeeded": true,
+    "summary": "读取 artifact art_ebc47b0e70f5b363f3d871f2 字符 [4000, 10000)",
+    "tool_name": "reader"
+  },
+  "resolved_arguments": {
+    "artifact_id": "art_ebc47b0e70f5b363f3d871f2",
+    "char_start": 4000,
+    "max_chars": 6000,
+    "reads": null
+  },
+  "result_count": null,
+  "run_id": "run-d606cd37534a47349b905d42c6141768",
+  "scope": {
+    "attempt": 1,
+    "point_id": "NP-3",
+    "task_id": "T-1"
+  },
+  "stage_name": "run_research_task",
+  "started_at": "2026-09-17T14:38:00.624185+00:00",
+  "tool_call_id": "tool_0045",
+  "tool_name": "reader"
+}

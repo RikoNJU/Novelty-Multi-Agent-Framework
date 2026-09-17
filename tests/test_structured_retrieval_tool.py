@@ -255,7 +255,10 @@ def test_search_execution_failure_stops_chain(tmp_path):
     )
     bundle = asyncio.run(tool.ainvoke(request()))
 
-    assert [item.status.value for item in bundle.search_executions] == ["failed"]
+    assert bundle.search_executions[0].status.value == "failed"
+    assert all(item.status.value == "not_run" and
+               item.parameters["not_run_reason"] == "provider_failed"
+               for item in bundle.search_executions[1:])
     assert "secret-token" not in bundle.search_executions[0].error
 
 

@@ -60,7 +60,8 @@ def test_web_http_is_failed(status, tmp_path):
     assert not result.succeeded
     assert tool.project_model_context(result)["retrieval_status"] == "PROVIDER_FAILED"
     assert result.payload["execution_summary"]["provider_failed"]
-    assert len(result.payload["search_executions"]) == transport.stats()["requests"] == 1
+    assert transport.stats()["requests"] == 1
+    assert sum(item["status"] != "not_run" for item in result.payload["search_executions"]) == 1
     assert str(status) in result.payload["search_executions"][0]["error"]
 
 
@@ -92,6 +93,20 @@ def test_structured_retrieval_does_not_treat_provider_failure_as_empty(tmp_path)
     assert record["business_status"] == "PROVIDER_FAILED"
     assert record["execution_status"] == "FAILED"
     assert transport.stats()["events"][-1]["task_id"] == "T-1"
+
+
+def test_physical_cap_stops_web_retry_before_second_http_request(tmp_path):
+    tool, transport = database(lambda r: httpx.Response(503), tmp_path)
+    transport._max_retries = 2
+    manager = RuntimeArtifactManager("web-budget", config=RuntimeDebugConfig(
+        output_root=tmp_path / "runtime", archive_root=tmp_path / "archive",
+        max_physical_provider_requests=1), diagnostics=())
+    with manager:
+        result = invoke(tool)
+    assert transport.stats()["requests"] == 1
+    assert all(item["status"] == "not_run" and
+               item["parameters"]["not_run_reason"] == "retrieval_incomplete_budget"
+               for item in result.payload["search_executions"])
 
 
 @pytest.mark.parametrize("probe_status", [200, 503])

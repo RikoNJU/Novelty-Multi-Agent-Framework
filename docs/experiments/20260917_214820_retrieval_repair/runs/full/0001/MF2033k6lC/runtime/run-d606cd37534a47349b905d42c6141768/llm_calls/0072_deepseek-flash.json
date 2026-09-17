@@ -1,0 +1,77 @@
+{
+  "alias": "deepseek-flash",
+  "billing": {
+    "amount": 0.007857,
+    "currency": "RMB",
+    "pricing_table": "/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/config/llm_pricing.json",
+    "rate_name": "default",
+    "rates_per_unit": {
+      "cached_input": 0.3,
+      "input": 3.0,
+      "output": 9.0
+    },
+    "status": "PRICED",
+    "unit_tokens": 1000000
+  },
+  "client_call_id": "7d1fe7f1d2234683a7e2ee050847cf26",
+  "duration_ms": 3968,
+  "error": null,
+  "llm_call_id": "llm_0072",
+  "message_count": 2,
+  "model": "deepseek-ai/DeepSeek-V4-Flash",
+  "parent_stage_id": "stage_0012",
+  "provider": "openai_compatible",
+  "provider_usage": {
+    "completion_tokens": 223,
+    "completion_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "prompt_cache_hit_tokens": 0,
+    "prompt_cache_miss_tokens": 1950,
+    "prompt_tokens": 1950,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "total_tokens": 2173
+  },
+  "request_id": "01a0afcf2a386ca0743044b441f1f2eb",
+  "request_options": {
+    "endpoint": "https://api.siliconflow.cn/v1/chat/completions",
+    "timeout_seconds": 180.0
+  },
+  "request_payload": {
+    "enable_thinking": false,
+    "max_tokens": 8192,
+    "messages": [
+      {
+        "content": "你是查新点级汇总 Reviewer。综合带索引的单卡核验结果和已核验关键引文，\n输出 NoveltyPointReview。单卡结果是派生分析，不是原始证据。\n必须区分单篇公开完整组合与多篇分别公开部分特征，保留部分相关文献。\n单卡失败、证据不足及 quote_truncated=true 的局限必须保留；截短引文\n未展示的内容不能当作不存在。摘要未说明机制不能改写为文献未采用机制。\n若裁定依赖未核验的关键差异，返回 insufficient_evidence，在\nsupplement_request 中说明待复核索引；已证实的有限结论仍可保留。\n本轮不可调用工具，不得用模型记忆填补缺口；只能引用输入已核验的\nwork_id、card_id 和 evidence_id。网页补充资料不得用于裁定。\n理由简洁，不重复逐卡全文；只输出严格 JSON。\n区分原文明确支持的事实与未核验的特征。摘要、局部片段或截短引文未提及某特征，不能证明文献未采用该特征；取得全文也不等于已读到关键段落。若最终裁定依赖尚未核验的关键差异，返回 status=insufficient_evidence，说明缺少的比较证据，不得仅降低 confidence 后继续裁定。保留已证实的局部重合；多篇分别覆盖部分特征不等于单篇公开完整组合。检索或获取失败、零命中、未展示证据均不能支持新颖性。不影响当前有限结论的次要未知可以作为局限保留。",
+        "role": "system"
+      },
+      {
+        "content": "{\"today\": \"2026-09-17\", \"novelty_point\": {\"point_id\": \"NP-1\", \"claim\": \"提出一种基于图摘要的大规模时序图表示学习方法GSAERU，通过图摘要技术将动态时序图压缩为固定规模的新图，解决GNN输出无法直接输入RNN的问题，并利用图自编码器与循环神经网络学习时序特征。\", \"claim_en\": \"Propose a large-scale sequential graph representation learning method GSAERU based on graph summarization, which compresses dynamic sequential graphs into fixed-size new graphs via graph summarization to solve the problem that GNN outputs cannot be directly fed into RNN, and uses graph autoencoder and recurrent neural network to learn temporal features.\", \"technical_features\": [\"将动态时序图建模为各时刻原图快照的序列\", \"在单时间步上利用图摘要技术压缩原图，将压缩后的新图输入图自编码器，通过重构误差训练原图节点表征\", \"将单时间步图表征输入循环神经网络，学习时间维度上的特征信息与依赖关系\"], \"technical_features_en\": [\"Model dynamic sequential graphs as a sequence of snapshots of the original graph at each time step\", \"Compress the original graph via graph summarization at a single time step, input the compressed new graph into a graph autoencoder, and train node representations using reconstruction error with the original graph\", \"Feed the single-time-step graph representations into a recurrent neural network to learn temporal features and dependencies\"], \"source_locations\": [\"摘要：GSAERU 模型由“图表征学习模块”和“时序学习模块”两部分构成。首先将动态时序图建模为各时刻上原图快照的序列，接着在单时间步上将图快照输入图表征学习模块。该模块通过图摘要技术对原图进行压缩，并将压缩后的新图输入图自编码器，利用和原图的重构误差训练原图节点的表征。在获得单时间步上的图表征后将其输入时序学习模块，并通过一个循环神经网络学习原图在时间维度上的特征信息与依赖关系\", \"作者贡献段1：GSAERU 模型通过引入图摘要技术将原图映射到固定规模的新图中，解决了GNN 模型输出无法直接输入到RNN 模型中进行训练的问题\"]}, \"card_reviews\": [{\"index\": 1, \"card_id\": \"card_e0f18431d0e8ab03ad5ce4a0\", \"novelty_point_id\": \"NP-1\", \"status\": \"completed\", \"document_title\": \"Learning Dual Dynamic Representations on Time-Sliced User-Item Interaction Graphs for Sequential Recommendation\", \"review\": {\"novelty_point_id\": \"NP-1\", \"status\": \"insufficient_evidence\", \"verdict\": null, \"verdict_reason\": null, \"confidence\": null, \"highly_relevant_works\": [{\"work_id\": \"wrk_0816eb289770aba763747fae\", \"card_ids\": [\"card_e0f18431d0e8ab03ad5ce4a0\"], \"evidence_ids\": [\"ev_e63a8e6abf04a95481abeef0\"], \"relevance_reason\": \"该文献与查新点存在局部相关性；具体技术差异尚待原文核验。\"}], \"supplement_request\": {\"reason\": \"裁定依赖文献未采用特征的断言，但输入引文没有直接支持该否定；需核验原文。\", \"missing_aspects\": [\"核验被声称未采用的关键特征\"], \"suggested_focus\": []}}, \"key_quotes\": [{\"evidence_id\": \"ev_e63a8e6abf04a95481abeef0\", \"work_id\": \"wrk_0816eb289770aba763747fae\", \"artifact_id\": \"art_ac6571cb2ce9e7e48a24e192\", \"quote\": \"the proposed model builds a global user-item interaction graph for each time slice and exploits time-sliced graph neural networks to learn user and item representations\", \"quote_truncated\": false}], \"omitted_quote_count\": 0}], \"review_schema\": {\"$defs\": {\"NoveltyVerdict\": {\"description\": \"Reviewer 对单个查新点给出的新颖性评价。\", \"enum\": [\"novel\", \"partially_novel\", \"not_novel\"], \"title\": \"NoveltyVerdict\", \"type\": \"string\"}, \"RelevantWork\": {\"additionalProperties\": false, \"description\": \"对查新点结论高度相关、且仅以可信句柄引用的 Work。\", \"properties\": {\"work_id\": {\"minLength\": 1, \"title\": \"Work Id\", \"type\": \"string\"}, \"card_ids\": {\"items\": {\"type\": \"string\"}, \"minItems\": 1, \"title\": \"Card Ids\", \"type\": \"array\"}, \"evidence_ids\": {\"items\": {\"type\": \"string\"}, \"minItems\": 1, \"title\": \"Evidence Ids\", \"type\": \"array\"}, \"relevance_reason\": {\"minLength\": 1, \"title\": \"Relevance Reason\", \"type\": \"string\"}}, \"required\": [\"work_id\", \"card_ids\", \"evidence_ids\", \"relevance_reason\"], \"title\": \"RelevantWork\", \"type\": \"object\"}, \"ReviewStatus\": {\"description\": \"查新点级 Reviewer 的完成状态。\", \"enum\": [\"reviewed\", \"insufficient_evidence\"], \"title\": \"ReviewStatus\", \"type\": \"string\"}, \"SupplementRequest\": {\"additionalProperties\": false, \"description\": \"Reviewer 的补检语义建议；V0 不拥有工作流路由权。\", \"properties\": {\"reason\": {\"minLength\": 1, \"title\": \"Reason\", \"type\": \"string\"}, \"missing_aspects\": {\"items\": {\"type\": \"string\"}, \"title\": \"Missing Aspects\", \"type\": \"array\"}, \"suggested_focus\": {\"items\": {\"type\": \"string\"}, \"title\": \"Suggested Focus\", \"type\": \"array\"}}, \"required\": [\"reason\"], \"title\": \"SupplementRequest\", \"type\": \"object\"}}, \"additionalProperties\": false, \"description\": \"一个 NoveltyPoint 的结构化信息判定结果。\", \"properties\": {\"novelty_point_id\": {\"minLength\": 1, \"title\": \"Novelty Point Id\", \"type\": \"string\"}, \"status\": {\"$ref\": \"#/$defs/ReviewStatus\"}, \"verdict\": {\"anyOf\": [{\"$ref\": \"#/$defs/NoveltyVerdict\"}, {\"type\": \"null\"}], \"default\": null}, \"verdict_reason\": {\"anyOf\": [{\"type\": \"string\"}, {\"type\": \"null\"}], \"default\": null, \"title\": \"Verdict Reason\"}, \"confidence\": {\"anyOf\": [{\"maximum\": 1.0, \"minimum\": 0.0, \"type\": \"number\"}, {\"type\": \"null\"}], \"default\": null, \"title\": \"Confidence\"}, \"highly_relevant_works\": {\"items\": {\"$ref\": \"#/$defs/RelevantWork\"}, \"title\": \"Highly Relevant Works\", \"type\": \"array\"}, \"supplement_request\": {\"anyOf\": [{\"$ref\": \"#/$defs/SupplementRequest\"}, {\"type\": \"null\"}], \"default\": null}}, \"required\": [\"novelty_point_id\", \"status\"], \"title\": \"NoveltyPointReview\", \"type\": \"object\"}}",
+        "role": "user"
+      }
+    ],
+    "model": "deepseek-ai/DeepSeek-V4-Flash",
+    "temperature": 0.0,
+    "tool_choice": "none"
+  },
+  "response": {
+    "content": "{\n  \"novelty_point_id\": \"NP-1\",\n  \"status\": \"insufficient_evidence\",\n  \"verdict\": null,\n  \"verdict_reason\": null,\n  \"confidence\": null,\n  \"highly_relevant_works\": [\n    {\n      \"work_id\": \"wrk_0816eb289770aba763747fae\",\n      \"card_ids\": [\"card_e0f18431d0e8ab03ad5ce4a0\"],\n      \"evidence_ids\": [\"ev_e63a8e6abf04a95481abeef0\"],\n      \"relevance_reason\": \"该文献与查新点存在局部相关性；具体技术差异尚待原文核验。\"\n    }\n  ],\n  \"supplement_request\": {\n    \"reason\": \"裁定依赖文献未采用特征的断言，但输入引文没有直接支持该否定；需核验原文。\",\n    \"missing_aspects\": [\"核验被声称未采用的关键特征\"],\n    \"suggested_focus\": []\n  }\n}",
+    "tool_calls": []
+  },
+  "run_id": "run-d606cd37534a47349b905d42c6141768",
+  "scope": {},
+  "stage_name": "review_evidence",
+  "started_at": "2026-09-17T14:39:44.541533+00:00",
+  "status": "SUCCESS",
+  "tokens": {
+    "available": true,
+    "billable_breakdown_available": true,
+    "cached_input_tokens": 0,
+    "input_tokens": 1950,
+    "output_tokens": 223,
+    "reasoning_tokens": 0,
+    "total_tokens": 2173
+  }
+}

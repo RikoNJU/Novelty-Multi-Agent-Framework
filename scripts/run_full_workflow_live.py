@@ -39,6 +39,8 @@ def parser() -> argparse.ArgumentParser:
     result.add_argument("--run-number", type=int)
     result.add_argument("--max-rounds", type=int, default=1)
     result.add_argument("--max-concurrency", type=int, default=1)
+    result.add_argument("--max-model-calls", type=int, default=80)
+    result.add_argument("--max-physical-provider-requests", type=int, default=48)
     result.add_argument("--force-reference-bootstrap", action="store_true")
     return result
 
@@ -77,6 +79,8 @@ def main() -> None:
     _load_dev_env()
     args = parser().parse_args()
     paper_json = args.paper_json.resolve(strict=True)
+    if args.max_model_calls < 1 or args.max_physical_provider_requests < 1:
+        raise ValueError("request caps must be positive")
     paper = PaperInput.model_validate_json(paper_json.read_text(encoding="utf-8"))
     run_number, run_dir = allocate_run_directory(args.runs_root, args.run_number)
     run_dir = run_dir.resolve()
@@ -94,6 +98,8 @@ def main() -> None:
         "git_commit": _git_commit(),
         "max_rounds": args.max_rounds,
         "max_concurrency": args.max_concurrency,
+        "max_model_calls": args.max_model_calls,
+        "max_physical_provider_requests": args.max_physical_provider_requests,
         "started_at": started_at.isoformat(),
     }
     manifest_path = run_dir / "run.json"
@@ -104,6 +110,10 @@ def main() -> None:
         config = load_application_config()
         config.project.workflow.max_rounds = args.max_rounds
         config.project.workflow.max_concurrency = args.max_concurrency
+        config.project.runtime_debug.max_model_calls = args.max_model_calls
+        config.project.runtime_debug.max_physical_provider_requests = args.max_physical_provider_requests
+        _write_json(run_dir / "effective-config.json", config.model_dump(mode="json"))
+        _write_json(run_dir / "paper-input.json", paper.model_dump(mode="json"))
         workflow = build_standard_full_workflow(config, output_root=run_dir)
         stable_root = _stable_output_root(paper_json, paper.paper_id)
         prepare_paper_input_references(

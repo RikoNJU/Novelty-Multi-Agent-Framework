@@ -2,6 +2,9 @@ from __future__ import annotations
 
 import httpx
 import pytest
+from novelty_agent_framework.core.runtime_artifacts import (
+    ProviderPhysicalBudgetExceeded, RuntimeArtifactManager, RuntimeDebugConfig,
+)
 
 from novelty_agent_framework.tools.database_search.providers.common import (
     HttpRequestPolicy,
@@ -73,3 +76,27 @@ def test_transport_error_does_not_expose_credential_bearing_url() -> None:
 
     assert "secret-key" not in str(exc_info.value)
     assert "catalog.test" not in str(exc_info.value)
+
+
+def test_physical_budget_counts_retry_before_http_dispatch(tmp_path) -> None:
+    calls = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls.append(request)
+        return httpx.Response(503)
+
+    transport = ResilientHttpClient(
+        httpx.Client(transport=httpx.MockTransport(handler)),
+        policy=HttpRequestPolicy(max_retries=2, retry_backoff_seconds=0),
+    )
+    manager = RuntimeArtifactManager("paper", config=RuntimeDebugConfig(
+        output_root=tmp_path / "output", archive_root=tmp_path / "archive",
+        max_physical_provider_requests=1))
+    manager.activate()
+    try:
+        with pytest.raises(ProviderPhysicalBudgetExceeded):
+            transport.get("https://catalog.test/items")
+    finally:
+        manager.deactivate()
+    assert len(calls) == 1
+    assert len(list((manager.run_dir / "provider_budget").glob("*.json"))) == 1

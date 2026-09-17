@@ -1,0 +1,83 @@
+{
+  "alias": "deepseek-flash",
+  "billing": {
+    "amount": 0.007143,
+    "currency": "RMB",
+    "pricing_table": "/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/config/llm_pricing.json",
+    "rate_name": "default",
+    "rates_per_unit": {
+      "cached_input": 0.3,
+      "input": 3.0,
+      "output": 9.0
+    },
+    "status": "PRICED",
+    "unit_tokens": 1000000
+  },
+  "client_call_id": "f16310c20c0f4e3ea54c205fe9a5e25d",
+  "duration_ms": 11325,
+  "error": null,
+  "llm_call_id": "llm_0004",
+  "message_count": 2,
+  "model": "deepseek-ai/DeepSeek-V4-Flash",
+  "parent_stage_id": "stage_0004",
+  "provider": "openai_compatible",
+  "provider_usage": {
+    "completion_tokens": 331,
+    "completion_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "prompt_cache_hit_tokens": 0,
+    "prompt_cache_miss_tokens": 1388,
+    "prompt_tokens": 1388,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "total_tokens": 1719
+  },
+  "request_id": "01a0afc88c6a40717716a7f8ba0ff30c",
+  "request_options": {
+    "endpoint": "https://api.siliconflow.cn/v1/chat/completions",
+    "timeout_seconds": 180.0
+  },
+  "request_payload": {
+    "enable_thinking": false,
+    "max_tokens": 2048,
+    "messages": [
+      {
+        "content": "## 角色\n你是科技查新系统中的 SearchPlanner。把 NoveltyPoint 和 ResearchTask 转换为\n最小检索草稿 SearchPlanDraft（v2）。你只生成语义载荷：概念的角色/词项/别名/\n排除词/重要性，以及策略的 level（与可选 focus_concepts）。布尔表达式由系统\n模板生成，你绝不输出 expression、concept_id、strategy_id 等机械字段。",
+        "role": "system"
+      },
+      {
+        "content": "请根据以下输入生成一个 SearchPlanDraft JSON 对象。\n\nNoveltyPoint：\n{\"point_id\": \"NP-1\", \"claim\": \"提出一种基于图摘要的大规模时序图表示学习方法GSAERU，通过图摘要技术将动态时序图压缩为固定规模的新图，解决GNN输出无法直接输入RNN的问题，并利用图自编码器与循环神经网络学习时序特征。\", \"claim_en\": \"Propose a large-scale sequential graph representation learning method GSAERU based on graph summarization, which compresses dynamic sequential graphs into fixed-size new graphs via graph summarization to solve the problem that GNN outputs cannot be directly fed into RNN, and uses graph autoencoder and recurrent neural network to learn temporal features.\", \"technical_features\": [\"将动态时序图建模为各时刻原图快照的序列\", \"在单时间步上利用图摘要技术压缩原图，将压缩后的新图输入图自编码器，通过重构误差训练原图节点表征\", \"将单时间步图表征输入循环神经网络，学习时间维度上的特征信息与依赖关系\"], \"technical_features_en\": [\"Model dynamic sequential graphs as a sequence of snapshots of the original graph at each time step\", \"Compress the original graph via graph summarization at a single time step, input the compressed new graph into a graph autoencoder, and train node representations using reconstruction error with the original graph\", \"Feed the single-time-step graph representations into a recurrent neural network to learn temporal features and dependencies\"], \"source_locations\": [\"摘要：GSAERU 模型由“图表征学习模块”和“时序学习模块”两部分构成。首先将动态时序图建模为各时刻上原图快照的序列，接着在单时间步上将图快照输入图表征学习模块。该模块通过图摘要技术对原图进行压缩，并将压缩后的新图输入图自编码器，利用和原图的重构误差训练原图节点的表征。在获得单时间步上的图表征后将其输入时序学习模块，并通过一个循环神经网络学习原图在时间维度上的特征信息与依赖关系\", \"作者贡献段1：GSAERU 模型通过引入图摘要技术将原图映射到固定规模的新图中，解决了GNN 模型输出无法直接输入到RNN 模型中进行训练的问题\"]}\n\nResearchTask：\n{\"task_id\": \"T-1\", \"novelty_point_id\": \"NP-1\", \"task_type\": \"literature_search\", \"language\": \"en\", \"description\": \"针对该查新点执行英文文献检索。\", \"attempt\": 1}\n\n上次失败原因（首次为无）：\n[{\"code\": \"too_many_concepts\", \"detail\": \"共 7 个概念（上限 6）\", \"fix\": \"研究对象/技术手段/关键特征/场景 + escape，共 4~6 个\"}]\n\nSearchPlanDraft schema：\n{\"$defs\": {\"SearchConceptDraft\": {\"additionalProperties\": false, \"description\": \"一个语义概念：角色、规范词项、别名、排除词与重要性。\\n\\nconcept_id 由系统按顺序分配 C1..Cn；terms 为 3~7 词名词短语（≤3 个），\\nalias 为同义/缩写/跨领域叫法（非 paraphrase，≤3 个），\\nexclude 为 NOT 词（≤2 个），importance 1~3（3=机制/方法，1=场景/应用）。\", \"properties\": {\"role\": {\"default\": \"object\", \"enum\": [\"object\", \"method\", \"feature\", \"setting\", \"escape\"], \"title\": \"Role\", \"type\": \"string\"}, \"terms\": {\"items\": {\"type\": \"string\"}, \"minItems\": 1, \"title\": \"Terms\", \"type\": \"array\"}, \"alias\": {\"items\": {\"type\": \"string\"}, \"title\": \"Alias\", \"type\": \"array\"}, \"exclude\": {\"items\": {\"type\": \"string\"}, \"title\": \"Exclude\", \"type\": \"array\"}, \"importance\": {\"default\": 2, \"maximum\": 3, \"minimum\": 1, \"title\": \"Importance\", \"type\": \"integer\"}}, \"required\": [\"terms\"], \"title\": \"SearchConceptDraft\", \"type\": \"object\"}, \"SearchStrategyDraft\": {\"additionalProperties\": false, \"description\": \"一条检索策略意图；strategy_id 与 expression 由系统生成。\\n\\nlevel 在 strict/medium/broad 中取值；focus_concepts 可选，引用 C1..Cn，\\n非空时覆盖模板的默认概念选择（仅在确有必要时使用）。\", \"properties\": {\"level\": {\"enum\": [\"strict\", \"medium\", \"broad\"], \"title\": \"Level\", \"type\": \"string\"}, \"focus_concepts\": {\"items\": {\"type\": \"string\"}, \"title\": \"Focus Concepts\", \"type\": \"array\"}}, \"required\": [\"level\"], \"title\": \"SearchStrategyDraft\", \"type\": \"object\"}}, \"additionalProperties\": false, \"description\": \"LLM 输出的最小检索计划（v2）。\\n\\n- concepts 按顺序编号为 C1..Cn；\\n- strategies 数量：literature_search 必须恰好三条（strict/medium/broad），\\n  补检任务 1~3 条且 level 不重复；\\n- 表达式由编译器按模板组装，LLM 不生成布尔表达式。\", \"properties\": {\"concepts\": {\"items\": {\"$ref\": \"#/$defs/SearchConceptDraft\"}, \"minItems\": 1, \"title\": \"Concepts\", \"type\": \"array\"}, \"strategies\": {\"items\": {\"$ref\": \"#/$defs/SearchStrategyDraft\"}, \"minItems\": 1, \"title\": \"Strategies\", \"type\": \"array\"}}, \"required\": [\"concepts\", \"strategies\"], \"title\": \"SearchPlanDraft\", \"type\": \"object\"}",
+        "role": "user"
+      }
+    ],
+    "model": "deepseek-ai/DeepSeek-V4-Flash",
+    "response_format": {
+      "type": "json_object"
+    },
+    "temperature": 0.2
+  },
+  "response": {
+    "content": "{\n  \"concepts\": [\n    {\n      \"role\": \"object\",\n      \"terms\": [\"sequential graph representation learning\"],\n      \"alias\": [\"dynamic graph embedding\", \"temporal graph learning\"],\n      \"exclude\": [],\n      \"importance\": 3\n    },\n    {\n      \"role\": \"method\",\n      \"terms\": [\"graph summarization\"],\n      \"alias\": [\"graph compression\", \"graph coarsening\"],\n      \"exclude\": [],\n      \"importance\": 3\n    },\n    {\n      \"role\": \"method\",\n      \"terms\": [\"graph autoencoder\"],\n      \"alias\": [\"graph auto-encoder\", \"GAE\"],\n      \"exclude\": [],\n      \"importance\": 2\n    },\n    {\n      \"role\": \"method\",\n      \"terms\": [\"recurrent neural network\"],\n      \"alias\": [\"RNN\"],\n      \"exclude\": [],\n      \"importance\": 2\n    },\n    {\n      \"role\": \"feature\",\n      \"terms\": [\"temporal feature learning\"],\n      \"alias\": [\"time-series feature extraction\", \"temporal dependency modeling\"],\n      \"exclude\": [],\n      \"importance\": 2\n    },\n    {\n      \"role\": \"escape\",\n      \"terms\": [\"large-scale graphs\"],\n      \"alias\": [\"big graphs\", \"large graphs\"],\n      \"exclude\": [],\n      \"importance\": 1\n    }\n  ],\n  \"strategies\": [\n    {\n      \"level\": \"strict\"\n    },\n    {\n      \"level\": \"medium\"\n    },\n    {\n      \"level\": \"broad\"\n    }\n  ]\n}",
+    "tool_calls": []
+  },
+  "run_id": "run-d606cd37534a47349b905d42c6141768",
+  "scope": {
+    "attempt": 1,
+    "point_id": "NP-1",
+    "task_id": "T-1"
+  },
+  "stage_name": "plan_research_task",
+  "started_at": "2026-09-17T14:32:30.948376+00:00",
+  "status": "SUCCESS",
+  "tokens": {
+    "available": true,
+    "billable_breakdown_available": true,
+    "cached_input_tokens": 0,
+    "input_tokens": 1388,
+    "output_tokens": 331,
+    "reasoning_tokens": 0,
+    "total_tokens": 1719
+  }
+}
