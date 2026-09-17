@@ -124,7 +124,12 @@ class ReportResourceStore:
         self.root = root
 
     def register(self, bundle: Path, *, dry_run: bool = False) -> dict:
-        manifest = verify_bundle(bundle)
+        try:
+            manifest = verify_bundle(bundle)
+        except ReportResourceError as exc:
+            logger.warning("report_resource_registration_failed utc=%s code=%s bundle=%s",
+                           datetime.now(timezone.utc).isoformat(), exc.code, bundle)
+            raise
         identity = json.dumps({key: manifest[key] for key in (
             "source_run_id", "live_recovery_id", "assembly_id", "paper_id")}, sort_keys=True).encode()
         resource_id = "rr-" + _sha(identity)[:32]
@@ -137,6 +142,9 @@ class ReportResourceStore:
             comparable = {key: value for key, value in current.items() if key != "registered_at"}
             expected = {key: value for key, value in public.items() if key != "registered_at"}
             if comparable != expected:
+                logger.warning("report_resource_registration_conflict utc=%s id=%s source=%s",
+                               datetime.now(timezone.utc).isoformat(), resource_id,
+                               manifest["source_run_id"])
                 raise ReportResourceError("resource_conflict", "Same identity has different content")
             return current
         if dry_run:
