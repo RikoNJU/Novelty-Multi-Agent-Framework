@@ -11,6 +11,7 @@ from novelty_agent_framework.core import (
     RuntimeDebugConfig,
     ToolCallHarness,
 )
+from novelty_agent_framework.core.runtime_artifacts import _infer_result_count
 from novelty_agent_framework.schemas import (
     NoveltyPoint,
     ResearcherToolObservation,
@@ -533,3 +534,12 @@ def test_reviewer_scope_and_output_facts_are_in_stage_and_summary(
     markdown = (manager.run_dir / "summary.md").read_text(encoding="utf-8")
     assert "## Reviewer Information Adjudication" in markdown
     assert "| NP-1 | insufficient_evidence | - | 0 | True |" in markdown
+
+
+def test_reader_content_count_precedes_empty_material_catalog() -> None:
+    assert _infer_result_count({"material_catalog": [], "read_result": {
+        "char_start": 0, "char_end": 100, "text": "x" * 100}}) == 1
+    assert _infer_result_count({"material_catalog": [], "read_result": {
+        "char_start": 100, "char_end": 100, "text": ""}}) == 0
+    assert _infer_result_count({"read_results": [
+        {"char_start": 0, "char_end": 10}, {"char_start": 10, "char_end": 10}]}) == 1

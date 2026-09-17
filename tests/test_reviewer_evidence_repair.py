@@ -13,7 +13,7 @@ from backend.env import ModelResponse, ModelToolCall
 from novelty_agent_framework.agents.evidence_reviewer import (
     EvidenceReviewerConfig, NoveltyEvidenceReviewer, _compact_summary_rows, _extract_json, _guard_unsupported_absence,
     _legacy_guard_shadow, _register_review_reads, _review_failure_cause,
-    _validate_review_references, _summary_incomplete_reason,
+    _validate_review_references, _summary_incomplete_reason, _summary_model_rows,
 )
 from novelty_agent_framework.persistence import ReferenceStore
 from novelty_agent_framework.core import RuntimeArtifactManager, RuntimeDebugConfig
@@ -81,6 +81,27 @@ def test_reviewer_budget_finalization_registers_only_cited_read() -> None:
     assert len(client.calls) == 2
     assert client.calls[-1][1].tools == () and client.calls[-1][1].tool_choice == "none"
     assert "cards=[]" not in client.calls[-1][0][-1].content
+
+
+def test_selected_read_quote_reaches_summary_without_repeated_feature_ref() -> None:
+    request, tool = fixed_request(), reader_tool()
+    args = ReaderArguments(artifact_id=BODY_ID, char_start=16701, max_chars=500)
+    read = asyncio.run(tool.ainvoke(args, scope=request)).payload["read_result"]
+    draft = {"novelty_point_id": "NP-3", "status": "insufficient_evidence",
+             "read_citations": [{"read_id": read["read_id"]}],
+             "supplement_request": {"reason": "其他关键特征仍需核验"}}
+    client = _ScriptedClient(ModelResponse(content=None, tool_calls=(ModelToolCall(
+        id="method", name="reader", arguments=args.model_dump()),)),
+        ModelResponse(content=json.dumps(draft, ensure_ascii=False)))
+    review = asyncio.run(NoveltyEvidenceReviewer(
+        client, tool_registry=ResearcherToolRegistry([tool])).review_card(request))
+    rows, valid_ids = _compact_summary_rows(request, [{"index": 0, "card_id": CARD_ID,
+        "novelty_point_id": "NP-3", "status": "completed", "review": review.model_dump(mode="json")}])
+    new_id = review.review_evidence[0].evidence_id
+    assert new_id in valid_ids
+    assert any(q["evidence_id"] == new_id and q["quote"] == read["text"]
+               for q in rows[0]["key_quotes"])
+    assert new_id in json.dumps(_summary_model_rows(rows), ensure_ascii=False)
 
 
 def test_reviewer_contract_violation_gets_one_strict_repair() -> None:

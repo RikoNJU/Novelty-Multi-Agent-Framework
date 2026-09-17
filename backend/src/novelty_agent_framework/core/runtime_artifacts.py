@@ -1172,6 +1172,20 @@ def _infer_result_count(value: Any) -> int | None:
     if isinstance(value, (list, tuple, set, frozenset)):
         return len(value)
     if isinstance(value, Mapping):
+        # Reader observations may also contain an empty material_catalog. Count
+        # the returned slices first so a successful content read is not logged
+        # as EMPTY merely because the catalog is empty.
+        if isinstance(value.get("read_results"), list):
+            return sum(isinstance(item, Mapping) and
+                       isinstance(item.get("char_start"), int) and
+                       isinstance(item.get("char_end"), int) and
+                       item["char_end"] > item["char_start"]
+                       for item in value["read_results"])
+        if isinstance(value.get("read_result"), Mapping):
+            read = value["read_result"]
+            return int(isinstance(read.get("char_start"), int) and
+                       isinstance(read.get("char_end"), int) and
+                       read["char_end"] > read["char_start"])
         for key in ("results", "items", "hits", "evidence_cards", "artifacts"):
             candidate = value.get(key)
             if isinstance(candidate, (list, tuple)):

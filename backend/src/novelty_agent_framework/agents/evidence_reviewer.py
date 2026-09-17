@@ -889,6 +889,10 @@ def _compact_summary_rows(request, card_reviews):
         ))
         ids = list(dict.fromkeys(ids + [eid for item in review.feature_comparisons
                                         for eid in item.evidence_refs]))
+        # read_citations are an explicit model selection, already validated and
+        # registered by the harness. Carry their quotes even when the model
+        # neglected to repeat the new IDs in work or feature references.
+        ids = list(dict.fromkeys(ids + [item.evidence_id for item in review.review_evidence]))
         validated_ids.update(ids)
         compact["review"] = review.model_dump(mode="json")
         additions = {item.evidence_id: item for item in review.review_evidence}

@@ -1,0 +1,589 @@
+{
+  "actual_model_input": {
+    "system": "仅以可追溯论文 Evidence 评审。Web 内容仅是补充资料，不属于相关文献或原始 Evidence。\nsource_kind=web_supplement 或旧 web_supplement_evidence 不得用于查新裁定；\n发现此类旧证据时按不可用处理，证据不足则明确返回不足，不将网页事实升级为论文证据。\nLLM summary 是派生信息，不能替代原始 Evidence。\n你是论文查新系统的查新点级信息判定 Agent，而不是 EvidenceCard 过滤器。\n本轮只核验一张 Card 对应的一篇论文，是中间结果，不作最终查新裁定。\n按输入的 ReviewerCardDraft schema 输出；verdict 仅描述该文献与查新点的关系。\n记录已覆盖特征、已证实的差异、引用可靠性和证据局限；部分相关文献也必须保留。\n优先使用输入 Evidence 原文，仅在存在具体疑问时回读，避免重复读取同一片段。\n摘要未提及的特征是未知，不是文献未采用；如果该未知决定关系判断，应返回\ninsufficient_evidence，说明需要核验的特征。理由简洁，不超过300字。\n材料目录列出的同论文正文可受控回读。引用新片段时输出真实 read_id 或\nread_citations；原文 quote 由系统登记，不能自行编造证据 ID。\n不要输出 review_evidence、incomplete_reason、exact_quote 或 review_id；这些由系统登记。\n对不同术语比较对象、操作、作用位置与约束，并说明作者方案或基线归属。\n区分原文明确支持的事实与未核验的特征。摘要、局部片段或截短引文未提及某特征，不能证明文献未采用该特征；取得全文也不等于已读到关键段落。若最终裁定依赖尚未核验的关键差异，返回 status=insufficient_evidence，说明缺少的比较证据，不得仅降低 confidence 后继续裁定。保留已证实的局部重合；多篇分别覆盖部分特征不等于单篇公开完整组合。检索或获取失败、零命中、未展示证据均不能支持新颖性。不影响当前有限结论的次要未知可以作为局限保留。",
+    "user": "请对以下单个查新点进行信息综合与新颖性判定。\n\n当前可信日期（UTC）：2026-09-17\n\n查新点：\n{\"point_id\": \"NP-3\", \"claim\": \"提出一种基于边分割的图流划分算法Sketch-DBH，利用Count-Min Sketch存储节点度数信息，并使用最小堆维护高频节点信息，实现常数时间内返回查询结果并生成子图编号，确保负载均衡。\", \"claim_en\": \"Propose an edge-segmentation-based graph stream partitioning algorithm Sketch-DBH, which uses Count-Min Sketch to store node degree information and a min-heap to maintain high-frequency node information, enabling constant-time query results and generating subgraph IDs to ensure load balancing.\", \"technical_features\": [\"使用Count-Min Sketch概率数据结构存储每个节点的度数信息\", \"使用最小堆维护图流数据中的高频节点信息\", \"在常数时间内返回查询结果\", \"根据节点度数信息生成单条图流数据即将被分配到的子图编号\", \"高效完成大规模图流数据的划分且确保负载均衡\"], \"technical_features_en\": [\"Use Count-Min Sketch probabilistic data structure to store degree information of each node\", \"Use a min-heap to maintain high-frequency node information in graph stream data\", \"Return query results in constant time\", \"Generate the subgraph ID to which a single graph stream data item will be assigned based on node degree information\", \"Efficiently partition large-scale graph stream data and ensure load balancing\"], \"source_locations\": [\"作者贡献段2：提出了一种新的基于边分割的图流划分算法——Sketch-DBH，用于处理大规模图流数据下的子图划分问题。该算法通过Count-Min Sketch 这一概率数据结构存储每个节点的度数信息，并使用一个最小堆维护图流数据中的高频节点信息，使其可以在常数时间内返回查询结果并以此根据节点度数信息生成单条图流数据即将被分配到的子图编号。Sketch-DBH 算法可以高效完成大规模图流数据的划分且确保负载均衡\"]}\n\n相关调研任务：\n[{\"task_id\": \"T-1\", \"novelty_point_id\": \"NP-3\", \"task_type\": \"literature_search\", \"language\": \"en\", \"description\": \"针对该查新点执行英文文献检索。\", \"attempt\": 1}]\n\nEvidenceCard：\n[{\"card_id\": \"card_055dcd710a45194158c1d5ba\", \"task_id\": \"T-1\", \"novelty_point_id\": \"NP-3\", \"document_title\": \"2PS: High-Quality Edge Partitioning with Two-Phase Streaming\", \"main_contribution\": \"Proposes 2PS, a two-phase streaming edge partitioning algorithm that separates vertices into clusters in the first phase and performs edge partitioning in the second phase, achieving low replication factor with low memory overhead.\", \"overlaps\": [\"Graph stream/edge partitioning method domain\", \"Streaming assignment of edges to partitions\", \"Load balancing and replication minimization objectives\"], \"differences\": [\"Uses a two-phase streaming clustering approach rather than edge-segmentation with Count-Min Sketch\", \"Does not use Count-Min Sketch probabilistic data structure for degree storage\", \"Does not use a min-heap to maintain high-frequency node information\", \"No constant-time query mechanism for subgraph ID generation is described\"], \"sources\": [{\"title\": \"2PS: High-Quality Edge Partitioning with Two-Phase Streaming\", \"quote\": \"In this paper, we propose 2PS, a novel two-phase streaming algorithm for high-quality edge partitioning. In the first phase, vertices are separated into clusters by a lightweight streaming clustering algorithm. In the second phase, the graph is re-streamed and edge partitioning is performed while taking into account the clustering of the vertices from the first phase.\", \"location\": \"artifact art_082358a7cb0efe62d471f7fb chars:844-1214\", \"doi\": null, \"url\": \"https://arxiv.org/pdf/2001.07086\"}], \"cited_by_paper\": null, \"possible_baseline\": false, \"relevance\": 0.6, \"confidence\": 0.8, \"evidence_ids\": [\"ev_c8d31bd880ce2c28d6c3e196\"]}]\n\nEvidence（包含允许 reader 回读的 artifact_id）：\n[{\"evidence_id\": \"ev_c8d31bd880ce2c28d6c3e196\", \"work_id\": \"wrk_b77f32398f578aa48e68b57c\", \"artifact_id\": \"art_082358a7cb0efe62d471f7fb\", \"novelty_point_id\": \"NP-3\", \"task_id\": \"T-1\", \"quote\": \"In this paper, we propose 2PS, a novel two-phase streaming algorithm for high-quality edge partitioning. In the first phase, vertices are separated into clusters by a lightweight streaming clustering algorithm. In the second phase, the graph is re-streamed and edge partitioning is performed while taking into account the clustering of the vertices from the first phase.\", \"locator\": {\"page_start\": null, \"page_end\": null, \"section\": null, \"block_id\": null, \"paragraph_start\": null, \"paragraph_end\": null, \"char_start\": 844, \"char_end\": 1214, \"selector\": null}, \"interpretation\": \"2PS performs streaming edge partitioning using a two-phase clustering mechanism, overlapping with the general graph stream partitioning domain of NP-3, but it does not use Count-Min Sketch or a min-heap for degree-based constant-time subgraph assignment.\", \"confidence\": 0.9, \"provenance\": {\"artifact_namespace\": \"research_reference\", \"builder\": \"evidence_card_builder\", \"evidence_type\": \"database_evidence\", \"quote_char_end\": 1214, \"quote_char_start\": 844, \"read_char_end\": 1397, \"read_char_start\": 0, \"read_id\": \"read_18de94ed910d0cdaa2786d7f\", \"source_kind\": \"structured_database\", \"source_record_id\": \"src_185d339c2255a694e06b5cd3\"}}]\n\n输出 schema：\n{\"$defs\": {\"FeatureComparison\": {\"additionalProperties\": false, \"properties\": {\"feature_id\": {\"minLength\": 1, \"title\": \"Feature Id\", \"type\": \"string\"}, \"work_id\": {\"minLength\": 1, \"title\": \"Work Id\", \"type\": \"string\"}, \"relation\": {\"enum\": [\"supported\", \"partially_supported\", \"contradicted\", \"unknown\"], \"title\": \"Relation\", \"type\": \"string\"}, \"basis_type\": {\"enum\": [\"direct_statement\", \"semantic_equivalence\", \"grounded_inference\", \"insufficient\"], \"title\": \"Basis Type\", \"type\": \"string\"}, \"evidence_refs\": {\"items\": {\"type\": \"string\"}, \"title\": \"Evidence Refs\", \"type\": \"array\"}, \"reason\": {\"minLength\": 1, \"title\": \"Reason\", \"type\": \"string\"}, \"source_context\": {\"default\": \"unknown\", \"enum\": [\"author_method\", \"related_work\", \"baseline\", \"ablation\", \"unknown\"], \"title\": \"Source Context\", \"type\": \"string\"}}, \"required\": [\"feature_id\", \"work_id\", \"relation\", \"basis_type\", \"reason\"], \"title\": \"FeatureComparison\", \"type\": \"object\"}, \"NoveltyVerdict\": {\"description\": \"Reviewer 对单个查新点给出的新颖性评价。\", \"enum\": [\"novel\", \"partially_novel\", \"not_novel\"], \"title\": \"NoveltyVerdict\", \"type\": \"string\"}, \"RelevantWork\": {\"additionalProperties\": false, \"description\": \"对查新点结论高度相关、且仅以可信句柄引用的 Work。\", \"properties\": {\"work_id\": {\"minLength\": 1, \"title\": \"Work Id\", \"type\": \"string\"}, \"card_ids\": {\"items\": {\"type\": \"string\"}, \"minItems\": 1, \"title\": \"Card Ids\", \"type\": \"array\"}, \"evidence_ids\": {\"items\": {\"type\": \"string\"}, \"minItems\": 1, \"title\": \"Evidence Ids\", \"type\": \"array\"}, \"relevance_reason\": {\"minLength\": 1, \"title\": \"Relevance Reason\", \"type\": \"string\"}}, \"required\": [\"work_id\", \"card_ids\", \"evidence_ids\", \"relevance_reason\"], \"title\": \"RelevantWork\", \"type\": \"object\"}, \"ReviewReadCitation\": {\"additionalProperties\": false, \"description\": \"Model-selected read; the harness resolves its exact quote and evidence ID.\", \"properties\": {\"read_id\": {\"minLength\": 1, \"title\": \"Read Id\", \"type\": \"string\"}, \"char_start\": {\"anyOf\": [{\"minimum\": 0, \"type\": \"integer\"}, {\"type\": \"null\"}], \"default\": null, \"title\": \"Char Start\"}, \"char_end\": {\"anyOf\": [{\"minimum\": 0, \"type\": \"integer\"}, {\"type\": \"null\"}], \"default\": null, \"title\": \"Char End\"}}, \"required\": [\"read_id\"], \"title\": \"ReviewReadCitation\", \"type\": \"object\"}, \"ReviewStatus\": {\"description\": \"查新点级 Reviewer 的完成状态。\", \"enum\": [\"reviewed\", \"insufficient_evidence\"], \"title\": \"ReviewStatus\", \"type\": \"string\"}, \"SupplementRequest\": {\"additionalProperties\": false, \"description\": \"Reviewer 的补检语义建议；V0 不拥有工作流路由权。\", \"properties\": {\"reason\": {\"minLength\": 1, \"title\": \"Reason\", \"type\": \"string\"}, \"missing_aspects\": {\"items\": {\"type\": \"string\"}, \"title\": \"Missing Aspects\", \"type\": \"array\"}, \"suggested_focus\": {\"items\": {\"type\": \"string\"}, \"title\": \"Suggested Focus\", \"type\": \"array\"}}, \"required\": [\"reason\"], \"title\": \"SupplementRequest\", \"type\": \"object\"}}, \"additionalProperties\": false, \"description\": \"Model-owned single-card judgment; provenance is registered by the harness.\", \"properties\": {\"novelty_point_id\": {\"minLength\": 1, \"title\": \"Novelty Point Id\", \"type\": \"string\"}, \"status\": {\"$ref\": \"#/$defs/ReviewStatus\"}, \"verdict\": {\"anyOf\": [{\"$ref\": \"#/$defs/NoveltyVerdict\"}, {\"type\": \"null\"}], \"default\": null}, \"verdict_reason\": {\"anyOf\": [{\"type\": \"string\"}, {\"type\": \"null\"}], \"default\": null, \"title\": \"Verdict Reason\"}, \"confidence\": {\"anyOf\": [{\"maximum\": 1.0, \"minimum\": 0.0, \"type\": \"number\"}, {\"type\": \"null\"}], \"default\": null, \"title\": \"Confidence\"}, \"highly_relevant_works\": {\"items\": {\"$ref\": \"#/$defs/RelevantWork\"}, \"title\": \"Highly Relevant Works\", \"type\": \"array\"}, \"supplement_request\": {\"anyOf\": [{\"$ref\": \"#/$defs/SupplementRequest\"}, {\"type\": \"null\"}], \"default\": null}, \"read_citations\": {\"items\": {\"$ref\": \"#/$defs/ReviewReadCitation\"}, \"title\": \"Read Citations\", \"type\": \"array\"}, \"feature_comparisons\": {\"items\": {\"$ref\": \"#/$defs/FeatureComparison\"}, \"title\": \"Feature Comparisons\", \"type\": \"array\"}}, \"required\": [\"novelty_point_id\", \"status\"], \"title\": \"ReviewerCardDraft\", \"type\": \"object\"}\n已授权材料目录（只可读取这些 Artifact）：\n[{\"work_id\": \"wrk_b77f32398f578aa48e68b57c\", \"artifact_id\": \"art_082358a7cb0efe62d471f7fb\", \"namespace\": \"research_reference\", \"source_record_id\": \"src_185d339c2255a694e06b5cd3\", \"role\": \"abstract\", \"content_extent\": \"full\", \"content_hash\": \"649df801788d99ce4c549514e1cf6e624ba9cb64b4c62f455a1e490d8f77c82c\", \"readable_chars\": 1397, \"version_label\": null, \"readable\": true, \"section_hints\": []}]\n固定特征 ID：\n[{\"feature_id\": \"F1\", \"text\": \"使用Count-Min Sketch概率数据结构存储每个节点的度数信息\", \"sha256\": \"9426867b0916ddb1b9b8e92764c23ce9cd3f534a09c27a5f5e4cefedd872e4b5\"}, {\"feature_id\": \"F2\", \"text\": \"使用最小堆维护图流数据中的高频节点信息\", \"sha256\": \"162220c051aa455f9390724e3ad1dcf928bbd6ebb582063ebd535faae6c91073\"}, {\"feature_id\": \"F3\", \"text\": \"在常数时间内返回查询结果\", \"sha256\": \"bd9a166ff3cc13f5aff66f6966d09f0e99178236e0f38ed52ec7ff7d8d787d82\"}, {\"feature_id\": \"F4\", \"text\": \"根据节点度数信息生成单条图流数据即将被分配到的子图编号\", \"sha256\": \"da5b2c9d6d4e94065253c01d53afbb5052f46ac0a23d7c6ea54405bbd3f99a79\"}, {\"feature_id\": \"F5\", \"text\": \"高效完成大规模图流数据的划分且确保负载均衡\", \"sha256\": \"4f726fbe3b165843590a6640d93454884e8b65942ffd949e9a7f8f28decab680\"}]"
+  },
+  "card_ids": [
+    "card_055dcd710a45194158c1d5ba"
+  ],
+  "draft_schema": {
+    "$defs": {
+      "FeatureComparison": {
+        "additionalProperties": false,
+        "properties": {
+          "basis_type": {
+            "enum": [
+              "direct_statement",
+              "semantic_equivalence",
+              "grounded_inference",
+              "insufficient"
+            ],
+            "title": "Basis Type",
+            "type": "string"
+          },
+          "evidence_refs": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Evidence Refs",
+            "type": "array"
+          },
+          "feature_id": {
+            "minLength": 1,
+            "title": "Feature Id",
+            "type": "string"
+          },
+          "reason": {
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          },
+          "relation": {
+            "enum": [
+              "supported",
+              "partially_supported",
+              "contradicted",
+              "unknown"
+            ],
+            "title": "Relation",
+            "type": "string"
+          },
+          "source_context": {
+            "default": "unknown",
+            "enum": [
+              "author_method",
+              "related_work",
+              "baseline",
+              "ablation",
+              "unknown"
+            ],
+            "title": "Source Context",
+            "type": "string"
+          },
+          "work_id": {
+            "minLength": 1,
+            "title": "Work Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "feature_id",
+          "work_id",
+          "relation",
+          "basis_type",
+          "reason"
+        ],
+        "title": "FeatureComparison",
+        "type": "object"
+      },
+      "NoveltyVerdict": {
+        "description": "Reviewer 对单个查新点给出的新颖性评价。",
+        "enum": [
+          "novel",
+          "partially_novel",
+          "not_novel"
+        ],
+        "title": "NoveltyVerdict",
+        "type": "string"
+      },
+      "RelevantWork": {
+        "additionalProperties": false,
+        "description": "对查新点结论高度相关、且仅以可信句柄引用的 Work。",
+        "properties": {
+          "card_ids": {
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "title": "Card Ids",
+            "type": "array"
+          },
+          "evidence_ids": {
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "title": "Evidence Ids",
+            "type": "array"
+          },
+          "relevance_reason": {
+            "minLength": 1,
+            "title": "Relevance Reason",
+            "type": "string"
+          },
+          "work_id": {
+            "minLength": 1,
+            "title": "Work Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "work_id",
+          "card_ids",
+          "evidence_ids",
+          "relevance_reason"
+        ],
+        "title": "RelevantWork",
+        "type": "object"
+      },
+      "ReviewReadCitation": {
+        "additionalProperties": false,
+        "description": "Model-selected read; the harness resolves its exact quote and evidence ID.",
+        "properties": {
+          "char_end": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Char End"
+          },
+          "char_start": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Char Start"
+          },
+          "read_id": {
+            "minLength": 1,
+            "title": "Read Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "read_id"
+        ],
+        "title": "ReviewReadCitation",
+        "type": "object"
+      },
+      "ReviewStatus": {
+        "description": "查新点级 Reviewer 的完成状态。",
+        "enum": [
+          "reviewed",
+          "insufficient_evidence"
+        ],
+        "title": "ReviewStatus",
+        "type": "string"
+      },
+      "SupplementRequest": {
+        "additionalProperties": false,
+        "description": "Reviewer 的补检语义建议；V0 不拥有工作流路由权。",
+        "properties": {
+          "missing_aspects": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Missing Aspects",
+            "type": "array"
+          },
+          "reason": {
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          },
+          "suggested_focus": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Suggested Focus",
+            "type": "array"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "title": "SupplementRequest",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "description": "Model-owned single-card judgment; provenance is registered by the harness.",
+    "properties": {
+      "confidence": {
+        "anyOf": [
+          {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "type": "number"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Confidence"
+      },
+      "feature_comparisons": {
+        "items": {
+          "$ref": "#/$defs/FeatureComparison"
+        },
+        "title": "Feature Comparisons",
+        "type": "array"
+      },
+      "highly_relevant_works": {
+        "items": {
+          "$ref": "#/$defs/RelevantWork"
+        },
+        "title": "Highly Relevant Works",
+        "type": "array"
+      },
+      "novelty_point_id": {
+        "minLength": 1,
+        "title": "Novelty Point Id",
+        "type": "string"
+      },
+      "read_citations": {
+        "items": {
+          "$ref": "#/$defs/ReviewReadCitation"
+        },
+        "title": "Read Citations",
+        "type": "array"
+      },
+      "status": {
+        "$ref": "#/$defs/ReviewStatus"
+      },
+      "supplement_request": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/SupplementRequest"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "verdict": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/NoveltyVerdict"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "verdict_reason": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Verdict Reason"
+      }
+    },
+    "required": [
+      "novelty_point_id",
+      "status"
+    ],
+    "title": "ReviewerCardDraft",
+    "type": "object"
+  },
+  "execution_status": "completed",
+  "finalization_attempted": false,
+  "legacy_guard_shadow": {
+    "assertion_matches": [
+      {
+        "end": 172,
+        "rule": "strong_absence",
+        "start": 169,
+        "text": "未采用"
+      }
+    ],
+    "formal_status": "reviewed",
+    "input_quote_matches": [],
+    "old_relevance_reasons": [
+      "该文献与查新点存在局部相关性；具体技术差异尚待原文核验。"
+    ],
+    "old_status": "insufficient_evidence",
+    "old_verdict": null,
+    "variant_id": "G0_shadow",
+    "would_change": true
+  },
+  "material_catalog": [
+    {
+      "artifact_id": "art_082358a7cb0efe62d471f7fb",
+      "content_extent": "full",
+      "content_hash": "649df801788d99ce4c549514e1cf6e624ba9cb64b4c62f455a1e490d8f77c82c",
+      "namespace": "research_reference",
+      "readable": true,
+      "readable_chars": 1397,
+      "role": "abstract",
+      "section_hints": [],
+      "source_record_id": "src_185d339c2255a694e06b5cd3",
+      "version_label": null,
+      "work_id": "wrk_b77f32398f578aa48e68b57c"
+    }
+  ],
+  "parent_stage_id": "stage_0001",
+  "phase": "single_card_result",
+  "point_id": "NP-3",
+  "raw_draft": {
+    "confidence": 0.6,
+    "feature_comparisons": [
+      {
+        "basis_type": "insufficient",
+        "evidence_refs": [
+          "ev_c8d31bd880ce2c28d6c3e196"
+        ],
+        "feature_id": "F1",
+        "reason": "摘要描述两阶段聚类机制，未提及 Count-Min Sketch 或度数存储方式；摘要未提及不等于未采用，需全文核验。",
+        "relation": "unknown",
+        "source_context": "author_method",
+        "work_id": "wrk_b77f32398f578aa48e68b57c"
+      },
+      {
+        "basis_type": "insufficient",
+        "evidence_refs": [
+          "ev_c8d31bd880ce2c28d6c3e196"
+        ],
+        "feature_id": "F2",
+        "reason": "摘要未提及最小堆或高频节点维护机制；无法从摘要确认是否采用。",
+        "relation": "unknown",
+        "source_context": "author_method",
+        "work_id": "wrk_b77f32398f578aa48e68b57c"
+      },
+      {
+        "basis_type": "insufficient",
+        "evidence_refs": [
+          "ev_c8d31bd880ce2c28d6c3e196"
+        ],
+        "feature_id": "F3",
+        "reason": "摘要未描述查询机制或时间复杂度；无法确认是否存在常数时间查询。",
+        "relation": "unknown",
+        "source_context": "author_method",
+        "work_id": "wrk_b77f32398f578aa48e68b57c"
+      },
+      {
+        "basis_type": "insufficient",
+        "evidence_refs": [
+          "ev_c8d31bd880ce2c28d6c3e196"
+        ],
+        "feature_id": "F4",
+        "reason": "摘要描述基于顶点聚类的边分配，未提及基于节点度数生成子图编号的机制。",
+        "relation": "unknown",
+        "source_context": "author_method",
+        "work_id": "wrk_b77f32398f578aa48e68b57c"
+      },
+      {
+        "basis_type": "direct_statement",
+        "evidence_refs": [
+          "ev_c8d31bd880ce2c28d6c3e196"
+        ],
+        "feature_id": "F5",
+        "reason": "摘要明确目标为将边集划分为 k 个等大小分区并最小化顶点复制，体现负载均衡与高效划分目标，但未涉及大规模图流数据的具体效率指标。",
+        "relation": "partially_supported",
+        "source_context": "author_method",
+        "work_id": "wrk_b77f32398f578aa48e68b57c"
+      }
+    ],
+    "highly_relevant_works": [
+      {
+        "card_ids": [
+          "card_055dcd710a45194158c1d5ba"
+        ],
+        "evidence_ids": [
+          "ev_c8d31bd880ce2c28d6c3e196"
+        ],
+        "relevance_reason": "同属图流边划分领域，共享负载均衡目标，但采用两阶段聚类机制，与查新点的 CMS+最小堆+常数时间查询机制不同，属部分相关文献。",
+        "work_id": "wrk_b77f32398f578aa48e68b57c"
+      }
+    ],
+    "novelty_point_id": "NP-3",
+    "read_citations": [
+      {
+        "char_end": 1397,
+        "char_start": 0,
+        "read_id": "read_18de94ed910d0cdaa2786d7f"
+      },
+      {
+        "char_end": 1244,
+        "char_start": 844,
+        "read_id": "read_0cfda1b4501d30109ca800bf"
+      }
+    ],
+    "status": "reviewed",
+    "supplement_request": null,
+    "verdict": "novel",
+    "verdict_reason": "2PS 采用两阶段流式聚类（先聚类顶点、再重流划分边）的机制，与查新点基于边分割、用 Count-Min Sketch 存度数、最小堆维护高频节点、常数时间查询并生成子图编号的机制在结构上完全不同。该文献未描述 CMS、最小堆、常数时间查询或基于度数的子图编号生成，不构成对查新点组合的预期。但 F1-F4 在摘要中未提及，属未知而非确认未采用，故新颖性判定仅针对本单篇文献，置信度中等。"
+  },
+  "raw_model_output": "I have confirmed the key passage. The 2PS paper describes a two-phase clustering approach for edge partitioning. It does not mention Count-Min Sketch, min-heap, constant-time queries, or degree-based subgraph ID generation anywhere in the abstract.\n\nNow I'll construct the final ReviewerCardDraft.\n\n**Analysis:**\n\nThe 2PS paper is in the same domain (streaming edge partitioning) and shares the load-balancing objective (F5 partially supported — it aims for k equally-sized partitions). However, its mechanism is fundamentally different: two-phase vertex clustering rather than edge-segmentation with CMS degree storage. The abstract does not mention CMS (F1), min-heap (F2), constant-time queries (F3), or degree-based subgraph ID generation (F4) — these are unknown from this abstract, not confirmed absent.\n\nSince the described method is structurally different from the claimed approach, this single paper does not anticipate the claim. Verdict: novel (with respect to this paper), but with the caveat that F1-F4 are unknown (not confirmed absent in the full paper). Confidence moderate.\n\n```json\n{\n  \"novelty_point_id\": \"NP-3\",\n  \"status\": \"reviewed\",\n  \"verdict\": \"novel\",\n  \"verdict_reason\": \"2PS 采用两阶段流式聚类（先聚类顶点、再重流划分边）的机制，与查新点基于边分割、用 Count-Min Sketch 存度数、最小堆维护高频节点、常数时间查询并生成子图编号的机制在结构上完全不同。该文献未描述 CMS、最小堆、常数时间查询或基于度数的子图编号生成，不构成对查新点组合的预期。但 F1-F4 在摘要中未提及，属未知而非确认未采用，故新颖性判定仅针对本单篇文献，置信度中等。\",\n  \"confidence\": 0.6,\n  \"highly_relevant_works\": [\n    {\n      \"work_id\": \"wrk_b77f32398f578aa48e68b57c\",\n      \"card_ids\": [\"card_055dcd710a45194158c1d5ba\"],\n      \"evidence_ids\": [\"ev_c8d31bd880ce2c28d6c3e196\"],\n      \"relevance_reason\": \"同属图流边划分领域，共享负载均衡目标，但采用两阶段聚类机制，与查新点的 CMS+最小堆+常数时间查询机制不同，属部分相关文献。\"\n    }\n  ],\n  \"feature_comparisons\": [\n    {\n      \"feature_id\": \"F1\",\n      \"work_id\": \"wrk_b77f32398f578aa48e68b57c\",\n      \"relation\": \"unknown\",\n      \"basis_type\": \"insufficient\",\n      \"evidence_refs\": [\"ev_c8d31bd880ce2c28d6c3e196\"],\n      \"reason\": \"摘要描述两阶段聚类机制，未提及 Count-Min Sketch 或度数存储方式；摘要未提及不等于未采用，需全文核验。\",\n      \"source_context\": \"author_method\"\n    },\n    {\n      \"feature_id\": \"F2\",\n      \"work_id\": \"wrk_b77f32398f578aa48e68b57c\",\n      \"relation\": \"unknown\",\n      \"basis_type\": \"insufficient\",\n      \"evidence_refs\": [\"ev_c8d31bd880ce2c28d6c3e196\"],\n      \"reason\": \"摘要未提及最小堆或高频节点维护机制；无法从摘要确认是否采用。\",\n      \"source_context\": \"author_method\"\n    },\n    {\n      \"feature_id\": \"F3\",\n      \"work_id\": \"wrk_b77f32398f578aa48e68b57c\",\n      \"relation\": \"unknown\",\n      \"basis_type\": \"insufficient\",\n      \"evidence_refs\": [\"ev_c8d31bd880ce2c28d6c3e196\"],\n      \"reason\": \"摘要未描述查询机制或时间复杂度；无法确认是否存在常数时间查询。\",\n      \"source_context\": \"author_method\"\n    },\n    {\n      \"feature_id\": \"F4\",\n      \"work_id\": \"wrk_b77f32398f578aa48e68b57c\",\n      \"relation\": \"unknown\",\n      \"basis_type\": \"insufficient\",\n      \"evidence_refs\": [\"ev_c8d31bd880ce2c28d6c3e196\"],\n      \"reason\": \"摘要描述基于顶点聚类的边分配，未提及基于节点度数生成子图编号的机制。\",\n      \"source_context\": \"author_method\"\n    },\n    {\n      \"feature_id\": \"F5\",\n      \"work_id\": \"wrk_b77f32398f578aa48e68b57c\",\n      \"relation\": \"partially_supported\",\n      \"basis_type\": \"direct_statement\",\n      \"evidence_refs\": [\"ev_c8d31bd880ce2c28d6c3e196\"],\n      \"reason\": \"摘要明确目标为将边集划分为 k 个等大小分区并最小化顶点复制，体现负载均衡与高效划分目标，但未涉及大规模图流数据的具体效率指标。\",\n      \"source_context\": \"author_method\"\n    }\n  ],\n  \"read_citations\": [\n    {\n      \"read_id\": \"read_18de94ed910d0cdaa2786d7f\",\n      \"char_start\": 0,\n      \"char_end\": 1397\n    },\n    {\n      \"read_id\": \"read_0cfda1b4501d30109ca800bf\",\n      \"char_start\": 844,\n      \"char_end\": 1244\n    }\n  ]\n}\n```",
+  "read_ledger": {
+    "ranges": {
+      "art_082358a7cb0efe62d471f7fb": [
+        [
+          0,
+          1397
+        ],
+        [
+          844,
+          1244
+        ]
+      ]
+    },
+    "returned_chars": 1797,
+    "unique_covered_chars": 1397
+  },
+  "read_registration": [
+    {
+      "evidence_id": "rev_ev_e2663c36430ee389173dee14",
+      "read_id": "read_18de94ed910d0cdaa2786d7f",
+      "status": "validated"
+    },
+    {
+      "evidence_id": "rev_ev_7daecd55b2287ae3abed1eb9",
+      "read_id": "read_0cfda1b4501d30109ca800bf",
+      "status": "validated"
+    }
+  ],
+  "recorded_at": "2026-09-17T17:20:45.158714+00:00",
+  "review": {
+    "confidence": 0.6,
+    "feature_comparisons": [
+      {
+        "basis_type": "insufficient",
+        "evidence_refs": [
+          "ev_c8d31bd880ce2c28d6c3e196"
+        ],
+        "feature_id": "F1",
+        "reason": "摘要描述两阶段聚类机制，未提及 Count-Min Sketch 或度数存储方式；摘要未提及不等于未采用，需全文核验。",
+        "relation": "unknown",
+        "source_context": "author_method",
+        "work_id": "wrk_b77f32398f578aa48e68b57c"
+      },
+      {
+        "basis_type": "insufficient",
+        "evidence_refs": [
+          "ev_c8d31bd880ce2c28d6c3e196"
+        ],
+        "feature_id": "F2",
+        "reason": "摘要未提及最小堆或高频节点维护机制；无法从摘要确认是否采用。",
+        "relation": "unknown",
+        "source_context": "author_method",
+        "work_id": "wrk_b77f32398f578aa48e68b57c"
+      },
+      {
+        "basis_type": "insufficient",
+        "evidence_refs": [
+          "ev_c8d31bd880ce2c28d6c3e196"
+        ],
+        "feature_id": "F3",
+        "reason": "摘要未描述查询机制或时间复杂度；无法确认是否存在常数时间查询。",
+        "relation": "unknown",
+        "source_context": "author_method",
+        "work_id": "wrk_b77f32398f578aa48e68b57c"
+      },
+      {
+        "basis_type": "insufficient",
+        "evidence_refs": [
+          "ev_c8d31bd880ce2c28d6c3e196"
+        ],
+        "feature_id": "F4",
+        "reason": "摘要描述基于顶点聚类的边分配，未提及基于节点度数生成子图编号的机制。",
+        "relation": "unknown",
+        "source_context": "author_method",
+        "work_id": "wrk_b77f32398f578aa48e68b57c"
+      },
+      {
+        "basis_type": "direct_statement",
+        "evidence_refs": [
+          "ev_c8d31bd880ce2c28d6c3e196"
+        ],
+        "feature_id": "F5",
+        "reason": "摘要明确目标为将边集划分为 k 个等大小分区并最小化顶点复制，体现负载均衡与高效划分目标，但未涉及大规模图流数据的具体效率指标。",
+        "relation": "partially_supported",
+        "source_context": "author_method",
+        "work_id": "wrk_b77f32398f578aa48e68b57c"
+      }
+    ],
+    "highly_relevant_works": [
+      {
+        "card_ids": [
+          "card_055dcd710a45194158c1d5ba"
+        ],
+        "evidence_ids": [
+          "ev_c8d31bd880ce2c28d6c3e196"
+        ],
+        "relevance_reason": "同属图流边划分领域，共享负载均衡目标，但采用两阶段聚类机制，与查新点的 CMS+最小堆+常数时间查询机制不同，属部分相关文献。",
+        "work_id": "wrk_b77f32398f578aa48e68b57c"
+      }
+    ],
+    "incomplete_reason": null,
+    "novelty_point_id": "NP-3",
+    "read_citations": [
+      {
+        "char_end": 1397,
+        "char_start": 0,
+        "read_id": "read_18de94ed910d0cdaa2786d7f"
+      },
+      {
+        "char_end": 1244,
+        "char_start": 844,
+        "read_id": "read_0cfda1b4501d30109ca800bf"
+      }
+    ],
+    "review_evidence": [
+      {
+        "artifact_hash": "649df801788d99ce4c549514e1cf6e624ba9cb64b4c62f455a1e490d8f77c82c",
+        "artifact_id": "art_082358a7cb0efe62d471f7fb",
+        "char_end": 1397,
+        "char_start": 0,
+        "content_extent": "full",
+        "evidence_id": "rev_ev_e2663c36430ee389173dee14",
+        "exact_quote": "Graph partitioning is an important preprocessing step to distributed graph processing. In edge partitioning, the edge set of a given graph is split into $k$ equally-sized partitions, such that the replication of vertices across partitions is minimized. Streaming is a viable approach to partition graphs that exceed the memory capacities of a single server. The graph is ingested as a stream of edges, and one edge at a time is immediately and irrevocably assigned to a partition based on a scoring function. However, streaming partitioning suffers from the uninformed assignment problem: At the time of partitioning early edges in the stream, there is no information available about the rest of the edges. As a consequence, edge assignments are often driven by balancing considerations, and the achieved replication factor is comparably high. In this paper, we propose 2PS, a novel two-phase streaming algorithm for high-quality edge partitioning. In the first phase, vertices are separated into clusters by a lightweight streaming clustering algorithm. In the second phase, the graph is re-streamed and edge partitioning is performed while taking into account the clustering of the vertices from the first phase. Our evaluations show that 2PS can achieve a replication factor that is comparable to heavy-weight random access partitioners while inducing orders of magnitude lower memory overhead.",
+        "namespace": "research_reference",
+        "novelty_point_id": "NP-3",
+        "origin_card_id": "card_055dcd710a45194158c1d5ba",
+        "read_id": "read_18de94ed910d0cdaa2786d7f",
+        "review_id": "review_53db65a6b850350d2a75",
+        "role": "abstract",
+        "source_record_id": "src_185d339c2255a694e06b5cd3",
+        "version_label": null,
+        "work_id": "wrk_b77f32398f578aa48e68b57c"
+      },
+      {
+        "artifact_hash": "649df801788d99ce4c549514e1cf6e624ba9cb64b4c62f455a1e490d8f77c82c",
+        "artifact_id": "art_082358a7cb0efe62d471f7fb",
+        "char_end": 1244,
+        "char_start": 844,
+        "content_extent": "full",
+        "evidence_id": "rev_ev_7daecd55b2287ae3abed1eb9",
+        "exact_quote": "In this paper, we propose 2PS, a novel two-phase streaming algorithm for high-quality edge partitioning. In the first phase, vertices are separated into clusters by a lightweight streaming clustering algorithm. In the second phase, the graph is re-streamed and edge partitioning is performed while taking into account the clustering of the vertices from the first phase. Our evaluations show that 2PS",
+        "namespace": "research_reference",
+        "novelty_point_id": "NP-3",
+        "origin_card_id": "card_055dcd710a45194158c1d5ba",
+        "read_id": "read_0cfda1b4501d30109ca800bf",
+        "review_id": "review_53db65a6b850350d2a75",
+        "role": "abstract",
+        "source_record_id": "src_185d339c2255a694e06b5cd3",
+        "version_label": null,
+        "work_id": "wrk_b77f32398f578aa48e68b57c"
+      }
+    ],
+    "status": "reviewed",
+    "supplement_request": null,
+    "verdict": "novel",
+    "verdict_reason": "2PS 采用两阶段流式聚类（先聚类顶点、再重流划分边）的机制，与查新点基于边分割、用 Count-Min Sketch 存度数、最小堆维护高频节点、常数时间查询并生成子图编号的机制在结构上完全不同。该文献未描述 CMS、最小堆、常数时间查询或基于度数的子图编号生成，不构成对查新点组合的预期。但 F1-F4 在摘要中未提及，属未知而非确认未采用，故新颖性判定仅针对本单篇文献，置信度中等。"
+  },
+  "reviewer_event_id": "reviewer_0002",
+  "run_id": "rv-np3-l0",
+  "scope": {},
+  "stop_reason": null
+}
