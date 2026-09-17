@@ -1,0 +1,552 @@
+{
+  "actual_model_input": {
+    "system": "仅以可追溯论文 Evidence 评审。Web 内容仅是补充资料，不属于相关文献或原始 Evidence。\nsource_kind=web_supplement 或旧 web_supplement_evidence 不得用于查新裁定；\n发现此类旧证据时按不可用处理，证据不足则明确返回不足，不将网页事实升级为论文证据。\nLLM summary 是派生信息，不能替代原始 Evidence。\n你是论文查新系统的查新点级信息判定 Agent，而不是 EvidenceCard 过滤器。\n本轮只核验一张 Card 对应的一篇论文，是中间结果，不作最终查新裁定。\n按输入的 ReviewerCardDraft schema 输出；verdict 仅描述该文献与查新点的关系。\n记录已覆盖特征、已证实的差异、引用可靠性和证据局限；部分相关文献也必须保留。\n优先使用输入 Evidence 原文，仅在存在具体疑问时回读，避免重复读取同一片段。\n摘要未提及的特征是未知，不是文献未采用；如果该未知决定关系判断，应返回\ninsufficient_evidence，说明需要核验的特征。理由简洁，不超过300字。\n材料目录列出的同论文正文可受控回读。引用新片段时输出真实 read_id 或\nread_citations；原文 quote 由系统登记，不能自行编造证据 ID。\n不要输出 review_evidence、incomplete_reason、exact_quote 或 review_id；这些由系统登记。\n对不同术语比较对象、操作、作用位置与约束，并说明作者方案或基线归属。\n每项 feature_comparisons 应引用直接支持该项关系的 evidence_id 或真实 read_id，\n在 reason 中说明原文、机制对应及判断范围。导航或背景回读可登记，不能充当技术断言依据；\n摘要足以支持的有限事实仍可引用摘要。例：feature_id=F1、relation=supported、\nevidence_refs=[实际读到的 read_id]，仅当该片段确实支持 F1 时使用。\ncontradicted 需要同一对象和条件下不相容的依据；未提及属于 unknown。\n采用一种方法不自动排除可共存的另一方法。次要 unknown 不自动否决有依据的有限结论。\n区分原文明确支持的事实与未核验的特征。摘要、局部片段或截短引文未提及某特征，不能证明文献未采用该特征；取得全文也不等于已读到关键段落。若最终裁定依赖尚未核验的关键差异，返回 status=insufficient_evidence，说明缺少的比较证据，不得仅降低 confidence 后继续裁定。保留已证实的局部重合；多篇分别覆盖部分特征不等于单篇公开完整组合。检索或获取失败、零命中、未展示证据均不能支持新颖性。不影响当前有限结论的次要未知可以作为局限保留。",
+    "user": "请对以下单个查新点进行信息综合与新颖性判定。\n\n当前可信日期（UTC）：2026-09-17\n\n查新点：\n{\"point_id\": \"NP-2\", \"claim\": \"提出使用相似度统计方法探究音乐结构，并据此确定结构相关小节，用于指导细粒度注意力的选择。\", \"claim_en\": \"Proposes using similarity statistics to explore music structures and determine structure-related bars, guiding the selection of fine-grained attention.\", \"technical_features\": [\"通过自相似度矩阵分析音乐中的重复结构。\", \"基于训练集和不同数据集的相似度分布，确定与音乐结构最相关的小节（如前1、2、4、8小节）。\", \"将相似度统计结果用于细粒度注意力的结构相关小节选择。\", \"分析了多轨音乐的相似度分布，以支持不同音乐类型的结构建模。\"], \"technical_features_en\": [\"Analyzes repetition structures in music via self-similarity matrices.\", \"Determines bars most relevant to music structures (e.g., previous 1st, 2nd, 4th, and 8th bars) based on similarity distributions in training sets and various datasets.\", \"Uses similarity statistics results to select structure-related bars for fine-grained attention.\", \"Analyzes similarity distributions of multi-track music to support structure modeling across different music types.\"], \"source_locations\": [\"abstract\", \"english_abstract\", \"3.3音乐结构分析和结构相关小节选择\", \"3.4 多轨音乐的相似度分布\"]}\n\n相关调研任务：\n[{\"task_id\": \"T-1\", \"novelty_point_id\": \"NP-2\", \"task_type\": \"literature_search\", \"language\": \"en\", \"description\": \"针对该查新点执行英文文献检索。\", \"attempt\": 1}]\n\nEvidenceCard：\n[{\"card_id\": \"card_7fe969471654f4f8e4f27f48\", \"task_id\": \"T-1\", \"novelty_point_id\": \"NP-2\", \"document_title\": \"Visual Overviews for Sheet Music Structure\", \"main_contribution\": \"Proposes visual augmentation methods for sheet music that map the overall similarity between sections or bars to colors, helping users analyze structure, find repetitions, and determine similarity of specific segments.\", \"overlaps\": [\"Analyzes similarity between bars/sections and repetition patterns in music, overlapping with the claim's feature of analyzing repetition structures via similarity.\", \"Focuses on determining similarity of specific segments to others, related to identifying structure-related segments/bars.\"], \"differences\": [\"Uses dimensionality reduction or clustering to map similarity to colors for visualization, not self-similarity matrix analysis.\", \"Targets human visual analysis of sheet music, not using similarity statistics to select structure-related bars for guiding fine-grained attention in music generation.\", \"Does not determine specific structure-related bars (e.g., previous 1st, 2nd, 4th, 8th bars) from similarity distributions across training sets and datasets.\", \"Does not address multi-track music similarity distributions or fine-grained attention mechanisms.\"], \"sources\": [{\"title\": \"Visual Overviews for Sheet Music Structure\", \"quote\": \"we explored mapping the overall similarity between sections or bars to colors. For these mappings, we use dimensionality reduction or clustering to assign similar segments to similar colors and vice versa.\", \"location\": \"artifact art_3cfcd862a4df5022da1b4320 chars:219-424\", \"doi\": null, \"url\": \"https://arxiv.org/pdf/2308.06140\"}], \"cited_by_paper\": null, \"possible_baseline\": false, \"relevance\": 0.35, \"confidence\": 0.6, \"evidence_ids\": [\"ev_0d321c14b63ce450a7b9606f\"]}]\n\nEvidence（包含允许 reader 回读的 artifact_id）：\n[{\"evidence_id\": \"ev_0d321c14b63ce450a7b9606f\", \"work_id\": \"wrk_2e2856efebb6106c4344fc13\", \"artifact_id\": \"art_3cfcd862a4df5022da1b4320\", \"novelty_point_id\": \"NP-2\", \"task_id\": \"T-1\", \"quote\": \"we explored mapping the overall similarity between sections or bars to colors. For these mappings, we use dimensionality reduction or clustering to assign similar segments to similar colors and vice versa.\", \"locator\": {\"page_start\": null, \"page_end\": null, \"section\": null, \"block_id\": null, \"paragraph_start\": null, \"paragraph_end\": null, \"char_start\": 219, \"char_end\": 424, \"selector\": null}, \"interpretation\": \"The paper analyzes similarity between bars/sections and maps it to colors via dimensionality reduction or clustering, which overlaps with the claim's use of similarity to explore music structure but differs in method (clustering vs. self-similarity matrix) and purpose (visualization vs. attention guidance).\", \"confidence\": 0.8, \"provenance\": {\"artifact_namespace\": \"research_reference\", \"builder\": \"evidence_card_builder\", \"evidence_type\": \"database_evidence\", \"quote_char_end\": 424, \"quote_char_start\": 219, \"read_char_end\": 943, \"read_char_start\": 0, \"read_id\": \"read_060e4d2f916134fb2424afbf\", \"source_kind\": \"structured_database\", \"source_record_id\": \"src_6dddb6957fab13d6043562f1\"}}]\n\n输出 schema：\n{\"$defs\": {\"FeatureComparison\": {\"additionalProperties\": false, \"properties\": {\"feature_id\": {\"minLength\": 1, \"title\": \"Feature Id\", \"type\": \"string\"}, \"work_id\": {\"minLength\": 1, \"title\": \"Work Id\", \"type\": \"string\"}, \"relation\": {\"enum\": [\"supported\", \"partially_supported\", \"contradicted\", \"unknown\"], \"title\": \"Relation\", \"type\": \"string\"}, \"basis_type\": {\"enum\": [\"direct_statement\", \"semantic_equivalence\", \"grounded_inference\", \"insufficient\"], \"title\": \"Basis Type\", \"type\": \"string\"}, \"evidence_refs\": {\"items\": {\"type\": \"string\"}, \"title\": \"Evidence Refs\", \"type\": \"array\"}, \"reason\": {\"minLength\": 1, \"title\": \"Reason\", \"type\": \"string\"}, \"source_context\": {\"default\": \"unknown\", \"enum\": [\"author_method\", \"related_work\", \"baseline\", \"ablation\", \"unknown\"], \"title\": \"Source Context\", \"type\": \"string\"}}, \"required\": [\"feature_id\", \"work_id\", \"relation\", \"basis_type\", \"reason\"], \"title\": \"FeatureComparison\", \"type\": \"object\"}, \"NoveltyVerdict\": {\"description\": \"Reviewer 对单个查新点给出的新颖性评价。\", \"enum\": [\"novel\", \"partially_novel\", \"not_novel\"], \"title\": \"NoveltyVerdict\", \"type\": \"string\"}, \"RelevantWork\": {\"additionalProperties\": false, \"description\": \"对查新点结论高度相关、且仅以可信句柄引用的 Work。\", \"properties\": {\"work_id\": {\"minLength\": 1, \"title\": \"Work Id\", \"type\": \"string\"}, \"card_ids\": {\"items\": {\"type\": \"string\"}, \"minItems\": 1, \"title\": \"Card Ids\", \"type\": \"array\"}, \"evidence_ids\": {\"items\": {\"type\": \"string\"}, \"minItems\": 1, \"title\": \"Evidence Ids\", \"type\": \"array\"}, \"relevance_reason\": {\"minLength\": 1, \"title\": \"Relevance Reason\", \"type\": \"string\"}}, \"required\": [\"work_id\", \"card_ids\", \"evidence_ids\", \"relevance_reason\"], \"title\": \"RelevantWork\", \"type\": \"object\"}, \"ReviewReadCitation\": {\"additionalProperties\": false, \"description\": \"Model-selected read; the harness resolves its exact quote and evidence ID.\", \"properties\": {\"read_id\": {\"minLength\": 1, \"title\": \"Read Id\", \"type\": \"string\"}, \"char_start\": {\"anyOf\": [{\"minimum\": 0, \"type\": \"integer\"}, {\"type\": \"null\"}], \"default\": null, \"title\": \"Char Start\"}, \"char_end\": {\"anyOf\": [{\"minimum\": 0, \"type\": \"integer\"}, {\"type\": \"null\"}], \"default\": null, \"title\": \"Char End\"}}, \"required\": [\"read_id\"], \"title\": \"ReviewReadCitation\", \"type\": \"object\"}, \"ReviewStatus\": {\"description\": \"查新点级 Reviewer 的完成状态。\", \"enum\": [\"reviewed\", \"insufficient_evidence\"], \"title\": \"ReviewStatus\", \"type\": \"string\"}, \"SupplementRequest\": {\"additionalProperties\": false, \"description\": \"Reviewer 的补检语义建议；V0 不拥有工作流路由权。\", \"properties\": {\"reason\": {\"minLength\": 1, \"title\": \"Reason\", \"type\": \"string\"}, \"missing_aspects\": {\"items\": {\"type\": \"string\"}, \"title\": \"Missing Aspects\", \"type\": \"array\"}, \"suggested_focus\": {\"items\": {\"type\": \"string\"}, \"title\": \"Suggested Focus\", \"type\": \"array\"}}, \"required\": [\"reason\"], \"title\": \"SupplementRequest\", \"type\": \"object\"}}, \"additionalProperties\": false, \"description\": \"Model-owned single-card judgment; provenance is registered by the harness.\", \"properties\": {\"novelty_point_id\": {\"minLength\": 1, \"title\": \"Novelty Point Id\", \"type\": \"string\"}, \"status\": {\"$ref\": \"#/$defs/ReviewStatus\"}, \"verdict\": {\"anyOf\": [{\"$ref\": \"#/$defs/NoveltyVerdict\"}, {\"type\": \"null\"}], \"default\": null}, \"verdict_reason\": {\"anyOf\": [{\"type\": \"string\"}, {\"type\": \"null\"}], \"default\": null, \"title\": \"Verdict Reason\"}, \"confidence\": {\"anyOf\": [{\"maximum\": 1.0, \"minimum\": 0.0, \"type\": \"number\"}, {\"type\": \"null\"}], \"default\": null, \"title\": \"Confidence\"}, \"highly_relevant_works\": {\"items\": {\"$ref\": \"#/$defs/RelevantWork\"}, \"title\": \"Highly Relevant Works\", \"type\": \"array\"}, \"supplement_request\": {\"anyOf\": [{\"$ref\": \"#/$defs/SupplementRequest\"}, {\"type\": \"null\"}], \"default\": null}, \"read_citations\": {\"items\": {\"$ref\": \"#/$defs/ReviewReadCitation\"}, \"title\": \"Read Citations\", \"type\": \"array\"}, \"feature_comparisons\": {\"items\": {\"$ref\": \"#/$defs/FeatureComparison\"}, \"title\": \"Feature Comparisons\", \"type\": \"array\"}}, \"required\": [\"novelty_point_id\", \"status\"], \"title\": \"ReviewerCardDraft\", \"type\": \"object\"}\n已授权材料目录（只可读取这些 Artifact）：\n[{\"work_id\": \"wrk_2e2856efebb6106c4344fc13\", \"artifact_id\": \"art_3cfcd862a4df5022da1b4320\", \"namespace\": \"research_reference\", \"source_record_id\": \"src_6dddb6957fab13d6043562f1\", \"role\": \"abstract\", \"content_extent\": \"full\", \"content_hash\": \"f3c8cc766c5fd1fb201330cfbeb91adc40ec41666bf676bb438a1f8cb2e185c2\", \"readable_chars\": 943, \"version_label\": null, \"readable\": true, \"section_hints\": []}]\n固定特征 ID：\n[{\"feature_id\": \"F1\", \"text\": \"通过自相似度矩阵分析音乐中的重复结构。\", \"sha256\": \"a32b63305f018468fd0b88ea380a390cd25b3235a3613b9bd24ffd027f9c02fc\"}, {\"feature_id\": \"F2\", \"text\": \"基于训练集和不同数据集的相似度分布，确定与音乐结构最相关的小节（如前1、2、4、8小节）。\", \"sha256\": \"71d591eb7afdb643b96fb94c4642fe962199080e2e1ae09a5f44541c023a27f0\"}, {\"feature_id\": \"F3\", \"text\": \"将相似度统计结果用于细粒度注意力的结构相关小节选择。\", \"sha256\": \"3eadd95228655073d541f17476dd1306de5727eca865f45ddf4558abd0f00039\"}, {\"feature_id\": \"F4\", \"text\": \"分析了多轨音乐的相似度分布，以支持不同音乐类型的结构建模。\", \"sha256\": \"bfe85a439a6bd3e378375ca04f2491973de2a31efb98b46daf310e55174d7d50\"}]"
+  },
+  "card_ids": [
+    "card_7fe969471654f4f8e4f27f48"
+  ],
+  "draft_schema": {
+    "$defs": {
+      "FeatureComparison": {
+        "additionalProperties": false,
+        "properties": {
+          "basis_type": {
+            "enum": [
+              "direct_statement",
+              "semantic_equivalence",
+              "grounded_inference",
+              "insufficient"
+            ],
+            "title": "Basis Type",
+            "type": "string"
+          },
+          "evidence_refs": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Evidence Refs",
+            "type": "array"
+          },
+          "feature_id": {
+            "minLength": 1,
+            "title": "Feature Id",
+            "type": "string"
+          },
+          "reason": {
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          },
+          "relation": {
+            "enum": [
+              "supported",
+              "partially_supported",
+              "contradicted",
+              "unknown"
+            ],
+            "title": "Relation",
+            "type": "string"
+          },
+          "source_context": {
+            "default": "unknown",
+            "enum": [
+              "author_method",
+              "related_work",
+              "baseline",
+              "ablation",
+              "unknown"
+            ],
+            "title": "Source Context",
+            "type": "string"
+          },
+          "work_id": {
+            "minLength": 1,
+            "title": "Work Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "feature_id",
+          "work_id",
+          "relation",
+          "basis_type",
+          "reason"
+        ],
+        "title": "FeatureComparison",
+        "type": "object"
+      },
+      "NoveltyVerdict": {
+        "description": "Reviewer 对单个查新点给出的新颖性评价。",
+        "enum": [
+          "novel",
+          "partially_novel",
+          "not_novel"
+        ],
+        "title": "NoveltyVerdict",
+        "type": "string"
+      },
+      "RelevantWork": {
+        "additionalProperties": false,
+        "description": "对查新点结论高度相关、且仅以可信句柄引用的 Work。",
+        "properties": {
+          "card_ids": {
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "title": "Card Ids",
+            "type": "array"
+          },
+          "evidence_ids": {
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "title": "Evidence Ids",
+            "type": "array"
+          },
+          "relevance_reason": {
+            "minLength": 1,
+            "title": "Relevance Reason",
+            "type": "string"
+          },
+          "work_id": {
+            "minLength": 1,
+            "title": "Work Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "work_id",
+          "card_ids",
+          "evidence_ids",
+          "relevance_reason"
+        ],
+        "title": "RelevantWork",
+        "type": "object"
+      },
+      "ReviewReadCitation": {
+        "additionalProperties": false,
+        "description": "Model-selected read; the harness resolves its exact quote and evidence ID.",
+        "properties": {
+          "char_end": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Char End"
+          },
+          "char_start": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Char Start"
+          },
+          "read_id": {
+            "minLength": 1,
+            "title": "Read Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "read_id"
+        ],
+        "title": "ReviewReadCitation",
+        "type": "object"
+      },
+      "ReviewStatus": {
+        "description": "查新点级 Reviewer 的完成状态。",
+        "enum": [
+          "reviewed",
+          "insufficient_evidence"
+        ],
+        "title": "ReviewStatus",
+        "type": "string"
+      },
+      "SupplementRequest": {
+        "additionalProperties": false,
+        "description": "Reviewer 的补检语义建议；V0 不拥有工作流路由权。",
+        "properties": {
+          "missing_aspects": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Missing Aspects",
+            "type": "array"
+          },
+          "reason": {
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          },
+          "suggested_focus": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Suggested Focus",
+            "type": "array"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "title": "SupplementRequest",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "description": "Model-owned single-card judgment; provenance is registered by the harness.",
+    "properties": {
+      "confidence": {
+        "anyOf": [
+          {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "type": "number"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Confidence"
+      },
+      "feature_comparisons": {
+        "items": {
+          "$ref": "#/$defs/FeatureComparison"
+        },
+        "title": "Feature Comparisons",
+        "type": "array"
+      },
+      "highly_relevant_works": {
+        "items": {
+          "$ref": "#/$defs/RelevantWork"
+        },
+        "title": "Highly Relevant Works",
+        "type": "array"
+      },
+      "novelty_point_id": {
+        "minLength": 1,
+        "title": "Novelty Point Id",
+        "type": "string"
+      },
+      "read_citations": {
+        "items": {
+          "$ref": "#/$defs/ReviewReadCitation"
+        },
+        "title": "Read Citations",
+        "type": "array"
+      },
+      "status": {
+        "$ref": "#/$defs/ReviewStatus"
+      },
+      "supplement_request": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/SupplementRequest"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "verdict": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/NoveltyVerdict"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "verdict_reason": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Verdict Reason"
+      }
+    },
+    "required": [
+      "novelty_point_id",
+      "status"
+    ],
+    "title": "ReviewerCardDraft",
+    "type": "object"
+  },
+  "execution_status": "completed",
+  "finalization_attempted": false,
+  "legacy_guard_shadow": {
+    "assertion_matches": [
+      {
+        "end": 159,
+        "rule": "strong_absence",
+        "start": 156,
+        "text": "未涉及"
+      },
+      {
+        "end": 317,
+        "rule": "novel_absence",
+        "start": 314,
+        "text": "未覆盖"
+      }
+    ],
+    "formal_status": "reviewed",
+    "input_quote_matches": [],
+    "old_relevance_reasons": [
+      "该文献与查新点存在局部相关性；具体技术差异尚待原文核验。"
+    ],
+    "old_status": "insufficient_evidence",
+    "old_verdict": null,
+    "variant_id": "G0_shadow",
+    "would_change": true
+  },
+  "material_catalog": [
+    {
+      "artifact_id": "art_3cfcd862a4df5022da1b4320",
+      "content_extent": "full",
+      "content_hash": "f3c8cc766c5fd1fb201330cfbeb91adc40ec41666bf676bb438a1f8cb2e185c2",
+      "namespace": "research_reference",
+      "readable": true,
+      "readable_chars": 943,
+      "role": "abstract",
+      "section_hints": [],
+      "source_record_id": "src_6dddb6957fab13d6043562f1",
+      "version_label": null,
+      "work_id": "wrk_2e2856efebb6106c4344fc13"
+    }
+  ],
+  "parent_stage_id": "stage_0001",
+  "phase": "single_card_result",
+  "point_id": "NP-2",
+  "raw_draft": {
+    "confidence": 0.7,
+    "feature_comparisons": [
+      {
+        "basis_type": "direct_statement",
+        "evidence_refs": [
+          "ev_0d321c14b63ce450a7b9606f",
+          "read_060e4d2f916134fb2424afbf"
+        ],
+        "feature_id": "F1",
+        "reason": "摘要明确分析小节/段落间相似性与重复模式（'analyzing structure, finding repetitions, and determining the similarity of specific segments'），与'通过相似度分析重复结构'部分重叠；但方法为降维/聚类映射颜色，未提及自相似度矩阵，故仅部分支持。",
+        "relation": "partially_supported",
+        "source_context": "author_method",
+        "work_id": "wrk_2e2856efebb6106c4344fc13"
+      },
+      {
+        "basis_type": "insufficient",
+        "evidence_refs": [
+          "ev_0d321c14b63ce450a7b9606f",
+          "read_060e4d2f916134fb2424afbf"
+        ],
+        "feature_id": "F2",
+        "reason": "摘要未提及基于训练集/数据集相似度分布确定结构相关小节（如前1、2、4、8小节），该特征在文献中未出现；摘要未提及不等于未采用，但全文仅943字符且无相关表述，判定为未知/未覆盖。",
+        "relation": "unknown",
+        "source_context": "author_method",
+        "work_id": "wrk_2e2856efebb6106c4344fc13"
+      },
+      {
+        "basis_type": "insufficient",
+        "evidence_refs": [
+          "ev_0d321c14b63ce450a7b9606f",
+          "read_060e4d2f916134fb2424afbf"
+        ],
+        "feature_id": "F3",
+        "reason": "摘要面向人类视觉分析（'help users gain an overview'），未提及细粒度注意力机制或将其用于结构相关小节选择；该特征在文献中未出现，判定为未知/未覆盖。",
+        "relation": "unknown",
+        "source_context": "author_method",
+        "work_id": "wrk_2e2856efebb6106c4344fc13"
+      },
+      {
+        "basis_type": "insufficient",
+        "evidence_refs": [
+          "ev_0d321c14b63ce450a7b9606f",
+          "read_060e4d2f916134fb2424afbf"
+        ],
+        "feature_id": "F4",
+        "reason": "摘要未提及多轨音乐的相似度分布或不同音乐类型的结构建模，该特征在文献中未出现，判定为未知/未覆盖。",
+        "relation": "unknown",
+        "source_context": "author_method",
+        "work_id": "wrk_2e2856efebb6106c4344fc13"
+      }
+    ],
+    "highly_relevant_works": [
+      {
+        "card_ids": [
+          "card_7fe969471654f4f8e4f27f48"
+        ],
+        "evidence_ids": [
+          "ev_0d321c14b63ce450a7b9606f"
+        ],
+        "relevance_reason": "该文献分析音乐中小节/段落间的相似性与重复模式，与查新点'通过相似度探究音乐结构'部分重叠，但方法（聚类/降维可视化）与目的（人类视觉分析）均不同，未覆盖结构相关小节确定、细粒度注意力与多轨音乐等核心特征。",
+        "work_id": "wrk_2e2856efebb6106c4344fc13"
+      }
+    ],
+    "novelty_point_id": "NP-2",
+    "read_citations": [
+      {
+        "char_end": 943,
+        "char_start": 0,
+        "read_id": "read_060e4d2f916134fb2424afbf"
+      }
+    ],
+    "status": "reviewed",
+    "supplement_request": null,
+    "verdict": "partially_novel",
+    "verdict_reason": "该文献（Visual Overviews for Sheet Music Structure）通过相似度/聚类将小节或段落间相似性映射为颜色，用于人类视觉分析音乐结构与重复模式，与查新点F1的'通过相似度分析重复结构'存在部分重叠。但其方法为降维/聚类可视化而非自相似度矩阵，且目的为可视化而非指导细粒度注意力；未涉及基于训练集/数据集相似度分布确定结构相关小节（F2）、细粒度注意力选择（F3）或多轨音乐相似度分布（F4）。核心区分特征未被覆盖，故相对该文献查新点具有新颖性。"
+  },
+  "raw_model_output": "I have the full abstract. Now I'll produce the final review.\n\n```json\n{\n  \"novelty_point_id\": \"NP-2\",\n  \"status\": \"reviewed\",\n  \"verdict\": \"partially_novel\",\n  \"verdict_reason\": \"该文献（Visual Overviews for Sheet Music Structure）通过相似度/聚类将小节或段落间相似性映射为颜色，用于人类视觉分析音乐结构与重复模式，与查新点F1的'通过相似度分析重复结构'存在部分重叠。但其方法为降维/聚类可视化而非自相似度矩阵，且目的为可视化而非指导细粒度注意力；未涉及基于训练集/数据集相似度分布确定结构相关小节（F2）、细粒度注意力选择（F3）或多轨音乐相似度分布（F4）。核心区分特征未被覆盖，故相对该文献查新点具有新颖性。\",\n  \"confidence\": 0.7,\n  \"highly_relevant_works\": [\n    {\n      \"work_id\": \"wrk_2e2856efebb6106c4344fc13\",\n      \"card_ids\": [\"card_7fe969471654f4f8e4f27f48\"],\n      \"evidence_ids\": [\"ev_0d321c14b63ce450a7b9606f\"],\n      \"relevance_reason\": \"该文献分析音乐中小节/段落间的相似性与重复模式，与查新点'通过相似度探究音乐结构'部分重叠，但方法（聚类/降维可视化）与目的（人类视觉分析）均不同，未覆盖结构相关小节确定、细粒度注意力与多轨音乐等核心特征。\"\n    }\n  ],\n  \"read_citations\": [\n    {\n      \"read_id\": \"read_060e4d2f916134fb2424afbf\",\n      \"char_start\": 0,\n      \"char_end\": 943\n    }\n  ],\n  \"feature_comparisons\": [\n    {\n      \"feature_id\": \"F1\",\n      \"work_id\": \"wrk_2e2856efebb6106c4344fc13\",\n      \"relation\": \"partially_supported\",\n      \"basis_type\": \"direct_statement\",\n      \"evidence_refs\": [\"ev_0d321c14b63ce450a7b9606f\", \"read_060e4d2f916134fb2424afbf\"],\n      \"reason\": \"摘要明确分析小节/段落间相似性与重复模式（'analyzing structure, finding repetitions, and determining the similarity of specific segments'），与'通过相似度分析重复结构'部分重叠；但方法为降维/聚类映射颜色，未提及自相似度矩阵，故仅部分支持。\",\n      \"source_context\": \"author_method\"\n    },\n    {\n      \"feature_id\": \"F2\",\n      \"work_id\": \"wrk_2e2856efebb6106c4344fc13\",\n      \"relation\": \"unknown\",\n      \"basis_type\": \"insufficient\",\n      \"evidence_refs\": [\"ev_0d321c14b63ce450a7b9606f\", \"read_060e4d2f916134fb2424afbf\"],\n      \"reason\": \"摘要未提及基于训练集/数据集相似度分布确定结构相关小节（如前1、2、4、8小节），该特征在文献中未出现；摘要未提及不等于未采用，但全文仅943字符且无相关表述，判定为未知/未覆盖。\",\n      \"source_context\": \"author_method\"\n    },\n    {\n      \"feature_id\": \"F3\",\n      \"work_id\": \"wrk_2e2856efebb6106c4344fc13\",\n      \"relation\": \"unknown\",\n      \"basis_type\": \"insufficient\",\n      \"evidence_refs\": [\"ev_0d321c14b63ce450a7b9606f\", \"read_060e4d2f916134fb2424afbf\"],\n      \"reason\": \"摘要面向人类视觉分析（'help users gain an overview'），未提及细粒度注意力机制或将其用于结构相关小节选择；该特征在文献中未出现，判定为未知/未覆盖。\",\n      \"source_context\": \"author_method\"\n    },\n    {\n      \"feature_id\": \"F4\",\n      \"work_id\": \"wrk_2e2856efebb6106c4344fc13\",\n      \"relation\": \"unknown\",\n      \"basis_type\": \"insufficient\",\n      \"evidence_refs\": [\"ev_0d321c14b63ce450a7b9606f\", \"read_060e4d2f916134fb2424afbf\"],\n      \"reason\": \"摘要未提及多轨音乐的相似度分布或不同音乐类型的结构建模，该特征在文献中未出现，判定为未知/未覆盖。\",\n      \"source_context\": \"author_method\"\n    }\n  ]\n}\n```",
+  "read_ledger": {
+    "ranges": {
+      "art_3cfcd862a4df5022da1b4320": [
+        [
+          0,
+          943
+        ],
+        [
+          0,
+          943
+        ],
+        [
+          0,
+          943
+        ]
+      ]
+    },
+    "returned_chars": 2829,
+    "unique_covered_chars": 943
+  },
+  "read_registration": [
+    {
+      "evidence_id": "rev_ev_e53447e7f9d212d4ecbb512b",
+      "read_id": "read_060e4d2f916134fb2424afbf",
+      "status": "validated"
+    }
+  ],
+  "recorded_at": "2026-09-17T19:10:41.711262+00:00",
+  "review": {
+    "confidence": 0.7,
+    "feature_comparisons": [
+      {
+        "basis_type": "direct_statement",
+        "evidence_refs": [
+          "ev_0d321c14b63ce450a7b9606f",
+          "rev_ev_e53447e7f9d212d4ecbb512b"
+        ],
+        "feature_id": "F1",
+        "reason": "摘要明确分析小节/段落间相似性与重复模式（'analyzing structure, finding repetitions, and determining the similarity of specific segments'），与'通过相似度分析重复结构'部分重叠；但方法为降维/聚类映射颜色，未提及自相似度矩阵，故仅部分支持。",
+        "relation": "partially_supported",
+        "source_context": "author_method",
+        "work_id": "wrk_2e2856efebb6106c4344fc13"
+      },
+      {
+        "basis_type": "insufficient",
+        "evidence_refs": [
+          "ev_0d321c14b63ce450a7b9606f",
+          "rev_ev_e53447e7f9d212d4ecbb512b"
+        ],
+        "feature_id": "F2",
+        "reason": "摘要未提及基于训练集/数据集相似度分布确定结构相关小节（如前1、2、4、8小节），该特征在文献中未出现；摘要未提及不等于未采用，但全文仅943字符且无相关表述，判定为未知/未覆盖。",
+        "relation": "unknown",
+        "source_context": "author_method",
+        "work_id": "wrk_2e2856efebb6106c4344fc13"
+      },
+      {
+        "basis_type": "insufficient",
+        "evidence_refs": [
+          "ev_0d321c14b63ce450a7b9606f",
+          "rev_ev_e53447e7f9d212d4ecbb512b"
+        ],
+        "feature_id": "F3",
+        "reason": "摘要面向人类视觉分析（'help users gain an overview'），未提及细粒度注意力机制或将其用于结构相关小节选择；该特征在文献中未出现，判定为未知/未覆盖。",
+        "relation": "unknown",
+        "source_context": "author_method",
+        "work_id": "wrk_2e2856efebb6106c4344fc13"
+      },
+      {
+        "basis_type": "insufficient",
+        "evidence_refs": [
+          "ev_0d321c14b63ce450a7b9606f",
+          "rev_ev_e53447e7f9d212d4ecbb512b"
+        ],
+        "feature_id": "F4",
+        "reason": "摘要未提及多轨音乐的相似度分布或不同音乐类型的结构建模，该特征在文献中未出现，判定为未知/未覆盖。",
+        "relation": "unknown",
+        "source_context": "author_method",
+        "work_id": "wrk_2e2856efebb6106c4344fc13"
+      }
+    ],
+    "highly_relevant_works": [
+      {
+        "card_ids": [
+          "card_7fe969471654f4f8e4f27f48"
+        ],
+        "evidence_ids": [
+          "ev_0d321c14b63ce450a7b9606f"
+        ],
+        "relevance_reason": "该文献分析音乐中小节/段落间的相似性与重复模式，与查新点'通过相似度探究音乐结构'部分重叠，但方法（聚类/降维可视化）与目的（人类视觉分析）均不同，未覆盖结构相关小节确定、细粒度注意力与多轨音乐等核心特征。",
+        "work_id": "wrk_2e2856efebb6106c4344fc13"
+      }
+    ],
+    "incomplete_reason": null,
+    "novelty_point_id": "NP-2",
+    "read_citations": [
+      {
+        "char_end": 943,
+        "char_start": 0,
+        "read_id": "read_060e4d2f916134fb2424afbf"
+      }
+    ],
+    "review_evidence": [
+      {
+        "artifact_hash": "f3c8cc766c5fd1fb201330cfbeb91adc40ec41666bf676bb438a1f8cb2e185c2",
+        "artifact_id": "art_3cfcd862a4df5022da1b4320",
+        "char_end": 943,
+        "char_start": 0,
+        "content_extent": "full",
+        "evidence_id": "rev_ev_e53447e7f9d212d4ecbb512b",
+        "exact_quote": "We propose different methods for alternative representation and visual augmentation of sheet music that help users gain an overview of general structure, repeating patterns, and the similarity of segments. To this end, we explored mapping the overall similarity between sections or bars to colors. For these mappings, we use dimensionality reduction or clustering to assign similar segments to similar colors and vice versa. To provide a better overview, we further designed simplified music notation representations, including hierarchical and compressed encodings. These overviews allow users to display whole pieces more compactly on a single screen without clutter and to find and navigate to distant segments more quickly. Our preliminary evaluation with guitarists and tablature shows that our design supports users in tasks such as analyzing structure, finding repetitions, and determining the similarity of specific segments to others.",
+        "namespace": "research_reference",
+        "novelty_point_id": "NP-2",
+        "origin_card_id": "card_7fe969471654f4f8e4f27f48",
+        "read_id": "read_060e4d2f916134fb2424afbf",
+        "review_id": "review_00f5915d9ecad6eda6f4",
+        "role": "abstract",
+        "source_record_id": "src_6dddb6957fab13d6043562f1",
+        "version_label": null,
+        "work_id": "wrk_2e2856efebb6106c4344fc13"
+      }
+    ],
+    "status": "reviewed",
+    "supplement_request": null,
+    "verdict": "partially_novel",
+    "verdict_reason": "该文献（Visual Overviews for Sheet Music Structure）通过相似度/聚类将小节或段落间相似性映射为颜色，用于人类视觉分析音乐结构与重复模式，与查新点F1的'通过相似度分析重复结构'存在部分重叠。但其方法为降维/聚类可视化而非自相似度矩阵，且目的为可视化而非指导细粒度注意力；未涉及基于训练集/数据集相似度分布确定结构相关小节（F2）、细粒度注意力选择（F3）或多轨音乐相似度分布（F4）。核心区分特征未被覆盖，故相对该文献查新点具有新颖性。"
+  },
+  "reviewer_event_id": "reviewer_0002",
+  "run_id": "rv-stable-holdout-2",
+  "scope": {},
+  "stop_reason": null
+}
