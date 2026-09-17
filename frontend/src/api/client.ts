@@ -1,4 +1,4 @@
-import { snapshotSchema } from './contracts';
+import { reportResourceSchema, snapshotSchema } from './contracts';
 export class ApiError extends Error {
   constructor(public code: 'network' | 'timeout' | 'http' | 'contract' | 'unavailable', message: string, public status?: number) { super(message); }
 }
@@ -28,6 +28,11 @@ async function snapshot(response: Response) {
   catch { throw new ApiError('contract', '服务响应格式不兼容，请联系服务管理员。'); }
 }
 export const api = {
+  getReportResource: async (id: string, signal: AbortSignal) => {
+    const response = await request(`/api/novelty/report-artifacts/${encodeURIComponent(id)}`, { signal });
+    try { return reportResourceSchema.parse(await response.json()); }
+    catch { throw new ApiError('contract', '报告资源元数据格式不兼容。'); }
+  },
   getRun: async (id: string, signal: AbortSignal) => snapshot(await request(`/api/novelty/runs/${encodeURIComponent(id)}`, { signal })),
   createRun: async (paper: File, signal: AbortSignal, submissionId: string) => {
     if (import.meta.env.VITE_FILE_API_ENABLED === 'false') throw new ApiError('unavailable', '当前服务尚未开放文件查新，请待服务升级后重试。');

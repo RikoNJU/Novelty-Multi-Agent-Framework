@@ -7,16 +7,17 @@ import { UploadView } from '../features/upload/UploadView';
 import { useRun } from '../features/run-progress/useRun';
 import { ProgressView } from '../features/run-progress/ProgressView';
 import { ReportView } from '../features/report/ReportView';
+import { ResourceReportView } from '../features/report/ResourceReportView';
 export default function App() {
-  const [params, setParams] = useSearchParams(); const id = params.get('run');
+  const [params, setParams] = useSearchParams(); const id = params.get('run'); const resourceId = params.get('report_resource_id');
   const [localPhase, setPhase] = useState<Phase>('landing');
   const [paper, setPaper] = useState<File | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null); const submitting = useRef(false);
   const [submissionUncertain, setSubmissionUncertain] = useState(false);
   const controller = useRef<AbortController | null>(null);
-  const { snapshot, error, reconnecting, retry } = useRun(id);
+  const { snapshot, error, reconnecting, retry } = useRun(resourceId ? null : id);
   const unfinished = snapshot?.result?.report.conclusions.some(c => c.incomplete_reason && c.incomplete_reason !== 'semantic_evidence') ?? false;
-  const phase: Phase = id ? error ? 'failed' : snapshot?.status === 'succeeded' && params.get('view') === 'report' ? 'previewing' : snapshot?.status ?? 'running' : localPhase;
+  const phase: Phase = resourceId ? 'previewing' : id ? error ? 'failed' : snapshot?.status === 'succeeded' && params.get('view') === 'report' ? 'previewing' : snapshot?.status ?? 'running' : localPhase;
   const main = useRef<HTMLElement>(null);
   const celebrated = useRef(new Set<string>());
   const animateSuccess = !!id && !celebrated.current.has(id);
@@ -53,6 +54,7 @@ export default function App() {
       {(phase === 'queued' || phase === 'running') && <ProgressView snapshot={snapshot} reconnecting={reconnecting}/>}
       {phase === 'succeeded' && <section className="panel completion"><div className={`success-mark ${animateSuccess ? 'animate-success' : ''}`}><Check size={40}/></div><p className="eyebrow">本次查新流程已结束</p><h1>{unfinished ? '部分核验未完成' : '查新完成'}</h1>{unfinished && <p>报告包含未完成的核验，请查看各查新点的原因与证据范围。</p>}<button className="primary" onClick={() => setParams({ run: id!, view: 'report' })}>查看查新报告<ArrowRight size={18}/></button><button className="text-button" onClick={restart}>开始新的查新</button></section>}
       {phase === 'previewing' && snapshot && <ReportView run={snapshot} onClose={() => setParams({ run: id! })}/>}
+      {resourceId && <ResourceReportView id={resourceId} onClose={returnHome}/>}
       {phase === 'failed' && <section className="panel failure"><p className="eyebrow">本次查新未能完成</p><h1>{error?.status === 404 ? '任务已失效' : '暂时遇到问题'}</h1><p role="alert">{error?.message ?? '查新运行失败。请检查文件后重新开始，或联系服务管理员。'}</p><p className="task-id">任务编号 {id}</p><button className="primary" onClick={restart}>重新开始<RotateCcw size={18}/></button>{error && error.status !== 404 && <button className="text-button" onClick={retry}>重新查询任务</button>}</section>}
     </main>
   </div>;
