@@ -1,6 +1,6 @@
 # Historical claim and evidence comparison
 
-This is the **already seen L1 diagnostic output**, not a new S1 model judgment or a semantic gold standard. The source quote below is the text actually sent in historical S0. Each `relation`, `basis_type`, and `reason` is the old model's claim; support remains unassessed. All seven newly registered reads were absent from that historical summary request.
+This is the **already seen L1 diagnostic output**, not a new S1 model judgment or a semantic gold standard. The source quote below is the text actually sent in historical S0. Each `relation`, `basis_type`, and `reason` is the old model's claim; support remains unassessed. All seven newly registered reads were absent from that historical summary request. The authorized S1 request did send those seven reads, but timed out without a response, so no new claim can be assessed.
 
 ## Card card_055dcd710a45194158c1d5ba
 

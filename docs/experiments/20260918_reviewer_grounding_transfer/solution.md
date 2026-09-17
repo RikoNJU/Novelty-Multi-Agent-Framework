@@ -1,6 +1,6 @@
 # Reviewer grounding: offline implementation
 
-Baseline: `lya` at `546c59304eba32314df5d6bb79cd2d7d4f308cf4`. Scope: Reviewer summary assembly, citation integrity, prompts, Debug, and local tests. No business model or network calls were made in this round.
+Baseline: `lya` at `546c59304eba32314df5d6bb79cd2d7d4f308cf4`. Scope: Reviewer summary assembly, citation integrity, prompts, Debug, and local tests. The initial implementation was offline. After user authorization, one S1 summary request was dispatched and timed out; see `report.md`.
 
 ## Mechanism
 
@@ -12,6 +12,6 @@ The three Reviewer prompts and fallback instructions now ask for per-feature sup
 
 ## Local result
 
-Historical L1 S0 sent two nonempty original evidence quotes. Offline S1 assembly from the same frozen card reviews prepares nine nonempty quotes, including seven registered `rev_ev_*` items. See `payload-diff.json` and `evidence-lineage.json`. S1 is `sent_to_model=false`; this result establishes preparation and the scripted client boundary, not a new model judgment.
+Historical L1 S0 sent two nonempty original evidence quotes. Offline S1 assembly from the same frozen card reviews prepares nine nonempty quotes, including seven registered `rev_ev_*` items. The authorized S1 request later sent exactly this serialized user message, as verified by SHA-256, but timed out without a model response. See `payload-diff.json`, `evidence-lineage.json`, and `trials/s1_summary_live/trial-status.json`.
 
 Two distinct music and attention related source Works from the existing MG archive were selected after the prompts were edited. Their card, point, source artifact and prompt hashes are frozen in `holdout-manifest.json`. No holdout model decision was run, so generalization is **not yet tested**.

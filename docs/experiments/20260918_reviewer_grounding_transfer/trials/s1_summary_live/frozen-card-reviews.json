@@ -1,0 +1,339 @@
+[
+  {
+    "index": 0,
+    "card_id": "card_055dcd710a45194158c1d5ba",
+    "novelty_point_id": "NP-3",
+    "status": "completed",
+    "review": {
+      "confidence": 0.8,
+      "feature_comparisons": [
+        {
+          "basis_type": "direct_statement",
+          "evidence_refs": [
+            "ev_c8d31bd880ce2c28d6c3e196"
+          ],
+          "feature_id": "F1",
+          "reason": "2PS 使用 int[] 度数数组和聚类卷（vol）数组存储顶点信息，未使用 Count-Min Sketch 概率数据结构。",
+          "relation": "contradicted",
+          "source_context": "author_method",
+          "work_id": "wrk_b77f32398f578aa48e68b57c"
+        },
+        {
+          "basis_type": "direct_statement",
+          "evidence_refs": [
+            "ev_c8d31bd880ce2c28d6c3e196"
+          ],
+          "feature_id": "F2",
+          "reason": "2PS 算法使用聚类卷数组和顶点-簇映射，未使用最小堆维护高频节点信息。",
+          "relation": "contradicted",
+          "source_context": "author_method",
+          "work_id": "wrk_b77f32398f578aa48e68b57c"
+        },
+        {
+          "basis_type": "direct_statement",
+          "evidence_refs": [
+            "ev_c8d31bd880ce2c28d6c3e196"
+          ],
+          "feature_id": "F3",
+          "reason": "2PS 未描述基于概率数据结构的常数时间查询机制，其分配基于聚类卷比较。",
+          "relation": "contradicted",
+          "source_context": "author_method",
+          "work_id": "wrk_b77f32398f578aa48e68b57c"
+        },
+        {
+          "basis_type": "semantic_equivalence",
+          "evidence_refs": [
+            "ev_c8d31bd880ce2c28d6c3e196"
+          ],
+          "feature_id": "F4",
+          "reason": "2PS 在第二阶段根据顶点聚类信息为每条边分配分区，功能上类似生成分配目标，但依据是聚类而非节点度数信息生成子图编号。",
+          "relation": "partially_supported",
+          "source_context": "author_method",
+          "work_id": "wrk_b77f32398f578aa48e68b57c"
+        },
+        {
+          "basis_type": "direct_statement",
+          "evidence_refs": [
+            "ev_c8d31bd880ce2c28d6c3e196"
+          ],
+          "feature_id": "F5",
+          "reason": "2PS 目标为低复制因子和低内存开销的流式边划分，与负载均衡目标部分重合，但未明确描述大规模图流数据的高效划分与负载均衡保证。",
+          "relation": "partially_supported",
+          "source_context": "author_method",
+          "work_id": "wrk_b77f32398f578aa48e68b57c"
+        }
+      ],
+      "highly_relevant_works": [
+        {
+          "card_ids": [
+            "card_055dcd710a45194158c1d5ba"
+          ],
+          "evidence_ids": [
+            "ev_c8d31bd880ce2c28d6c3e196"
+          ],
+          "relevance_reason": "同属图流边划分领域，采用流式边分配策略并追求负载均衡与低复制因子，与查新点领域重合，但技术路径（两阶段聚类）与查新点（CMS+最小堆）不同。",
+          "work_id": "wrk_b77f32398f578aa48e68b57c"
+        }
+      ],
+      "incomplete_reason": null,
+      "novelty_point_id": "NP-3",
+      "read_citations": [
+        {
+          "char_end": 1397,
+          "char_start": 0,
+          "read_id": "read_18de94ed910d0cdaa2786d7f"
+        },
+        {
+          "char_end": 2000,
+          "char_start": 0,
+          "read_id": "read_a8c5e70fb23d3af59f681413"
+        },
+        {
+          "char_end": 55687,
+          "char_start": 53687,
+          "read_id": "read_9fa9065ed3f43b44553f8d8c"
+        },
+        {
+          "char_end": 18701,
+          "char_start": 16701,
+          "read_id": "read_c0be775aeed43bdd1b4abc95"
+        }
+      ],
+      "review_evidence": [
+        {
+          "artifact_hash": "649df801788d99ce4c549514e1cf6e624ba9cb64b4c62f455a1e490d8f77c82c",
+          "artifact_id": "art_082358a7cb0efe62d471f7fb",
+          "char_end": 1397,
+          "char_start": 0,
+          "content_extent": "full",
+          "evidence_id": "rev_ev_e2663c36430ee389173dee14",
+          "exact_quote": "Graph partitioning is an important preprocessing step to distributed graph processing. In edge partitioning, the edge set of a given graph is split into $k$ equally-sized partitions, such that the replication of vertices across partitions is minimized. Streaming is a viable approach to partition graphs that exceed the memory capacities of a single server. The graph is ingested as a stream of edges, and one edge at a time is immediately and irrevocably assigned to a partition based on a scoring function. However, streaming partitioning suffers from the uninformed assignment problem: At the time of partitioning early edges in the stream, there is no information available about the rest of the edges. As a consequence, edge assignments are often driven by balancing considerations, and the achieved replication factor is comparably high. In this paper, we propose 2PS, a novel two-phase streaming algorithm for high-quality edge partitioning. In the first phase, vertices are separated into clusters by a lightweight streaming clustering algorithm. In the second phase, the graph is re-streamed and edge partitioning is performed while taking into account the clustering of the vertices from the first phase. Our evaluations show that 2PS can achieve a replication factor that is comparable to heavy-weight random access partitioners while inducing orders of magnitude lower memory overhead.",
+          "namespace": "research_reference",
+          "novelty_point_id": "NP-3",
+          "origin_card_id": "card_055dcd710a45194158c1d5ba",
+          "read_id": "read_18de94ed910d0cdaa2786d7f",
+          "review_id": "review_53db65a6b850350d2a75",
+          "role": "abstract",
+          "source_record_id": "src_185d339c2255a694e06b5cd3",
+          "version_label": null,
+          "work_id": "wrk_b77f32398f578aa48e68b57c"
+        },
+        {
+          "artifact_hash": "7336b7d0a936c5b8259a8f64c834d9643567ae5e4c98f516cd65479880ba5089",
+          "artifact_id": "art_ebc47b0e70f5b363f3d871f2",
+          "char_end": 2000,
+          "char_start": 0,
+          "content_extent": "unknown",
+          "evidence_id": "rev_ev_1c9a7ae2fb19ed1d25c1ec50",
+          "exact_quote": "2PS: High-Quality Edge Partitioning with Two-Phase Streaming\n\n      Report GitHub Issue\n      ×\n\n      Title:\n\nContent selection saved. Describe the issue below:\n\n      Description:\n\n      Submit without GitHub\n      Submit in GitHub\n\n    arXiv is now an independent nonprofit!\n    Learn more\n    ×\n\n      Back to arXiv\n\n    Why HTML?\n\n      Report Issue\n\n      Back to Abstract\n\n      Download PDF\n\nAbstract\n\n1 Introduction\n\n2 Problem Analysis\n\n2.1 Edge Partitioning Problem\n\n2.2 Streaming Edge Partitioning\n\n2.3 Shortcomings of Streaming Partitioning\n\n3 Two-Phase Streaming Edge Partitioning\n\n3.1 Phase 1: Clustering\n\n3.1.1 Streaming Clustering Algorithm\n\n3.2 Phase 2: Partitioning\n\n3.3 Discussion of Design Choices\n\n4 Theoretical Analysis\n\n4.1 Time Complexity\n\n4.2 Space Complexity\n\n4.3 Replication Factor\n\n5 Evaluations\n\n5.1 Setup\n\n5.2 Performance on Real-World Graphs\n\nMain Observations\n\n5.3 Impact of Power-Law Degree\n\n6 Related Work\n\n7 Conclusions\n\nReferences\n\n    License: arXiv.org perpetual non-exclusive license\n\narXiv:2001.07086v1 [cs.DC] 20 Jan 2020\n\n2PS: High-Quality Edge Partitioning with Two-Phase Streaming\n\nRuben Mayer\n††thanks: Both authors contributed equally to this paper.\nAffiliation: Technical University of Munich\n\n  \nKamil Orujzade11footnotemark:\n          1\n\nAffiliation: Technical University of Munich\n\n  \nHans-Arno Jacobsen\n\nAffiliation: Technical University of Munich\n\nAbstract\n\nGraph partitioning is an important preprocessing step to distributed graph processing. In edge partitioning, the edge set of a given graph is split into kk equally-sized partitions, such that the replication of vertices across partitions is minimized. Streaming is a viable approach to partition graphs that exceed the memory capacities of a single server. The graph is ingested as a stream of edges, and one edge at a time is immediately and irrevocably assigned to a partition based on a scoring function. However, streaming partitioning suffers from the uninformed assignment problem: At",
+          "namespace": "research_reference",
+          "novelty_point_id": "NP-3",
+          "origin_card_id": "card_055dcd710a45194158c1d5ba",
+          "read_id": "read_a8c5e70fb23d3af59f681413",
+          "review_id": "review_53db65a6b850350d2a75",
+          "role": "extracted_text",
+          "source_record_id": "src_185d339c2255a694e06b5cd3",
+          "version_label": null,
+          "work_id": "wrk_b77f32398f578aa48e68b57c"
+        },
+        {
+          "artifact_hash": "7336b7d0a936c5b8259a8f64c834d9643567ae5e4c98f516cd65479880ba5089",
+          "artifact_id": "art_ebc47b0e70f5b363f3d871f2",
+          "char_end": 55687,
+          "char_start": 53687,
+          "content_extent": "unknown",
+          "evidence_id": "rev_ev_915b523429f70453af896d5c",
+          "exact_quote": "6 Related Work\n\nGraph partitioning is a problem with a long history in research [8]. It has numerous applications in solving optimization problems, e.g., in VLSI design [18] and operator placement in stream processing systems [19]. In this paper, we focus on the edge partitioning problem. In particular, edge partitioning has gained a lot of attention as a preprocessing step for distributed graph processing systems, e.g., PowerGraph [12] and Spark/GraphX [13].\n\nRandom-access partitioners [43, 25, 15] require full information about the graph structure, i.e., the complete graph is loaded into memory of either a single machine [43] or a cluster of multiple machines [25, 15] before partitioning is performed. The major shortcoming of such partitioners is that they consume a lot of memory. However, memory is a scarce and expensive resource. While a single machine may not have sufficient memory capacities to keep a large graph, employing a cluster of machines to perform graph partitioning induces a higher monetary cost. Streaming edge partitioning is a common approach to reduce the memory overhead of edge partitioning.\n\nThere are a number of approaches to streaming edge partitioning. Besides stateless partitioning based on hashing (e.g., DBH [41]), stateful partitioners have received growing attention. The basic idea is that by gathering state about past assignment decisions, future edges in the stream can be partitioned with a lower replication degree. In this regard, the main differentiation between streaming partitioners so far has been in the formulation of the scoring function. Different such functions have been proposed, e.g., Greedy [12] and HDRF [32]. However, all of these approaches suffer from the uninformed assignment problem. An earlier approach to overcome this problem has been proposed in ADWISE [28], which allows for dynamically re-ordering the edge stream such that the assignment of uninformed edges can be delayed. This way, locality in the edge stream can b",
+          "namespace": "research_reference",
+          "novelty_point_id": "NP-3",
+          "origin_card_id": "card_055dcd710a45194158c1d5ba",
+          "read_id": "read_9fa9065ed3f43b44553f8d8c",
+          "review_id": "review_53db65a6b850350d2a75",
+          "role": "extracted_text",
+          "source_record_id": "src_185d339c2255a694e06b5cd3",
+          "version_label": null,
+          "work_id": "wrk_b77f32398f578aa48e68b57c"
+        },
+        {
+          "artifact_hash": "7336b7d0a936c5b8259a8f64c834d9643567ae5e4c98f516cd65479880ba5089",
+          "artifact_id": "art_ebc47b0e70f5b363f3d871f2",
+          "char_end": 18701,
+          "char_start": 16701,
+          "content_extent": "unknown",
+          "evidence_id": "rev_ev_0381d59b9f875c77fad7c6a3",
+          "exact_quote": "3.1.1 Streaming Clustering Algorithm\n\nAlgorithm 1  2PS Phase 1: Clustering\n\n                1:\n\n              int[] d ⊳\\triangleright vertex degrees\n\n                2:\n\n              int[] vol ⊳\\triangleright cluster volumes\n\n                3:\n\n              int[] v2c ⊳\\triangleright map of vertex_id to cluster_id\n\n                4:\n\n              int max_vol ⊳\\triangleright maximum cluster volume\n\n                5:\n\n              int next_id ←\\leftarrow 0 ⊳\\triangleright id of next new cluster\n\n                6:\n\n              procedure streamingClustering\n\n                7:\n\n                max_vol ←\\leftarrow 2∗|E|k∗0.5\\frac{2*|E|}{k}*0.5\n\n                8:\n\n                performStreamingPass() ⊳\\triangleright first pass\n\n                9:\n\n                max_vol ←\\leftarrow max_vol ∗2*2\n\n                10:\n\n                performStreamingPass() ⊳\\triangleright second pass\n\n                11:\n\n              procedure performStreamingPass\n\n                12:\n\n                for each e∈e\\in edge_stream do\n\n                13:\n\n                 for each v∈ev\\in e do\n\n                14:\n\n                   if v2c[v] = NULL then\n\n                15:\n\n                    v2c[vv] ←\\leftarrow next_id\n\n                16:\n\n                    vol[next_id] ←\\leftarrow vol[next_id] + d[vv]\n\n                17:\n\n                    next_id ←\\leftarrow next_id + 1\n        \n\n                18:\n\n                 if vol[v2c[vv]] ≤\\leq max_vol ∀v∈e\\forall v\\in e then\n\n                19:\n\n                   vs←v_{\\mathit{s}}\\leftarrow vi∈e:v_{i}\\in e:vol[v2c[viv_{i}]] ≤\\leq vol[v2c[vjv_{j}]], vj∈ev_{j}\\in e\n\n                20:\n\n                   vl←v_{\\mathit{l}}\\leftarrow vj∈e:vj≠vsv_{j}\\in e:v_{j}\\neq v_{\\mathit{s}}\n\n                21:\n\n                   if vol[v2c[vlv_{l}]] ++ d[vsv_{s}] ≤\\leq max_vol then\n\n                22:\n\n                    v2c[vsv_{s}] ←\\leftarrow v2c[vlv_{l}]\n\n                23:\n\n                    vol[v2c[vlv_{l}]] ←\\leftarrow",
+          "namespace": "research_reference",
+          "novelty_point_id": "NP-3",
+          "origin_card_id": "card_055dcd710a45194158c1d5ba",
+          "read_id": "read_c0be775aeed43bdd1b4abc95",
+          "review_id": "review_53db65a6b850350d2a75",
+          "role": "extracted_text",
+          "source_record_id": "src_185d339c2255a694e06b5cd3",
+          "version_label": null,
+          "work_id": "wrk_b77f32398f578aa48e68b57c"
+        }
+      ],
+      "status": "reviewed",
+      "supplement_request": null,
+      "verdict": "partially_novel",
+      "verdict_reason": "2PS 属于图流边划分领域，与查新点存在领域重合，但其采用两阶段流式聚类方法，未使用 Count-Min Sketch 概率数据结构存储节点度数，也未使用最小堆维护高频节点信息，未描述常数时间查询机制。该文献不构成对 Sketch-DBH 核心技术组合（CMS+最小堆+常数时间查询）的公开，查新点核心特征组合仍具新颖性。"
+    }
+  },
+  {
+    "index": 1,
+    "card_id": "card_927caf724042beff967b2231",
+    "novelty_point_id": "NP-3",
+    "status": "completed",
+    "review": {
+      "confidence": 0.7,
+      "feature_comparisons": [
+        {
+          "basis_type": "direct_statement",
+          "evidence_refs": [
+            "ev_6c078063949967ee95518dc2"
+          ],
+          "feature_id": "F1",
+          "reason": "WStream 使用分布式元数据文件存储已见顶点信息，未提及 Count-Min Sketch 概率数据结构。",
+          "relation": "contradicted",
+          "source_context": "author_method",
+          "work_id": "wrk_dd602dc2d2b07d7e69e6724c"
+        },
+        {
+          "basis_type": "direct_statement",
+          "evidence_refs": [
+            "ev_6c078063949967ee95518dc2"
+          ],
+          "feature_id": "F2",
+          "reason": "WStream 算法描述中未使用最小堆维护高频节点信息，采用窗口机制与元数据文件。",
+          "relation": "contradicted",
+          "source_context": "author_method",
+          "work_id": "wrk_dd602dc2d2b07d7e69e6724c"
+        },
+        {
+          "basis_type": "insufficient",
+          "evidence_refs": [
+            "ev_6c078063949967ee95518dc2"
+          ],
+          "feature_id": "F3",
+          "reason": "摘要与算法描述未提及常数时间查询机制，无法确认或否定。",
+          "relation": "unknown",
+          "source_context": "author_method",
+          "work_id": "wrk_dd602dc2d2b07d7e69e6724c"
+        },
+        {
+          "basis_type": "direct_statement",
+          "evidence_refs": [
+            "ev_6c078063949967ee95518dc2"
+          ],
+          "feature_id": "F4",
+          "reason": "WStream 基于窗口策略分配顶点到分区，而非根据节点度数信息生成子图编号。",
+          "relation": "contradicted",
+          "source_context": "author_method",
+          "work_id": "wrk_dd602dc2d2b07d7e69e6724c"
+        },
+        {
+          "basis_type": "direct_statement",
+          "evidence_refs": [
+            "ev_6c078063949967ee95518dc2"
+          ],
+          "feature_id": "F5",
+          "reason": "摘要明确声明 WStream 能高效划分大规模图数据并保持各分区负载均衡。",
+          "relation": "supported",
+          "source_context": "author_method",
+          "work_id": "wrk_dd602dc2d2b07d7e69e6724c"
+        }
+      ],
+      "highly_relevant_works": [
+        {
+          "card_ids": [
+            "card_927caf724042beff967b2231"
+          ],
+          "evidence_ids": [
+            "ev_6c078063949967ee95518dc2"
+          ],
+          "relevance_reason": "同属图流划分领域，以负载均衡为核心目标，但采用窗口边割策略而非 Sketch-DBH 的 Count-Min Sketch+最小堆方案，作为领域相关基线文献。",
+          "work_id": "wrk_dd602dc2d2b07d7e69e6724c"
+        }
+      ],
+      "incomplete_reason": null,
+      "novelty_point_id": "NP-3",
+      "read_citations": [
+        {
+          "char_end": 1313,
+          "char_start": 713,
+          "read_id": "read_fdc9f7715fb75e8314bcc073"
+        },
+        {
+          "char_end": 2000,
+          "char_start": 0,
+          "read_id": "read_d2f2682ff298bbcec344818c"
+        },
+        {
+          "char_end": 18004,
+          "char_start": 16004,
+          "read_id": "read_e5b7f0bdc9a93be2ac82a77d"
+        }
+      ],
+      "review_evidence": [
+        {
+          "artifact_hash": "9d985bcceed6aa75968f58f3c30446f83206e732512037047482dbab84afef67",
+          "artifact_id": "art_044b624240993e16c40f3537",
+          "char_end": 1313,
+          "char_start": 713,
+          "content_extent": "full",
+          "evidence_id": "rev_ev_68a6df2fb2bf9b8687fd0a69",
+          "exact_quote": "This paper proposes an efficient window-based streaming graph partitioning algorithm called WStream. The WStream algorithm is an edge-cut partitioning algorithm, which distributes a vertex among the partitions. Our results suggest that the WStream algorithm is able to partition large graph data efficiently while keeping the load balanced across different partitions, and communication to a minimum. Evaluation results with real workloads also prove the effectiveness of our proposed algorithm, and it achieves a significant reduction in load imbalance and edge-cut with different ranges of dataset.",
+          "namespace": "research_reference",
+          "novelty_point_id": "NP-3",
+          "origin_card_id": "card_927caf724042beff967b2231",
+          "read_id": "read_fdc9f7715fb75e8314bcc073",
+          "review_id": "review_5fc3455382a69cf7879b",
+          "role": "abstract",
+          "source_record_id": "src_14307f6656b2a10b7a5ab99c",
+          "version_label": null,
+          "work_id": "wrk_dd602dc2d2b07d7e69e6724c"
+        },
+        {
+          "artifact_hash": "76cbf1943e5b391bf5762d967db2db17e51ea2923993fefd1d3e479a0654e1e3",
+          "artifact_id": "art_239d9f203a9c73612f1cbbaa",
+          "char_end": 2000,
+          "char_start": 0,
+          "content_extent": "unknown",
+          "evidence_id": "rev_ev_37363d07e01e1ba87e945b6a",
+          "exact_quote": "Window-based Streaming Graph Partitioning Algorithm\n\n      Report GitHub Issue\n      ×\n\n      Title:\n\nContent selection saved. Describe the issue below:\n\n      Description:\n\n      Submit without GitHub\n      Submit in GitHub\n\n    arXiv is now an independent nonprofit!\n    Learn more\n    ×\n\n      Back to arXiv\n\n    Why HTML?\n\n      Report Issue\n\n      Back to Abstract\n\n      Download PDF\n\nAbstract\n\n1 Introduction\n\n2 Related Work\n\n2.1 Vertex-cut Partitioning\n\n2.2 Edge-cut Partitioning\n\n3 Proposed Algorithm\n\n3.1 Preliminaries\n\n3.2 System Architecture\n\n3.3 The Streaming Model and Window\n\n3.4 WStream Algorithm\n\n3.5 Greedy Strategy\n\n4 Performance Evaluation\n\n4.1 Experimental Settings\n\n4.2 Dataset\n\n4.3 Performance Metrics\n\n4.4 Evaluation Scenario\n\n5 Results Analysis\n\n5.1 Impact of Stream Window Sizes\n\n5.2 Impact of Balancing Factor\n\n5.3 Performance Comparison\n\n5.3.1 Edge-cut comparison\n\n5.3.2 Load Imbalance Comparison\n\n6 Conclusions and Future Direction\n\nReferences\n\n    License: arXiv.org perpetual non-exclusive license\n\narXiv:1902.01543v1 [cs.DS] 05 Feb 2019\n\nWindow-based Streaming Graph Partitioning Algorithm\n\nMd Anwarul Kaium Patwary\n\n  \nSaurabh Garg, and Byeong Kang\n\nAbstract\n\nIn the recent years, the scale of graph datasets has increased to such a degree that a single machine is not capable of efficiently processing large graphs. Thereby, efficient graph partitioning is necessary for those large graph applications. Traditional graph partitioning generally loads the whole graph data into the memory before performing partitioning; this is not only a time consuming task but it also creates memory bottlenecks. These issues of memory limitation and enormous time complexity can be resolved using stream-based graph partitioning. A streaming graph partitioning algorithm reads vertices once and assigns that vertex to a partition accordingly. This is also called an one-pass algorithm. This paper proposes an efficient window-based streaming graph partitioning algorithm called WS",
+          "namespace": "research_reference",
+          "novelty_point_id": "NP-3",
+          "origin_card_id": "card_927caf724042beff967b2231",
+          "read_id": "read_d2f2682ff298bbcec344818c",
+          "review_id": "review_5fc3455382a69cf7879b",
+          "role": "extracted_text",
+          "source_record_id": "src_14307f6656b2a10b7a5ab99c",
+          "version_label": null,
+          "work_id": "wrk_dd602dc2d2b07d7e69e6724c"
+        },
+        {
+          "artifact_hash": "76cbf1943e5b391bf5762d967db2db17e51ea2923993fefd1d3e479a0654e1e3",
+          "artifact_id": "art_239d9f203a9c73612f1cbbaa",
+          "char_end": 18004,
+          "char_start": 16004,
+          "content_extent": "unknown",
+          "evidence_id": "rev_ev_db49817e65f54206b7c51223",
+          "exact_quote": "3 Proposed Algorithm\n\n3.1 Preliminaries\n\nWe consider an undirected graph GG, with a set of edges EE and vertices VV, such that G=(V,E)G=(V,E). A balanced k-way partitioning divides the graph into almost equal subsets. The graph partitioning algorithm uses a balancing constraint to keep all the partitions balanced. The balancing constraint can be defined by Equation (1):\n\n∀i∈{1..k}:|Vi|≤Lm​a​x:=(1+α)⌈|V|/k⌉\\forall_{i}\\in\\{1..k\\}:|V_{i}|\\leq L_{max}:=(1+\\alpha)\\lceil|V|/k\\rceil\n\n(1)\n\nWhere, α\\alpha is the imbalanced parameter, and is a non-negative real number. The vertex vv is adjacent to vertex uu given there is an edge {u,v}∈E\\{u,v\\}\\in E. If vertex vv and vertex uu reside in different partitions, this is called the cut edge. Thus, Ei​j:={{u,v}∈E:u∈Vi,v∈Vj}E_{ij}:=\\{\\{u,v\\}\\in E:u\\in V_{i},v\\in V_{j}\\} is the set of edge-cuts between partitions. Edge-cut graph partitioning always aims at reducing this cut.\n\n3.2 System Architecture\n\nIn our system, we used master machines, which is responsible for reading input, and assign the vertices to the clients. As such partitioning algorithm resides in the master machines. We used a Stream Generator which creates the stream data after receiving the input and then form a stream window. We used a distributed meta data file which has been used to store the information of vertices are already seen in the stream. This information was used to assign the future vertices from stream of data. Figure 1 shows the architecture of the system.\n\n•\n\nMaster Machine: Master machine receives the input graph data from the input file. In master machine the Stream Generator, generates the stream data and maintained the stream window before assigning each vertex to the respective partition. It also stores the partitioned vertex information and later this uses for future vertex partition.\n\n•\n\nPartition: Each partition also known as worker machine communicate with master machine to receive the assigned vertex from the master machine. Worker machine al",
+          "namespace": "research_reference",
+          "novelty_point_id": "NP-3",
+          "origin_card_id": "card_927caf724042beff967b2231",
+          "read_id": "read_e5b7f0bdc9a93be2ac82a77d",
+          "review_id": "review_5fc3455382a69cf7879b",
+          "role": "extracted_text",
+          "source_record_id": "src_14307f6656b2a10b7a5ab99c",
+          "version_label": null,
+          "work_id": "wrk_dd602dc2d2b07d7e69e6724c"
+        }
+      ],
+      "status": "reviewed",
+      "supplement_request": null,
+      "verdict": "partially_novel",
+      "verdict_reason": "WStream 与 Sketch-DBH 同属图流划分领域并均以负载均衡为目标，但 WStream 采用基于窗口的边割划分策略，使用分布式元数据文件存储顶点信息，未采用 Count-Min Sketch、最小堆或常数时间查询机制。核心创新特征（F1-F4）在该文献中均未出现，仅领域与方法目标（F5）部分重合。基于单篇文献，Sketch-DBH 的核心技术组合未见公开，判定为部分新颖。"
+    }
+  }
+]
