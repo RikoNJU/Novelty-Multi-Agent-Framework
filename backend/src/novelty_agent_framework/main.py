@@ -16,6 +16,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .config import NoveltyWebSettings
 from .routers import health_router, runs_router
+from .routers.report_artifacts import router as report_artifacts_router
+from .services.report_resources import ReportResourceStore
 from .services import (
     NoveltyWorkflowService,
     build_demo_workflow_service,
@@ -32,6 +34,7 @@ def create_app(
     runs_root: Path | None = None,
     runner=None,
     static_root: Path | None = None,
+    report_resources_root: Path | None = None,
 ) -> FastAPI:
     settings = settings or NoveltyWebSettings.from_env()
     @asynccontextmanager
@@ -51,6 +54,9 @@ def create_app(
         description="Evidence-grounded novelty research workflow API",
     )
     application.state.settings = settings
+    application.state.report_resources = ReportResourceStore(
+        report_resources_root or Path(os.getenv("NOVELTY_REPORT_RESOURCE_ROOT", "outputs/report-resources"))
+    )
     application.state.workflow_service = service
     application.state.workflow_error = None
     if service is None:
@@ -72,6 +78,7 @@ def create_app(
     )
     application.include_router(health_router, prefix=settings.api_prefix)
     application.include_router(runs_router, prefix=settings.api_prefix)
+    application.include_router(report_artifacts_router, prefix=settings.api_prefix)
     application.include_router(pdf_router)
     application.add_middleware(UploadLimitMiddleware)
 
