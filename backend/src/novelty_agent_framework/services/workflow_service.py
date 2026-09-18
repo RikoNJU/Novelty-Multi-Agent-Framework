@@ -77,7 +77,7 @@ class NoveltyWorkflowService:
         store: InMemoryRunStore | None = None,
         max_upload_bytes: int = 30 * 1024 * 1024,
         run_model_budget_rmb: Decimal | None = None,
-        run_model_max_attempts: int = 80,
+        run_model_max_attempts: int | None = 80,
     ) -> None:
         self.workflow_factory = workflow_factory
         self.processor = processor
@@ -377,7 +377,8 @@ def build_real_workflow_service(settings: NoveltyWebSettings) -> NoveltyWorkflow
         max_upload_bytes=settings.max_upload_bytes,
         run_model_budget_rmb=(Decimal(os.environ["NOVELTY_RUN_MODEL_BUDGET_RMB"])
                               if os.getenv("NOVELTY_RUN_MODEL_BUDGET_RMB") else None),
-        run_model_max_attempts=int(os.getenv("NOVELTY_RUN_MODEL_MAX_ATTEMPTS", "80")),
+        run_model_max_attempts=(None if os.getenv("NOVELTY_RUN_MODEL_MAX_ATTEMPTS", "80").strip().lower() == "none"
+                                else int(os.getenv("NOVELTY_RUN_MODEL_MAX_ATTEMPTS", "80"))),
     )
 
 

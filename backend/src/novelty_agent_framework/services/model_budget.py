@@ -14,9 +14,9 @@ from novelty_agent_framework.diagnostics.llm_usage import LlmPricingCatalog
 
 
 class RunModelBudget:
-    def __init__(self, path: Path, *, cap_rmb: Decimal, max_attempts: int,
+    def __init__(self, path: Path, *, cap_rmb: Decimal, max_attempts: int | None,
                  pricing: LlmPricingCatalog | None = None, resume: bool = False) -> None:
-        if cap_rmb <= 0 or max_attempts < 1:
+        if cap_rmb <= 0 or (max_attempts is not None and max_attempts < 1):
             raise ValueError("model budget caps must be positive")
         self.path = path
         self.cap_rmb = cap_rmb
@@ -61,7 +61,8 @@ class RunModelBudget:
                 reserve = (Decimal(len(body)) * Decimal(str(rates["input"]))
                            + Decimal(payload["max_tokens"]) * Decimal(str(rates["output"]))) \
                           / Decimal(self.pricing.unit_tokens)
-                if len(self._attempts) >= self.max_attempts or self._reserved + reserve > self.cap_rmb:
+                if ((self.max_attempts is not None and len(self._attempts) >= self.max_attempts)
+                        or self._reserved + reserve > self.cap_rmb):
                     raise ModelCallBudgetExceeded("run model budget exhausted before dispatch")
                 self._attempts[event.call_id] = {
                     "attempt": len(self._attempts) + 1,

@@ -1,11 +1,13 @@
 """Web run budget reserves before transport and never recycles unknown requests."""
 
 from decimal import Decimal
+from dataclasses import replace
+from datetime import datetime, timezone
 import json
 
 import pytest
 
-from backend.env import (ChatMessage, ModelCallBudgetExceeded, ModelCallOptions,
+from backend.env import (ChatMessage, ModelCallBudgetExceeded, ModelCallEvent, ModelCallOptions,
                          ModelProfile, OpenAICompatibleChatClient,
                          reset_model_call_budget, set_model_call_budget)
 from novelty_agent_framework.services.model_budget import RunModelBudget
@@ -96,3 +98,22 @@ def test_budget_resume_preserves_prior_unknown_attempt(tmp_path):
         RunModelBudget(path, cap_rmb=Decimal("5"), max_attempts=4, resume=True)
     with pytest.raises(FileExistsError):
         RunModelBudget(path, cap_rmb=Decimal("4"), max_attempts=4)
+
+
+def test_amount_only_budget_has_no_request_count_cap(tmp_path):
+    budget = RunModelBudget(tmp_path / "budget-ledger.json",
+                            cap_rmb=Decimal("1"), max_attempts=None)
+    event = ModelCallEvent(
+        alias="deepseek-flash", provider="openai_compatible",
+        call_id="first", phase="START", model="deepseek-ai/DeepSeek-V4-Flash",
+        started_at=datetime.now(timezone.utc), duration_ms=0, message_count=1,
+        request_payload={"messages": [{"role": "user", "content": "x"}], "max_tokens": 8},
+    )
+    for index in range(81):
+        budget(replace(event, call_id=f"attempt-{index}"))
+    with pytest.raises(ModelCallBudgetExceeded, match="budget exhausted"):
+        budget(replace(event, call_id="over_amount",
+                       request_payload={"messages": [], "max_tokens": 1_000_000_000}))
+    ledger = json.loads((tmp_path / "budget-ledger.json").read_text())
+    assert ledger["max_attempts"] is None
+    assert len(ledger["attempts"]) == 81
