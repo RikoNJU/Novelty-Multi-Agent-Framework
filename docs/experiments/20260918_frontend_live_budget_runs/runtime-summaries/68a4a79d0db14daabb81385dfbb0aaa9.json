@@ -1,0 +1,937 @@
+{
+  "diagnostics": [
+    {
+      "artifact": "diagnostics/reader.json",
+      "classification_counts": {
+        "INCOMPLETE_RECORD": 20
+      },
+      "counts": {
+        "failed": 0,
+        "incomplete": 20,
+        "reader_calls": 30,
+        "succeeded": 10
+      },
+      "diagnostic_name": "reader",
+      "primary_code": "INCOMPLETE_RECORD",
+      "schema_version": "1.0",
+      "status": "WARNING"
+    },
+    {
+      "artifact": "diagnostics/reference_namespace.json",
+      "classification_counts": {},
+      "counts": {
+        "errors": 40,
+        "evidence_bindings": 8,
+        "namespace_integrity_failures": 0,
+        "reader_calls": 30,
+        "warnings": 0
+      },
+      "diagnostic_name": "reference_namespace",
+      "primary_code": null,
+      "schema_version": "1.0",
+      "status": "ERROR"
+    },
+    {
+      "artifact": "diagnostics/reviewer.json",
+      "classification_counts": {},
+      "counts": {
+        "evidence": 8,
+        "novelty_points": 3,
+        "reviewer_reader_calls": 10,
+        "reviews": 3,
+        "runtime_review_stages": 1,
+        "validator_accepted_cards": 5
+      },
+      "diagnostic_name": "reviewer",
+      "primary_code": null,
+      "schema_version": "1.0",
+      "status": "ERROR"
+    }
+  ],
+  "environment": {
+    "git_branch": "lya",
+    "git_commit": "93442c59ad0e50a87295f4b154387bc9e4dc7bb1",
+    "model_name": "deepseek-ai/DeepSeek-V4-Flash",
+    "model_provider": "openai_compatible",
+    "python_version": "3.12.3"
+  },
+  "errors": [
+    {
+      "error_id": "error_0001",
+      "message": "reader required after database_search returned artifact_ids",
+      "stage": "run_research_task",
+      "timestamp": "2026-09-17T23:24:38.036698+00:00",
+      "tool_call_id": "tool_0011",
+      "traceback": "",
+      "type": "HarnessPolicyError"
+    },
+    {
+      "error_id": "error_0002",
+      "message": "reader required after database_search returned artifact_ids",
+      "stage": "run_research_task",
+      "timestamp": "2026-09-17T23:24:39.466062+00:00",
+      "tool_call_id": "tool_0012",
+      "traceback": "",
+      "type": "HarnessPolicyError"
+    },
+    {
+      "error_id": "error_0003",
+      "message": "all 1 search executions failed",
+      "stage": "run_research_task",
+      "timestamp": "2026-09-17T23:24:43.069961+00:00",
+      "tool_call_id": "tool_0014",
+      "traceback": "  File \"<frozen runpy>\", line 198, in _run_module_as_main\n  File \"<frozen runpy>\", line 88, in _run_code\n  File \"/tmp/novelty-web-deps/uvicorn/__main__.py\", line 4, in <module>\n    uvicorn.main()\n  File \"/tmp/novelty-web-deps/click/core.py\", line 1631, in __call__\n    return self.main(*args, **kwargs)\n  File \"/tmp/novelty-web-deps/click/core.py\", line 1552, in main\n    rv = self.invoke(ctx)\n  File \"/tmp/novelty-web-deps/click/core.py\", line 1415, in invoke\n    return ctx.invoke(self.callback, **ctx.params)\n  File \"/tmp/novelty-web-deps/click/core.py\", line 910, in invoke\n    return callback(*args, **kwargs)\n  File \"/tmp/novelty-web-deps/uvicorn/main.py\", line 448, in main\n    run(\n  File \"/tmp/novelty-web-deps/uvicorn/main.py\", line 632, in run\n    server.run()\n  File \"/tmp/novelty-web-deps/uvicorn/server.py\", line 86, in run\n    return asyncio_run(self.serve(sockets=sockets), loop_factory=self.config.get_loop_factory())\n  File \"/usr/lib/python3.12/asyncio/runners.py\", line 194, in run\n    return runner.run(main)\n  File \"/usr/lib/python3.12/asyncio/runners.py\", line 118, in run\n    return self._loop.run_until_complete(task)\n  File \"/usr/lib/python3.12/asyncio/base_events.py\", line 674, in run_until_complete\n    self.run_forever()\n  File \"/usr/lib/python3.12/asyncio/base_events.py\", line 641, in run_forever\n    self._run_once()\n  File \"/usr/lib/python3.12/asyncio/base_events.py\", line 1987, in _run_once\n    handle._run()\n  File \"/usr/lib/python3.12/asyncio/events.py\", line 88, in _run\n    self._context.run(self._callback, *self._args)\n  File \"/tmp/nstab-python-deps/langgraph/_internal/_runnable.py\", line 522, in ainvoke\n    ret = await self.afunc(*args, **kwargs)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py\", line 313, in recorded\n    output = await function(state)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py\", line 524, in _run_research_task\n    await self.services.task_researcher.ainvoke(request)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/research_task.py\", line 104, in ainvoke\n    result, trace = await self._research(request)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/research_task.py\", line 114, in _research\n    harness_result = await self.harness.run(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/tool_call_harness.py\", line 122, in run\n    return await self._run(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/tool_call_harness.py\", line 461, in _run\n    runtime.finish_tool_call(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/runtime_artifacts.py\", line 671, in finish_tool_call\n    error_payload = self._coerce_error(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/runtime_artifacts.py\", line 1018, in _coerce_error\n    \"traceback\": \"\".join(traceback_module.format_stack()),\n",
+      "type": "ToolExecutionError"
+    },
+    {
+      "error_id": "error_0004",
+      "message": "all 1 search executions failed",
+      "stage": "run_research_task",
+      "timestamp": "2026-09-17T23:24:47.404083+00:00",
+      "tool_call_id": "tool_0017",
+      "traceback": "  File \"<frozen runpy>\", line 198, in _run_module_as_main\n  File \"<frozen runpy>\", line 88, in _run_code\n  File \"/tmp/novelty-web-deps/uvicorn/__main__.py\", line 4, in <module>\n    uvicorn.main()\n  File \"/tmp/novelty-web-deps/click/core.py\", line 1631, in __call__\n    return self.main(*args, **kwargs)\n  File \"/tmp/novelty-web-deps/click/core.py\", line 1552, in main\n    rv = self.invoke(ctx)\n  File \"/tmp/novelty-web-deps/click/core.py\", line 1415, in invoke\n    return ctx.invoke(self.callback, **ctx.params)\n  File \"/tmp/novelty-web-deps/click/core.py\", line 910, in invoke\n    return callback(*args, **kwargs)\n  File \"/tmp/novelty-web-deps/uvicorn/main.py\", line 448, in main\n    run(\n  File \"/tmp/novelty-web-deps/uvicorn/main.py\", line 632, in run\n    server.run()\n  File \"/tmp/novelty-web-deps/uvicorn/server.py\", line 86, in run\n    return asyncio_run(self.serve(sockets=sockets), loop_factory=self.config.get_loop_factory())\n  File \"/usr/lib/python3.12/asyncio/runners.py\", line 194, in run\n    return runner.run(main)\n  File \"/usr/lib/python3.12/asyncio/runners.py\", line 118, in run\n    return self._loop.run_until_complete(task)\n  File \"/usr/lib/python3.12/asyncio/base_events.py\", line 674, in run_until_complete\n    self.run_forever()\n  File \"/usr/lib/python3.12/asyncio/base_events.py\", line 641, in run_forever\n    self._run_once()\n  File \"/usr/lib/python3.12/asyncio/base_events.py\", line 1987, in _run_once\n    handle._run()\n  File \"/usr/lib/python3.12/asyncio/events.py\", line 88, in _run\n    self._context.run(self._callback, *self._args)\n  File \"/tmp/nstab-python-deps/langgraph/_internal/_runnable.py\", line 522, in ainvoke\n    ret = await self.afunc(*args, **kwargs)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py\", line 313, in recorded\n    output = await function(state)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py\", line 524, in _run_research_task\n    await self.services.task_researcher.ainvoke(request)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/research_task.py\", line 104, in ainvoke\n    result, trace = await self._research(request)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/research_task.py\", line 114, in _research\n    harness_result = await self.harness.run(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/tool_call_harness.py\", line 122, in run\n    return await self._run(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/tool_call_harness.py\", line 461, in _run\n    runtime.finish_tool_call(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/runtime_artifacts.py\", line 671, in finish_tool_call\n    error_payload = self._coerce_error(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/runtime_artifacts.py\", line 1018, in _coerce_error\n    \"traceback\": \"\".join(traceback_module.format_stack()),\n",
+      "type": "ToolExecutionError"
+    },
+    {
+      "error_id": "error_0005",
+      "message": "all 1 search executions failed",
+      "stage": "run_research_task",
+      "timestamp": "2026-09-17T23:24:49.710927+00:00",
+      "tool_call_id": "tool_0018",
+      "traceback": "  File \"<frozen runpy>\", line 198, in _run_module_as_main\n  File \"<frozen runpy>\", line 88, in _run_code\n  File \"/tmp/novelty-web-deps/uvicorn/__main__.py\", line 4, in <module>\n    uvicorn.main()\n  File \"/tmp/novelty-web-deps/click/core.py\", line 1631, in __call__\n    return self.main(*args, **kwargs)\n  File \"/tmp/novelty-web-deps/click/core.py\", line 1552, in main\n    rv = self.invoke(ctx)\n  File \"/tmp/novelty-web-deps/click/core.py\", line 1415, in invoke\n    return ctx.invoke(self.callback, **ctx.params)\n  File \"/tmp/novelty-web-deps/click/core.py\", line 910, in invoke\n    return callback(*args, **kwargs)\n  File \"/tmp/novelty-web-deps/uvicorn/main.py\", line 448, in main\n    run(\n  File \"/tmp/novelty-web-deps/uvicorn/main.py\", line 632, in run\n    server.run()\n  File \"/tmp/novelty-web-deps/uvicorn/server.py\", line 86, in run\n    return asyncio_run(self.serve(sockets=sockets), loop_factory=self.config.get_loop_factory())\n  File \"/usr/lib/python3.12/asyncio/runners.py\", line 194, in run\n    return runner.run(main)\n  File \"/usr/lib/python3.12/asyncio/runners.py\", line 118, in run\n    return self._loop.run_until_complete(task)\n  File \"/usr/lib/python3.12/asyncio/base_events.py\", line 674, in run_until_complete\n    self.run_forever()\n  File \"/usr/lib/python3.12/asyncio/base_events.py\", line 641, in run_forever\n    self._run_once()\n  File \"/usr/lib/python3.12/asyncio/base_events.py\", line 1987, in _run_once\n    handle._run()\n  File \"/usr/lib/python3.12/asyncio/events.py\", line 88, in _run\n    self._context.run(self._callback, *self._args)\n  File \"/tmp/nstab-python-deps/langgraph/_internal/_runnable.py\", line 522, in ainvoke\n    ret = await self.afunc(*args, **kwargs)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py\", line 313, in recorded\n    output = await function(state)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py\", line 524, in _run_research_task\n    await self.services.task_researcher.ainvoke(request)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/research_task.py\", line 104, in ainvoke\n    result, trace = await self._research(request)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/research_task.py\", line 114, in _research\n    harness_result = await self.harness.run(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/tool_call_harness.py\", line 122, in run\n    return await self._run(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/tool_call_harness.py\", line 461, in _run\n    runtime.finish_tool_call(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/runtime_artifacts.py\", line 671, in finish_tool_call\n    error_payload = self._coerce_error(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/runtime_artifacts.py\", line 1018, in _coerce_error\n    \"traceback\": \"\".join(traceback_module.format_stack()),\n",
+      "type": "ToolExecutionError"
+    },
+    {
+      "error_id": "error_0006",
+      "message": "all 1 search executions failed",
+      "stage": "run_research_task",
+      "timestamp": "2026-09-17T23:24:54.310590+00:00",
+      "tool_call_id": "tool_0022",
+      "traceback": "  File \"<frozen runpy>\", line 198, in _run_module_as_main\n  File \"<frozen runpy>\", line 88, in _run_code\n  File \"/tmp/novelty-web-deps/uvicorn/__main__.py\", line 4, in <module>\n    uvicorn.main()\n  File \"/tmp/novelty-web-deps/click/core.py\", line 1631, in __call__\n    return self.main(*args, **kwargs)\n  File \"/tmp/novelty-web-deps/click/core.py\", line 1552, in main\n    rv = self.invoke(ctx)\n  File \"/tmp/novelty-web-deps/click/core.py\", line 1415, in invoke\n    return ctx.invoke(self.callback, **ctx.params)\n  File \"/tmp/novelty-web-deps/click/core.py\", line 910, in invoke\n    return callback(*args, **kwargs)\n  File \"/tmp/novelty-web-deps/uvicorn/main.py\", line 448, in main\n    run(\n  File \"/tmp/novelty-web-deps/uvicorn/main.py\", line 632, in run\n    server.run()\n  File \"/tmp/novelty-web-deps/uvicorn/server.py\", line 86, in run\n    return asyncio_run(self.serve(sockets=sockets), loop_factory=self.config.get_loop_factory())\n  File \"/usr/lib/python3.12/asyncio/runners.py\", line 194, in run\n    return runner.run(main)\n  File \"/usr/lib/python3.12/asyncio/runners.py\", line 118, in run\n    return self._loop.run_until_complete(task)\n  File \"/usr/lib/python3.12/asyncio/base_events.py\", line 674, in run_until_complete\n    self.run_forever()\n  File \"/usr/lib/python3.12/asyncio/base_events.py\", line 641, in run_forever\n    self._run_once()\n  File \"/usr/lib/python3.12/asyncio/base_events.py\", line 1987, in _run_once\n    handle._run()\n  File \"/usr/lib/python3.12/asyncio/events.py\", line 88, in _run\n    self._context.run(self._callback, *self._args)\n  File \"/tmp/nstab-python-deps/langgraph/_internal/_runnable.py\", line 522, in ainvoke\n    ret = await self.afunc(*args, **kwargs)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py\", line 313, in recorded\n    output = await function(state)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py\", line 524, in _run_research_task\n    await self.services.task_researcher.ainvoke(request)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/research_task.py\", line 104, in ainvoke\n    result, trace = await self._research(request)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/research_task.py\", line 114, in _research\n    harness_result = await self.harness.run(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/tool_call_harness.py\", line 122, in run\n    return await self._run(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/tool_call_harness.py\", line 461, in _run\n    runtime.finish_tool_call(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/runtime_artifacts.py\", line 671, in finish_tool_call\n    error_payload = self._coerce_error(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/runtime_artifacts.py\", line 1018, in _coerce_error\n    \"traceback\": \"\".join(traceback_module.format_stack()),\n",
+      "type": "ToolExecutionError"
+    },
+    {
+      "error_id": "error_0007",
+      "message": "reader required after database_search returned artifact_ids",
+      "stage": "run_research_task",
+      "timestamp": "2026-09-17T23:24:59.673760+00:00",
+      "tool_call_id": "tool_0027",
+      "traceback": "",
+      "type": "HarnessPolicyError"
+    },
+    {
+      "error_id": "error_0008",
+      "message": "reader required after database_search returned artifact_ids",
+      "stage": "run_research_task",
+      "timestamp": "2026-09-17T23:25:01.746420+00:00",
+      "tool_call_id": "tool_0029",
+      "traceback": "",
+      "type": "HarnessPolicyError"
+    },
+    {
+      "error_id": "error_0009",
+      "message": "all 1 search executions failed",
+      "stage": "run_research_task",
+      "timestamp": "2026-09-17T23:25:06.020661+00:00",
+      "tool_call_id": "tool_0032",
+      "traceback": "  File \"<frozen runpy>\", line 198, in _run_module_as_main\n  File \"<frozen runpy>\", line 88, in _run_code\n  File \"/tmp/novelty-web-deps/uvicorn/__main__.py\", line 4, in <module>\n    uvicorn.main()\n  File \"/tmp/novelty-web-deps/click/core.py\", line 1631, in __call__\n    return self.main(*args, **kwargs)\n  File \"/tmp/novelty-web-deps/click/core.py\", line 1552, in main\n    rv = self.invoke(ctx)\n  File \"/tmp/novelty-web-deps/click/core.py\", line 1415, in invoke\n    return ctx.invoke(self.callback, **ctx.params)\n  File \"/tmp/novelty-web-deps/click/core.py\", line 910, in invoke\n    return callback(*args, **kwargs)\n  File \"/tmp/novelty-web-deps/uvicorn/main.py\", line 448, in main\n    run(\n  File \"/tmp/novelty-web-deps/uvicorn/main.py\", line 632, in run\n    server.run()\n  File \"/tmp/novelty-web-deps/uvicorn/server.py\", line 86, in run\n    return asyncio_run(self.serve(sockets=sockets), loop_factory=self.config.get_loop_factory())\n  File \"/usr/lib/python3.12/asyncio/runners.py\", line 194, in run\n    return runner.run(main)\n  File \"/usr/lib/python3.12/asyncio/runners.py\", line 118, in run\n    return self._loop.run_until_complete(task)\n  File \"/usr/lib/python3.12/asyncio/base_events.py\", line 674, in run_until_complete\n    self.run_forever()\n  File \"/usr/lib/python3.12/asyncio/base_events.py\", line 641, in run_forever\n    self._run_once()\n  File \"/usr/lib/python3.12/asyncio/base_events.py\", line 1987, in _run_once\n    handle._run()\n  File \"/usr/lib/python3.12/asyncio/events.py\", line 88, in _run\n    self._context.run(self._callback, *self._args)\n  File \"/tmp/nstab-python-deps/langgraph/_internal/_runnable.py\", line 522, in ainvoke\n    ret = await self.afunc(*args, **kwargs)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py\", line 313, in recorded\n    output = await function(state)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py\", line 524, in _run_research_task\n    await self.services.task_researcher.ainvoke(request)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/research_task.py\", line 104, in ainvoke\n    result, trace = await self._research(request)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/research_task.py\", line 114, in _research\n    harness_result = await self.harness.run(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/tool_call_harness.py\", line 122, in run\n    return await self._run(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/tool_call_harness.py\", line 461, in _run\n    runtime.finish_tool_call(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/runtime_artifacts.py\", line 671, in finish_tool_call\n    error_payload = self._coerce_error(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/runtime_artifacts.py\", line 1018, in _coerce_error\n    \"traceback\": \"\".join(traceback_module.format_stack()),\n",
+      "type": "ToolExecutionError"
+    },
+    {
+      "error_id": "error_0010",
+      "message": "all 1 search executions failed",
+      "stage": "run_research_task",
+      "timestamp": "2026-09-17T23:25:07.137333+00:00",
+      "tool_call_id": "tool_0033",
+      "traceback": "  File \"<frozen runpy>\", line 198, in _run_module_as_main\n  File \"<frozen runpy>\", line 88, in _run_code\n  File \"/tmp/novelty-web-deps/uvicorn/__main__.py\", line 4, in <module>\n    uvicorn.main()\n  File \"/tmp/novelty-web-deps/click/core.py\", line 1631, in __call__\n    return self.main(*args, **kwargs)\n  File \"/tmp/novelty-web-deps/click/core.py\", line 1552, in main\n    rv = self.invoke(ctx)\n  File \"/tmp/novelty-web-deps/click/core.py\", line 1415, in invoke\n    return ctx.invoke(self.callback, **ctx.params)\n  File \"/tmp/novelty-web-deps/click/core.py\", line 910, in invoke\n    return callback(*args, **kwargs)\n  File \"/tmp/novelty-web-deps/uvicorn/main.py\", line 448, in main\n    run(\n  File \"/tmp/novelty-web-deps/uvicorn/main.py\", line 632, in run\n    server.run()\n  File \"/tmp/novelty-web-deps/uvicorn/server.py\", line 86, in run\n    return asyncio_run(self.serve(sockets=sockets), loop_factory=self.config.get_loop_factory())\n  File \"/usr/lib/python3.12/asyncio/runners.py\", line 194, in run\n    return runner.run(main)\n  File \"/usr/lib/python3.12/asyncio/runners.py\", line 118, in run\n    return self._loop.run_until_complete(task)\n  File \"/usr/lib/python3.12/asyncio/base_events.py\", line 674, in run_until_complete\n    self.run_forever()\n  File \"/usr/lib/python3.12/asyncio/base_events.py\", line 641, in run_forever\n    self._run_once()\n  File \"/usr/lib/python3.12/asyncio/base_events.py\", line 1987, in _run_once\n    handle._run()\n  File \"/usr/lib/python3.12/asyncio/events.py\", line 88, in _run\n    self._context.run(self._callback, *self._args)\n  File \"/tmp/nstab-python-deps/langgraph/_internal/_runnable.py\", line 522, in ainvoke\n    ret = await self.afunc(*args, **kwargs)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py\", line 313, in recorded\n    output = await function(state)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py\", line 524, in _run_research_task\n    await self.services.task_researcher.ainvoke(request)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/research_task.py\", line 104, in ainvoke\n    result, trace = await self._research(request)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/research_task.py\", line 114, in _research\n    harness_result = await self.harness.run(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/tool_call_harness.py\", line 122, in run\n    return await self._run(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/tool_call_harness.py\", line 461, in _run\n    runtime.finish_tool_call(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/runtime_artifacts.py\", line 671, in finish_tool_call\n    error_payload = self._coerce_error(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/runtime_artifacts.py\", line 1018, in _coerce_error\n    \"traceback\": \"\".join(traceback_module.format_stack()),\n",
+      "type": "ToolExecutionError"
+    },
+    {
+      "error_id": "error_0011",
+      "message": "reader required after database_search returned artifact_ids",
+      "stage": "run_research_task",
+      "timestamp": "2026-09-17T23:25:09.945148+00:00",
+      "tool_call_id": "tool_0034",
+      "traceback": "",
+      "type": "HarnessPolicyError"
+    },
+    {
+      "error_id": "error_0012",
+      "message": "reader required after database_search returned artifact_ids",
+      "stage": "run_research_task",
+      "timestamp": "2026-09-17T23:25:11.560507+00:00",
+      "tool_call_id": "tool_0035",
+      "traceback": "",
+      "type": "HarnessPolicyError"
+    },
+    {
+      "error_id": "error_0013",
+      "message": "all 1 search executions failed",
+      "stage": "run_research_task",
+      "timestamp": "2026-09-17T23:25:23.287568+00:00",
+      "tool_call_id": "tool_0042",
+      "traceback": "  File \"<frozen runpy>\", line 198, in _run_module_as_main\n  File \"<frozen runpy>\", line 88, in _run_code\n  File \"/tmp/novelty-web-deps/uvicorn/__main__.py\", line 4, in <module>\n    uvicorn.main()\n  File \"/tmp/novelty-web-deps/click/core.py\", line 1631, in __call__\n    return self.main(*args, **kwargs)\n  File \"/tmp/novelty-web-deps/click/core.py\", line 1552, in main\n    rv = self.invoke(ctx)\n  File \"/tmp/novelty-web-deps/click/core.py\", line 1415, in invoke\n    return ctx.invoke(self.callback, **ctx.params)\n  File \"/tmp/novelty-web-deps/click/core.py\", line 910, in invoke\n    return callback(*args, **kwargs)\n  File \"/tmp/novelty-web-deps/uvicorn/main.py\", line 448, in main\n    run(\n  File \"/tmp/novelty-web-deps/uvicorn/main.py\", line 632, in run\n    server.run()\n  File \"/tmp/novelty-web-deps/uvicorn/server.py\", line 86, in run\n    return asyncio_run(self.serve(sockets=sockets), loop_factory=self.config.get_loop_factory())\n  File \"/usr/lib/python3.12/asyncio/runners.py\", line 194, in run\n    return runner.run(main)\n  File \"/usr/lib/python3.12/asyncio/runners.py\", line 118, in run\n    return self._loop.run_until_complete(task)\n  File \"/usr/lib/python3.12/asyncio/base_events.py\", line 674, in run_until_complete\n    self.run_forever()\n  File \"/usr/lib/python3.12/asyncio/base_events.py\", line 641, in run_forever\n    self._run_once()\n  File \"/usr/lib/python3.12/asyncio/base_events.py\", line 1987, in _run_once\n    handle._run()\n  File \"/usr/lib/python3.12/asyncio/events.py\", line 88, in _run\n    self._context.run(self._callback, *self._args)\n  File \"/tmp/nstab-python-deps/langgraph/_internal/_runnable.py\", line 522, in ainvoke\n    ret = await self.afunc(*args, **kwargs)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py\", line 313, in recorded\n    output = await function(state)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py\", line 524, in _run_research_task\n    await self.services.task_researcher.ainvoke(request)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/research_task.py\", line 104, in ainvoke\n    result, trace = await self._research(request)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/research_task.py\", line 114, in _research\n    harness_result = await self.harness.run(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/tool_call_harness.py\", line 122, in run\n    return await self._run(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/tool_call_harness.py\", line 461, in _run\n    runtime.finish_tool_call(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/runtime_artifacts.py\", line 671, in finish_tool_call\n    error_payload = self._coerce_error(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/runtime_artifacts.py\", line 1018, in _coerce_error\n    \"traceback\": \"\".join(traceback_module.format_stack()),\n",
+      "type": "ToolExecutionError"
+    },
+    {
+      "error_id": "error_0014",
+      "message": "run model budget exhausted before dispatch",
+      "stage": "synthesize_report",
+      "timestamp": "2026-09-17T23:26:52.447405+00:00",
+      "tool_call_id": null,
+      "traceback": "Traceback (most recent call last):\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py\", line 313, in recorded\n    output = await function(state)\n             ^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py\", line 971, in _synthesize_report\n    report_value = self.services.coordinator.synthesize(\n                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/agents/coordinator.py\", line 264, in synthesize\n    response = self._client().complete(messages, options=options)\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/env/model_client.py\", line 292, in complete\n    _emit_model_call(ModelCallEvent(**common, duration_ms=0, phase=\"START\"))\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/env/model_client.py\", line 114, in _emit_model_call\n    budget(event)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/services/model_budget.py\", line 65, in __call__\n    raise ModelCallBudgetExceeded(\"run model budget exhausted before dispatch\")\nbackend.env.model_client.ModelCallBudgetExceeded: run model budget exhausted before dispatch\n",
+      "type": "ModelCallBudgetExceeded"
+    },
+    {
+      "error_id": "error_0015",
+      "message": "run model budget exhausted before dispatch",
+      "stage": null,
+      "timestamp": "2026-09-17T23:26:52.453200+00:00",
+      "tool_call_id": null,
+      "traceback": "Traceback (most recent call last):\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py\", line 1087, in arun\n    final = await self.graph.ainvoke(\n            ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/tmp/nstab-python-deps/langgraph/pregel/main.py\", line 4090, in ainvoke\n    async for chunk in self.astream(\n  File \"/tmp/nstab-python-deps/langgraph/pregel/main.py\", line 3440, in astream\n    async for _ in runner.atick(\n  File \"/tmp/nstab-python-deps/langgraph/pregel/_runner.py\", line 396, in atick\n    await arun_with_retry(\n  File \"/tmp/nstab-python-deps/langgraph/pregel/_retry.py\", line 744, in arun_with_retry\n    return await task.proc.ainvoke(task.input, config)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/tmp/nstab-python-deps/langgraph/_internal/_runnable.py\", line 756, in ainvoke\n    input = await asyncio.create_task(\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/tmp/nstab-python-deps/langgraph/_internal/_runnable.py\", line 522, in ainvoke\n    ret = await self.afunc(*args, **kwargs)\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py\", line 313, in recorded\n    output = await function(state)\n             ^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py\", line 971, in _synthesize_report\n    report_value = self.services.coordinator.synthesize(\n                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/agents/coordinator.py\", line 264, in synthesize\n    response = self._client().complete(messages, options=options)\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/env/model_client.py\", line 292, in complete\n    _emit_model_call(ModelCallEvent(**common, duration_ms=0, phase=\"START\"))\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/env/model_client.py\", line 114, in _emit_model_call\n    budget(event)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/services/model_budget.py\", line 65, in __call__\n    raise ModelCallBudgetExceeded(\"run model budget exhausted before dispatch\")\nbackend.env.model_client.ModelCallBudgetExceeded: run model budget exhausted before dispatch\nDuring task with name 'synthesize_report' and id 'fb4f042f-db5d-7415-573b-ca255627ffdd'\n",
+      "type": "ModelCallBudgetExceeded"
+    }
+  ],
+  "final_evidence_sufficiency_checks": [
+    {
+      "actual_next_stage": "synthesize_report",
+      "calculated_insufficient_final_evidence_points": [],
+      "calculated_insufficient_point_ids": [],
+      "calculated_status": "PASS",
+      "check_status": "PASS",
+      "configured_cut": 1,
+      "counted_final_valid_card_count": 5,
+      "ignored_card_count": 0,
+      "input_final_valid_card_count": 5,
+      "max_rounds": 2,
+      "output_matches_calculation": true,
+      "point_results": [
+        {
+          "novelty_point_id": "NP-1",
+          "required_card_count": 1,
+          "status": "PASS",
+          "valid_card_count": 2
+        },
+        {
+          "novelty_point_id": "NP-2",
+          "required_card_count": 1,
+          "status": "PASS",
+          "valid_card_count": 2
+        },
+        {
+          "novelty_point_id": "NP-3",
+          "required_card_count": 1,
+          "status": "PASS",
+          "valid_card_count": 1
+        }
+      ],
+      "reported_insufficient_final_evidence_points": [],
+      "round": 1,
+      "round_limit_allows_supplement": false,
+      "stage_id": "stage_0014",
+      "stage_status": "SUCCESS"
+    }
+  ],
+  "integrity_gates": [
+    {
+      "accepted_card_count": 5,
+      "accepted_card_ids": [
+        "card_16f49865227bbd5024828799",
+        "card_c78c542eb6693bc22f4b2289",
+        "card_03c98693329d04887e5fd151",
+        "card_9c36a4194673ed3befbe859e",
+        "card_a3d1e55f728942ba696e5706"
+      ],
+      "checked_card_count": 5,
+      "rejected_card_count": 0,
+      "rejected_card_ids": [],
+      "rejected_cards": [],
+      "stage_name": "validate_synthesis_input",
+      "validation_passed": true
+    }
+  ],
+  "last_completed_stage": "check_final_evidence_sufficiency",
+  "llm_usage": {
+    "by_model": [
+      {
+        "amount_rmb": 1.1323092,
+        "cached_input_tokens": 64768,
+        "calls": 80,
+        "failed_calls": 0,
+        "free_calls": 0,
+        "input_tokens": 702248,
+        "model": "deepseek-ai/DeepSeek-V4-Flash",
+        "output_tokens": 36972,
+        "priced_calls": 80,
+        "reasoning_tokens": 0,
+        "successful_calls": 80,
+        "total_tokens": 739220,
+        "unpriced_calls": 0,
+        "usage_unavailable_calls": 0
+      }
+    ],
+    "totals": {
+      "amount_rmb": 1.1323092,
+      "cached_input_tokens": 64768,
+      "calls": 80,
+      "cost_completeness": "COMPLETE",
+      "currency": "RMB",
+      "failed_calls": 0,
+      "free_calls": 0,
+      "input_tokens": 702248,
+      "output_tokens": 36972,
+      "priced_calls": 80,
+      "reasoning_tokens": 0,
+      "successful_calls": 80,
+      "total_tokens": 739220,
+      "unpriced_calls": 0,
+      "usage_unavailable_calls": 0
+    }
+  },
+  "outcome": null,
+  "provider_requests": {
+    "api_elapsed_ms": 7670.857,
+    "average_batch_size": 3.0,
+    "batch_count": 5,
+    "by_transport": {
+      "api": {
+        "api_elapsed_ms": 7670.857,
+        "average_batch_size": 3.0,
+        "batch_count": 5,
+        "circuit_open_count": 0,
+        "dedup_count": 0,
+        "http_200_count": 23,
+        "http_429_count": 0,
+        "interval_violation_count": 0,
+        "logical_api_requests": 33,
+        "logical_web_requests": 0,
+        "max_batch_size": 4,
+        "metadata_batch_ratio": 3.0,
+        "metadata_logical_requests": 15,
+        "metadata_physical_requests": 5,
+        "physical_api_requests": 23,
+        "physical_web_requests": 0,
+        "queue_wait_ms": 194481.973,
+        "read_timeout_count": 0,
+        "request_compression_ratio": 1.434782608695652,
+        "retry_count": 0,
+        "status_counts": {
+          "200": 23
+        },
+        "timeout_count": 0,
+        "total_arxiv_elapsed_ms": 88177.001,
+        "transports": [
+          "api"
+        ],
+        "unique_metadata_ids": 15
+      }
+    },
+    "circuit_open_count": 0,
+    "dedup_count": 0,
+    "http_200_count": 23,
+    "http_429_count": 0,
+    "interval_violation_count": 0,
+    "logical_api_requests": 33,
+    "logical_web_requests": 0,
+    "max_batch_size": 4,
+    "metadata_batch_ratio": 3.0,
+    "metadata_logical_requests": 15,
+    "metadata_physical_requests": 5,
+    "physical_api_requests": 23,
+    "physical_web_requests": 0,
+    "queue_wait_ms": 194481.973,
+    "read_timeout_count": 0,
+    "request_compression_ratio": 1.434782608695652,
+    "retry_count": 0,
+    "status_counts": {
+      "200": 23
+    },
+    "timeout_count": 0,
+    "total_arxiv_elapsed_ms": 88177.001,
+    "transports": [
+      "api"
+    ],
+    "unique_metadata_ids": 15
+  },
+  "reviewer_information_adjudication_checks": [
+    {
+      "actual_next_stage": "validate_synthesis_input",
+      "cards_preserved": true,
+      "duplicate_review_point_ids": [],
+      "expected_point_ids": [
+        "NP-1",
+        "NP-2",
+        "NP-3"
+      ],
+      "input_card_ids": [
+        "card_16f49865227bbd5024828799",
+        "card_c78c542eb6693bc22f4b2289",
+        "card_03c98693329d04887e5fd151",
+        "card_9c36a4194673ed3befbe859e",
+        "card_a3d1e55f728942ba696e5706"
+      ],
+      "missing_review_point_ids": [],
+      "output_card_ids": [
+        "card_16f49865227bbd5024828799",
+        "card_c78c542eb6693bc22f4b2289",
+        "card_03c98693329d04887e5fd151",
+        "card_9c36a4194673ed3befbe859e",
+        "card_a3d1e55f728942ba696e5706"
+      ],
+      "point_scopes": [
+        {
+          "allowed_artifact_ids": [
+            "art_1d1fa7ff3a1183988e64f3cf",
+            "art_25909f55700f4728930d8a24"
+          ],
+          "card_ids": [
+            "card_16f49865227bbd5024828799",
+            "card_c78c542eb6693bc22f4b2289"
+          ],
+          "novelty_point_id": "NP-1",
+          "referenced_evidence_ids": [
+            "ev_52b0ec921f23aebc8c077314",
+            "ev_5b4b495e5698c2b37806e96d",
+            "ev_8a9e03a918ddec4439dd13b3",
+            "ev_ff622eca127e5924ceca1846"
+          ],
+          "unresolved_evidence_ids": []
+        },
+        {
+          "allowed_artifact_ids": [
+            "art_00ea5d4bffcc0be9ca49ba34",
+            "art_54da6e025cc0ed386d08e5d1"
+          ],
+          "card_ids": [
+            "card_03c98693329d04887e5fd151",
+            "card_9c36a4194673ed3befbe859e"
+          ],
+          "novelty_point_id": "NP-2",
+          "referenced_evidence_ids": [
+            "ev_a71ee6bafc7ef7788c2d8a09",
+            "ev_f2a97cd413e1487a83c85ef1"
+          ],
+          "unresolved_evidence_ids": []
+        },
+        {
+          "allowed_artifact_ids": [
+            "art_044b624240993e16c40f3537"
+          ],
+          "card_ids": [
+            "card_a3d1e55f728942ba696e5706"
+          ],
+          "novelty_point_id": "NP-3",
+          "referenced_evidence_ids": [
+            "ev_13b4594f3569c0595e41f96d",
+            "ev_83d1a72ee86dbe0bed579417"
+          ],
+          "unresolved_evidence_ids": []
+        }
+      ],
+      "review_results": [
+        {
+          "confidence": 0.7,
+          "has_supplement_request": false,
+          "highly_relevant_work_count": 2,
+          "novelty_point_id": "NP-1",
+          "status": "reviewed",
+          "supplement_reason": null,
+          "verdict": "partially_novel"
+        },
+        {
+          "confidence": null,
+          "has_supplement_request": true,
+          "highly_relevant_work_count": 1,
+          "novelty_point_id": "NP-2",
+          "status": "insufficient_evidence",
+          "supplement_reason": "最终裁定依赖未核验的关键差异：SDT-GNN是否采用领导-工作者模式、图摘要小批量训练、注意力层返回及同步更新机制，这些特征在摘要中未提及，需全文核验。同时，card_03c98693329d04887e5fd151因技术错误未完成，需重新核验该文献。",
+          "verdict": null
+        },
+        {
+          "confidence": null,
+          "has_supplement_request": true,
+          "highly_relevant_work_count": 0,
+          "novelty_point_id": "NP-3",
+          "status": "insufficient_evidence",
+          "supplement_reason": "全部单卡核验因运行错误或预算限制未完成；未调用模型汇总。",
+          "verdict": null
+        }
+      ],
+      "reviewed_point_ids": [
+        "NP-1",
+        "NP-2",
+        "NP-3"
+      ],
+      "stage_id": "stage_0012",
+      "stage_status": "SUCCESS",
+      "supplement_requests_control_route": false,
+      "unexpected_review_point_ids": [],
+      "unresolved_evidence_ids": []
+    }
+  ],
+  "run": {
+    "duration_ms": 214456,
+    "end_time": "2026-09-17T23:26:52.454505+00:00",
+    "entrypoint": null,
+    "input_identity": {},
+    "paper_id": "68a4a79d0db14daabb81385dfbb0aaa9",
+    "run_id": "run-077b58eed445407c85084aca2bd02ce5",
+    "start_time": "2026-09-17T23:23:18.043522+00:00",
+    "status": "FAILED"
+  },
+  "stages": [
+    {
+      "duration": 9.030072,
+      "duration_ms": 9030,
+      "error": null,
+      "finished_at": "2026-09-17T23:23:27.097351+00:00",
+      "parent_stage_id": null,
+      "scope": {},
+      "stage_id": "stage_0001",
+      "stage_name": "extract_points",
+      "started_at": "2026-09-17T23:23:18.058817+00:00",
+      "status": "SUCCESS",
+      "validation_result": null
+    },
+    {
+      "duration": 0.000284,
+      "duration_ms": 0,
+      "error": null,
+      "finished_at": "2026-09-17T23:23:27.112485+00:00",
+      "parent_stage_id": null,
+      "scope": {},
+      "stage_id": "stage_0002",
+      "stage_name": "plan",
+      "started_at": "2026-09-17T23:23:27.102578+00:00",
+      "status": "SUCCESS",
+      "validation_result": null
+    },
+    {
+      "duration": 4.6e-05,
+      "duration_ms": 0,
+      "error": null,
+      "finished_at": "2026-09-17T23:23:27.128385+00:00",
+      "parent_stage_id": null,
+      "scope": {},
+      "stage_id": "stage_0003",
+      "stage_name": "dispatch_planning_tasks",
+      "started_at": "2026-09-17T23:23:27.117652+00:00",
+      "status": "SUCCESS",
+      "validation_result": null
+    },
+    {
+      "duration": 4.871854,
+      "duration_ms": 4871,
+      "error": null,
+      "finished_at": "2026-09-17T23:23:32.009864+00:00",
+      "parent_stage_id": null,
+      "scope": {
+        "attempt": 1,
+        "point_id": "NP-1",
+        "task_id": "T-1"
+      },
+      "stage_id": "stage_0004",
+      "stage_name": "plan_research_task",
+      "started_at": "2026-09-17T23:23:27.133855+00:00",
+      "status": "SUCCESS",
+      "validation_result": null
+    },
+    {
+      "duration": 4.918727,
+      "duration_ms": 4918,
+      "error": null,
+      "finished_at": "2026-09-17T23:23:36.935918+00:00",
+      "parent_stage_id": null,
+      "scope": {
+        "attempt": 1,
+        "point_id": "NP-2",
+        "task_id": "T-1"
+      },
+      "stage_id": "stage_0005",
+      "stage_name": "plan_research_task",
+      "started_at": "2026-09-17T23:23:32.013830+00:00",
+      "status": "SUCCESS",
+      "validation_result": null
+    },
+    {
+      "duration": 2.677267,
+      "duration_ms": 2677,
+      "error": null,
+      "finished_at": "2026-09-17T23:23:39.618753+00:00",
+      "parent_stage_id": null,
+      "scope": {
+        "attempt": 1,
+        "point_id": "NP-3",
+        "task_id": "T-1"
+      },
+      "stage_id": "stage_0006",
+      "stage_name": "plan_research_task",
+      "started_at": "2026-09-17T23:23:36.938512+00:00",
+      "status": "SUCCESS",
+      "validation_result": null
+    },
+    {
+      "duration": 5.8e-05,
+      "duration_ms": 0,
+      "error": null,
+      "finished_at": "2026-09-17T23:23:39.633862+00:00",
+      "parent_stage_id": null,
+      "scope": {},
+      "stage_id": "stage_0007",
+      "stage_name": "dispatch_research_tasks",
+      "started_at": "2026-09-17T23:23:39.622683+00:00",
+      "status": "SUCCESS",
+      "validation_result": null
+    },
+    {
+      "duration": 127.734175,
+      "duration_ms": 127734,
+      "error": null,
+      "finished_at": "2026-09-17T23:25:47.377521+00:00",
+      "parent_stage_id": null,
+      "scope": {
+        "attempt": 1,
+        "point_id": "NP-1",
+        "task_id": "T-1"
+      },
+      "stage_id": "stage_0008",
+      "stage_name": "run_research_task",
+      "started_at": "2026-09-17T23:23:39.639298+00:00",
+      "status": "SUCCESS",
+      "validation_result": null
+    },
+    {
+      "duration": 88.681489,
+      "duration_ms": 88681,
+      "error": null,
+      "finished_at": "2026-09-17T23:25:08.332015+00:00",
+      "parent_stage_id": null,
+      "scope": {
+        "attempt": 1,
+        "point_id": "NP-2",
+        "task_id": "T-1"
+      },
+      "stage_id": "stage_0009",
+      "stage_name": "run_research_task",
+      "started_at": "2026-09-17T23:23:39.646921+00:00",
+      "status": "SUCCESS",
+      "validation_result": null
+    },
+    {
+      "duration": 118.573058,
+      "duration_ms": 118573,
+      "error": null,
+      "finished_at": "2026-09-17T23:25:38.236888+00:00",
+      "parent_stage_id": null,
+      "scope": {
+        "attempt": 1,
+        "point_id": "NP-3",
+        "task_id": "T-1"
+      },
+      "stage_id": "stage_0010",
+      "stage_name": "run_research_task",
+      "started_at": "2026-09-17T23:23:39.657062+00:00",
+      "status": "SUCCESS",
+      "validation_result": null
+    },
+    {
+      "duration": 0.002765,
+      "duration_ms": 2,
+      "error": null,
+      "finished_at": "2026-09-17T23:25:47.437092+00:00",
+      "parent_stage_id": null,
+      "scope": {},
+      "stage_id": "stage_0011",
+      "stage_name": "validate_evidence",
+      "started_at": "2026-09-17T23:25:47.392670+00:00",
+      "status": "SUCCESS",
+      "validation_result": null
+    },
+    {
+      "debug_details": {
+        "reviewer_information_adjudication": {
+          "cards_preserved": true,
+          "duplicate_review_point_ids": [],
+          "expected_point_ids": [
+            "NP-1",
+            "NP-2",
+            "NP-3"
+          ],
+          "input_card_ids": [
+            "card_16f49865227bbd5024828799",
+            "card_c78c542eb6693bc22f4b2289",
+            "card_03c98693329d04887e5fd151",
+            "card_9c36a4194673ed3befbe859e",
+            "card_a3d1e55f728942ba696e5706"
+          ],
+          "missing_review_point_ids": [],
+          "output_card_ids": [
+            "card_16f49865227bbd5024828799",
+            "card_c78c542eb6693bc22f4b2289",
+            "card_03c98693329d04887e5fd151",
+            "card_9c36a4194673ed3befbe859e",
+            "card_a3d1e55f728942ba696e5706"
+          ],
+          "point_scopes": [
+            {
+              "allowed_artifact_ids": [
+                "art_1d1fa7ff3a1183988e64f3cf",
+                "art_25909f55700f4728930d8a24"
+              ],
+              "card_ids": [
+                "card_16f49865227bbd5024828799",
+                "card_c78c542eb6693bc22f4b2289"
+              ],
+              "novelty_point_id": "NP-1",
+              "referenced_evidence_ids": [
+                "ev_52b0ec921f23aebc8c077314",
+                "ev_5b4b495e5698c2b37806e96d",
+                "ev_8a9e03a918ddec4439dd13b3",
+                "ev_ff622eca127e5924ceca1846"
+              ],
+              "unresolved_evidence_ids": []
+            },
+            {
+              "allowed_artifact_ids": [
+                "art_00ea5d4bffcc0be9ca49ba34",
+                "art_54da6e025cc0ed386d08e5d1"
+              ],
+              "card_ids": [
+                "card_03c98693329d04887e5fd151",
+                "card_9c36a4194673ed3befbe859e"
+              ],
+              "novelty_point_id": "NP-2",
+              "referenced_evidence_ids": [
+                "ev_a71ee6bafc7ef7788c2d8a09",
+                "ev_f2a97cd413e1487a83c85ef1"
+              ],
+              "unresolved_evidence_ids": []
+            },
+            {
+              "allowed_artifact_ids": [
+                "art_044b624240993e16c40f3537"
+              ],
+              "card_ids": [
+                "card_a3d1e55f728942ba696e5706"
+              ],
+              "novelty_point_id": "NP-3",
+              "referenced_evidence_ids": [
+                "ev_13b4594f3569c0595e41f96d",
+                "ev_83d1a72ee86dbe0bed579417"
+              ],
+              "unresolved_evidence_ids": []
+            }
+          ],
+          "review_results": [
+            {
+              "confidence": 0.7,
+              "has_supplement_request": false,
+              "highly_relevant_work_count": 2,
+              "novelty_point_id": "NP-1",
+              "status": "reviewed",
+              "supplement_reason": null,
+              "verdict": "partially_novel"
+            },
+            {
+              "confidence": null,
+              "has_supplement_request": true,
+              "highly_relevant_work_count": 1,
+              "novelty_point_id": "NP-2",
+              "status": "insufficient_evidence",
+              "supplement_reason": "最终裁定依赖未核验的关键差异：SDT-GNN是否采用领导-工作者模式、图摘要小批量训练、注意力层返回及同步更新机制，这些特征在摘要中未提及，需全文核验。同时，card_03c98693329d04887e5fd151因技术错误未完成，需重新核验该文献。",
+              "verdict": null
+            },
+            {
+              "confidence": null,
+              "has_supplement_request": true,
+              "highly_relevant_work_count": 0,
+              "novelty_point_id": "NP-3",
+              "status": "insufficient_evidence",
+              "supplement_reason": "全部单卡核验因运行错误或预算限制未完成；未调用模型汇总。",
+              "verdict": null
+            }
+          ],
+          "reviewed_point_ids": [
+            "NP-1",
+            "NP-2",
+            "NP-3"
+          ],
+          "supplement_requests_control_route": false,
+          "unexpected_review_point_ids": [],
+          "unresolved_evidence_ids": []
+        }
+      },
+      "duration": 64.78561,
+      "duration_ms": 64785,
+      "error": null,
+      "finished_at": "2026-09-17T23:26:52.269838+00:00",
+      "parent_stage_id": null,
+      "scope": {},
+      "stage_id": "stage_0012",
+      "stage_name": "review_evidence",
+      "started_at": "2026-09-17T23:25:47.441440+00:00",
+      "status": "SUCCESS",
+      "validation_result": null
+    },
+    {
+      "duration": 0.011807,
+      "duration_ms": 11,
+      "error": null,
+      "finished_at": "2026-09-17T23:26:52.338228+00:00",
+      "parent_stage_id": null,
+      "scope": {},
+      "stage_id": "stage_0013",
+      "stage_name": "validate_synthesis_input",
+      "started_at": "2026-09-17T23:26:52.276028+00:00",
+      "status": "SUCCESS",
+      "validation_result": {
+        "accepted_card_count": 5,
+        "accepted_card_ids": [
+          "card_16f49865227bbd5024828799",
+          "card_c78c542eb6693bc22f4b2289",
+          "card_03c98693329d04887e5fd151",
+          "card_9c36a4194673ed3befbe859e",
+          "card_a3d1e55f728942ba696e5706"
+        ],
+        "checked_card_count": 5,
+        "rejected_card_count": 0,
+        "rejected_card_ids": [],
+        "rejected_cards": [],
+        "validation_passed": true
+      }
+    },
+    {
+      "debug_details": {
+        "final_evidence_sufficiency": {
+          "calculated_insufficient_final_evidence_points": [],
+          "calculated_insufficient_point_ids": [],
+          "calculated_status": "PASS",
+          "check_status": "PASS",
+          "configured_cut": 1,
+          "counted_final_valid_card_count": 5,
+          "ignored_card_count": 0,
+          "input_final_valid_card_count": 5,
+          "max_rounds": 2,
+          "output_matches_calculation": true,
+          "point_results": [
+            {
+              "novelty_point_id": "NP-1",
+              "required_card_count": 1,
+              "status": "PASS",
+              "valid_card_count": 2
+            },
+            {
+              "novelty_point_id": "NP-2",
+              "required_card_count": 1,
+              "status": "PASS",
+              "valid_card_count": 2
+            },
+            {
+              "novelty_point_id": "NP-3",
+              "required_card_count": 1,
+              "status": "PASS",
+              "valid_card_count": 1
+            }
+          ],
+          "reported_insufficient_final_evidence_points": [],
+          "round": 1,
+          "round_limit_allows_supplement": false
+        }
+      },
+      "duration": 0.000295,
+      "duration_ms": 0,
+      "error": null,
+      "finished_at": "2026-09-17T23:26:52.388294+00:00",
+      "parent_stage_id": null,
+      "scope": {},
+      "stage_id": "stage_0014",
+      "stage_name": "check_final_evidence_sufficiency",
+      "started_at": "2026-09-17T23:26:52.342589+00:00",
+      "status": "SUCCESS",
+      "validation_result": null
+    },
+    {
+      "duration": 0.005424,
+      "duration_ms": 5,
+      "error": {
+        "message": "run model budget exhausted before dispatch",
+        "stage": "synthesize_report",
+        "timestamp": "2026-09-17T23:26:52.447405+00:00",
+        "tool_call_id": null,
+        "traceback": "Traceback (most recent call last):\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py\", line 313, in recorded\n    output = await function(state)\n             ^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py\", line 971, in _synthesize_report\n    report_value = self.services.coordinator.synthesize(\n                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/agents/coordinator.py\", line 264, in synthesize\n    response = self._client().complete(messages, options=options)\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/env/model_client.py\", line 292, in complete\n    _emit_model_call(ModelCallEvent(**common, duration_ms=0, phase=\"START\"))\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/env/model_client.py\", line 114, in _emit_model_call\n    budget(event)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/services/model_budget.py\", line 65, in __call__\n    raise ModelCallBudgetExceeded(\"run model budget exhausted before dispatch\")\nbackend.env.model_client.ModelCallBudgetExceeded: run model budget exhausted before dispatch\n",
+        "type": "ModelCallBudgetExceeded"
+      },
+      "finished_at": "2026-09-17T23:26:52.445352+00:00",
+      "parent_stage_id": null,
+      "scope": {},
+      "stage_id": "stage_0015",
+      "stage_name": "synthesize_report",
+      "started_at": "2026-09-17T23:26:52.393055+00:00",
+      "status": "FAILED",
+      "validation_result": null
+    },
+    {
+      "duration": null,
+      "duration_ms": null,
+      "error": null,
+      "finished_at": null,
+      "stage_id": null,
+      "stage_name": "plan_supplement",
+      "started_at": null,
+      "status": "NOT_RUN"
+    },
+    {
+      "duration": null,
+      "duration_ms": null,
+      "error": null,
+      "finished_at": null,
+      "stage_id": null,
+      "stage_name": "validate_report_integrity",
+      "started_at": null,
+      "status": "NOT_RUN"
+    },
+    {
+      "duration": null,
+      "duration_ms": null,
+      "error": null,
+      "finished_at": null,
+      "stage_id": null,
+      "stage_name": "persist_report",
+      "started_at": null,
+      "status": "NOT_RUN"
+    },
+    {
+      "duration": null,
+      "duration_ms": null,
+      "error": null,
+      "finished_at": null,
+      "stage_id": null,
+      "stage_name": "render_report",
+      "started_at": null,
+      "status": "NOT_RUN"
+    }
+  ],
+  "tool_calls": [
+    {
+      "calls": 20,
+      "empty": 0,
+      "failed": 12,
+      "success": 8,
+      "tool_name": "database_search"
+    },
+    {
+      "calls": 11,
+      "empty": 10,
+      "failed": 1,
+      "success": 10,
+      "tool_name": "reference_search"
+    },
+    {
+      "calls": 30,
+      "empty": 0,
+      "failed": 0,
+      "success": 30,
+      "tool_name": "reader"
+    }
+  ]
+}
