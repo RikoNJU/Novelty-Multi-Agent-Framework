@@ -95,7 +95,7 @@ def test_default_text_llm_roles_are_unified_on_deepseek_v4_flash():
     assert config.project.processing["ocr_model"] == "deepseek-ocr"
 
 
-def test_official_deepseek_profile_supports_enable_thinking():
+def test_official_deepseek_profile_maps_thinking_switch():
     config = load_application_config(environ={"DEEPSEEK_API_KEY": "test-key"})
 
     profile = config.models["deepseek-official-flash"]
@@ -106,9 +106,19 @@ def test_official_deepseek_profile_supports_enable_thinking():
     )
 
     assert profile.base_url == "https://api.deepseek.com"
-    assert profile.model == "deepseek-v4-flash"
+    assert profile.model == "deepseek-flash"
     assert "enable_thinking" in profile.supported_params
-    assert payload["enable_thinking"] is False
+    assert payload["thinking"] == {"type": "disabled"}
+    assert "enable_thinking" not in payload
+
+
+def test_processing_models_can_use_official_provider():
+    config = load_application_config(environ={
+        "NOVELTY_PROCESSING_LLM_MODEL": "deepseek-official-flash",
+        "NOVELTY_PROCESSING_OCR_MODEL": "deepseek-official-flash",
+    })
+    assert config.project.processing["llm_model"] == "deepseek-official-flash"
+    assert config.project.processing["ocr_model"] == "deepseek-official-flash"
 
 
 def test_search_planner_example_filename_is_canonical():

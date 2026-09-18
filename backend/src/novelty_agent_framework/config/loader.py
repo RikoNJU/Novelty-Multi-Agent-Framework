@@ -66,6 +66,12 @@ def _apply_model_overrides(raw: dict[str, Any], environ: Mapping[str, str]) -> N
         value = next((environ[name] for name in names if environ.get(name)), None)
         if value:
             raw[role]["model"]["alias"] = value
+    for field, name in (
+        ("llm_model", "NOVELTY_PROCESSING_LLM_MODEL"),
+        ("ocr_model", "NOVELTY_PROCESSING_OCR_MODEL"),
+    ):
+        if environ.get(name):
+            raw["project"]["processing"][field] = environ[name]
 
 
 def _apply_database_overrides(

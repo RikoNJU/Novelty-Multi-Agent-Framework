@@ -442,10 +442,16 @@ class OpenAICompatibleChatClient:
             ):
                 continue
             if key in profile.supported_params and key not in payload:
-                payload[key] = value
+                if profile.base_url.rstrip("/") == "https://api.deepseek.com" and key == "enable_thinking":
+                    payload["thinking"] = {"type": "enabled" if value else "disabled"}
+                else:
+                    payload[key] = value
         for key, value in (options.extra_body or {}).items():
             if key in profile.supported_params:
-                payload[key] = value
+                if profile.base_url.rstrip("/") == "https://api.deepseek.com" and key == "enable_thinking":
+                    payload["thinking"] = {"type": "enabled" if value else "disabled"}
+                else:
+                    payload[key] = value
         return payload
 
     async def acomplete(
