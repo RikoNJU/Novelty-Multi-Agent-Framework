@@ -2,7 +2,7 @@
 
 基于 LangGraph 的论文查新辅助系统。输入一篇论文，系统提取查新点、规划检索任务、并行调研文献、对证据做确定性校验与门控，最终产出一份可回溯到原文的查新报告。
 
-本系统为研究原型与辅助工具，**不能替代正式科技查新机构**，也不使用“世界首创”“绝对原创”等超出检索能力的表述。
+本系统为研究原型与辅助工具，**不能替代正式科技查新机构**。
 
 ## 项目结构
 
@@ -71,21 +71,6 @@ SILICONFLOW_API_KEY=...
 - 厂商私有参数（如 `enable_thinking`）经 `supported_params` 白名单过滤后透传，换模型不会因多余参数失败；
 - 逐次调用的用量与费用按 `config/llm_pricing.json` 的单价表计算，未知单价标记为 `UNPRICED`。
 
-### 数据源配置
-
-数据源通过 `RetrievalSourceRegistry` 注册，由 `retrieval.active_source` 选择：
-
-| 数据源 | 默认状态 | 说明 |
-| --- | --- | --- |
-| arXiv | 启用 | 当前能力完整的结构化来源，支持元数据与全文 |
-| ScienceDirect | 禁用 | 已完成离线 API 契约测试，启用需 Elsevier Key |
-| Springer Nature | 禁用 | Meta API 检索，开放全文 JATS；TDM 全文需另行授权 |
-| IEEE Xplore | 禁用 | Metadata API 检索，默认仅尝试 Open Access 全文 |
-| null_catalog | 可选 | 离线 Null Object，永远返回空结果，用于验证注册与空结果处理 |
-
-arXiv 接口限流由进程级共享调度统一处理（最小间隔、`Retry-After`、有限重试、预算上限与熔断）。接口不可用时可显式配置 Web 通道作为替代检索路径。
-
-新增数据源的 Provider 边界与配置要求见 [`docs/database-providers.md`](docs/database-providers.md)。
 
 ### 前端环境
 
@@ -191,11 +176,3 @@ outputs/<paper_id>/
 后端直接以 `python -m novelty_agent_framework.main` 启动，由同源代理统一处理鉴权。
 
 前端生产部署需将 `dist/` 作为静态目录，并将同源 `/api/novelty/` 反向代理到后端；不得将未知路径或 API 错误回退为 `index.html`。报告跨域地址被拒绝，不在浏览器存储中保存令牌或论文内容。
-
-## 文档
-
-- [代码框架说明](docs/code-framework.md)
-- [代码框架详细说明](docs/code-framework-detailed.md)
-- [数据库接入报告](docs/database-integration-report.md)
-- [数据源接入规范](docs/database-providers.md)
-- [初始设计 V0](docs/design-v0.md)
