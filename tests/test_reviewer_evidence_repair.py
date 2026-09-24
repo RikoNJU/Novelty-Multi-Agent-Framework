@@ -82,6 +82,7 @@ def test_reviewer_budget_finalization_registers_only_cited_read() -> None:
     assert len(client.calls) == 2
     assert client.calls[-1][1].tools == () and client.calls[-1][1].tool_choice == "none"
     assert "cards=[]" not in client.calls[-1][0][-1].content
+    assert "不得复制输入 Evidence.provenance.read_id" in client.calls[0][0][0].content
 
 
 def test_selected_read_quote_reaches_summary_without_repeated_feature_ref() -> None:

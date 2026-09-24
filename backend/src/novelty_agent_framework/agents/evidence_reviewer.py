@@ -100,6 +100,8 @@ _EVIDENCE_BOUNDARY = (
     "保留已证实的局部重合；多篇分别覆盖部分特征不等于单篇公开完整组合。"
     "检索或获取失败、零命中、未展示证据均不能支持新颖性。"
     "不影响当前有限结论的次要未知可以作为局限保留。"
+    "read_citations 只能填写本轮 reader 工具实际返回的 read_id；本轮未调用 reader 时"
+    "必须输出空数组，不得复制输入 Evidence.provenance.read_id。"
 )
 
 _CARD_FALLBACK = (
