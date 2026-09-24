@@ -211,7 +211,10 @@ class NoveltyCoordinatorAgent(NoveltyCoordinator):
         """
 
         payload = {
-            "paper": paper.model_dump(mode="json"),
+            # The brief and reviews already contain the derived technical
+            # context. Resending full text and extracted assets here can dwarf
+            # the small narrative draft requested from the model.
+            "paper": _report_paper_context(paper),
             "brief": brief.model_dump(mode="json"),
             "evidence": [item.model_dump(mode="json") for item in evidence],
             "novelty_reviews": [
@@ -394,6 +397,20 @@ class NoveltyCoordinatorAgent(NoveltyCoordinator):
             "你不能编造文献、DOI、URL 或证据位置；证据不足时必须显式说明。"
             "你的输出必须严格符合调用方要求的 JSON schema。"
         )
+
+
+def _report_paper_context(paper: PaperInput) -> dict[str, Any]:
+    """Project PaperInput to fields needed for report narrative wording."""
+
+    return {
+        "paper_id": paper.paper_id,
+        "title": paper.title,
+        "abstract": paper.abstract,
+        "english_abstract": paper.english_abstract,
+        "claimed_contributions": list(paper.claimed_contributions),
+        "keywords_zh": list(paper.keywords_zh),
+        "keywords_en": list(paper.keywords_en),
+    }
 
 
 

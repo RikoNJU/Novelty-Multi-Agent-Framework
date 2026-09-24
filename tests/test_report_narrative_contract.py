@@ -144,12 +144,12 @@ class _Client:
         return result
 
 
-def _synthesize(client):
+def _synthesize(client, paper=None):
     points, cards, reviews, draft = _case(1)
     agent = NoveltyCoordinatorAgent(model_client=client, model_options=ModelCallOptions(max_tokens=4096))
     brief = NoveltyBrief(paper_summary="summary", research_problem="problem", novelty_points=points)
     return agent.synthesize(
-        PaperInput(paper_id="paper", title="Paper", full_text="body"),
+        paper or PaperInput(paper_id="paper", title="Paper", full_text="body"),
         brief=brief, evidence=cards, novelty_reviews=reviews,
         rejected_evidence=[], insufficient_final_evidence_points=[],
     )
@@ -195,3 +195,25 @@ def test_complete_bad_draft_gets_one_correction_with_same_schema():
     assert len(client.calls) == 2
     assert "ReportNarrativeDraft" in client.calls[1][0][-1].content
     assert "NoveltyReport" not in client.calls[1][0][-1].content
+
+
+def test_synthesis_prompt_uses_compact_paper_context_without_full_text():
+    good = json.dumps({"conclusions": [{
+        "novelty_point_id": "P-0", "summary": "short",
+        "supporting_card_ids": ["P-card-0"], "counter_card_ids": [],
+    }], "limitations": []})
+    client = _Client([ModelResponse(content=good)])
+    paper = PaperInput(
+        paper_id="paper",
+        title="Paper title",
+        abstract="Trusted abstract",
+        full_text="FULL_TEXT_SENTINEL_SHOULD_NOT_REACH_SYNTHESIS",
+        references=["REFERENCE_SENTINEL_SHOULD_NOT_REACH_SYNTHESIS"],
+    )
+
+    _synthesize(client, paper)
+
+    prompt = client.calls[0][0][-1].content
+    assert "Paper title" in prompt and "Trusted abstract" in prompt
+    assert "FULL_TEXT_SENTINEL_SHOULD_NOT_REACH_SYNTHESIS" not in prompt
+    assert "REFERENCE_SENTINEL_SHOULD_NOT_REACH_SYNTHESIS" not in prompt
