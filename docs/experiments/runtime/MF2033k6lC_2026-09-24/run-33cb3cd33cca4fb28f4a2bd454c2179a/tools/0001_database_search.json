@@ -1,0 +1,401 @@
+{
+  "agent_arguments": {
+    "full_text_source_record_ids": [],
+    "source_id": "arxiv"
+  },
+  "agent_tool_call_id": "chatcmpl-tool-7d110f90ccf54a879d3f72f60d53782d",
+  "business_status": "PROVIDER_FAILED",
+  "duration": 0.717759,
+  "duration_ms": 717,
+  "error": {
+    "message": "all 1 search executions failed",
+    "stage": "run_research_task",
+    "timestamp": "2026-09-24T20:51:41.381553+00:00",
+    "tool_call_id": "tool_0001",
+    "traceback": "  File \"<workspace>/scripts/run_full_workflow_live.py\", line 224, in <module>\n    main()\n  File \"<workspace>/scripts/run_full_workflow_live.py\", line 126, in main\n    result = workflow.run(paper, run_identity=identity)\n  File \"<workspace>/backend/src/novelty_agent_framework/workflows/novelty.py\", line 1129, in run\n    return asyncio.run(self.arun(paper, run_identity=run_identity))\n  File \"<python-env>/lib/python3.11/asyncio/runners.py\", line 190, in run\n    return runner.run(main)\n  File \"<python-env>/lib/python3.11/asyncio/runners.py\", line 118, in run\n    return self._loop.run_until_complete(task)\n  File \"<python-env>/lib/python3.11/asyncio/base_events.py\", line 641, in run_until_complete\n    self.run_forever()\n  File \"<python-env>/lib/python3.11/asyncio/base_events.py\", line 608, in run_forever\n    self._run_once()\n  File \"<python-env>/lib/python3.11/asyncio/base_events.py\", line 1936, in _run_once\n    handle._run()\n  File \"<python-env>/lib/python3.11/asyncio/events.py\", line 84, in _run\n    self._context.run(self._callback, *self._args)\n  File \"<python-env>/lib/python3.11/site-packages/langgraph/_internal/_runnable.py\", line 501, in ainvoke\n    ret = await self.afunc(*args, **kwargs)\n  File \"<workspace>/backend/src/novelty_agent_framework/workflows/novelty.py\", line 313, in recorded\n    output = await function(state)\n  File \"<workspace>/backend/src/novelty_agent_framework/workflows/novelty.py\", line 524, in _run_research_task\n    await self.services.task_researcher.ainvoke(request)\n  File \"<workspace>/backend/src/novelty_agent_framework/workflows/research_task.py\", line 104, in ainvoke\n    result, trace = await self._research(request)\n  File \"<workspace>/backend/src/novelty_agent_framework/workflows/research_task.py\", line 114, in _research\n    harness_result = await self.harness.run(\n  File \"<workspace>/backend/src/novelty_agent_framework/core/tool_call_harness.py\", line 122, in run\n    return await self._run(\n  File \"<workspace>/backend/src/novelty_agent_framework/core/tool_call_harness.py\", line 461, in _run\n    runtime.finish_tool_call(\n  File \"<workspace>/backend/src/novelty_agent_framework/core/runtime_artifacts.py\", line 671, in finish_tool_call\n    error_payload = self._coerce_error(\n  File \"<workspace>/backend/src/novelty_agent_framework/core/runtime_artifacts.py\", line 1018, in _coerce_error\n    \"traceback\": \"\".join(traceback_module.format_stack()),\n",
+    "type": "ToolExecutionError"
+  },
+  "execution_status": "FAILED",
+  "failure_phase": "TOOL_EXECUTION",
+  "finished_at": "2026-09-24T20:51:41.381564+00:00",
+  "normalized_result": {
+    "error": "all 1 search executions failed",
+    "execution_summary": {
+      "all_failed": true,
+      "degraded": false,
+      "failed": 1,
+      "no_execution": false,
+      "not_run": 5,
+      "partial": 0,
+      "provider_failed": true,
+      "requires_human": 0,
+      "retrieval_incomplete_budget": false,
+      "succeeded": 0,
+      "total": 6
+    },
+    "result_marker": "failed",
+    "results": [],
+    "retrieval_status": "PROVIDER_FAILED",
+    "source_id": "arxiv",
+    "succeeded": false,
+    "summary": "数据库检索执行失败：1/1 search executions failed",
+    "warnings": []
+  },
+  "parent_llm_call_id": "llm_0006",
+  "parent_stage_id": "stage_0006",
+  "raw_result": {
+    "arguments": {
+      "full_text_source_record_ids": [],
+      "source_id": "arxiv"
+    },
+    "elapsed_ms": 715,
+    "error": "all 1 search executions failed",
+    "payload": {
+      "artifacts": [],
+      "database_search_result": {
+        "results": [],
+        "source_id": "arxiv",
+        "warnings": []
+      },
+      "execution_summary": {
+        "all_failed": true,
+        "degraded": false,
+        "failed": 1,
+        "no_execution": false,
+        "not_run": 5,
+        "partial": 0,
+        "provider_failed": true,
+        "requires_human": 0,
+        "retrieval_incomplete_budget": false,
+        "succeeded": 0,
+        "total": 6
+      },
+      "research_bundle": {
+        "artifacts": [],
+        "bundle_id": "bnd_47e2fa52d9dd0545d6f29382",
+        "evidence": [],
+        "producer": "structured_source_retrieval:arxiv",
+        "search_executions": [
+          {
+            "completed_at": "2026-09-24T20:51:41.370206Z",
+            "error": "HTTPStatusError: Client error '406 Not Acceptable' for url 'https://export.arxiv.org/api/query?search_query=abs%3A%22graph+summarization%22+AND+abs%3A%22graph+autoencoder%22&start=0&max_results=8'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/406",
+            "execution_id": "sex_117c48d46d1af735a9acb67d",
+            "parameters": {
+              "base_strategy": "S1",
+              "fallback_reason": null,
+              "level": "strict",
+              "limit": 8,
+              "novelty_point_id": "NP-1",
+              "strategy_id": "S1",
+              "task_id": "T-1",
+              "variant_id": "S1"
+            },
+            "query": "abs:\"graph summarization\" AND abs:\"graph autoencoder\"",
+            "results": [],
+            "run_id": "run-33cb3cd33cca4fb28f4a2bd454c2179a",
+            "source_id": "arxiv",
+            "started_at": "2026-09-24T20:51:40.664285Z",
+            "status": "failed",
+            "tool_name": "structured_source_retrieval"
+          },
+          {
+            "completed_at": "2026-09-24T20:51:41.370429Z",
+            "error": null,
+            "execution_id": "sex_182ecf48c2934aa5c5aa449d",
+            "parameters": {
+              "base_strategy": "S2",
+              "fallback_reason": null,
+              "level": "medium",
+              "limit": 8,
+              "max_provider_requests": 6,
+              "not_run_reason": "provider_failed",
+              "novelty_point_id": "NP-1",
+              "requests_used": 1,
+              "strategy_id": "S2",
+              "task_id": "T-1",
+              "variant_id": "S2"
+            },
+            "query": "abs:\"graph summarization\" AND abs:\"graph autoencoder\"",
+            "results": [],
+            "run_id": "run-33cb3cd33cca4fb28f4a2bd454c2179a",
+            "source_id": "arxiv",
+            "started_at": "2026-09-24T20:51:41.370429Z",
+            "status": "not_run",
+            "tool_name": "structured_source_retrieval"
+          },
+          {
+            "completed_at": "2026-09-24T20:51:41.371625Z",
+            "error": null,
+            "execution_id": "sex_7fd631e70d2b3d58d8b0e2f1",
+            "parameters": {
+              "base_strategy": "S3",
+              "fallback_reason": null,
+              "level": "broad",
+              "limit": 8,
+              "max_provider_requests": 6,
+              "not_run_reason": "provider_failed",
+              "novelty_point_id": "NP-1",
+              "requests_used": 1,
+              "strategy_id": "S3",
+              "task_id": "T-1",
+              "variant_id": "S3"
+            },
+            "query": "abs:\"graph summarization\"",
+            "results": [],
+            "run_id": "run-33cb3cd33cca4fb28f4a2bd454c2179a",
+            "source_id": "arxiv",
+            "started_at": "2026-09-24T20:51:41.371625Z",
+            "status": "not_run",
+            "tool_name": "structured_source_retrieval"
+          },
+          {
+            "completed_at": "2026-09-24T20:51:41.372864Z",
+            "error": null,
+            "execution_id": "sex_22e781172a4a49d19e36f7ef",
+            "parameters": {
+              "base_strategy": "S1",
+              "fallback_reason": "丢弃概念 C2（graph autoencoder，importance=3）",
+              "level": "strict",
+              "limit": 8,
+              "max_provider_requests": 6,
+              "not_run_reason": "provider_failed",
+              "novelty_point_id": "NP-1",
+              "requests_used": 1,
+              "strategy_id": "S1-fb1",
+              "task_id": "T-1",
+              "variant_id": "S1-fb1"
+            },
+            "query": "abs:\"graph summarization\"",
+            "results": [],
+            "run_id": "run-33cb3cd33cca4fb28f4a2bd454c2179a",
+            "source_id": "arxiv",
+            "started_at": "2026-09-24T20:51:41.372864Z",
+            "status": "not_run",
+            "tool_name": "structured_source_retrieval"
+          },
+          {
+            "completed_at": "2026-09-24T20:51:41.374335Z",
+            "error": null,
+            "execution_id": "sex_9d0f823e84db0d9b95546b8e",
+            "parameters": {
+              "base_strategy": "S2",
+              "fallback_reason": "丢弃概念 C2（graph autoencoder，importance=3）",
+              "level": "medium",
+              "limit": 8,
+              "max_provider_requests": 6,
+              "not_run_reason": "provider_failed",
+              "novelty_point_id": "NP-1",
+              "requests_used": 1,
+              "strategy_id": "S2-fb1",
+              "task_id": "T-1",
+              "variant_id": "S2-fb1"
+            },
+            "query": "abs:\"graph summarization\"",
+            "results": [],
+            "run_id": "run-33cb3cd33cca4fb28f4a2bd454c2179a",
+            "source_id": "arxiv",
+            "started_at": "2026-09-24T20:51:41.374335Z",
+            "status": "not_run",
+            "tool_name": "structured_source_retrieval"
+          },
+          {
+            "completed_at": "2026-09-24T20:51:41.375502Z",
+            "error": null,
+            "execution_id": "sex_45904a3376261caee04da950",
+            "parameters": {
+              "base_strategy": "S3",
+              "fallback_reason": "移除 exclude 排除词（最后兜底）",
+              "level": "broad",
+              "limit": 8,
+              "max_provider_requests": 6,
+              "not_run_reason": "provider_failed",
+              "novelty_point_id": "NP-1",
+              "requests_used": 1,
+              "strategy_id": "S3-fb1",
+              "task_id": "T-1",
+              "variant_id": "S3-fb1"
+            },
+            "query": "abs:\"graph summarization\"",
+            "results": [],
+            "run_id": "run-33cb3cd33cca4fb28f4a2bd454c2179a",
+            "source_id": "arxiv",
+            "started_at": "2026-09-24T20:51:41.375502Z",
+            "status": "not_run",
+            "tool_name": "structured_source_retrieval"
+          }
+        ],
+        "source_records": [],
+        "warnings": [],
+        "works": []
+      },
+      "search_executions": [
+        {
+          "completed_at": "2026-09-24T20:51:41.370206Z",
+          "error": "HTTPStatusError: Client error '406 Not Acceptable' for url 'https://export.arxiv.org/api/query?search_query=abs%3A%22graph+summarization%22+AND+abs%3A%22graph+autoencoder%22&start=0&max_results=8'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/406",
+          "execution_id": "sex_117c48d46d1af735a9acb67d",
+          "parameters": {
+            "base_strategy": "S1",
+            "fallback_reason": null,
+            "level": "strict",
+            "limit": 8,
+            "novelty_point_id": "NP-1",
+            "strategy_id": "S1",
+            "task_id": "T-1",
+            "variant_id": "S1"
+          },
+          "query": "abs:\"graph summarization\" AND abs:\"graph autoencoder\"",
+          "results": [],
+          "run_id": "run-33cb3cd33cca4fb28f4a2bd454c2179a",
+          "source_id": "arxiv",
+          "started_at": "2026-09-24T20:51:40.664285Z",
+          "status": "failed",
+          "tool_name": "structured_source_retrieval"
+        },
+        {
+          "completed_at": "2026-09-24T20:51:41.370429Z",
+          "error": null,
+          "execution_id": "sex_182ecf48c2934aa5c5aa449d",
+          "parameters": {
+            "base_strategy": "S2",
+            "fallback_reason": null,
+            "level": "medium",
+            "limit": 8,
+            "max_provider_requests": 6,
+            "not_run_reason": "provider_failed",
+            "novelty_point_id": "NP-1",
+            "requests_used": 1,
+            "strategy_id": "S2",
+            "task_id": "T-1",
+            "variant_id": "S2"
+          },
+          "query": "abs:\"graph summarization\" AND abs:\"graph autoencoder\"",
+          "results": [],
+          "run_id": "run-33cb3cd33cca4fb28f4a2bd454c2179a",
+          "source_id": "arxiv",
+          "started_at": "2026-09-24T20:51:41.370429Z",
+          "status": "not_run",
+          "tool_name": "structured_source_retrieval"
+        },
+        {
+          "completed_at": "2026-09-24T20:51:41.371625Z",
+          "error": null,
+          "execution_id": "sex_7fd631e70d2b3d58d8b0e2f1",
+          "parameters": {
+            "base_strategy": "S3",
+            "fallback_reason": null,
+            "level": "broad",
+            "limit": 8,
+            "max_provider_requests": 6,
+            "not_run_reason": "provider_failed",
+            "novelty_point_id": "NP-1",
+            "requests_used": 1,
+            "strategy_id": "S3",
+            "task_id": "T-1",
+            "variant_id": "S3"
+          },
+          "query": "abs:\"graph summarization\"",
+          "results": [],
+          "run_id": "run-33cb3cd33cca4fb28f4a2bd454c2179a",
+          "source_id": "arxiv",
+          "started_at": "2026-09-24T20:51:41.371625Z",
+          "status": "not_run",
+          "tool_name": "structured_source_retrieval"
+        },
+        {
+          "completed_at": "2026-09-24T20:51:41.372864Z",
+          "error": null,
+          "execution_id": "sex_22e781172a4a49d19e36f7ef",
+          "parameters": {
+            "base_strategy": "S1",
+            "fallback_reason": "丢弃概念 C2（graph autoencoder，importance=3）",
+            "level": "strict",
+            "limit": 8,
+            "max_provider_requests": 6,
+            "not_run_reason": "provider_failed",
+            "novelty_point_id": "NP-1",
+            "requests_used": 1,
+            "strategy_id": "S1-fb1",
+            "task_id": "T-1",
+            "variant_id": "S1-fb1"
+          },
+          "query": "abs:\"graph summarization\"",
+          "results": [],
+          "run_id": "run-33cb3cd33cca4fb28f4a2bd454c2179a",
+          "source_id": "arxiv",
+          "started_at": "2026-09-24T20:51:41.372864Z",
+          "status": "not_run",
+          "tool_name": "structured_source_retrieval"
+        },
+        {
+          "completed_at": "2026-09-24T20:51:41.374335Z",
+          "error": null,
+          "execution_id": "sex_9d0f823e84db0d9b95546b8e",
+          "parameters": {
+            "base_strategy": "S2",
+            "fallback_reason": "丢弃概念 C2（graph autoencoder，importance=3）",
+            "level": "medium",
+            "limit": 8,
+            "max_provider_requests": 6,
+            "not_run_reason": "provider_failed",
+            "novelty_point_id": "NP-1",
+            "requests_used": 1,
+            "strategy_id": "S2-fb1",
+            "task_id": "T-1",
+            "variant_id": "S2-fb1"
+          },
+          "query": "abs:\"graph summarization\"",
+          "results": [],
+          "run_id": "run-33cb3cd33cca4fb28f4a2bd454c2179a",
+          "source_id": "arxiv",
+          "started_at": "2026-09-24T20:51:41.374335Z",
+          "status": "not_run",
+          "tool_name": "structured_source_retrieval"
+        },
+        {
+          "completed_at": "2026-09-24T20:51:41.375502Z",
+          "error": null,
+          "execution_id": "sex_45904a3376261caee04da950",
+          "parameters": {
+            "base_strategy": "S3",
+            "fallback_reason": "移除 exclude 排除词（最后兜底）",
+            "level": "broad",
+            "limit": 8,
+            "max_provider_requests": 6,
+            "not_run_reason": "provider_failed",
+            "novelty_point_id": "NP-1",
+            "requests_used": 1,
+            "strategy_id": "S3-fb1",
+            "task_id": "T-1",
+            "variant_id": "S3-fb1"
+          },
+          "query": "abs:\"graph summarization\"",
+          "results": [],
+          "run_id": "run-33cb3cd33cca4fb28f4a2bd454c2179a",
+          "source_id": "arxiv",
+          "started_at": "2026-09-24T20:51:41.375502Z",
+          "status": "not_run",
+          "tool_name": "structured_source_retrieval"
+        }
+      ],
+      "source_records": []
+    },
+    "succeeded": false,
+    "summary": "数据库检索执行失败：1/1 search executions failed",
+    "tool_name": "database_search"
+  },
+  "resolved_arguments": {
+    "full_text_source_record_ids": [],
+    "source_id": "arxiv"
+  },
+  "result_count": 0,
+  "run_id": "run-33cb3cd33cca4fb28f4a2bd454c2179a",
+  "scope": {
+    "attempt": 1,
+    "point_id": "NP-1",
+    "task_id": "T-1"
+  },
+  "stage_name": "run_research_task",
+  "started_at": "2026-09-24T20:51:40.661800+00:00",
+  "tool_call_id": "tool_0001",
+  "tool_name": "database_search"
+}

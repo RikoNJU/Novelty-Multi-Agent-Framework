@@ -1,0 +1,310 @@
+{
+  "agent_arguments": {
+    "full_text_source_record_ids": [],
+    "source_id": "arxiv"
+  },
+  "agent_tool_call_id": "chatcmpl-tool-bf24d1604c5a464eb43e8f15aea2ae7e",
+  "business_status": "PROVIDER_FAILED",
+  "duration": 0.700993,
+  "duration_ms": 700,
+  "error": {
+    "message": "all 1 search executions failed",
+    "stage": "run_research_task",
+    "timestamp": "2026-09-24T20:57:18.590735+00:00",
+    "tool_call_id": "tool_0020",
+    "traceback": "  File \"<workspace>/scripts/run_full_workflow_live.py\", line 224, in <module>\n    main()\n  File \"<workspace>/scripts/run_full_workflow_live.py\", line 126, in main\n    result = workflow.run(paper, run_identity=identity)\n  File \"<workspace>/backend/src/novelty_agent_framework/workflows/novelty.py\", line 1129, in run\n    return asyncio.run(self.arun(paper, run_identity=run_identity))\n  File \"<python-env>/lib/python3.11/asyncio/runners.py\", line 190, in run\n    return runner.run(main)\n  File \"<python-env>/lib/python3.11/asyncio/runners.py\", line 118, in run\n    return self._loop.run_until_complete(task)\n  File \"<python-env>/lib/python3.11/asyncio/base_events.py\", line 641, in run_until_complete\n    self.run_forever()\n  File \"<python-env>/lib/python3.11/asyncio/base_events.py\", line 608, in run_forever\n    self._run_once()\n  File \"<python-env>/lib/python3.11/asyncio/base_events.py\", line 1936, in _run_once\n    handle._run()\n  File \"<python-env>/lib/python3.11/asyncio/events.py\", line 84, in _run\n    self._context.run(self._callback, *self._args)\n  File \"<python-env>/lib/python3.11/site-packages/langgraph/_internal/_runnable.py\", line 501, in ainvoke\n    ret = await self.afunc(*args, **kwargs)\n  File \"<workspace>/backend/src/novelty_agent_framework/workflows/novelty.py\", line 313, in recorded\n    output = await function(state)\n  File \"<workspace>/backend/src/novelty_agent_framework/workflows/novelty.py\", line 524, in _run_research_task\n    await self.services.task_researcher.ainvoke(request)\n  File \"<workspace>/backend/src/novelty_agent_framework/workflows/research_task.py\", line 104, in ainvoke\n    result, trace = await self._research(request)\n  File \"<workspace>/backend/src/novelty_agent_framework/workflows/research_task.py\", line 114, in _research\n    harness_result = await self.harness.run(\n  File \"<workspace>/backend/src/novelty_agent_framework/core/tool_call_harness.py\", line 122, in run\n    return await self._run(\n  File \"<workspace>/backend/src/novelty_agent_framework/core/tool_call_harness.py\", line 461, in _run\n    runtime.finish_tool_call(\n  File \"<workspace>/backend/src/novelty_agent_framework/core/runtime_artifacts.py\", line 671, in finish_tool_call\n    error_payload = self._coerce_error(\n  File \"<workspace>/backend/src/novelty_agent_framework/core/runtime_artifacts.py\", line 1018, in _coerce_error\n    \"traceback\": \"\".join(traceback_module.format_stack()),\n",
+    "type": "ToolExecutionError"
+  },
+  "execution_status": "FAILED",
+  "failure_phase": "TOOL_EXECUTION",
+  "finished_at": "2026-09-24T20:57:18.590745+00:00",
+  "normalized_result": {
+    "error": "all 1 search executions failed",
+    "execution_summary": {
+      "all_failed": true,
+      "degraded": false,
+      "failed": 1,
+      "no_execution": false,
+      "not_run": 3,
+      "partial": 0,
+      "provider_failed": true,
+      "requires_human": 0,
+      "retrieval_incomplete_budget": false,
+      "succeeded": 0,
+      "total": 4
+    },
+    "result_marker": "failed",
+    "results": [],
+    "retrieval_status": "PROVIDER_FAILED",
+    "source_id": "arxiv",
+    "succeeded": false,
+    "summary": "数据库检索执行失败：1/1 search executions failed",
+    "warnings": [
+      "S1: fallback_not_applicable; no safe removable concept",
+      "S2: fallback_not_applicable; no safe removable concept"
+    ]
+  },
+  "parent_llm_call_id": "llm_0026",
+  "parent_stage_id": "stage_0008",
+  "raw_result": {
+    "arguments": {
+      "full_text_source_record_ids": [],
+      "source_id": "arxiv"
+    },
+    "elapsed_ms": 700,
+    "error": "all 1 search executions failed",
+    "payload": {
+      "artifacts": [],
+      "database_search_result": {
+        "results": [],
+        "source_id": "arxiv",
+        "warnings": [
+          "S1: fallback_not_applicable; no safe removable concept",
+          "S2: fallback_not_applicable; no safe removable concept"
+        ]
+      },
+      "execution_summary": {
+        "all_failed": true,
+        "degraded": false,
+        "failed": 1,
+        "no_execution": false,
+        "not_run": 3,
+        "partial": 0,
+        "provider_failed": true,
+        "requires_human": 0,
+        "retrieval_incomplete_budget": false,
+        "succeeded": 0,
+        "total": 4
+      },
+      "research_bundle": {
+        "artifacts": [],
+        "bundle_id": "bnd_7d4eaba37aa2d96f015ca564",
+        "evidence": [],
+        "producer": "structured_source_retrieval:arxiv",
+        "search_executions": [
+          {
+            "completed_at": "2026-09-24T20:57:18.579916Z",
+            "error": "HTTPStatusError: Client error '406 Not Acceptable' for url 'https://export.arxiv.org/api/query?search_query=abs%3Adistributed+AND+abs%3Agraph+AND+abs%3Aneural+AND+abs%3Anetwork+AND+abs%3Atraining+AND+abs%3Aframework&start=0&max_results=8'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/406",
+            "execution_id": "sex_7fb3862b0e867a17fb4f37e6",
+            "parameters": {
+              "base_strategy": "S1",
+              "fallback_reason": null,
+              "level": "strict",
+              "limit": 8,
+              "novelty_point_id": "NP-2",
+              "strategy_id": "S1",
+              "task_id": "T-1",
+              "variant_id": "S1"
+            },
+            "query": "abs:distributed AND abs:graph AND abs:neural AND abs:network AND abs:training AND abs:framework",
+            "results": [],
+            "run_id": "run-f41ac741cf6f49deaa52124ae5b23903",
+            "source_id": "arxiv",
+            "started_at": "2026-09-24T20:57:17.889905Z",
+            "status": "failed",
+            "tool_name": "structured_source_retrieval"
+          },
+          {
+            "completed_at": "2026-09-24T20:57:18.580039Z",
+            "error": null,
+            "execution_id": "sex_2ec69f8933a520b94b276ce4",
+            "parameters": {
+              "base_strategy": "S2",
+              "fallback_reason": null,
+              "level": "medium",
+              "limit": 8,
+              "max_provider_requests": 6,
+              "not_run_reason": "provider_failed",
+              "novelty_point_id": "NP-2",
+              "requests_used": 1,
+              "strategy_id": "S2",
+              "task_id": "T-1",
+              "variant_id": "S2"
+            },
+            "query": "(abs:distributed AND abs:graph AND abs:neural AND abs:network AND abs:training AND abs:framework OR abs:Distributed AND abs:GNN AND abs:Training AND abs:Framework)",
+            "results": [],
+            "run_id": "run-f41ac741cf6f49deaa52124ae5b23903",
+            "source_id": "arxiv",
+            "started_at": "2026-09-24T20:57:18.580039Z",
+            "status": "not_run",
+            "tool_name": "structured_source_retrieval"
+          },
+          {
+            "completed_at": "2026-09-24T20:57:18.581515Z",
+            "error": null,
+            "execution_id": "sex_6b709fc2b5c6b575e702195e",
+            "parameters": {
+              "base_strategy": "S3",
+              "fallback_reason": null,
+              "level": "broad",
+              "limit": 8,
+              "max_provider_requests": 6,
+              "not_run_reason": "provider_failed",
+              "novelty_point_id": "NP-2",
+              "requests_used": 1,
+              "strategy_id": "S3",
+              "task_id": "T-1",
+              "variant_id": "S3"
+            },
+            "query": "(abs:distributed AND abs:graph AND abs:neural AND abs:network AND abs:training AND abs:framework OR abs:Distributed AND abs:GNN AND abs:Training AND abs:Framework)",
+            "results": [],
+            "run_id": "run-f41ac741cf6f49deaa52124ae5b23903",
+            "source_id": "arxiv",
+            "started_at": "2026-09-24T20:57:18.581515Z",
+            "status": "not_run",
+            "tool_name": "structured_source_retrieval"
+          },
+          {
+            "completed_at": "2026-09-24T20:57:18.583137Z",
+            "error": null,
+            "execution_id": "sex_94ea2508ae3940de2f277e10",
+            "parameters": {
+              "base_strategy": "S3",
+              "fallback_reason": "移除 exclude 排除词（最后兜底）",
+              "level": "broad",
+              "limit": 8,
+              "max_provider_requests": 6,
+              "not_run_reason": "provider_failed",
+              "novelty_point_id": "NP-2",
+              "requests_used": 1,
+              "strategy_id": "S3-fb1",
+              "task_id": "T-1",
+              "variant_id": "S3-fb1"
+            },
+            "query": "(abs:distributed AND abs:graph AND abs:neural AND abs:network AND abs:training AND abs:framework OR abs:Distributed AND abs:GNN AND abs:Training AND abs:Framework)",
+            "results": [],
+            "run_id": "run-f41ac741cf6f49deaa52124ae5b23903",
+            "source_id": "arxiv",
+            "started_at": "2026-09-24T20:57:18.583137Z",
+            "status": "not_run",
+            "tool_name": "structured_source_retrieval"
+          }
+        ],
+        "source_records": [],
+        "warnings": [
+          "S1: fallback_not_applicable; no safe removable concept",
+          "S2: fallback_not_applicable; no safe removable concept"
+        ],
+        "works": []
+      },
+      "search_executions": [
+        {
+          "completed_at": "2026-09-24T20:57:18.579916Z",
+          "error": "HTTPStatusError: Client error '406 Not Acceptable' for url 'https://export.arxiv.org/api/query?search_query=abs%3Adistributed+AND+abs%3Agraph+AND+abs%3Aneural+AND+abs%3Anetwork+AND+abs%3Atraining+AND+abs%3Aframework&start=0&max_results=8'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/406",
+          "execution_id": "sex_7fb3862b0e867a17fb4f37e6",
+          "parameters": {
+            "base_strategy": "S1",
+            "fallback_reason": null,
+            "level": "strict",
+            "limit": 8,
+            "novelty_point_id": "NP-2",
+            "strategy_id": "S1",
+            "task_id": "T-1",
+            "variant_id": "S1"
+          },
+          "query": "abs:distributed AND abs:graph AND abs:neural AND abs:network AND abs:training AND abs:framework",
+          "results": [],
+          "run_id": "run-f41ac741cf6f49deaa52124ae5b23903",
+          "source_id": "arxiv",
+          "started_at": "2026-09-24T20:57:17.889905Z",
+          "status": "failed",
+          "tool_name": "structured_source_retrieval"
+        },
+        {
+          "completed_at": "2026-09-24T20:57:18.580039Z",
+          "error": null,
+          "execution_id": "sex_2ec69f8933a520b94b276ce4",
+          "parameters": {
+            "base_strategy": "S2",
+            "fallback_reason": null,
+            "level": "medium",
+            "limit": 8,
+            "max_provider_requests": 6,
+            "not_run_reason": "provider_failed",
+            "novelty_point_id": "NP-2",
+            "requests_used": 1,
+            "strategy_id": "S2",
+            "task_id": "T-1",
+            "variant_id": "S2"
+          },
+          "query": "(abs:distributed AND abs:graph AND abs:neural AND abs:network AND abs:training AND abs:framework OR abs:Distributed AND abs:GNN AND abs:Training AND abs:Framework)",
+          "results": [],
+          "run_id": "run-f41ac741cf6f49deaa52124ae5b23903",
+          "source_id": "arxiv",
+          "started_at": "2026-09-24T20:57:18.580039Z",
+          "status": "not_run",
+          "tool_name": "structured_source_retrieval"
+        },
+        {
+          "completed_at": "2026-09-24T20:57:18.581515Z",
+          "error": null,
+          "execution_id": "sex_6b709fc2b5c6b575e702195e",
+          "parameters": {
+            "base_strategy": "S3",
+            "fallback_reason": null,
+            "level": "broad",
+            "limit": 8,
+            "max_provider_requests": 6,
+            "not_run_reason": "provider_failed",
+            "novelty_point_id": "NP-2",
+            "requests_used": 1,
+            "strategy_id": "S3",
+            "task_id": "T-1",
+            "variant_id": "S3"
+          },
+          "query": "(abs:distributed AND abs:graph AND abs:neural AND abs:network AND abs:training AND abs:framework OR abs:Distributed AND abs:GNN AND abs:Training AND abs:Framework)",
+          "results": [],
+          "run_id": "run-f41ac741cf6f49deaa52124ae5b23903",
+          "source_id": "arxiv",
+          "started_at": "2026-09-24T20:57:18.581515Z",
+          "status": "not_run",
+          "tool_name": "structured_source_retrieval"
+        },
+        {
+          "completed_at": "2026-09-24T20:57:18.583137Z",
+          "error": null,
+          "execution_id": "sex_94ea2508ae3940de2f277e10",
+          "parameters": {
+            "base_strategy": "S3",
+            "fallback_reason": "移除 exclude 排除词（最后兜底）",
+            "level": "broad",
+            "limit": 8,
+            "max_provider_requests": 6,
+            "not_run_reason": "provider_failed",
+            "novelty_point_id": "NP-2",
+            "requests_used": 1,
+            "strategy_id": "S3-fb1",
+            "task_id": "T-1",
+            "variant_id": "S3-fb1"
+          },
+          "query": "(abs:distributed AND abs:graph AND abs:neural AND abs:network AND abs:training AND abs:framework OR abs:Distributed AND abs:GNN AND abs:Training AND abs:Framework)",
+          "results": [],
+          "run_id": "run-f41ac741cf6f49deaa52124ae5b23903",
+          "source_id": "arxiv",
+          "started_at": "2026-09-24T20:57:18.583137Z",
+          "status": "not_run",
+          "tool_name": "structured_source_retrieval"
+        }
+      ],
+      "source_records": []
+    },
+    "succeeded": false,
+    "summary": "数据库检索执行失败：1/1 search executions failed",
+    "tool_name": "database_search"
+  },
+  "resolved_arguments": {
+    "full_text_source_record_ids": [],
+    "source_id": "arxiv"
+  },
+  "result_count": 0,
+  "run_id": "run-f41ac741cf6f49deaa52124ae5b23903",
+  "scope": {
+    "attempt": 1,
+    "point_id": "NP-2",
+    "task_id": "T-1"
+  },
+  "stage_name": "run_research_task",
+  "started_at": "2026-09-24T20:57:17.888413+00:00",
+  "tool_call_id": "tool_0020",
+  "tool_name": "database_search"
+}

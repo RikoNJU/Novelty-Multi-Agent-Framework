@@ -1,0 +1,363 @@
+{
+  "brief": {
+    "paper_summary": "由于现实世界中的大多数数据都可以用图表示，因此近年来针对图表示学\n习的研究越来越受到关注。通过将高维图数据转化成低维的表征向量，图表示\n学习可以有效地对图的信息进行存储并快捷地访问图中实体的关键知识。利用\n学习到的图表征数据可以为社交网络行为分析、节点分类、链路预测和聚类等\n下游任务提供帮助。随着深度学习的快速发展，研究人员提出了基于图神经网\n络的图表示学习方法，其使图中的节点能够同时学习图的结构信息以及邻域节\n点的特征信息，从而得到高质量的低维表征。针对图神经网络上的图表示学\n习，本文主要关注两个问题：大规模时序图场景下的图表示学习方法和分布式\n场景下的大规模图的图神经网络优化训练方法。\n真实世界中的图数据规模往往十分庞大且处于动态变化的状态，而现有的\n图神经网络要么无法处理动态时序图上的图表征学习，要么面对大规模图数据\n集时训练效率低下。为了解决大规模动态图上的图表征学习问题，本文提出了\n一种基于图摘要的大规模时序图表示学习方法——GSAERU 模型。GSAERU 模\n型由“图表征学习模块”和“时序学习模块”两部分构成。首先将动态时序图\n建模为各时刻上原图快照的序列，接着在单时间步上将图快照输入图表征学习\n模块。该模块通过图摘要技术对原图进行压缩，并将压缩后的新图输入图自编\n码器，利用和原图的重构误差训练原图节点的表征。在获得单时间步上的图表\n征后将其输入时序学习模块，并通过一个循环神经网络学习原图在时间维度上\n的特征信息与依赖关系，从而得到大规模时序图的高质量表征。基于在四个真\n实世界的大规模图数据集上的大量实验表明，GSAERU 模型能够高效生成时序\n图的表征。与传统的图神经网络算法相比，其平均内存消耗和平均训练时长只\n有其9.86% 与13.27%，且与性能最好的算法在大部分指标下的差距都不超过\n3.5%。\n\nii\n使用分布式技术加速神经网络训练也是如今热门的研究课题，因为在处理\n大规模数据时，单个设备（如CPU，GPU）有限的内存和计算资源往往会成为\n训练瓶颈。而分布式技术可以提供更多的计算资源来提高训练效率。然而由于\n图数据的不规则性，传统分布式机器学习方法中的子任务划分和模型训练方法\n难以直接应用于图神经网络。针对大规模图流数据场景下的分布式图神经网络\n训练优化问题，本文提出了基于图摘要的分布式图神经网络优化训练算法——\nDSGNN 模型。DSGNN 模型采用“领导——工作者”工作模式，首先由领导节\n点利用一个基于边分割的图流划分算法对原图进行划分并将划分子图分配给各\n个工作节点。工作节点随后执行一个基于图摘要技术的小批量训练并将训练结\n果通过一个注意力层返回给领导节点，最后由领导节点汇总结果并计算梯度，\n并根据梯度同步更新所有计算节点上的模型。基于四个真实世界的大规模图数\n据集上的大量实验，结果表明DSGNN 模型可以大大加速GNN 模型的训练，\n并且在链路预测任务上的F1 分数显著高于其它分布式图神经网络模型。",
+    "research_problem": "面向大规模动态图的图神经网络优化机制研究",
+    "novelty_points": [
+      {
+        "point_id": "NP-1",
+        "claim": "提出了一种基于图摘要的大规模时序图表示学习方法GSAERU，该方法结合图摘要压缩、图自编码器重构和循环神经网络时序学习，能够高效生成大规模动态图的表征。",
+        "claim_en": "Proposes a large-scale sequential graph representation learning method GSAERU based on graph summarization, which combines graph summarization compression, graph autoencoder reconstruction, and recurrent neural network temporal learning to efficiently generate representations of large-scale dynamic graphs.",
+        "technical_features": [
+          "将动态时序图建模为各时刻原图快照的序列",
+          "利用图摘要技术对图快照进行压缩",
+          "压缩后的图输入图自编码器，利用重构误差训练节点表征",
+          "通过循环神经网络学习时间维度上的特征信息与依赖关系"
+        ],
+        "technical_features_en": [
+          "Model the dynamic sequential graph as a sequence of snapshots at each time step",
+          "Compress graph snapshots using graph summarization technology",
+          "Input the compressed graph into a graph autoencoder and train node representations using reconstruction error",
+          "Learn temporal features and dependencies through a recurrent neural network"
+        ],
+        "source_locations": [
+          "摘要中关于GSAERU模型的描述",
+          "全文摘录中关于GSAERU模型的段落"
+        ]
+      },
+      {
+        "point_id": "NP-2",
+        "claim": "提出了一种基于图摘要的分布式图神经网络优化训练算法DSGNN，采用领导-工作者模式，结合边分割图流划分、基于图摘要的小批量训练和注意力层聚合，大幅加速大规模图流数据上的GNN训练。",
+        "claim_en": "Proposes a distributed graph neural network optimization training algorithm DSGNN based on graph summarization, which adopts a leader-worker mode, combining edge segmentation based graph stream partition, graph summarization based mini-batch training, and attention layer aggregation, greatly accelerating GNN training on large-scale graph streaming data.",
+        "technical_features": [
+          "采用领导-工作者工作模式",
+          "利用基于边分割的图流划分算法对原图进行划分",
+          "工作节点执行基于图摘要的小批量训练",
+          "训练结果通过注意力层返回给领导节点",
+          "领导节点汇总结果并计算梯度，同步更新模型"
+        ],
+        "technical_features_en": [
+          "Adopt a leader-worker mode",
+          "Use an edge segmentation based graph stream partition algorithm to partition the original graph",
+          "Workers perform mini-batch training based on graph summarization",
+          "Training results are returned to the leader through an attention layer",
+          "The leader aggregates results, computes gradients, and synchronously updates models"
+        ],
+        "source_locations": [
+          "摘要中关于DSGNN模型的描述",
+          "全文摘录中关于DSGNN模型的段落"
+        ]
+      }
+    ],
+    "keywords_zh": [
+      "图表示学习",
+      "深度学习",
+      "图神经网络",
+      "分布式技术"
+    ],
+    "keywords_en": [
+      "graph representation learning",
+      "deep learning",
+      "graph neural network",
+      "distributed"
+    ],
+    "research_tasks": [
+      {
+        "task_id": "T-1",
+        "novelty_point_id": "NP-1",
+        "task_type": "literature_search",
+        "language": "zh",
+        "description": "针对该查新点执行中文文献检索。",
+        "attempt": 1
+      },
+      {
+        "task_id": "T-2",
+        "novelty_point_id": "NP-1",
+        "task_type": "literature_search",
+        "language": "en",
+        "description": "针对该查新点执行英文文献检索。",
+        "attempt": 1
+      },
+      {
+        "task_id": "T-1",
+        "novelty_point_id": "NP-2",
+        "task_type": "literature_search",
+        "language": "zh",
+        "description": "针对该查新点执行中文文献检索。",
+        "attempt": 1
+      },
+      {
+        "task_id": "T-2",
+        "novelty_point_id": "NP-2",
+        "task_type": "literature_search",
+        "language": "en",
+        "description": "针对该查新点执行英文文献检索。",
+        "attempt": 1
+      }
+    ]
+  },
+  "evidence_cards": [
+    {
+      "card_id": "card_da4eec814d7a76c6cac45f56",
+      "task_id": "T-2",
+      "novelty_point_id": "NP-1",
+      "document_title": "Inductive Representation Learning on Temporal Graphs",
+      "main_contribution": "Temporal graph attention (TGAT) layer for inductive representation learning on temporal graphs, using self-attention and functional time encoding to capture temporal-topological neighborhood features.",
+      "overlaps": [
+        "Temporal graph representation learning",
+        "Dynamic network embedding",
+        "Time-dependent node embeddings"
+      ],
+      "differences": [
+        "Uses self-attention mechanism instead of graph summarization compression",
+        "Does not use graph autoencoder reconstruction for training node representations",
+        "Does not use recurrent neural network for temporal dependency learning"
+      ],
+      "sources": [
+        {
+          "title": "Inductive Representation Learning on Temporal Graphs",
+          "quote": "We propose the temporal graph attention (TGAT) layer to efficiently aggregate temporal-topological neighborhood features as well as to learn the time-feature interactions. For TGAT, we use the self-attention mechanism as building block and develop a novel functional time encoding technique based on the classical Bochner's theorem from harmonic analysis.",
+          "location": "artifact art_b8b821043e4485fda0b8527c chars:516-871",
+          "doi": null,
+          "url": "https://arxiv.org/pdf/2002.07962"
+        }
+      ],
+      "cited_by_paper": null,
+      "possible_baseline": true,
+      "relevance": 0.45,
+      "confidence": 0.8,
+      "evidence_ids": [
+        "ev_a59eee8016fb79da4a9546ae"
+      ]
+    },
+    {
+      "card_id": "card_f3114ca5ef189c024aff2fda",
+      "task_id": "T-2",
+      "novelty_point_id": "NP-1",
+      "document_title": "Temporal Graph Networks for Deep Learning on Dynamic Graphs",
+      "main_contribution": "Temporal Graph Networks (TGNs), a generic and efficient framework for deep learning on dynamic graphs represented as sequences of timed events, combining memory modules and graph-based operators.",
+      "overlaps": [
+        "Dynamic graph representation learning",
+        "Temporal modeling of dynamic graphs",
+        "Sequence-based modeling of graph events"
+      ],
+      "differences": [
+        "Uses memory modules and graph-based operators instead of graph summarization compression",
+        "Does not use graph autoencoder reconstruction for node representation training",
+        "Does not explicitly combine graph summarization with RNN temporal learning"
+      ],
+      "sources": [
+        {
+          "title": "Temporal Graph Networks for Deep Learning on Dynamic Graphs",
+          "quote": "we present Temporal Graph Networks (TGNs), a generic, efficient framework for deep learning on dynamic graphs represented as sequences of timed events. Thanks to a novel combination of memory modules and graph-based operators, TGNs are able to significantly outperform previous approaches being at the same time more computationally efficient.",
+          "location": "artifact art_ea01d9c5f48ad68092a07bf7 chars:520-863",
+          "doi": null,
+          "url": "https://arxiv.org/pdf/2006.10637"
+        }
+      ],
+      "cited_by_paper": null,
+      "possible_baseline": true,
+      "relevance": 0.5,
+      "confidence": 0.85,
+      "evidence_ids": [
+        "ev_06fb482848179902cbe5afdf"
+      ]
+    },
+    {
+      "card_id": "card_1800ebe9811ad96dfd604571",
+      "task_id": "T-2",
+      "novelty_point_id": "NP-2",
+      "document_title": "AGL: a Scalable System for Industrial-purpose Graph Machine Learning",
+      "main_contribution": "AGL is a scalable, fault-tolerant and integrated system for industrial-purpose graph machine learning with fully-functional training and inference for GNNs.",
+      "overlaps": [
+        "scalable distributed GNN training",
+        "large-scale graph machine learning"
+      ],
+      "differences": [
+        "No graph summarization-based mini-batch training",
+        "No leader-worker mode with attention layer aggregation",
+        "Uses parameter server and k-hop neighborhood generation instead"
+      ],
+      "sources": [
+        {
+          "title": "AGL: a Scalable System for Industrial-purpose Graph Machine Learning",
+          "quote": "we design AGL, a scalable, fault-tolerance and integrated system, with fully-functional training and inference for GNNs. Our system design follows the message passing scheme underlying the computations of GNNs.",
+          "location": "artifact art_6f98816ebc9005d24844fdfd chars:1021-1231",
+          "doi": null,
+          "url": "https://arxiv.org/pdf/2003.02454"
+        }
+      ],
+      "cited_by_paper": null,
+      "possible_baseline": false,
+      "relevance": 0.5,
+      "confidence": 0.8,
+      "evidence_ids": [
+        "ev_779f26444f2854a980416ea3"
+      ]
+    },
+    {
+      "card_id": "card_396b3a2c53a363562c5987e7",
+      "task_id": "T-2",
+      "novelty_point_id": "NP-2",
+      "document_title": "AliGraph: A Comprehensive Graph Neural Network Platform",
+      "main_contribution": "AliGraph is a comprehensive distributed graph neural network platform with distributed graph storage, optimized sampling operators and runtime to support GNN training at scale.",
+      "overlaps": [
+        "distributed GNN training",
+        "scalable graph storage and computation for GNN"
+      ],
+      "differences": [
+        "No graph summarization-based mini-batch training",
+        "No leader-worker mode",
+        "No attention layer aggregation for result fusion"
+      ],
+      "sources": [
+        {
+          "title": "AliGraph: A Comprehensive Graph Neural Network Platform",
+          "quote": "we present a comprehensive graph neural network system, namely AliGraph, which consists of distributed graph storage, optimized sampling operators and runtime to efficiently support not only existing popular GNNs but also a series of in-house developed ones for different scenarios.",
+          "location": "artifact art_d88778158223021b818fdd97 chars:649-931",
+          "doi": null,
+          "url": "https://arxiv.org/pdf/1902.08730"
+        }
+      ],
+      "cited_by_paper": null,
+      "possible_baseline": false,
+      "relevance": 0.5,
+      "confidence": 0.8,
+      "evidence_ids": [
+        "ev_5679a77fe3c2a290a816a4e2"
+      ]
+    },
+    {
+      "card_id": "card_5fb8defcbf1c385812f31f9b",
+      "task_id": "T-2",
+      "novelty_point_id": "NP-2",
+      "document_title": "Graph Attention Networks",
+      "main_contribution": "Graph Attention Networks (GATs) introduce masked self-attentional layers for graph-structured data, enabling nodes to attend over their neighborhoods' features with different weights.",
+      "overlaps": [
+        "attention layer mechanism in GNNs"
+      ],
+      "differences": [
+        "Not a distributed training algorithm",
+        "No graph summarization",
+        "No leader-worker mode",
+        "No graph stream partitioning"
+      ],
+      "sources": [
+        {
+          "title": "Graph Attention Networks",
+          "quote": "We present graph attention networks (GATs), novel neural network architectures that operate on graph-structured data, leveraging masked self-attentional layers to address the shortcomings of prior methods based on graph convolutions or their approximations.",
+          "location": "artifact art_646de98cecaee1517f7729c3 chars:0-257",
+          "doi": null,
+          "url": "https://arxiv.org/pdf/1710.10903"
+        }
+      ],
+      "cited_by_paper": null,
+      "possible_baseline": false,
+      "relevance": 0.3,
+      "confidence": 0.8,
+      "evidence_ids": [
+        "ev_c48d81c2723b9f059fca9c0d"
+      ]
+    },
+    {
+      "card_id": "card_ea7d9077219f8d5b4a3b1383",
+      "task_id": "T-2",
+      "novelty_point_id": "NP-2",
+      "document_title": "GraphSAINT: Graph Sampling Based Inductive Learning Method",
+      "main_contribution": "GraphSAINT is a graph sampling based inductive learning method that constructs minibatches by sampling the training graph, improving training efficiency and accuracy for large graphs.",
+      "overlaps": [
+        "mini-batch training for large-scale GNNs",
+        "graph sampling based training"
+      ],
+      "differences": [
+        "Not distributed (no leader-worker mode)",
+        "No graph summarization",
+        "No attention layer aggregation for result fusion"
+      ],
+      "sources": [
+        {
+          "title": "GraphSAINT: Graph Sampling Based Inductive Learning Method",
+          "quote": "GraphSAINT constructs minibatches by sampling the training graph, rather than the nodes or edges across GCN layers. Each iteration, a complete GCN is built from the properly sampled subgraph.",
+          "location": "artifact art_4144023700aceff174c81183 chars:452-643",
+          "doi": null,
+          "url": "https://arxiv.org/pdf/1907.04931"
+        }
+      ],
+      "cited_by_paper": null,
+      "possible_baseline": false,
+      "relevance": 0.4,
+      "confidence": 0.8,
+      "evidence_ids": [
+        "ev_2bdc5a41dacf6b182cbf19b3"
+      ]
+    }
+  ],
+  "rejected_evidence": [],
+  "novelty_reviews": [
+    {
+      "novelty_point_id": "NP-1",
+      "status": "insufficient_evidence",
+      "verdict": null,
+      "verdict_reason": null,
+      "confidence": null,
+      "highly_relevant_works": [],
+      "supplement_request": {
+        "reason": "Reviewer 未启用，未执行查新点级信息判定。",
+        "missing_aspects": [],
+        "suggested_focus": []
+      }
+    },
+    {
+      "novelty_point_id": "NP-2",
+      "status": "insufficient_evidence",
+      "verdict": null,
+      "verdict_reason": null,
+      "confidence": null,
+      "highly_relevant_works": [],
+      "supplement_request": {
+        "reason": "Reviewer 未启用，未执行查新点级信息判定。",
+        "missing_aspects": [],
+        "suggested_focus": []
+      }
+    }
+  ],
+  "insufficient_final_evidence_points": [],
+  "issues": [],
+  "rounds": 1,
+  "report": {
+    "paper_id": "MF2033k6lC",
+    "conclusions": [
+      {
+        "novelty_point_id": "NP-1",
+        "level": "strong",
+        "summary": "基于有效证据卡，现有动态图表示学习方法（如TGAT和TGN）均未采用图摘要压缩结合图自编码器重构与循环神经网络时序学习的完整组合。TGAT使用自注意力机制，TGN使用记忆模块与图操作，均未使用图摘要技术。GSAERU的“图摘要+GAE+GRU”架构在证据检索范围内未见相同方案，因此该查新点具有较强新颖性。",
+        "supporting_card_ids": [
+          "card_da4eec814d7a76c6cac45f56",
+          "card_f3114ca5ef189c024aff2fda"
+        ],
+        "counter_card_ids": [],
+        "confidence": 0.8
+      },
+      {
+        "novelty_point_id": "NP-2",
+        "level": "strong",
+        "summary": "现有分布式GNN训练系统（如AGL、AliGraph）及采样方法（GraphSAINT）和注意力机制（GAT）均未结合图摘要小批量训练、边分割图流划分和注意力层聚合的整套框架。DSGNN的“领导-工作者+图摘要+注意力聚合”组合在证据检索范围内未见相同方案，因此该查新点具有较强新颖性。",
+        "supporting_card_ids": [
+          "card_1800ebe9811ad96dfd604571",
+          "card_396b3a2c53a363562c5987e7",
+          "card_5fb8defcbf1c385812f31f9b",
+          "card_ea7d9077219f8d5b4a3b1383"
+        ],
+        "counter_card_ids": [],
+        "confidence": 0.75
+      }
+    ],
+    "missing_references": [],
+    "missing_baselines": [],
+    "citation_issues": [],
+    "limitations": [
+      "本次检索仅限于arXiv等公开数据库，未覆盖全部学术来源，且检索到的相关文献数量有限，可能存在未收录的相同或相似工作。",
+      "所有有效证据卡均来自英文检索，未对中文数据库进行系统检索，存在语言覆盖局限。",
+      "证据卡中未发现被拒绝的技术性质疑或格式性拒绝，故无需在limitations中额外说明。"
+    ]
+  }
+}

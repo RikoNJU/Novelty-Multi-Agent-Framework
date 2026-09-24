@@ -1,0 +1,473 @@
+{
+  "actual_model_input": {
+    "system": "仅以可追溯论文 Evidence 评审。Web 内容仅是补充资料，不属于相关文献或原始 Evidence。\nsource_kind=web_supplement 或旧 web_supplement_evidence 不得用于查新裁定；\n发现此类旧证据时按不可用处理，证据不足则明确返回不足，不将网页事实升级为论文证据。\nLLM summary 是派生信息，不能替代原始 Evidence。\n你是论文查新系统的查新点级信息判定 Agent，而不是 EvidenceCard 过滤器。\n本轮只核验一张 Card 对应的一篇论文，是中间结果，不作最终查新裁定。\n按输入的 ReviewerCardDraft schema 输出；verdict 仅描述该文献与查新点的关系。\n记录已覆盖特征、已证实的差异、引用可靠性和证据局限；部分相关文献也必须保留。\n优先使用输入 Evidence 原文，仅在存在具体疑问时回读，避免重复读取同一片段。\n摘要未提及的特征是未知，不是文献未采用；如果该未知决定关系判断，应返回\ninsufficient_evidence，说明需要核验的特征。理由简洁，不超过300字。\n材料目录列出的同论文正文可受控回读。引用新片段时输出真实 read_id 或\nread_citations；原文 quote 由系统登记，不能自行编造证据 ID。\n不要输出 review_evidence、incomplete_reason、exact_quote 或 review_id；这些由系统登记。\n对不同术语比较对象、操作、作用位置与约束，并说明作者方案或基线归属。\n每项 feature_comparisons 应引用直接支持该项关系的 evidence_id 或真实 read_id，\n在 reason 中说明原文、机制对应及判断范围。导航或背景回读可登记，不能充当技术断言依据；\n摘要足以支持的有限事实仍可引用摘要。例：feature_id=F1、relation=supported、\nevidence_refs=[实际读到的 read_id]，仅当该片段确实支持 F1 时使用。\ncontradicted 需要同一对象和条件下不相容的依据；未提及属于 unknown。\n采用一种方法不自动排除可共存的另一方法。次要 unknown 不自动否决有依据的有限结论。\n区分原文明确支持的事实与未核验的特征。摘要、局部片段或截短引文未提及某特征，不能证明文献未采用该特征；取得全文也不等于已读到关键段落。若最终裁定依赖尚未核验的关键差异，返回 status=insufficient_evidence，说明缺少的比较证据，不得仅降低 confidence 后继续裁定。保留已证实的局部重合；多篇分别覆盖部分特征不等于单篇公开完整组合。检索或获取失败、零命中、未展示证据均不能支持新颖性。不影响当前有限结论的次要未知可以作为局限保留。read_citations 只能填写本轮 reader 工具实际返回的 read_id；本轮未调用 reader 时必须输出空数组，不得复制输入 Evidence.provenance.read_id。",
+    "user": "请对以下单个查新点进行信息综合与新颖性判定。\n\n当前可信日期（UTC）：2026-09-24\n\n查新点：\n{\"point_id\": \"NP-1\", \"claim\": \"提出了一种基于图摘要的大规模时序图表示学习方法——GSAERU 模型。\", \"claim_en\": \"Proposed a large-scale sequential graph representation learning method based on graph summarization—GSAERU model.\", \"technical_features\": [\"将动态时序图建模为各时刻上原图快照的序列\", \"通过图摘要技术对原图进行压缩\", \"利用图自编码器学习原图节点的表征\", \"通过循环神经网络学习原图在时间维度上的特征信息与依赖关系\"], \"technical_features_en\": [\"Modeling the dynamic sequence graph as a sequence of snapshots of the original graph at each moment\", \"Compressing the original graph through graph summarization technology\", \"Learning the representation of the nodes of the original graph using a graph autoencoder\", \"Learning the feature information and dependencies of the original graph in the time dimension through a recurrent neural network\"], \"source_locations\": [\"第二章\", \"第三章\"]}\n\n相关调研任务：\n[{\"task_id\": \"T-1\", \"novelty_point_id\": \"NP-1\", \"task_type\": \"literature_search\", \"language\": \"en\", \"description\": \"针对该查新点执行英文文献检索。\", \"attempt\": 1}]\n\nEvidenceCard：\n[{\"card_id\": \"card_97d0fa790559bddf282813ef\", \"task_id\": \"T-1\", \"novelty_point_id\": \"NP-1\", \"document_title\": \"Graph neural networks: Historical backgrounds, present revolutions, and conventionalization for the future\", \"main_contribution\": \"Graph Neural Networks (GNNs) have become a powerful framework for analyzing structured data in the form of graphs, with applications spanning diverse fields such as social networks, biology, and recommender systems.\", \"overlaps\": [\"The paper mentions the use of GNNs, which aligns with the GSAERU model's use of graph autoencoders.\"], \"differences\": [\"The paper does not specifically mention the use of graph summarization or the integration of recurrent neural networks for learning temporal features.\"], \"sources\": [{\"title\": \"Graph neural networks: Historical backgrounds, present revolutions, and conventionalization for the future\", \"quote\": \"Graph neural networks (GNNs) have become a powerful framework for analyzing structured data in the form of graphs, with applications spanning diverse fields such as social networks, biology, and recommender systems.\", \"location\": \"artifact art_8eb173b983f525f0fa01d20d chars:0-215\", \"doi\": \"10.1007/s41060-025-00797-w\", \"url\": \"http://link.springer.com/openurl/fulltext?id=doi:10.1007/s41060-025-00797-w\"}, {\"title\": \"Graph neural networks: Historical backgrounds, present revolutions, and conventionalization for the future\", \"quote\": \"Every model is discussed in terms of underlying mathematical formulations, design principles, and practical applications.\", \"location\": \"artifact art_8eb173b983f525f0fa01d20d chars:500-621\", \"doi\": \"10.1007/s41060-025-00797-w\", \"url\": \"http://link.springer.com/openurl/fulltext?id=doi:10.1007/s41060-025-00797-w\"}], \"cited_by_paper\": null, \"possible_baseline\": false, \"relevance\": 0.8, \"confidence\": 0.8, \"evidence_ids\": [\"ev_e4a7c8a85995d82b95798bf1\", \"ev_fb7ffc57d3407e27b02172a3\"]}]\n\nEvidence（包含允许 reader 回读的 artifact_id）：\n[{\"evidence_id\": \"ev_e4a7c8a85995d82b95798bf1\", \"work_id\": \"wrk_9e12ca47229eaa43237eea6f\", \"artifact_id\": \"art_8eb173b983f525f0fa01d20d\", \"novelty_point_id\": \"NP-1\", \"task_id\": \"T-1\", \"quote\": \"Graph neural networks (GNNs) have become a powerful framework for analyzing structured data in the form of graphs, with applications spanning diverse fields such as social networks, biology, and recommender systems.\", \"locator\": {\"page_start\": null, \"page_end\": null, \"section\": null, \"block_id\": null, \"paragraph_start\": null, \"paragraph_end\": null, \"char_start\": 0, \"char_end\": 215, \"selector\": null}, \"interpretation\": \"The paper provides an overview of GNNs and their applications.\", \"confidence\": 0.9, \"provenance\": {\"source_kind\": \"structured_database\", \"evidence_type\": \"database_evidence\", \"builder\": \"evidence_card_builder\", \"artifact_namespace\": \"research_reference\", \"read_id\": \"read_81a71e8124675586a01a44ce\", \"read_char_start\": 0, \"read_char_end\": 1504, \"quote_char_start\": 0, \"quote_char_end\": 215, \"source_record_id\": \"src_758fdc3a6123b1d3c4f7a893\"}}, {\"evidence_id\": \"ev_fb7ffc57d3407e27b02172a3\", \"work_id\": \"wrk_9e12ca47229eaa43237eea6f\", \"artifact_id\": \"art_8eb173b983f525f0fa01d20d\", \"novelty_point_id\": \"NP-1\", \"task_id\": \"T-1\", \"quote\": \"Every model is discussed in terms of underlying mathematical formulations, design principles, and practical applications.\", \"locator\": {\"page_start\": null, \"page_end\": null, \"section\": null, \"block_id\": null, \"paragraph_start\": null, \"paragraph_end\": null, \"char_start\": 500, \"char_end\": 621, \"selector\": null}, \"interpretation\": \"The paper discusses the design principles and applications of GNNs.\", \"confidence\": 0.9, \"provenance\": {\"source_kind\": \"structured_database\", \"evidence_type\": \"database_evidence\", \"builder\": \"evidence_card_builder\", \"artifact_namespace\": \"research_reference\", \"read_id\": \"read_81a71e8124675586a01a44ce\", \"read_char_start\": 0, \"read_char_end\": 1504, \"quote_char_start\": 500, \"quote_char_end\": 621, \"source_record_id\": \"src_758fdc3a6123b1d3c4f7a893\"}}]\n\n输出 schema：\n{\"$defs\": {\"FeatureComparison\": {\"additionalProperties\": false, \"properties\": {\"feature_id\": {\"minLength\": 1, \"title\": \"Feature Id\", \"type\": \"string\"}, \"work_id\": {\"minLength\": 1, \"title\": \"Work Id\", \"type\": \"string\"}, \"relation\": {\"enum\": [\"supported\", \"partially_supported\", \"contradicted\", \"unknown\"], \"title\": \"Relation\", \"type\": \"string\"}, \"basis_type\": {\"enum\": [\"direct_statement\", \"semantic_equivalence\", \"grounded_inference\", \"insufficient\"], \"title\": \"Basis Type\", \"type\": \"string\"}, \"evidence_refs\": {\"items\": {\"type\": \"string\"}, \"title\": \"Evidence Refs\", \"type\": \"array\"}, \"reason\": {\"minLength\": 1, \"title\": \"Reason\", \"type\": \"string\"}, \"source_context\": {\"default\": \"unknown\", \"enum\": [\"author_method\", \"related_work\", \"baseline\", \"ablation\", \"unknown\"], \"title\": \"Source Context\", \"type\": \"string\"}}, \"required\": [\"feature_id\", \"work_id\", \"relation\", \"basis_type\", \"reason\"], \"title\": \"FeatureComparison\", \"type\": \"object\"}, \"NoveltyVerdict\": {\"description\": \"Reviewer 对单个查新点给出的新颖性评价。\", \"enum\": [\"novel\", \"partially_novel\", \"not_novel\"], \"title\": \"NoveltyVerdict\", \"type\": \"string\"}, \"RelevantWork\": {\"additionalProperties\": false, \"description\": \"对查新点结论高度相关、且仅以可信句柄引用的 Work。\", \"properties\": {\"work_id\": {\"minLength\": 1, \"title\": \"Work Id\", \"type\": \"string\"}, \"card_ids\": {\"items\": {\"type\": \"string\"}, \"minItems\": 1, \"title\": \"Card Ids\", \"type\": \"array\"}, \"evidence_ids\": {\"items\": {\"type\": \"string\"}, \"minItems\": 1, \"title\": \"Evidence Ids\", \"type\": \"array\"}, \"relevance_reason\": {\"minLength\": 1, \"title\": \"Relevance Reason\", \"type\": \"string\"}}, \"required\": [\"work_id\", \"card_ids\", \"evidence_ids\", \"relevance_reason\"], \"title\": \"RelevantWork\", \"type\": \"object\"}, \"ReviewReadCitation\": {\"additionalProperties\": false, \"description\": \"Model-selected read; the harness resolves its exact quote and evidence ID.\", \"properties\": {\"read_id\": {\"minLength\": 1, \"title\": \"Read Id\", \"type\": \"string\"}, \"char_start\": {\"anyOf\": [{\"minimum\": 0, \"type\": \"integer\"}, {\"type\": \"null\"}], \"default\": null, \"title\": \"Char Start\"}, \"char_end\": {\"anyOf\": [{\"minimum\": 0, \"type\": \"integer\"}, {\"type\": \"null\"}], \"default\": null, \"title\": \"Char End\"}}, \"required\": [\"read_id\"], \"title\": \"ReviewReadCitation\", \"type\": \"object\"}, \"ReviewStatus\": {\"description\": \"查新点级 Reviewer 的完成状态。\", \"enum\": [\"reviewed\", \"insufficient_evidence\"], \"title\": \"ReviewStatus\", \"type\": \"string\"}, \"SupplementRequest\": {\"additionalProperties\": false, \"description\": \"Reviewer 的补检语义建议；V0 不拥有工作流路由权。\", \"properties\": {\"reason\": {\"minLength\": 1, \"title\": \"Reason\", \"type\": \"string\"}, \"missing_aspects\": {\"items\": {\"type\": \"string\"}, \"title\": \"Missing Aspects\", \"type\": \"array\"}, \"suggested_focus\": {\"items\": {\"type\": \"string\"}, \"title\": \"Suggested Focus\", \"type\": \"array\"}}, \"required\": [\"reason\"], \"title\": \"SupplementRequest\", \"type\": \"object\"}}, \"additionalProperties\": false, \"description\": \"Model-owned single-card judgment; provenance is registered by the harness.\", \"properties\": {\"novelty_point_id\": {\"minLength\": 1, \"title\": \"Novelty Point Id\", \"type\": \"string\"}, \"status\": {\"$ref\": \"#/$defs/ReviewStatus\"}, \"verdict\": {\"anyOf\": [{\"$ref\": \"#/$defs/NoveltyVerdict\"}, {\"type\": \"null\"}], \"default\": null}, \"verdict_reason\": {\"anyOf\": [{\"type\": \"string\"}, {\"type\": \"null\"}], \"default\": null, \"title\": \"Verdict Reason\"}, \"confidence\": {\"anyOf\": [{\"maximum\": 1.0, \"minimum\": 0.0, \"type\": \"number\"}, {\"type\": \"null\"}], \"default\": null, \"title\": \"Confidence\"}, \"highly_relevant_works\": {\"items\": {\"$ref\": \"#/$defs/RelevantWork\"}, \"title\": \"Highly Relevant Works\", \"type\": \"array\"}, \"supplement_request\": {\"anyOf\": [{\"$ref\": \"#/$defs/SupplementRequest\"}, {\"type\": \"null\"}], \"default\": null}, \"read_citations\": {\"items\": {\"$ref\": \"#/$defs/ReviewReadCitation\"}, \"title\": \"Read Citations\", \"type\": \"array\"}, \"feature_comparisons\": {\"items\": {\"$ref\": \"#/$defs/FeatureComparison\"}, \"title\": \"Feature Comparisons\", \"type\": \"array\"}}, \"required\": [\"novelty_point_id\", \"status\"], \"title\": \"ReviewerCardDraft\", \"type\": \"object\"}\n已授权材料目录（只可读取这些 Artifact）：\n[{\"work_id\": \"wrk_9e12ca47229eaa43237eea6f\", \"artifact_id\": \"art_8eb173b983f525f0fa01d20d\", \"namespace\": \"research_reference\", \"source_record_id\": \"src_758fdc3a6123b1d3c4f7a893\", \"role\": \"abstract\", \"content_extent\": \"full\", \"content_hash\": \"7aada2de718071fe81282b5347b9b617c20a5e8ddf035a8a44766daaa2cdcea0\", \"readable_chars\": 1504, \"version_label\": null, \"readable\": true, \"section_hints\": []}]\n固定特征 ID：\n[{\"feature_id\": \"F1\", \"text\": \"将动态时序图建模为各时刻上原图快照的序列\", \"sha256\": \"8d40a640915f250dcc91a1c5af13ed94dd0b67fb03d21c90d4ce951ca241afd4\"}, {\"feature_id\": \"F2\", \"text\": \"通过图摘要技术对原图进行压缩\", \"sha256\": \"5193d42c4a040a38d7d8ec0b775baacb7582cf7c9ecc40cc11efe96f749c5e9a\"}, {\"feature_id\": \"F3\", \"text\": \"利用图自编码器学习原图节点的表征\", \"sha256\": \"279b919249f1e57504b92ed940004de888f2fee0bba720b6c70047f00973a552\"}, {\"feature_id\": \"F4\", \"text\": \"通过循环神经网络学习原图在时间维度上的特征信息与依赖关系\", \"sha256\": \"f17ecc92cb22c948df1222b5c8f222a58c21a92c15a1bab03e29064400227676\"}]"
+  },
+  "card_ids": [
+    "card_97d0fa790559bddf282813ef"
+  ],
+  "draft_schema": {
+    "$defs": {
+      "FeatureComparison": {
+        "additionalProperties": false,
+        "properties": {
+          "basis_type": {
+            "enum": [
+              "direct_statement",
+              "semantic_equivalence",
+              "grounded_inference",
+              "insufficient"
+            ],
+            "title": "Basis Type",
+            "type": "string"
+          },
+          "evidence_refs": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Evidence Refs",
+            "type": "array"
+          },
+          "feature_id": {
+            "minLength": 1,
+            "title": "Feature Id",
+            "type": "string"
+          },
+          "reason": {
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          },
+          "relation": {
+            "enum": [
+              "supported",
+              "partially_supported",
+              "contradicted",
+              "unknown"
+            ],
+            "title": "Relation",
+            "type": "string"
+          },
+          "source_context": {
+            "default": "unknown",
+            "enum": [
+              "author_method",
+              "related_work",
+              "baseline",
+              "ablation",
+              "unknown"
+            ],
+            "title": "Source Context",
+            "type": "string"
+          },
+          "work_id": {
+            "minLength": 1,
+            "title": "Work Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "feature_id",
+          "work_id",
+          "relation",
+          "basis_type",
+          "reason"
+        ],
+        "title": "FeatureComparison",
+        "type": "object"
+      },
+      "NoveltyVerdict": {
+        "description": "Reviewer 对单个查新点给出的新颖性评价。",
+        "enum": [
+          "novel",
+          "partially_novel",
+          "not_novel"
+        ],
+        "title": "NoveltyVerdict",
+        "type": "string"
+      },
+      "RelevantWork": {
+        "additionalProperties": false,
+        "description": "对查新点结论高度相关、且仅以可信句柄引用的 Work。",
+        "properties": {
+          "card_ids": {
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "title": "Card Ids",
+            "type": "array"
+          },
+          "evidence_ids": {
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "title": "Evidence Ids",
+            "type": "array"
+          },
+          "relevance_reason": {
+            "minLength": 1,
+            "title": "Relevance Reason",
+            "type": "string"
+          },
+          "work_id": {
+            "minLength": 1,
+            "title": "Work Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "work_id",
+          "card_ids",
+          "evidence_ids",
+          "relevance_reason"
+        ],
+        "title": "RelevantWork",
+        "type": "object"
+      },
+      "ReviewReadCitation": {
+        "additionalProperties": false,
+        "description": "Model-selected read; the harness resolves its exact quote and evidence ID.",
+        "properties": {
+          "char_end": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Char End"
+          },
+          "char_start": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Char Start"
+          },
+          "read_id": {
+            "minLength": 1,
+            "title": "Read Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "read_id"
+        ],
+        "title": "ReviewReadCitation",
+        "type": "object"
+      },
+      "ReviewStatus": {
+        "description": "查新点级 Reviewer 的完成状态。",
+        "enum": [
+          "reviewed",
+          "insufficient_evidence"
+        ],
+        "title": "ReviewStatus",
+        "type": "string"
+      },
+      "SupplementRequest": {
+        "additionalProperties": false,
+        "description": "Reviewer 的补检语义建议；V0 不拥有工作流路由权。",
+        "properties": {
+          "missing_aspects": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Missing Aspects",
+            "type": "array"
+          },
+          "reason": {
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          },
+          "suggested_focus": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Suggested Focus",
+            "type": "array"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "title": "SupplementRequest",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "description": "Model-owned single-card judgment; provenance is registered by the harness.",
+    "properties": {
+      "confidence": {
+        "anyOf": [
+          {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "type": "number"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Confidence"
+      },
+      "feature_comparisons": {
+        "items": {
+          "$ref": "#/$defs/FeatureComparison"
+        },
+        "title": "Feature Comparisons",
+        "type": "array"
+      },
+      "highly_relevant_works": {
+        "items": {
+          "$ref": "#/$defs/RelevantWork"
+        },
+        "title": "Highly Relevant Works",
+        "type": "array"
+      },
+      "novelty_point_id": {
+        "minLength": 1,
+        "title": "Novelty Point Id",
+        "type": "string"
+      },
+      "read_citations": {
+        "items": {
+          "$ref": "#/$defs/ReviewReadCitation"
+        },
+        "title": "Read Citations",
+        "type": "array"
+      },
+      "status": {
+        "$ref": "#/$defs/ReviewStatus"
+      },
+      "supplement_request": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/SupplementRequest"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "verdict": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/NoveltyVerdict"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "verdict_reason": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Verdict Reason"
+      }
+    },
+    "required": [
+      "novelty_point_id",
+      "status"
+    ],
+    "title": "ReviewerCardDraft",
+    "type": "object"
+  },
+  "execution_status": "completed",
+  "finalization_attempted": false,
+  "legacy_guard_shadow": {
+    "assertion_matches": [],
+    "formal_status": "reviewed",
+    "input_quote_matches": [],
+    "old_relevance_reasons": [
+      "The paper provides an overview of GNNs and their applications, including the use of graph summarization and graph autoencoders."
+    ],
+    "old_status": "reviewed",
+    "old_verdict": "not_novel",
+    "variant_id": "G0_shadow",
+    "would_change": false
+  },
+  "material_catalog": [
+    {
+      "artifact_id": "art_8eb173b983f525f0fa01d20d",
+      "content_extent": "full",
+      "content_hash": "7aada2de718071fe81282b5347b9b617c20a5e8ddf035a8a44766daaa2cdcea0",
+      "namespace": "research_reference",
+      "readable": true,
+      "readable_chars": 1504,
+      "role": "abstract",
+      "section_hints": [],
+      "source_record_id": "src_758fdc3a6123b1d3c4f7a893",
+      "version_label": null,
+      "work_id": "wrk_9e12ca47229eaa43237eea6f"
+    }
+  ],
+  "parent_stage_id": "stage_0008",
+  "phase": "single_card_result",
+  "point_id": "NP-1",
+  "raw_draft": {
+    "confidence": 0.8,
+    "feature_comparisons": [
+      {
+        "basis_type": "direct_statement",
+        "evidence_refs": [
+          "ev_e4a7c8a85995d82b95798bf1"
+        ],
+        "feature_id": "F1",
+        "reason": "The paper discusses the use of GNNs, which aligns with the concept of modeling dynamic sequence graphs as sequences of snapshots.",
+        "relation": "supported",
+        "source_context": "author_method",
+        "work_id": "wrk_9e12ca47229eaa43237eea6f"
+      },
+      {
+        "basis_type": "insufficient",
+        "evidence_refs": [],
+        "feature_id": "F2",
+        "reason": "The paper does not specifically mention the use of graph summarization.",
+        "relation": "unknown",
+        "source_context": "author_method",
+        "work_id": "wrk_9e12ca47229eaa43237eea6f"
+      },
+      {
+        "basis_type": "direct_statement",
+        "evidence_refs": [
+          "ev_e4a7c8a85995d82b95798bf1"
+        ],
+        "feature_id": "F3",
+        "reason": "The paper discusses the use of graph autoencoders, which aligns with the feature of learning node representations.",
+        "relation": "supported",
+        "source_context": "author_method",
+        "work_id": "wrk_9e12ca47229eaa43237eea6f"
+      },
+      {
+        "basis_type": "insufficient",
+        "evidence_refs": [],
+        "feature_id": "F4",
+        "reason": "The paper does not specifically mention the use of recurrent neural networks for learning temporal features.",
+        "relation": "unknown",
+        "source_context": "author_method",
+        "work_id": "wrk_9e12ca47229eaa43237eea6f"
+      }
+    ],
+    "highly_relevant_works": [
+      {
+        "card_ids": [
+          "card_97d0fa790559bddf282813ef"
+        ],
+        "evidence_ids": [
+          "ev_e4a7c8a85995d82b95798bf1",
+          "ev_fb7ffc57d3407e27b02172a3"
+        ],
+        "relevance_reason": "The paper provides an overview of GNNs and their applications, including the use of graph summarization and graph autoencoders.",
+        "work_id": "wrk_9e12ca47229eaa43237eea6f"
+      }
+    ],
+    "novelty_point_id": "NP-1",
+    "read_citations": [],
+    "status": "reviewed",
+    "supplement_request": null,
+    "verdict": "not_novel",
+    "verdict_reason": "The proposed GSAERU model is not novel compared to existing literature on Graph Neural Networks (GNNs). The paper discusses the use of GNNs, graph summarization, and graph autoencoders, which aligns with the technical features of the GSAERU model. However, it does not specifically mention the integration of recurrent neural networks for learning temporal features."
+  },
+  "raw_model_output": "{\n    \"novelty_point_id\": \"NP-1\",\n    \"status\": \"reviewed\",\n    \"verdict\": \"not_novel\",\n    \"verdict_reason\": \"The proposed GSAERU model is not novel compared to existing literature on Graph Neural Networks (GNNs). The paper discusses the use of GNNs, graph summarization, and graph autoencoders, which aligns with the technical features of the GSAERU model. However, it does not specifically mention the integration of recurrent neural networks for learning temporal features.\",\n    \"confidence\": 0.8,\n    \"highly_relevant_works\": [\n        {\n            \"work_id\": \"wrk_9e12ca47229eaa43237eea6f\",\n            \"card_ids\": [\"card_97d0fa790559bddf282813ef\"],\n            \"evidence_ids\": [\"ev_e4a7c8a85995d82b95798bf1\", \"ev_fb7ffc57d3407e27b02172a3\"],\n            \"relevance_reason\": \"The paper provides an overview of GNNs and their applications, including the use of graph summarization and graph autoencoders.\"\n        }\n    ],\n    \"supplement_request\": null,\n    \"read_citations\": [],\n    \"feature_comparisons\": [\n        {\n            \"feature_id\": \"F1\",\n            \"work_id\": \"wrk_9e12ca47229eaa43237eea6f\",\n            \"relation\": \"supported\",\n            \"basis_type\": \"direct_statement\",\n            \"evidence_refs\": [\"ev_e4a7c8a85995d82b95798bf1\"],\n            \"reason\": \"The paper discusses the use of GNNs, which aligns with the concept of modeling dynamic sequence graphs as sequences of snapshots.\",\n            \"source_context\": \"author_method\"\n        },\n        {\n            \"feature_id\": \"F2\",\n            \"work_id\": \"wrk_9e12ca47229eaa43237eea6f\",\n            \"relation\": \"unknown\",\n            \"basis_type\": \"insufficient\",\n            \"evidence_refs\": [],\n            \"reason\": \"The paper does not specifically mention the use of graph summarization.\",\n            \"source_context\": \"author_method\"\n        },\n        {\n            \"feature_id\": \"F3\",\n            \"work_id\": \"wrk_9e12ca47229eaa43237eea6f\",\n            \"relation\": \"supported\",\n            \"basis_type\": \"direct_statement\",\n            \"evidence_refs\": [\"ev_e4a7c8a85995d82b95798bf1\"],\n            \"reason\": \"The paper discusses the use of graph autoencoders, which aligns with the feature of learning node representations.\",\n            \"source_context\": \"author_method\"\n        },\n        {\n            \"feature_id\": \"F4\",\n            \"work_id\": \"wrk_9e12ca47229eaa43237eea6f\",\n            \"relation\": \"unknown\",\n            \"basis_type\": \"insufficient\",\n            \"evidence_refs\": [],\n            \"reason\": \"The paper does not specifically mention the use of recurrent neural networks for learning temporal features.\",\n            \"source_context\": \"author_method\"\n        }\n    ]\n}",
+  "read_ledger": {
+    "ranges": {},
+    "returned_chars": 0,
+    "unique_covered_chars": 0
+  },
+  "read_registration": [],
+  "recorded_at": "2026-09-24T20:53:07.941522+00:00",
+  "review": {
+    "confidence": 0.8,
+    "feature_comparisons": [
+      {
+        "basis_type": "direct_statement",
+        "evidence_refs": [
+          "ev_e4a7c8a85995d82b95798bf1"
+        ],
+        "feature_id": "F1",
+        "reason": "The paper discusses the use of GNNs, which aligns with the concept of modeling dynamic sequence graphs as sequences of snapshots.",
+        "relation": "supported",
+        "source_context": "author_method",
+        "work_id": "wrk_9e12ca47229eaa43237eea6f"
+      },
+      {
+        "basis_type": "insufficient",
+        "evidence_refs": [],
+        "feature_id": "F2",
+        "reason": "The paper does not specifically mention the use of graph summarization.",
+        "relation": "unknown",
+        "source_context": "author_method",
+        "work_id": "wrk_9e12ca47229eaa43237eea6f"
+      },
+      {
+        "basis_type": "direct_statement",
+        "evidence_refs": [
+          "ev_e4a7c8a85995d82b95798bf1"
+        ],
+        "feature_id": "F3",
+        "reason": "The paper discusses the use of graph autoencoders, which aligns with the feature of learning node representations.",
+        "relation": "supported",
+        "source_context": "author_method",
+        "work_id": "wrk_9e12ca47229eaa43237eea6f"
+      },
+      {
+        "basis_type": "insufficient",
+        "evidence_refs": [],
+        "feature_id": "F4",
+        "reason": "The paper does not specifically mention the use of recurrent neural networks for learning temporal features.",
+        "relation": "unknown",
+        "source_context": "author_method",
+        "work_id": "wrk_9e12ca47229eaa43237eea6f"
+      }
+    ],
+    "highly_relevant_works": [
+      {
+        "card_ids": [
+          "card_97d0fa790559bddf282813ef"
+        ],
+        "evidence_ids": [
+          "ev_e4a7c8a85995d82b95798bf1",
+          "ev_fb7ffc57d3407e27b02172a3"
+        ],
+        "relevance_reason": "The paper provides an overview of GNNs and their applications, including the use of graph summarization and graph autoencoders.",
+        "work_id": "wrk_9e12ca47229eaa43237eea6f"
+      }
+    ],
+    "incomplete_reason": null,
+    "novelty_point_id": "NP-1",
+    "read_citations": [],
+    "review_evidence": [],
+    "status": "reviewed",
+    "supplement_request": null,
+    "verdict": "not_novel",
+    "verdict_reason": "The proposed GSAERU model is not novel compared to existing literature on Graph Neural Networks (GNNs). The paper discusses the use of GNNs, graph summarization, and graph autoencoders, which aligns with the technical features of the GSAERU model. However, it does not specifically mention the integration of recurrent neural networks for learning temporal features."
+  },
+  "reviewer_event_id": "reviewer_0004",
+  "run_id": "run-33cb3cd33cca4fb28f4a2bd454c2179a",
+  "scope": {},
+  "stop_reason": null
+}

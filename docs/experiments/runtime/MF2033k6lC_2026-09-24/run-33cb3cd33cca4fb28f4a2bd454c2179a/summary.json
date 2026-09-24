@@ -1,0 +1,612 @@
+{
+  "diagnostics": [
+    {
+      "artifact": "diagnostics/reader.json",
+      "classification_counts": {},
+      "counts": {
+        "failed": 0,
+        "incomplete": 0,
+        "reader_calls": 6,
+        "succeeded": 6
+      },
+      "diagnostic_name": "reader",
+      "primary_code": null,
+      "schema_version": "1.0",
+      "status": "OK"
+    },
+    {
+      "artifact": "diagnostics/reference_namespace.json",
+      "classification_counts": {},
+      "counts": {
+        "errors": 12,
+        "evidence_bindings": 4,
+        "namespace_integrity_failures": 0,
+        "reader_calls": 6,
+        "warnings": 0
+      },
+      "diagnostic_name": "reference_namespace",
+      "primary_code": null,
+      "schema_version": "1.0",
+      "status": "ERROR"
+    },
+    {
+      "artifact": "diagnostics/reviewer.json",
+      "classification_counts": {},
+      "counts": {
+        "evidence": 4,
+        "novelty_points": 1,
+        "reviewer_reader_calls": 0,
+        "reviews": 1,
+        "runtime_review_stages": 1,
+        "validator_accepted_cards": 2
+      },
+      "diagnostic_name": "reviewer",
+      "primary_code": null,
+      "schema_version": "1.0",
+      "status": "OK"
+    }
+  ],
+  "environment": {
+    "git_branch": "experiment/local-llm-baseline",
+    "git_commit": "7e03fcca3eee05c9ce7b06ee9e74b5818b833726",
+    "model_name": "qwen2.5-7b-instruct",
+    "model_provider": "openai_compatible",
+    "python_version": "3.11.15"
+  },
+  "errors": [
+    {
+      "error_id": "error_0001",
+      "message": "all 1 search executions failed",
+      "stage": "run_research_task",
+      "timestamp": "2026-09-24T20:51:41.381553+00:00",
+      "tool_call_id": "tool_0001",
+      "traceback": "  File \"<workspace>/scripts/run_full_workflow_live.py\", line 224, in <module>\n    main()\n  File \"<workspace>/scripts/run_full_workflow_live.py\", line 126, in main\n    result = workflow.run(paper, run_identity=identity)\n  File \"<workspace>/backend/src/novelty_agent_framework/workflows/novelty.py\", line 1129, in run\n    return asyncio.run(self.arun(paper, run_identity=run_identity))\n  File \"<python-env>/lib/python3.11/asyncio/runners.py\", line 190, in run\n    return runner.run(main)\n  File \"<python-env>/lib/python3.11/asyncio/runners.py\", line 118, in run\n    return self._loop.run_until_complete(task)\n  File \"<python-env>/lib/python3.11/asyncio/base_events.py\", line 641, in run_until_complete\n    self.run_forever()\n  File \"<python-env>/lib/python3.11/asyncio/base_events.py\", line 608, in run_forever\n    self._run_once()\n  File \"<python-env>/lib/python3.11/asyncio/base_events.py\", line 1936, in _run_once\n    handle._run()\n  File \"<python-env>/lib/python3.11/asyncio/events.py\", line 84, in _run\n    self._context.run(self._callback, *self._args)\n  File \"<python-env>/lib/python3.11/site-packages/langgraph/_internal/_runnable.py\", line 501, in ainvoke\n    ret = await self.afunc(*args, **kwargs)\n  File \"<workspace>/backend/src/novelty_agent_framework/workflows/novelty.py\", line 313, in recorded\n    output = await function(state)\n  File \"<workspace>/backend/src/novelty_agent_framework/workflows/novelty.py\", line 524, in _run_research_task\n    await self.services.task_researcher.ainvoke(request)\n  File \"<workspace>/backend/src/novelty_agent_framework/workflows/research_task.py\", line 104, in ainvoke\n    result, trace = await self._research(request)\n  File \"<workspace>/backend/src/novelty_agent_framework/workflows/research_task.py\", line 114, in _research\n    harness_result = await self.harness.run(\n  File \"<workspace>/backend/src/novelty_agent_framework/core/tool_call_harness.py\", line 122, in run\n    return await self._run(\n  File \"<workspace>/backend/src/novelty_agent_framework/core/tool_call_harness.py\", line 461, in _run\n    runtime.finish_tool_call(\n  File \"<workspace>/backend/src/novelty_agent_framework/core/runtime_artifacts.py\", line 671, in finish_tool_call\n    error_payload = self._coerce_error(\n  File \"<workspace>/backend/src/novelty_agent_framework/core/runtime_artifacts.py\", line 1018, in _coerce_error\n    \"traceback\": \"\".join(traceback_module.format_stack()),\n",
+      "type": "ToolExecutionError"
+    },
+    {
+      "error_id": "error_0002",
+      "message": "模型 HTTP 调用失败: 400 {\"object\":\"error\",\"message\":\"This model's maximum context length is 32768 tokens. However, you requested 61456 tokens (57360 in the messages, 4096 in the completion). Please reduce the length of the messages or completion.\",\"type\":\"BadRequestError\",\"param\":null,\"code\":400}",
+      "stage": "synthesize_report",
+      "timestamp": "2026-09-24T20:53:25.125928+00:00",
+      "tool_call_id": null,
+      "traceback": "Traceback (most recent call last):\n  File \"<workspace>/backend/src/novelty_agent_framework/workflows/novelty.py\", line 1127, in run\n    asyncio.get_running_loop()\nRuntimeError: no running event loop\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"<workspace>/backend/env/model_client.py\", line 357, in _complete\n    with urllib.request.urlopen(request, timeout=timeout) as response:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<python-env>/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<python-env>/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"<python-env>/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"<python-env>/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<python-env>/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"<python-env>/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 400: Bad Request\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"<workspace>/backend/src/novelty_agent_framework/workflows/novelty.py\", line 313, in recorded\n    output = await function(state)\n             ^^^^^^^^^^^^^^^^^^^^^\n  File \"<workspace>/backend/src/novelty_agent_framework/workflows/novelty.py\", line 971, in _synthesize_report\n    report_value = self.services.coordinator.synthesize(\n                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<workspace>/backend/src/novelty_agent_framework/agents/coordinator.py\", line 264, in synthesize\n    response = self._client().complete(messages, options=options)\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<workspace>/backend/env/model_client.py\", line 295, in complete\n    response = self._complete(messages, options=options)\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<workspace>/backend/env/model_client.py\", line 368, in _complete\n    raise ModelClientError(f\"模型 HTTP 调用失败: {exc.code} {detail}\") from exc\nbackend.env.model_client.ModelClientError: 模型 HTTP 调用失败: 400 {\"object\":\"error\",\"message\":\"This model's maximum context length is 32768 tokens. However, you requested 61456 tokens (57360 in the messages, 4096 in the completion). Please reduce the length of the messages or completion.\",\"type\":\"BadRequestError\",\"param\":null,\"code\":400}\n",
+      "type": "ModelClientError"
+    },
+    {
+      "error_id": "error_0003",
+      "message": "模型 HTTP 调用失败: 400 {\"object\":\"error\",\"message\":\"This model's maximum context length is 32768 tokens. However, you requested 61456 tokens (57360 in the messages, 4096 in the completion). Please reduce the length of the messages or completion.\",\"type\":\"BadRequestError\",\"param\":null,\"code\":400}",
+      "stage": null,
+      "timestamp": "2026-09-24T20:53:25.131983+00:00",
+      "tool_call_id": null,
+      "traceback": "Traceback (most recent call last):\n  File \"<workspace>/backend/src/novelty_agent_framework/workflows/novelty.py\", line 1127, in run\n    asyncio.get_running_loop()\nRuntimeError: no running event loop\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"<workspace>/backend/env/model_client.py\", line 357, in _complete\n    with urllib.request.urlopen(request, timeout=timeout) as response:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<python-env>/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<python-env>/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"<python-env>/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"<python-env>/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<python-env>/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"<python-env>/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 400: Bad Request\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"<workspace>/backend/src/novelty_agent_framework/workflows/novelty.py\", line 1087, in arun\n    final = await self.graph.ainvoke(\n            ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<python-env>/lib/python3.11/site-packages/langgraph/pregel/main.py\", line 4090, in ainvoke\n    async for chunk in self.astream(\n  File \"<python-env>/lib/python3.11/site-packages/langgraph/pregel/main.py\", line 3440, in astream\n    async for _ in runner.atick(\n  File \"<python-env>/lib/python3.11/site-packages/langgraph/pregel/_runner.py\", line 396, in atick\n    await arun_with_retry(\n  File \"<python-env>/lib/python3.11/site-packages/langgraph/pregel/_retry.py\", line 744, in arun_with_retry\n    return await task.proc.ainvoke(task.input, config)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<python-env>/lib/python3.11/site-packages/langgraph/_internal/_runnable.py\", line 733, in ainvoke\n    input = await asyncio.create_task(\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<python-env>/lib/python3.11/site-packages/langgraph/_internal/_runnable.py\", line 501, in ainvoke\n    ret = await self.afunc(*args, **kwargs)\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<workspace>/backend/src/novelty_agent_framework/workflows/novelty.py\", line 313, in recorded\n    output = await function(state)\n             ^^^^^^^^^^^^^^^^^^^^^\n  File \"<workspace>/backend/src/novelty_agent_framework/workflows/novelty.py\", line 971, in _synthesize_report\n    report_value = self.services.coordinator.synthesize(\n                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<workspace>/backend/src/novelty_agent_framework/agents/coordinator.py\", line 264, in synthesize\n    response = self._client().complete(messages, options=options)\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<workspace>/backend/env/model_client.py\", line 295, in complete\n    response = self._complete(messages, options=options)\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<workspace>/backend/env/model_client.py\", line 368, in _complete\n    raise ModelClientError(f\"模型 HTTP 调用失败: {exc.code} {detail}\") from exc\nbackend.env.model_client.ModelClientError: 模型 HTTP 调用失败: 400 {\"object\":\"error\",\"message\":\"This model's maximum context length is 32768 tokens. However, you requested 61456 tokens (57360 in the messages, 4096 in the completion). Please reduce the length of the messages or completion.\",\"type\":\"BadRequestError\",\"param\":null,\"code\":400}\nDuring task with name 'synthesize_report' and id 'af2f70ce-db54-0d21-69b0-9205ab717f75'\n",
+      "type": "ModelClientError"
+    }
+  ],
+  "final_evidence_sufficiency_checks": [
+    {
+      "actual_next_stage": "synthesize_report",
+      "calculated_insufficient_final_evidence_points": [],
+      "calculated_insufficient_point_ids": [],
+      "calculated_status": "PASS",
+      "check_status": "PASS",
+      "configured_cut": 1,
+      "counted_final_valid_card_count": 2,
+      "ignored_card_count": 0,
+      "input_final_valid_card_count": 2,
+      "max_rounds": 1,
+      "output_matches_calculation": true,
+      "point_results": [
+        {
+          "novelty_point_id": "NP-1",
+          "required_card_count": 1,
+          "status": "PASS",
+          "valid_card_count": 2
+        }
+      ],
+      "reported_insufficient_final_evidence_points": [],
+      "round": 1,
+      "round_limit_allows_supplement": false,
+      "stage_id": "stage_0010",
+      "stage_status": "SUCCESS"
+    }
+  ],
+  "integrity_gates": [
+    {
+      "accepted_card_count": 2,
+      "accepted_card_ids": [
+        "card_a97fedc0057857de88015883",
+        "card_97d0fa790559bddf282813ef"
+      ],
+      "checked_card_count": 2,
+      "rejected_card_count": 0,
+      "rejected_card_ids": [],
+      "rejected_cards": [],
+      "stage_name": "validate_synthesis_input",
+      "validation_passed": true
+    }
+  ],
+  "last_completed_stage": "check_final_evidence_sufficiency",
+  "llm_usage": {
+    "by_model": [
+      {
+        "amount_rmb": 0.0,
+        "cached_input_tokens": 0,
+        "calls": 18,
+        "failed_calls": 1,
+        "free_calls": 0,
+        "input_tokens": 94048,
+        "model": "qwen2.5-7b-instruct",
+        "output_tokens": 5934,
+        "priced_calls": 0,
+        "reasoning_tokens": 0,
+        "successful_calls": 17,
+        "total_tokens": 99982,
+        "unpriced_calls": 17,
+        "usage_unavailable_calls": 1
+      }
+    ],
+    "totals": {
+      "amount_rmb": 0.0,
+      "cached_input_tokens": 0,
+      "calls": 18,
+      "cost_completeness": "PARTIAL",
+      "currency": "RMB",
+      "failed_calls": 1,
+      "free_calls": 0,
+      "input_tokens": 94048,
+      "output_tokens": 5934,
+      "priced_calls": 0,
+      "reasoning_tokens": 0,
+      "successful_calls": 17,
+      "total_tokens": 99982,
+      "unpriced_calls": 17,
+      "usage_unavailable_calls": 1
+    }
+  },
+  "outcome": null,
+  "provider_requests": {
+    "api_elapsed_ms": 699.729,
+    "average_batch_size": 0.0,
+    "batch_count": 0,
+    "by_transport": {
+      "api": {
+        "api_elapsed_ms": 699.729,
+        "average_batch_size": 0.0,
+        "batch_count": 0,
+        "circuit_open_count": 0,
+        "dedup_count": 0,
+        "http_200_count": 0,
+        "http_429_count": 0,
+        "interval_violation_count": 0,
+        "logical_api_requests": 1,
+        "logical_web_requests": 0,
+        "max_batch_size": 0,
+        "metadata_batch_ratio": 0.0,
+        "metadata_logical_requests": 0,
+        "metadata_physical_requests": 0,
+        "physical_api_requests": 1,
+        "physical_web_requests": 0,
+        "queue_wait_ms": 0.019,
+        "read_timeout_count": 0,
+        "request_compression_ratio": 1.0,
+        "retry_count": 0,
+        "status_counts": {
+          "406": 1
+        },
+        "timeout_count": 0,
+        "total_arxiv_elapsed_ms": 701.189,
+        "transports": [
+          "api"
+        ],
+        "unique_metadata_ids": 0
+      }
+    },
+    "circuit_open_count": 0,
+    "dedup_count": 0,
+    "http_200_count": 0,
+    "http_429_count": 0,
+    "interval_violation_count": 0,
+    "logical_api_requests": 1,
+    "logical_web_requests": 0,
+    "max_batch_size": 0,
+    "metadata_batch_ratio": 0.0,
+    "metadata_logical_requests": 0,
+    "metadata_physical_requests": 0,
+    "physical_api_requests": 1,
+    "physical_web_requests": 0,
+    "queue_wait_ms": 0.019,
+    "read_timeout_count": 0,
+    "request_compression_ratio": 1.0,
+    "retry_count": 0,
+    "status_counts": {
+      "406": 1
+    },
+    "timeout_count": 0,
+    "total_arxiv_elapsed_ms": 701.189,
+    "transports": [
+      "api"
+    ],
+    "unique_metadata_ids": 0
+  },
+  "reviewer_information_adjudication_checks": [
+    {
+      "actual_next_stage": "validate_synthesis_input",
+      "cards_preserved": true,
+      "duplicate_review_point_ids": [],
+      "expected_point_ids": [
+        "NP-1"
+      ],
+      "input_card_ids": [
+        "card_a97fedc0057857de88015883",
+        "card_97d0fa790559bddf282813ef"
+      ],
+      "missing_review_point_ids": [],
+      "output_card_ids": [
+        "card_a97fedc0057857de88015883",
+        "card_97d0fa790559bddf282813ef"
+      ],
+      "point_scopes": [
+        {
+          "allowed_artifact_ids": [
+            "art_7bd9e39414be7e72de059e1d",
+            "art_8eb173b983f525f0fa01d20d"
+          ],
+          "card_ids": [
+            "card_a97fedc0057857de88015883",
+            "card_97d0fa790559bddf282813ef"
+          ],
+          "novelty_point_id": "NP-1",
+          "referenced_evidence_ids": [
+            "ev_098a7c5de02d694e7ccd1a80",
+            "ev_7e9cf38b274e44906b7af89c",
+            "ev_e4a7c8a85995d82b95798bf1",
+            "ev_fb7ffc57d3407e27b02172a3"
+          ],
+          "unresolved_evidence_ids": []
+        }
+      ],
+      "review_results": [
+        {
+          "confidence": 0.8,
+          "has_supplement_request": false,
+          "highly_relevant_work_count": 1,
+          "novelty_point_id": "NP-1",
+          "status": "reviewed",
+          "supplement_reason": null,
+          "verdict": "not_novel"
+        }
+      ],
+      "reviewed_point_ids": [
+        "NP-1"
+      ],
+      "stage_id": "stage_0008",
+      "stage_status": "SUCCESS",
+      "supplement_requests_control_route": false,
+      "unexpected_review_point_ids": [],
+      "unresolved_evidence_ids": []
+    }
+  ],
+  "run": {
+    "duration_ms": 148875,
+    "end_time": "2026-09-24T20:53:25.133593+00:00",
+    "entrypoint": "paper_input",
+    "input_identity": {
+      "novelty_point_id": null,
+      "paper_json": "outputs/MF2033k6lC/paper-input/others/paper.json",
+      "paper_sha256": "89fcc578efcc840daa9c4e0698943314f794e096e176c067dbbd6e603d42ea66",
+      "search_plan_id": null,
+      "task_id": null
+    },
+    "paper_id": "MF2033k6lC",
+    "run_id": "run-33cb3cd33cca4fb28f4a2bd454c2179a",
+    "start_time": "2026-09-24T20:50:56.276474+00:00",
+    "status": "FAILED"
+  },
+  "stages": [
+    {
+      "duration": 37.202334,
+      "duration_ms": 37202,
+      "error": null,
+      "finished_at": "2026-09-24T20:51:33.498801+00:00",
+      "parent_stage_id": null,
+      "scope": {},
+      "stage_id": "stage_0001",
+      "stage_name": "extract_points",
+      "started_at": "2026-09-24T20:50:56.288690+00:00",
+      "status": "SUCCESS",
+      "validation_result": null
+    },
+    {
+      "duration": 6.9e-05,
+      "duration_ms": 0,
+      "error": null,
+      "finished_at": "2026-09-24T20:51:33.509961+00:00",
+      "parent_stage_id": null,
+      "scope": {},
+      "stage_id": "stage_0002",
+      "stage_name": "plan",
+      "started_at": "2026-09-24T20:51:33.502049+00:00",
+      "status": "SUCCESS",
+      "validation_result": null
+    },
+    {
+      "duration": 2.1e-05,
+      "duration_ms": 0,
+      "error": null,
+      "finished_at": "2026-09-24T20:51:33.520860+00:00",
+      "parent_stage_id": null,
+      "scope": {},
+      "stage_id": "stage_0003",
+      "stage_name": "dispatch_planning_tasks",
+      "started_at": "2026-09-24T20:51:33.513566+00:00",
+      "status": "SUCCESS",
+      "validation_result": null
+    },
+    {
+      "duration": 5.94545,
+      "duration_ms": 5945,
+      "error": null,
+      "finished_at": "2026-09-24T20:51:39.472341+00:00",
+      "parent_stage_id": null,
+      "scope": {
+        "attempt": 1,
+        "point_id": "NP-1",
+        "task_id": "T-1"
+      },
+      "stage_id": "stage_0004",
+      "stage_name": "plan_research_task",
+      "started_at": "2026-09-24T20:51:33.524093+00:00",
+      "status": "SUCCESS",
+      "validation_result": null
+    },
+    {
+      "duration": 2.1e-05,
+      "duration_ms": 0,
+      "error": null,
+      "finished_at": "2026-09-24T20:51:39.483538+00:00",
+      "parent_stage_id": null,
+      "scope": {},
+      "stage_id": "stage_0005",
+      "stage_name": "dispatch_research_tasks",
+      "started_at": "2026-09-24T20:51:39.475606+00:00",
+      "status": "SUCCESS",
+      "validation_result": null
+    },
+    {
+      "duration": 49.841655,
+      "duration_ms": 49841,
+      "error": null,
+      "finished_at": "2026-09-24T20:52:29.331464+00:00",
+      "parent_stage_id": null,
+      "scope": {
+        "attempt": 1,
+        "point_id": "NP-1",
+        "task_id": "T-1"
+      },
+      "stage_id": "stage_0006",
+      "stage_name": "run_research_task",
+      "started_at": "2026-09-24T20:51:39.486491+00:00",
+      "status": "SUCCESS",
+      "validation_result": null
+    },
+    {
+      "duration": 0.001291,
+      "duration_ms": 1,
+      "error": null,
+      "finished_at": "2026-09-24T20:52:29.362200+00:00",
+      "parent_stage_id": null,
+      "scope": {},
+      "stage_id": "stage_0007",
+      "stage_name": "validate_evidence",
+      "started_at": "2026-09-24T20:52:29.344034+00:00",
+      "status": "SUCCESS",
+      "validation_result": null
+    },
+    {
+      "debug_details": {
+        "reviewer_information_adjudication": {
+          "cards_preserved": true,
+          "duplicate_review_point_ids": [],
+          "expected_point_ids": [
+            "NP-1"
+          ],
+          "input_card_ids": [
+            "card_a97fedc0057857de88015883",
+            "card_97d0fa790559bddf282813ef"
+          ],
+          "missing_review_point_ids": [],
+          "output_card_ids": [
+            "card_a97fedc0057857de88015883",
+            "card_97d0fa790559bddf282813ef"
+          ],
+          "point_scopes": [
+            {
+              "allowed_artifact_ids": [
+                "art_7bd9e39414be7e72de059e1d",
+                "art_8eb173b983f525f0fa01d20d"
+              ],
+              "card_ids": [
+                "card_a97fedc0057857de88015883",
+                "card_97d0fa790559bddf282813ef"
+              ],
+              "novelty_point_id": "NP-1",
+              "referenced_evidence_ids": [
+                "ev_098a7c5de02d694e7ccd1a80",
+                "ev_7e9cf38b274e44906b7af89c",
+                "ev_e4a7c8a85995d82b95798bf1",
+                "ev_fb7ffc57d3407e27b02172a3"
+              ],
+              "unresolved_evidence_ids": []
+            }
+          ],
+          "review_results": [
+            {
+              "confidence": 0.8,
+              "has_supplement_request": false,
+              "highly_relevant_work_count": 1,
+              "novelty_point_id": "NP-1",
+              "status": "reviewed",
+              "supplement_reason": null,
+              "verdict": "not_novel"
+            }
+          ],
+          "reviewed_point_ids": [
+            "NP-1"
+          ],
+          "supplement_requests_control_route": false,
+          "unexpected_review_point_ids": [],
+          "unresolved_evidence_ids": []
+        }
+      },
+      "duration": 55.483959,
+      "duration_ms": 55483,
+      "error": null,
+      "finished_at": "2026-09-24T20:53:24.866761+00:00",
+      "parent_stage_id": null,
+      "scope": {},
+      "stage_id": "stage_0008",
+      "stage_name": "review_evidence",
+      "started_at": "2026-09-24T20:52:29.365927+00:00",
+      "status": "SUCCESS",
+      "validation_result": null
+    },
+    {
+      "duration": 0.002992,
+      "duration_ms": 2,
+      "error": null,
+      "finished_at": "2026-09-24T20:53:24.891584+00:00",
+      "parent_stage_id": null,
+      "scope": {},
+      "stage_id": "stage_0009",
+      "stage_name": "validate_synthesis_input",
+      "started_at": "2026-09-24T20:53:24.870872+00:00",
+      "status": "SUCCESS",
+      "validation_result": {
+        "accepted_card_count": 2,
+        "accepted_card_ids": [
+          "card_a97fedc0057857de88015883",
+          "card_97d0fa790559bddf282813ef"
+        ],
+        "checked_card_count": 2,
+        "rejected_card_count": 0,
+        "rejected_card_ids": [],
+        "rejected_cards": [],
+        "validation_passed": true
+      }
+    },
+    {
+      "debug_details": {
+        "final_evidence_sufficiency": {
+          "calculated_insufficient_final_evidence_points": [],
+          "calculated_insufficient_point_ids": [],
+          "calculated_status": "PASS",
+          "check_status": "PASS",
+          "configured_cut": 1,
+          "counted_final_valid_card_count": 2,
+          "ignored_card_count": 0,
+          "input_final_valid_card_count": 2,
+          "max_rounds": 1,
+          "output_matches_calculation": true,
+          "point_results": [
+            {
+              "novelty_point_id": "NP-1",
+              "required_card_count": 1,
+              "status": "PASS",
+              "valid_card_count": 2
+            }
+          ],
+          "reported_insufficient_final_evidence_points": [],
+          "round": 1,
+          "round_limit_allows_supplement": false
+        }
+      },
+      "duration": 6.4e-05,
+      "duration_ms": 0,
+      "error": null,
+      "finished_at": "2026-09-24T20:53:24.911646+00:00",
+      "parent_stage_id": null,
+      "scope": {},
+      "stage_id": "stage_0010",
+      "stage_name": "check_final_evidence_sufficiency",
+      "started_at": "2026-09-24T20:53:24.894620+00:00",
+      "status": "SUCCESS",
+      "validation_result": null
+    },
+    {
+      "duration": 0.193629,
+      "duration_ms": 193,
+      "error": {
+        "message": "模型 HTTP 调用失败: 400 {\"object\":\"error\",\"message\":\"This model's maximum context length is 32768 tokens. However, you requested 61456 tokens (57360 in the messages, 4096 in the completion). Please reduce the length of the messages or completion.\",\"type\":\"BadRequestError\",\"param\":null,\"code\":400}",
+        "stage": "synthesize_report",
+        "timestamp": "2026-09-24T20:53:25.125928+00:00",
+        "tool_call_id": null,
+        "traceback": "Traceback (most recent call last):\n  File \"<workspace>/backend/src/novelty_agent_framework/workflows/novelty.py\", line 1127, in run\n    asyncio.get_running_loop()\nRuntimeError: no running event loop\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"<workspace>/backend/env/model_client.py\", line 357, in _complete\n    with urllib.request.urlopen(request, timeout=timeout) as response:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<python-env>/lib/python3.11/urllib/request.py\", line 216, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<python-env>/lib/python3.11/urllib/request.py\", line 525, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"<python-env>/lib/python3.11/urllib/request.py\", line 634, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"<python-env>/lib/python3.11/urllib/request.py\", line 563, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<python-env>/lib/python3.11/urllib/request.py\", line 496, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"<python-env>/lib/python3.11/urllib/request.py\", line 643, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 400: Bad Request\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"<workspace>/backend/src/novelty_agent_framework/workflows/novelty.py\", line 313, in recorded\n    output = await function(state)\n             ^^^^^^^^^^^^^^^^^^^^^\n  File \"<workspace>/backend/src/novelty_agent_framework/workflows/novelty.py\", line 971, in _synthesize_report\n    report_value = self.services.coordinator.synthesize(\n                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<workspace>/backend/src/novelty_agent_framework/agents/coordinator.py\", line 264, in synthesize\n    response = self._client().complete(messages, options=options)\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<workspace>/backend/env/model_client.py\", line 295, in complete\n    response = self._complete(messages, options=options)\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<workspace>/backend/env/model_client.py\", line 368, in _complete\n    raise ModelClientError(f\"模型 HTTP 调用失败: {exc.code} {detail}\") from exc\nbackend.env.model_client.ModelClientError: 模型 HTTP 调用失败: 400 {\"object\":\"error\",\"message\":\"This model's maximum context length is 32768 tokens. However, you requested 61456 tokens (57360 in the messages, 4096 in the completion). Please reduce the length of the messages or completion.\",\"type\":\"BadRequestError\",\"param\":null,\"code\":400}\n",
+        "type": "ModelClientError"
+      },
+      "finished_at": "2026-09-24T20:53:25.124188+00:00",
+      "parent_stage_id": null,
+      "scope": {},
+      "stage_id": "stage_0011",
+      "stage_name": "synthesize_report",
+      "started_at": "2026-09-24T20:53:24.914845+00:00",
+      "status": "FAILED",
+      "validation_result": null
+    },
+    {
+      "duration": null,
+      "duration_ms": null,
+      "error": null,
+      "finished_at": null,
+      "stage_id": null,
+      "stage_name": "plan_supplement",
+      "started_at": null,
+      "status": "NOT_RUN"
+    },
+    {
+      "duration": null,
+      "duration_ms": null,
+      "error": null,
+      "finished_at": null,
+      "stage_id": null,
+      "stage_name": "validate_report_integrity",
+      "started_at": null,
+      "status": "NOT_RUN"
+    },
+    {
+      "duration": null,
+      "duration_ms": null,
+      "error": null,
+      "finished_at": null,
+      "stage_id": null,
+      "stage_name": "persist_report",
+      "started_at": null,
+      "status": "NOT_RUN"
+    },
+    {
+      "duration": null,
+      "duration_ms": null,
+      "error": null,
+      "finished_at": null,
+      "stage_id": null,
+      "stage_name": "render_report",
+      "started_at": null,
+      "status": "NOT_RUN"
+    }
+  ],
+  "tool_calls": [
+    {
+      "calls": 2,
+      "empty": 0,
+      "failed": 1,
+      "success": 1,
+      "tool_name": "database_search"
+    },
+    {
+      "calls": 6,
+      "empty": 3,
+      "failed": 0,
+      "success": 6,
+      "tool_name": "reader"
+    }
+  ]
+}
