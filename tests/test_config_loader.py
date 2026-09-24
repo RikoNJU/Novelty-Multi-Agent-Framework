@@ -24,8 +24,8 @@ def test_split_files_load_and_project_settings_are_slim():
     project = json.loads(DEFAULT_PROJECT_PATH.read_text(encoding="utf-8"))
     assert not {"models", "agents", "task_researcher", "retrieval"} & set(project)
     assert config.models and config.researcher.version == config.search_planner.version == 1
-    assert config.researcher.model.alias == "deepseek-flash"
-    assert config.search_planner.model.alias == "deepseek-flash"
+    assert config.researcher.model.alias == "local-qwen2.5-7b"
+    assert config.search_planner.model.alias == "local-qwen2.5-7b"
     assert config.reviewer is not None
     assert config.reviewer.enabled is True
 
@@ -76,10 +76,10 @@ def test_environment_model_override_is_loader_owned():
 
 def test_search_planner_uses_verified_default_without_environment_override():
     config = load_application_config(environ={})
-    assert config.search_planner.model.alias == "deepseek-flash"
+    assert config.search_planner.model.alias == "local-qwen2.5-7b"
 
 
-def test_default_text_llm_roles_are_unified_on_deepseek_v4_flash():
+def test_default_text_llm_roles_are_unified_on_local_qwen():
     config = load_application_config(environ={})
     aliases = {
         config.coordinator.model.alias,
@@ -90,8 +90,8 @@ def test_default_text_llm_roles_are_unified_on_deepseek_v4_flash():
         config.project.processing["llm_model"],
     }
 
-    assert aliases == {"deepseek-flash"}
-    assert config.models["deepseek-flash"].model == "deepseek-ai/DeepSeek-V4-Flash"
+    assert aliases == {"local-qwen2.5-7b"}
+    assert config.models["local-qwen2.5-7b"].model == "qwen2.5-7b-instruct"
     assert config.project.processing["ocr_model"] == "deepseek-ocr"
 
 

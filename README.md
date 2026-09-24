@@ -298,9 +298,11 @@ result = workflow.run(PaperInput.model_validate(paper_data))
 ```
 
 当前默认配置已将 Coordinator、PointExtractor、Researcher、SearchPlanner、Reviewer
-以及文本处理的 LLM 兜底统一为 `deepseek-flash`；OCR 保留专用的
+以及文本处理的 LLM 兜底统一为 `local-qwen2.5-7b`；OCR 保留专用的
 `deepseek-ocr`。仍可分别通过 `NOVELTY_COORDINATOR_MODEL`、
-`NOVELTY_RESEARCH_MODEL` 和 `NOVELTY_SEARCH_PLANNER_MODEL` 显式覆盖。
+`NOVELTY_POINT_EXTRACTOR_MODEL`、`NOVELTY_RESEARCHER_MODEL`、
+`NOVELTY_SEARCH_PLANNER_MODEL`、`NOVELTY_REVIEWER_MODEL` 和
+`NOVELTY_PROCESSING_LLM_MODEL` 显式覆盖。
 
 ### Renderer 与 API
 

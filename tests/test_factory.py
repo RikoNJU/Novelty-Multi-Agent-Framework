@@ -70,9 +70,9 @@ def test_load_config_default_contains_models_and_agents():
     config = load_config()
     assert "models" in config
     assert "agents" in config
-    assert config["agents"]["coordinator"]["model"] == "deepseek-flash"
-    assert config["agents"]["search_planner"]["model"] == "deepseek-flash"
-    assert config["agents"]["research"]["model"] == "deepseek-flash"
+    assert config["agents"]["coordinator"]["model"] == "local-qwen2.5-7b"
+    assert config["agents"]["search_planner"]["model"] == "local-qwen2.5-7b"
+    assert config["agents"]["research"]["model"] == "local-qwen2.5-7b"
 
 
 def test_build_workflow_wires_role_models(monkeypatch):
