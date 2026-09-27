@@ -1,0 +1,311 @@
+{
+  "alias": "local-context-guard",
+  "billing": {
+    "amount": null,
+    "currency": "RMB",
+    "pricing_table": "/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/config/llm_pricing.json",
+    "rate_name": null,
+    "rates_per_unit": null,
+    "status": "UNPRICED",
+    "unit_tokens": 1000000
+  },
+  "chat_transport_invoked": true,
+  "client_call_id": "17688be4e11c4b4ea0a2a35d2d40c992",
+  "context_admission": {
+    "code": "CONTEXT_ADMITTED",
+    "counter": "vllm",
+    "decision": "allow",
+    "effective_context_window": 32768,
+    "exact": true,
+    "input_tokens": 580,
+    "measurement_details": {
+      "endpoint": "http://127.0.0.1:8000/tokenize",
+      "schema_verified": true,
+      "server_version": "0.8.5.post1",
+      "template_fields": [
+        "add_generation_prompt",
+        "add_special_tokens",
+        "chat_template_kwargs",
+        "continue_final_message",
+        "messages",
+        "model"
+      ],
+      "tokenize_payload_sha256": "dde4282885a836c030354bd89f42f173be660df29f6c673af120e61c38f09afd",
+      "vllm_tools_mode": "v0_8_5_kwargs"
+    },
+    "mode": "enforce",
+    "on_unavailable": "reject",
+    "output_reservation_field": "max_tokens",
+    "output_tokens_reserved": 32,
+    "payload_sha256": "f30f674ea301b058292ffa386b6b55e2732478652e227c2452167fa99f037a26",
+    "profile_context_window": 40000,
+    "requested_total_tokens": 612,
+    "server_context_window": 32768,
+    "source": "vllm_tokenize",
+    "status": "admitted",
+    "vllm_tools_mode": "v0_8_5_kwargs",
+    "window_source": "minimum_of_profile_and_server",
+    "would_reject": false
+  },
+  "context_measurement_requests": 3,
+  "context_measurement_verification": {
+    "measured_input_tokens": 580,
+    "payload_sha256": "f30f674ea301b058292ffa386b6b55e2732478652e227c2452167fa99f037a26",
+    "provider_input_tokens": 580,
+    "status": "matched"
+  },
+  "duration_ms": 557,
+  "error": null,
+  "finish_reason": "stop",
+  "llm_call_id": "llm_0001",
+  "message_count": 2,
+  "model": "qwen2.5-7b-instruct",
+  "parent_stage_id": null,
+  "provider": "openai_compatible",
+  "provider_usage": {
+    "completion_tokens": 2,
+    "prompt_tokens": 580,
+    "prompt_tokens_details": null,
+    "total_tokens": 582
+  },
+  "request_id": "chatcmpl-a4f20c23ed324c31a0fee6184bc30875",
+  "request_options": {
+    "endpoint": "http://127.0.0.1:8000/v1/chat/completions",
+    "timeout_seconds": 30
+  },
+  "request_payload": {
+    "max_tokens": 32,
+    "messages": [
+      {
+        "content": "This is a token accounting probe. Reply with OK only. Do not invoke any tools.",
+        "role": "system"
+      },
+      {
+        "content": "Confirm by replying OK.",
+        "role": "user"
+      }
+    ],
+    "model": "qwen2.5-7b-instruct",
+    "temperature": 0,
+    "tool_choice": "auto",
+    "tools": [
+      {
+        "function": {
+          "description": "按 Artifact ID 读取可验证文本。发现多个候选后优先一次批量读取必要片段：reads=[{\"artifact_id\":\"...\",\"max_chars\":2000}, ...]，最多4段；每段保留独立 read_id、来源和字符范围。也支持单个 artifact_id。",
+          "name": "reader",
+          "parameters": {
+            "$defs": {
+              "ConfiguredReaderArguments8000_16000": {
+                "additionalProperties": false,
+                "properties": {
+                  "artifact_id": {
+                    "minLength": 1,
+                    "title": "Artifact Id",
+                    "type": "string"
+                  },
+                  "char_start": {
+                    "default": 0,
+                    "minimum": 0,
+                    "title": "Char Start",
+                    "type": "integer"
+                  },
+                  "max_chars": {
+                    "default": 8000,
+                    "maximum": 16000,
+                    "minimum": 1,
+                    "title": "Max Chars",
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "artifact_id"
+                ],
+                "title": "ConfiguredReaderArguments8000_16000",
+                "type": "object"
+              }
+            },
+            "additionalProperties": false,
+            "properties": {
+              "artifact_id": {
+                "anyOf": [
+                  {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Artifact Id"
+              },
+              "char_start": {
+                "default": 0,
+                "minimum": 0,
+                "title": "Char Start",
+                "type": "integer"
+              },
+              "max_chars": {
+                "default": 8000,
+                "maximum": 16000,
+                "minimum": 1,
+                "title": "Max Chars",
+                "type": "integer"
+              },
+              "reads": {
+                "anyOf": [
+                  {
+                    "items": {
+                      "$ref": "#/$defs/ConfiguredReaderArguments8000_16000"
+                    },
+                    "maxItems": 4,
+                    "minItems": 1,
+                    "type": "array"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Reads"
+              }
+            },
+            "title": "ConfiguredReaderCall8000_16000",
+            "type": "object"
+          }
+        },
+        "type": "function"
+      }
+    ]
+  },
+  "response": {
+    "content": "OK",
+    "tool_calls": []
+  },
+  "run_id": "allow_short",
+  "scope": {},
+  "stage_name": null,
+  "started_at": "2026-09-27T15:25:42.605536+00:00",
+  "status": "SUCCESS",
+  "timeline": [
+    {
+      "at": "2026-09-27T15:25:42.605536+00:00",
+      "endpoint": "http://127.0.0.1:8000/openapi.json",
+      "kind": "schema",
+      "method": "GET",
+      "payload_sha256": null,
+      "phase": "CONTEXT_MEASUREMENT_REQUEST"
+    },
+    {
+      "at": "2026-09-27T15:25:42.605536+00:00",
+      "kind": "schema",
+      "phase": "CONTEXT_MEASUREMENT_RESPONSE"
+    },
+    {
+      "at": "2026-09-27T15:25:42.605536+00:00",
+      "endpoint": "http://127.0.0.1:8000/version",
+      "kind": "version",
+      "method": "GET",
+      "payload_sha256": null,
+      "phase": "CONTEXT_MEASUREMENT_REQUEST"
+    },
+    {
+      "at": "2026-09-27T15:25:42.605536+00:00",
+      "kind": "version",
+      "phase": "CONTEXT_MEASUREMENT_RESPONSE"
+    },
+    {
+      "at": "2026-09-27T15:25:42.605536+00:00",
+      "endpoint": "http://127.0.0.1:8000/tokenize",
+      "kind": "tokenize",
+      "method": "POST",
+      "payload_sha256": "dde4282885a836c030354bd89f42f173be660df29f6c673af120e61c38f09afd",
+      "phase": "CONTEXT_MEASUREMENT_REQUEST"
+    },
+    {
+      "at": "2026-09-27T15:25:42.605536+00:00",
+      "count": 580,
+      "kind": "tokenize",
+      "max_model_len": 32768,
+      "phase": "CONTEXT_MEASUREMENT_RESPONSE"
+    },
+    {
+      "at": "2026-09-27T15:25:42.605536+00:00",
+      "code": "CONTEXT_ADMITTED",
+      "counter": "vllm",
+      "decision": "allow",
+      "effective_context_window": 32768,
+      "exact": true,
+      "input_tokens": 580,
+      "measurement_details": {
+        "endpoint": "http://127.0.0.1:8000/tokenize",
+        "schema_verified": true,
+        "server_version": "0.8.5.post1",
+        "template_fields": [
+          "add_generation_prompt",
+          "add_special_tokens",
+          "chat_template_kwargs",
+          "continue_final_message",
+          "messages",
+          "model"
+        ],
+        "tokenize_payload_sha256": "dde4282885a836c030354bd89f42f173be660df29f6c673af120e61c38f09afd",
+        "vllm_tools_mode": "v0_8_5_kwargs"
+      },
+      "mode": "enforce",
+      "on_unavailable": "reject",
+      "output_reservation_field": "max_tokens",
+      "output_tokens_reserved": 32,
+      "payload_sha256": "f30f674ea301b058292ffa386b6b55e2732478652e227c2452167fa99f037a26",
+      "phase": "CONTEXT_ADMISSION",
+      "profile_context_window": 40000,
+      "requested_total_tokens": 612,
+      "server_context_window": 32768,
+      "source": "vllm_tokenize",
+      "status": "admitted",
+      "vllm_tools_mode": "v0_8_5_kwargs",
+      "window_source": "minimum_of_profile_and_server",
+      "would_reject": false
+    },
+    {
+      "at": "2026-09-27T15:25:42.676634+00:00",
+      "phase": "TRANSPORT_INVOKED",
+      "timeout_seconds": 30
+    },
+    {
+      "at": "2026-09-27T15:25:43.151946+00:00",
+      "http_status": 200,
+      "phase": "RESPONSE_HEADERS",
+      "provider_request_id": null
+    },
+    {
+      "at": "2026-09-27T15:25:43.155812+00:00",
+      "body_bytes": 420,
+      "phase": "RESPONSE_BODY_COMPLETE"
+    },
+    {
+      "at": "2026-09-27T15:25:43.158184+00:00",
+      "phase": "RESPONSE_PARSED",
+      "response_id": "chatcmpl-a4f20c23ed324c31a0fee6184bc30875",
+      "usage_available": true
+    },
+    {
+      "at": "2026-09-27T15:25:42.605536+00:00",
+      "measured_input_tokens": 580,
+      "payload_sha256": "f30f674ea301b058292ffa386b6b55e2732478652e227c2452167fa99f037a26",
+      "phase": "CONTEXT_MEASUREMENT_VERIFIED",
+      "provider_input_tokens": 580,
+      "status": "matched"
+    }
+  ],
+  "tokens": {
+    "available": true,
+    "billable_breakdown_available": true,
+    "cached_input_tokens": 0,
+    "input_tokens": 580,
+    "output_tokens": 2,
+    "reasoning_tokens": 0,
+    "total_tokens": 582
+  },
+  "transport_inflight_unknown": false
+}

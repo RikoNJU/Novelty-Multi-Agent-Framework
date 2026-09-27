@@ -1,0 +1,124 @@
+{
+  "endpoint": "http://127.0.0.1:8000/v1",
+  "retrieval_calls": 0,
+  "tokenize_is_not_chat_usage": true,
+  "outcomes": [
+    {
+      "probe": "reject_archived",
+      "profile_window": 100,
+      "request_sha256": "f182f4f91e619dc9528ea2f65a130d6af9d0cc719d09f9bc660635d7db39fda8",
+      "fixture": "docs/experiments/20260927_harness_config_continued/reader_local_pair_restarted/state_off/MF2033k6lC/runtime/state_off/llm_calls/0001_local-qwen2.5-7b.json",
+      "result": "pre_chat_rejected",
+      "code": "CONTEXT_LIMIT_EXCEEDED",
+      "admission": {
+        "code": "CONTEXT_LIMIT_EXCEEDED",
+        "counter": "vllm",
+        "decision": "reject",
+        "effective_context_window": 100,
+        "exact": true,
+        "input_tokens": 5749,
+        "measurement_details": {
+          "endpoint": "http://127.0.0.1:8000/tokenize",
+          "schema_verified": true,
+          "server_version": "0.8.5.post1",
+          "template_fields": [
+            "add_generation_prompt",
+            "add_special_tokens",
+            "chat_template_kwargs",
+            "continue_final_message",
+            "messages",
+            "model"
+          ],
+          "tokenize_payload_sha256": "a78c95f5fbab598867906951665dcb43548fc7aa510a2d2edd3df250d6e2402a",
+          "vllm_tools_mode": "v0_8_5_kwargs"
+        },
+        "mode": "enforce",
+        "on_unavailable": "reject",
+        "output_reservation_field": "max_tokens",
+        "output_tokens_reserved": 2048,
+        "payload_sha256": "f182f4f91e619dc9528ea2f65a130d6af9d0cc719d09f9bc660635d7db39fda8",
+        "profile_context_window": 100,
+        "requested_total_tokens": 7797,
+        "server_context_window": 32768,
+        "source": "vllm_tokenize",
+        "status": "context_limit",
+        "vllm_tools_mode": "v0_8_5_kwargs",
+        "window_source": "minimum_of_profile_and_server",
+        "would_reject": true
+      },
+      "runtime": "docs/experiments/20260927_harness_config_continued/context_guard_local/context-admission/runtime/reject_archived",
+      "verification": null,
+      "chat_transport_invoked": false,
+      "context_measurement_requests": 3,
+      "physical_requests_by_kind": {
+        "schema": 1,
+        "version": 1,
+        "tokenize": 1
+      }
+    },
+    {
+      "probe": "allow_short",
+      "profile_window": 40000,
+      "request_sha256": "f30f674ea301b058292ffa386b6b55e2732478652e227c2452167fa99f037a26",
+      "fixture": "authored_short_instruction_with_archived_reader_schema",
+      "result": "chat_completed",
+      "content": "OK",
+      "provider_usage": {
+        "prompt_tokens": 580,
+        "total_tokens": 582,
+        "completion_tokens": 2,
+        "prompt_tokens_details": null
+      },
+      "runtime": "docs/experiments/20260927_harness_config_continued/context_guard_local/context-admission/runtime/allow_short",
+      "admission": {
+        "code": "CONTEXT_ADMITTED",
+        "counter": "vllm",
+        "decision": "allow",
+        "effective_context_window": 32768,
+        "exact": true,
+        "input_tokens": 580,
+        "measurement_details": {
+          "endpoint": "http://127.0.0.1:8000/tokenize",
+          "schema_verified": true,
+          "server_version": "0.8.5.post1",
+          "template_fields": [
+            "add_generation_prompt",
+            "add_special_tokens",
+            "chat_template_kwargs",
+            "continue_final_message",
+            "messages",
+            "model"
+          ],
+          "tokenize_payload_sha256": "dde4282885a836c030354bd89f42f173be660df29f6c673af120e61c38f09afd",
+          "vllm_tools_mode": "v0_8_5_kwargs"
+        },
+        "mode": "enforce",
+        "on_unavailable": "reject",
+        "output_reservation_field": "max_tokens",
+        "output_tokens_reserved": 32,
+        "payload_sha256": "f30f674ea301b058292ffa386b6b55e2732478652e227c2452167fa99f037a26",
+        "profile_context_window": 40000,
+        "requested_total_tokens": 612,
+        "server_context_window": 32768,
+        "source": "vllm_tokenize",
+        "status": "admitted",
+        "vllm_tools_mode": "v0_8_5_kwargs",
+        "window_source": "minimum_of_profile_and_server",
+        "would_reject": false
+      },
+      "verification": {
+        "measured_input_tokens": 580,
+        "payload_sha256": "f30f674ea301b058292ffa386b6b55e2732478652e227c2452167fa99f037a26",
+        "provider_input_tokens": 580,
+        "status": "matched"
+      },
+      "chat_transport_invoked": true,
+      "context_measurement_requests": 3,
+      "physical_requests_by_kind": {
+        "schema": 1,
+        "version": 1,
+        "tokenize": 1
+      }
+    }
+  ]
+}

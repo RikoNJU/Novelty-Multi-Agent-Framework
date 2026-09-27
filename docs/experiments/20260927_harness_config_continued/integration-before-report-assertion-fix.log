@@ -1,0 +1,62 @@
+........................................................................ [  6%]
+........................................................................ [ 13%]
+........................................................................ [ 19%]
+........................................................................ [ 26%]
+........................................................................ [ 32%]
+.........................................................F.............. [ 39%]
+........................................................................ [ 45%]
+........................................................................ [ 52%]
+........................................................................ [ 58%]
+........................................................................ [ 65%]
+........................................................................ [ 71%]
+........................................................................ [ 78%]
+........................................................................ [ 84%]
+........................................................................ [ 91%]
+........................................................................ [ 97%]
+........................                                                 [100%]
+=================================== FAILURES ===================================
+________________ test_gate_a_reasons_do_not_enter_formal_report ________________
+
+    def test_gate_a_reasons_do_not_enter_formal_report() -> None:
+        workflow = NoveltyWorkflow.default()
+        point = _point()
+        paper = PaperInput(paper_id="paper-1", title="Paper", full_text="body")
+        output = asyncio.run(
+            workflow._synthesize_report(
+                {
+                    "paper": paper,
+                    "novelty_points": [point],
+                    "brief": NoveltyBrief(
+                        paper_summary="summary",
+                        novelty_points=[point],
+                        research_tasks=[_task()],
+                    ),
+                    "evidence_cards": [],
+                    "novelty_reviews": [_review()],
+                    "rejected_evidence": [
+                        RejectedEvidence(
+                            card_id="gate-only",
+                            reason="missing Evidence: ev-missing",
+                        )
+                    ],
+                    "integrity_rejected_card_ids": ["gate-only"],
+                    "insufficient_final_evidence_points": [],
+                }
+            )
+        )
+>       assert output["report"].limitations == []
+E       AssertionError: assert ['本报告节点输入未提供完...事实，检索覆盖状态未知。'] == []
+E         
+E         Left contains one more item: '本报告节点输入未提供完整检索执行事实，检索覆盖状态未知。'
+E         Use -v to get more diff
+
+tests/test_integrity_gates.py:616: AssertionError
+=============================== warnings summary ===============================
+../../miniconda3/envs/Novelty-web/lib/python3.11/site-packages/starlette/testclient.py:53
+  /home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/site-packages/starlette/testclient.py:53: DeprecationWarning: The anyio.abc.BlockingPortal alias is deprecated, use anyio.from_thread.BlockingPortal instead.
+    _PortalFactoryType = Callable[[], AbstractContextManager[anyio.abc.BlockingPortal]]
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_integrity_gates.py::test_gate_a_reasons_do_not_enter_formal_report
+1 failed, 1103 passed, 6 deselected, 1 warning in 24.39s

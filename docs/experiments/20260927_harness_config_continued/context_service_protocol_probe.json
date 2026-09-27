@@ -1,0 +1,889 @@
+{
+  "/version": {
+    "version": "0.8.5.post1"
+  },
+  "/v1/models": {
+    "object": "list",
+    "data": [
+      {
+        "id": "qwen2.5-7b-instruct",
+        "object": "model",
+        "created": 1790521378,
+        "owned_by": "vllm",
+        "root": "/nvme/home/rincug/liuyuang/models/Qwen2.5-7B-Instruct",
+        "parent": null,
+        "max_model_len": 32768,
+        "permission": [
+          {
+            "id": "modelperm-584794a6bffc491fb32aa446a52e6c14",
+            "object": "model_permission",
+            "created": 1790521378,
+            "allow_create_engine": false,
+            "allow_sampling": true,
+            "allow_logprobs": true,
+            "allow_search_indices": false,
+            "allow_view": true,
+            "allow_fine_tuning": false,
+            "organization": "*",
+            "group": null,
+            "is_blocking": false
+          }
+        ]
+      }
+    ]
+  },
+  "/openapi.json": {
+    "paths": {
+      "/tokenize": {
+        "post": {
+          "summary": "Tokenize",
+          "operationId": "tokenize_tokenize_post",
+          "requestBody": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/TokenizeCompletionRequest"
+                    },
+                    {
+                      "$ref": "#/components/schemas/TokenizeChatRequest"
+                    }
+                  ],
+                  "title": "Request"
+                }
+              }
+            },
+            "required": true
+          },
+          "responses": {
+            "200": {
+              "description": "Successful Response",
+              "content": {
+                "application/json": {
+                  "schema": {}
+                }
+              }
+            },
+            "422": {
+              "description": "Validation Error",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/v1/chat/completions": {
+        "post": {
+          "summary": "Create Chat Completion",
+          "operationId": "create_chat_completion_v1_chat_completions_post",
+          "requestBody": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatCompletionRequest"
+                }
+              }
+            },
+            "required": true
+          },
+          "responses": {
+            "200": {
+              "description": "Successful Response",
+              "content": {
+                "application/json": {
+                  "schema": {}
+                }
+              }
+            },
+            "422": {
+              "description": "Validation Error",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "ChatCompletionRequest": {
+        "properties": {
+          "messages": {
+            "items": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/ChatCompletionDeveloperMessageParam"
+                },
+                {
+                  "$ref": "#/components/schemas/ChatCompletionSystemMessageParam"
+                },
+                {
+                  "$ref": "#/components/schemas/ChatCompletionUserMessageParam"
+                },
+                {
+                  "$ref": "#/components/schemas/ChatCompletionAssistantMessageParam"
+                },
+                {
+                  "$ref": "#/components/schemas/ChatCompletionToolMessageParam"
+                },
+                {
+                  "$ref": "#/components/schemas/ChatCompletionFunctionMessageParam"
+                },
+                {
+                  "$ref": "#/components/schemas/CustomChatCompletionMessageParam"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Messages"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          },
+          "frequency_penalty": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Frequency Penalty",
+            "default": 0.0
+          },
+          "logit_bias": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "number"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Logit Bias"
+          },
+          "logprobs": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Logprobs",
+            "default": false
+          },
+          "top_logprobs": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Top Logprobs",
+            "default": 0
+          },
+          "max_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Tokens",
+            "deprecated": true
+          },
+          "max_completion_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Completion Tokens"
+          },
+          "n": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "N",
+            "default": 1
+          },
+          "presence_penalty": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Presence Penalty",
+            "default": 0.0
+          },
+          "response_format": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ResponseFormat"
+              },
+              {
+                "$ref": "#/components/schemas/StructuralTagResponseFormat"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Response Format"
+          },
+          "seed": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 9.223372036854776e+18,
+                "minimum": -9.223372036854776e+18
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seed"
+          },
+          "stop": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stop"
+          },
+          "stream": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stream",
+            "default": false
+          },
+          "stream_options": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StreamOptions"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "temperature": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Temperature"
+          },
+          "top_p": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Top P"
+          },
+          "tools": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ChatCompletionToolsParam"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tools"
+          },
+          "tool_choice": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "none"
+              },
+              {
+                "type": "string",
+                "const": "auto"
+              },
+              {
+                "type": "string",
+                "const": "required"
+              },
+              {
+                "$ref": "#/components/schemas/ChatCompletionNamedToolChoiceParam"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tool Choice",
+            "default": "none"
+          },
+          "parallel_tool_calls": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parallel Tool Calls",
+            "default": false
+          },
+          "user": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User"
+          },
+          "best_of": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Best Of"
+          },
+          "use_beam_search": {
+            "type": "boolean",
+            "title": "Use Beam Search",
+            "default": false
+          },
+          "top_k": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Top K"
+          },
+          "min_p": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min P"
+          },
+          "repetition_penalty": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Repetition Penalty"
+          },
+          "length_penalty": {
+            "type": "number",
+            "title": "Length Penalty",
+            "default": 1.0
+          },
+          "stop_token_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "integer"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stop Token Ids"
+          },
+          "include_stop_str_in_output": {
+            "type": "boolean",
+            "title": "Include Stop Str In Output",
+            "default": false
+          },
+          "ignore_eos": {
+            "type": "boolean",
+            "title": "Ignore Eos",
+            "default": false
+          },
+          "min_tokens": {
+            "type": "integer",
+            "title": "Min Tokens",
+            "default": 0
+          },
+          "skip_special_tokens": {
+            "type": "boolean",
+            "title": "Skip Special Tokens",
+            "default": true
+          },
+          "spaces_between_special_tokens": {
+            "type": "boolean",
+            "title": "Spaces Between Special Tokens",
+            "default": true
+          },
+          "truncate_prompt_tokens": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Truncate Prompt Tokens"
+          },
+          "prompt_logprobs": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prompt Logprobs"
+          },
+          "echo": {
+            "type": "boolean",
+            "title": "Echo",
+            "description": "If true, the new message will be prepended with the last message if they belong to the same role.",
+            "default": false
+          },
+          "add_generation_prompt": {
+            "type": "boolean",
+            "title": "Add Generation Prompt",
+            "description": "If true, the generation prompt will be added to the chat template. This is a parameter used by chat template in tokenizer config of the model.",
+            "default": true
+          },
+          "continue_final_message": {
+            "type": "boolean",
+            "title": "Continue Final Message",
+            "description": "If this is set, the chat will be formatted so that the final message in the chat is open-ended, without any EOS tokens. The model will continue this message rather than starting a new one. This allows you to \"prefill\" part of the model's response for it. Cannot be used at the same time as `add_generation_prompt`.",
+            "default": false
+          },
+          "add_special_tokens": {
+            "type": "boolean",
+            "title": "Add Special Tokens",
+            "description": "If true, special tokens (e.g. BOS) will be added to the prompt on top of what is added by the chat template. For most models, the chat template takes care of adding the special tokens so this should be set to false (as is the default).",
+            "default": false
+          },
+          "documents": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Documents",
+            "description": "A list of dicts representing documents that will be accessible to the model if it is performing RAG (retrieval-augmented generation). If the template does not support RAG, this argument will have no effect. We recommend that each document should be a dict containing \"title\" and \"text\" keys."
+          },
+          "chat_template": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chat Template",
+            "description": "A Jinja template to use for this conversion. As of transformers v4.44, default chat template is no longer allowed, so you must provide a chat template if the tokenizer does not define one."
+          },
+          "chat_template_kwargs": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chat Template Kwargs",
+            "description": "Additional kwargs to pass to the template renderer. Will be accessible by the chat template."
+          },
+          "mm_processor_kwargs": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mm Processor Kwargs",
+            "description": "Additional kwargs to pass to the HF processor."
+          },
+          "guided_json": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "$ref": "#/components/schemas/BaseModel"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Guided Json",
+            "description": "If specified, the output will follow the JSON schema."
+          },
+          "guided_regex": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Guided Regex",
+            "description": "If specified, the output will follow the regex pattern."
+          },
+          "guided_choice": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Guided Choice",
+            "description": "If specified, the output will be exactly one of the choices."
+          },
+          "guided_grammar": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Guided Grammar",
+            "description": "If specified, the output will follow the context free grammar."
+          },
+          "structural_tag": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Structural Tag",
+            "description": "If specified, the output will follow the structural tag schema."
+          },
+          "guided_decoding_backend": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Guided Decoding Backend",
+            "description": "If specified, will override the default guided decoding backend of the server for this specific request. If set, must be either 'outlines' / 'lm-format-enforcer'"
+          },
+          "guided_whitespace_pattern": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Guided Whitespace Pattern",
+            "description": "If specified, will override the default whitespace pattern for guided json decoding."
+          },
+          "priority": {
+            "type": "integer",
+            "title": "Priority",
+            "description": "The priority of the request (lower means earlier handling; default: 0). Any priority other than 0 will raise an error if the served model does not use priority scheduling.",
+            "default": 0
+          },
+          "request_id": {
+            "type": "string",
+            "title": "Request Id",
+            "description": "The request_id related to this request. If the caller does not set it, a random_uuid will be generated. This id is used through out the inference process and return in response."
+          },
+          "logits_processors": {
+            "anyOf": [
+              {
+                "items": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "$ref": "#/components/schemas/LogitsProcessorConstructor"
+                    }
+                  ]
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Logits Processors",
+            "description": "A list of either qualified names of logits processors, or constructor objects, to apply when sampling. A constructor is a JSON object with a required 'qualname' field specifying the qualified name of the processor class/factory, and optional 'args' and 'kwargs' fields containing positional and keyword arguments. For example: {'qualname': 'my_module.MyLogitsProcessor', 'args': [1, 2], 'kwargs': {'param': 'value'}}."
+          },
+          "return_tokens_as_token_ids": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Return Tokens As Token Ids",
+            "description": "If specified with 'logprobs', tokens are represented  as strings of the form 'token_id:{token_id}' so that tokens that are not JSON-encodable can be identified."
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "messages"
+        ],
+        "title": "ChatCompletionRequest"
+      },
+      "TokenizeChatRequest": {
+        "properties": {
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          },
+          "messages": {
+            "items": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/ChatCompletionDeveloperMessageParam"
+                },
+                {
+                  "$ref": "#/components/schemas/ChatCompletionSystemMessageParam"
+                },
+                {
+                  "$ref": "#/components/schemas/ChatCompletionUserMessageParam"
+                },
+                {
+                  "$ref": "#/components/schemas/ChatCompletionAssistantMessageParam"
+                },
+                {
+                  "$ref": "#/components/schemas/ChatCompletionToolMessageParam"
+                },
+                {
+                  "$ref": "#/components/schemas/ChatCompletionFunctionMessageParam"
+                },
+                {
+                  "$ref": "#/components/schemas/CustomChatCompletionMessageParam"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Messages"
+          },
+          "add_generation_prompt": {
+            "type": "boolean",
+            "title": "Add Generation Prompt",
+            "description": "If true, the generation prompt will be added to the chat template. This is a parameter used by chat template in tokenizer config of the model.",
+            "default": true
+          },
+          "continue_final_message": {
+            "type": "boolean",
+            "title": "Continue Final Message",
+            "description": "If this is set, the chat will be formatted so that the final message in the chat is open-ended, without any EOS tokens. The model will continue this message rather than starting a new one. This allows you to \"prefill\" part of the model's response for it. Cannot be used at the same time as `add_generation_prompt`.",
+            "default": false
+          },
+          "add_special_tokens": {
+            "type": "boolean",
+            "title": "Add Special Tokens",
+            "description": "If true, special tokens (e.g. BOS) will be added to the prompt on top of what is added by the chat template. For most models, the chat template takes care of adding the special tokens so this should be set to false (as is the default).",
+            "default": false
+          },
+          "chat_template": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chat Template",
+            "description": "A Jinja template to use for this conversion. As of transformers v4.44, default chat template is no longer allowed, so you must provide a chat template if the tokenizer does not define one."
+          },
+          "chat_template_kwargs": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chat Template Kwargs",
+            "description": "Additional kwargs to pass to the template renderer. Will be accessible by the chat template."
+          },
+          "mm_processor_kwargs": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mm Processor Kwargs",
+            "description": "Additional kwargs to pass to the HF processor."
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "messages"
+        ],
+        "title": "TokenizeChatRequest"
+      },
+      "TokenizeCompletionRequest": {
+        "properties": {
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          },
+          "prompt": {
+            "type": "string",
+            "title": "Prompt"
+          },
+          "add_special_tokens": {
+            "type": "boolean",
+            "title": "Add Special Tokens",
+            "description": "If true (the default), special tokens (e.g. BOS) will be added to the prompt.",
+            "default": true
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "prompt"
+        ],
+        "title": "TokenizeCompletionRequest"
+      }
+    }
+  }
+}

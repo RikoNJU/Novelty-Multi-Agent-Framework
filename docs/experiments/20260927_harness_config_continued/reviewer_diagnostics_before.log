@@ -1,0 +1,38 @@
+FF                                                                       [100%]
+=================================== FAILURES ===================================
+_____ test_inspector_accepts_registered_evidence_in_real_reviewer_fixture ______
+
+tmp_path = PosixPath('/tmp/pytest-of-lya3106643285/pytest-24/test_inspector_accepts_registe0')
+
+    def test_inspector_accepts_registered_evidence_in_real_reviewer_fixture(tmp_path):
+        workspace, fixture = _registered_evidence_workspace(tmp_path)
+    
+        report = inspect_workspace(workspace)
+    
+>       assert report["ok"] is True, report["errors"]
+E       AssertionError: ['review references missing Evidence: rev_ev_3e77e610fafb464ad929b232']
+E       assert False is True
+
+tests/test_reviewer_diagnostics.py:184: AssertionError
+___ test_registered_evidence_links_to_its_origin_card_without_base_citation ____
+
+tmp_path = PosixPath('/tmp/pytest-of-lya3106643285/pytest-24/test_registered_evidence_links0')
+
+    def test_registered_evidence_links_to_its_origin_card_without_base_citation(tmp_path):
+        workspace, fixture = _registered_evidence_workspace(tmp_path)
+        review = fixture["novelty_reviews"]["reviews"][0]
+        review["highly_relevant_works"][0]["evidence_ids"] = [
+            review["review_evidence"][0]["evidence_id"]
+        ]
+        _write(workspace / "novelty-reviews.json", fixture["novelty_reviews"])
+    
+        report = inspect_workspace(workspace)
+    
+>       assert report["ok"] is True, report["errors"]
+E       AssertionError: ['review references missing Evidence: rev_ev_3e77e610fafb464ad929b232', 'Card/Evidence link missing in RelevantWork: card_59de824fb081565b0b00d1e6']
+E       assert False is True
+
+tests/test_reviewer_diagnostics.py:204: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_reviewer_diagnostics.py::test_inspector_accepts_registered_evidence_in_real_reviewer_fixture
+FAILED tests/test_reviewer_diagnostics.py::test_registered_evidence_links_to_its_origin_card_without_base_citation
