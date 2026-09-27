@@ -10,6 +10,7 @@ from pydantic import Field, StringConstraints, model_validator
 from .domain import EvidenceCard, NoveltyPoint, ResearchTask, SearchPlan, StrictModel
 from .references import Evidence, ExternalIdentifier, ResearchBundle, SearchExecution
 from .research_tools import ResearchFinishDraft, ReferenceReadResult
+from .failures import FailureEvent, RecoveryDecision
 
 NonEmptyStr = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
 
@@ -28,6 +29,7 @@ class TaskResearchRequest(StrictModel):
     research_task: ResearchTask
     search_plan: SearchPlan
     target_identity: TargetPaperIdentity | None = None
+    recovery: RecoveryDecision | None = None
 
     @model_validator(mode="after")
     def bind_task(self) -> TaskResearchRequest:
@@ -39,6 +41,8 @@ class TaskResearchRequest(StrictModel):
             raise ValueError("search_plan must belong to research_task novelty_point")
         if self.search_plan.novelty_point_id != self.novelty_point.point_id:
             raise ValueError("search_plan must belong to novelty_point")
+        if self.recovery is not None and self.recovery.point_id != self.novelty_point.point_id:
+            raise ValueError("recovery directive has wrong point binding")
         return self
 
 
@@ -142,6 +146,7 @@ class TaskResearchResult(StrictModel):
     evidence_cards: list[EvidenceCard] = Field(default_factory=list)
     search_executions: list[SearchExecution] = Field(default_factory=list)
     candidate_audit: list[CandidateAuditRecord] = Field(default_factory=list)
+    execution_failures: list[FailureEvent] = Field(default_factory=list)
     warnings: list[str] = Field(default_factory=list)
     steps_used: int = Field(ge=0)
 

@@ -7,6 +7,8 @@ from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from .failures import FailureEvent, RecoveryDecision
+
 
 class StrictModel(BaseModel):
     """拒绝未声明字段，避免 Agent 静默改变接口。"""
@@ -334,6 +336,18 @@ class FeatureComparison(StrictModel):
     source_context: Literal["author_method", "related_work", "baseline", "ablation", "unknown"] = "unknown"
 
 
+class ReviewerReadAudit(StrictModel):
+    """Harness-owned metadata for one successfully executed Reviewer read."""
+    read_id: str
+    namespace: str
+    work_id: str
+    artifact_id: str
+    artifact_hash: str
+    char_start: int = Field(ge=0)
+    char_end: int = Field(ge=0)
+    text_sha256: str
+
+
 class NoveltyPointReview(StrictModel):
     """一个 NoveltyPoint 的结构化信息判定结果。"""
 
@@ -348,6 +362,8 @@ class NoveltyPointReview(StrictModel):
     review_evidence: list[ReviewEvidence] = Field(default_factory=list)
     feature_comparisons: list[FeatureComparison] = Field(default_factory=list)
     incomplete_reason: Literal["semantic_evidence", "material_unavailable", "budget_exhausted", "technical_error"] | None = None
+    execution_issues: list[FailureEvent] = Field(default_factory=list)
+    reader_observations: list[ReviewerReadAudit] = Field(default_factory=list)
 
     @model_validator(mode="after")
     def validate_review_semantics(self) -> "NoveltyPointReview":
@@ -454,9 +470,28 @@ class ReportNarrativeDraft(StrictModel):
     )
 
 
+class PartialCardReview(StrictModel):
+    """An original card result whose point-level summary has not completed."""
+    card_id: str = Field(min_length=1)
+    novelty_point_id: str = Field(min_length=1)
+    review: NoveltyPointReview
+    summary_status: Literal["failed", "incomplete"]
+
+    @model_validator(mode="after")
+    def same_point(self):
+        if self.review.novelty_point_id != self.novelty_point_id:
+            raise ValueError("partial card review must retain its point binding")
+        return self
+
+
 class NoveltyReport(StrictModel):
     """查新工作流输出给后续系统的报告。"""
 
+    partial_card_reviews: list[PartialCardReview] = Field(default_factory=list)
+    execution_failures: list[FailureEvent] = Field(default_factory=list)
+    recovery_decisions: list[RecoveryDecision] = Field(default_factory=list)
+    point_coverage: dict = Field(default_factory=dict)
+    point_lifecycle: list[dict] = Field(default_factory=list)
     paper_id: str
     conclusions: list[NoveltyConclusion] = Field(default_factory=list)
     missing_references: list[str] = Field(default_factory=list)
@@ -477,6 +512,8 @@ class InsufficientFinalEvidence(StrictModel):
 class NoveltyRunResult(StrictModel):
     """一次完整工作流的可测试结果。"""
 
+    failure_events: list[FailureEvent] = Field(default_factory=list)
+    recovery_decisions: list[RecoveryDecision] = Field(default_factory=list)
     brief: NoveltyBrief
     evidence_cards: list[EvidenceCard]
     rejected_evidence: list[RejectedEvidence]

@@ -18,6 +18,7 @@ from ..schemas import (
 from .reference_reader import ReferenceArtifactReaderTool
 from ..persistence import reference_store_for_artifact_namespace
 from ..schemas.research_tools import ReaderCallArguments
+from ..schemas.failures import FailureCode, FailureScope, make_failure
 
 
 class ReaderTool:
@@ -78,20 +79,26 @@ class ReaderTool:
                 f"读取 artifact {result.artifact_id} 字符 "
                 f"[{result.char_start}, {result.char_end})"
             ),
-            payload={"read_result": result.model_dump(mode="json")},
+            payload={"read_result": result.model_dump(mode="json"),
+                     "read_status": "content" if result.char_end > result.char_start else "artifact_eof"},
             elapsed_ms=int((time.monotonic() - started) * 1000),
         )
 
     async def _read_batch(self, arguments, *, scope) -> ResearcherToolObservation:
         started = time.monotonic()
-        results, errors, statuses = [], [], []
+        results, errors, statuses, issues = [], [], [], []
         # Local reads are bounded; batching removes model round trips, without
         # weakening the single-tool policy or creating unbounded I/O concurrency.
         for index, request in enumerate(arguments.reads):
             try:
                 observation = await self.ainvoke(request, scope=scope)
-                results.append(observation.payload["read_result"])
-                statuses.append(observation.payload.get("read_status", "content"))
+                issues.extend(observation.payload.get("execution_issues", []))
+                if observation.succeeded:
+                    results.append(observation.payload["read_result"])
+                    statuses.append(observation.payload.get("read_status", "content"))
+                else:
+                    errors.append({"index": index, "artifact_id": request.artifact_id,
+                                   "error_type": "ReaderUnavailable", "message": observation.error or "read failed"})
             except Exception as exc:
                 errors.append({"index": index, "artifact_id": request.artifact_id,
                                "error_type": type(exc).__name__, "message": str(exc)[:500]})
@@ -101,6 +108,7 @@ class ReaderTool:
             summary=f"批量读取：成功 {len(results)} 段，失败 {len(errors)} 段",
             payload={"read_results": results, "read_errors": errors,
                      "read_statuses": statuses,
+                     **({"execution_issues": issues} if issues else {}),
                      **({"read_status": "artifact_eof"} if statuses and
                         all(status == "artifact_eof" for status in statuses) else {})},
             elapsed_ms=int((time.monotonic() - started) * 1000),
@@ -127,6 +135,9 @@ class ReaderTool:
     def project_model_context(
         self, observation: ResearcherToolObservation
     ) -> dict[str, object]:
+        if not observation.succeeded and "read_results" not in observation.payload:
+            return {"succeeded": False, "error": observation.error,
+                    "execution_issues": observation.payload.get("execution_issues", [])}
         if "read_results" in observation.payload:
             return {"succeeded": observation.succeeded, "summary": observation.summary,
                     "read_results": observation.payload["read_results"],
@@ -179,7 +190,15 @@ class ReviewerReaderTool(ReaderTool):
                 store = reference_store_for_artifact_namespace(namespace, output_root=root)
                 try:
                     manifest = store.load_manifest(scope.subject_paper_id)
-                except FileNotFoundError:
+                except (OSError, ValueError) as exc:
+                    for item in bound:
+                        if item.work_id == work_id and item.provenance.get("artifact_namespace", "research_reference") == namespace.value:
+                            entries.append({"work_id": work_id, "artifact_id": item.artifact_id,
+                                "namespace": namespace.value, "source_record_id": item.provenance.get("source_record_id"),
+                                "role": "unknown", "content_extent": "unknown", "content_hash": None,
+                                "readable_chars": None, "version_label": None, "readable": False,
+                                "availability_code": (FailureCode.MATERIAL_UNAVAILABLE.value
+                                    if isinstance(exc, OSError) else FailureCode.MATERIAL_INTEGRITY.value)})
                     continue
                 cited_versions = {
                     artifact.version_label for artifact in manifest.artifacts
@@ -198,7 +217,14 @@ class ReviewerReaderTool(ReaderTool):
                         _, _, raw = store.verify_artifact_file(scope.subject_paper_id, artifact.artifact_id)
                         content = raw.decode("utf-8")
                         chars = len(content)
-                    except (OSError, ValueError, UnicodeDecodeError):
+                    except (OSError, ValueError, UnicodeDecodeError) as exc:
+                        entries.append({"work_id": work_id, "artifact_id": artifact.artifact_id,
+                            "namespace": namespace.value, "source_record_id": artifact.source_record_id,
+                            "role": artifact.role.value, "content_extent": artifact.content_extent.value,
+                            "content_hash": artifact.sha256, "readable_chars": None,
+                            "version_label": artifact.version_label, "readable": False,
+                            "availability_code": (FailureCode.MATERIAL_UNAVAILABLE.value
+                                if isinstance(exc, OSError) else FailureCode.MATERIAL_INTEGRITY.value)})
                         continue
                     entries.append({
                         "work_id": work_id, "artifact_id": artifact.artifact_id,
@@ -214,6 +240,18 @@ class ReviewerReaderTool(ReaderTool):
                                 r"[^\n]{0,40}$", content))[:12]
                         ],
                     })
+        if root is not None:
+            # A previously bound Artifact disappearing from its manifest is a
+            # material failure. It is never permission to read an arbitrary ID.
+            known = {(entry["namespace"], entry["artifact_id"]) for entry in entries}
+            for item in bound:
+                namespace = item.provenance.get("artifact_namespace", "research_reference")
+                if (namespace, item.artifact_id) not in known:
+                    entries.append({"work_id": item.work_id, "artifact_id": item.artifact_id,
+                        "namespace": namespace, "source_record_id": item.provenance.get("source_record_id"),
+                        "role": "unknown", "content_extent": "unknown", "content_hash": None,
+                        "readable_chars": None, "version_label": None, "readable": False,
+                        "availability_code": FailureCode.MATERIAL_UNAVAILABLE.value})
         # Test adapters without a manifest retain the old evidence-only scope.
         if root is None:
             for item in bound:
@@ -239,6 +277,14 @@ class ReviewerReaderTool(ReaderTool):
                 f"artifact {arguments.artifact_id!r} is outside reviewer scope"
             )
         entry = matches[0]
+        if not entry.get("readable", True):
+            code = FailureCode(entry["availability_code"])
+            issue = make_failure(code, scope=FailureScope(paper_id=scope.subject_paper_id,
+                point_id=scope.novelty_point.point_id, artifact_id=arguments.artifact_id),
+                message="Authorized Reviewer material is unavailable or failed integrity verification")
+            return ResearcherToolObservation(tool_name=self.name,
+                arguments=arguments.model_dump(mode="json"), succeeded=False,
+                error=issue.message, payload={"execution_issues": [issue.model_dump(mode="json")]})
         namespace, work_id = ArtifactNamespace(entry["namespace"]), entry["work_id"]
         started = time.monotonic()
         result = await self.reader.ainvoke(

@@ -284,3 +284,36 @@ def test_successful_reader_call_passes_and_running_call_warns(tmp_path) -> None:
     assert report["status"] == "WARNING"
     assert report["counts"]["incomplete"] == 1
     assert report["classification_counts"] == {"INCOMPLETE_RECORD": 1}
+
+
+def test_successful_batch_is_not_reported_as_incomplete(tmp_path):
+    workspace = tmp_path / "outputs" / PAPER_ID
+    _write(workspace / "runtime/run-1/tools/0001_reader.json", {
+        "tool_name": "reader", "tool_call_id": "tool_0001", "execution_status": "SUCCESS",
+        "resolved_arguments": {"reads": [{"artifact_id": "a"}, {"artifact_id": "b", "char_start": 5}]},
+        "normalized_result": {"read_results": [{"artifact_id": "a", "char_start": 0},
+                                                  {"artifact_id": "b", "char_start": 5}], "read_errors": []},
+        "error": None,
+    })
+    result = _inspect(workspace)
+    assert result["status"] == "OK"
+    assert result["counts"] == {"reader_calls": 1, "reader_items": 2, "succeeded": 2, "failed": 0, "incomplete": 0}
+
+
+def test_mixed_batch_preserves_individual_failure_classification(tmp_path):
+    workspace = tmp_path / "outputs" / PAPER_ID
+    _write(workspace / "runtime/run-1/tools/0001_reader.json", {
+        "tool_name": "reader", "tool_call_id": "tool_0001", "execution_status": "SUCCESS",
+        "resolved_arguments": {"reads": [{"artifact_id": "a"}, {"artifact_id": "ghost"}]},
+        "normalized_result": {"read_results": [{"artifact_id": "a", "char_start": 0}],
+            "read_errors": [{"index": 1, "artifact_id": "ghost", "error_type": "ValueError",
+                             "message": "unknown artifact_id 'ghost' in the research or subject reference manifest"}]},
+        "error": None,
+    })
+    result = _inspect(workspace)
+    assert result["status"] == "WARNING"
+    assert result["classification_counts"] == {"NEVER_PERSISTED": 1}
+    assert result["counts"]["incomplete"] == 0
+    assert result["counts"]["succeeded"] == 1
+    assert result["findings"][0]["artifact_id"] == "ghost"
+    assert result["findings"][0]["batch_index"] == 1

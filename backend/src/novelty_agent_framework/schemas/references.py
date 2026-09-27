@@ -11,6 +11,7 @@ from typing import Annotated, Any
 from pydantic import Field, StringConstraints, field_validator, model_validator
 
 from .domain import NoveltyPoint, ResearchTask, SearchPlan, StrictModel
+from .failures import FailureEvent
 
 NonEmptyStr = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
 JsonObject = dict[str, Any]
@@ -344,6 +345,7 @@ class SearchExecution(StrictModel):
     completed_at: datetime | None = None
     results: list[SearchResultRef] = Field(default_factory=list)
     error: NonEmptyStr | None = None
+    failure: FailureEvent | None = None
 
     @field_validator("started_at", "completed_at")
     @classmethod
@@ -369,6 +371,7 @@ class SearchExecution(StrictModel):
 
 
 class ResearchBundle(StrictModel):
+    execution_failures: list[FailureEvent] = Field(default_factory=list)
     bundle_id: NonEmptyStr
     producer: NonEmptyStr
     search_executions: list[SearchExecution] = Field(default_factory=list)

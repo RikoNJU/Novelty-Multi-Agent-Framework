@@ -83,6 +83,7 @@ class ResearcherToolRegistry:
                 arguments=_json_arguments(arguments),
                 succeeded=False,
                 error=_safe_error(exc),
+                payload=_failure_payload(exc, scope, tool_name, registered=tool_name in self._tools, phase="arguments"),
                 elapsed_ms=int((time.monotonic() - started) * 1000),
             )
 
@@ -143,6 +144,7 @@ class ResearcherToolRegistry:
                 arguments=arguments.model_dump(mode="json"),
                 succeeded=False,
                 error=_safe_error(exc),
+                payload=_failure_payload(exc, scope, tool_name, registered=tool_name in self._tools, phase="execution"),
                 elapsed_ms=int((time.monotonic() - invoked_at) * 1000),
             )
 
@@ -154,9 +156,9 @@ class ResearcherToolRegistry:
         """Project a full audit observation into the model-visible data plane."""
 
         if not observation.succeeded:
-            tool = self.get(tool_name)
+            tool = self._tools.get(tool_name)
             projector = getattr(tool, "project_model_context", None)
-            if projector is not None and observation.payload:
+            if projector is not None and any(key not in {"error_type", "failure"} for key in observation.payload):
                 projected = projector(observation)
                 if not isinstance(projected, dict):
                     raise TypeError("tool model-context projector must return a dict")
@@ -165,6 +167,7 @@ class ResearcherToolRegistry:
                 "succeeded": False,
                 "summary": observation.summary,
                 "error": observation.error,
+                **observation.payload,
             }
         tool = self.get(tool_name)
         projector = getattr(tool, "project_model_context", None)
@@ -193,3 +196,25 @@ def _json_arguments(arguments: Any) -> dict[str, Any]:
         for key, value in arguments.items()
         if value is None or isinstance(value, (str, int, float, bool, list, dict))
     }
+
+
+def _failure_payload(exc, scope, tool_name, *, registered, phase):
+    from ..schemas.failures import FailureCode as C, FailureScope, make_failure
+    if not registered:
+        code = C.TOOL_UNAVAILABLE
+    elif isinstance(exc, PermissionError):
+        code = C.TOOL_SCOPE
+    elif phase == 'arguments':
+        code = C.TOOL_ARGUMENTS
+    elif tool_name == 'reader' and isinstance(exc, OSError):
+        code = C.MATERIAL_UNAVAILABLE
+    else:
+        code = C.UNKNOWN
+    task = getattr(scope, 'research_task', None)
+    failure = make_failure(code, scope=FailureScope(
+        paper_id=getattr(scope,'subject_paper_id',None), run_id=getattr(scope,'run_id',None),
+        point_id=getattr(getattr(scope,'novelty_point',None),'point_id',None),
+        task_id=getattr(task,'task_id',None), attempt=getattr(task,'attempt',None)),
+        message='Tool request failed at the registered action boundary; no scientific finding was established.',
+        occurrence_id=f'{tool_name}-{phase}-{type(exc).__name__}')
+    return {'error_type':type(exc).__name__, 'failure':failure.model_dump(mode='json')}

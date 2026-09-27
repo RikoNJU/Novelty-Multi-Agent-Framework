@@ -29,7 +29,7 @@ def test_tool_schema_module_imports_without_implementations() -> None:
 
 
 def test_reader_uses_canonical_arguments_and_legacy_alias() -> None:
-    assert ReaderTool.args_schema is ReaderArguments
+    assert ReaderTool.args_schema is research_tools.ReaderCallArguments
     assert ReferenceReaderToolArguments is ReaderArguments
     with pytest.raises(ValidationError):
         ReaderTool.args_schema.model_validate(

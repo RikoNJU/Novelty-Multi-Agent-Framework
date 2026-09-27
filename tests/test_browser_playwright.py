@@ -141,6 +141,11 @@ def test_fetch_collects_rendered_content_and_applies_limits(monkeypatch) -> None
         "novelty_agent_framework.tools.browser_backend._load_async_playwright",
         lambda: lambda: manager,
     )
+    # This test uses a fake browser; system-library checks belong to runtime tests.
+    monkeypatch.setattr(
+        "novelty_agent_framework.tools.browser_backend.playwright_launch_kwargs",
+        lambda *args, **kwargs: ({"headless": True}, {}, {}),
+    )
     backend = PlaywrightBrowserBackend(max_html_chars=20, max_text_chars=13)
 
     result = asyncio.run(backend.fetch("https://example.com/requested"))

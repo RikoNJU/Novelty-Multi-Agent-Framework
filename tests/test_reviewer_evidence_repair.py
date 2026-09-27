@@ -269,7 +269,7 @@ def test_read_evidence_is_registered_and_carried_to_summary() -> None:
     assert rows[0]["summary_input_complete"] is True
     assert _legacy_guard_shadow(review, request)["would_change"] is False
     summary_output = review.model_dump(mode="json")
-    for system_field in ("read_citations", "review_evidence", "incomplete_reason"):
+    for system_field in ("read_citations", "review_evidence", "incomplete_reason", "execution_issues", "reader_observations"):
         summary_output.pop(system_field)
     summary_client = _ScriptedClient(ModelResponse(content=json.dumps(summary_output, ensure_ascii=False)))
     summarizer = NoveltyEvidenceReviewer(summary_client, tool_registry=ResearcherToolRegistry([tool]))

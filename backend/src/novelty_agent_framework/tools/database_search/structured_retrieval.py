@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from ...core.failure_classification import provider_failure
+from ...schemas.failures import FailureScope, FailureCode, make_failure
+
 import asyncio
 import hashlib
 import inspect
@@ -200,6 +203,7 @@ class StructuredSourceRetrievalTool:
 
     async def acquire_full_texts(self, request, record_ids: list[str]) -> ResearchBundle:
         """Acquire only previously discovered database records; never execute a search."""
+        failures = []
         manifest = self.reference_store.load_manifest(request.subject_paper_id)
         records = {r.source_record_id: r for r in manifest.source_records}
         works = {w.work_id: w for w in manifest.works}
@@ -219,7 +223,7 @@ class StructuredSourceRetrievalTool:
         from .providers.arxiv_scheduler import provider_task_id
         token = provider_task_id.set(request.research_task.task_id)
         try:
-            full_texts, warnings = await self._fetch_full_texts(hits)
+            full_texts, warnings = await self._fetch_full_texts(hits, request=request, failure_sink=failures)
         finally:
             provider_task_id.reset(token)
         for record in selected:
@@ -252,7 +256,7 @@ class StructuredSourceRetrievalTool:
                                             "full_text", *record_ids),
             producer=f"{self.name}:{self.source_id}",
             works=[works[r.work_id] for r in selected], source_records=selected,
-            artifacts=artifacts, warnings=warnings)
+            artifacts=artifacts, warnings=warnings, execution_failures=failures)
 
     async def ainvoke(
         self, request: StructuredSourceRetrievalRequest
@@ -293,7 +297,8 @@ class StructuredSourceRetrievalTool:
                 ],
             })
         warnings = list(chain_warnings)
-        enriched_hits, acquisition_warnings = await self._enrich_metadata(unique_hits)
+        failures = []
+        enriched_hits, acquisition_warnings = await self._enrich_metadata(unique_hits, request=request, failure_sink=failures)
         warnings.extend(acquisition_warnings)
 
         observed_at = datetime.now(timezone.utc)
@@ -387,7 +392,7 @@ class StructuredSourceRetrievalTool:
                 artifacts[artifact.artifact_id] = artifact
 
         full_texts, full_text_warnings = await self._fetch_full_texts(
-            list(enriched_hits.items())[: self.full_text_limit]
+            list(enriched_hits.items())[: self.full_text_limit], request=request, failure_sink=failures
         )
         warnings.extend(full_text_warnings)
         if self.source.full_text_tool is None and any(
@@ -455,6 +460,7 @@ class StructuredSourceRetrievalTool:
             artifacts=list(artifacts.values()),
             evidence=[],
             warnings=list(dict.fromkeys(warnings)),
+            execution_failures=failures,
         )
 
     def invoke(
@@ -569,6 +575,8 @@ class StructuredSourceRetrievalTool:
                                     "requests_used": requests_used,
                                     "max_provider_requests": self.max_provider_requests},
                         status=SearchExecutionStatus.NOT_RUN,
+                        failure=make_failure(FailureCode.BUDGET_EXHAUSTED if reason == "retrieval_incomplete_budget" else FailureCode.COVERAGE_NOT_EXECUTED,
+                            scope=_failure_scope(request), message="Query was not executed after an observed source or budget boundary.", occurrence_id=execution_id),
                         started_at=started, completed_at=started,
                     ))
                     if runtime is not None:
@@ -612,6 +620,8 @@ class StructuredSourceRetrievalTool:
                                     "not_run_reason": "retrieval_incomplete_budget",
                                     "budget_unit": "physical_provider_request"},
                         status=SearchExecutionStatus.NOT_RUN,
+                        failure=make_failure(FailureCode.BUDGET_EXHAUSTED, scope=_failure_scope(request),
+                            message="Physical provider request budget refused this query before execution.", occurrence_id=execution_id),
                         started_at=started,
                         completed_at=datetime.now(timezone.utc),
                     ))
@@ -632,6 +642,8 @@ class StructuredSourceRetrievalTool:
                                                         variant=variant),
                                     "not_run_reason": "replay_miss"},
                         status=SearchExecutionStatus.NOT_RUN,
+                        failure=make_failure(FailureCode.COVERAGE_NOT_EXECUTED, scope=_failure_scope(request),
+                            message="Offline replay has no exact captured response; query did not execute.", occurrence_id=execution_id),
                         started_at=started,
                         completed_at=datetime.now(timezone.utc),
                     ))
@@ -661,6 +673,12 @@ class StructuredSourceRetrievalTool:
                             started_at=started,
                             completed_at=datetime.now(timezone.utc),
                             error=_safe_error(exc),
+                            failure=provider_failure(exc, scope=FailureScope(
+                                paper_id=request.subject_paper_id, run_id=request.run_id,
+                                point_id=request.novelty_point.point_id,
+                                task_id=request.research_task.task_id,
+                                attempt=request.research_task.attempt, provider=self.source_id,
+                            ), occurrence_id=execution_id),
                         )
                     )
                     provider_failed = True
@@ -717,7 +735,7 @@ class StructuredSourceRetrievalTool:
         )
 
     async def _enrich_metadata(
-        self, hits: Mapping[str, SearchHit]
+        self, hits: Mapping[str, SearchHit], *, request=None, failure_sink=None
     ) -> tuple[dict[str, SearchHit], list[str]]:
         if self.source.metadata_tool is None:
             return dict(hits), []
@@ -731,6 +749,9 @@ class StructuredSourceRetrievalTool:
                         hit.document_id,
                     )
                 except Exception as exc:
+                    if request is not None and failure_sink is not None:
+                        failure_sink.append(provider_failure(exc, scope=_failure_scope(request),
+                            occurrence_id=f"metadata-{hit.document_id}").model_copy(update={"execution_status":"partial"}))
                     return key, hit, f"metadata {hit.document_id}: {_safe_error(exc)}"
             if metadata is None:
                 return key, hit, None
@@ -750,9 +771,13 @@ class StructuredSourceRetrievalTool:
         )
 
     async def _fetch_full_texts(
-        self, hits: Sequence[tuple[str, SearchHit]]
+        self, hits: Sequence[tuple[str, SearchHit]], *, request=None, failure_sink=None
     ) -> tuple[dict[str, FullText], list[str]]:
         if self.source.full_text_tool is None:
+            if request is not None and failure_sink is not None and hits:
+                failure_sink.append(make_failure(FailureCode.MATERIAL_UNAVAILABLE, scope=_failure_scope(request),
+                    message="This configured source has no full-text acquisition capability; available abstracts remain usable.",
+                    occurrence_id="fulltext-capability"))
             return {}, []
         loop = asyncio.get_running_loop()
         if loop not in self._full_text_states:
@@ -775,8 +800,17 @@ class StructuredSourceRetrievalTool:
                 task.add_done_callback(done)
             try:
                 value = await asyncio.shield(pending[document_id])
+                if (value is None or not value.text.strip()) and request is not None and failure_sink is not None:
+                    failure_sink.append(make_failure(FailureCode.MATERIAL_UNAVAILABLE, scope=_failure_scope(request),
+                        message="Full-text operation returned no readable material; this is not a search no-match finding.",
+                        occurrence_id=f"fulltext-{document_id}"))
                 return key, value, None
             except Exception as exc:
+                if request is not None and failure_sink is not None:
+                    cause = provider_failure(exc, scope=_failure_scope(request), occurrence_id=f"fulltext-{document_id}")
+                    failure_sink.extend([cause, make_failure(FailureCode.MATERIAL_UNAVAILABLE, scope=_failure_scope(request),
+                        message="Full-text acquisition failed; available abstract material remains usable.",
+                        cause_event_ids=[cause.event_id], occurrence_id=f"fulltext-{document_id}")])
                 return key, None, f"full text {document_id}: {_safe_error(exc)}"
 
         results = await asyncio.gather(*(fetch(key, hit) for key, hit in hits))
@@ -890,3 +924,9 @@ def _safe_error(exc: Exception) -> str:
         str(exc),
     )
     return f"{type(exc).__name__}: {message}"[:1000]
+
+
+def _failure_scope(request):
+    return FailureScope(paper_id=request.subject_paper_id, run_id=request.run_id,
+        point_id=request.novelty_point.point_id, task_id=request.research_task.task_id,
+        attempt=request.research_task.attempt, provider=request.source_id)

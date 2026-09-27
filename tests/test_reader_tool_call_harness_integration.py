@@ -311,3 +311,178 @@ def test_batch_default_limits_and_exclusive_modes(tmp_path):
                     {"reads": [{"artifact_id": ARTIFACT_ID}], "max_chars": 1}):
         with pytest.raises(ValidationError):
             reader.args_schema.model_validate(invalid)
+
+
+@pytest.mark.parametrize("enabled,physical_reads", [(False, 2), (True, 1)])
+def test_exact_reader_replay_keeps_provenance_without_new_reads(tmp_path, enabled, physical_reads):
+    from novelty_agent_framework.workflows.research_task import _trusted_reads
+
+    low_level = ReferenceArtifactReaderTool(prepare_store(tmp_path))
+    original = low_level.ainvoke
+    dispatched = []
+
+    async def counted(request):
+        dispatched.append(request)
+        return await original(request)
+
+    low_level.ainvoke = counted
+    args = {"artifact_id": ARTIFACT_ID, "max_chars": 16}
+    model = ScriptedModelClient(tool_request(args, "first"), tool_request(args, "again"),
+                                ModelResponse(content="done"))
+    result = asyncio.run(ToolCallHarness(model, ResearcherToolRegistry([ReaderTool(low_level)]),
+        config=ToolCallHarnessConfig(reuse_reader_results=enabled)).run(
+            system_prompt="test", initial_user_message="test", scope=research_scope()))
+    assert len(dispatched) == physical_reads
+    assert result.tool_calls_used == physical_reads
+    payloads = [json.loads(e.message.content) for e in result.trace if e.kind == "tool_result"]
+    assert payloads[0]["read_result"] == payloads[1]["read_result"]
+    assert payloads[1].get("reused_result", False) == enabled
+    reads, warnings = _trusted_reads(result.trace)
+    assert not warnings
+    assert len(reads) == physical_reads
+    assert reads[0].text == TEXT[:16]
+    assert len({r.read_id for r in reads}) == 1
+
+
+def test_reader_replay_remains_available_after_execution_and_character_budget(tmp_path):
+    model = ScriptedModelClient(tool_request({"artifact_id": ARTIFACT_ID, "max_chars": 16}, "first"),
+        tool_request({"artifact_id": ARTIFACT_ID, "max_chars": 16}, "again"), ModelResponse(content="done"))
+    result = asyncio.run(ToolCallHarness(model, ResearcherToolRegistry([
+        ReaderTool(ReferenceArtifactReaderTool(prepare_store(tmp_path)))]),
+        config=ToolCallHarnessConfig(reuse_reader_results=True, max_tool_calls=1,
+            per_tool_limits={"reader": 1}, max_total_read_chars=16)).run(
+                system_prompt="test", initial_user_message="test", scope=research_scope()))
+    assert result.tool_calls_used == 1
+    assert result.turns_used == 3
+    assert result.final_content == "done"
+
+
+def test_reader_eof_guard_preserves_unread_prefix_and_changed_ranges(tmp_path):
+    from novelty_agent_framework.workflows.research_task import _trusted_reads
+
+    requests = [
+        {"artifact_id": ARTIFACT_ID, "char_start": len(TEXT) - 10, "max_chars": 16},
+        {"artifact_id": ARTIFACT_ID, "char_start": len(TEXT), "max_chars": 16},
+        {"artifact_id": ARTIFACT_ID, "char_start": len(TEXT) + 10, "max_chars": 16},
+        {"artifact_id": ARTIFACT_ID, "char_start": 0, "max_chars": 16},
+        {"artifact_id": ARTIFACT_ID, "char_start": 8, "max_chars": 16},
+    ]
+    model = ScriptedModelClient(*(tool_request(args, f"r{i}") for i, args in enumerate(requests)),
+                                ModelResponse(content="done"))
+    result = asyncio.run(ToolCallHarness(model, ResearcherToolRegistry([
+        ReaderTool(ReferenceArtifactReaderTool(prepare_store(tmp_path)))]),
+        config=ToolCallHarnessConfig(reuse_reader_results=True)).run(
+            system_prompt="test", initial_user_message="test", scope=research_scope()))
+    assert result.tool_calls_used == 3
+    replayed = [e for e in result.trace if e.detail == "reader_state_reused"]
+    assert len(replayed) == 2
+    assert all(json.loads(e.message.content)["read_status"] == "artifact_eof" for e in replayed)
+    reads, warnings = _trusted_reads(result.trace)
+    assert not warnings
+    assert [r.text for r in reads] == [TEXT[-10:], TEXT[:16], TEXT[8:24]]
+    assert "Reader state" in model.calls[-1][0][0].content
+
+
+def test_reader_cache_is_invocation_scoped_and_failed_reads_are_not_cached(tmp_path):
+    low_level = ReferenceArtifactReaderTool(prepare_store(tmp_path))
+    original = low_level.ainvoke
+    dispatched = []
+
+    async def counted(request):
+        dispatched.append(request)
+        if len(dispatched) == 1:
+            raise OSError("transient local read failure")
+        return await original(request)
+
+    low_level.ainvoke = counted
+    model = ScriptedModelClient()
+    harness = ToolCallHarness(model, ResearcherToolRegistry([ReaderTool(low_level)]),
+        config=ToolCallHarnessConfig(reuse_reader_results=True))
+    for _ in range(2):
+        model.responses = [tool_request({"artifact_id": ARTIFACT_ID, "max_chars": 16}, "first"),
+            tool_request({"artifact_id": ARTIFACT_ID, "max_chars": 16}, "again"), ModelResponse(content="done")]
+        asyncio.run(harness.run(system_prompt="test", initial_user_message="test", scope=research_scope()))
+    assert len(dispatched) == 3  # first failure + successful retry + new invocation
+
+
+def test_reader_repetition_is_still_bounded_by_model_turn_budget(tmp_path):
+    args = {"artifact_id": ARTIFACT_ID, "max_chars": 16}
+    model = ScriptedModelClient(*(tool_request(args, f"repeat-{i}") for i in range(3)))
+    harness = ToolCallHarness(model, ResearcherToolRegistry([
+        ReaderTool(ReferenceArtifactReaderTool(prepare_store(tmp_path)))]),
+        config=ToolCallHarnessConfig(reuse_reader_results=True, max_turns=3))
+    with pytest.raises(ToolCallBudgetExhausted, match="turn budget") as error:
+        asyncio.run(harness.run(system_prompt="test", initial_user_message="test", scope=research_scope()))
+    assert len(model.calls) == 3
+    assert sum(e.kind == "tool_call" for e in error.value.trace) == 1
+    assert sum(e.detail == "reader_state_reused" for e in error.value.trace) == 2
+
+
+def test_batch_replay_preserves_all_handles_and_mixed_eof_batch_is_not_dropped(tmp_path):
+    from novelty_agent_framework.workflows.research_task import _trusted_reads
+
+    full = {"artifact_id": ARTIFACT_ID, "max_chars": len(TEXT)}
+    mixed = {"reads": [{"artifact_id": ARTIFACT_ID, "char_start": len(TEXT), "max_chars": 16},
+                       {"artifact_id": ARTIFACT_ID, "char_start": 5, "max_chars": 16}]}
+    model = ScriptedModelClient(tool_request(full, "full"), tool_request(mixed, "mixed"),
+        tool_request(mixed, "mixed-again"), ModelResponse(content="done"))
+    result = asyncio.run(ToolCallHarness(model, ResearcherToolRegistry([
+        ReaderTool(ReferenceArtifactReaderTool(prepare_store(tmp_path)))]),
+        config=ToolCallHarnessConfig(reuse_reader_results=True)).run(
+            system_prompt="test", initial_user_message="test", scope=research_scope()))
+    assert result.tool_calls_used == 2
+    reads, warnings = _trusted_reads(result.trace)
+    assert not warnings
+    assert [r.text for r in reads] == [TEXT, "", TEXT[5:21]]
+    assert result.trace[-3].detail == "reader_state_reused"
+
+
+def test_reader_state_never_shares_eof_across_namespaces():
+    from novelty_agent_framework.core.tool_call_harness import _ReaderState
+    from novelty_agent_framework.schemas import ResearcherToolObservation
+
+    state = _ReaderState()
+    def remember(namespace):
+        row = {"namespace": namespace, "artifact_id": "same", "read_id": "same-read",
+               "sha256": namespace, "char_start": 0, "char_end": 3, "text": "abc", "has_more": False}
+        arguments = {"namespace": namespace, "artifact_id": "same", "char_start": 0, "max_chars": 3}
+        state.remember(arguments, ResearcherToolObservation(tool_name="reader", succeeded=True,
+            arguments=arguments, payload={"read_result": row}), {"read_result": row})
+
+    remember("research_reference")
+    assert state.replay({"namespace": "research_reference", "artifact_id": "same", "char_start": 3})
+    assert state.replay({"namespace": "subject_reference", "artifact_id": "same", "char_start": 3}) is None
+    remember("subject_reference")
+    assert len(state.reads) == 2
+    assert state.replay({"artifact_id": "same", "char_start": 3}) is None
+
+
+@pytest.mark.parametrize("eof,remaining", [(False, ["other"]), (True, [ARTIFACT_ID, "other"])])
+def test_reader_replay_only_discharges_nonempty_matching_mandatory_reads(tmp_path, eof, remaining):
+    from novelty_agent_framework.schemas import StrictModel, ResearcherToolObservation
+
+    class Arguments(StrictModel):
+        pass
+    class Database:
+        name = "database_search"
+        description = "fixed fixture"
+        args_schema = Arguments
+        async def ainvoke(self, arguments, *, scope):
+            return ResearcherToolObservation(tool_name=self.name, succeeded=True,
+                payload={"database_search_result": {"results": [{"artifact_ids": [ARTIFACT_ID, "other"]}]}})
+    def db(name):
+        return ModelResponse(content=None, tool_calls=(ModelToolCall(name, "database_search", {}),))
+
+    first = {"artifact_id": ARTIFACT_ID, "max_chars": len(TEXT)}
+    replay = {"artifact_id": ARTIFACT_ID, "char_start": len(TEXT), "max_chars": 16} if eof else first
+    model = ScriptedModelClient(tool_request(first), db("db1"), tool_request(replay, "again"),
+                                db("db2"), tool_request(first, "unrelated"), db("db3"), ModelResponse(content="done"))
+    result = asyncio.run(ToolCallHarness(model, ResearcherToolRegistry([
+        ReaderTool(ReferenceArtifactReaderTool(prepare_store(tmp_path))), Database()]),
+        config=ToolCallHarnessConfig(reuse_reader_results=True)).run(
+            system_prompt="test", initial_user_message="test", scope=research_scope()))
+    results = [json.loads(e.message.content) for e in result.trace if e.kind == "tool_result"]
+    assert results[3]["required_artifact_ids"] == sorted(remaining)
+    assert results[-1]["required_artifact_ids"] == ["other"]
+    if not eof:
+        assert results[-2]["required_artifact_ids"] == ["other"]

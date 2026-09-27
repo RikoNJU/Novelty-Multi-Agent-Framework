@@ -190,6 +190,7 @@ class DatabaseSearchTool:
             summary=summary,
             payload={
                 "research_bundle": bundle.model_dump(mode="json"),
+                "execution_issues": [issue.model_dump(mode="json") for issue in bundle.execution_failures],
                 "database_search_result": result.model_dump(mode="json"),
                 "search_executions": [
                     item.model_dump(mode="json") for item in bundle.search_executions
@@ -213,6 +214,7 @@ class DatabaseSearchTool:
             "summary": observation.summary,
             "error": observation.error,
             "execution_summary": observation.payload["execution_summary"],
+            "execution_issues": observation.payload.get("execution_issues", []),
             "result_marker": ("zero_hits" if observation.succeeded and not result["results"]
                               and not observation.payload["execution_summary"].get("degraded")
                               else "has_hits" if observation.succeeded and result["results"]

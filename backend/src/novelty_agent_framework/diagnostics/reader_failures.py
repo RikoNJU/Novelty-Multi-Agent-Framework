@@ -153,6 +153,40 @@ def _classify(
     return "OTHER", manifest_presence, [ns for ns, _ in disk_matches], file_presence
 
 
+def _reader_items(record: dict[str, Any], arguments: dict[str, Any]):
+    """Expand batch item outcomes without mistaking its absent top-level ID for corruption."""
+    requests = arguments.get("reads")
+    if not isinstance(requests, list) or not requests:
+        return [(record, arguments, None)]
+    raw = record.get("raw_result")
+    payload = record.get("normalized_result") or (raw.get("payload") if isinstance(raw, dict) else {})
+    payload = payload if isinstance(payload, dict) else {}
+    failures = payload.get("read_errors")
+    failures = failures if isinstance(failures, list) else []
+    errors = {item.get("index"): item for item in failures if isinstance(item, dict)}
+    successes = payload.get("read_results")
+    successes = list(successes) if isinstance(successes, list) else []
+    result = []
+    for index, request in enumerate(requests):
+        item = dict(record)
+        request = request if isinstance(request, dict) else {}
+        failure = errors.get(index)
+        if failure is not None:
+            item.update(execution_status="FAILED", error={"type": failure.get("error_type"),
+                                                        "message": failure.get("message")})
+        elif record.get("execution_status") == "SUCCESS":
+            match = next((row for row in successes if isinstance(row, dict) and
+                row.get("artifact_id") == request.get("artifact_id") and
+                row.get("char_start") == request.get("char_start", 0)), None)
+            if match is not None:
+                successes.remove(match)
+                item.update(execution_status="SUCCESS", error=None)
+            elif not (payload.get("reused_result") and payload.get("read_status") == "artifact_eof"):
+                item.update(execution_status="RUNNING", error=None)  # Missing per-item terminal fact.
+        result.append((item, request, index))
+    return result
+
+
 def inspect_reader_failures(context: RuntimeDiagnosticContext) -> dict[str, Any]:
     errors: list[str] = []
     warnings: list[str] = []
@@ -163,6 +197,7 @@ def inspect_reader_failures(context: RuntimeDiagnosticContext) -> dict[str, Any]
     findings: list[dict[str, Any]] = []
     succeeded = 0
     reader_calls = 0
+    reader_items = 0
     incomplete = 0
     tools_dir = context.run_dir / "tools"
     for path in sorted(tools_dir.glob("*.json")):
@@ -180,35 +215,38 @@ def inspect_reader_failures(context: RuntimeDiagnosticContext) -> dict[str, Any]
         arguments = record.get("resolved_arguments") or record.get("agent_arguments") or {}
         if not isinstance(arguments, dict):
             arguments = {}
-        code, manifest_presence, disk_namespaces, file_presence = _classify(
-            record, arguments, manifests, context.workspace
-        )
-        if code == "SUCCEEDED":
-            succeeded += 1
-            continue
-        if code == "INCOMPLETE_RECORD":
-            incomplete += 1
-        error = record.get("error") if isinstance(record.get("error"), dict) else {}
-        actual_namespaces = manifest_presence or disk_namespaces
-        findings.append(
-            {
-                "reason_code": code,
-                "tool_call_id": record.get("tool_call_id"),
-                "agent_tool_call_id": record.get("agent_tool_call_id"),
-                "stage_name": record.get("stage_name"),
-                "execution_status": record.get("execution_status"),
-                "artifact_id": arguments.get("artifact_id"),
-                "namespace": arguments.get("namespace"),
-                "actual_namespace": (
-                    actual_namespaces[0] if len(actual_namespaces) == 1 else None
-                ),
-                "manifest_presence": manifest_presence,
-                "file_presence": file_presence,
-                "error_type": error.get("type"),
-                "error_message": _safe_message(error.get("message")),
-                "recommended_action": _ACTIONS[code],
-            }
-        )
+        for item_record, item_arguments, batch_index in _reader_items(record, arguments):
+            reader_items += 1
+            code, manifest_presence, disk_namespaces, file_presence = _classify(
+                item_record, item_arguments, manifests, context.workspace
+            )
+            if code == "SUCCEEDED":
+                succeeded += 1
+                continue
+            if code == "INCOMPLETE_RECORD":
+                incomplete += 1
+            error = item_record.get("error") if isinstance(item_record.get("error"), dict) else {}
+            actual_namespaces = manifest_presence or disk_namespaces
+            findings.append(
+                {
+                    "reason_code": code,
+                    **({"batch_index": batch_index} if batch_index is not None else {}),
+                    "tool_call_id": item_record.get("tool_call_id"),
+                    "agent_tool_call_id": item_record.get("agent_tool_call_id"),
+                    "stage_name": item_record.get("stage_name"),
+                    "execution_status": item_record.get("execution_status"),
+                    "artifact_id": item_arguments.get("artifact_id"),
+                    "namespace": item_arguments.get("namespace"),
+                    "actual_namespace": (
+                        actual_namespaces[0] if len(actual_namespaces) == 1 else None
+                    ),
+                    "manifest_presence": manifest_presence,
+                    "file_presence": file_presence,
+                    "error_type": error.get("type"),
+                    "error_message": _safe_message(error.get("message")),
+                    "recommended_action": _ACTIONS[code],
+                }
+            )
     classification_counts = dict(Counter(item["reason_code"] for item in findings))
     failed = len(findings) - incomplete
     if errors:
@@ -235,11 +273,12 @@ def inspect_reader_failures(context: RuntimeDiagnosticContext) -> dict[str, Any]
     }
     return {
         "diagnostic_name": "reader",
-        "schema_version": "1.0",
+        "schema_version": "1.1",
         "status": status,
         "scope": {"paper_id": context.paper_id, "run_id": context.run_id},
         "counts": {
             "reader_calls": reader_calls,
+            "reader_items": reader_items,
             "succeeded": succeeded,
             "failed": failed,
             "incomplete": incomplete,
@@ -262,7 +301,7 @@ def inspect_reader_failures(context: RuntimeDiagnosticContext) -> dict[str, Any]
 
 class ReaderFailureDiagnostic:
     name = "reader"
-    schema_version = "1.0"
+    schema_version = "1.1"
 
     def inspect(self, context: RuntimeDiagnosticContext) -> dict[str, Any]:
         return inspect_reader_failures(context)
