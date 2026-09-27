@@ -6,6 +6,8 @@
 
 **当前为阶段成果，任务尚未完成整体验收。** 已撤回“探索审查已完成”的判断，见[状态纠正与剩余验收](acceptance_correction.md)。 最终代码1263项非live回归通过、6项live排除，1条既有弃用警告。Reader六次真实摘要实验均0卡/partial；Reviewer三次引用合法但语义不通过；arXiv公共查询仍406，根因Unknown。没有把这些结果改写为成功，也没有追加云模型能力。
 
+独立总结见 [阶段总结报告](../20260928_harness_config_review_summary.md)；原始试验记录按阶段提交，版本导航见 [上传索引](../20260928_harness_upload_index.md)。
+
 ## 修复与实验入口
 
 | 分项 | 报告 | 主要证据 |
@@ -19,12 +21,12 @@
 | Reader重复实验 | [reader_repeated_local.md](reader_repeated_local.md) | off/on各3，实际30本地chat；调用和物理读均未减少，无cache命中，0卡 |
 | Provider故障 | [arxiv_failure_analysis.md](arxiv_failure_analysis.md)、[sciencedirect_enrichment.md](sciencedirect_enrichment.md) | 4个公共GET定位边界；离线修补可选补齐失败丢候选，保留失败状态 |
 
-本轮闭环新增39个本地Qwen请求，逐调用原usage均匹配；235350输入+6433输出=241783 tokens。没有新论文外检/云模型调用；4个arXiv GET使用固定公共词，另读取公开官方能力文档。价格及本地算力成本Unknown。详细去重口径在 [scope_accounting.json](scope_accounting.json)，不能与历史242次或前轮采样调用相加冒充全任务总数。
+本阶段新增39个本地Qwen请求，逐调用原usage均匹配；235350输入+6433输出=241783 tokens。没有新论文外检/云模型调用；4个arXiv GET使用固定公共词，另读取公开官方能力文档。价格及本地算力成本Unknown。详细去重口径在 [scope_accounting.json](scope_accounting.json)，不能与历史242次或前轮采样调用相加冒充全任务总数。
 
 ## 最终验证与归档
 
 - [full-tests.log](full-tests.log) / [full-tests.xml](full-tests.xml)：最终完整结果；命令 `PYTHONPATH=backend/src:.:tests /home/lya3106643285/miniconda3/envs/Novelty-web/bin/python -m pytest -o addopts='' -q -m 'not live'`。相邻前次结果保留为before文件，不当最终结果。
-- [source_inventory.json](source_inventory.json)：85个backend/scripts/tests/config变更文件，包含新增文件。`implementation.patch`是相对该清单base_commit的累计补丁，反向应用检查通过；不是一次新git提交，未提交/推送。
+- [source_inventory.json](source_inventory.json)：85个backend/scripts/tests/config变更文件，包含新增文件。`implementation.patch`是相对该清单base_commit的累计补丁，反向应用检查通过；它记录的是当时工作区累计状态，不等同于后来按方面拆分的某个提交；当前提交导航见上传索引。
 - [final_configuration_manifest.json](final_configuration_manifest.json)和[final_startup_v2/manifest.json](final_startup_v2/manifest.json)：最终新离线冻结；原始输入、有效配置和源码内容。早期`final_startup/`及before-tool-boundary文件保留，均不能冒充此前live的启动状态。
 - Reviewer真实实验用`reviewer_local_fixed/source_snapshot/`；Reader真实实验用`reader_local_repeated/startup/`。执行版本与最终代码不同处有明确时间/哈希边界。Reader runner收尾两处调用签名错误已记录，off_1未重复推理，原llm/tool/stage事实保留，但该样本缺正常summary/独立trace sidecar。
 - [secret_scan.json](secret_scan.json)：新工件和已知真实密钥的扫描口径及结果；不含密钥值。只证明所列范围与已知值无命中。
