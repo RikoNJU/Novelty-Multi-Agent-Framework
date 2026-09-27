@@ -1,0 +1,279 @@
+{
+  "source_workspace": "outputs/frontend-user-20260918/99703e948fce4f1eb12c37de318f764d/99703e948fce4f1eb12c37de318f764d",
+  "source_files": {
+    "novelty-points.json": "327d7adfd7ef8a1c62cc4d79434d573141e06c33bb9a59b5a6993efc74c85482",
+    "evidence-cards.json": "d8e45911b25ec7df5166ee27dbbd0b69e8fe06601ba92de9c55a478c665d7ccc",
+    "novelty-reviews.json": "801f6380ca9f076be349e40c2f7a4eb30d9fa65e50a2819cbe626f7f2dbc7a08",
+    "research-runs/NP-1/T-1/attempt-1.json": "2a86edb9c6b3c316c7b2424e23405d1eb510a946c10efa5a6f9fc7ab6933974b"
+  },
+  "novelty_points": {
+    "novelty_points": [
+      {
+        "point_id": "NP-1",
+        "claim": "提出一种基于图摘要的大规模时序图表示学习方法GSAERU，通过图摘要技术将动态时序图映射到固定规模的新图，解决GNN输出无法直接输入RNN的问题，并利用图自编码器和循环神经网络学习时序图的表征。",
+        "claim_en": "Propose a large-scale sequential graph representation learning method GSAERU based on graph summarization, which maps dynamic sequential graphs to fixed-size new graphs via graph summarization, solving the problem that GNN outputs cannot be directly fed into RNN, and uses graph autoencoder and recurrent neural network to learn representations of sequential graphs.",
+        "technical_features": [
+          "将动态时序图建模为各时刻原图快照的序列",
+          "通过图摘要技术压缩原图，生成固定规模的新图",
+          "将压缩后的新图输入图自编码器，利用与原图的重构误差训练原图节点表征",
+          "将单时间步的图表征输入循环神经网络，学习时间维度上的特征信息与依赖关系"
+        ],
+        "technical_features_en": [
+          "Model dynamic sequential graphs as a sequence of snapshots of the original graph at each time step",
+          "Compress the original graph via graph summarization to generate fixed-size new graphs",
+          "Input the compressed new graph into a graph autoencoder and use reconstruction error with the original graph to train node representations",
+          "Feed the graph representations at each time step into a recurrent neural network to learn temporal features and dependencies"
+        ],
+        "source_locations": [
+          "摘要：GSAERU 模型由“图表征学习模块”和“时序学习模块”两部分构成...",
+          "作者贡献段1：提出了一种新的图表示学习模型——GSAERU..."
+        ]
+      }
+    ]
+  },
+  "evidence_cards": {
+    "validator_accepted_cards": [
+      {
+        "card_id": "card_59de824fb081565b0b00d1e6",
+        "task_id": "T-1",
+        "novelty_point_id": "NP-1",
+        "document_title": "Beyond Flat Netlist: Hierarchical Graph Representation Learning for Scalable Analysis of Sequential Circuits",
+        "main_contribution": "DeepSeq3 introduces a hierarchical framework that abstracts circuits into a two-level representation: fine-grained combinational subgraphs partitioned by flip-flops and a high-level Super-Node Graph modeling register-transfer structure, with a dual GNN architecture and state-centric pre-training to capture temporal behavior.",
+        "overlaps": [
+          "Abstracts/compresses large graphs into a higher-level representation, conceptually similar to graph summarization/compression",
+          "Models temporal dynamics (register-level state transitions)"
+        ],
+        "differences": [
+          "Uses hierarchical abstraction into a Super-Node Graph rather than graph summarization producing a fixed-size new graph",
+          "Does not use a graph autoencoder with reconstruction error against the original graph",
+          "Uses a dual GNN architecture rather than feeding graph representations into an RNN"
+        ],
+        "sources": [
+          {
+            "title": "Beyond Flat Netlist: Hierarchical Graph Representation Learning for Scalable Analysis of Sequential Circuits",
+            "quote": "we introduce DeepSeq3, a novel hierarchical framework that abstracts circuits into a two-level representation: fine-grained combinational subgraphs partitioned by flip-flops (FFs), and a high-level Super-Node Graph (SNG) that models the register-transfer structure",
+            "location": "artifact art_b69304460b19f401a0053317 chars:313-577",
+            "doi": "10.1145/3770743.3803902",
+            "url": "https://arxiv.org/pdf/2608.28188"
+          }
+        ],
+        "cited_by_paper": null,
+        "possible_baseline": false,
+        "relevance": 0.5,
+        "confidence": 0.75,
+        "evidence_ids": [
+          "ev_0437a0c8194c92820bdd2ad4"
+        ]
+      },
+      {
+        "card_id": "card_454112963d4c1c062c8e1ffe",
+        "task_id": "T-1",
+        "novelty_point_id": "NP-1",
+        "document_title": "Learning Dual Dynamic Representations on Time-Sliced User-Item Interaction Graphs for Sequential Recommendation",
+        "main_contribution": "DRL-SRe proposes a Dynamic Representation Learning model for Sequential Recommendation that builds a global user-item interaction graph for each time slice and uses time-sliced graph neural networks to learn user and item representations, with an auxiliary temporal prediction task based on temporal point process.",
+        "overlaps": [
+          "Models dynamic sequential graphs as time-sliced snapshots of the interaction graph, similar to modeling dynamic sequential graphs as a sequence of snapshots",
+          "Learns temporal features/dependencies across consecutive time slices"
+        ],
+        "differences": [
+          "Does not use graph summarization to compress the graph into a fixed-size new graph",
+          "Does not use a graph autoencoder with reconstruction error to train node representations",
+          "Uses time-sliced GNNs and a temporal point process rather than feeding graph representations into an RNN"
+        ],
+        "sources": [
+          {
+            "title": "Learning Dual Dynamic Representations on Time-Sliced User-Item Interaction Graphs for Sequential Recommendation",
+            "quote": "the proposed model builds a global user-item interaction graph for each time slice and exploits time-sliced graph neural networks to learn user and item representations",
+            "location": "artifact art_ac6571cb2ce9e7e48a24e192 chars:797-965",
+            "doi": null,
+            "url": "https://arxiv.org/pdf/2109.11790"
+          }
+        ],
+        "cited_by_paper": null,
+        "possible_baseline": false,
+        "relevance": 0.55,
+        "confidence": 0.8,
+        "evidence_ids": [
+          "ev_66012b400358828e37eac864"
+        ]
+      }
+    ]
+  },
+  "research_attempt": {
+    "evidence": [
+      {
+        "evidence_id": "ev_66012b400358828e37eac864",
+        "work_id": "wrk_0816eb289770aba763747fae",
+        "artifact_id": "art_ac6571cb2ce9e7e48a24e192",
+        "novelty_point_id": "NP-1",
+        "task_id": "T-1",
+        "quote": "the proposed model builds a global user-item interaction graph for each time slice and exploits time-sliced graph neural networks to learn user and item representations",
+        "locator": {
+          "page_start": null,
+          "page_end": null,
+          "section": null,
+          "block_id": null,
+          "paragraph_start": null,
+          "paragraph_end": null,
+          "char_start": 797,
+          "char_end": 965,
+          "selector": null
+        },
+        "interpretation": "Confirms overlap with modeling dynamic sequential graphs as time-slice snapshots and learning representations over time, but the mechanism uses time-sliced GNNs rather than graph summarization + graph autoencoder + RNN.",
+        "confidence": 0.85,
+        "provenance": {
+          "source_kind": "structured_database",
+          "evidence_type": "database_evidence",
+          "builder": "evidence_card_builder",
+          "artifact_namespace": "research_reference",
+          "read_id": "read_6de5f364e6da7c41e724a71e",
+          "read_char_start": 0,
+          "read_char_end": 1322,
+          "quote_char_start": 797,
+          "quote_char_end": 965,
+          "source_record_id": "src_289530987e528399013f7297"
+        }
+      },
+      {
+        "evidence_id": "ev_0437a0c8194c92820bdd2ad4",
+        "work_id": "wrk_550019147260ce5861cd5a14",
+        "artifact_id": "art_b69304460b19f401a0053317",
+        "novelty_point_id": "NP-1",
+        "task_id": "T-1",
+        "quote": "we introduce DeepSeq3, a novel hierarchical framework that abstracts circuits into a two-level representation: fine-grained combinational subgraphs partitioned by flip-flops (FFs), and a high-level Super-Node Graph (SNG) that models the register-transfer structure",
+        "locator": {
+          "page_start": null,
+          "page_end": null,
+          "section": null,
+          "block_id": null,
+          "paragraph_start": null,
+          "paragraph_end": null,
+          "char_start": 313,
+          "char_end": 577,
+          "selector": null
+        },
+        "interpretation": "Shows overlap in compressing/abstracting large graphs and modeling temporal structure, but the compression mechanism (hierarchical abstraction) and learning mechanism (dual GNN) differ from graph summarization + graph autoencoder + RNN.",
+        "confidence": 0.8,
+        "provenance": {
+          "source_kind": "structured_database",
+          "evidence_type": "database_evidence",
+          "builder": "evidence_card_builder",
+          "artifact_namespace": "research_reference",
+          "read_id": "read_b08df313193c28b02fc58057",
+          "read_char_start": 0,
+          "read_char_end": 1107,
+          "quote_char_start": 313,
+          "quote_char_end": 577,
+          "source_record_id": "src_62d44a6933243708bf2c2cd3"
+        }
+      }
+    ]
+  },
+  "novelty_reviews": {
+    "reviews": [
+      {
+        "novelty_point_id": "NP-1",
+        "status": "insufficient_evidence",
+        "verdict": null,
+        "verdict_reason": null,
+        "confidence": null,
+        "highly_relevant_works": [
+          {
+            "work_id": "wrk_550019147260ce5861cd5a14",
+            "card_ids": [
+              "card_59de824fb081565b0b00d1e6"
+            ],
+            "evidence_ids": [
+              "ev_0437a0c8194c92820bdd2ad4",
+              "rev_ev_3e77e610fafb464ad929b232"
+            ],
+            "relevance_reason": "该文献涉及大规模图压缩/抽象与时序动态建模，与查新点的图摘要压缩和时序学习概念层面相关，但具体机制不同，属于部分相关文献。"
+          }
+        ],
+        "supplement_request": {
+          "reason": "关键差异尚未核验：card_454112963d4c1c062c8e1ffe 因技术错误未完成核验，无法提供任何证据；且 card_59de824fb081565b0b00d1e6 对 F1（动态时序图建模为快照序列）仅基于摘要判定为 unknown，未核验正文。若最终裁定新颖性，需补充核验该文献的正文以确认 F1 是否公开，并重新核验 card_454112963d4c1c062c8e1ffe 对应的文献。",
+          "missing_aspects": [
+            "card_454112963d4c1c062c8e1ffe 对应文献的完整核验",
+            "card_59de824fb081565b0b00d1e6 对应文献中 F1 特征的正文核验"
+          ],
+          "suggested_focus": [
+            "获取并核验 card_454112963d4c1c062c8e1ffe 对应文献的全文，特别是其方法部分是否公开了动态时序图建模为快照序列、图摘要压缩、图自编码器重构误差训练、RNN时序学习等特征",
+            "对 card_59de824fb081565b0b00d1e6 对应文献，核验其方法部分是否明确将时序图建模为各时刻快照序列，以确定 F1 的公开状态"
+          ]
+        },
+        "read_citations": [],
+        "review_evidence": [
+          {
+            "evidence_id": "rev_ev_3e77e610fafb464ad929b232",
+            "review_id": "review_5611bd2f28891685ed01",
+            "origin_card_id": "card_59de824fb081565b0b00d1e6",
+            "novelty_point_id": "NP-1",
+            "work_id": "wrk_550019147260ce5861cd5a14",
+            "source_record_id": "src_62d44a6933243708bf2c2cd3",
+            "artifact_id": "art_b69304460b19f401a0053317",
+            "namespace": "research_reference",
+            "artifact_hash": "eb3f4025639f2430cf603baf31f98f12b8faa842879c7d72fba30a24d4db1cd6",
+            "read_id": "read_b08df313193c28b02fc58057",
+            "char_start": 0,
+            "char_end": 1107,
+            "exact_quote": "Circuit Representation Learning (CRL) offers a powerful paradigm to guide and optimize core Electronic Design Automation (EDA) tasks, but its practical adoption is hindered by the immense scale of industrial netlists and a failure to explicitly model register-level temporal dynamics. To overcome these barriers, we introduce DeepSeq3, a novel hierarchical framework that abstracts circuits into a two-level representation: fine-grained combinational subgraphs partitioned by flip-flops (FFs), and a high-level Super-Node Graph (SNG) that models the register-transfer structure. A dual Graph Neural Network (GNN) architecture learns representations at both levels, capturing local Boolean logic and global state transitions. Crucially, we introduce a state-centric pre-training scheme that predicts the reachability between FF states, endowing the model with a deep understanding of temporal behavior. Demonstrated on large-scale benchmarks, DeepSeq3's approach yields superior scalability and richer representations, reducing bounded model checking (BMC) solving time by 18% while guaranteeing correctness.",
+            "role": "abstract",
+            "content_extent": "full",
+            "version_label": null
+          }
+        ],
+        "feature_comparisons": [
+          {
+            "feature_id": "F1",
+            "work_id": "wrk_550019147260ce5861cd5a14",
+            "relation": "unknown",
+            "basis_type": "insufficient",
+            "evidence_refs": [
+              "ev_0437a0c8194c92820bdd2ad4",
+              "rev_ev_3e77e610fafb464ad929b232"
+            ],
+            "reason": "摘要提及'register-level temporal dynamics'和'global state transitions'，表明该文献建模时序行为，但未明确描述将动态图建模为各时刻原图快照的序列这一具体形式。摘要未提及该特征，无法确认或否定，需核验正文。",
+            "source_context": "author_method"
+          },
+          {
+            "feature_id": "F2",
+            "work_id": "wrk_550019147260ce5861cd5a14",
+            "relation": "partially_supported",
+            "basis_type": "semantic_equivalence",
+            "evidence_refs": [
+              "ev_0437a0c8194c92820bdd2ad4",
+              "rev_ev_3e77e610fafb464ad929b232"
+            ],
+            "reason": "摘要明确描述'abstracts circuits into a two-level representation'和'Super-Node Graph (SNG)'，在'压缩/抽象大规模图'概念层面与图摘要压缩有语义重叠；但机制为层级抽象而非图摘要生成固定规模新图，且未提及'固定规模'这一约束，故仅部分支持。",
+            "source_context": "author_method"
+          },
+          {
+            "feature_id": "F3",
+            "work_id": "wrk_550019147260ce5861cd5a14",
+            "relation": "contradicted",
+            "basis_type": "direct_statement",
+            "evidence_refs": [
+              "ev_0437a0c8194c92820bdd2ad4",
+              "rev_ev_3e77e610fafb464ad929b232"
+            ],
+            "reason": "摘要明确说明学习机制为'dual Graph Neural Network (GNN) architecture'和'state-centric pre-training'，未提及图自编码器或与原图的重构误差训练。该文献采用双GNN架构，与查新点的图自编码器+重构误差机制不相容。",
+            "source_context": "author_method"
+          },
+          {
+            "feature_id": "F4",
+            "work_id": "wrk_550019147260ce5861cd5a14",
+            "relation": "contradicted",
+            "basis_type": "direct_statement",
+            "evidence_refs": [
+              "ev_0437a0c8194c92820bdd2ad4",
+              "rev_ev_3e77e610fafb464ad929b232"
+            ],
+            "reason": "摘要描述时序建模通过'dual GNN'和'state-centric pre-training'实现，未提及循环神经网络（RNN）或单时间步图表征输入RNN的机制。该文献的时序学习路径与查新点的RNN方案不同。",
+            "source_context": "author_method"
+          }
+        ],
+        "incomplete_reason": "technical_error"
+      }
+    ]
+  }
+}

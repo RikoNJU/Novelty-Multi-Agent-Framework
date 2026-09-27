@@ -37,7 +37,8 @@ from ..schemas import (
 )
 from ..tools.researcher_registry import ResearcherToolRegistry
 from ..tools.reader import ReviewerReaderTool
-from ..schemas.domain import ReviewEvidence
+from ..schemas.domain import ReviewEvidence, ReviewerReadAudit
+from ..schemas.failures import FailureCode, FailureScope, FailureEvent, make_failure
 from ..core.runtime_artifacts import current_runtime_artifacts
 
 
@@ -234,6 +235,7 @@ class NoveltyEvidenceReviewer(EvidenceReviewer):
         if card_only:
             system += "\n" + self._render_instruction("reviewer/review_card", _CARD_FALLBACK)
         system += "\n" + _EVIDENCE_BOUNDARY
+        phase = "model"
         try:
             harness = self.harness
             client = self._client()
@@ -275,6 +277,7 @@ class NoveltyEvidenceReviewer(EvidenceReviewer):
                 scope=request,
                 options=call_options,
             )
+            phase = "schema"
             try:
                 draft = ReviewerCardDraft.model_validate_json(_extract_json(result.final_content))
             except (ValidationError, ValueError) as parse_error:
@@ -286,10 +289,20 @@ class NoveltyEvidenceReviewer(EvidenceReviewer):
                                              ReviewerCardDraft.model_json_schema(), call_options)
                 draft = ReviewerCardDraft.model_validate_json(_extract_json(repaired))
             review = NoveltyPointReview.model_validate(draft.model_dump(mode="json"))
-            review = review.model_copy(update={"incomplete_reason":
-                "semantic_evidence" if review.status is ReviewStatus.INSUFFICIENT_EVIDENCE else None})
+            execution_issues, read_audit = _review_execution_facts(result.trace, request)
+            incomplete = "semantic_evidence" if review.status is ReviewStatus.INSUFFICIENT_EVIDENCE else None
+            if incomplete and execution_issues:
+                incomplete = ("material_unavailable" if all(issue.code == FailureCode.MATERIAL_UNAVAILABLE
+                              for issue in execution_issues) else "technical_error")
+            if review.status is ReviewStatus.REVIEWED:
+                execution_issues = [issue.model_copy(update={"conclusion_effect": "limits_coverage"})
+                                    for issue in execution_issues]
+            review = review.model_copy(update={"incomplete_reason": incomplete,
+                "execution_issues": execution_issues, "reader_observations": read_audit})
+            phase = "reference"
             review = _register_review_reads(review, request, result.trace, catalog)
             review = _validate_review_references(review, request)
+            review = _validate_verdict_coverage(review, request)
             _record_review_event("single_card_result", request, {
                 "material_catalog": catalog, "actual_model_input": {"system": system, "user": user},
                 "draft_schema": ReviewerCardDraft.model_json_schema(),
@@ -319,7 +332,7 @@ class NoveltyEvidenceReviewer(EvidenceReviewer):
                 request.novelty_point.point_id,
                 f"Reviewer 无法完成可靠判定：{type(exc).__name__}: {exc}"[:500],
                 cause=_review_failure_cause(exc),
-            )
+            ).model_copy(update={"execution_issues": [_review_exception_issue(exc, request, phase)]})
 
     async def review_card(self, request: NoveltyPointReviewRequest) -> NoveltyPointReview:
         """Reuse the existing review contract for one indexed intermediate result."""
@@ -329,10 +342,39 @@ class NoveltyEvidenceReviewer(EvidenceReviewer):
             return await asyncio.wait_for(
                 self._review_point(request, card_only=True), self.config.card_timeout_seconds
             )
-        except TimeoutError:
-            return _insufficient_review(request.novelty_point.point_id, "单卡评审超过时间预算，核验未完成。", cause="budget_exhausted")
+        except TimeoutError as exc:
+            return _insufficient_review(request.novelty_point.point_id, "单卡评审超过时间预算，核验未完成。", cause="budget_exhausted").model_copy(
+                update={"execution_issues": [_review_exception_issue(exc, request, "model")]})
 
-    async def summarize_reviews(self, request, card_reviews) -> NoveltyPointReview:
+    def _summary_checkpoint_prompt(self) -> str:
+        return self._render_instruction("reviewer/summarize_reviews", _SUMMARY_FALLBACK) + "\n" + _EVIDENCE_BOUNDARY
+
+    async def summarize_with_checkpoint(self, request, card_reviews, *, output_root, run_id):
+        """Persist verified Card results before the existing summary call."""
+        from .reviewer_checkpoint import ReviewerSummaryCheckpoint, ReviewSummaryAttempt
+        try:
+            checkpoint = ReviewerSummaryCheckpoint.create(self, request, card_reviews,
+                output_root=output_root, run_id=run_id)
+        except (OSError, ValueError, TypeError) as exc:
+            # Legacy/unverifiable sources cannot authorize recovery. Preserve the
+            # existing summary path and explicitly report that durability failed.
+            review = await self.summarize_reviews(request, card_reviews)
+            issue = make_failure(FailureCode.REVIEW_SUMMARY_FAILED,
+                scope=FailureScope(paper_id=request.subject_paper_id, run_id=run_id,
+                                   point_id=request.novelty_point.point_id),
+                message="Summary checkpoint unavailable: " + type(exc).__name__)
+            return ReviewSummaryAttempt(attempt_id="uncheckpointed", status="checkpoint_unavailable",
+                review=review, partial_card_results=card_reviews, execution_issues=[*review.execution_issues, issue])
+        return await checkpoint.attempt(self)
+
+    async def recover_summary(self, request, *, output_root, run_id, checkpoint_id):
+        """Explicit one-attempt summary recovery, with no retrieval or Reader tool call."""
+        from .reviewer_checkpoint import ReviewerSummaryCheckpoint
+        checkpoint = ReviewerSummaryCheckpoint.load(self, request, output_root=output_root,
+            run_id=run_id, checkpoint_id=checkpoint_id)
+        return await checkpoint.attempt(self, recovery=True)
+
+    async def summarize_reviews(self, request, card_reviews, *, _input_date=None) -> NoveltyPointReview:
         """Synthesize compact card reviews; validate against originals locally."""
         deadline = time.monotonic() + self.config.summary_timeout_seconds
         usable = [row for row in card_reviews if row.get("status") == "completed"
@@ -347,11 +389,12 @@ class NoveltyEvidenceReviewer(EvidenceReviewer):
                 "全部单卡核验因运行错误或预算限制未完成；未调用模型汇总。", cause=cause)
         system = self._render_instruction("reviewer/summarize_reviews", _SUMMARY_FALLBACK)
         system += "\n" + _EVIDENCE_BOUNDARY
+        phase = "reference"
         try:
             rows, validated_ids = _compact_summary_rows(request, card_reviews)
             projected = _summary_model_rows(rows)
             user = json.dumps({
-                "today": self.config.summary_input_date or datetime.now(timezone.utc).date().isoformat(),
+                "today": _input_date or self.config.summary_input_date or datetime.now(timezone.utc).date().isoformat(),
                 "novelty_point": request.novelty_point.model_dump(mode="json"),
                 "card_reviews": projected,
                 "review_schema": ReviewerSummaryDraft.model_json_schema(),
@@ -368,6 +411,7 @@ class NoveltyEvidenceReviewer(EvidenceReviewer):
                 "payload_sha256": hashlib.sha256(user.encode()).hexdigest(),
                 "actual_model_input": user, "evidence_lineage": lineage,
                 "remaining_seconds": remaining, "transport_timeout_seconds": transport_timeout})
+            phase = "model"
             response = await asyncio.wait_for(self._client().acomplete(
                 [ChatMessage(role="system", content=system), ChatMessage(role="user", content=user)],
                 options=summary_options,
@@ -377,6 +421,7 @@ class NoveltyEvidenceReviewer(EvidenceReviewer):
                 "raw_model_output": response.content})
             if response.tool_calls:
                 raise ValueError("summary attempted a tool call")
+            phase = "schema"
             try:
                 draft = ReviewerSummaryDraft.model_validate_json(_extract_json(response.content))
             except (ValidationError, ValueError) as parse_error:
@@ -395,14 +440,23 @@ class NoveltyEvidenceReviewer(EvidenceReviewer):
             review = NoveltyPointReview.model_validate(draft.model_dump(mode="json"))
             review = review.model_copy(update={"incomplete_reason":
                 _summary_incomplete_reason(rows) if review.status is ReviewStatus.INSUFFICIENT_EVIDENCE else None})
+            phase = "reference"
             incremental = [ReviewEvidence.model_validate(item) for row in rows
                            for item in row.get("review_evidence", [])]
-            review = review.model_copy(update={"review_evidence": incremental})
+            inherited_issues = {issue.event_id: issue for row in card_reviews
+                if row.get("status") == "completed"
+                for issue in NoveltyPointReview.model_validate(row["review"]).execution_issues}
+            if review.status is ReviewStatus.REVIEWED:
+                inherited_issues = {key: issue.model_copy(update={"conclusion_effect": "limits_coverage"})
+                                    for key, issue in inherited_issues.items()}
+            review = review.model_copy(update={"review_evidence": incremental,
+                                               "execution_issues": list(inherited_issues.values())})
             summary_refs = [eid for work in review.highly_relevant_works for eid in work.evidence_ids]
             summary_refs += [eid for item in review.feature_comparisons for eid in item.evidence_refs]
             if any(evidence_id not in validated_ids for evidence_id in summary_refs):
                 raise ValueError("summary cites evidence not verified in card stage or without a displayed quote")
             review = _validate_review_references(review, request)
+            review = _validate_verdict_coverage(review, request)
             _summary_remaining(deadline)
             _record_review_event("summary_result", request, {
                 "rows": rows, "actual_model_input": user,
@@ -426,7 +480,7 @@ class NoveltyEvidenceReviewer(EvidenceReviewer):
                 request.novelty_point.point_id,
                 f"Reviewer 汇总失败：{type(exc).__name__}: {exc}"[:500],
                 cause=cause,
-            )
+            ).model_copy(update={"execution_issues": [_review_exception_issue(exc, request, phase)]})
     def _render_point_prompt(
         self, request: NoveltyPointReviewRequest
     ) -> tuple[str, str]:
@@ -707,6 +761,70 @@ def _extract_json(content: str | None) -> str:
     return text[start : end + 1] if start != -1 and end > start else text
 
 
+def _review_execution_facts(trace, request):
+    issues, reads = {}, {}
+    for index, event in enumerate(trace):
+        observation = getattr(event, "observation", None)
+        if getattr(event, "kind", None) != "tool_result" or observation is None:
+            continue
+        payload = observation.payload
+        raw_issues = payload.get("execution_issues", [])
+        for raw in raw_issues:
+            issue = FailureEvent.model_validate(raw)
+            issues[issue.event_id] = issue
+        errors = payload.get("read_errors", [])
+        if not observation.succeeded and not raw_issues and not errors:
+            errors = [{"error_type": payload.get("error_type"),
+                       "artifact_id": observation.arguments.get("artifact_id")}]
+        for error in errors:
+            # Structured exception identity, never the prose error message.
+            if error.get("error_type") == "ReaderUnavailable" and raw_issues:
+                continue
+            code = {"PermissionError": FailureCode.TOOL_SCOPE,
+                    "ValidationError": FailureCode.TOOL_ARGUMENTS,
+                    "ValueError": FailureCode.TOOL_ARGUMENTS,
+                    "FileNotFoundError": FailureCode.MATERIAL_UNAVAILABLE}.get(
+                        error.get("error_type"), FailureCode.TOOL_UNAVAILABLE)
+            issue = make_failure(code, scope=FailureScope(paper_id=request.subject_paper_id,
+                point_id=request.novelty_point.point_id, artifact_id=error.get("artifact_id")),
+                message="Reviewer tool execution did not complete", occurrence_id=str(index))
+            issues[issue.event_id] = issue
+        if observation.tool_name != "reader" or not observation.succeeded:
+            continue
+        for raw in payload.get("read_results", []) + ([payload["read_result"]] if "read_result" in payload else []):
+            audit = ReviewerReadAudit(read_id=raw["read_id"], namespace=raw["namespace"],
+                work_id=raw["work_id"], artifact_id=raw["artifact_id"], artifact_hash=raw["sha256"],
+                char_start=raw["char_start"], char_end=raw["char_end"],
+                text_sha256=hashlib.sha256(raw["text"].encode()).hexdigest())
+            reads[audit.read_id] = audit
+    return list(issues.values()), list(reads.values())
+
+
+def _review_exception_issue(exc, request, phase):
+    from backend.env import ModelContextAdmissionError
+    from backend.env.model_client import ModelTransportTimeout
+    chain, current = [], exc
+    while current is not None and id(current) not in {id(item) for item in chain}:
+        chain.append(current)
+        current = current.__cause__
+    if any(isinstance(item, ModelContextAdmissionError) for item in chain):
+        admission = next(item for item in chain if isinstance(item, ModelContextAdmissionError))
+        code = (FailureCode.MODEL_CONTEXT_UNAVAILABLE if admission.code == "CONTEXT_MEASUREMENT_UNAVAILABLE"
+                else FailureCode.MODEL_CONTEXT_LIMIT)
+    elif any(isinstance(item, (TimeoutError, ModelTransportTimeout)) for item in chain):
+        code = FailureCode.MODEL_TIMEOUT
+    elif _review_failure_cause(exc) == "budget_exhausted":
+        code = FailureCode.BUDGET_EXHAUSTED
+    elif phase == "schema":
+        code = FailureCode.MODEL_OUTPUT_SCHEMA
+    elif phase == "reference":
+        code = FailureCode.MODEL_OUTPUT_REFERENCE
+    else:
+        code = FailureCode.MODEL_TRANSPORT
+    return make_failure(code, scope=FailureScope(paper_id=request.subject_paper_id,
+        point_id=request.novelty_point.point_id), message="Reviewer execution incomplete")
+
+
 def _review_failure_cause(exc: BaseException) -> str:
     """Classify by exception identity, including a harness-wrapped cause."""
     current: BaseException | None = exc
@@ -978,7 +1096,7 @@ def _summary_model_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
         item = {key: value for key, value in row.items() if key != "review_evidence"}
         if "review" in item:
             item["review"] = {key: value for key, value in item["review"].items()
-                              if key not in {"review_evidence", "read_citations"}}
+                              if key not in {"review_evidence", "read_citations", "reader_observations"}}
         projected.append(item)
     return projected
 
@@ -1012,6 +1130,45 @@ def _summary_incomplete_reason(rows: list[dict[str, Any]]) -> str:
         if cause in reasons:
             return cause
     return "semantic_evidence"
+
+
+def _validate_verdict_coverage(review, request):
+    """A not_novel label requires one Work covering every declared feature.
+
+    This checks the model's own structured relations, not their semantic truth.
+    A secondary unknown must not automatically veto a limited/partial judgment.
+    """
+    if review.status is not ReviewStatus.REVIEWED or review.verdict is None or review.verdict.value != "not_novel":
+        return review
+    features = _feature_catalog(request.novelty_point)
+    expected = {item["feature_id"] for item in features}
+    by_work = {}
+    for comparison in review.feature_comparisons:
+        by_work.setdefault(comparison.work_id, {}).setdefault(comparison.feature_id, []).append(comparison)
+    complete = [work for work, comparisons in by_work.items() if expected and all(
+        len(comparisons.get(fid, [])) == 1 and comparisons[fid][0].relation == "supported"
+        and comparisons[fid][0].evidence_refs for fid in expected)]
+    if complete:
+        return review
+    issue = make_failure(FailureCode.REVIEW_MISSING_FEATURES,
+        scope=FailureScope(paper_id=request.subject_paper_id,
+            point_id=request.novelty_point.point_id, feature_ids=sorted(expected)),
+        message="not_novel requires one Work with a unique supported, cited comparison for every declared feature")
+    _record_review_event("verdict_coverage_rejected", request, {
+        "review_before_guard": review.model_dump(mode="json"),
+        "required_feature_ids": sorted(expected), "failure": issue.model_dump(mode="json"),
+        "semantic_relations_rejudged": False})
+    missing = [item["text"] for item in features if not any(
+        len(comparisons.get(item["feature_id"], [])) == 1
+        and comparisons[item["feature_id"]][0].relation == "supported"
+        and comparisons[item["feature_id"]][0].evidence_refs for comparisons in by_work.values())]
+    return review.model_copy(update={"status": ReviewStatus.INSUFFICIENT_EVIDENCE,
+        "verdict": None, "verdict_reason": None, "confidence": None,
+        "incomplete_reason": "semantic_evidence",
+        "supplement_request": SupplementRequest(
+            reason="尚无单篇文献对全部明确技术特征的完整支持，不能形成 not_novel 裁定；已登记局部核验结果保留。",
+            missing_aspects=missing or ["单篇文献对完整技术组合的证据对应"]),
+        "execution_issues": [*review.execution_issues, issue]})
 
 
 def _validate_review_references(

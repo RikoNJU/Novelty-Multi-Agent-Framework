@@ -35,6 +35,50 @@ def _load_json(path: Path, errors: list[str]) -> Any:
         return {}
 
 
+def _review_evidence_index(
+    review: NoveltyPointReview,
+    card_by_id: dict[str, dict[str, Any]],
+    evidence_by_id: dict[str, dict[str, Any]],
+    errors: list[str],
+) -> dict[str, dict[str, Any]]:
+    """Index this review's additions only after checking their original scope.
+
+    This checks reference closure, not Reader provenance or source quote integrity.
+    Original Card evidence is deliberately resolved from research attempts only.
+    """
+    counts = Counter(item.evidence_id for item in review.review_evidence)
+    additions: dict[str, dict[str, Any]] = {}
+    for item in review.review_evidence:
+        evidence_id = item.evidence_id
+        if counts[evidence_id] > 1:
+            errors.append(f"duplicate ReviewEvidence ID: {evidence_id}")
+            continue
+        if evidence_id in evidence_by_id:
+            errors.append(f"ReviewEvidence shadows original Evidence: {evidence_id}")
+            continue
+        card = card_by_id.get(item.origin_card_id)
+        if card is None:
+            errors.append(
+                f"ReviewEvidence references missing Card: {item.origin_card_id}"
+            )
+            continue
+        if item.novelty_point_id != review.novelty_point_id or card.get(
+            "novelty_point_id"
+        ) != review.novelty_point_id:
+            errors.append(f"cross-point ReviewEvidence: {evidence_id}")
+            continue
+        if not any(
+            (original := evidence_by_id.get(original_id)) is not None
+            and original.get("work_id") == item.work_id
+            and original.get("novelty_point_id") == review.novelty_point_id
+            for original_id in card.get("evidence_ids", [])
+        ):
+            errors.append(f"ReviewEvidence outside Card/Work scope: {evidence_id}")
+            continue
+        additions[evidence_id] = item.model_dump(mode="json")
+    return additions
+
+
 def inspect_workspace(workspace: Path, *, run_id: str | None = None) -> dict[str, Any]:
     """Return a deterministic, source-text-free Reviewer diagnostic report."""
 
@@ -116,7 +160,10 @@ def inspect_workspace(workspace: Path, *, run_id: str | None = None) -> dict[str
         f"duplicate review: {point_id}" for point_id in duplicate_review_ids
     )
 
+    registered_evidence_ids: set[str] = set()
     for review in reviews:
+        additions = _review_evidence_index(review, card_by_id, evidence_by_id, errors)
+        registered_evidence_ids.update(additions)
         for work in review.highly_relevant_works:
             for card_id in work.card_ids:
                 card = card_by_id.get(card_id)
@@ -126,7 +173,7 @@ def inspect_workspace(workspace: Path, *, run_id: str | None = None) -> dict[str
                 if review.novelty_point_id != card.get("novelty_point_id"):
                     errors.append(f"cross-point Card reference: {card_id}")
             for evidence_id in work.evidence_ids:
-                evidence = evidence_by_id.get(evidence_id)
+                evidence = evidence_by_id.get(evidence_id) or additions.get(evidence_id)
                 if evidence is None:
                     errors.append(
                         f"review references missing Evidence: {evidence_id}"
@@ -140,9 +187,14 @@ def inspect_workspace(workspace: Path, *, run_id: str | None = None) -> dict[str
             cited_ids = set(work.evidence_ids)
             for card_id in work.card_ids:
                 card = card_by_id.get(card_id)
-                if card is not None and not cited_ids.intersection(
-                    card.get("evidence_ids", [])
-                ):
+                if card is None:
+                    continue
+                linked_ids = set(card.get("evidence_ids", [])) | {
+                    evidence_id
+                    for evidence_id, item in additions.items()
+                    if item["origin_card_id"] == card_id
+                }
+                if not cited_ids.intersection(linked_ids):
                     errors.append(
                         f"Card/Evidence link missing in RelevantWork: {card_id}"
                     )
@@ -217,7 +269,7 @@ def inspect_workspace(workspace: Path, *, run_id: str | None = None) -> dict[str
         "counts": {
             "novelty_points": len(point_ids),
             "validator_accepted_cards": len(cards),
-            "evidence": len(evidence_by_id),
+            "evidence": len(evidence_by_id) + len(registered_evidence_ids),
             "reviews": len(reviews),
             "runtime_review_stages": len(runtime_checks),
             "reviewer_reader_calls": len(reader_calls),
