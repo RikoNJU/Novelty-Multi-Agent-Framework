@@ -1,8 +1,8 @@
 # Novelty 本地 LLM 使用手册
 
-> 当前状态：开发 / 调试 / 实验用 Baseline\
-> 当前模型：Qwen2.5-7B-Instruct\
-> 推理服务：vLLM / OpenAI-compatible API\
+> 当前状态：开发 / 调试 / 实验用 Baseline
+> 当前模型：Qwen2.5-7B-Instruct
+> 推理服务：vLLM / OpenAI-compatible API
 > 更新日期：2026-09-25
 
 这份文档解决一个问题：
@@ -11,7 +11,7 @@
 
 你**不需要在自己电脑上下载模型**。
 
-------------------------------------------------------------------------
+---
 
 # 一、第一次使用
 
@@ -21,10 +21,10 @@
 
 向组内成员获取：
 
--   服务器地址
--   SSH 用户名
--   SSH 端口（如果不是 22）
--   登录方式
+- 服务器地址
+- SSH 用户名
+- SSH 端口（如果不是 22）
+- 登录方式
 
 这些信息不要提交到 GitHub。
 
@@ -32,7 +32,7 @@
 
 以下命令都在你自己的 WSL 中执行。
 
-``` bash
+```bash
 mkdir -p ~/.ssh
 chmod 700 ~/.ssh
 nano ~/.ssh/config
@@ -40,7 +40,7 @@ nano ~/.ssh/config
 
 加入：
 
-``` text
+```text
 Host lab-novelty
     HostName <服务器地址>
     User <用户名>
@@ -50,25 +50,25 @@ Host lab-novelty
 
 如果有指定端口，再加：
 
-``` text
+```text
     Port <端口>
 ```
 
 如果使用 SSH Key：
 
-``` text
+```text
     IdentityFile ~/.ssh/<PRIVATE_KEY>
 ```
 
 保存后设置权限：
 
-``` bash
+```bash
 chmod 600 ~/.ssh/config
 ```
 
 测试：
 
-``` bash
+```bash
 ssh lab-novelty
 ```
 
@@ -76,14 +76,14 @@ ssh lab-novelty
 
 退出：
 
-``` bash
+```bash
 exit
 ```
 
 以后统一使用
 `lab-novelty`，不需要在日常命令、脚本和项目配置中重复填写服务器真实地址。
 
-------------------------------------------------------------------------
+---
 
 # 二、每次使用模型
 
@@ -91,13 +91,13 @@ exit
 
 登录服务器：
 
-``` bash
+```bash
 ssh lab-novelty
 ```
 
 执行：
 
-``` bash
+```bash
 cd ~/llm-service
 ./status.sh
 ```
@@ -106,14 +106,14 @@ cd ~/llm-service
 
 看到类似：
 
-``` text
+```text
 RUNNING: novelty-llm
 API OK
 ```
 
 直接：
 
-``` bash
+```bash
 exit
 ```
 
@@ -123,7 +123,7 @@ exit
 
 先执行：
 
-``` bash
+```bash
 nvidia-smi
 ```
 
@@ -131,7 +131,7 @@ nvidia-smi
 
 然后：
 
-``` bash
+```bash
 cd ~/llm-service
 ./start.sh
 ```
@@ -140,19 +140,19 @@ cd ~/llm-service
 
 检查：
 
-``` bash
+```bash
 ./status.sh
 ```
 
 直到出现：
 
-``` text
+```text
 API OK
 ```
 
 然后：
 
-``` bash
+```bash
 exit
 ```
 
@@ -160,7 +160,7 @@ exit
 
 在本地 WSL：
 
-``` bash
+```bash
 ssh -N \
   -L 8000:127.0.0.1:8000 \
   -o ExitOnForwardFailure=yes \
@@ -179,13 +179,13 @@ ssh -N \
 
 执行：
 
-``` bash
+```bash
 curl http://127.0.0.1:8000/v1/models
 ```
 
 如果输出中出现：
 
-``` text
+```text
 qwen2.5-7b-instruct
 ```
 
@@ -193,7 +193,7 @@ qwen2.5-7b-instruct
 
 现在：
 
-``` text
+```text
 你电脑的 localhost:8000
 ```
 
@@ -203,19 +203,19 @@ qwen2.5-7b-instruct
 
 进入你本地的 Novelty 项目：
 
-``` bash
+```bash
 cd <你的 Novelty-Multi-Agent-Framework 路径>
 ```
 
 切换到包含本地模型配置的版本：
 
-``` bash
+```bash
 git switch experiment/local-llm-baseline
 ```
 
 设置：
 
-``` bash
+```bash
 export LOCAL_VLLM_API_KEY=local
 ```
 
@@ -225,13 +225,13 @@ Researcher 和 Reviewer 使用实验室服务器上的 Qwen2.5-7B。
 如果需要临时覆盖某个 Agent 的模型，可使用对应的
 `NOVELTY_<ROLE>_MODEL` 环境变量，例如：
 
-``` bash
+```bash
 export NOVELTY_SEARCH_PLANNER_MODEL=local-qwen2.5-7b
 ```
 
 不需要修改 Python 代码。
 
-------------------------------------------------------------------------
+---
 
 # 三、快速检查
 
@@ -239,7 +239,7 @@ export NOVELTY_SEARCH_PLANNER_MODEL=local-qwen2.5-7b
 
 ## 服务器
 
-``` bash
+```bash
 ssh lab-novelty
 cd ~/llm-service
 ./status.sh
@@ -247,7 +247,7 @@ cd ~/llm-service
 
 应该看到：
 
-``` text
+```text
 RUNNING: novelty-llm
 API OK
 ```
@@ -256,7 +256,7 @@ API OK
 
 SSH Tunnel 保持运行：
 
-``` bash
+```bash
 ssh -N \
   -L 8000:127.0.0.1:8000 \
   -o ExitOnForwardFailure=yes \
@@ -265,19 +265,19 @@ ssh -N \
 
 另开终端：
 
-``` bash
+```bash
 curl http://127.0.0.1:8000/v1/models
 ```
 
 能看到：
 
-``` text
+```text
 qwen2.5-7b-instruct
 ```
 
 就能用。
 
-------------------------------------------------------------------------
+---
 
 # 四、不用了怎么办
 
@@ -285,7 +285,7 @@ qwen2.5-7b-instruct
 
 到运行 SSH Tunnel 的窗口按：
 
-``` text
+```text
 Ctrl+C
 ```
 
@@ -293,7 +293,7 @@ Ctrl+C
 
 即：
 
-``` text
+```text
 SSH Tunnel 生命周期 ≠ LLM Service 生命周期
 ```
 
@@ -301,63 +301,63 @@ SSH Tunnel 生命周期 ≠ LLM Service 生命周期
 
 登录服务器：
 
-``` bash
+```bash
 ssh lab-novelty
 ```
 
 执行：
 
-``` bash
+```bash
 cd ~/llm-service
 ./stop.sh
 ```
 
 然后：
 
-``` bash
+```bash
 nvidia-smi
 ```
 
 确认显存已经释放。
 
-------------------------------------------------------------------------
+---
 
 # 五、最常用的命令
 
 服务器模型状态：
 
-``` bash
+```bash
 cd ~/llm-service
 ./status.sh
 ```
 
 启动：
 
-``` bash
+```bash
 ./start.sh
 ```
 
 停止：
 
-``` bash
+```bash
 ./stop.sh
 ```
 
 查看 GPU：
 
-``` bash
+```bash
 nvidia-smi
 ```
 
 查看模型日志：
 
-``` bash
+```bash
 tmux capture-pane -pt novelty-llm | tail -50
 ```
 
 本地建立连接：
 
-``` bash
+```bash
 ssh -N \
   -L 8000:127.0.0.1:8000 \
   -o ExitOnForwardFailure=yes \
@@ -366,17 +366,17 @@ ssh -N \
 
 本地检查 API：
 
-``` bash
+```bash
 curl http://127.0.0.1:8000/v1/models
 ```
 
 Novelty 使用本地模型：
 
-``` bash
+```bash
 export LOCAL_VLLM_API_KEY=local
 ```
 
-------------------------------------------------------------------------
+---
 
 # 六、出问题先看这里
 
@@ -386,7 +386,7 @@ export LOCAL_VLLM_API_KEY=local
 
 如果不在，重新：
 
-``` bash
+```bash
 ssh -N \
   -L 8000:127.0.0.1:8000 \
   -o ExitOnForwardFailure=yes \
@@ -395,7 +395,7 @@ ssh -N \
 
 如果仍然失败，登录服务器：
 
-``` bash
+```bash
 ssh lab-novelty
 cd ~/llm-service
 ./status.sh
@@ -405,13 +405,13 @@ cd ~/llm-service
 
 查看模型日志：
 
-``` bash
+```bash
 tmux capture-pane -pt novelty-llm | tail -50
 ```
 
 再检查 GPU：
 
-``` bash
+```bash
 nvidia-smi
 ```
 
@@ -421,7 +421,7 @@ nvidia-smi
 
 先：
 
-``` bash
+```bash
 nvidia-smi
 ```
 
@@ -429,7 +429,7 @@ nvidia-smi
 
 然后：
 
-``` bash
+```bash
 cd ~/llm-service
 ./start.sh
 ```
@@ -438,7 +438,7 @@ cd ~/llm-service
 
 可以临时使用：
 
-``` bash
+```bash
 ssh -N \
   -L 18000:127.0.0.1:8000 \
   -o ExitOnForwardFailure=yes \
@@ -447,14 +447,14 @@ ssh -N \
 
 此时本地地址变成：
 
-``` text
+```text
 http://127.0.0.1:18000/v1
 ```
 
 当前项目默认 profile 使用 8000，因此最好优先释放本地 8000
 端口，而不是长期改端口。
 
-------------------------------------------------------------------------
+---
 
 # 七、共享服务器使用规则
 
@@ -462,24 +462,24 @@ http://127.0.0.1:18000/v1
 
 启动模型前必须：
 
-``` bash
+```bash
 nvidia-smi
 ```
 
 不要：
 
--   杀掉不认识的进程；
--   抢占其他人的 GPU；
--   修改 NVIDIA Driver；
--   修改系统 CUDA；
--   修改其他人的 Conda 环境；
--   把服务器信息提交到 GitHub；
--   把服务器端口直接开放到公网；
--   长期占用 GPU 却不运行实验。
+- 杀掉不认识的进程；
+- 抢占其他人的 GPU；
+- 修改 NVIDIA Driver；
+- 修改系统 CUDA；
+- 修改其他人的 Conda 环境；
+- 把服务器信息提交到 GitHub；
+- 把服务器端口直接开放到公网；
+- 长期占用 GPU 却不运行实验。
 
 不确定资源是否可以使用时，先问组内成员。
 
-------------------------------------------------------------------------
+---
 
 # 八、维护者：当前部署
 
@@ -487,18 +487,18 @@ nvidia-smi
 
 当前服务器部署：
 
-  项目             当前配置
-  ---------------- ---------------------
-  Model            Qwen2.5-7B-Instruct
-  Precision        BF16
-  GPU              单张 RTX 3090 24GB
-  vLLM             0.8.5.post1
-  PyTorch          2.6.0+cu124
-  Transformers     4.51.3
-  Context Length   32768
-  API              OpenAI-compatible
-  Port             8000
-  Bind             127.0.0.1
+| 项目 | 当前配置 |
+| --- | --- |
+| Model | Qwen2.5-7B-Instruct |
+| Precision | BF16 |
+| GPU | 单张 RTX 3090 24GB |
+| vLLM | 0.8.5.post1 |
+| PyTorch | 2.6.0+cu124 |
+| Transformers | 4.51.3 |
+| Context Length | 32768 |
+| API | OpenAI-compatible |
+| Port | 8000 |
+| Bind | 127.0.0.1 |
 
 模型磁盘大小约 15 GB。
 
@@ -509,7 +509,7 @@ Cache、CUDA/vLLM Runtime 和 Workspace。
 
 服务器没有直接向外暴露 8000 端口。开发者通过 SSH Tunnel 访问。
 
-------------------------------------------------------------------------
+---
 
 # 九、环境隔离
 
@@ -519,10 +519,10 @@ Cache、CUDA/vLLM Runtime 和 Workspace。
 
 负责模型 Serving：
 
--   PyTorch
--   CUDA Runtime
--   Transformers
--   vLLM
+- PyTorch
+- CUDA Runtime
+- Transformers
+- vLLM
 
 不要随意安装 Novelty Framework 的应用依赖。
 
@@ -530,15 +530,15 @@ Cache、CUDA/vLLM Runtime 和 Workspace。
 
 负责服务器侧：
 
--   Novelty Framework
--   LangGraph
--   Pydantic
--   测试
--   集成验证
+- Novelty Framework
+- LangGraph
+- Pydantic
+- 测试
+- 集成验证
 
 两边通过 HTTP 通信：
 
-``` text
+```text
 novelty-app
     ↓
 localhost:8000
@@ -548,7 +548,7 @@ novelty-llm / vLLM
 
 这样应用依赖升级不会轻易破坏已经验证稳定的模型 Serving 环境。
 
-------------------------------------------------------------------------
+---
 
 # 十、已知部署问题
 
@@ -556,7 +556,7 @@ novelty-llm / vLLM
 
 当前服务器已验证：
 
-``` text
+```text
 Hugging Face direct connection → 不稳定 / 可能超时
 ModelScope → 可用
 ```
@@ -567,7 +567,7 @@ ModelScope → 可用
 
 优先使用 NJU PyPI Mirror：
 
-``` bash
+```bash
 python -m pip install <PACKAGE> \
   -i https://mirrors.nju.edu.cn/pypi/web/simple
 ```
@@ -576,7 +576,7 @@ python -m pip install <PACKAGE> \
 
 曾遇到：
 
-``` text
+```text
 AttributeError:
 Qwen2Tokenizer has no attribute all_special_tokens_extended
 ```
@@ -585,19 +585,19 @@ Qwen2Tokenizer has no attribute all_special_tokens_extended
 
 当前验证版本：
 
-``` text
+```text
 Transformers 4.51.3
 ```
 
 不要在 `novelty-llm` 环境中随意升级 Transformers。
 
-------------------------------------------------------------------------
+---
 
 # 十一、为什么 Novelty 不需要特殊修改
 
 Novelty 当前调用结构：
 
-``` text
+```text
 Agent
  ↓
 ModelRegistry
@@ -609,7 +609,7 @@ Model API
 
 本地模型只是一个普通模型配置：
 
-``` text
+```text
 local-qwen2.5-7b
 ```
 
@@ -618,13 +618,13 @@ local-qwen2.5-7b
 不要在 SearchPlanner、Researcher、Reviewer、Coordinator 等 Agent
 内加入针对本地模型的特殊判断。
 
-------------------------------------------------------------------------
+---
 
 # 十二、当前验证范围
 
 已经实际验证：
 
-``` text
+```text
 服务器加载 Qwen2.5-7B                 ✓
 vLLM API                              ✓
 OpenAI-compatible Chat Completion     ✓
@@ -641,7 +641,7 @@ Coordinator                           ✓
 
 目前还没有完成的验证：
 
-``` text
+```text
 多模型 Benchmark
 多人并发
 正式生产部署
