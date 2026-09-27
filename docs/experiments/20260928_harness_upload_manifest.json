@@ -3269,11 +3269,57 @@
         "docs/experiments/20260928_harness_upload_index.md",
         "docs/experiments/20260928_harness_upload_manifest.json"
       ],
-      "notes": "按用户追加指令补交8次演示运行的800个原始runtime文件，明确零模型/零Provider，不计入真实实验成效。澄清此前已修改生产代码并验证局部缺陷修复，整体效果及验收仍未完成。本次不修改生产代码。"
+      "notes": "按用户追加指令补交8次演示运行的800个原始runtime文件，明确零模型/零Provider，不计入真实实验成效。澄清此前已修改生产代码并验证局部缺陷修复，整体效果及验收仍未完成。本次不修改生产代码。",
+      "commit": "2844ce830bea81adeaaf8ee6b8424e4f6338aefc"
+    },
+    {
+      "sequence": 15,
+      "commit": "adcd974bdca7b846fdcd02a149a16b545f01c77a",
+      "title": "Ignore generated Python caches in experiment archives",
+      "files": [
+        ".gitignore"
+      ],
+      "notes": "按用户要求处理剩余缓存；66个pyc保留本地，修正归档反忽略规则。"
+    },
+    {
+      "sequence": 16,
+      "commit": "8fd9c6aa331db053dc2e634358819aae3b7714f5",
+      "title": "Normalize local LLM manual Markdown formatting",
+      "files": [
+        "docs/Novelty_本地LLM使用手册.md"
+      ],
+      "notes": "用户追加要求后单独提交手册格式整理；部署参数不变。"
+    },
+    {
+      "sequence": 17,
+      "title": "Investigate tool failure causality and audit recovery code coverage",
+      "files": [
+        "docs/experiments/20260928_tool_failure_causality/README.md",
+        "docs/experiments/20260928_tool_failure_causality/code_system_status.md",
+        "docs/experiments/20260928_tool_failure_causality/contract-tests.xml",
+        "docs/experiments/20260928_tool_failure_causality/curl_env_human.body",
+        "docs/experiments/20260928_tool_failure_causality/curl_env_model.body",
+        "docs/experiments/20260928_tool_failure_causality/httpx_direct_human.body",
+        "docs/experiments/20260928_tool_failure_causality/httpx_direct_model.body",
+        "docs/experiments/20260928_tool_failure_causality/httpx_env_human.body",
+        "docs/experiments/20260928_tool_failure_causality/httpx_env_human_repeat.body",
+        "docs/experiments/20260928_tool_failure_causality/httpx_env_known_id.body",
+        "docs/experiments/20260928_tool_failure_causality/httpx_env_model.body",
+        "docs/experiments/20260928_tool_failure_causality/implementation_audit.json",
+        "docs/experiments/20260928_tool_failure_causality/model_query_lineage.json",
+        "docs/experiments/20260928_tool_failure_causality/network_probe.py",
+        "docs/experiments/20260928_tool_failure_causality/network_results.json",
+        "docs/experiments/20260928_tool_failure_causality/offline_probe.py",
+        "docs/experiments/20260928_tool_failure_causality/offline_results.json",
+        "docs/experiments/20260928_tool_failure_causality/validation.json",
+        "docs/experiments/20260928_harness_config_review_summary.md",
+        "docs/experiments/20260928_harness_upload_index.md",
+        "docs/experiments/20260928_harness_upload_manifest.json"
+      ],
+      "notes": "用户要求补做因果对照并先核对两套码。24个无模型注入案例、8个真实arXiv请求、48项已有离线回归。未修改生产代码；406根因仍未知，27错误码及13恢复动作不等于完整生产覆盖/效果验收。"
     }
   ],
   "excluded": [
-    "docs/Novelty_本地LLM使用手册.md",
     "task/",
     "**/__pycache__/**",
     "**/*.pyc"
