@@ -22,6 +22,7 @@ from ..retrieval_sources import RetrievalSource
 from .common import (
     HttpRequestPolicy,
     ProviderConfigurationError,
+    ProviderRequestError,
     ResilientHttpClient,
     resolve_env_credential,
 )
@@ -185,7 +186,20 @@ class ScienceDirectSearchTool(SearchTool):
                 continue
             try:
                 metadata = self.article_client.fetch_metadata(hit.document_id)
-            except (httpx.HTTPError, ValueError):
+            except (httpx.HTTPError, ProviderRequestError, ValueError) as exc:
+                # Abstract enrichment is optional: a transport failure must not
+                # discard already retrieved discovery metadata. Preserve a safe
+                # machine-readable failure without URLs, headers or error bodies.
+                response = getattr(exc, "response", None)
+                hit = replace(hit, raw_metadata={
+                    **hit.raw_metadata,
+                    "abstract_enrichment": {
+                        "status": "failed", "error_type": type(exc).__name__,
+                        "transport_error_type": getattr(exc, "transport_error_type", None),
+                        "http_status": (getattr(exc, "status_code", None)
+                                        or getattr(response, "status_code", None)),
+                    },
+                })
                 metadata = None
             enriched.append(_enrich_hit(hit, metadata))
         return enriched

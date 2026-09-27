@@ -31,13 +31,20 @@ class MissingProviderCredentialError(ProviderConfigurationError):
 class ProviderRequestError(RuntimeError):
     """An HTTP provider failed without exposing credential-bearing request URLs."""
 
+    def __init__(self, message: str, *, status_code: int | None = None,
+                 transport_error_type: str | None = None) -> None:
+        super().__init__(message)
+        self.status_code = status_code
+        self.transport_error_type = transport_error_type
+
 
 def raise_for_provider_status(response: httpx.Response, *, provider: str) -> None:
     """Raise a sanitized error because some providers put API keys in the URL."""
 
     if response.is_error:
         raise ProviderRequestError(
-            f"{provider} API returned HTTP {response.status_code}"
+            f"{provider} API returned HTTP {response.status_code}",
+            status_code=response.status_code
         )
 
 
@@ -120,7 +127,8 @@ class ResilientHttpClient:
                 # httpx exception messages can include the complete request URL,
                 # including provider credentials supplied as query parameters.
                 raise ProviderRequestError(
-                    f"provider HTTP request failed: {type(exc).__name__}"
+                    f"provider HTTP request failed: {type(exc).__name__}",
+                    transport_error_type=type(exc).__name__
                 ) from None
             if (
                 response.status_code not in self._RETRYABLE_STATUS_CODES

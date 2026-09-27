@@ -326,3 +326,102 @@ def test_tdm_builder_requires_metric(monkeypatch) -> None:
                 "tdm_api_metric_env": "SPRINGER_MISSING_METRIC",
             }
         )
+
+# Exact no-data payload observed from Meta API on 2026-09-15 and 2026-09-27.
+NO_MATCH_RESPONSE = {
+    "status": "Fail",
+    "message": "No data was found for the given query.",
+    "error": {
+        "error": "Not Found",
+        "error_description": "No matching data is available for the requested query.",
+    },
+}
+
+
+def _search_tool(handler) -> SpringerNatureSearchTool:
+    transport = _transport(handler)
+    article_client = SpringerNatureArticleClient(
+        transport, base_url=BASE_URL, meta_api_key="meta-key",
+        open_access_api_key=None, full_text_mode="disabled",
+    )
+    return SpringerNatureSearchTool(
+        transport, article_client, base_url=BASE_URL, meta_api_key="meta-key"
+    )
+
+
+def test_search_recognizes_verified_no_match_404() -> None:
+    tool = _search_tool(lambda request: httpx.Response(404, json=NO_MATCH_RESPONSE))
+    assert list(tool.search("no matching data")) == []
+
+
+@pytest.mark.parametrize("status,payload", [
+    (404, {"error": "Not Found"}),
+    (404, {**NO_MATCH_RESPONSE, "message": "API endpoint not found"}),
+    (404, {**NO_MATCH_RESPONSE, "error": {"error": "Not Found"}}),
+    (404, {**NO_MATCH_RESPONSE, "records": [{"doi": "10.1007/conflict"}]}),
+    (404, []),
+    (401, NO_MATCH_RESPONSE),
+    (403, NO_MATCH_RESPONSE),
+    (429, NO_MATCH_RESPONSE),
+    (500, NO_MATCH_RESPONSE),
+])
+def test_search_preserves_other_http_failures(status, payload) -> None:
+    tool = _search_tool(lambda request: httpx.Response(status, json=payload))
+    with pytest.raises(ProviderRequestError, match=f"HTTP {status}"):
+        tool.search("query")
+
+
+def test_search_preserves_html_404() -> None:
+    tool = _search_tool(lambda request: httpx.Response(404, text="<html>Not Found</html>"))
+    with pytest.raises(ProviderRequestError, match="HTTP 404"):
+        tool.search("query")
+
+
+def test_no_match_404_keeps_retrieval_fallback_available(tmp_path) -> None:
+    import asyncio
+    from novelty_agent_framework.persistence import ReferenceStore
+    from novelty_agent_framework.schemas import (
+        NoveltyPoint, ResearchTask, StructuredSourceRetrievalRequest,
+    )
+    from novelty_agent_framework.tools.database_search import (
+        RetrievalSource, StructuredSourceRetrievalTool,
+    )
+    queries = []
+
+    def handler(request):
+        queries.append(request.url.params["q"])
+        if len(queries) == 1:
+            return httpx.Response(404, json=NO_MATCH_RESPONSE)
+        return httpx.Response(200, json={"records": [{
+            "doi": "10.1007/fallback", "title": "Fallback Paper",
+            "abstract": "The broader query found this abstract.",
+        }]})
+
+    tool = StructuredSourceRetrievalTool(
+        source=RetrievalSource(
+            source_id="springer", query_adapter=SpringerNatureQueryAdapter(),
+            search_tool=_search_tool(handler),
+        ),
+        reference_store=ReferenceStore(tmp_path), full_text_limit=0,
+    )
+    plan = _plan().model_copy(update={
+        "concepts": [*_plan().concepts, SearchConcept(
+            concept_id="C2", name="compression", terms=["compression"]
+        )],
+        "strategies": [SearchStrategy(
+            strategy_id="S1", level="strict", expression="C1 AND C2"
+        )],
+        "protected_concept_ids": ["C1"],
+    })
+    bundle = asyncio.run(tool.ainvoke(StructuredSourceRetrievalRequest(
+        subject_paper_id="paper", run_id="springer-empty-regression",
+        source_id="springer",
+        novelty_point=NoveltyPoint(point_id="NP1", claim="graph model", technical_features=["graph model"]),
+        research_task=ResearchTask(task_id="T1", novelty_point_id="NP1", task_type="search", language="en"),
+        search_plan=plan,
+    )))
+    assert len(queries) >= 2
+    assert queries[0] != queries[1]
+    assert all(item.status.value == "succeeded" for item in bundle.search_executions)
+    assert bundle.search_executions[0].results == []
+    assert len(bundle.source_records) == 1

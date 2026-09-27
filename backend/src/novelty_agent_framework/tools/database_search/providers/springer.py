@@ -168,6 +168,10 @@ class SpringerNatureSearchTool(SearchTool):
             },
             headers={"Accept": "application/json"},
         )
+        # Meta API uses this specific 404 body for an exhausted query. A plain
+        # 404 (missing endpoint/resource) must remain a technical failure.
+        if _is_meta_no_match_response(response):
+            return ()
         raise_for_provider_status(response, provider="Springer Nature")
         payload = response.json()
         if not isinstance(payload, Mapping):
@@ -185,6 +189,28 @@ class SpringerNatureSearchTool(SearchTool):
             if len(hits) >= limit:
                 break
         return hits
+
+
+def _is_meta_no_match_response(response: httpx.Response) -> bool:
+    """Recognize only the no-data contract confirmed in live Meta API traces."""
+    if response.status_code != 404:
+        return False
+    try:
+        payload = response.json()
+    except ValueError:
+        return False
+    if not isinstance(payload, Mapping):
+        return False
+    error = payload.get("error")
+    return (
+        payload.get("status") == "Fail"
+        and payload.get("message") == "No data was found for the given query."
+        and payload.get("records") in (None, [])
+        and isinstance(error, Mapping)
+        and error.get("error") == "Not Found"
+        and error.get("error_description")
+        == "No matching data is available for the requested query."
+    )
 
 
 class SpringerNatureFullTextTool(FullTextTool):

@@ -209,3 +209,89 @@ def test_default_registry_exposes_adapter_without_credentials() -> None:
 
     assert isinstance(source.query_adapter, ScienceDirectQueryAdapter)
     assert source.search_tool is None
+
+
+@pytest.mark.parametrize("transport_error", [httpx.ReadTimeout, httpx.ConnectError])
+def test_abstract_transport_failure_preserves_retained_candidates(transport_error) -> None:
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        if request.method == "PUT":
+            return httpx.Response(200, json={"results": [
+                {"pii": f"S{i}", "title": f"Candidate {i}", "doi": f"10.1016/item{i}"}
+                for i in (1, 2, 3)
+            ]})
+        if request.url.path.endswith("/S1"):
+            raise transport_error("private-details-must-not-be-recorded", request=request)
+        assert request.url.path.endswith("/S2")
+        return httpx.Response(200, json={"full-text-retrieval-response": {
+            "coredata": {"dc:description": "Abstract of the second candidate."}}})
+
+    transport = _transport(handler)
+    article_client = ScienceDirectArticleClient(transport, base_url=BASE_URL, headers=HEADERS)
+    search = ScienceDirectSearchTool(transport, article_client, base_url=BASE_URL,
+                                    headers=HEADERS, abstract_enrichment_limit=2)
+    hits = search.search('"graph neural network"', limit=3)
+    assert [hit.document_id for hit in hits] == ["S1", "S2", "S3"]
+    assert hits[0].title == "Candidate 1" and hits[0].doi == "10.1016/item1"
+    assert hits[0].abstract == ""
+    assert hits[0].raw_metadata["abstract_enrichment"] == {
+        "status": "failed", "error_type": "ProviderRequestError",
+        "transport_error_type": transport_error.__name__, "http_status": None,
+    }
+    assert hits[1].abstract == "Abstract of the second candidate."
+    assert hits[2].abstract == ""  # Outside the configured enrichment budget.
+    assert [request.method for request in requests] == ["PUT", "GET", "GET"]
+    assert "private-details" not in json.dumps([hit.raw_metadata for hit in hits])
+    assert "S1" not in article_client._metadata_cache  # Transient failure is not cached as absence.
+
+
+def test_search_transport_failure_still_propagates() -> None:
+    from novelty_agent_framework.tools.database_search.providers.common import ProviderRequestError
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        raise httpx.ConnectError("offline transport failure", request=request)
+
+    transport = _transport(handler)
+    search = ScienceDirectSearchTool(transport,
+        ScienceDirectArticleClient(transport, base_url=BASE_URL, headers=HEADERS),
+        base_url=BASE_URL, headers=HEADERS)
+    with pytest.raises(ProviderRequestError):
+        search.search("fixed query")
+
+
+@pytest.mark.parametrize("error_kind", ["budget", "unexpected"])
+def test_abstract_enrichment_does_not_swallow_policy_or_programming_errors(error_kind) -> None:
+    from novelty_agent_framework.core.runtime_artifacts import ProviderPhysicalBudgetExceeded
+    failure = (ProviderPhysicalBudgetExceeded("physical budget exhausted") if error_kind == "budget"
+               else RuntimeError("unexpected programming failure"))
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.method == "PUT":
+            return httpx.Response(200, json={"results": [{"pii": "S1", "title": "Candidate"}]})
+        raise failure
+
+    transport = _transport(handler)
+    search = ScienceDirectSearchTool(transport,
+        ScienceDirectArticleClient(transport, base_url=BASE_URL, headers=HEADERS),
+        base_url=BASE_URL, headers=HEADERS)
+    with pytest.raises(type(failure), match=str(failure)):
+        search.search("fixed query")
+
+
+def test_abstract_http_failure_keeps_metadata_and_explicit_failed_status() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.method == "PUT":
+            return httpx.Response(200, json={"results": [{"pii": "S1", "title": "Candidate"}]})
+        return httpx.Response(503, text="private-error-body")
+
+    transport = _transport(handler)
+    search = ScienceDirectSearchTool(transport,
+        ScienceDirectArticleClient(transport, base_url=BASE_URL, headers=HEADERS),
+        base_url=BASE_URL, headers=HEADERS)
+    hits = search.search("fixed query")
+    assert len(hits) == 1 and hits[0].abstract == ""
+    assert hits[0].raw_metadata["abstract_enrichment"]["http_status"] == 503
+    assert hits[0].raw_metadata["abstract_enrichment"]["status"] == "failed"
+    assert "private-error-body" not in json.dumps(hits[0].raw_metadata)
