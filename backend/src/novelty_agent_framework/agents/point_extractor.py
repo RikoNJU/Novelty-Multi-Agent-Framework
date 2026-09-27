@@ -19,6 +19,7 @@ from backend.env import (
     PromptLibrary,
 )
 
+from ..core.point_coverage import build_coverage_ledger, guard_deletions, merge_same_claim
 from ..ports import NoveltyPointExtractor
 from ..schemas import NoveltyBrief, NoveltyPoint, PaperDigest, PaperInput
 
@@ -32,13 +33,22 @@ TRUNCATION_MARK = "…[截断]"
 
 DELETE_SCHEMA = {
     "type": "object",
+    "additionalProperties": False,
     "properties": {
-        "delete_indices": {
+        "deletions": {
             "type": "array",
-            "items": {"type": "integer"},
+            "items": {
+                "type": "object", "additionalProperties": False,
+                "properties": {
+                    "index": {"type": "integer", "minimum": 1},
+                    "duplicate_of": {"type": "integer", "minimum": 1},
+                    "reason": {"type": "string", "minLength": 1},
+                },
+                "required": ["index", "duplicate_of", "reason"],
+            },
         }
     },
-    "required": ["delete_indices"],
+    "required": ["deletions"],
 }
 _POINT_OUTPUT_SCHEMA = {
     "type": "object",
@@ -109,6 +119,10 @@ class NoveltyPointExtractorAgent(NoveltyPointExtractor):
         model_alias: str | None = None,
         temperature: float = 0.2,
         model_options: ModelCallOptions | None = None,
+        generation_prompt_name: str = "extractor/extract_points",
+        review_prompt_name: str = "reviewer/review_points",
+        coverage_prompt_name: str = "extractor/extract_points",
+        conservative_dedup: bool = True,
     ) -> None:
         self.model_client = model_client
         self._prompts = prompts
@@ -116,6 +130,10 @@ class NoveltyPointExtractorAgent(NoveltyPointExtractor):
         self._model_alias = model_alias
         self.temperature = temperature
         self.model_options = model_options
+        self.generation_prompt_name = generation_prompt_name
+        self.review_prompt_name = review_prompt_name
+        self.coverage_prompt_name = coverage_prompt_name
+        self.conservative_dedup = conservative_dedup
         self.last_trace: dict[str, Any] = {}
         self._model_calls_used = 0
 
@@ -140,8 +158,17 @@ class NoveltyPointExtractorAgent(NoveltyPointExtractor):
             "model_call_budget": MAX_MODEL_CALLS,
             "calls": [],
         }
-        candidates = self._generate_candidates(digest, previous_brief, attempt)
-        result = self._review_candidates(digest, candidates, previous_brief, attempt)
+        result: list[NoveltyPoint] = []
+        try:
+            candidates = self._generate_candidates(digest, previous_brief, attempt)
+            result = self._review_candidates(digest, candidates, previous_brief, attempt)
+        finally:
+            ledger = build_coverage_ledger(digest, self.last_trace, result,
+                conservative=self.conservative_dedup)
+            self.last_trace["coverage_ledger"] = ledger
+            self.last_trace["coverage_complete"] = ledger["coverage_complete"]
+            if not ledger["coverage_complete"]:
+                self.last_trace["scope_status"] = "pending_coverage"
         self.last_trace["final_points"] = [p.model_dump(mode="json") for p in result]
         self.last_trace["final_count"] = len(result)
         self.last_trace["exit_reason"] = (
@@ -159,15 +186,17 @@ class NoveltyPointExtractorAgent(NoveltyPointExtractor):
         """生成步：首次合格（≥MIN_POINTS）直接返回；否则增量重试，每次要求补充不重复查新点。"""
 
         last_error: ValueError | None = None
-        aggregated: dict[str, NoveltyPoint] = {}
+        aggregated: list[NoveltyPoint] = []
         for _ in range(MAX_ATTEMPTS):
             if self._model_calls_used >= MAX_MODEL_CALLS - 1:
                 break  # reserve one call for deduplication
-            existing = list(aggregated.values())
+            existing = list(aggregated)
             existing_dicts = [point.model_dump(mode="json") for point in existing]
+            raw_candidates = None
+            validation_error = None
             try:
                 data = self._complete_json(
-                    prompt_name="extractor/extract_points",
+                    prompt_name=self.generation_prompt_name,
                     variables={
                         "digest_json": json.dumps(
                             digest.model_dump(mode="json"), ensure_ascii=False
@@ -201,24 +230,24 @@ class NoveltyPointExtractorAgent(NoveltyPointExtractor):
                     ),
                 )
                 self.last_trace.setdefault("parse_branches", []).append(_point_parse_branch(data))
-                candidates = validate_point_items(_extract_points_list(data))
+                raw_candidates = _extract_points_list(data)
+                candidates = validate_point_items(raw_candidates)
             except ValueError as exc:
                 last_error = exc
+                validation_error = str(exc)
                 candidates = []
                 self.last_trace.setdefault("generation_errors", []).append(str(exc))
             self.last_trace.setdefault("generation", []).append({
                 "existing_count": len(existing),
                 "candidate_count": len(candidates),
+                "raw_candidates": raw_candidates,
+                "validation_error": validation_error,
                 "candidates": [p.model_dump(mode="json") for p in candidates],
             })
-            if not aggregated and len(candidates) >= MIN_POINTS:
-                self.last_trace["merged_candidates"] = [p.model_dump(mode="json") for p in candidates]
-                return candidates
-            for point in candidates:
-                aggregated.setdefault(point.claim.strip(), point)
+            aggregated = merge_same_claim([*aggregated, *candidates])
             if len(aggregated) >= MIN_POINTS:
                 break
-        selected = list(aggregated.values())
+        selected = list(aggregated)
         self.last_trace["merged_candidates"] = [p.model_dump(mode="json") for p in selected]
         if not selected and last_error is not None:
             raise last_error
@@ -231,18 +260,20 @@ class NoveltyPointExtractorAgent(NoveltyPointExtractor):
         previous_brief: NoveltyBrief | None,
         attempt: int,
     ) -> list[NoveltyPoint]:
-        """审查步：模型只判定重复条目编号，代码删除后原样保留其余。"""
+        """Only execute auditable duplicate mappings to retained candidates."""
 
         numbered = [
             {"index": index, "claim": point.claim,
              "technical_features": point.technical_features,
+             "claim_en": point.claim_en,
+             "technical_features_en": point.technical_features_en,
              "source_locations": point.source_locations}
             for index, point in enumerate(candidates, start=1)
         ]
         contribution_context = [part[:CONTRIBUTION_EXCERPT_LIMIT]
                                 for part in digest.full_text_excerpt.split("[作者贡献段 ")[1:4]]
         data = self._complete_json(
-            prompt_name="reviewer/review_points",
+            prompt_name=self.review_prompt_name,
             variables={
                 "points_json": json.dumps(numbered, ensure_ascii=False),
                 "contribution_context_json": json.dumps(contribution_context, ensure_ascii=False),
@@ -252,43 +283,43 @@ class NoveltyPointExtractorAgent(NoveltyPointExtractor):
             },
             payload={"points": numbered, "contribution_context": contribution_context},
             fallback_user_prompt=(
-                "请判断候选查新点中哪些是重复条目，输出 {\"delete_indices\": [编号列表]}；"
+                "判断重复项，输出 {\"deletions\": [{\"index\": 2, \"duplicate_of\": 1, \"reason\": \"等价依据\"}]}；"
+                "每个删除项必须指向一个保留项并给出等价理由；无重复输出空 deletions。"
                 "只有技术目标、核心机制和适用范围等价且仅为复述时才删除；"
                 "框架与独立子算法不能仅因包含关系被删除。无重复输出空数组。"
             ),
         )
-        delete_indices = _parse_delete_indices(data)
-        raw_indices = data.get("delete_indices", data.get("delete", data.get("indices"))) if isinstance(data, dict) else data
-        invalid_entries = [entry for entry in raw_indices if type(entry) is not int] if isinstance(raw_indices, list) else []
-        invalid_indices = sorted(index for index in delete_indices
-                                 if index < 1 or index > len(candidates))
-        delete_indices -= set(invalid_indices)
-        kept = [
-            point
-            for index, point in enumerate(candidates, start=1)
-            if index not in delete_indices
-        ]
-        if not kept and candidates:
-            kept = list(candidates)  # 安全兜底：不允许删空
-            delete_indices.clear()
+        deletion_audit = guard_deletions(candidates,
+            _validated_deletion_mappings(data, len(candidates)), enabled=self.conservative_dedup)
+        candidates = list(candidates)
+        for item in deletion_audit["accepted_deletions"]:
+            source, target = candidates[item["index"] - 1], candidates[item["duplicate_of"] - 1]
+            candidates[item["duplicate_of"] - 1] = target.model_copy(update={
+                "source_locations": list(dict.fromkeys([*target.source_locations, *source.source_locations]))})
+        delete_indices = {item["index"] for item in deletion_audit["accepted_deletions"]}
+        kept = [point for index, point in enumerate(candidates, start=1)
+                if index not in delete_indices]
         self.last_trace["deduplication"] = {
             "input": numbered,
             "contribution_context": contribution_context,
             "raw_delete_indices": data,
-            "invalid_entries": invalid_entries,
-            "invalid_indices": invalid_indices,
+            **deletion_audit,
             "deleted_indices": sorted(delete_indices),
             "retained_indices": [i for i in range(1, len(candidates) + 1)
                                  if i not in delete_indices],
-            "deletion_reason": "not provided by model",
+            "semantic_equivalence_verified_by_harness": False,
         }
+        if deletion_audit["contract_issues"]:
+            self.last_trace["scope_status"] = "pending_dedup"
+        else:
+            self.last_trace["scope_status"] = "deduplication_contract_valid"
         if len(kept) < MIN_POINTS and len(candidates) >= MIN_POINTS \
                 and self._model_calls_used < MAX_MODEL_CALLS:
             # One bounded coverage check after deletion; do not regenerate all points.
             try:
                 self.last_trace["coverage_followup_attempted"] = True
                 data = self._complete_json(
-                    prompt_name="extractor/extract_points",
+                    prompt_name=self.coverage_prompt_name,
                     variables={
                         "digest_json": json.dumps(digest.model_dump(mode="json"), ensure_ascii=False),
                         "existing_points_json": json.dumps([p.model_dump(mode="json") for p in kept], ensure_ascii=False),
@@ -301,10 +332,10 @@ class NoveltyPointExtractorAgent(NoveltyPointExtractor):
                     fallback_user_prompt="只核查已有候选和删除结果是否遗漏原文支持的独立技术机制；没有则返回空 novelty_points 数组。",
                 )
                 self.last_trace["coverage_followup_parse_branch"] = _point_parse_branch(data)
-                additions = validate_point_items(_extract_points_list(data))
-                for point in additions:
-                    if point.claim.strip() not in {p.claim.strip() for p in kept}:
-                        kept.append(point)
+                raw_additions = _extract_points_list(data)
+                self.last_trace["coverage_followup_raw_candidates"] = raw_additions
+                additions = validate_point_items(raw_additions)
+                kept = merge_same_claim([*kept, *additions])
                 self.last_trace["coverage_followup_candidates"] = [p.model_dump(mode="json") for p in additions]
             except ValueError as exc:
                 self.last_trace["coverage_followup_error"] = str(exc)
@@ -482,17 +513,61 @@ def renumber_points(points: Sequence[NoveltyPoint]) -> list[NoveltyPoint]:
     ]
 
 
-def _parse_delete_indices(data: Any) -> set[int]:
-    """从模型输出中解析要删除的编号集合（兼容多种包装形态）。"""
+def _validated_deletion_mappings(data: Any, candidate_count: int) -> dict[str, Any]:
+    """Validate deletion authority, not the model's semantic equivalence claim.
 
-    if isinstance(data, dict):
-        value = data.get("delete_indices") or data.get("delete") or data.get("indices")
-    else:
-        value = data
-    if not isinstance(value, list):
-        return set()
-    indices: set[int] = set()
-    for item in value:
-        if type(item) is int:
-            indices.add(item)
-    return indices
+    A surviving representative and a recorded reason are mandatory. Legacy bare
+    indices cannot authorize deletion; affected candidates remain pending.
+    """
+    issues: list[str] = []
+    pending: set[int] = set()
+    valid: dict[int, dict[str, Any]] = {}
+    seen: set[int] = set()
+    invalid_entries: list[Any] = []
+    invalid_indices: list[int] = []
+    records = data.get("deletions") if isinstance(data, dict) else None
+    if not isinstance(records, list):
+        legacy = data.get("delete_indices", data.get("delete", data.get("indices"))) if isinstance(data, dict) else data
+        legacy = legacy if isinstance(legacy, list) else []
+        invalid_entries = [x for x in legacy if type(x) is not int]
+        invalid_indices = sorted({x for x in legacy if type(x) is int and not 1 <= x <= candidate_count})
+        pending = {x for x in legacy if type(x) is int and 1 <= x <= candidate_count}
+        # An explicit legacy empty deletion list is harmless and remains accepted.
+        if not (isinstance(data, dict) and "delete_indices" in data and data["delete_indices"] == []):
+            issues.append("missing_deletion_mappings")
+            if not pending:
+                pending.update(range(1, candidate_count + 1))
+        records = []
+    elif set(data) != {"deletions"}:
+        issues.append("unexpected_deletion_payload_fields")
+        pending.update(range(1, candidate_count + 1))
+        records = []
+    for item in records:
+        source = item.get("index") if isinstance(item, dict) else None
+        if type(source) is not int or not 1 <= source <= candidate_count:
+            issues.append("invalid_deletion_index")
+            continue
+        target, reason = item.get("duplicate_of"), item.get("reason")
+        if source in seen:
+            issues.append(f"duplicate_deletion_index:{source}")
+            valid.pop(source, None)
+            pending.add(source)
+            continue
+        seen.add(source)
+        if set(item) != {"index", "duplicate_of", "reason"} or type(target) is not int \
+                or not 1 <= target <= candidate_count or target == source \
+                or not isinstance(reason, str) or not reason.strip():
+            issues.append(f"invalid_deletion_mapping:{source}")
+            pending.add(source)
+            continue
+        valid[source] = {"index": source, "duplicate_of": target, "reason": reason.strip()}
+    accepted = []
+    for source, item in valid.items():
+        if item["duplicate_of"] in valid:
+            issues.append(f"representative_also_marked_for_deletion:{source}")
+            pending.add(source)
+        else:
+            accepted.append(item)
+    return {"accepted_deletions": accepted, "pending_indices": sorted(pending),
+            "contract_issues": issues, "invalid_entries": invalid_entries,
+            "invalid_indices": invalid_indices}

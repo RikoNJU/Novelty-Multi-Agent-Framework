@@ -9,7 +9,7 @@ from novelty_agent_framework.agents import (
     NoveltyPointExtractorAgent,
     build_paper_digest,
 )
-from novelty_agent_framework.agents.point_extractor import _extract_points_list
+from novelty_agent_framework.agents.point_extractor import _extract_points_list, _validated_deletion_mappings
 from novelty_agent_framework.persistence import persist_novelty_points
 from novelty_agent_framework.schemas import PaperDigest, PaperInput
 
@@ -54,10 +54,11 @@ def make_paper() -> PaperInput:
     )
 
 
-def make_agent(client) -> NoveltyPointExtractorAgent:
+def make_agent(client, **options) -> NoveltyPointExtractorAgent:
     return NoveltyPointExtractorAgent(
         model_client=client,
         prompts=PromptLibrary(PROMPTS_ROOT),
+        **options,
     )
 
 
@@ -121,11 +122,11 @@ def test_extractor_incremental_retry_supplements():
     assert "查新点1" in second_gen_user  # 已生成的查新点反馈给重试
 
 
-def test_extractor_review_dedupes_only():
+def test_legacy_mapping_review_dedupes_only():
     two = three_items()[:2]
-    client = SequencedClient([json.dumps(two), json.dumps({"delete_indices": [1]})])
+    client = SequencedClient([json.dumps(two), json.dumps({"deletions": [{"index": 1, "duplicate_of": 2, "reason": "等价复述"}]})])
 
-    points = make_agent(client).extract(
+    points = make_agent(client, conservative_dedup=False).extract(
         build_paper_digest(make_paper()),
         previous_brief=None,
         attempt=1,
@@ -134,12 +135,12 @@ def test_extractor_review_dedupes_only():
     assert len(points) == 1  # 审查只去重，不强制数量
 
 
-def test_extractor_review_deletes_by_index():
+def test_legacy_mapping_review_deletes_by_index():
     client = SequencedClient(
-        [json.dumps(three_items()), json.dumps({"delete_indices": [2]})]
+        [json.dumps(three_items()), json.dumps({"deletions": [{"index": 2, "duplicate_of": 1, "reason": "等价复述"}]})]
     )
 
-    points = make_agent(client).extract(
+    points = make_agent(client, conservative_dedup=False).extract(
         build_paper_digest(make_paper()),
         previous_brief=None,
         attempt=1,
@@ -284,14 +285,14 @@ def test_extractor_dedup_receives_only_bounded_author_contributions():
     assert len(agent.last_trace["deduplication"]["contribution_context"][0]) <= 1200
 
 
-def test_extractor_coverage_followup_shares_budget_and_records_numbering():
+def test_legacy_mapping_coverage_followup_shares_budget_and_records_numbering():
     items = three_items()
     client = SequencedClient([
         json.dumps({"novelty_points": items}),
-        json.dumps({"delete_indices": [3]}),
+        json.dumps({"deletions": [{"index": 3, "duplicate_of": 1, "reason": "等价复述"}]}),
         json.dumps({"novelty_points": [dict(items[2], claim="独立补核查机制")]}),
     ])
-    agent = make_agent(client)
+    agent = make_agent(client, conservative_dedup=False)
     points = agent.extract(build_paper_digest(make_paper()), previous_brief=None, attempt=1)
     assert [p.point_id for p in points] == ["NP-1", "NP-2", "NP-3"]
     assert points[2].claim == "独立补核查机制"
@@ -513,3 +514,46 @@ def test_persist_novelty_points_writes_file(tmp_path):
     assert data["paper_id"] == "paper-1"
     assert data["storage"] == "test-version-local-file"
     assert [point["point_id"] for point in data["novelty_points"]] == ["NP-1", "NP-2"]
+
+
+def test_unmapped_deletions_keep_candidates_pending_without_semantic_confirmation():
+    agent = make_agent(SequencedClient([
+        json.dumps({"novelty_points": three_items()}),
+        json.dumps({"delete_indices": [2, 3]}),
+    ]))
+    points = agent.extract(build_paper_digest(make_paper()), previous_brief=None, attempt=1)
+    assert [point.claim for point in points] == [item["claim"] for item in three_items()]
+    audit = agent.last_trace["deduplication"]
+    assert audit["deleted_indices"] == []
+    assert audit["pending_indices"] == [2, 3]
+    assert audit["semantic_equivalence_verified_by_harness"] is False
+    assert agent.last_trace["scope_status"] == "pending_coverage"
+
+
+@pytest.mark.parametrize("deletions", [
+    [{"index": 2, "duplicate_of": 2, "reason": "self"}],
+    [{"index": 2, "duplicate_of": 99, "reason": "outside"}],
+    [{"index": 2, "duplicate_of": True, "reason": "wrong type"}],
+    [{"index": 2, "duplicate_of": 1, "reason": "  "}],
+    [{"index": 2, "duplicate_of": 1}],
+    [{"index": 2, "duplicate_of": 1, "reason": "first"},
+     {"index": 2, "duplicate_of": 3, "reason": "conflict"}],
+    [{"index": 1, "duplicate_of": 2, "reason": "cycle"},
+     {"index": 2, "duplicate_of": 1, "reason": "cycle"}],
+])
+def test_unsafe_deletion_mappings_remain_pending(deletions):
+    audit = _validated_deletion_mappings({"deletions": deletions}, 3)
+    assert audit["accepted_deletions"] == []
+    assert audit["contract_issues"]
+    assert audit["pending_indices"]
+
+
+def test_deletion_chain_cannot_remove_a_representative():
+    audit = _validated_deletion_mappings({"deletions": [
+        {"index": 2, "duplicate_of": 1, "reason": "same mechanism"},
+        {"index": 3, "duplicate_of": 2, "reason": "same mechanism"},
+    ]}, 3)
+    deleted = {item["index"] for item in audit["accepted_deletions"]}
+    assert deleted == {2}
+    assert audit["pending_indices"] == [3]
+    assert all(item["duplicate_of"] not in deleted for item in audit["accepted_deletions"])
