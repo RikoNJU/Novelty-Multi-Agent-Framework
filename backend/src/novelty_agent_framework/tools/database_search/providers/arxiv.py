@@ -25,6 +25,7 @@ from ....schemas import (
 )
 from ..adapter import QueryAdapter, QueryAdapterError
 from ..retrieval_sources import RetrievalSource
+from .arxiv_identifiers import atom_identifier
 from .arxiv_scheduler import (
     ARXIV_QUERY_URL,
     ArxivCircuitOpenError,
@@ -206,7 +207,7 @@ def parse_entry(entry: ET.Element) -> SearchHit:
     """把 Atom entry 映射为 SearchHit。"""
 
     entry_id = entry.findtext(f"{ATOM_NS}id") or ""
-    external_id = entry_id.rsplit("/", 1)[-1]
+    external_id = atom_identifier(entry_id)
     arxiv_id = strip_version(external_id)
     authors = tuple(
         name.text.strip()

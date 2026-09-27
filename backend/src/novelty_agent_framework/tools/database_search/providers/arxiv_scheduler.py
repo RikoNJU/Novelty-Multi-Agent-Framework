@@ -20,6 +20,8 @@ from urllib.parse import parse_qsl, urlsplit
 
 import httpx
 
+from .arxiv_identifiers import atom_identifier
+
 
 provider_task_id: ContextVar[str | None] = ContextVar("arxiv_task_id", default=None)
 
@@ -255,7 +257,7 @@ class ArxivRequestScheduler:
             by_id: dict[str, str] = {}
             for entry in root.findall(f"{ATOM_NS}entry"):
                 atom_id = entry.findtext(f"{ATOM_NS}id") or ""
-                doc_id = _strip_version(atom_id.rsplit("/", 1)[-1])
+                doc_id = _strip_version(atom_identifier(atom_id))
                 if doc_id:
                     by_id[doc_id.casefold()] = ET.tostring(entry, encoding="unicode")
             for doc_id, values in batch.items():

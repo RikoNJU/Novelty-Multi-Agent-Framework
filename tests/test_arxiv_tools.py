@@ -627,3 +627,33 @@ def test_metadata_missing_returns_none():
 
     tool = ArxivMetadataTool(client=make_client(handler))
     assert tool.resolve("0000.00000") is None
+
+
+@pytest.mark.parametrize('identifier', ['cond-mat/0011267v1', 'hep-th/0505137', '2305.12345v2', '2305.12345'])
+def test_identifier_survives_search_metadata_and_fulltext(identifier):
+    """A searched legacy identifier must still locate metadata and full text."""
+    doc_id = arxiv_module.strip_version(identifier)
+    atom = ATOM_ENTRY.replace('2305.12345v2', identifier)
+    seen = []
+
+    def handler(request):
+        seen.append(request)
+        if request.url.path.startswith('/html/'):
+            return httpx.Response(200, text=HTML_BODY)
+        return httpx.Response(200, text=atom)
+
+    client = make_client(handler)
+    search = ArxivSearchTool(client=client, min_interval=0)
+    hit = search.search('all:electron', limit=1)[0]
+    assert hit.external_id == identifier
+    assert hit.document_id == doc_id
+    assert hit.url == f'https://arxiv.org/abs/{doc_id}'
+    assert hit.full_text_url == f'https://arxiv.org/pdf/{doc_id}'
+    metadata = ArxivMetadataTool(scheduler=search._scheduler).resolve(doc_id)
+    assert metadata is not None
+    assert metadata.url == hit.url
+    assert seen[-1].url.params['id_list'] == doc_id
+    fulltext = ArxivFullTextTool(client=client).fetch(hit.document_id)
+    assert fulltext is not None
+    assert fulltext.document_id == doc_id
+    assert fulltext.source_url == f'https://arxiv.org/html/{doc_id}'
