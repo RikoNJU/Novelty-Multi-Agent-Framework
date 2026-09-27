@@ -1,0 +1,1969 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<!-- new favicon config and versions by realfavicongenerator.net -->
+<link rel="apple-touch-icon" sizes="180x180" href="https://static.arxiv.org/static/base/1.0.0a5/images/icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://static.arxiv.org/static/base/1.0.0a5/images/icons/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="https://static.arxiv.org/static/base/1.0.0a5/images/icons/favicon-16x16.png">
+<link rel="manifest" href="https://static.arxiv.org/static/base/1.0.0a5/images/icons/site.webmanifest">
+<link rel="mask-icon" href="https://static.arxiv.org/static/base/1.0.0a5/images/icons/safari-pinned-tab.svg" color="#b31b1b">
+<link rel="shortcut icon" href="https://static.arxiv.org/static/base/1.0.0a5/images/icons/favicon.ico">
+<meta name="msapplication-TileColor" content="#b31b1b">
+<meta name="msapplication-config" content="images/icons/browserconfig.xml">
+<meta name="theme-color" content="#b31b1b">
+<!-- end favicon config -->
+<title>Advanced Search | arXiv e-print repository</title>
+<script defer src="https://static.arxiv.org/static/base/1.0.0a5/fontawesome-free-5.11.2-web/js/all.js"></script>
+<link rel="stylesheet" href="https://static.arxiv.org/static/base/1.0.0a5/css/arxivstyle.css" />
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    messageStyle: "none",
+    extensions: ["tex2jax.js"],
+    jax: ["input/TeX", "output/HTML-CSS"],
+    tex2jax: {
+      inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+      displayMath: [ ['$$','$$'], ["\\[","\\]"] ],
+      processEscapes: true,
+      ignoreClass: '.*',
+      processClass: 'mathjax.*'
+    },
+    TeX: {
+        extensions: ["AMSmath.js", "AMSsymbols.js", "noErrors.js"],
+        noErrors: {
+          inlineDelimiters: ["$","$"],
+          multiLine: false,
+          style: {
+            "font-size": "normal",
+            "border": ""
+          }
+        }
+    },
+    "HTML-CSS": { availableFonts: ["TeX"] }
+  });
+</script>
+<script src='//static.arxiv.org/MathJax-2.7.3/MathJax.js'></script>
+<script src="https://static.arxiv.org/static/base/1.0.0a5/js/notification.js"></script>
+
+    
+  <script>document.documentElement.classList.add('js');</script>
+  <link rel="stylesheet" type="text/css" media="screen" href="https://static.arxiv.org/static/base/1.0.1/css/arxiv-header-footer.css?v=20260626" />
+  <script defer src="https://static.arxiv.org/static/base/1.0.1/js/arxiv-header.js?v=20260626"></script>
+  <link rel="stylesheet" href="https://static.arxiv.org/static/search/0.5.6/css/bulma-tooltip.min.css" />
+  <link rel="stylesheet" href="https://static.arxiv.org/static/search/0.5.6/css/search.css" />
+  <script
+    src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
+    integrity="sha256-k2WSCIexGzOj3Euiig+TlR8gA0EmPjuc79OEeY5L45g="
+    crossorigin="anonymous"></script>
+
+  <script src="https://static.arxiv.org/static/search/0.5.6/js/fieldset.js"></script>
+  <style>
+  radio#cf-customfield_11400 {
+    display: none;
+  }
+  /* Render the spinout .ds-site-footer standalone / full-bleed. search extends the
+     legacy base, whose bare wrapping <footer> (in base/base.html, outside any
+     overridable block — so it can't be removed from here) is styled by
+     arxivstyle.css with a grey background (hsl(0,0%,95%)) + 1em 2em padding,
+     boxing our warm-wash footer inside a second grey band. display:contents drops
+     the wrapper's box entirely (cleaner than zeroing individual properties) so
+     .ds-site-footer renders in its place; it inherits flex-shrink:0 from the same
+     legacy `footer` rule, so the sticky footer still works. Search-specific
+     legacy-base integration; the shared chrome CSS stays byte-identical to the SSOT. */
+  body > footer {
+    display: contents;
+  }
+  </style>
+
+  </head>
+  <body>
+  
+  
+  <header><a href="#main-container" class="is-sr-only">Skip to main content</a>
+    <div class="ds-announcement" id="announcement-banner" role="region" aria-label="Announcement" data-banner-name="spinout-nonprofit">
+  <img class="ds-announcement-glyph" src="https://static.arxiv.org/static/base/1.0.1/images/icons/smileybones-small.svg" alt="" aria-hidden="true">
+  <span class="ds-announcement-text">arXiv is now an independent nonprofit!</span>
+  <a class="ds-announcement-link" href="https://info.arxiv.org/about">Learn more</a>
+  <button type="button" class="ds-announcement-close" aria-label="Dismiss announcement">&times;</button>
+</div>
+<header class="ds-site-header">
+  <a href="https://arxiv.org/" class="ds-site-header-logo" aria-label="archive home">
+    <img src="https://static.arxiv.org/static/base/1.0.1/images/arxiv-logo-primary-light.svg" alt="archive">
+  </a>
+  <button type="button" id="ds-nav-toggle" class="ds-site-header-nav-toggle"
+    aria-label="Open menu" aria-controls="ds-site-header-nav" aria-expanded="false">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+      <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+    </svg>
+  </button>
+  <nav class="ds-site-header-nav" id="ds-site-header-nav" aria-label="Main navigation">
+    <a id="arxiv-search-toggle" href="/search" aria-controls="arxiv-search-overlay" aria-expanded="false">
+      <svg class="ds-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      Search
+    </a>
+    <a href="https://arxiv.org/user/create">Submit</a>
+    <a href="https://info.arxiv.org/about/donate.html">Donate</a>
+    <span class="ds-site-header-divider" aria-hidden="true"></span>
+    <a href="https://arxiv.org/login" class="ds-site-header-login">Log in</a>
+  </nav>
+</header>
+
+<div class="arxiv-search-overlay" id="arxiv-search-overlay" hidden>
+  <div class="arxiv-search-panel" role="search">
+    <form method="GET" action="/search">
+      <label for="arxiv-search-input" class="is-sr-only">Search arXiv</label>
+      <input type="text" name="query" id="arxiv-search-input" autocomplete="off"
+        placeholder="Search papers by title, author, abstract, or ID...">
+      <input type="hidden" name="searchtype" value="all">
+      <input type="hidden" name="source" value="header">
+    </form>
+    <div class="arxiv-search-hint">
+      Press Enter to search &middot; <a href="/search/advanced">Advanced search</a>
+    </div>
+  </div>
+</div>
+
+  </header>
+  <main class="container" id="main-container">
+    
+
+
+    
+  <div class="level is-marginless">
+    <div class="level-left">
+      <h1 class="title is-clearfix">
+    
+        Showing 1&ndash;25 of 12,219 results
+    
+</h1>
+    </div>
+    <div class="level-right is-hidden-mobile">
+      <!-- feedback for mobile is moved to footer -->
+      <span class="help" style="display: inline-block;"><a href="https://github.com/arXiv/arxiv-search/releases">Search v0.5.6 released 2020-02-24</a>&nbsp;&nbsp;</span>
+    </div>
+  </div>
+    <div class="content">
+      
+  
+    
+
+    <div class="columns">
+      <div class="column is-two-thirds-tablet">
+        <p style="margin-bottom: .5em">Query: <a href="/search/advanced?classification-include_cross_list=include&amp;abstracts=show&amp;size=25&amp;order=-announced_date_first&amp;terms-0-operator=AND&amp;terms-0-term=%22graph+neural+network%22&amp;terms-0-field=all">order: -announced_date_first; size: 25; include_cross_list: True; terms: AND all=&#34;graph neural network&#34;</a></p>
+        <div class="buttons">
+          <a class="button is-link" href="/search/advanced?classification-include_cross_list=include&amp;abstracts=show&amp;size=25&amp;order=-announced_date_first&amp;terms-0-operator=AND&amp;terms-0-term=%22graph+neural+network%22&amp;terms-0-field=all">Refine query</a><a class="button" href="/search/advanced">New search</a>
+        </div>
+      </div>
+      <div class="column is-one-third-tablet is-hidden-mobile">
+        <p class="has-text-right" style="margin-top: 1em">
+          
+          <a href="/search/?order=-announced_date_first&amp;size=25">Simple Search</a>
+          
+        </p>
+      </div>
+    </div>
+
+    
+        
+<div class="level breathe-horizontal">
+  <div class="level-left">
+    <form method="GET" action="/search/advanced">
+      <div style="display: none;">
+        
+          
+            <input id="advanced" name="advanced" type="hidden" value="">
+          
+        
+          
+            <ul id="terms"><li><label for="terms-0">Terms-0</label> <table id="terms-0"><tr><th><label for="terms-0-term">Search term...</label></th><td><input id="terms-0-term" name="terms-0-term" type="text" value="&quot;graph neural network&quot;"></td></tr><tr><th><label for="terms-0-operator">Operator</label></th><td><select id="terms-0-operator" name="terms-0-operator"><option selected value="AND">AND</option><option value="OR">OR</option><option value="NOT">NOT</option></select></td></tr><tr><th><label for="terms-0-field">Field</label></th><td><select id="terms-0-field" name="terms-0-field"><option value="title">Title</option><option value="author">Author(s)</option><option value="abstract">Abstract</option><option value="comments">Comments</option><option value="journal_ref">Journal reference</option><option value="acm_class">ACM classification</option><option value="msc_class">MSC classification</option><option value="report_num">Report number</option><option value="paper_id">arXiv identifier</option><option value="cross_list_category">Cross-list category</option><option value="doi">DOI</option><option value="orcid">ORCID</option><option value="author_id">arXiv author ID</option><option selected value="all">All fields</option></select></td></tr></table></li></ul>
+          
+        
+          
+            <table id="classification"><tr><th><label for="classification-computer_science">Computer Science (cs)</label></th><td><input id="classification-computer_science" name="classification-computer_science" type="checkbox" value="y"></td></tr><tr><th><label for="classification-economics">Economics (econ)</label></th><td><input id="classification-economics" name="classification-economics" type="checkbox" value="y"></td></tr><tr><th><label for="classification-eess">Electrical Engineering and Systems Science (eess)</label></th><td><input id="classification-eess" name="classification-eess" type="checkbox" value="y"></td></tr><tr><th><label for="classification-mathematics">Mathematics (math)</label></th><td><input id="classification-mathematics" name="classification-mathematics" type="checkbox" value="y"></td></tr><tr><th><label for="classification-physics">Physics</label></th><td><input id="classification-physics" name="classification-physics" type="checkbox" value="y"></td></tr><tr><th><label for="classification-physics_archives">Physics Archives</label></th><td><select id="classification-physics_archives" name="classification-physics_archives"><option selected value="all">all</option><option value="astro-ph">astro-ph</option><option value="cond-mat">cond-mat</option><option value="gr-qc">gr-qc</option><option value="hep-ex">hep-ex</option><option value="hep-lat">hep-lat</option><option value="hep-ph">hep-ph</option><option value="hep-th">hep-th</option><option value="math-ph">math-ph</option><option value="nlin">nlin</option><option value="nucl-ex">nucl-ex</option><option value="nucl-th">nucl-th</option><option value="physics">physics</option><option value="quant-ph">quant-ph</option></select></td></tr><tr><th><label for="classification-q_biology">Quantitative Biology (q-bio)</label></th><td><input id="classification-q_biology" name="classification-q_biology" type="checkbox" value="y"></td></tr><tr><th><label for="classification-q_finance">Quantitative Finance (q-fin)</label></th><td><input id="classification-q_finance" name="classification-q_finance" type="checkbox" value="y"></td></tr><tr><th><label for="classification-statistics">Statistics (stat)</label></th><td><input id="classification-statistics" name="classification-statistics" type="checkbox" value="y"></td></tr><tr><th><label for="classification-include_cross_list">Include cross-list</label></th><td><ul id="classification-include_cross_list"><li><input checked id="classification-include_cross_list-0" name="classification-include_cross_list" type="radio" value="include"> <label for="classification-include_cross_list-0">Include cross-listed papers</label></li><li><input id="classification-include_cross_list-1" name="classification-include_cross_list" type="radio" value="exclude"> <label for="classification-include_cross_list-1">Exclude cross-listed papers</label></li></ul></td></tr></table>
+          
+        
+          
+            <table id="date"><tr><th><label for="date-filter_by">Filter by</label></th><td><ul id="date-filter_by"><li><input checked id="date-filter_by-0" name="date-filter_by" type="radio" value="all_dates"> <label for="date-filter_by-0">All dates</label></li><li><input id="date-filter_by-1" name="date-filter_by" type="radio" value="past_12"> <label for="date-filter_by-1">Past 12 months</label></li><li><input id="date-filter_by-2" name="date-filter_by" type="radio" value="specific_year"> <label for="date-filter_by-2">Specific year</label></li><li><input id="date-filter_by-3" name="date-filter_by" type="radio" value="date_range"> <label for="date-filter_by-3">Date range</label></li></ul></td></tr><tr><th><label for="date-year">Year</label></th><td><input id="date-year" name="date-year" type="text" value=""></td></tr><tr><th><label for="date-from_date">From</label></th><td><input id="date-from_date" name="date-from_date" type="text" value=""></td></tr><tr><th><label for="date-to_date">to</label></th><td><input id="date-to_date" name="date-to_date" type="text" value=""></td></tr><tr><th><label for="date-date_type">Apply to</label></th><td><ul id="date-date_type"><li><input checked id="date-date_type-0" name="date-date_type" type="radio" value="submitted_date"> <label for="date-date_type-0">Submission date (most recent)</label></li><li><input id="date-date_type-1" name="date-date_type" type="radio" value="submitted_date_first"> <label for="date-date_type-1">Submission date (original)</label></li><li><input id="date-date_type-2" name="date-date_type" type="radio" value="announced_date_first"> <label for="date-date_type-2">Announcement date</label></li></ul></td></tr></table>
+          
+        
+          
+        
+          
+        
+          
+            <input id="include_older_versions" name="include_older_versions" type="checkbox" value="y">
+          
+        
+          
+            <ul id="abstracts"><li><input checked id="abstracts-0" name="abstracts" type="radio" value="show"> <label for="abstracts-0">Show abstracts</label></li><li><input id="abstracts-1" name="abstracts" type="radio" value="hide"> <label for="abstracts-1">Hide abstracts</label></li></ul>
+          
+        
+      </div>
+      <div class="box field is-grouped is-grouped-multiline level-item">
+        <div class="control">
+          <span class="select is-small">
+            <select id="size" name="size"><option selected value="25">25</option><option value="50">50</option><option value="100">100</option><option value="200">200</option></select>
+          </span>
+          <label for="size">results per page</label>.
+        </div>
+        <div class="control">
+          <label for="order">Sort results by</label>
+          <span class="select is-small">
+            <select id="order" name="order"><option selected value="-announced_date_first">Announcement date (newest first)</option><option value="announced_date_first">Announcement date (oldest first)</option><option value="-submitted_date">Submission date (newest first)</option><option value="submitted_date">Submission date (oldest first)</option><option value="">Relevance</option></select>
+          </span>
+        </div>
+        <div class="control">
+          <button class="button is-small is-link">Go</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+        
+
+
+  <nav class="pagination is-small is-centered breathe-horizontal" role="navigation" aria-label="pagination">
+    
+    <a href=""
+      class="pagination-previous is-invisible">Previous
+    </a>
+    
+    
+      <a href="/search/advanced?advanced=&amp;classification-include_cross_list=include&amp;abstracts=show&amp;size=25&amp;order=-announced_date_first&amp;terms-0-operator=AND&amp;terms-0-term=%22graph+neural+network%22&amp;terms-0-field=all&amp;start=25"
+        class="pagination-next" >Next
+      </a>
+    
+    <ul class="pagination-list">
+
+      <li>
+        <a href="/search/advanced?advanced=&amp;classification-include_cross_list=include&amp;abstracts=show&amp;size=25&amp;order=-announced_date_first&amp;terms-0-operator=AND&amp;terms-0-term=%22graph+neural+network%22&amp;terms-0-field=all&amp;start=0"
+          class="pagination-link is-current"
+          aria-label="Goto page 1">1
+        </a>
+      </li>
+
+      
+                                     
+          
+          <li>
+            <a href="/search/advanced?advanced=&amp;classification-include_cross_list=include&amp;abstracts=show&amp;size=25&amp;order=-announced_date_first&amp;terms-0-operator=AND&amp;terms-0-term=%22graph+neural+network%22&amp;terms-0-field=all&amp;start=25"
+              class="pagination-link "
+              aria-label="Page 2"
+              aria-current="page">2
+            </a>
+          </li>
+          
+          <li>
+            <a href="/search/advanced?advanced=&amp;classification-include_cross_list=include&amp;abstracts=show&amp;size=25&amp;order=-announced_date_first&amp;terms-0-operator=AND&amp;terms-0-term=%22graph+neural+network%22&amp;terms-0-field=all&amp;start=50"
+              class="pagination-link "
+              aria-label="Page 3"
+              aria-current="page">3
+            </a>
+          </li>
+          
+          <li>
+            <a href="/search/advanced?advanced=&amp;classification-include_cross_list=include&amp;abstracts=show&amp;size=25&amp;order=-announced_date_first&amp;terms-0-operator=AND&amp;terms-0-term=%22graph+neural+network%22&amp;terms-0-field=all&amp;start=75"
+              class="pagination-link "
+              aria-label="Page 4"
+              aria-current="page">4
+            </a>
+          </li>
+          
+          <li>
+            <a href="/search/advanced?advanced=&amp;classification-include_cross_list=include&amp;abstracts=show&amp;size=25&amp;order=-announced_date_first&amp;terms-0-operator=AND&amp;terms-0-term=%22graph+neural+network%22&amp;terms-0-field=all&amp;start=100"
+              class="pagination-link "
+              aria-label="Page 5"
+              aria-current="page">5
+            </a>
+          </li>
+          
+          <li><span class="pagination-ellipsis">&hellip;</span></li>
+        
+      
+    </ul>
+  </nav>
+  
+
+
+
+<ol class="breathe-horizontal" start="1"> 
+
+
+  <li class="arxiv-result">
+    <div class="is-marginless">
+      <p class="list-title is-inline-block"><a href="https://arxiv.org/abs/2609.30173">arXiv:2609.30173</a>
+        <span>&nbsp;[<a href="https://arxiv.org/pdf/2609.30173">pdf</a>, <a href="https://arxiv.org/ps/2609.30173">ps</a>, <a href="https://arxiv.org/format/2609.30173">other</a>]&nbsp;</span>
+      </p>
+      <div class="tags is-inline-block">
+        <span class="tag is-small is-link tooltip is-tooltip-top" data-tooltip="Systems and Control">eess.SY</span>
+        
+          
+            <span class="tag is-small is-grey tooltip is-tooltip-top" data-tooltip="Machine Learning">cs.LG</span>
+          
+            <span class="tag is-small is-grey tooltip is-tooltip-top" data-tooltip="Optimization and Control">math.OC</span>
+          
+        </div>
+      
+    </div>
+    
+    <p class="title is-5 mathjax">
+      
+        GridSFM: A Foundation Model for Solving AC Optimal Power Flow
+      
+    </p>
+    <p class="authors">
+      <span class="has-text-black-bis has-text-weight-semibold">Authors:</span>
+      
+      <a href="/search/?searchtype=author&amp;query=Bhan%2C+L">Luke Bhan</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Yang%2C+W">Weiwei Yang</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Capetz%2C+M">Margaret Capetz</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Zhang%2C+B">Baosen Zhang</a>
+      
+    </p>
+    
+    <p class="abstract mathjax">
+      <span class="has-text-black-bis has-text-weight-semibold">Abstract</span>:
+      <span class="abstract-short has-text-grey-dark mathjax" id="2609.30173v1-abstract-short" style="display: inline;">
+        &hellip;million parameter physics-inspired <span class="search-hit mathjax">graph</span> <span class="search-hit mathjax">neural</span> <span class="search-hit mathjax">network</span> pretrained across $54$ topologies of $500$ to $4{,}000$ buses. Our model attains a $2.45\%$ zero-shot generation-cost error on a $10{,}000$ bus case held-out operating conditions with no degradation as system size grows. Bu&hellip;
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.30173v1-abstract-full').style.display = 'inline'; document.getElementById('2609.30173v1-abstract-short').style.display = 'none';">&#9661; More</a>
+      </span>
+      <span class="abstract-full has-text-grey-dark mathjax" id="2609.30173v1-abstract-full" style="display: none;">
+        We introduce GridSFM, a framework that combines a pretrained foundation model across grid topologies with physics-informed fine-tuning for solving AC Optimal Power Flow (AC-OPF) at scale. It is a $15$ million parameter physics-inspired <span class="search-hit mathjax">graph</span> <span class="search-hit mathjax">neural</span> <span class="search-hit mathjax">network</span> pretrained across $54$ topologies of $500$ to $4{,}000$ buses. Our model attains a $2.45\%$ zero-shot generation-cost error on a $10{,}000$ bus case held-out operating conditions with no degradation as system size grows. Building on this, we pair the pretrained backbone with a physics-informed fine-tuning design based on Newton&#39;s method for power flow. With only $100$ solved instances, GridSFM adapts to unseen grids up to $10{,}000$ buses. We show it out performs single topology, dedicated neural network models that are trained more data, both in terms of cost and solver iterations when deployed as warm starting points.
+  In designing this foundation model, we overcome the fact that the feasible set for AC-OPF can be disconnected. This is an obstruction that prevents any continuous neural network from approximating the solution map. To do so, we lift the problem and relax its constraints with logarithmically penalized slacks. We prove that the resulting elastic feasible set is contractible, that the AC-OPF minimizers remain minimizers of the elastic problem above an explicit penalty threshold, and that projecting an approximate solution back onto the AC-OPF feasible set is well posed. We release all models, data, and code so that the community can build on a shared starting point for AC-OPF.
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.30173v1-abstract-full').style.display = 'none'; document.getElementById('2609.30173v1-abstract-short').style.display = 'inline';">&#9651; Less</a>
+      </span>
+    </p>
+    
+
+    <p class="is-size-7"><span class="has-text-black-bis has-text-weight-semibold">Submitted</span> 24 September, 2026; 
+      <span class="has-text-black-bis has-text-weight-semibold">originally announced</span> September 2026.
+      
+    </p>
+    
+    <p class="comments is-size-7">
+      <span class="has-text-black-bis has-text-weight-semibold">Comments:</span>
+      <span class="has-text-grey-dark mathjax">19 pages</span>
+    </p>
+    
+
+    
+
+    
+  </li>
+
+  <li class="arxiv-result">
+    <div class="is-marginless">
+      <p class="list-title is-inline-block"><a href="https://arxiv.org/abs/2609.30150">arXiv:2609.30150</a>
+        <span>&nbsp;[<a href="https://arxiv.org/pdf/2609.30150">pdf</a>, <a href="https://arxiv.org/ps/2609.30150">ps</a>, <a href="https://arxiv.org/format/2609.30150">other</a>]&nbsp;</span>
+      </p>
+      <div class="tags is-inline-block">
+        <span class="tag is-small is-link tooltip is-tooltip-top" data-tooltip="Machine Learning">cs.LG</span>
+        </div>
+      
+    </div>
+    
+    <p class="title is-5 mathjax">
+      
+        Graph-Based Inference and Topology-Aware Multi-Agent Reinforcement Learning for Large-Scale Railway Network Management
+      
+    </p>
+    <p class="authors">
+      <span class="has-text-black-bis has-text-weight-semibold">Authors:</span>
+      
+      <a href="/search/?searchtype=author&amp;query=Arcieri%2C+G">Giacomo Arcieri</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Duth%C3%A9%2C+G">Gregory Duthé</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Muller%2C+C">Christophe Muller</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Papakonstantinou%2C+K+G">Konstantinos G. Papakonstantinou</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Straub%2C+D">Daniel Straub</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Chatzi%2C+E">Eleni Chatzi</a>
+      
+    </p>
+    
+    <p class="abstract mathjax">
+      <span class="search-hit">Abstract</span>:
+      <span class="abstract-short has-text-grey-dark mathjax" id="2609.30150v1-abstract-short" style="display: inline;">
+        &hellip;planning from real-world data provided by the Swiss Federal Railways. Second, we introduce a topology-aware Multi-Agent Reinforcement Learning (MARL) framework by integrating <span class="search-hit mathjax">graph</span> <span class="search-hit mathjax">neural</span> <span class="search-hit mathjax">networks</span> and graph Transformers to optimize network-level policies. A central contribution o&hellip;
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.30150v1-abstract-full').style.display = 'inline'; document.getElementById('2609.30150v1-abstract-short').style.display = 'none';">&#9661; More</a>
+      </span>
+      <span class="abstract-full has-text-grey-dark mathjax" id="2609.30150v1-abstract-full" style="display: none;">
+        Modern infrastructure asset management constitutes a complex sequential decision-making problem, characterized by long planning horizons and system-level interactions, such as spatial deterioration correlations and economies of scale. While deep reinforcement learning has shown promise in optimizing maintenance policies, scaling to real-world networks remains challenging. Centralized approaches become computationally intractable in large-scale systems, whereas decentralized approaches often fail to capture essential coordination mechanisms. To address these challenges, we propose a graph-based framework that integrates accurate environment modeling with scalable decision support. First, we employ a hierarchical Bayesian model leveraging a Gaussian Process on Graph kernel to infer a realistic, spatially correlated networked environment of railway maintenance planning from real-world data provided by the Swiss Federal Railways. Second, we introduce a topology-aware Multi-Agent Reinforcement Learning (MARL) framework by integrating <span class="search-hit mathjax">graph</span> <span class="search-hit mathjax">neural</span> <span class="search-hit mathjax">networks</span> and graph Transformers to optimize network-level policies. A central contribution of this work is the demonstration of scalability through zero-shot transfer learning: graph-based agents, trained only on small network portions, are successfully deployed in a zero-shot manner on large-scale unseen networks without any retraining. Numerical results indicate that the proposed method significantly outperforms optimized heuristics and standard MARL baselines, reducing computational training time while maintaining superior performance on large-scale networks.
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.30150v1-abstract-full').style.display = 'none'; document.getElementById('2609.30150v1-abstract-short').style.display = 'inline';">&#9651; Less</a>
+      </span>
+    </p>
+    
+
+    <p class="is-size-7"><span class="has-text-black-bis has-text-weight-semibold">Submitted</span> 24 September, 2026; 
+      <span class="has-text-black-bis has-text-weight-semibold">originally announced</span> September 2026.
+      
+    </p>
+    
+
+    
+
+    
+  </li>
+
+  <li class="arxiv-result">
+    <div class="is-marginless">
+      <p class="list-title is-inline-block"><a href="https://arxiv.org/abs/2609.30079">arXiv:2609.30079</a>
+        <span>&nbsp;[<a href="https://arxiv.org/pdf/2609.30079">pdf</a>, <a href="https://arxiv.org/ps/2609.30079">ps</a>, <a href="https://arxiv.org/format/2609.30079">other</a>]&nbsp;</span>
+      </p>
+      <div class="tags is-inline-block">
+        <span class="tag is-small is-link tooltip is-tooltip-top" data-tooltip="Machine Learning">cs.LG</span>
+        
+          
+            <span class="tag is-small is-grey tooltip is-tooltip-top" data-tooltip="Artificial Intelligence">cs.AI</span>
+          
+        </div>
+      
+        
+          <div class="is-inline-block" style="margin-left: 0.5rem">
+            <div class="tags has-addons">
+              <span class="tag is-dark is-size-7">doi</span>
+              <span class="tag is-light is-size-7"><a class="" href="https://doi.org/10.1007/978-3-032-32357-6_13">10.1007/978-3-032-32357-6_13 <i class="fa fa-external-link" aria-hidden="true"></i></a></span>
+            </div>
+          </div>
+        
+      
+    </div>
+    
+    <p class="title is-5 mathjax">
+      
+        Reachability-Based Formal Verification of <span class="search-hit mathjax">Graph</span> <span class="search-hit mathjax">Neural</span> <span class="search-hit mathjax">Networks</span> with Node and Edge Features
+      
+    </p>
+    <p class="authors">
+      <span class="has-text-black-bis has-text-weight-semibold">Authors:</span>
+      
+      <a href="/search/?searchtype=author&amp;query=Tumlin%2C+A+M">Anne M. Tumlin</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Wooding%2C+B">Ben Wooding</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Shao%2C+Z">Zhenxuan Shao</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Lopez%2C+D+M">Diego Manzanas Lopez</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Derr%2C+T">Tyler Derr</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Johnson%2C+T+T">Taylor T. Johnson</a>
+      
+    </p>
+    
+    <p class="abstract mathjax">
+      <span class="search-hit">Abstract</span>:
+      <span class="abstract-short has-text-grey-dark mathjax" id="2609.30079v1-abstract-short" style="display: inline;">
+        <span class="search-hit mathjax">Graph</span> <span class="search-hit mathjax">neural</span> <span class="search-hit mathjax">networks</span> (GNNs) have become a prominent approach for developing fast, topology-aware surrogates in electric power systems, supporting tasks such as power flow (PF) analysis, optimal power flow (OPF) estimation, and cascading failure analysis (CFA). Despite this growi&hellip;
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.30079v1-abstract-full').style.display = 'inline'; document.getElementById('2609.30079v1-abstract-short').style.display = 'none';">&#9661; More</a>
+      </span>
+      <span class="abstract-full has-text-grey-dark mathjax" id="2609.30079v1-abstract-full" style="display: none;">
+        <span class="search-hit mathjax">Graph</span> <span class="search-hit mathjax">neural</span> <span class="search-hit mathjax">networks</span> (GNNs) have become a prominent approach for developing fast, topology-aware surrogates in electric power systems, supporting tasks such as power flow (PF) analysis, optimal power flow (OPF) estimation, and cascading failure analysis (CFA). Despite this growing use, formally verifying GNN-based models remains challenging, with existing methods limited in scope. We extend the neural network verification (NNV) framework to graph-structured inputs through GraphStar sets, a generalization of Star sets that captures uncertainty over both node and edge features. This extension enables the propagation of linear message-passing operations and the sound approximation of ReLU nonlinearities for GNN architectures, including graph convolutional network (GCN) and graph isomorphism network with edge features (GINE) layers. We evaluate GNNV across three power system tasks, PF, OPF, and CFA, on the IEEE-24, IEEE-39, and IEEE-118 test cases, as well as two standard graph classification benchmarks, ENZYMES and PROTEINS. Our results show that GNNV provides tighter robustness guarantees than CORA on graph classification models with ReLU-based activations and, for the first time, delivers edge-aware robustness guarantees for GINE-based PF and OPF models under joint node and edge perturbations.
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.30079v1-abstract-full').style.display = 'none'; document.getElementById('2609.30079v1-abstract-short').style.display = 'inline';">&#9651; Less</a>
+      </span>
+    </p>
+    
+
+    <p class="is-size-7"><span class="has-text-black-bis has-text-weight-semibold">Submitted</span> 24 September, 2026; 
+      <span class="has-text-black-bis has-text-weight-semibold">originally announced</span> September 2026.
+      
+    </p>
+    
+
+    
+
+    
+      <p class="comments is-size-7">
+        <span class="has-text-black-bis has-text-weight-semibold">Journal ref:</span>
+        AI Verification: Third International Symposium, SAIV 2026, Lisbon, Portugal, July 24-25, 2026, Proceedings
+      </p>
+    
+  </li>
+
+  <li class="arxiv-result">
+    <div class="is-marginless">
+      <p class="list-title is-inline-block"><a href="https://arxiv.org/abs/2609.30050">arXiv:2609.30050</a>
+        <span>&nbsp;[<a href="https://arxiv.org/pdf/2609.30050">pdf</a>, <a href="https://arxiv.org/ps/2609.30050">ps</a>, <a href="https://arxiv.org/format/2609.30050">other</a>]&nbsp;</span>
+      </p>
+      <div class="tags is-inline-block">
+        <span class="tag is-small is-link tooltip is-tooltip-top" data-tooltip="Artificial Intelligence">cs.AI</span>
+        </div>
+      
+    </div>
+    
+    <p class="title is-5 mathjax">
+      
+        NNV3: Expanding Neural Network Verification to New Architectures and Domains
+      
+    </p>
+    <p class="authors">
+      <span class="has-text-black-bis has-text-weight-semibold">Authors:</span>
+      
+      <a href="/search/?searchtype=author&amp;query=Tumlin%2C+A+M">Anne M. Tumlin</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Sasaki%2C+S">Samuel Sasaki</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Wooding%2C+B">Ben Wooding</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Lopez%2C+D+M">Diego Manzanas Lopez</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Zubair%2C+M+U">Muhammad Usama Zubair</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Hashemi%2C+N">Navid Hashemi</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Zhang%2C+H">Hongchao Zhang</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Abbas%2C+W">Waseem Abbas</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Oguz%2C+I">Ipek Oguz</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Ma%2C+M">Meiyi Ma</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Johnson%2C+T+T">Taylor T. Johnson</a>
+      
+    </p>
+    
+    <p class="abstract mathjax">
+      <span class="search-hit">Abstract</span>:
+      <span class="abstract-short has-text-grey-dark mathjax" id="2609.30050v1-abstract-short" style="display: inline;">
+        &hellip;NNV3 introduces new members of the Star-set family: ModelStar for verifying networks under weight perturbation, VolumeStar for video and 3D volumetric inputs, and GraphStar for <span class="search-hit mathjax">graph</span> <span class="search-hit mathjax">neural</span> <span class="search-hit mathjax">networks</span>. A conformal-inference-based probabilistic reachability mode complements sound a&hellip;
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.30050v1-abstract-full').style.display = 'inline'; document.getElementById('2609.30050v1-abstract-short').style.display = 'none';">&#9661; More</a>
+      </span>
+      <span class="abstract-full has-text-grey-dark mathjax" id="2609.30050v1-abstract-full" style="display: none;">
+        We present NNV3, the latest version of the Neural Network Verification (NNV) tool, a MATLAB framework for formal verification of deep learning models and learning-enabled cyber-physical systems. Building on the set-based reachability foundation of NNV 1.0 (FFNNs, CNNs, NNCS) and NNV 2.0 (RNNs, SSNNs, neural ODEs), NNV3 introduces new members of the Star-set family: ModelStar for verifying networks under weight perturbation, VolumeStar for video and 3D volumetric inputs, and GraphStar for <span class="search-hit mathjax">graph</span> <span class="search-hit mathjax">neural</span> <span class="search-hit mathjax">networks</span>. A conformal-inference-based probabilistic reachability mode complements sound analysis for problems where deterministic verification is intractable, while FairNNV certifies counterfactual and individual fairness properties over continuous input regions. NNV3 introduces new benchmarks for malware detection, graph-based power-system models, medical imaging, variable-length time series data, and action recognition. NNV3 also incorporates tutorials and developer guides through a unified documentation site. This paper details these major updates, demonstrating NNV&#39;s maturation into a comprehensive, robust, and accessible verification tool for a diverse range of AI systems.
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.30050v1-abstract-full').style.display = 'none'; document.getElementById('2609.30050v1-abstract-short').style.display = 'inline';">&#9651; Less</a>
+      </span>
+    </p>
+    
+
+    <p class="is-size-7"><span class="has-text-black-bis has-text-weight-semibold">Submitted</span> 24 September, 2026; 
+      <span class="has-text-black-bis has-text-weight-semibold">originally announced</span> September 2026.
+      
+    </p>
+    
+
+    
+
+    
+  </li>
+
+  <li class="arxiv-result">
+    <div class="is-marginless">
+      <p class="list-title is-inline-block"><a href="https://arxiv.org/abs/2609.29322">arXiv:2609.29322</a>
+        <span>&nbsp;[<a href="https://arxiv.org/pdf/2609.29322">pdf</a>, <a href="https://arxiv.org/ps/2609.29322">ps</a>, <a href="https://arxiv.org/format/2609.29322">other</a>]&nbsp;</span>
+      </p>
+      <div class="tags is-inline-block">
+        <span class="tag is-small is-link tooltip is-tooltip-top" data-tooltip="Machine Learning">cs.LG</span>
+        </div>
+      
+    </div>
+    
+    <p class="title is-5 mathjax">
+      
+        TinyCardioUNet: IMU-to-ECG Translation with Graph-Encoded Inter-Axis Dependencies and Tensor Decomposition-Based Parameter Reduction
+      
+    </p>
+    <p class="authors">
+      <span class="has-text-black-bis has-text-weight-semibold">Authors:</span>
+      
+      <a href="/search/?searchtype=author&amp;query=Han%2C+S">Seungwoo Han</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Chanpornpakdi%2C+I">Ingon Chanpornpakdi</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Noda%2C+M">Motoi Noda</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Leelasiri%2C+P">Puwadej Leelasiri</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Hiruma%2C+I">Ibuki Hiruma</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Tanaka%2C+T">Toshihisa Tanaka</a>
+      
+    </p>
+    
+    <p class="abstract mathjax">
+      <span class="has-text-black-bis has-text-weight-semibold">Abstract</span>:
+      <span class="abstract-short has-text-grey-dark mathjax" id="2609.29322v1-abstract-short" style="display: inline;">
+        &hellip;without the discomfort of electrodes. We propose TinyCardioUNet, a lightweight UNet that uses all six IMU axes without prior channel selection, refines its bottleneck with a <span class="search-hit mathjax">graph</span> <span class="search-hit mathjax">neural</span> <span class="search-hit mathjax">network</span> that encodes inter-axis dependencies, and employs tensor decomposition with automatic&hellip;
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.29322v1-abstract-full').style.display = 'inline'; document.getElementById('2609.29322v1-abstract-short').style.display = 'none';">&#9661; More</a>
+      </span>
+      <span class="abstract-full has-text-grey-dark mathjax" id="2609.29322v1-abstract-full" style="display: none;">
+        Estimating electrocardiography (ECG) from a chest-worn inertial measurement unit (IMU) enables continuous heart rate (HR) monitoring without the discomfort of electrodes. We propose TinyCardioUNet, a lightweight UNet that uses all six IMU axes without prior channel selection, refines its bottleneck with a <span class="search-hit mathjax">graph</span> <span class="search-hit mathjax">neural</span> <span class="search-hit mathjax">network</span> that encodes inter-axis dependencies, and employs tensor decomposition with automatic variational Bayesian rank selection for parameter reduction. On a public dataset, TinyCardioUNet achieves an RMSE of $0.098$ and a Pearson correlation coefficient of $0.677$ with only $36.0$k parameters and remains comparatively robust to additive noise, demonstrating accurate ECG reconstruction with a compact model.
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.29322v1-abstract-full').style.display = 'none'; document.getElementById('2609.29322v1-abstract-short').style.display = 'inline';">&#9651; Less</a>
+      </span>
+    </p>
+    
+
+    <p class="is-size-7"><span class="has-text-black-bis has-text-weight-semibold">Submitted</span> 24 September, 2026; 
+      <span class="has-text-black-bis has-text-weight-semibold">originally announced</span> September 2026.
+      
+    </p>
+    
+    <p class="comments is-size-7">
+      <span class="has-text-black-bis has-text-weight-semibold">Comments:</span>
+      <span class="has-text-grey-dark mathjax">The source code and pretrained models are available at https://github.com/ttlabtuat/TinyCardioUNet</span>
+    </p>
+    
+
+    
+
+    
+  </li>
+
+  <li class="arxiv-result">
+    <div class="is-marginless">
+      <p class="list-title is-inline-block"><a href="https://arxiv.org/abs/2609.29223">arXiv:2609.29223</a>
+        <span>&nbsp;[<a href="https://arxiv.org/pdf/2609.29223">pdf</a>, <a href="https://arxiv.org/ps/2609.29223">ps</a>, <a href="https://arxiv.org/format/2609.29223">other</a>]&nbsp;</span>
+      </p>
+      <div class="tags is-inline-block">
+        <span class="tag is-small is-link tooltip is-tooltip-top" data-tooltip="Distributed, Parallel, and Cluster Computing">cs.DC</span>
+        </div>
+      
+    </div>
+    
+    <p class="title is-5 mathjax">
+      
+        TrafficFab: An Autonomic Edge-Cloud Testbed Fabric forAI-Driven Traffic Management
+      
+    </p>
+    <p class="authors">
+      <span class="has-text-black-bis has-text-weight-semibold">Authors:</span>
+      
+      <a href="/search/?searchtype=author&amp;query=Arya%2C+M">Mayank Arya</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Naman%2C+P">Pranjal Naman</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Pansari%2C+P">Priyanshu Pansari</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Banerjee%2C+R">Roopkatha Banerjee</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Mehta%2C+D">Daksh Mehta</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Nepal%2C+M">Manjil Nepal</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Sharma%2C+A">Akash Sharma</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Simmhan%2C+Y">Yogesh Simmhan</a>
+      
+    </p>
+    
+    <p class="abstract mathjax">
+      <span class="has-text-black-bis has-text-weight-semibold">Abstract</span>:
+      <span class="abstract-short has-text-grey-dark mathjax" id="2609.29223v1-abstract-short" style="display: inline;">
+        &hellip;slice of a megacity deployment. TrafficFab combines RTSP stream emulation, heterogeneous edge inference using DNNs, cloud-based nowcasting and forecasting using Spatio-Temporal <span class="search-hit mathjax">Graph</span> <span class="search-hit mathjax">Neural</span> <span class="search-hit mathjax">Network</span> (ST-GNN), and continual model adaptation through foundation-model (FM)-assisted Fe&hellip;
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.29223v1-abstract-full').style.display = 'inline'; document.getElementById('2609.29223v1-abstract-short').style.display = 'none';">&#9661; More</a>
+      </span>
+      <span class="abstract-full has-text-grey-dark mathjax" id="2609.29223v1-abstract-full" style="display: none;">
+        Traffic management in emerging megacities requires real-time analytics over thousands of CCTV video streams under latency, bandwidth, compute and energy constraints. We present TrafficFab, an autonomic edge--cloud testbed for AI-driven traffic management, designed to validate a representative slice of a megacity deployment. TrafficFab combines RTSP stream emulation, heterogeneous edge inference using DNNs, cloud-based nowcasting and forecasting using Spatio-Temporal <span class="search-hit mathjax">Graph</span> <span class="search-hit mathjax">Neural</span> <span class="search-hit mathjax">Network</span> (ST-GNN), and continual model adaptation through foundation-model (FM)-assisted Federated Learning (FL). Its autonomic control enables fine-grained scale-out/in of edge inference through energy- and migration-aware scheduling, elastic scale-up/down of GNN forecasting on public clouds, and periodic adaptation of the DNN on edge accelerators and private cloud, without centralized video collection. We evaluate TrafficFab on a Bangalore-city inspired deployment, spanning Raspberry Pis, Jetson accelerators, GPU fogs, private cloud servers, and cloud VMs, sustaining real-time analytics for $\approx 400$ live camera streams (10% of Bangalore) and analytically characterize larger setups. The results demonstrate that TrafficFab offers a practical validation-scale platform for closed-loop traffic analytics, short-term operational decision support, and longer-horizon planning analyses in megacity scales.
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.29223v1-abstract-full').style.display = 'none'; document.getElementById('2609.29223v1-abstract-short').style.display = 'inline';">&#9651; Less</a>
+      </span>
+    </p>
+    
+
+    <p class="is-size-7"><span class="has-text-black-bis has-text-weight-semibold">Submitted</span> 24 September, 2026; 
+      <span class="has-text-black-bis has-text-weight-semibold">originally announced</span> September 2026.
+      
+    </p>
+    
+
+    
+
+    
+  </li>
+
+  <li class="arxiv-result">
+    <div class="is-marginless">
+      <p class="list-title is-inline-block"><a href="https://arxiv.org/abs/2609.28979">arXiv:2609.28979</a>
+        <span>&nbsp;[<a href="https://arxiv.org/pdf/2609.28979">pdf</a>, <a href="https://arxiv.org/ps/2609.28979">ps</a>, <a href="https://arxiv.org/format/2609.28979">other</a>]&nbsp;</span>
+      </p>
+      <div class="tags is-inline-block">
+        <span class="tag is-small is-link tooltip is-tooltip-top" data-tooltip="Machine Learning">cs.LG</span>
+        </div>
+      
+    </div>
+    
+    <p class="title is-5 mathjax">
+      
+        Spectral <span class="search-hit mathjax">Graph</span> <span class="search-hit mathjax">Neural</span> <span class="search-hit mathjax">Networks</span> with Hermite Polynomials: A Comprehensive Study
+      
+    </p>
+    <p class="authors">
+      <span class="has-text-black-bis has-text-weight-semibold">Authors:</span>
+      
+      <a href="/search/?searchtype=author&amp;query=Wu%2C+S">Shuang Wu</a>
+      
+    </p>
+    
+    <p class="abstract mathjax">
+      <span class="search-hit">Abstract</span>:
+      <span class="abstract-short has-text-grey-dark mathjax" id="2609.28979v1-abstract-short" style="display: inline;">
+        We study spectral <span class="search-hit mathjax">graph</span> <span class="search-hit mathjax">neural</span> <span class="search-hit mathjax">networks</span> built from Hermite polynomials and propose HermNet, a simple model that combines a nodewise predictor with normalized Hermite propagation. Its sparse recurrence requires neither eigendecomposition nor a learned basis. We distinguish the bas&hellip;
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.28979v1-abstract-full').style.display = 'inline'; document.getElementById('2609.28979v1-abstract-short').style.display = 'none';">&#9661; More</a>
+      </span>
+      <span class="abstract-full has-text-grey-dark mathjax" id="2609.28979v1-abstract-full" style="display: none;">
+        We study spectral <span class="search-hit mathjax">graph</span> <span class="search-hit mathjax">neural</span> <span class="search-hit mathjax">networks</span> built from Hermite polynomials and propose HermNet, a simple model that combines a nodewise predictor with normalized Hermite propagation. Its sparse recurrence requires neither eigendecomposition nor a learned basis. We distinguish the basic model from optional coordinate calibration, response normalization and Gaussian derivative regularization. Hermite and other complete polynomial bases span the same degree-bounded filter space, but their coordinates can produce different optimization behavior under limited training budgets. We analyze this behavior through spectral signal energy, label sampling, changes in learned features and the bias--variance trade-off of regularization. Controlled synthetic experiments identify a regime in which plain HermNet outperforms matched polynomial-basis alternatives, including with a jointly trained nonlinear predictor. Curvature regularization further improves HermNet when the same functional penalty is available to every comparator. Fixed-predictor controls support the advantage under short training budgets, but longer training removes the plain-model lead. Matched real-data comparisons show accuracy deficits, and architectural and numerical studies identify further limits. Together, the analysis and experiments clarify when Hermite propagation is useful and how calibration and regularization affect its performance.
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.28979v1-abstract-full').style.display = 'none'; document.getElementById('2609.28979v1-abstract-short').style.display = 'inline';">&#9651; Less</a>
+      </span>
+    </p>
+    
+
+    <p class="is-size-7"><span class="has-text-black-bis has-text-weight-semibold">Submitted</span> 23 September, 2026; 
+      <span class="has-text-black-bis has-text-weight-semibold">originally announced</span> September 2026.
+      
+    </p>
+    
+
+    
+
+    
+  </li>
+
+  <li class="arxiv-result">
+    <div class="is-marginless">
+      <p class="list-title is-inline-block"><a href="https://arxiv.org/abs/2609.28782">arXiv:2609.28782</a>
+        <span>&nbsp;[<a href="https://arxiv.org/pdf/2609.28782">pdf</a>, <a href="https://arxiv.org/ps/2609.28782">ps</a>, <a href="https://arxiv.org/format/2609.28782">other</a>]&nbsp;</span>
+      </p>
+      <div class="tags is-inline-block">
+        <span class="tag is-small is-link tooltip is-tooltip-top" data-tooltip="Machine Learning">cs.LG</span>
+        
+          
+            <span class="tag is-small is-grey tooltip is-tooltip-top" data-tooltip="Chemical Physics">physics.chem-ph</span>
+          
+            <span class="tag is-small is-grey tooltip is-tooltip-top" data-tooltip="Computational Physics">physics.comp-ph</span>
+          
+        </div>
+      
+    </div>
+    
+    <p class="title is-5 mathjax">
+      
+        The Mechanics of Delta Learning: Target Design for Generalizable Scientific Machine Learning
+      
+    </p>
+    <p class="authors">
+      <span class="has-text-black-bis has-text-weight-semibold">Authors:</span>
+      
+      <a href="/search/?searchtype=author&amp;query=Gameel%2C+K+M">Kareem M. Gameel</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Neporozhnii%2C+I">Ihor Neporozhnii</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Hoogland%2C+S">Sjoerd Hoogland</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Voznyy%2C+O">Oleksandr Voznyy</a>
+      
+    </p>
+    
+    <p class="abstract mathjax">
+      <span class="search-hit">Abstract</span>:
+      <span class="abstract-short has-text-grey-dark mathjax" id="2609.28782v1-abstract-short" style="display: inline;">
+        &hellip;residual scales inherently improve downstream performance. Here, we demonstrate that residual scale alone is an insufficient heuristic for learnability. Evaluating molecular <span class="search-hit mathjax">graph</span> <span class="search-hit mathjax">neural</span> <span class="search-hit mathjax">networks</span> on total energy targets, we show that complex local descriptor baselines can yield s&hellip;
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.28782v1-abstract-full').style.display = 'inline'; document.getElementById('2609.28782v1-abstract-short').style.display = 'none';">&#9661; More</a>
+      </span>
+      <span class="abstract-full has-text-grey-dark mathjax" id="2609.28782v1-abstract-full" style="display: none;">
+        In scientific machine learning, $Δ$-learning trains models on residual errors relative to physical baselines, assuming that more accurate baselines with smaller residual scales inherently improve downstream performance. Here, we demonstrate that residual scale alone is an insufficient heuristic for learnability. Evaluating molecular <span class="search-hit mathjax">graph</span> <span class="search-hit mathjax">neural</span> <span class="search-hit mathjax">networks</span> on total energy targets, we show that complex local descriptor baselines can yield small residual targets that are disproportionately rough within architecture-informed proxy spaces and harder to learn relative to their scale. Conversely, semi-empirical baseline reduces both scale and normalized roughness, improving in-domain and out-of-domain prediction. We introduce scale-normalized graph Dirichlet roughness ($D_{\text{IQR}}$) as a pre-training diagnostic for residual learnability and establish baseline complementarity as a core target-design principle, elevating target space formulation alongside model architecture as a key axis for scientific machine learning.
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.28782v1-abstract-full').style.display = 'none'; document.getElementById('2609.28782v1-abstract-short').style.display = 'inline';">&#9651; Less</a>
+      </span>
+    </p>
+    
+
+    <p class="is-size-7"><span class="has-text-black-bis has-text-weight-semibold">Submitted</span> 23 September, 2026; 
+      <span class="has-text-black-bis has-text-weight-semibold">originally announced</span> September 2026.
+      
+    </p>
+    
+    <p class="comments is-size-7">
+      <span class="has-text-black-bis has-text-weight-semibold">Comments:</span>
+      <span class="has-text-grey-dark mathjax">41 pages, including 24 pages of Supplementary Information; 4 main-text figures</span>
+    </p>
+    
+
+    
+
+    
+  </li>
+
+  <li class="arxiv-result">
+    <div class="is-marginless">
+      <p class="list-title is-inline-block"><a href="https://arxiv.org/abs/2609.28553">arXiv:2609.28553</a>
+        <span>&nbsp;[<a href="https://arxiv.org/pdf/2609.28553">pdf</a>, <a href="https://arxiv.org/ps/2609.28553">ps</a>, <a href="https://arxiv.org/format/2609.28553">other</a>]&nbsp;</span>
+      </p>
+      <div class="tags is-inline-block">
+        <span class="tag is-small is-link tooltip is-tooltip-top" data-tooltip="Machine Learning">cs.LG</span>
+        
+          
+            <span class="tag is-small is-grey tooltip is-tooltip-top" data-tooltip="Artificial Intelligence">cs.AI</span>
+          
+        </div>
+      
+        
+          <div class="is-inline-block" style="margin-left: 0.5rem">
+            <div class="tags has-addons">
+              <span class="tag is-dark is-size-7">doi</span>
+              <span class="tag is-light is-size-7"><a class="" href="https://doi.org/10.1109/MAPR72750.2026.11685822">10.1109/MAPR72750.2026.11685822 <i class="fa fa-external-link" aria-hidden="true"></i></a></span>
+            </div>
+          </div>
+        
+      
+    </div>
+    
+    <p class="title is-5 mathjax">
+      
+        SMILESGNN: Interpretable Clinical Toxicity Prediction via SMILES-Graph Cross-Attention Fusion
+      
+    </p>
+    <p class="authors">
+      <span class="has-text-black-bis has-text-weight-semibold">Authors:</span>
+      
+      <a href="/search/?searchtype=author&amp;query=Nguyen%2C+Q+M">Quang Minh Nguyen</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Nguyen%2C+T+Q">Thuy Quynh Nguyen</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Le%2C+D+M">Duc Minh Le</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Nguyen%2C+H+N+M">Ho Nhat Minh Nguyen</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Doan%2C+T+L+D">Thanh Long Dai Doan</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Nguyen%2C+T+N">Trong Nghia Nguyen</a>
+      
+    </p>
+    
+    <p class="abstract mathjax">
+      <span class="search-hit">Abstract</span>:
+      <span class="abstract-short has-text-grey-dark mathjax" id="2609.28553v1-abstract-short" style="display: inline;">
+        &hellip;challenging due to severe class imbalance, scaffold-based generalization, and the clinical need for interpretable predictions. Single-modality approaches-SMILES Transformers or <span class="search-hit mathjax">graph</span> <span class="search-hit mathjax">neural</span> <span class="search-hit mathjax">networks</span> capture complementary aspects of molecular structure, while sequence-only models&hellip;
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.28553v1-abstract-full').style.display = 'inline'; document.getElementById('2609.28553v1-abstract-short').style.display = 'none';">&#9661; More</a>
+      </span>
+      <span class="abstract-full has-text-grey-dark mathjax" id="2609.28553v1-abstract-full" style="display: none;">
+        Drug toxicity prediction is critical for reducing late-stage attrition in drug discovery, yet remains challenging due to severe class imbalance, scaffold-based generalization, and the clinical need for interpretable predictions. Single-modality approaches-SMILES Transformers or <span class="search-hit mathjax">graph</span> <span class="search-hit mathjax">neural</span> <span class="search-hit mathjax">networks</span> capture complementary aspects of molecular structure, while sequence-only models cannot directly provide graph-attributed explanations. We present SMILESGNN, a multimodal architecture that fuses a SMILES Transformer encoder and a GATv2 graph encoder via cross-attention, and SMILESGNN-PT, a variant using a ChemBERTa-2 pretrained backbone. The design retains an explicit graph branch within the predictive pipeline, supporting GNNExplainer-based analysis of substructures associated with toxic predictions. On ClinTox, SMILESGNN achieves AUC-ROC 0.987 and F1 0.906 with only 0.4M parameters, performing competitively with a strong SMILESTransformer and a larger ChemBERTa-2/GATv2 concat-fusion baseline. On Tox21 (12 tasks), SMILESGNN-PT obtains mean AUC-ROC 0.750, comparable to ChemBERTa-2 alone and the same-backbone concat-fusion baseline. Overall, the results suggest that cross-attention is a practical fusion alternative that preserves competitive predictive performance while enabling graph-based interpretability support.
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.28553v1-abstract-full').style.display = 'none'; document.getElementById('2609.28553v1-abstract-short').style.display = 'inline';">&#9651; Less</a>
+      </span>
+    </p>
+    
+
+    <p class="is-size-7"><span class="has-text-black-bis has-text-weight-semibold">Submitted</span> 23 September, 2026; 
+      <span class="has-text-black-bis has-text-weight-semibold">originally announced</span> September 2026.
+      
+    </p>
+    
+
+    
+
+    
+      <p class="comments is-size-7">
+        <span class="has-text-black-bis has-text-weight-semibold">Journal ref:</span>
+        2026 International Conference on Multimedia Analysis and Pattern Recognition (MAPR)
+      </p>
+    
+  </li>
+
+  <li class="arxiv-result">
+    <div class="is-marginless">
+      <p class="list-title is-inline-block"><a href="https://arxiv.org/abs/2609.28517">arXiv:2609.28517</a>
+        <span>&nbsp;[<a href="https://arxiv.org/pdf/2609.28517">pdf</a>, <a href="https://arxiv.org/ps/2609.28517">ps</a>, <a href="https://arxiv.org/format/2609.28517">other</a>]&nbsp;</span>
+      </p>
+      <div class="tags is-inline-block">
+        <span class="tag is-small is-link tooltip is-tooltip-top" data-tooltip="Cryptography and Security">cs.CR</span>
+        </div>
+      
+    </div>
+    
+    <p class="title is-5 mathjax">
+      
+        Stress-Testing Structure-Aware Calibration of Malware <span class="search-hit mathjax">Graph</span> <span class="search-hit mathjax">Neural</span> <span class="search-hit mathjax">Networks</span> under Type Shift
+      
+    </p>
+    <p class="authors">
+      <span class="has-text-black-bis has-text-weight-semibold">Authors:</span>
+      
+      <a href="/search/?searchtype=author&amp;query=Zhu%2C+J">Junru Zhu</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Yang%2C+Y">Yixin Yang</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Ding%2C+X">Xiaoqing Ding</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Qi%2C+R">Ruoyu Qi</a>
+      
+    </p>
+    
+    <p class="abstract mathjax">
+      <span class="has-text-black-bis has-text-weight-semibold">Abstract</span>:
+      <span class="abstract-short has-text-grey-dark mathjax" id="2609.28517v1-abstract-short" style="display: inline;">
+        Post-hoc malware calibrators can condition confidence on graph structure, but their structural inputs may leave the support represented by validation data under malware-type shift. We study this risk on MalNet-Tiny by holding out each of four malware types across three seeds, freezing a graph isomorphism network, and fitting post-hoc mappings only on known-type data. Adding eight community covaria&hellip;
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.28517v1-abstract-full').style.display = 'inline'; document.getElementById('2609.28517v1-abstract-short').style.display = 'none';">&#9661; More</a>
+      </span>
+      <span class="abstract-full has-text-grey-dark mathjax" id="2609.28517v1-abstract-full" style="display: none;">
+        Post-hoc malware calibrators can condition confidence on graph structure, but their structural inputs may leave the support represented by validation data under malware-type shift. We study this risk on MalNet-Tiny by holding out each of four malware types across three seeds, freezing a graph isomorphism network, and fitting post-hoc mappings only on known-type data. Adding eight community covariates to a generic-topology calibrator increases mean negative log likelihood (NLL) by 0.1369; a type-cluster bootstrap gives a 95% interval of [-0.0125, 0.2864]. A capacity-matched control adds eight label-independent nuisance variables over 20 deterministic repeats and increases NLL by only 0.0415, indicating that input count explains part but not all of the degradation. We then use calibration data to define a community-support guard: predictions outside the 95th percentile of calibration-standardized community displacement revert to the generic calibrator. The guard reduces combined NLL by 0.1133 and high-confidence errors from 43.25 to 33.25 per 400-sample cell, while its NLL remains close to the generic baseline. These results show how structural covariates can create support-sensitive confidence errors and how a label-free fallback can recover most of the resulting loss.
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.28517v1-abstract-full').style.display = 'none'; document.getElementById('2609.28517v1-abstract-short').style.display = 'inline';">&#9651; Less</a>
+      </span>
+    </p>
+    
+
+    <p class="is-size-7"><span class="has-text-black-bis has-text-weight-semibold">Submitted</span> 21 September, 2026; 
+      <span class="has-text-black-bis has-text-weight-semibold">originally announced</span> September 2026.
+      
+    </p>
+    
+    <p class="comments is-size-7">
+      <span class="has-text-black-bis has-text-weight-semibold">Comments:</span>
+      <span class="has-text-grey-dark mathjax">6 pages, 1 figure, 4 tables</span>
+    </p>
+    
+
+    
+
+    
+  </li>
+
+  <li class="arxiv-result">
+    <div class="is-marginless">
+      <p class="list-title is-inline-block"><a href="https://arxiv.org/abs/2609.28144">arXiv:2609.28144</a>
+        <span>&nbsp;[<a href="https://arxiv.org/pdf/2609.28144">pdf</a>, <a href="https://arxiv.org/ps/2609.28144">ps</a>, <a href="https://arxiv.org/format/2609.28144">other</a>]&nbsp;</span>
+      </p>
+      <div class="tags is-inline-block">
+        <span class="tag is-small is-link tooltip is-tooltip-top" data-tooltip="High Energy Physics - Experiment">hep-ex</span>
+        </div>
+      
+    </div>
+    
+    <p class="title is-5 mathjax">
+      
+        Integer Quantization of <span class="search-hit mathjax">Graph</span> <span class="search-hit mathjax">Neural</span> <span class="search-hit mathjax">Networks</span> for Real-Time FPGA Track Finding
+      
+    </p>
+    <p class="authors">
+      <span class="has-text-black-bis has-text-weight-semibold">Authors:</span>
+      
+      <a href="/search/?searchtype=author&amp;query=Cardini%2C+A">Andrea Cardini</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Leguina%2C+P">Pelayo Leguina</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Aller%2C+E">Elena Aller</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Folgueras%2C+S">Santiago Folgueras</a>
+      
+    </p>
+    
+    <p class="abstract mathjax">
+      <span class="search-hit">Abstract</span>:
+      <span class="abstract-short has-text-grey-dark mathjax" id="2609.28144v1-abstract-short" style="display: inline;">
+        &hellip;s while processing high-throughput detector data. Because muon hits map naturally onto sparse, irregular graphs, <span class="search-hit mathjax">graph</span> <span class="search-hit mathjax">neural</span> <span class="search-hit mathjax">networks</span> (GNNs) are attractive candidates; however, mapping message-passing models to field-programmable gate arrays (FPGAs) requires careful co-design of&hellip;
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.28144v1-abstract-full').style.display = 'inline'; document.getElementById('2609.28144v1-abstract-short').style.display = 'none';">&#9661; More</a>
+      </span>
+      <span class="abstract-full has-text-grey-dark mathjax" id="2609.28144v1-abstract-full" style="display: none;">
+        Real-time track finding for displaced-muon signatures in the CMS Level-1 trigger must operate under strict fixed-latency constraints of 12.5 $μ$s while processing high-throughput detector data. Because muon hits map naturally onto sparse, irregular graphs, <span class="search-hit mathjax">graph</span> <span class="search-hit mathjax">neural</span> <span class="search-hit mathjax">networks</span> (GNNs) are attractive candidates; however, mapping message-passing models to field-programmable gate arrays (FPGAs) requires careful co-design of numerical precision, microarchitecture, and high-level synthesis (HLS) implementation. This work presents a reproducible, bit-exact workflow bridging GNN design and FPGA prototyping for fixed-latency inference. The methodology is demonstrated by implementing a two-layer GraphSAGE network onto an XCVU13P FPGA, using the Cora citation network as a fixed-size benchmark for firmware evaluation that decouples deployment feasibility from the physics task. Starting from a 32-bit floating-point reference that exceeds the available FPGA resource budget, we derive an integer-only datapath through post-training quantization (INT8 weights and activations, INT32 biases), a power-of-two scale approximation that replaces rescaling multipliers with arithmetic shifts, and data-driven bit-width narrowing. Every stage is validated bit-exactly against a Python integer emulator in Vitis HLS C-simulation. The optimized INT8 power-of-two design achieves an inference latency of 19 clock cycles (52.8 ns at the nominal 360 MHz clock) at 20\% DSP, 6\% FF, and 27\% LUT utilization, with 75.0$\pm$1.1\% accuracy compared to the 78.0$\pm$0.8\% for FP32. Accuracy is reported as the average across multiple training seeds. The resulting workflow establishes a concrete, transferable path toward fixed-latency GNN-based track reconstruction in the CMS Level-1 trigger.
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.28144v1-abstract-full').style.display = 'none'; document.getElementById('2609.28144v1-abstract-short').style.display = 'inline';">&#9651; Less</a>
+      </span>
+    </p>
+    
+
+    <p class="is-size-7"><span class="has-text-black-bis has-text-weight-semibold">Submitted</span> 23 September, 2026; 
+      <span class="has-text-black-bis has-text-weight-semibold">originally announced</span> September 2026.
+      
+    </p>
+    
+    <p class="comments is-size-7">
+      <span class="has-text-black-bis has-text-weight-semibold">Comments:</span>
+      <span class="has-text-grey-dark mathjax">This work has been submitted to the IEEE TNS journal for possible publication. The work was originally presented at the 25th IEEE Real Time Conference</span>
+    </p>
+    
+
+    
+
+    
+  </li>
+
+  <li class="arxiv-result">
+    <div class="is-marginless">
+      <p class="list-title is-inline-block"><a href="https://arxiv.org/abs/2609.28085">arXiv:2609.28085</a>
+        <span>&nbsp;[<a href="https://arxiv.org/pdf/2609.28085">pdf</a>, <a href="https://arxiv.org/ps/2609.28085">ps</a>, <a href="https://arxiv.org/format/2609.28085">other</a>]&nbsp;</span>
+      </p>
+      <div class="tags is-inline-block">
+        <span class="tag is-small is-link tooltip is-tooltip-top" data-tooltip="Machine Learning">cs.LG</span>
+        
+          
+            <span class="tag is-small is-grey tooltip is-tooltip-top" data-tooltip="Artificial Intelligence">cs.AI</span>
+          
+        </div>
+      
+    </div>
+    
+    <p class="title is-5 mathjax">
+      
+        Curriculum Learning with GNN-based Reinforcement Learning for Job Shop Scheduling
+      
+    </p>
+    <p class="authors">
+      <span class="has-text-black-bis has-text-weight-semibold">Authors:</span>
+      
+      <a href="/search/?searchtype=author&amp;query=Vasudevan%2C+J+K">Jayakrishnan K. Vasudevan</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Hoss%2C+J">Jonathan Hoss</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Klarmann%2C+N">Noah Klarmann</a>
+      
+    </p>
+    
+    <p class="abstract mathjax">
+      <span class="has-text-black-bis has-text-weight-semibold">Abstract</span>:
+      <span class="abstract-short has-text-grey-dark mathjax" id="2609.28085v1-abstract-short" style="display: inline;">
+        The job shop scheduling problem is a challenging combinatorial optimization problem, and recent reinforcement learning approaches using <span class="search-hit mathjax">graph</span>&hellip;
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.28085v1-abstract-full').style.display = 'inline'; document.getElementById('2609.28085v1-abstract-short').style.display = 'none';">&#9661; More</a>
+      </span>
+      <span class="abstract-full has-text-grey-dark mathjax" id="2609.28085v1-abstract-full" style="display: none;">
+        The job shop scheduling problem is a challenging combinatorial optimization problem, and recent reinforcement learning approaches using <span class="search-hit mathjax">graph</span> <span class="search-hit mathjax">neural</span> <span class="search-hit mathjax">networks</span> have shown promise for learning scheduling policies directly from problem instances. However, training on large instances remains computationally expensive, and generalization across instance sizes remains challenging. This paper studies curriculum learning for <span class="search-hit mathjax">graph</span> <span class="search-hit mathjax">neural</span> <span class="search-hit mathjax">network</span>-based reinforcement learning in the job shop scheduling problem by comparing it with single-size training across three target sizes: 20 x 20, 25 x 25, and 30 x 30. In the curriculum setting, the policy is first trained on smaller instances and then progressively adapted to larger target sizes, allowing scheduling behavior learned in earlier stages to support learning on larger instances. Models are evaluated on unseen instances from 8 x 8 to 30 x 30 using the optimality gap, considering both generalization across all evaluation sizes and specialization on the target size. Results show that curriculum learning consistently reduces wall-clock training time, with larger benefits as the target size increases. The strongest advantage is observed at 30 x 30, where curriculum learning reduces the mean optimality gap across all evaluation sizes by approximately 8.1 percentage points, reduces the target-size mean optimality gap by approximately 8.6 percentage points, and saves approximately 50 hours of training time.
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.28085v1-abstract-full').style.display = 'none'; document.getElementById('2609.28085v1-abstract-short').style.display = 'inline';">&#9651; Less</a>
+      </span>
+    </p>
+    
+
+    <p class="is-size-7"><span class="has-text-black-bis has-text-weight-semibold">Submitted</span> 23 September, 2026; 
+      <span class="has-text-black-bis has-text-weight-semibold">originally announced</span> September 2026.
+      
+    </p>
+    
+    <p class="comments is-size-7">
+      <span class="has-text-black-bis has-text-weight-semibold">Comments:</span>
+      <span class="has-text-grey-dark mathjax">This paper has been accepted for presentation at the IEEE 10th International Conference on Computational Systems and Information Technology for Sustainable Solutions (CSITSS 2026)</span>
+    </p>
+    
+
+    
+
+    
+  </li>
+
+  <li class="arxiv-result">
+    <div class="is-marginless">
+      <p class="list-title is-inline-block"><a href="https://arxiv.org/abs/2609.27209">arXiv:2609.27209</a>
+        <span>&nbsp;[<a href="https://arxiv.org/pdf/2609.27209">pdf</a>, <a href="https://arxiv.org/ps/2609.27209">ps</a>, <a href="https://arxiv.org/format/2609.27209">other</a>]&nbsp;</span>
+      </p>
+      <div class="tags is-inline-block">
+        <span class="tag is-small is-link tooltip is-tooltip-top" data-tooltip="Machine Learning">cs.LG</span>
+        
+          
+            <span class="tag is-small is-grey tooltip is-tooltip-top" data-tooltip="Artificial Intelligence">cs.AI</span>
+          
+        </div>
+      
+    </div>
+    
+    <p class="title is-5 mathjax">
+      
+        Scalable Subgraph Sampling via Resistance Curvature
+      
+    </p>
+    <p class="authors">
+      <span class="has-text-black-bis has-text-weight-semibold">Authors:</span>
+      
+      <a href="/search/?searchtype=author&amp;query=Fei%2C+C">Chaoqun Fei</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Zhou%2C+T">Tinglve Zhou</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Hao%2C+T">Tianyong Hao</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Li%2C+Y">Yangyang Li</a>
+      
+    </p>
+    
+    <p class="abstract mathjax">
+      <span class="search-hit">Abstract</span>:
+      <span class="abstract-short has-text-grey-dark mathjax" id="2609.27209v1-abstract-short" style="display: inline;">
+        Subgraph sampling reduces the training cost of large-scale <span class="search-hit mathjax">graph</span> <span class="search-hit mathjax">neural</span> <span class="search-hit mathjax">networks</span>, but sampling criteria may overlook the geometric roles of edges. We propose a resistance-curvature-guided sampling framework built on ERC-LG, a curvature approximation method for large-scale graphs.&hellip;
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.27209v1-abstract-full').style.display = 'inline'; document.getElementById('2609.27209v1-abstract-short').style.display = 'none';">&#9661; More</a>
+      </span>
+      <span class="abstract-full has-text-grey-dark mathjax" id="2609.27209v1-abstract-full" style="display: none;">
+        Subgraph sampling reduces the training cost of large-scale <span class="search-hit mathjax">graph</span> <span class="search-hit mathjax">neural</span> <span class="search-hit mathjax">networks</span>, but sampling criteria may overlook the geometric roles of edges. We propose a resistance-curvature-guided sampling framework built on ERC-LG, a curvature approximation method for large-scale graphs. ERC-LG combines Johnson-Lindenstrauss projections with regularized multi-GPU batched conjugate gradient solvers, avoiding explicit Laplacian pseudoinverse computation and full embedding storage. The resulting curvature informs node- and edge-sampling probabilities for constructing GNN training subgraphs. Experiments show numerical agreement with pseudoinverse-based curvature and reduced runtime compared with CG-only computation. ERC-LG-based sampling variants achieve the highest mean accuracy on six of seven real-world datasets in downstream node classification.
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.27209v1-abstract-full').style.display = 'none'; document.getElementById('2609.27209v1-abstract-short').style.display = 'inline';">&#9651; Less</a>
+      </span>
+    </p>
+    
+
+    <p class="is-size-7"><span class="has-text-black-bis has-text-weight-semibold">Submitted</span> 22 September, 2026; 
+      <span class="has-text-black-bis has-text-weight-semibold">originally announced</span> September 2026.
+      
+    </p>
+    
+
+    
+
+    
+  </li>
+
+  <li class="arxiv-result">
+    <div class="is-marginless">
+      <p class="list-title is-inline-block"><a href="https://arxiv.org/abs/2609.27069">arXiv:2609.27069</a>
+        <span>&nbsp;[<a href="https://arxiv.org/pdf/2609.27069">pdf</a>, <a href="https://arxiv.org/ps/2609.27069">ps</a>, <a href="https://arxiv.org/format/2609.27069">other</a>]&nbsp;</span>
+      </p>
+      <div class="tags is-inline-block">
+        <span class="tag is-small is-link tooltip is-tooltip-top" data-tooltip="Software Engineering">cs.SE</span>
+        
+          
+            <span class="tag is-small is-grey tooltip is-tooltip-top" data-tooltip="Machine Learning">cs.LG</span>
+          
+        </div>
+      
+    </div>
+    
+    <p class="title is-5 mathjax">
+      
+        Does Graph Structure Earn Its Place in Microservice Root-Cause Analysis? A Controlled Study on RCAEval, and What the Benchmark Was Really Measuring
+      
+    </p>
+    <p class="authors">
+      <span class="has-text-black-bis has-text-weight-semibold">Authors:</span>
+      
+      <a href="/search/?searchtype=author&amp;query=Bulji%C4%87%2C+I">Imad Buljić</a>
+      
+    </p>
+    
+    <p class="abstract mathjax">
+      <span class="search-hit">Abstract</span>:
+      <span class="abstract-short has-text-grey-dark mathjax" id="2609.27069v1-abstract-short" style="display: inline;">
+        <span class="search-hit mathjax">Graph</span> <span class="search-hit mathjax">neural</span> <span class="search-hit mathjax">networks</span> dominate recent work on microservice root-cause analysis, yet recent results question whether the graph contributes. Those results compare whole pipelines, so when a flat model wins one cannot tell whether structure is useless or redundant. We run the compar&hellip;
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.27069v1-abstract-full').style.display = 'inline'; document.getElementById('2609.27069v1-abstract-short').style.display = 'none';">&#9661; More</a>
+      </span>
+      <span class="abstract-full has-text-grey-dark mathjax" id="2609.27069v1-abstract-full" style="display: none;">
+        <span class="search-hit mathjax">Graph</span> <span class="search-hit mathjax">neural</span> <span class="search-hit mathjax">networks</span> dominate recent work on microservice root-cause analysis, yet recent results question whether the graph contributes. Those results compare whole pipelines, so when a flat model wins one cannot tell whether structure is useless or redundant. We run the comparison they imply on RCAEval: three learned arms with identical features, optimiser, validation split, early-stopping rule and scoring head, in which a single term separates the graph arms. Across two RCAEval benchmarks, two topology sources and four regimes we find no reliable graph-specific effect: in-distribution the graph model leads the conventional flat model by 0.003 Avg@5 (p = 0.844, n = 6 disjoint folds). Auditing the pipeline surfaced two benchmark properties that condition any result on it. RCAEval injects faults into only five services per system while exposing 12 to 70 in telemetry, and the headline metric is Avg@5: a ranker reading no telemetry at all places the true culprit in the top five on 99.7 percent of held-out incidents, scoring Avg@5 0.488. That prior, not the uniform-random 0.137, is the honest in-distribution floor, and it collapses to 0.192 across systems. The second property is a non-uniform column schema that silently zeroes telemetry for most RE1 cases. We reproduce a published baseline, BARO, RCAEval&#39;s own reference implementation; on the one system with a clean schema it reaches similar aggregate accuracy to our heuristic, within 0.004, under a different scoring rule. The audit motivated a new model. PSC-GRCA separates a candidate score into a system prior, telemetry evidence and a centred graph residual, and reaches mean Avg@5 0.915 against 0.864 for the flat baseline, while its ablations locate most of the gain in the prior term rather than the graph. We close with a twelve-item checklist for graph-versus-flat ablation studies, distilled from sixty-two recorded defects.
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.27069v1-abstract-full').style.display = 'none'; document.getElementById('2609.27069v1-abstract-short').style.display = 'inline';">&#9651; Less</a>
+      </span>
+    </p>
+    
+
+    <p class="is-size-7"><span class="has-text-black-bis has-text-weight-semibold">Submitted</span> 22 September, 2026; 
+      <span class="has-text-black-bis has-text-weight-semibold">originally announced</span> September 2026.
+      
+    </p>
+    
+    <p class="comments is-size-7">
+      <span class="has-text-black-bis has-text-weight-semibold">Comments:</span>
+      <span class="has-text-grey-dark mathjax">17 pages; preprint published at Zenodo, DOI 10.5281/zenodo.22832168</span>
+    </p>
+    
+
+    
+
+    
+  </li>
+
+  <li class="arxiv-result">
+    <div class="is-marginless">
+      <p class="list-title is-inline-block"><a href="https://arxiv.org/abs/2609.26737">arXiv:2609.26737</a>
+        <span>&nbsp;[<a href="https://arxiv.org/pdf/2609.26737">pdf</a>, <a href="https://arxiv.org/ps/2609.26737">ps</a>, <a href="https://arxiv.org/format/2609.26737">other</a>]&nbsp;</span>
+      </p>
+      <div class="tags is-inline-block">
+        <span class="tag is-small is-link tooltip is-tooltip-top" data-tooltip="Social and Information Networks">cs.SI</span>
+        
+          
+            <span class="tag is-small is-grey tooltip is-tooltip-top" data-tooltip="Machine Learning">cs.LG</span>
+          
+        </div>
+      
+    </div>
+    
+    <p class="title is-5 mathjax">
+      
+        Diffusion-Induced Spatial Attention Overlapping Community Detection
+      
+    </p>
+    <p class="authors">
+      <span class="has-text-black-bis has-text-weight-semibold">Authors:</span>
+      
+      <a href="/search/?searchtype=author&amp;query=Koistinen%2C+K">Kosti Koistinen</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Kuikka%2C+V">Vesa Kuikka</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Herttuainen%2C+J">Joni Herttuainen</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Hendren%2C+M">Matthew Hendren</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Holt%2C+B">Brian Holt</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Kaski%2C+K+K">Kimmo K. Kaski</a>
+      
+    </p>
+    
+    <p class="abstract mathjax">
+      <span class="has-text-black-bis has-text-weight-semibold">Abstract</span>:
+      <span class="abstract-short has-text-grey-dark mathjax" id="2609.26737v1-abstract-short" style="display: inline;">
+        Detection of overlapping communities is essential for modelling networks in which nodes participate simultaneously in multiple structural or functional groups. Existing <span class="search-hit mathjax">graph</span> <span class="search-hit mathjax">neural</span> <span class="search-hit mathjax">network</span> approaches commonly rely on local message passing, which can obscure community boundaries&hellip;
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.26737v1-abstract-full').style.display = 'inline'; document.getElementById('2609.26737v1-abstract-short').style.display = 'none';">&#9661; More</a>
+      </span>
+      <span class="abstract-full has-text-grey-dark mathjax" id="2609.26737v1-abstract-full" style="display: none;">
+        Detection of overlapping communities is essential for modelling networks in which nodes participate simultaneously in multiple structural or functional groups. Existing <span class="search-hit mathjax">graph</span> <span class="search-hit mathjax">neural</span> <span class="search-hit mathjax">network</span> approaches commonly rely on local message passing, which can obscure community boundaries through smoothing and limit the representation of structurally relevant long-range dependencies. We introduce Diffusion-Induced Spatial Attention Community Detection (DISCO), a deep-learning framework that combines a structural prior derived from influence spreading dynamics, sparse multi-head attention, and non-negative community-affiliation learning. The prior identifies candidate interactions beyond immediate graph neighbours and biases attention according to their structural proximity, while a Bernoulli-Poisson edge-reconstruction objective enables overlapping community inference from node attributes and structural profiles, or both. Benchmark experiments show that DISCO performs competitively against established graph convolutional and graph attention approaches across different input configurations. To demonstrate its practical applicability, we present a proof-of-concept cybersecurity use case in which changes between community assignments inferred from consecutive communication-network snapshots provide an interpretable anomaly signal. Temporal community similarity identifies structural deviations, while node-level contributions help locate the devices associated with them. DISCO therefore provides both a flexible method for overlapping community detection and a foundation for analysing structural change in dynamic networks.
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.26737v1-abstract-full').style.display = 'none'; document.getElementById('2609.26737v1-abstract-short').style.display = 'inline';">&#9651; Less</a>
+      </span>
+    </p>
+    
+
+    <p class="is-size-7"><span class="has-text-black-bis has-text-weight-semibold">Submitted</span> 22 September, 2026; 
+      <span class="has-text-black-bis has-text-weight-semibold">originally announced</span> September 2026.
+      
+    </p>
+    
+
+    
+
+    
+  </li>
+
+  <li class="arxiv-result">
+    <div class="is-marginless">
+      <p class="list-title is-inline-block"><a href="https://arxiv.org/abs/2609.26350">arXiv:2609.26350</a>
+        <span>&nbsp;[<a href="https://arxiv.org/pdf/2609.26350">pdf</a>, <a href="https://arxiv.org/ps/2609.26350">ps</a>, <a href="https://arxiv.org/format/2609.26350">other</a>]&nbsp;</span>
+      </p>
+      <div class="tags is-inline-block">
+        <span class="tag is-small is-link tooltip is-tooltip-top" data-tooltip="Instrumentation and Methods for Astrophysics">astro-ph.IM</span>
+        </div>
+      
+        
+          <div class="is-inline-block" style="margin-left: 0.5rem">
+            <div class="tags has-addons">
+              <span class="tag is-dark is-size-7">doi</span>
+              <span class="tag is-light is-size-7"><a class="" href="https://doi.org/10.1117/12.3104782">10.1117/12.3104782 <i class="fa fa-external-link" aria-hidden="true"></i></a></span>
+            </div>
+          </div>
+        
+      
+    </div>
+    
+    <p class="title is-5 mathjax">
+      
+        Testing deep learning techniques for event reconstruction in pair-production gamma-ray telescopes
+      
+    </p>
+    <p class="authors">
+      <span class="has-text-black-bis has-text-weight-semibold">Authors:</span>
+      
+      <a href="/search/?searchtype=author&amp;query=Maniscalco%2C+M">Mattia Maniscalco</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Fioretti%2C+V">Valentina Fioretti</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Parmiggiani%2C+N">Nicolò Parmiggiani</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Bulgarelli%2C+A">Andrea Bulgarelli</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Kierans%2C+C+A">Carolyn A. Kierans</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Laviron%2C+A">Adrien Laviron</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Panebianco%2C+G">Gabriele Panebianco</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Aboudan%2C+A">Alessio Aboudan</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Castaldini%2C+L">Luca Castaldini</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Zoglauer%2C+A">Andreas Zoglauer</a>
+      
+    </p>
+    
+    <p class="abstract mathjax">
+      <span class="has-text-black-bis has-text-weight-semibold">Abstract</span>:
+      <span class="abstract-short has-text-grey-dark mathjax" id="2609.26350v1-abstract-short" style="display: inline;">
+        &hellip;of the mission, reducing systematic uncertainties and maximizing the scientific output. In this study, we investigate the application of deep learning techniques such as <span class="search-hit mathjax">Graph</span>&hellip;
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.26350v1-abstract-full').style.display = 'inline'; document.getElementById('2609.26350v1-abstract-short').style.display = 'none';">&#9661; More</a>
+      </span>
+      <span class="abstract-full has-text-grey-dark mathjax" id="2609.26350v1-abstract-full" style="display: none;">
+        In the development of next-generation tracking detectors for gamma-ray space observations, the integration of advanced deep learning techniques into event reconstruction algorithms is a promising approach for improving the performance of the mission, reducing systematic uncertainties and maximizing the scientific output. In this study, we investigate the application of deep learning techniques such as <span class="search-hit mathjax">Graph</span> <span class="search-hit mathjax">Neural</span> <span class="search-hit mathjax">Networks</span> (GNNs) for the identification and reconstruction of particle tracks resulting from pair production events within the tracker of the AMEGO-X proposed concept. The goal is improving the angular resolution and the detection efficiency of the telescope, especially in the soft energy range (below 100 MeV) where multiple Coulomb scattering significantly degrades track reconstruction and consequently limits the sensitivity in the so-called MeV gap. We use the Geant4-based MEGAlib framework and a Python-based dedicated read-out and data handler processor to format the input datasets as close as possible to the real data. The simulated datasets are then used to train and evaluate two <span class="search-hit mathjax">graph</span> <span class="search-hit mathjax">neural</span> <span class="search-hit mathjax">network</span> architectures, GraphSAGE and Interaction Networks, and to compare their performance in pair-production event reconstruction in terms of Point Spread Function 68% containment radius and effective area, also with that obtained using standard reconstruction techniques. The results of this study indicate that <span class="search-hit mathjax">graph</span> <span class="search-hit mathjax">neural</span> <span class="search-hit mathjax">network</span>-based reconstruction is a promising approach for pair-production event reconstruction below 100 MeV when compared with standard reconstruction methods, with significant potential for further optimization.
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.26350v1-abstract-full').style.display = 'none'; document.getElementById('2609.26350v1-abstract-short').style.display = 'inline';">&#9651; Less</a>
+      </span>
+    </p>
+    
+
+    <p class="is-size-7"><span class="has-text-black-bis has-text-weight-semibold">Submitted</span> 22 September, 2026; 
+      <span class="has-text-black-bis has-text-weight-semibold">originally announced</span> September 2026.
+      
+    </p>
+    
+
+    
+
+    
+      <p class="comments is-size-7">
+        <span class="has-text-black-bis has-text-weight-semibold">Journal ref:</span>
+        Proc. SPIE 14146, Space Telescopes and Instrumentation 2026: Ultraviolet to Gamma Ray, 141465G (2026)
+      </p>
+    
+  </li>
+
+  <li class="arxiv-result">
+    <div class="is-marginless">
+      <p class="list-title is-inline-block"><a href="https://arxiv.org/abs/2609.26310">arXiv:2609.26310</a>
+        <span>&nbsp;[<a href="https://arxiv.org/pdf/2609.26310">pdf</a>, <a href="https://arxiv.org/ps/2609.26310">ps</a>, <a href="https://arxiv.org/format/2609.26310">other</a>]&nbsp;</span>
+      </p>
+      <div class="tags is-inline-block">
+        <span class="tag is-small is-link tooltip is-tooltip-top" data-tooltip="Machine Learning">cs.LG</span>
+        </div>
+      
+    </div>
+    
+    <p class="title is-5 mathjax">
+      
+        PreGS: A Parameter-Transfer-Based Multi-Expert <span class="search-hit mathjax">Graph</span> <span class="search-hit mathjax">Neural</span> <span class="search-hit mathjax">Network</span> for Node Classification
+      
+    </p>
+    <p class="authors">
+      <span class="has-text-black-bis has-text-weight-semibold">Authors:</span>
+      
+      <a href="/search/?searchtype=author&amp;query=Cai%2C+Z">Zhicong Cai</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Zhang%2C+Y">Yinglong Zhang</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Hong%2C+X">Xiaoying Hong</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Xia%2C+X">Xuewen Xia</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Xu%2C+X">Xing Xu</a>
+      
+    </p>
+    
+    <p class="abstract mathjax">
+      <span class="has-text-black-bis has-text-weight-semibold">Abstract</span>:
+      <span class="abstract-short has-text-grey-dark mathjax" id="2609.26310v1-abstract-short" style="display: inline;">
+        <span class="search-hit mathjax">Graph</span>&hellip;
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.26310v1-abstract-full').style.display = 'inline'; document.getElementById('2609.26310v1-abstract-short').style.display = 'none';">&#9661; More</a>
+      </span>
+      <span class="abstract-full has-text-grey-dark mathjax" id="2609.26310v1-abstract-full" style="display: none;">
+        <span class="search-hit mathjax">Graph</span> <span class="search-hit mathjax">neural</span> <span class="search-hit mathjax">networks</span> have achieved strong performance in node classification by aggregating information from graph neighborhoods. However, a single aggregation mechanism may be insufficient to capture diverse structural patterns across graph datasets. Moreover, independently training multiple structural branches can introduce substantial overhead without necessarily producing stable node representations. To address these issues, this paper proposes PreGS, a parameter-transfer-based multi-expert <span class="search-hit mathjax">graph</span> <span class="search-hit mathjax">neural</span> <span class="search-hit mathjax">network</span> framework. PreGS first pretrains a multi-head graph attention network (GAT) and transfers the linear transformation weights of its first-layer attention heads to multiple GraphSAGE experts. The transferred experts are frozen and used as complementary structural branches. The fused raw node features, GAT head representations, and GraphSAGE expert representations are fed into a multilayer perceptron (MLP), whose output is further fused with the pretrained GAT logits. Based on PreGS, we further develop PreGSv2, which introduces source-level weighting and a structural gating mechanism for adaptive multi-source feature integration. Experiments on eight public graph datasets show that PreGS and PreGSv2 achieve competitive performance against representative <span class="search-hit mathjax">graph</span> <span class="search-hit mathjax">neural</span> <span class="search-hit mathjax">network</span> baselines. Ablation, parameter-transfer, sensitivity, aggregator, visualization, and training-time analyses further validate the effectiveness and stability of the proposed framework. The code and datasets are available at https://github.com/LH-Czc/PreGS.
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.26310v1-abstract-full').style.display = 'none'; document.getElementById('2609.26310v1-abstract-short').style.display = 'inline';">&#9651; Less</a>
+      </span>
+    </p>
+    
+
+    <p class="is-size-7"><span class="has-text-black-bis has-text-weight-semibold">Submitted</span> 22 September, 2026; 
+      <span class="has-text-black-bis has-text-weight-semibold">originally announced</span> September 2026.
+      
+    </p>
+    
+    <p class="comments is-size-7">
+      <span class="has-text-black-bis has-text-weight-semibold">Comments:</span>
+      <span class="has-text-grey-dark mathjax">12 pages, 3 figures, 7 tables</span>
+    </p>
+    
+
+    
+
+    
+  </li>
+
+  <li class="arxiv-result">
+    <div class="is-marginless">
+      <p class="list-title is-inline-block"><a href="https://arxiv.org/abs/2609.26171">arXiv:2609.26171</a>
+        <span>&nbsp;[<a href="https://arxiv.org/pdf/2609.26171">pdf</a>, <a href="https://arxiv.org/ps/2609.26171">ps</a>, <a href="https://arxiv.org/format/2609.26171">other</a>]&nbsp;</span>
+      </p>
+      <div class="tags is-inline-block">
+        <span class="tag is-small is-link tooltip is-tooltip-top" data-tooltip="Information Retrieval">cs.IR</span>
+        
+          
+            <span class="tag is-small is-grey tooltip is-tooltip-top" data-tooltip="Probability">math.PR</span>
+          
+        </div>
+      
+    </div>
+    
+    <p class="title is-5 mathjax">
+      
+        When Concealed Links Cannot Be Recovered: A Structural Identifiability Bound and Evaluation Pitfalls in Offshore Leak Networks
+      
+    </p>
+    <p class="authors">
+      <span class="has-text-black-bis has-text-weight-semibold">Authors:</span>
+      
+      <a href="/search/?searchtype=author&amp;query=Bingham%2C+J">Joseph Bingham</a>
+      
+    </p>
+    
+    <p class="abstract mathjax">
+      <span class="has-text-black-bis has-text-weight-semibold">Abstract</span>:
+      <span class="abstract-short has-text-grey-dark mathjax" id="2609.26171v1-abstract-short" style="display: inline;">
+        &hellip;identifiability bound. For any recovery rule that respects graph isomorphism, and that covers every topological link-prediction score together with every message-passing <span class="search-hit mathjax">graph</span> <span class="search-hit mathjax">neural</span> <span class="search-hit mathjax">network</span>, a concealed endpoint left isolated in the observed graph is interchangeable with its str&hellip;
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.26171v1-abstract-full').style.display = 'inline'; document.getElementById('2609.26171v1-abstract-short').style.display = 'none';">&#9661; More</a>
+      </span>
+      <span class="abstract-full has-text-grey-dark mathjax" id="2609.26171v1-abstract-full" style="display: none;">
+        Leaks such as the Panama and Paradise Papers expose large networks of offshore entities, and they invite an obvious question for network learning. Can the relations these structures are built to hide---above all, who beneficially owns what---be recovered from the public part of the leak by link prediction? We argue that the answer is mostly no, and that the analyses which suggest otherwise are measuring the wrong thing. Our main result is a distribution-free identifiability bound. For any recovery rule that respects graph isomorphism, and that covers every topological link-prediction score together with every message-passing <span class="search-hit mathjax">graph</span> <span class="search-hit mathjax">neural</span> <span class="search-hit mathjax">network</span>, a concealed endpoint left isolated in the observed graph is interchangeable with its structural twins, so its hidden edge cannot be recovered above chance. Isolation is only the sharpest case. In general the ceiling on recovery is set by the size of a node&#39;s structural-indistinguishability class, for which the Weisfeiler--Leman colour class is a computable stand-in, and node degree is at best a loose proxy. On the full ICIJ Offshore Leaks graph (814K entities and 84K labelled beneficial-owner edges) a classifier-free, degree-controlled probe reproduces an exact $0.5$ floor for isolated owners, who make up $20.6\%$ of all owners, and a trained <span class="search-hit mathjax">graph</span> <span class="search-hit mathjax">neural</span> <span class="search-hit mathjax">network</span> lands on the same floor. Recovery climbs only as structural distinctiveness grows, and the floor reappears in every one of the five leaks. Along the way we document five evaluation traps. Each one makes a bound that cannot be beaten look beaten, and we give a short rule that avoids them. The practical upshot is to redirect effort from the hidden principal, which is close to unrecoverable, toward the machinery of concealment, and to spell out why fusing external data helps far less than one would hope.
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.26171v1-abstract-full').style.display = 'none'; document.getElementById('2609.26171v1-abstract-short').style.display = 'inline';">&#9651; Less</a>
+      </span>
+    </p>
+    
+
+    <p class="is-size-7"><span class="has-text-black-bis has-text-weight-semibold">Submitted</span> 10 August, 2026; 
+      <span class="has-text-black-bis has-text-weight-semibold">originally announced</span> September 2026.
+      
+    </p>
+    
+    <p class="comments is-size-7">
+      <span class="has-text-black-bis has-text-weight-semibold">Comments:</span>
+      <span class="has-text-grey-dark mathjax">9 pages, 7 figures</span>
+    </p>
+    
+
+    
+      <p class="comments is-size-7">
+        
+
+        
+          <span class="has-text-black-bis has-text-weight-semibold">MSC Class:</span>
+          68T05
+        
+
+        
+          <span class="has-text-black-bis has-text-weight-semibold">ACM Class:</span>
+          G.2.2; I.2.6; H.2.8
+        
+      </p>
+    
+
+    
+  </li>
+
+  <li class="arxiv-result">
+    <div class="is-marginless">
+      <p class="list-title is-inline-block"><a href="https://arxiv.org/abs/2609.26073">arXiv:2609.26073</a>
+        <span>&nbsp;[<a href="https://arxiv.org/pdf/2609.26073">pdf</a>, <a href="https://arxiv.org/ps/2609.26073">ps</a>, <a href="https://arxiv.org/format/2609.26073">other</a>]&nbsp;</span>
+      </p>
+      <div class="tags is-inline-block">
+        <span class="tag is-small is-link tooltip is-tooltip-top" data-tooltip="Computer Vision and Pattern Recognition">cs.CV</span>
+        </div>
+      
+    </div>
+    
+    <p class="title is-5 mathjax">
+      
+        Cellular-Communication-Level Interpretability for Pathology Foundation Models via Graph Distillation on Microenvironment
+      
+    </p>
+    <p class="authors">
+      <span class="has-text-black-bis has-text-weight-semibold">Authors:</span>
+      
+      <a href="/search/?searchtype=author&amp;query=Xiao%2C+Y">Yuxiang Xiao</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Chen%2C+Z">Zhiwei Chen</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Dai%2C+D">Dan Dai</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Li%2C+W">Wei Li</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Zhang%2C+T">Tianyang Zhang</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Ju%2C+Y">Yakun Ju</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Hu%2C+Y">Yang Hu</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Yang%2C+K">Kaixiang Yang</a>
+      
+    </p>
+    
+    <p class="abstract mathjax">
+      <span class="has-text-black-bis has-text-weight-semibold">Abstract</span>:
+      <span class="abstract-short has-text-grey-dark mathjax" id="2609.26073v1-abstract-short" style="display: inline;">
+        &hellip;&#34;plug-in&#34; interpreter, without modifying the teacher. For each tile, we segment cells as graph nodes and construct a microenvironment graph based on spatial adjacency. <span class="search-hit mathjax">Graph</span> <span class="search-hit mathjax">neural</span> <span class="search-hit mathjax">network</span> (GNN) students distil the PFM embedding, whilst learning attention-based message pa&hellip;
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.26073v1-abstract-full').style.display = 'inline'; document.getElementById('2609.26073v1-abstract-short').style.display = 'none';">&#9661; More</a>
+      </span>
+      <span class="abstract-full has-text-grey-dark mathjax" id="2609.26073v1-abstract-full" style="display: none;">
+        Pathology foundation models (PFMs) provide strong tile-level representations but remain difficult to interpret at the cellular and microenvironmental scales that underpin clinical reasoning. We introduce Graph-Interpreter (G-Interp), a graph-distillation framework that equips a frozen PFM teacher with a cellular-communication-level &#34;plug-in&#34; interpreter, without modifying the teacher. For each tile, we segment cells as graph nodes and construct a microenvironment graph based on spatial adjacency. <span class="search-hit mathjax">Graph</span> <span class="search-hit mathjax">neural</span> <span class="search-hit mathjax">network</span> (GNN) students distil the PFM embedding, whilst learning attention-based message passing that yields node- and edge-level importances. We interpret these importances as cell-cell communication evidence, providing fine-grained explanations of how PFMs encode microenvironmental context. To stabilise distillation when graph abstraction is imperfect, we employ a lightweight auxiliary student to supply complementary visual cues and condition graph message passing, while keeping the primary interpretability signal graph-derived. We evaluate explanation faithfulness by mapping graph-selected evidence back to the image using instance masks and measuring teacher sensitivity under targeted vs non-target occlusions. Across multiple histopathology tasks, G-Interp produces highly scalable, microenvironment-aware explanations, while maintaining competitive predictive performance.
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.26073v1-abstract-full').style.display = 'none'; document.getElementById('2609.26073v1-abstract-short').style.display = 'inline';">&#9651; Less</a>
+      </span>
+    </p>
+    
+
+    <p class="is-size-7"><span class="has-text-black-bis has-text-weight-semibold">Submitted</span> 2 August, 2026; 
+      <span class="has-text-black-bis has-text-weight-semibold">originally announced</span> September 2026.
+      
+    </p>
+    
+    <p class="comments is-size-7">
+      <span class="has-text-black-bis has-text-weight-semibold">Comments:</span>
+      <span class="has-text-grey-dark mathjax">11 pages, 3 figures, 1 table</span>
+    </p>
+    
+
+    
+
+    
+  </li>
+
+  <li class="arxiv-result">
+    <div class="is-marginless">
+      <p class="list-title is-inline-block"><a href="https://arxiv.org/abs/2609.25814">arXiv:2609.25814</a>
+        <span>&nbsp;[<a href="https://arxiv.org/pdf/2609.25814">pdf</a>, <a href="https://arxiv.org/ps/2609.25814">ps</a>, <a href="https://arxiv.org/format/2609.25814">other</a>]&nbsp;</span>
+      </p>
+      <div class="tags is-inline-block">
+        <span class="tag is-small is-link tooltip is-tooltip-top" data-tooltip="Machine Learning">cs.LG</span>
+        </div>
+      
+    </div>
+    
+    <p class="title is-5 mathjax">
+      
+        CacheDyG: Decoupling Temporal Propagation for Efficient Dynamic Graph Learning
+      
+    </p>
+    <p class="authors">
+      <span class="has-text-black-bis has-text-weight-semibold">Authors:</span>
+      
+      <a href="/search/?searchtype=author&amp;query=Zong%2C+P">PinHeng Zong</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Yuan%2C+Y">Ye Yuan</a>
+      
+    </p>
+    
+    <p class="abstract mathjax">
+      <span class="search-hit">Abstract</span>:
+      <span class="abstract-short has-text-grey-dark mathjax" id="2609.25814v1-abstract-short" style="display: inline;">
+        Dynamic graphs are widely used to model time-evolving relational systems in real-world applications. Dynamic <span class="search-hit mathjax">graph</span> <span class="search-hit mathjax">neural</span> <span class="search-hit mathjax">networks</span> provide an effective framework for capturing both structural dependencies and temporal dynamics in such data. However, they typically intertwine temp&hellip;
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.25814v1-abstract-full').style.display = 'inline'; document.getElementById('2609.25814v1-abstract-short').style.display = 'none';">&#9661; More</a>
+      </span>
+      <span class="abstract-full has-text-grey-dark mathjax" id="2609.25814v1-abstract-full" style="display: none;">
+        Dynamic graphs are widely used to model time-evolving relational systems in real-world applications. Dynamic <span class="search-hit mathjax">graph</span> <span class="search-hit mathjax">neural</span> <span class="search-hit mathjax">networks</span> provide an effective framework for capturing both structural dependencies and temporal dynamics in such data. However, they typically intertwine temporal graph propagation with every optimization epoch and often maintain large trainable representations for each node-time pair. This design repeatedly recomputes largely unchanged historical structures, leading to substantial training and parameter overhead. To address this critical issue, we propose CacheDyG, a Cache-refine framework for efficient Dynamic Graph learning. Specifically, it decouples temporal propagation from routine parameter updates by constructing a time-ordered temporal dependency cache that stores graph-aware node-time representations in non-trainable buffers. During standard training epochs, CacheDyG reads from the cache and updates only a lightweight cache refiner, an adaptive residual gate, and the link predictor. Selective cache refresh further keeps cached representations aligned with the supervised objective while avoiding epoch-wise sparse propagation. Experiments on five dynamic graph benchmarks show that CacheDyG adopts substantially fewer trainable parameters and lower runtime to obtain more competitive predictive performance than baselines. These results demonstrate that cache-based decoupling provides an effective principle for scalable dynamic graph learning.
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.25814v1-abstract-full').style.display = 'none'; document.getElementById('2609.25814v1-abstract-short').style.display = 'inline';">&#9651; Less</a>
+      </span>
+    </p>
+    
+
+    <p class="is-size-7"><span class="has-text-black-bis has-text-weight-semibold">Submitted</span> 22 September, 2026; 
+      <span class="has-text-black-bis has-text-weight-semibold">originally announced</span> September 2026.
+      
+    </p>
+    
+    <p class="comments is-size-7">
+      <span class="has-text-black-bis has-text-weight-semibold">Comments:</span>
+      <span class="has-text-grey-dark mathjax">Accepted at ADMA 2026. 17 pages, 3 figures</span>
+    </p>
+    
+
+    
+
+    
+  </li>
+
+  <li class="arxiv-result">
+    <div class="is-marginless">
+      <p class="list-title is-inline-block"><a href="https://arxiv.org/abs/2609.25722">arXiv:2609.25722</a>
+        <span>&nbsp;[<a href="https://arxiv.org/pdf/2609.25722">pdf</a>, <a href="https://arxiv.org/ps/2609.25722">ps</a>, <a href="https://arxiv.org/format/2609.25722">other</a>]&nbsp;</span>
+      </p>
+      <div class="tags is-inline-block">
+        <span class="tag is-small is-link tooltip is-tooltip-top" data-tooltip="Machine Learning">cs.LG</span>
+        </div>
+      
+    </div>
+    
+    <p class="title is-5 mathjax">
+      
+        Signed Graph Pre-Training and Prompt Learning
+      
+    </p>
+    <p class="authors">
+      <span class="has-text-black-bis has-text-weight-semibold">Authors:</span>
+      
+      <a href="/search/?searchtype=author&amp;query=Mei%2C+Z">Zihan Mei</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Pan%2C+R">Rong Pan</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Chen%2C+Y">Yuzhou Chen</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=He%2C+Y">Yixuan He</a>
+      
+    </p>
+    
+    <p class="abstract mathjax">
+      <span class="search-hit">Abstract</span>:
+      <span class="abstract-short has-text-grey-dark mathjax" id="2609.25722v1-abstract-short" style="display: inline;">
+        &hellip;networks, financial correlation systems, biological interaction graphs, and many other domains in which edges can be positive or negative and may also be directed. While signed <span class="search-hit mathjax">graph</span> <span class="search-hit mathjax">neural</span> <span class="search-hit mathjax">networks</span> have improved task-specific learning, graph transfer learning on signed graphs re&hellip;
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.25722v1-abstract-full').style.display = 'inline'; document.getElementById('2609.25722v1-abstract-short').style.display = 'none';">&#9661; More</a>
+      </span>
+      <span class="abstract-full has-text-grey-dark mathjax" id="2609.25722v1-abstract-full" style="display: none;">
+        Signed graphs arise in trust--distrust networks, financial correlation systems, biological interaction graphs, and many other domains in which edges can be positive or negative and may also be directed. While signed <span class="search-hit mathjax">graph</span> <span class="search-hit mathjax">neural</span> <span class="search-hit mathjax">networks</span> have improved task-specific learning, graph transfer learning on signed graphs remains underdeveloped. In this paper, we introduce TopoSIGN, a pioneer topology-guided graph pre-training and prompt learning framework for signed graphs. TopoSIGN combines a structural encoder built on the magnetic signed Laplacian with a novel persistent-homology branch that summarizes signed topology through Dowker-complex persistence images. The fused embeddings are then transferred to a prompt learning function. Experimental results on synthetic and real-world datasets demonstrate the efficacy of TopoSIGN in extracting useful structural information in signed graphs, as well as the adaptability and flexibility of the proposed general framework.
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.25722v1-abstract-full').style.display = 'none'; document.getElementById('2609.25722v1-abstract-short').style.display = 'inline';">&#9651; Less</a>
+      </span>
+    </p>
+    
+
+    <p class="is-size-7"><span class="has-text-black-bis has-text-weight-semibold">Submitted</span> 22 September, 2026; 
+      <span class="has-text-black-bis has-text-weight-semibold">originally announced</span> September 2026.
+      
+    </p>
+    
+    <p class="comments is-size-7">
+      <span class="has-text-black-bis has-text-weight-semibold">Comments:</span>
+      <span class="has-text-grey-dark mathjax">25 pages, 3 figures, Accepted to Learning on Graphs Conference (LoG 2026)</span>
+    </p>
+    
+
+    
+
+    
+  </li>
+
+  <li class="arxiv-result">
+    <div class="is-marginless">
+      <p class="list-title is-inline-block"><a href="https://arxiv.org/abs/2609.25542">arXiv:2609.25542</a>
+        <span>&nbsp;[<a href="https://arxiv.org/pdf/2609.25542">pdf</a>, <a href="https://arxiv.org/ps/2609.25542">ps</a>, <a href="https://arxiv.org/format/2609.25542">other</a>]&nbsp;</span>
+      </p>
+      <div class="tags is-inline-block">
+        <span class="tag is-small is-link tooltip is-tooltip-top" data-tooltip="Machine Learning">cs.LG</span>
+        
+          
+            <span class="tag is-small is-grey tooltip is-tooltip-top" data-tooltip="Artificial Intelligence">cs.AI</span>
+          
+        </div>
+      
+        
+          <div class="is-inline-block" style="margin-left: 0.5rem">
+            <div class="tags has-addons">
+              <span class="tag is-dark is-size-7">doi</span>
+              <span class="tag is-light is-size-7"><a class="" href="https://doi.org/10.1145/3799682.3840153">10.1145/3799682.3840153 <i class="fa fa-external-link" aria-hidden="true"></i></a></span>
+            </div>
+          </div>
+        
+      
+    </div>
+    
+    <p class="title is-5 mathjax">
+      
+        DefaultGNN: A Dual-Perspective GNN Framework for Predicting Corporate Default from Buyer-Seller Transaction Networks
+      
+    </p>
+    <p class="authors">
+      <span class="has-text-black-bis has-text-weight-semibold">Authors:</span>
+      
+      <a href="/search/?searchtype=author&amp;query=Kim%2C+J">Junghoon Kim</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Kim%2C+H">Hyunsung Kim</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Choi%2C+S">Seungyoon Choi</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Park%2C+K">KyoungYong Park</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Lee%2C+J">Jihun Lee</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Ji%2C+Y">YongGu Ji</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Park%2C+C">Chanyoung Park</a>
+      
+    </p>
+    
+    <p class="abstract mathjax">
+      <span class="has-text-black-bis has-text-weight-semibold">Abstract</span>:
+      <span class="abstract-short has-text-grey-dark mathjax" id="2609.25542v1-abstract-short" style="display: inline;">
+        &hellip;(buyer or seller) and scale-dependent. Based on these findings, we construct multiplex buyer-view and seller-view transaction networks and propose DefaultGNN, a dual-perspective <span class="search-hit mathjax">graph</span> <span class="search-hit mathjax">neural</span> <span class="search-hit mathjax">network</span>-based framework for corporate default prediction. DefaultGNN integrates both view&hellip;
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.25542v1-abstract-full').style.display = 'inline'; document.getElementById('2609.25542v1-abstract-short').style.display = 'none';">&#9661; More</a>
+      </span>
+      <span class="abstract-full has-text-grey-dark mathjax" id="2609.25542v1-abstract-full" style="display: none;">
+        Corporate default prediction is a core problem in financial risk management, yet traditional credit models rely heavily on financial statements that are often sparse or unavailable for many firms. Corporate transaction networks offer a complementary view of real economic activity, but how risk propagates through buyer-seller relationships remains underexplored. We conduct a large-scale empirical study using real-world electronic tax-invoice data spanning six years that links transaction histories with default events, revealing that transaction-driven risk is both role-dependent (buyer or seller) and scale-dependent. Based on these findings, we construct multiplex buyer-view and seller-view transaction networks and propose DefaultGNN, a dual-perspective <span class="search-hit mathjax">graph</span> <span class="search-hit mathjax">neural</span> <span class="search-hit mathjax">network</span>-based framework for corporate default prediction. DefaultGNN integrates both views to model how risk flows through transactional relationships, achieving strong improvements over both attribute-based and graph-based baselines, especially for firms with limited intrinsic risk signals. We further provide interpretable network-based explanations by visualizing how distressed trading partners contribute to default risk. In collaboration with a licensed credit rating agency, we validate that DefaultGNN&#39;s predictions complement existing credit scoring models, improving approval rates by 7-11%p without increasing default risk among approved firms. The source code can be found at https://github.com/jhkim611/DefaultGNN
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.25542v1-abstract-full').style.display = 'none'; document.getElementById('2609.25542v1-abstract-short').style.display = 'inline';">&#9651; Less</a>
+      </span>
+    </p>
+    
+
+    <p class="is-size-7"><span class="has-text-black-bis has-text-weight-semibold">Submitted</span> 21 September, 2026; 
+      <span class="has-text-black-bis has-text-weight-semibold">originally announced</span> September 2026.
+      
+    </p>
+    
+    <p class="comments is-size-7">
+      <span class="has-text-black-bis has-text-weight-semibold">Comments:</span>
+      <span class="has-text-grey-dark mathjax">CIKM 2026 Applied Research Track</span>
+    </p>
+    
+
+    
+
+    
+  </li>
+
+  <li class="arxiv-result">
+    <div class="is-marginless">
+      <p class="list-title is-inline-block"><a href="https://arxiv.org/abs/2609.25397">arXiv:2609.25397</a>
+        <span>&nbsp;[<a href="https://arxiv.org/pdf/2609.25397">pdf</a>, <a href="https://arxiv.org/ps/2609.25397">ps</a>, <a href="https://arxiv.org/format/2609.25397">other</a>]&nbsp;</span>
+      </p>
+      <div class="tags is-inline-block">
+        <span class="tag is-small is-link tooltip is-tooltip-top" data-tooltip="Machine Learning">cs.LG</span>
+        
+          
+            <span class="tag is-small is-grey tooltip is-tooltip-top" data-tooltip="Artificial Intelligence">cs.AI</span>
+          
+            <span class="tag is-small is-grey tooltip is-tooltip-top" data-tooltip="Optimization and Control">math.OC</span>
+          
+        </div>
+      
+    </div>
+    
+    <p class="title is-5 mathjax">
+      
+        Deep Reinforcement Learning on Item-Compatibility Graphs for One-Dimensional Bin Packing
+      
+    </p>
+    <p class="authors">
+      <span class="has-text-black-bis has-text-weight-semibold">Authors:</span>
+      
+      <a href="/search/?searchtype=author&amp;query=Ayd%C4%B1n%2C+M+A">M. Aslı Aydın</a>
+      
+    </p>
+    
+    <p class="abstract mathjax">
+      <span class="has-text-black-bis has-text-weight-semibold">Abstract</span>:
+      <span class="abstract-short has-text-grey-dark mathjax" id="2609.25397v1-abstract-short" style="display: inline;">
+        &hellip;as a Markov decision process on an item-compatibility graph, serving as a structural knowledge representation in which every action merges two partial bins that fit together. A <span class="search-hit mathjax">graph</span> <span class="search-hit mathjax">neural</span> <span class="search-hit mathjax">network</span> actor-critic policy extracts relational features from this representation and is t&hellip;
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.25397v1-abstract-full').style.display = 'inline'; document.getElementById('2609.25397v1-abstract-short').style.display = 'none';">&#9661; More</a>
+      </span>
+      <span class="abstract-full has-text-grey-dark mathjax" id="2609.25397v1-abstract-full" style="display: none;">
+        The one-dimensional bin packing problem (1D-BPP) is a classical NP-hard combinatorial optimization problem with applications ranging from logistics and manufacturing to cloud resource management. Although deep reinforcement learning (DRL) has become a competitive paradigm for data-driven optimization, most learned packing methods target 2D and 3D variants, and intelligent learned solvers for 1D-BPP remain scarce. In this paper, we present a novel end-to-end, size-agnostic graph reinforcement learning framework for 1D-BPP. We formulate the packing process as a Markov decision process on an item-compatibility graph, serving as a structural knowledge representation in which every action merges two partial bins that fit together. A <span class="search-hit mathjax">graph</span> <span class="search-hit mathjax">neural</span> <span class="search-hit mathjax">network</span> actor-critic policy extracts relational features from this representation and is trained through reinforcement learning and decoded by stochastic beam search, enabling a single trained model to generalize zero-shot to instances of any size. We conduct a systematic empirical study across graph encoders, DRL algorithms, reward functions, training distributions, and hyperparameters. Evaluated zero-shot on the full BPPLIB benchmark against a constructive heuristic, a grouping genetic algorithm, and recent learned methods, our data-driven policy lowers the mean optimality gap of the constructive heuristic from 2.66\% to 2.31\%, with the largest gains on structured instances. Against learned baselines evaluated on the same benchmark, it attains a lower gap on most of the nine families and is far more stable across instance distributions. On the hardest benchmark family, it outperforms a state-of-the-art learned solver that relies on column generation and integer programming, while using no solver at all. A grouping genetic algorithm remains ahead overall, and we analyze where and why the residual gap arises.
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.25397v1-abstract-full').style.display = 'none'; document.getElementById('2609.25397v1-abstract-short').style.display = 'inline';">&#9651; Less</a>
+      </span>
+    </p>
+    
+
+    <p class="is-size-7"><span class="has-text-black-bis has-text-weight-semibold">Submitted</span> 21 September, 2026; 
+      <span class="has-text-black-bis has-text-weight-semibold">originally announced</span> September 2026.
+      
+    </p>
+    
+    <p class="comments is-size-7">
+      <span class="has-text-black-bis has-text-weight-semibold">Comments:</span>
+      <span class="has-text-grey-dark mathjax">29 pages,3 figures, 8 tables</span>
+    </p>
+    
+
+    
+
+    
+  </li>
+
+  <li class="arxiv-result">
+    <div class="is-marginless">
+      <p class="list-title is-inline-block"><a href="https://arxiv.org/abs/2609.25326">arXiv:2609.25326</a>
+        <span>&nbsp;[<a href="https://arxiv.org/pdf/2609.25326">pdf</a>, <a href="https://arxiv.org/ps/2609.25326">ps</a>, <a href="https://arxiv.org/format/2609.25326">other</a>]&nbsp;</span>
+      </p>
+      <div class="tags is-inline-block">
+        <span class="tag is-small is-link tooltip is-tooltip-top" data-tooltip="Machine Learning">cs.LG</span>
+        </div>
+      
+    </div>
+    
+    <p class="title is-5 mathjax">
+      
+        Spatiotemporal Kronecker Covariance Neural Networks
+      
+    </p>
+    <p class="authors">
+      <span class="has-text-black-bis has-text-weight-semibold">Authors:</span>
+      
+      <a href="/search/?searchtype=author&amp;query=Cavallo%2C+A">Andrea Cavallo</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Georgoutsos%2C+A">Athanasios Georgoutsos</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Isufi%2C+E">Elvin Isufi</a>
+      
+    </p>
+    
+    <p class="abstract mathjax">
+      <span class="has-text-black-bis has-text-weight-semibold">Abstract</span>:
+      <span class="abstract-short has-text-grey-dark mathjax" id="2609.25326v1-abstract-short" style="display: inline;">
+        &hellip;stable, non-linear alternatives, but they ignore correlations across different time steps. To solve this, we introduce the Kronecker coVariance Neural Network (KVNN), a temporal <span class="search-hit mathjax">graph</span> <span class="search-hit mathjax">neural</span> <span class="search-hit mathjax">network</span> that represents the spatiotemporal covariance matrix via a sum of Kronecker produ&hellip;
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.25326v1-abstract-full').style.display = 'inline'; document.getElementById('2609.25326v1-abstract-short').style.display = 'none';">&#9661; More</a>
+      </span>
+      <span class="abstract-full has-text-grey-dark mathjax" id="2609.25326v1-abstract-full" style="display: none;">
+        Multivariate time series contain complex patterns that span across both space and time. While covariance-based statistical tools like spatiotemporal Principal Component Analysis (ST-PCA) help identify these patterns, they are limited to linear operations and prone to estimation errors with limited data. Recent covariance-based spatiotemporal neural networks offer more stable, non-linear alternatives, but they ignore correlations across different time steps. To solve this, we introduce the Kronecker coVariance Neural Network (KVNN), a temporal <span class="search-hit mathjax">graph</span> <span class="search-hit mathjax">neural</span> <span class="search-hit mathjax">network</span> that represents the spatiotemporal covariance matrix via a sum of Kronecker products where spatial and temporal dependencies are decoupled. By implementing filtering operations on spatial and temporal components, KVNNs achieve expressive processing capabilities, admit a rigorous spectral analysis, and are provably stable to finite-sample estimation errors, ultimately addressing all of ST-PCA&#39;s limitations. We show on five real-world datasets that KVNNs achieve strong forecasting performance, often requiring significantly fewer trainable parameters than competitive methods, and are consistent under estimation noise.
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.25326v1-abstract-full').style.display = 'none'; document.getElementById('2609.25326v1-abstract-short').style.display = 'inline';">&#9651; Less</a>
+      </span>
+    </p>
+    
+
+    <p class="is-size-7"><span class="has-text-black-bis has-text-weight-semibold">Submitted</span> 21 September, 2026; 
+      <span class="has-text-black-bis has-text-weight-semibold">originally announced</span> September 2026.
+      
+    </p>
+    
+
+    
+
+    
+  </li>
+
+  <li class="arxiv-result">
+    <div class="is-marginless">
+      <p class="list-title is-inline-block"><a href="https://arxiv.org/abs/2609.25179">arXiv:2609.25179</a>
+        <span>&nbsp;[<a href="https://arxiv.org/pdf/2609.25179">pdf</a>, <a href="https://arxiv.org/ps/2609.25179">ps</a>, <a href="https://arxiv.org/format/2609.25179">other</a>]&nbsp;</span>
+      </p>
+      <div class="tags is-inline-block">
+        <span class="tag is-small is-link tooltip is-tooltip-top" data-tooltip="Machine Learning">cs.LG</span>
+        
+          
+            <span class="tag is-small is-grey tooltip is-tooltip-top" data-tooltip="Artificial Intelligence">cs.AI</span>
+          
+        </div>
+      
+    </div>
+    
+    <p class="title is-5 mathjax">
+      
+        Multi-Term Fourier <span class="search-hit mathjax">Graph</span> <span class="search-hit mathjax">Neural</span> <span class="search-hit mathjax">Network</span> with Sample Relationship Learning for Enhanced Remaining Useful Life Prediction
+      
+    </p>
+    <p class="authors">
+      <span class="has-text-black-bis has-text-weight-semibold">Authors:</span>
+      
+      <a href="/search/?searchtype=author&amp;query=Song%2C+Y">Ya Song</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Bliek%2C+L">Laurens Bliek</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Wu%2C+Y">Yaoxin Wu</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Zhang%2C+Y">Yingqian Zhang</a>
+      
+    </p>
+    
+    <p class="abstract mathjax">
+      <span class="has-text-black-bis has-text-weight-semibold">Abstract</span>:
+      <span class="abstract-short has-text-grey-dark mathjax" id="2609.25179v1-abstract-short" style="display: inline;">
+        Predicting the remaining useful life (RUL) is essential for effective predictive maintenance. Spatio-Temporal <span class="search-hit mathjax">Graph</span>&hellip;
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.25179v1-abstract-full').style.display = 'inline'; document.getElementById('2609.25179v1-abstract-short').style.display = 'none';">&#9661; More</a>
+      </span>
+      <span class="abstract-full has-text-grey-dark mathjax" id="2609.25179v1-abstract-full" style="display: none;">
+        Predicting the remaining useful life (RUL) is essential for effective predictive maintenance. Spatio-Temporal <span class="search-hit mathjax">Graph</span> <span class="search-hit mathjax">Neural</span> <span class="search-hit mathjax">Networks</span> (ST-GNNs), which can model both temporal and spatial relationships by representing time series data as a sequence of graphs, have shown exceptional performance in RUL prediction. However, current ST-GNNs face several drawbacks. First, they require domain expertise or significant computational power to establish graph structures prior to deploying GNNs. Second, the models are restricted to capture temporal dependencies within a predefined fixed-size lookback window. This restriction ignores the common issue of varying time series lengths, leading the prediction model to miss short-term or long-term dependencies. Finally, conventional models often fail to capture the inherent relationships between samples generated from adjacent time windows, which are crucial for improving both the accuracy and robustness of predictions. To address the aforementioned issues, we introduce a novel framework called Multi-Term Fourier <span class="search-hit mathjax">Graph</span> <span class="search-hit mathjax">Neural</span> <span class="search-hit mathjax">Network</span> with Sample Relationship Learning (MTFGN-SRL). Rather than treating the sample as a sequence of graphs, we consider it as a single complete graph and utilize a Fourier <span class="search-hit mathjax">Graph</span> <span class="search-hit mathjax">Neural</span> <span class="search-hit mathjax">Network</span> (FGN) to capture the spatio-temporal information in the frequency domain. We propose a multi-term learning module that utilizes multiple lookback windows to generate samples with varying terms, which are then fed into the FGN to enhance the extraction of useful information from the data. Finally, we develop a sample relationship learning module by training a heterogeneous GNN to identify inter-sample relationships, resulting in enhanced accuracy and robustness in predictions. Evaluations on the CMAPSS dataset demonstrate MTFGN-SRL&#39;s superior performance over state-of-the-art methods in RUL prediction.
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.25179v1-abstract-full').style.display = 'none'; document.getElementById('2609.25179v1-abstract-short').style.display = 'inline';">&#9651; Less</a>
+      </span>
+    </p>
+    
+
+    <p class="is-size-7"><span class="has-text-black-bis has-text-weight-semibold">Submitted</span> 21 September, 2026; 
+      <span class="has-text-black-bis has-text-weight-semibold">originally announced</span> September 2026.
+      
+    </p>
+    
+
+    
+
+    
+  </li>
+
+</ol>
+
+
+  <nav class="pagination is-small is-centered breathe-horizontal" role="navigation" aria-label="pagination">
+    
+    <a href=""
+      class="pagination-previous is-invisible">Previous
+    </a>
+    
+    
+      <a href="/search/advanced?advanced=&amp;classification-include_cross_list=include&amp;abstracts=show&amp;size=25&amp;order=-announced_date_first&amp;terms-0-operator=AND&amp;terms-0-term=%22graph+neural+network%22&amp;terms-0-field=all&amp;start=25"
+        class="pagination-next" >Next
+      </a>
+    
+    <ul class="pagination-list">
+
+      <li>
+        <a href="/search/advanced?advanced=&amp;classification-include_cross_list=include&amp;abstracts=show&amp;size=25&amp;order=-announced_date_first&amp;terms-0-operator=AND&amp;terms-0-term=%22graph+neural+network%22&amp;terms-0-field=all&amp;start=0"
+          class="pagination-link is-current"
+          aria-label="Goto page 1">1
+        </a>
+      </li>
+
+      
+                                     
+          
+          <li>
+            <a href="/search/advanced?advanced=&amp;classification-include_cross_list=include&amp;abstracts=show&amp;size=25&amp;order=-announced_date_first&amp;terms-0-operator=AND&amp;terms-0-term=%22graph+neural+network%22&amp;terms-0-field=all&amp;start=25"
+              class="pagination-link "
+              aria-label="Page 2"
+              aria-current="page">2
+            </a>
+          </li>
+          
+          <li>
+            <a href="/search/advanced?advanced=&amp;classification-include_cross_list=include&amp;abstracts=show&amp;size=25&amp;order=-announced_date_first&amp;terms-0-operator=AND&amp;terms-0-term=%22graph+neural+network%22&amp;terms-0-field=all&amp;start=50"
+              class="pagination-link "
+              aria-label="Page 3"
+              aria-current="page">3
+            </a>
+          </li>
+          
+          <li>
+            <a href="/search/advanced?advanced=&amp;classification-include_cross_list=include&amp;abstracts=show&amp;size=25&amp;order=-announced_date_first&amp;terms-0-operator=AND&amp;terms-0-term=%22graph+neural+network%22&amp;terms-0-field=all&amp;start=75"
+              class="pagination-link "
+              aria-label="Page 4"
+              aria-current="page">4
+            </a>
+          </li>
+          
+          <li>
+            <a href="/search/advanced?advanced=&amp;classification-include_cross_list=include&amp;abstracts=show&amp;size=25&amp;order=-announced_date_first&amp;terms-0-operator=AND&amp;terms-0-term=%22graph+neural+network%22&amp;terms-0-field=all&amp;start=100"
+              class="pagination-link "
+              aria-label="Page 5"
+              aria-current="page">5
+            </a>
+          </li>
+          
+          <li><span class="pagination-ellipsis">&hellip;</span></li>
+        
+      
+    </ul>
+  </nav>
+  
+
+    
+  
+
+      <div class="is-hidden-tablet">
+        <!-- feedback for mobile only -->
+        <span class="help" style="display: inline-block;"><a href="https://github.com/arXiv/arxiv-search/releases">Search v0.5.6 released 2020-02-24</a>&nbsp;&nbsp;</span>
+      </div>
+    </div>
+
+  </main>
+  <footer>
+    
+<footer class="ds-site-footer">
+  <div class="ds-site-footer-grid">
+    <div class="ds-site-footer-main">
+      <div class="ds-site-footer-ack">
+        We gratefully acknowledge support from
+        our <strong>major funders</strong>,
+        <a href="https://info.arxiv.org/about/ourmembers.html"><strong>member institutions</strong></a><span class="ack-member-inline" hidden>, <strong></strong></span>,
+        and all contributors.
+      </div>
+      <nav class="ds-site-footer-links" aria-label="Site navigation">
+        <a href="https://info.arxiv.org/about">About</a>
+        <span class="ds-site-footer-sep" aria-hidden="true">&middot;</span>
+        <a href="https://info.arxiv.org/help">Help</a>
+        <span class="ds-site-footer-sep" aria-hidden="true">&middot;</span>
+        <a href="https://info.arxiv.org/help/contact.html">Contact</a>
+        <span class="ds-site-footer-sep" aria-hidden="true">&middot;</span>
+        <a href="https://info.arxiv.org/help/subscribe">Subscribe</a>
+        <span class="ds-site-footer-sep" aria-hidden="true">&middot;</span>
+        <a href="https://info.arxiv.org/help/license/index.html">Copyright</a>
+        <span class="ds-site-footer-sep" aria-hidden="true">&middot;</span>
+        <a href="https://info.arxiv.org/help/policies/privacy_policy.html">Privacy</a>
+        <span class="ds-site-footer-sep" aria-hidden="true">&middot;</span>
+        <a href="https://info.arxiv.org/help/web_accessibility.html">Accessibility</a>
+        <span class="ds-site-footer-sep" aria-hidden="true">&middot;</span>
+        <a href="https://status.arxiv.org" target="_blank" rel="noopener noreferrer">Operational Status<span class="is-sr-only"> (opens in new tab)</span></a>
+      </nav>
+    </div>
+    <div class="ds-site-footer-funders" aria-label="Major funders">
+      <div class="ds-site-footer-funders-label">Major funding support from</div>
+      <div class="ds-site-footer-funders-logos">
+        <a class="ds-funder-link" href="https://www.simonsfoundation.org/" target="_blank" rel="noopener noreferrer">
+          <img class="ds-funder-logo" src="https://static.arxiv.org/static/base/1.0.1/images/funders/simons-foundation.png" alt="Simons Foundation"></a>
+        <a class="ds-funder-link" href="https://www.sfi.org.bm/" target="_blank" rel="noopener noreferrer">
+          <img class="ds-funder-logo" src="https://static.arxiv.org/static/base/1.0.1/images/funders/simons-foundation-international.png" alt="Simons Foundation International"></a>
+        <a class="ds-funder-link" href="https://www.schmidtsciences.org/" target="_blank" rel="noopener noreferrer">
+          <img class="ds-funder-logo" src="https://static.arxiv.org/static/base/1.0.1/images/funders/schmidt-sciences.png" alt="Schmidt Sciences"></a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+  </footer>
+  <script src="https://static.arxiv.org/static/base/1.0.0a5/js/member_acknowledgement.js"></script>
+  </body>
+</html>

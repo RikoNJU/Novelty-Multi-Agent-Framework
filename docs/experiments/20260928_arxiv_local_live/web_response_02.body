@@ -1,0 +1,1960 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<!-- new favicon config and versions by realfavicongenerator.net -->
+<link rel="apple-touch-icon" sizes="180x180" href="https://static.arxiv.org/static/base/1.0.0a5/images/icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://static.arxiv.org/static/base/1.0.0a5/images/icons/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="https://static.arxiv.org/static/base/1.0.0a5/images/icons/favicon-16x16.png">
+<link rel="manifest" href="https://static.arxiv.org/static/base/1.0.0a5/images/icons/site.webmanifest">
+<link rel="mask-icon" href="https://static.arxiv.org/static/base/1.0.0a5/images/icons/safari-pinned-tab.svg" color="#b31b1b">
+<link rel="shortcut icon" href="https://static.arxiv.org/static/base/1.0.0a5/images/icons/favicon.ico">
+<meta name="msapplication-TileColor" content="#b31b1b">
+<meta name="msapplication-config" content="images/icons/browserconfig.xml">
+<meta name="theme-color" content="#b31b1b">
+<!-- end favicon config -->
+<title>Advanced Search | arXiv e-print repository</title>
+<script defer src="https://static.arxiv.org/static/base/1.0.0a5/fontawesome-free-5.11.2-web/js/all.js"></script>
+<link rel="stylesheet" href="https://static.arxiv.org/static/base/1.0.0a5/css/arxivstyle.css" />
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    messageStyle: "none",
+    extensions: ["tex2jax.js"],
+    jax: ["input/TeX", "output/HTML-CSS"],
+    tex2jax: {
+      inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+      displayMath: [ ['$$','$$'], ["\\[","\\]"] ],
+      processEscapes: true,
+      ignoreClass: '.*',
+      processClass: 'mathjax.*'
+    },
+    TeX: {
+        extensions: ["AMSmath.js", "AMSsymbols.js", "noErrors.js"],
+        noErrors: {
+          inlineDelimiters: ["$","$"],
+          multiLine: false,
+          style: {
+            "font-size": "normal",
+            "border": ""
+          }
+        }
+    },
+    "HTML-CSS": { availableFonts: ["TeX"] }
+  });
+</script>
+<script src='//static.arxiv.org/MathJax-2.7.3/MathJax.js'></script>
+<script src="https://static.arxiv.org/static/base/1.0.0a5/js/notification.js"></script>
+
+    
+  <script>document.documentElement.classList.add('js');</script>
+  <link rel="stylesheet" type="text/css" media="screen" href="https://static.arxiv.org/static/base/1.0.1/css/arxiv-header-footer.css?v=20260626" />
+  <script defer src="https://static.arxiv.org/static/base/1.0.1/js/arxiv-header.js?v=20260626"></script>
+  <link rel="stylesheet" href="https://static.arxiv.org/static/search/0.5.6/css/bulma-tooltip.min.css" />
+  <link rel="stylesheet" href="https://static.arxiv.org/static/search/0.5.6/css/search.css" />
+  <script
+    src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
+    integrity="sha256-k2WSCIexGzOj3Euiig+TlR8gA0EmPjuc79OEeY5L45g="
+    crossorigin="anonymous"></script>
+
+  <script src="https://static.arxiv.org/static/search/0.5.6/js/fieldset.js"></script>
+  <style>
+  radio#cf-customfield_11400 {
+    display: none;
+  }
+  /* Render the spinout .ds-site-footer standalone / full-bleed. search extends the
+     legacy base, whose bare wrapping <footer> (in base/base.html, outside any
+     overridable block — so it can't be removed from here) is styled by
+     arxivstyle.css with a grey background (hsl(0,0%,95%)) + 1em 2em padding,
+     boxing our warm-wash footer inside a second grey band. display:contents drops
+     the wrapper's box entirely (cleaner than zeroing individual properties) so
+     .ds-site-footer renders in its place; it inherits flex-shrink:0 from the same
+     legacy `footer` rule, so the sticky footer still works. Search-specific
+     legacy-base integration; the shared chrome CSS stays byte-identical to the SSOT. */
+  body > footer {
+    display: contents;
+  }
+  </style>
+
+  </head>
+  <body>
+  
+  
+  <header><a href="#main-container" class="is-sr-only">Skip to main content</a>
+    <div class="ds-announcement" id="announcement-banner" role="region" aria-label="Announcement" data-banner-name="spinout-nonprofit">
+  <img class="ds-announcement-glyph" src="https://static.arxiv.org/static/base/1.0.1/images/icons/smileybones-small.svg" alt="" aria-hidden="true">
+  <span class="ds-announcement-text">arXiv is now an independent nonprofit!</span>
+  <a class="ds-announcement-link" href="https://info.arxiv.org/about">Learn more</a>
+  <button type="button" class="ds-announcement-close" aria-label="Dismiss announcement">&times;</button>
+</div>
+<header class="ds-site-header">
+  <a href="https://arxiv.org/" class="ds-site-header-logo" aria-label="archive home">
+    <img src="https://static.arxiv.org/static/base/1.0.1/images/arxiv-logo-primary-light.svg" alt="archive">
+  </a>
+  <button type="button" id="ds-nav-toggle" class="ds-site-header-nav-toggle"
+    aria-label="Open menu" aria-controls="ds-site-header-nav" aria-expanded="false">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+      <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+    </svg>
+  </button>
+  <nav class="ds-site-header-nav" id="ds-site-header-nav" aria-label="Main navigation">
+    <a id="arxiv-search-toggle" href="/search" aria-controls="arxiv-search-overlay" aria-expanded="false">
+      <svg class="ds-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      Search
+    </a>
+    <a href="https://arxiv.org/user/create">Submit</a>
+    <a href="https://info.arxiv.org/about/donate.html">Donate</a>
+    <span class="ds-site-header-divider" aria-hidden="true"></span>
+    <a href="https://arxiv.org/login" class="ds-site-header-login">Log in</a>
+  </nav>
+</header>
+
+<div class="arxiv-search-overlay" id="arxiv-search-overlay" hidden>
+  <div class="arxiv-search-panel" role="search">
+    <form method="GET" action="/search">
+      <label for="arxiv-search-input" class="is-sr-only">Search arXiv</label>
+      <input type="text" name="query" id="arxiv-search-input" autocomplete="off"
+        placeholder="Search papers by title, author, abstract, or ID...">
+      <input type="hidden" name="searchtype" value="all">
+      <input type="hidden" name="source" value="header">
+    </form>
+    <div class="arxiv-search-hint">
+      Press Enter to search &middot; <a href="/search/advanced">Advanced search</a>
+    </div>
+  </div>
+</div>
+
+  </header>
+  <main class="container" id="main-container">
+    
+
+
+    
+  <div class="level is-marginless">
+    <div class="level-left">
+      <h1 class="title is-clearfix">
+    
+        Showing 1&ndash;25 of 2,142 results
+    
+</h1>
+    </div>
+    <div class="level-right is-hidden-mobile">
+      <!-- feedback for mobile is moved to footer -->
+      <span class="help" style="display: inline-block;"><a href="https://github.com/arXiv/arxiv-search/releases">Search v0.5.6 released 2020-02-24</a>&nbsp;&nbsp;</span>
+    </div>
+  </div>
+    <div class="content">
+      
+  
+    
+
+    <div class="columns">
+      <div class="column is-two-thirds-tablet">
+        <p style="margin-bottom: .5em">Query: <a href="/search/advanced?classification-include_cross_list=include&amp;abstracts=show&amp;size=25&amp;order=-announced_date_first&amp;terms-0-operator=AND&amp;terms-0-term=distributed&amp;terms-0-field=abstract&amp;terms-1-operator=AND&amp;terms-1-term=graph&amp;terms-1-field=abstract&amp;terms-2-operator=AND&amp;terms-2-term=neural&amp;terms-2-field=abstract&amp;terms-3-operator=AND&amp;terms-3-term=network&amp;terms-3-field=abstract">order: -announced_date_first; size: 25; include_cross_list: True; terms: AND abstract=distributed; AND abstract=graph; AND abstract=neural; AND abstract=network</a></p>
+        <div class="buttons">
+          <a class="button is-link" href="/search/advanced?classification-include_cross_list=include&amp;abstracts=show&amp;size=25&amp;order=-announced_date_first&amp;terms-0-operator=AND&amp;terms-0-term=distributed&amp;terms-0-field=abstract&amp;terms-1-operator=AND&amp;terms-1-term=graph&amp;terms-1-field=abstract&amp;terms-2-operator=AND&amp;terms-2-term=neural&amp;terms-2-field=abstract&amp;terms-3-operator=AND&amp;terms-3-term=network&amp;terms-3-field=abstract">Refine query</a><a class="button" href="/search/advanced">New search</a>
+        </div>
+      </div>
+      <div class="column is-one-third-tablet is-hidden-mobile">
+        <p class="has-text-right" style="margin-top: 1em">
+          
+          <a href="/search/?order=-announced_date_first&amp;size=25">Simple Search</a>
+          
+        </p>
+      </div>
+    </div>
+
+    
+        
+<div class="level breathe-horizontal">
+  <div class="level-left">
+    <form method="GET" action="/search/advanced">
+      <div style="display: none;">
+        
+          
+            <input id="advanced" name="advanced" type="hidden" value="">
+          
+        
+          
+            <ul id="terms"><li><label for="terms-0">Terms-0</label> <table id="terms-0"><tr><th><label for="terms-0-term">Search term...</label></th><td><input id="terms-0-term" name="terms-0-term" type="text" value="distributed"></td></tr><tr><th><label for="terms-0-operator">Operator</label></th><td><select id="terms-0-operator" name="terms-0-operator"><option selected value="AND">AND</option><option value="OR">OR</option><option value="NOT">NOT</option></select></td></tr><tr><th><label for="terms-0-field">Field</label></th><td><select id="terms-0-field" name="terms-0-field"><option value="title">Title</option><option value="author">Author(s)</option><option selected value="abstract">Abstract</option><option value="comments">Comments</option><option value="journal_ref">Journal reference</option><option value="acm_class">ACM classification</option><option value="msc_class">MSC classification</option><option value="report_num">Report number</option><option value="paper_id">arXiv identifier</option><option value="cross_list_category">Cross-list category</option><option value="doi">DOI</option><option value="orcid">ORCID</option><option value="author_id">arXiv author ID</option><option value="all">All fields</option></select></td></tr></table></li><li><label for="terms-1">Terms-1</label> <table id="terms-1"><tr><th><label for="terms-1-term">Search term...</label></th><td><input id="terms-1-term" name="terms-1-term" type="text" value="graph"></td></tr><tr><th><label for="terms-1-operator">Operator</label></th><td><select id="terms-1-operator" name="terms-1-operator"><option selected value="AND">AND</option><option value="OR">OR</option><option value="NOT">NOT</option></select></td></tr><tr><th><label for="terms-1-field">Field</label></th><td><select id="terms-1-field" name="terms-1-field"><option value="title">Title</option><option value="author">Author(s)</option><option selected value="abstract">Abstract</option><option value="comments">Comments</option><option value="journal_ref">Journal reference</option><option value="acm_class">ACM classification</option><option value="msc_class">MSC classification</option><option value="report_num">Report number</option><option value="paper_id">arXiv identifier</option><option value="cross_list_category">Cross-list category</option><option value="doi">DOI</option><option value="orcid">ORCID</option><option value="author_id">arXiv author ID</option><option value="all">All fields</option></select></td></tr></table></li><li><label for="terms-2">Terms-2</label> <table id="terms-2"><tr><th><label for="terms-2-term">Search term...</label></th><td><input id="terms-2-term" name="terms-2-term" type="text" value="neural"></td></tr><tr><th><label for="terms-2-operator">Operator</label></th><td><select id="terms-2-operator" name="terms-2-operator"><option selected value="AND">AND</option><option value="OR">OR</option><option value="NOT">NOT</option></select></td></tr><tr><th><label for="terms-2-field">Field</label></th><td><select id="terms-2-field" name="terms-2-field"><option value="title">Title</option><option value="author">Author(s)</option><option selected value="abstract">Abstract</option><option value="comments">Comments</option><option value="journal_ref">Journal reference</option><option value="acm_class">ACM classification</option><option value="msc_class">MSC classification</option><option value="report_num">Report number</option><option value="paper_id">arXiv identifier</option><option value="cross_list_category">Cross-list category</option><option value="doi">DOI</option><option value="orcid">ORCID</option><option value="author_id">arXiv author ID</option><option value="all">All fields</option></select></td></tr></table></li><li><label for="terms-3">Terms-3</label> <table id="terms-3"><tr><th><label for="terms-3-term">Search term...</label></th><td><input id="terms-3-term" name="terms-3-term" type="text" value="network"></td></tr><tr><th><label for="terms-3-operator">Operator</label></th><td><select id="terms-3-operator" name="terms-3-operator"><option selected value="AND">AND</option><option value="OR">OR</option><option value="NOT">NOT</option></select></td></tr><tr><th><label for="terms-3-field">Field</label></th><td><select id="terms-3-field" name="terms-3-field"><option value="title">Title</option><option value="author">Author(s)</option><option selected value="abstract">Abstract</option><option value="comments">Comments</option><option value="journal_ref">Journal reference</option><option value="acm_class">ACM classification</option><option value="msc_class">MSC classification</option><option value="report_num">Report number</option><option value="paper_id">arXiv identifier</option><option value="cross_list_category">Cross-list category</option><option value="doi">DOI</option><option value="orcid">ORCID</option><option value="author_id">arXiv author ID</option><option value="all">All fields</option></select></td></tr></table></li></ul>
+          
+        
+          
+            <table id="classification"><tr><th><label for="classification-computer_science">Computer Science (cs)</label></th><td><input id="classification-computer_science" name="classification-computer_science" type="checkbox" value="y"></td></tr><tr><th><label for="classification-economics">Economics (econ)</label></th><td><input id="classification-economics" name="classification-economics" type="checkbox" value="y"></td></tr><tr><th><label for="classification-eess">Electrical Engineering and Systems Science (eess)</label></th><td><input id="classification-eess" name="classification-eess" type="checkbox" value="y"></td></tr><tr><th><label for="classification-mathematics">Mathematics (math)</label></th><td><input id="classification-mathematics" name="classification-mathematics" type="checkbox" value="y"></td></tr><tr><th><label for="classification-physics">Physics</label></th><td><input id="classification-physics" name="classification-physics" type="checkbox" value="y"></td></tr><tr><th><label for="classification-physics_archives">Physics Archives</label></th><td><select id="classification-physics_archives" name="classification-physics_archives"><option selected value="all">all</option><option value="astro-ph">astro-ph</option><option value="cond-mat">cond-mat</option><option value="gr-qc">gr-qc</option><option value="hep-ex">hep-ex</option><option value="hep-lat">hep-lat</option><option value="hep-ph">hep-ph</option><option value="hep-th">hep-th</option><option value="math-ph">math-ph</option><option value="nlin">nlin</option><option value="nucl-ex">nucl-ex</option><option value="nucl-th">nucl-th</option><option value="physics">physics</option><option value="quant-ph">quant-ph</option></select></td></tr><tr><th><label for="classification-q_biology">Quantitative Biology (q-bio)</label></th><td><input id="classification-q_biology" name="classification-q_biology" type="checkbox" value="y"></td></tr><tr><th><label for="classification-q_finance">Quantitative Finance (q-fin)</label></th><td><input id="classification-q_finance" name="classification-q_finance" type="checkbox" value="y"></td></tr><tr><th><label for="classification-statistics">Statistics (stat)</label></th><td><input id="classification-statistics" name="classification-statistics" type="checkbox" value="y"></td></tr><tr><th><label for="classification-include_cross_list">Include cross-list</label></th><td><ul id="classification-include_cross_list"><li><input checked id="classification-include_cross_list-0" name="classification-include_cross_list" type="radio" value="include"> <label for="classification-include_cross_list-0">Include cross-listed papers</label></li><li><input id="classification-include_cross_list-1" name="classification-include_cross_list" type="radio" value="exclude"> <label for="classification-include_cross_list-1">Exclude cross-listed papers</label></li></ul></td></tr></table>
+          
+        
+          
+            <table id="date"><tr><th><label for="date-filter_by">Filter by</label></th><td><ul id="date-filter_by"><li><input checked id="date-filter_by-0" name="date-filter_by" type="radio" value="all_dates"> <label for="date-filter_by-0">All dates</label></li><li><input id="date-filter_by-1" name="date-filter_by" type="radio" value="past_12"> <label for="date-filter_by-1">Past 12 months</label></li><li><input id="date-filter_by-2" name="date-filter_by" type="radio" value="specific_year"> <label for="date-filter_by-2">Specific year</label></li><li><input id="date-filter_by-3" name="date-filter_by" type="radio" value="date_range"> <label for="date-filter_by-3">Date range</label></li></ul></td></tr><tr><th><label for="date-year">Year</label></th><td><input id="date-year" name="date-year" type="text" value=""></td></tr><tr><th><label for="date-from_date">From</label></th><td><input id="date-from_date" name="date-from_date" type="text" value=""></td></tr><tr><th><label for="date-to_date">to</label></th><td><input id="date-to_date" name="date-to_date" type="text" value=""></td></tr><tr><th><label for="date-date_type">Apply to</label></th><td><ul id="date-date_type"><li><input checked id="date-date_type-0" name="date-date_type" type="radio" value="submitted_date"> <label for="date-date_type-0">Submission date (most recent)</label></li><li><input id="date-date_type-1" name="date-date_type" type="radio" value="submitted_date_first"> <label for="date-date_type-1">Submission date (original)</label></li><li><input id="date-date_type-2" name="date-date_type" type="radio" value="announced_date_first"> <label for="date-date_type-2">Announcement date</label></li></ul></td></tr></table>
+          
+        
+          
+        
+          
+        
+          
+            <input id="include_older_versions" name="include_older_versions" type="checkbox" value="y">
+          
+        
+          
+            <ul id="abstracts"><li><input checked id="abstracts-0" name="abstracts" type="radio" value="show"> <label for="abstracts-0">Show abstracts</label></li><li><input id="abstracts-1" name="abstracts" type="radio" value="hide"> <label for="abstracts-1">Hide abstracts</label></li></ul>
+          
+        
+      </div>
+      <div class="box field is-grouped is-grouped-multiline level-item">
+        <div class="control">
+          <span class="select is-small">
+            <select id="size" name="size"><option selected value="25">25</option><option value="50">50</option><option value="100">100</option><option value="200">200</option></select>
+          </span>
+          <label for="size">results per page</label>.
+        </div>
+        <div class="control">
+          <label for="order">Sort results by</label>
+          <span class="select is-small">
+            <select id="order" name="order"><option selected value="-announced_date_first">Announcement date (newest first)</option><option value="announced_date_first">Announcement date (oldest first)</option><option value="-submitted_date">Submission date (newest first)</option><option value="submitted_date">Submission date (oldest first)</option><option value="">Relevance</option></select>
+          </span>
+        </div>
+        <div class="control">
+          <button class="button is-small is-link">Go</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+        
+
+
+  <nav class="pagination is-small is-centered breathe-horizontal" role="navigation" aria-label="pagination">
+    
+    <a href=""
+      class="pagination-previous is-invisible">Previous
+    </a>
+    
+    
+      <a href="/search/advanced?advanced=&amp;classification-include_cross_list=include&amp;abstracts=show&amp;size=25&amp;order=-announced_date_first&amp;terms-0-operator=AND&amp;terms-0-term=distributed&amp;terms-0-field=abstract&amp;terms-1-operator=AND&amp;terms-1-term=graph&amp;terms-1-field=abstract&amp;terms-2-operator=AND&amp;terms-2-term=neural&amp;terms-2-field=abstract&amp;terms-3-operator=AND&amp;terms-3-term=network&amp;terms-3-field=abstract&amp;start=25"
+        class="pagination-next" >Next
+      </a>
+    
+    <ul class="pagination-list">
+
+      <li>
+        <a href="/search/advanced?advanced=&amp;classification-include_cross_list=include&amp;abstracts=show&amp;size=25&amp;order=-announced_date_first&amp;terms-0-operator=AND&amp;terms-0-term=distributed&amp;terms-0-field=abstract&amp;terms-1-operator=AND&amp;terms-1-term=graph&amp;terms-1-field=abstract&amp;terms-2-operator=AND&amp;terms-2-term=neural&amp;terms-2-field=abstract&amp;terms-3-operator=AND&amp;terms-3-term=network&amp;terms-3-field=abstract&amp;start=0"
+          class="pagination-link is-current"
+          aria-label="Goto page 1">1
+        </a>
+      </li>
+
+      
+                                     
+          
+          <li>
+            <a href="/search/advanced?advanced=&amp;classification-include_cross_list=include&amp;abstracts=show&amp;size=25&amp;order=-announced_date_first&amp;terms-0-operator=AND&amp;terms-0-term=distributed&amp;terms-0-field=abstract&amp;terms-1-operator=AND&amp;terms-1-term=graph&amp;terms-1-field=abstract&amp;terms-2-operator=AND&amp;terms-2-term=neural&amp;terms-2-field=abstract&amp;terms-3-operator=AND&amp;terms-3-term=network&amp;terms-3-field=abstract&amp;start=25"
+              class="pagination-link "
+              aria-label="Page 2"
+              aria-current="page">2
+            </a>
+          </li>
+          
+          <li>
+            <a href="/search/advanced?advanced=&amp;classification-include_cross_list=include&amp;abstracts=show&amp;size=25&amp;order=-announced_date_first&amp;terms-0-operator=AND&amp;terms-0-term=distributed&amp;terms-0-field=abstract&amp;terms-1-operator=AND&amp;terms-1-term=graph&amp;terms-1-field=abstract&amp;terms-2-operator=AND&amp;terms-2-term=neural&amp;terms-2-field=abstract&amp;terms-3-operator=AND&amp;terms-3-term=network&amp;terms-3-field=abstract&amp;start=50"
+              class="pagination-link "
+              aria-label="Page 3"
+              aria-current="page">3
+            </a>
+          </li>
+          
+          <li>
+            <a href="/search/advanced?advanced=&amp;classification-include_cross_list=include&amp;abstracts=show&amp;size=25&amp;order=-announced_date_first&amp;terms-0-operator=AND&amp;terms-0-term=distributed&amp;terms-0-field=abstract&amp;terms-1-operator=AND&amp;terms-1-term=graph&amp;terms-1-field=abstract&amp;terms-2-operator=AND&amp;terms-2-term=neural&amp;terms-2-field=abstract&amp;terms-3-operator=AND&amp;terms-3-term=network&amp;terms-3-field=abstract&amp;start=75"
+              class="pagination-link "
+              aria-label="Page 4"
+              aria-current="page">4
+            </a>
+          </li>
+          
+          <li>
+            <a href="/search/advanced?advanced=&amp;classification-include_cross_list=include&amp;abstracts=show&amp;size=25&amp;order=-announced_date_first&amp;terms-0-operator=AND&amp;terms-0-term=distributed&amp;terms-0-field=abstract&amp;terms-1-operator=AND&amp;terms-1-term=graph&amp;terms-1-field=abstract&amp;terms-2-operator=AND&amp;terms-2-term=neural&amp;terms-2-field=abstract&amp;terms-3-operator=AND&amp;terms-3-term=network&amp;terms-3-field=abstract&amp;start=100"
+              class="pagination-link "
+              aria-label="Page 5"
+              aria-current="page">5
+            </a>
+          </li>
+          
+          <li><span class="pagination-ellipsis">&hellip;</span></li>
+        
+      
+    </ul>
+  </nav>
+  
+
+
+
+<ol class="breathe-horizontal" start="1"> 
+
+
+  <li class="arxiv-result">
+    <div class="is-marginless">
+      <p class="list-title is-inline-block"><a href="https://arxiv.org/abs/2609.29650">arXiv:2609.29650</a>
+        <span>&nbsp;[<a href="https://arxiv.org/pdf/2609.29650">pdf</a>, <a href="https://arxiv.org/ps/2609.29650">ps</a>, <a href="https://arxiv.org/format/2609.29650">other</a>]&nbsp;</span>
+      </p>
+      <div class="tags is-inline-block">
+        <span class="tag is-small is-link tooltip is-tooltip-top" data-tooltip="Computer Vision and Pattern Recognition">cs.CV</span>
+        
+          
+            <span class="tag is-small is-grey tooltip is-tooltip-top" data-tooltip="Machine Learning">cs.LG</span>
+          
+        </div>
+      
+    </div>
+    
+    <p class="title is-5 mathjax">
+      
+        VG-TIE: An interpretable tabular-to-image encoding method based on visibility graphs
+      
+    </p>
+    <p class="authors">
+      <span class="has-text-black-bis has-text-weight-semibold">Authors:</span>
+      
+      <a href="/search/?searchtype=author&amp;query=Chushig-Muzo%2C+D">David Chushig-Muzo</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=L%C3%B3pez-Ramos%2C+L+M">Luis M. López-Ramos</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=de+Cara%2C+%C3%81+R">Ángeles Rodríguez de Cara</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Milara%2C+E">Eva Milara</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Zhinin-Vera%2C+L">Luis Zhinin-Vera</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Peluffo-Ord%C3%B3%C3%B1ez%2C+D+H">Diego H. Peluffo-Ordóñez</a>
+      
+    </p>
+    
+    <p class="abstract mathjax">
+      <span class="search-hit">Abstract</span>:
+      <span class="abstract-short has-text-grey-dark mathjax" id="2609.29650v1-abstract-short" style="display: inline;">
+        Tabular-to-image encoding methods enable the application of models based on both convolutional <span class="search-hit mathjax">neural</span>&hellip;
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.29650v1-abstract-full').style.display = 'inline'; document.getElementById('2609.29650v1-abstract-short').style.display = 'none';">&#9661; More</a>
+      </span>
+      <span class="abstract-full has-text-grey-dark mathjax" id="2609.29650v1-abstract-full" style="display: none;">
+        Tabular-to-image encoding methods enable the application of models based on both convolutional <span class="search-hit mathjax">neural</span> <span class="search-hit mathjax">networks</span> and vision transformers to tabular data, transforming feature vectors into images. Existing methods employ linear and nonlinear dimensionality reduction techniques (e.g., Principal Component Analysis (PCA), t-SNE, and UMAP) to determine pixel positions, resulting in images whose spatial layout do not inherently reflect feature relationships. This paper introduces Visibility <span class="search-hit mathjax">Graphs</span> for Tabular-to-Image Encoding (VG-TIE), a novel method that encodes the structure of feature values using Natural Visibility <span class="search-hit mathjax">Graph</span> (NVG) and Horizontal Visibility <span class="search-hit mathjax">Graph</span> (HVG) into a two-dimensional space obtained through PCA. The resulting images are model-agnostic and intrinsically interpretable. Each pixel corresponds to an input feature, its intensity reflects the magnitude and direction of deviation from the population mean, and edges represent formally defined visibility relationships between features. VG-TIE provides two interpretability methods: (i) feature ranking from node degree <span class="search-hit mathjax">distributions</span>; and (ii) local and global feature importance from pixel intensity combined with Grad-CAM. Experiments on six public tabular datasets show that VG-TIE is competitive with other tabular-to-image methods while providing interpretability on feature importance and ranking similar to intrinsic interpretable methods. The results highlight the potential of the proposed image-based transformation to provide an effective framework that expands the use of deep learning across tabular data domains.
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.29650v1-abstract-full').style.display = 'none'; document.getElementById('2609.29650v1-abstract-short').style.display = 'inline';">&#9651; Less</a>
+      </span>
+    </p>
+    
+
+    <p class="is-size-7"><span class="has-text-black-bis has-text-weight-semibold">Submitted</span> 29 August, 2026; 
+      <span class="has-text-black-bis has-text-weight-semibold">originally announced</span> September 2026.
+      
+    </p>
+    
+
+    
+
+    
+  </li>
+
+  <li class="arxiv-result">
+    <div class="is-marginless">
+      <p class="list-title is-inline-block"><a href="https://arxiv.org/abs/2609.28262">arXiv:2609.28262</a>
+        <span>&nbsp;[<a href="https://arxiv.org/pdf/2609.28262">pdf</a>, <a href="https://arxiv.org/ps/2609.28262">ps</a>, <a href="https://arxiv.org/format/2609.28262">other</a>]&nbsp;</span>
+      </p>
+      <div class="tags is-inline-block">
+        <span class="tag is-small is-link tooltip is-tooltip-top" data-tooltip="Computer Vision and Pattern Recognition">cs.CV</span>
+        
+          
+            <span class="tag is-small is-grey tooltip is-tooltip-top" data-tooltip="Machine Learning">cs.LG</span>
+          
+            <span class="tag is-small is-grey tooltip is-tooltip-top" data-tooltip="Performance">cs.PF</span>
+          
+        </div>
+      
+    </div>
+    
+    <p class="title is-5 mathjax">
+      
+        RAMP: Robust Adaptive Mixed-Precision Quantization for Edge CPU Vision Models
+      
+    </p>
+    <p class="authors">
+      <span class="has-text-black-bis has-text-weight-semibold">Authors:</span>
+      
+      <a href="/search/?searchtype=author&amp;query=Poblaci%C3%B3n-Criado%2C+D">David Población-Criado</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Garcia-Gasulla%2C+D">Dario Garcia-Gasulla</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Quinones%2C+E">Eduardo Quinones</a>
+      
+    </p>
+    
+    <p class="abstract mathjax">
+      <span class="search-hit">Abstract</span>:
+      <span class="abstract-short has-text-grey-dark mathjax" id="2609.28262v1-abstract-short" style="display: inline;">
+        &hellip;fail systematically on modern architectures. We present a systematic empirical study of 13 sensitivity metrics for layer-wise INT8 quantization across four distinctly different <span class="search-hit mathjax">neural</span>&hellip;
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.28262v1-abstract-full').style.display = 'inline'; document.getElementById('2609.28262v1-abstract-short').style.display = 'none';">&#9661; More</a>
+      </span>
+      <span class="abstract-full has-text-grey-dark mathjax" id="2609.28262v1-abstract-full" style="display: none;">
+        Deploying deep learning models on edge CPUs is bottlenecked by computational and memory constraints. Mixed-precision quantization promises to reduce inference latency while preserving accuracy. However, quantization affects different layer types in inconsistent ways, so identifying where accuracy loss is minimized and latency reduction is maximized is critical, as the effect accumulates over a full deployment into substantial savings or unacceptable task degradation. Such identification relies on sensitivity metrics, proxies that estimate layer-wise degradation without evaluating the task accuracy of every candidate policy. Nevertheless, widely used metrics fail systematically on modern architectures. We present a systematic empirical study of 13 sensitivity metrics for layer-wise INT8 quantization across four distinctly different <span class="search-hit mathjax">neural</span> <span class="search-hit mathjax">networks</span>, and validate the resulting policies on two ARM64 platforms. Gradient-based sensitivity methods fail on 4 out of 8 model-hardware configurations and weight-based statistics on 2. In contrast, the Jensen-Shannon Divergence achieves zero catastrophic failures, reliably isolating the layers that cannot be safely quantized. A sensitivity metric alone does not define a policy, and the fixed thresholds typically used for that step are fragile over the highly skewed <span class="search-hit mathjax">distributions</span> of modern architectures. We address this with K-Means clustering, achieving near-lossless accuracy and a mean speed-up of $1.81\times$ over the full-precision model. Finally, we reveal that excluding from quantization the layers whose speed-up is negligible, regardless of their sensitivity, can be counterproductive, as it induces computational <span class="search-hit mathjax">graph</span> fragmentation and disables operator fusion. Our results yield concrete allocation policies for practitioners and researchers deploying quantized vision models on heterogeneous edge CPUs, without GPU access or gradient computation.
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.28262v1-abstract-full').style.display = 'none'; document.getElementById('2609.28262v1-abstract-short').style.display = 'inline';">&#9651; Less</a>
+      </span>
+    </p>
+    
+
+    <p class="is-size-7"><span class="has-text-black-bis has-text-weight-semibold">Submitted</span> 23 September, 2026; 
+      <span class="has-text-black-bis has-text-weight-semibold">originally announced</span> September 2026.
+      
+    </p>
+    
+    <p class="comments is-size-7">
+      <span class="has-text-black-bis has-text-weight-semibold">Comments:</span>
+      <span class="has-text-grey-dark mathjax">Accepted at the 37th British Machine Vision Conference (BMVC) 2026. 13 pages, 4 figures, 2 tables. Code available at https://github.com/davidpob99/ramp-mpq</span>
+    </p>
+    
+
+    
+
+    
+  </li>
+
+  <li class="arxiv-result">
+    <div class="is-marginless">
+      <p class="list-title is-inline-block"><a href="https://arxiv.org/abs/2609.27169">arXiv:2609.27169</a>
+        <span>&nbsp;[<a href="https://arxiv.org/pdf/2609.27169">pdf</a>, <a href="https://arxiv.org/ps/2609.27169">ps</a>, <a href="https://arxiv.org/format/2609.27169">other</a>]&nbsp;</span>
+      </p>
+      <div class="tags is-inline-block">
+        <span class="tag is-small is-link tooltip is-tooltip-top" data-tooltip="Signal Processing">eess.SP</span>
+        </div>
+      
+    </div>
+    
+    <p class="title is-5 mathjax">
+      
+        GCN-Based Model for Fault Classification in Distribution Networks under Harmonic Distortion
+      
+    </p>
+    <p class="authors">
+      <span class="has-text-black-bis has-text-weight-semibold">Authors:</span>
+      
+      <a href="/search/?searchtype=author&amp;query=Razick%2C+F+R+M">Fathima Razeeya Mohamed Razick</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Ahsan%2C+S+M">Syed Muhammad Ahsan</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Musilek%2C+P">Petr Musilek</a>
+      
+    </p>
+    
+    <p class="abstract mathjax">
+      <span class="search-hit">Abstract</span>:
+      <span class="abstract-short has-text-grey-dark mathjax" id="2609.27169v1-abstract-short" style="display: inline;">
+        The increasing integration of <span class="search-hit mathjax">distributed</span> energy resources introduces new challenges for accurate fault detection and classification in&hellip;
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.27169v1-abstract-full').style.display = 'inline'; document.getElementById('2609.27169v1-abstract-short').style.display = 'none';">&#9661; More</a>
+      </span>
+      <span class="abstract-full has-text-grey-dark mathjax" id="2609.27169v1-abstract-full" style="display: none;">
+        The increasing integration of <span class="search-hit mathjax">distributed</span> energy resources introduces new challenges for accurate fault detection and classification in <span class="search-hit mathjax">distribution</span> <span class="search-hit mathjax">networks</span>. This paper presents a topology-aware <span class="search-hit mathjax">graph</span> convolutional <span class="search-hit mathjax">network</span>-based model for fault classification under inverter-induced harmonic distortion. The model uses pre-fault and post-fault voltage and current phasors, including harmonic components, mapped to the IEEE 34-bus system topology. The simulation data generated in OpenDSS encompass varying levels of penetration of solar photovoltaics (30%, 50%, 70%) and current total harmonic distortion (0%, 1%, 3%, 5%) across multiple fault types: single line-to-ground, line-to-line, double line-to-ground, and three-phase-to-ground. A differential evolution algorithm is employed to optimize the hyperparameters of the <span class="search-hit mathjax">network</span>, resulting in a three-layer model that achieves an F1-score of 0.98. Stress testing across scenarios confirms high robustness and minimal class confusion. The results demonstrate that a <span class="search-hit mathjax">graph</span> convolutional <span class="search-hit mathjax">network</span>-based model can effectively classify <span class="search-hit mathjax">distribution</span> faults under varying photovoltaic penetration levels and harmonically distorted conditions. Comparative analyses with convolutional <span class="search-hit mathjax">neural</span> <span class="search-hit mathjax">network</span>, long short-term memory, and multi-layer perceptron architectures demonstrate that the proposed model delivers superior classification performance, particularly under the most stressed condition with 70% photovoltaic penetration and 5% harmonic distortion.
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.27169v1-abstract-full').style.display = 'none'; document.getElementById('2609.27169v1-abstract-short').style.display = 'inline';">&#9651; Less</a>
+      </span>
+    </p>
+    
+
+    <p class="is-size-7"><span class="has-text-black-bis has-text-weight-semibold">Submitted</span> 22 September, 2026; 
+      <span class="has-text-black-bis has-text-weight-semibold">originally announced</span> September 2026.
+      
+    </p>
+    
+    <p class="comments is-size-7">
+      <span class="has-text-black-bis has-text-weight-semibold">Comments:</span>
+      <span class="has-text-grey-dark mathjax">Accepted and presented at the IEEE Power and Energy Society General Meeting 2026, Montreal, Canada, July 19-23, 2026</span>
+    </p>
+    
+
+    
+
+    
+  </li>
+
+  <li class="arxiv-result">
+    <div class="is-marginless">
+      <p class="list-title is-inline-block"><a href="https://arxiv.org/abs/2609.27069">arXiv:2609.27069</a>
+        <span>&nbsp;[<a href="https://arxiv.org/pdf/2609.27069">pdf</a>, <a href="https://arxiv.org/ps/2609.27069">ps</a>, <a href="https://arxiv.org/format/2609.27069">other</a>]&nbsp;</span>
+      </p>
+      <div class="tags is-inline-block">
+        <span class="tag is-small is-link tooltip is-tooltip-top" data-tooltip="Software Engineering">cs.SE</span>
+        
+          
+            <span class="tag is-small is-grey tooltip is-tooltip-top" data-tooltip="Machine Learning">cs.LG</span>
+          
+        </div>
+      
+    </div>
+    
+    <p class="title is-5 mathjax">
+      
+        Does Graph Structure Earn Its Place in Microservice Root-Cause Analysis? A Controlled Study on RCAEval, and What the Benchmark Was Really Measuring
+      
+    </p>
+    <p class="authors">
+      <span class="has-text-black-bis has-text-weight-semibold">Authors:</span>
+      
+      <a href="/search/?searchtype=author&amp;query=Bulji%C4%87%2C+I">Imad Buljić</a>
+      
+    </p>
+    
+    <p class="abstract mathjax">
+      <span class="search-hit">Abstract</span>:
+      <span class="abstract-short has-text-grey-dark mathjax" id="2609.27069v1-abstract-short" style="display: inline;">
+        <span class="search-hit mathjax">Graph</span>&hellip;
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.27069v1-abstract-full').style.display = 'inline'; document.getElementById('2609.27069v1-abstract-short').style.display = 'none';">&#9661; More</a>
+      </span>
+      <span class="abstract-full has-text-grey-dark mathjax" id="2609.27069v1-abstract-full" style="display: none;">
+        <span class="search-hit mathjax">Graph</span> <span class="search-hit mathjax">neural</span> <span class="search-hit mathjax">networks</span> dominate recent work on microservice root-cause analysis, yet recent results question whether the <span class="search-hit mathjax">graph</span> contributes. Those results compare whole pipelines, so when a flat model wins one cannot tell whether structure is useless or redundant. We run the comparison they imply on RCAEval: three learned arms with identical features, optimiser, validation split, early-stopping rule and scoring head, in which a single term separates the <span class="search-hit mathjax">graph</span> arms. Across two RCAEval benchmarks, two topology sources and four regimes we find no reliable <span class="search-hit mathjax">graph</span>-specific effect: in-<span class="search-hit mathjax">distribution</span> the <span class="search-hit mathjax">graph</span> model leads the conventional flat model by 0.003 Avg@5 (p = 0.844, n = 6 disjoint folds). Auditing the pipeline surfaced two benchmark properties that condition any result on it. RCAEval injects faults into only five services per system while exposing 12 to 70 in telemetry, and the headline metric is Avg@5: a ranker reading no telemetry at all places the true culprit in the top five on 99.7 percent of held-out incidents, scoring Avg@5 0.488. That prior, not the uniform-random 0.137, is the honest in-<span class="search-hit mathjax">distribution</span> floor, and it collapses to 0.192 across systems. The second property is a non-uniform column schema that silently zeroes telemetry for most RE1 cases. We reproduce a published baseline, BARO, RCAEval&#39;s own reference implementation; on the one system with a clean schema it reaches similar aggregate accuracy to our heuristic, within 0.004, under a different scoring rule. The audit motivated a new model. PSC-GRCA separates a candidate score into a system prior, telemetry evidence and a centred <span class="search-hit mathjax">graph</span> residual, and reaches mean Avg@5 0.915 against 0.864 for the flat baseline, while its ablations locate most of the gain in the prior term rather than the <span class="search-hit mathjax">graph</span>. We close with a twelve-item checklist for <span class="search-hit mathjax">graph</span>-versus-flat ablation studies, distilled from sixty-two recorded defects.
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.27069v1-abstract-full').style.display = 'none'; document.getElementById('2609.27069v1-abstract-short').style.display = 'inline';">&#9651; Less</a>
+      </span>
+    </p>
+    
+
+    <p class="is-size-7"><span class="has-text-black-bis has-text-weight-semibold">Submitted</span> 22 September, 2026; 
+      <span class="has-text-black-bis has-text-weight-semibold">originally announced</span> September 2026.
+      
+    </p>
+    
+    <p class="comments is-size-7">
+      <span class="has-text-black-bis has-text-weight-semibold">Comments:</span>
+      <span class="has-text-grey-dark mathjax">17 pages; preprint published at Zenodo, DOI 10.5281/zenodo.22832168</span>
+    </p>
+    
+
+    
+
+    
+  </li>
+
+  <li class="arxiv-result">
+    <div class="is-marginless">
+      <p class="list-title is-inline-block"><a href="https://arxiv.org/abs/2609.26237">arXiv:2609.26237</a>
+        <span>&nbsp;[<a href="https://arxiv.org/pdf/2609.26237">pdf</a>, <a href="https://arxiv.org/ps/2609.26237">ps</a>, <a href="https://arxiv.org/format/2609.26237">other</a>]&nbsp;</span>
+      </p>
+      <div class="tags is-inline-block">
+        <span class="tag is-small is-link tooltip is-tooltip-top" data-tooltip="Information Retrieval">cs.IR</span>
+        
+          
+            <span class="tag is-small is-grey tooltip is-tooltip-top" data-tooltip="Artificial Intelligence">cs.AI</span>
+          
+            <span class="tag is-small is-grey tooltip is-tooltip-top" data-tooltip="Computation and Language">cs.CL</span>
+          
+        </div>
+      
+    </div>
+    
+    <p class="title is-5 mathjax">
+      
+        ABAI at COLIEE 2026 Task 1: Multi-Stage Retrieval with GraphRAG-Enhanced Meta-Learning, and a Post-Hoc Study of the Cross-Validation-to-Test Gap
+      
+    </p>
+    <p class="authors">
+      <span class="has-text-black-bis has-text-weight-semibold">Authors:</span>
+      
+      <a href="/search/?searchtype=author&amp;query=Cho%2C+M">Minhan Cho</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Park%2C+S">Soyoung Park</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Choi%2C+D">Daejin Choi</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Han%2C+J">Jinyoung Han</a>
+      
+    </p>
+    
+    <p class="abstract mathjax">
+      <span class="search-hit">Abstract</span>:
+      <span class="abstract-short has-text-grey-dark mathjax" id="2609.26237v1-abstract-short" style="display: inline;">
+        &hellip;overlap a retriever would rely on. Our pipeline answers this with four independently trained stages: multi-view BM25 over citation-context windows with reciprocal rank fusion, <span class="search-hit mathjax">neural</span> reranking,&hellip;
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.26237v1-abstract-full').style.display = 'inline'; document.getElementById('2609.26237v1-abstract-short').style.display = 'none';">&#9661; More</a>
+      </span>
+      <span class="abstract-full has-text-grey-dark mathjax" id="2609.26237v1-abstract-full" style="display: none;">
+        We present the ABAI submission to COLIEE 2026 Task 1, case law retrieval, together with a controlled study of why it underperformed. The task suppresses the cited passages themselves, which removes much of the lexical overlap a retriever would rely on. Our pipeline answers this with four independently trained stages: multi-view BM25 over citation-context windows with reciprocal rank fusion, <span class="search-hit mathjax">neural</span> reranking, <span class="search-hit mathjax">graph</span>-based features from entity communities and a <span class="search-hit mathjax">graph</span> attention <span class="search-hit mathjax">network</span>, and a LightGBM meta-learner over 34 features. Our best run reached F1=0.177 on the official test set, against a cross-validated 0.311, and we attributed that gap to a recall ceiling, temporal <span class="search-hit mathjax">distribution</span> shift, and threshold miscalibration. We then tested all three. Under leakage-free protocols threshold transfer costs 0.007 F1, decision quality is flat across chronological quartiles, and the official test queries are not measurably farther from the training manifold than training queries are from each other, in two independent embedding spaces. Decomposing the misses instead splits them exactly evenly between candidates never retrieved and candidates retrieved but ranked below the cut. Measuring the remedies for each half, BM25 length-normalisation tuning, an event-triple view, and full-content dense fusion lift top-200 recall by three to seven points, and citation-<span class="search-hit mathjax">graph</span> features add 0.014 F1 over eight seeds once own-citation leakage is removed, while per-query cutoff rules, a zero-shot reranker swap, and a date filter do not help. We also document four evaluation artifacts, each of which reversed a result once the protocol was corrected.
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.26237v1-abstract-full').style.display = 'none'; document.getElementById('2609.26237v1-abstract-short').style.display = 'inline';">&#9651; Less</a>
+      </span>
+    </p>
+    
+
+    <p class="is-size-7"><span class="has-text-black-bis has-text-weight-semibold">Submitted</span> 12 August, 2026; 
+      <span class="has-text-black-bis has-text-weight-semibold">originally announced</span> September 2026.
+      
+    </p>
+    
+    <p class="comments is-size-7">
+      <span class="has-text-black-bis has-text-weight-semibold">Comments:</span>
+      <span class="has-text-grey-dark mathjax">13 pages, 3 figures, 9 tables. Extended version of the paper presented at COLIEE 2026 (Workshop on the Thirteenth International Competition on Legal Information Extraction and Entailment), Singapore, June 2026. Code: https://github.com/rabqatab/coliee2026_ABAI</span>
+    </p>
+    
+
+    
+      <p class="comments is-size-7">
+        
+
+        
+
+        
+          <span class="has-text-black-bis has-text-weight-semibold">ACM Class:</span>
+          H.3.3; I.2.7
+        
+      </p>
+    
+
+    
+  </li>
+
+  <li class="arxiv-result">
+    <div class="is-marginless">
+      <p class="list-title is-inline-block"><a href="https://arxiv.org/abs/2609.26171">arXiv:2609.26171</a>
+        <span>&nbsp;[<a href="https://arxiv.org/pdf/2609.26171">pdf</a>, <a href="https://arxiv.org/ps/2609.26171">ps</a>, <a href="https://arxiv.org/format/2609.26171">other</a>]&nbsp;</span>
+      </p>
+      <div class="tags is-inline-block">
+        <span class="tag is-small is-link tooltip is-tooltip-top" data-tooltip="Information Retrieval">cs.IR</span>
+        
+          
+            <span class="tag is-small is-grey tooltip is-tooltip-top" data-tooltip="Probability">math.PR</span>
+          
+        </div>
+      
+    </div>
+    
+    <p class="title is-5 mathjax">
+      
+        When Concealed Links Cannot Be Recovered: A Structural Identifiability Bound and Evaluation Pitfalls in Offshore Leak Networks
+      
+    </p>
+    <p class="authors">
+      <span class="has-text-black-bis has-text-weight-semibold">Authors:</span>
+      
+      <a href="/search/?searchtype=author&amp;query=Bingham%2C+J">Joseph Bingham</a>
+      
+    </p>
+    
+    <p class="abstract mathjax">
+      <span class="search-hit">Abstract</span>:
+      <span class="abstract-short has-text-grey-dark mathjax" id="2609.26171v1-abstract-short" style="display: inline;">
+        Leaks such as the Panama and Paradise Papers expose large <span class="search-hit mathjax">networks</span> of offshore entities, and they invite an obvious question for&hellip;
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.26171v1-abstract-full').style.display = 'inline'; document.getElementById('2609.26171v1-abstract-short').style.display = 'none';">&#9661; More</a>
+      </span>
+      <span class="abstract-full has-text-grey-dark mathjax" id="2609.26171v1-abstract-full" style="display: none;">
+        Leaks such as the Panama and Paradise Papers expose large <span class="search-hit mathjax">networks</span> of offshore entities, and they invite an obvious question for <span class="search-hit mathjax">network</span> learning. Can the relations these structures are built to hide---above all, who beneficially owns what---be recovered from the public part of the leak by link prediction? We argue that the answer is mostly no, and that the analyses which suggest otherwise are measuring the wrong thing. Our main result is a <span class="search-hit mathjax">distribution</span>-free identifiability bound. For any recovery rule that respects <span class="search-hit mathjax">graph</span> isomorphism, and that covers every topological link-prediction score together with every message-passing <span class="search-hit mathjax">graph</span> <span class="search-hit mathjax">neural</span> <span class="search-hit mathjax">network</span>, a concealed endpoint left isolated in the observed <span class="search-hit mathjax">graph</span> is interchangeable with its structural twins, so its hidden edge cannot be recovered above chance. Isolation is only the sharpest case. In general the ceiling on recovery is set by the size of a node&#39;s structural-indistinguishability class, for which the Weisfeiler--Leman colour class is a computable stand-in, and node degree is at best a loose proxy. On the full ICIJ Offshore Leaks <span class="search-hit mathjax">graph</span> (814K entities and 84K labelled beneficial-owner edges) a classifier-free, degree-controlled probe reproduces an exact $0.5$ floor for isolated owners, who make up $20.6\%$ of all owners, and a trained <span class="search-hit mathjax">graph</span> <span class="search-hit mathjax">neural</span> <span class="search-hit mathjax">network</span> lands on the same floor. Recovery climbs only as structural distinctiveness grows, and the floor reappears in every one of the five leaks. Along the way we document five evaluation traps. Each one makes a bound that cannot be beaten look beaten, and we give a short rule that avoids them. The practical upshot is to redirect effort from the hidden principal, which is close to unrecoverable, toward the machinery of concealment, and to spell out why fusing external data helps far less than one would hope.
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.26171v1-abstract-full').style.display = 'none'; document.getElementById('2609.26171v1-abstract-short').style.display = 'inline';">&#9651; Less</a>
+      </span>
+    </p>
+    
+
+    <p class="is-size-7"><span class="has-text-black-bis has-text-weight-semibold">Submitted</span> 10 August, 2026; 
+      <span class="has-text-black-bis has-text-weight-semibold">originally announced</span> September 2026.
+      
+    </p>
+    
+    <p class="comments is-size-7">
+      <span class="has-text-black-bis has-text-weight-semibold">Comments:</span>
+      <span class="has-text-grey-dark mathjax">9 pages, 7 figures</span>
+    </p>
+    
+
+    
+      <p class="comments is-size-7">
+        
+
+        
+          <span class="has-text-black-bis has-text-weight-semibold">MSC Class:</span>
+          68T05
+        
+
+        
+          <span class="has-text-black-bis has-text-weight-semibold">ACM Class:</span>
+          G.2.2; I.2.6; H.2.8
+        
+      </p>
+    
+
+    
+  </li>
+
+  <li class="arxiv-result">
+    <div class="is-marginless">
+      <p class="list-title is-inline-block"><a href="https://arxiv.org/abs/2609.25397">arXiv:2609.25397</a>
+        <span>&nbsp;[<a href="https://arxiv.org/pdf/2609.25397">pdf</a>, <a href="https://arxiv.org/ps/2609.25397">ps</a>, <a href="https://arxiv.org/format/2609.25397">other</a>]&nbsp;</span>
+      </p>
+      <div class="tags is-inline-block">
+        <span class="tag is-small is-link tooltip is-tooltip-top" data-tooltip="Machine Learning">cs.LG</span>
+        
+          
+            <span class="tag is-small is-grey tooltip is-tooltip-top" data-tooltip="Artificial Intelligence">cs.AI</span>
+          
+            <span class="tag is-small is-grey tooltip is-tooltip-top" data-tooltip="Optimization and Control">math.OC</span>
+          
+        </div>
+      
+    </div>
+    
+    <p class="title is-5 mathjax">
+      
+        Deep Reinforcement Learning on Item-Compatibility Graphs for One-Dimensional Bin Packing
+      
+    </p>
+    <p class="authors">
+      <span class="has-text-black-bis has-text-weight-semibold">Authors:</span>
+      
+      <a href="/search/?searchtype=author&amp;query=Ayd%C4%B1n%2C+M+A">M. Aslı Aydın</a>
+      
+    </p>
+    
+    <p class="abstract mathjax">
+      <span class="search-hit">Abstract</span>:
+      <span class="abstract-short has-text-grey-dark mathjax" id="2609.25397v1-abstract-short" style="display: inline;">
+        &hellip;most learned packing methods target 2D and 3D variants, and intelligent learned solvers for 1D-BPP remain scarce. In this paper, we present a novel end-to-end, size-agnostic <span class="search-hit mathjax">graph</span> reinforcement learning framework for 1D-BPP. We formulate the packing process as a Markov decision process on an item-compatibility&hellip;
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.25397v1-abstract-full').style.display = 'inline'; document.getElementById('2609.25397v1-abstract-short').style.display = 'none';">&#9661; More</a>
+      </span>
+      <span class="abstract-full has-text-grey-dark mathjax" id="2609.25397v1-abstract-full" style="display: none;">
+        The one-dimensional bin packing problem (1D-BPP) is a classical NP-hard combinatorial optimization problem with applications ranging from logistics and manufacturing to cloud resource management. Although deep reinforcement learning (DRL) has become a competitive paradigm for data-driven optimization, most learned packing methods target 2D and 3D variants, and intelligent learned solvers for 1D-BPP remain scarce. In this paper, we present a novel end-to-end, size-agnostic <span class="search-hit mathjax">graph</span> reinforcement learning framework for 1D-BPP. We formulate the packing process as a Markov decision process on an item-compatibility <span class="search-hit mathjax">graph</span>, serving as a structural knowledge representation in which every action merges two partial bins that fit together. A <span class="search-hit mathjax">graph</span> <span class="search-hit mathjax">neural</span> <span class="search-hit mathjax">network</span> actor-critic policy extracts relational features from this representation and is trained through reinforcement learning and decoded by stochastic beam search, enabling a single trained model to generalize zero-shot to instances of any size. We conduct a systematic empirical study across <span class="search-hit mathjax">graph</span> encoders, DRL algorithms, reward functions, training <span class="search-hit mathjax">distributions</span>, and hyperparameters. Evaluated zero-shot on the full BPPLIB benchmark against a constructive heuristic, a grouping genetic algorithm, and recent learned methods, our data-driven policy lowers the mean optimality gap of the constructive heuristic from 2.66\% to 2.31\%, with the largest gains on structured instances. Against learned baselines evaluated on the same benchmark, it attains a lower gap on most of the nine families and is far more stable across instance <span class="search-hit mathjax">distributions</span>. On the hardest benchmark family, it outperforms a state-of-the-art learned solver that relies on column generation and integer programming, while using no solver at all. A grouping genetic algorithm remains ahead overall, and we analyze where and why the residual gap arises.
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.25397v1-abstract-full').style.display = 'none'; document.getElementById('2609.25397v1-abstract-short').style.display = 'inline';">&#9651; Less</a>
+      </span>
+    </p>
+    
+
+    <p class="is-size-7"><span class="has-text-black-bis has-text-weight-semibold">Submitted</span> 21 September, 2026; 
+      <span class="has-text-black-bis has-text-weight-semibold">originally announced</span> September 2026.
+      
+    </p>
+    
+    <p class="comments is-size-7">
+      <span class="has-text-black-bis has-text-weight-semibold">Comments:</span>
+      <span class="has-text-grey-dark mathjax">29 pages,3 figures, 8 tables</span>
+    </p>
+    
+
+    
+
+    
+  </li>
+
+  <li class="arxiv-result">
+    <div class="is-marginless">
+      <p class="list-title is-inline-block"><a href="https://arxiv.org/abs/2609.25143">arXiv:2609.25143</a>
+        <span>&nbsp;[<a href="https://arxiv.org/pdf/2609.25143">pdf</a>, <a href="https://arxiv.org/ps/2609.25143">ps</a>, <a href="https://arxiv.org/format/2609.25143">other</a>]&nbsp;</span>
+      </p>
+      <div class="tags is-inline-block">
+        <span class="tag is-small is-link tooltip is-tooltip-top" data-tooltip="Machine Learning">cs.LG</span>
+        
+          
+            <span class="tag is-small is-grey tooltip is-tooltip-top" data-tooltip="Artificial Intelligence">cs.AI</span>
+          
+        </div>
+      
+    </div>
+    
+    <p class="title is-5 mathjax">
+      
+        Stable Unsupervised Continual Chunking with Sheaf SyncMap
+      
+    </p>
+    <p class="authors">
+      <span class="has-text-black-bis has-text-weight-semibold">Authors:</span>
+      
+      <a href="/search/?searchtype=author&amp;query=Li%2C+X">Xueyuan Li</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Vargas%2C+D+V">Danilo Vasconcellos Vargas</a>
+      
+    </p>
+    
+    <p class="abstract mathjax">
+      <span class="search-hit">Abstract</span>:
+      <span class="abstract-short has-text-grey-dark mathjax" id="2609.25143v1-abstract-short" style="display: inline;">
+        &hellip;method achieves the highest normalized mutual information (NMI) among the evaluated SyncMap variants on 12 of 18 probabilistic Continual General Chunking Problem (CGCP) <span class="search-hit mathjax">graphs</span> with two-state memory and on 17 of 18&hellip;
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.25143v1-abstract-full').style.display = 'inline'; document.getElementById('2609.25143v1-abstract-short').style.display = 'none';">&#9661; More</a>
+      </span>
+      <span class="abstract-full has-text-grey-dark mathjax" id="2609.25143v1-abstract-full" style="display: none;">
+        Unsupervised Continual chunking is a fundamental problem in machine learning and neuroscience, where the goal is to identify groups of states that frequently co-occur in temporal sequences. A key challenge is to form accurate chunks while maintaining their stability over time. In this work, we propose sheaf regularization to reduce local inconsistencies in Decentralized SyncMap, a self-organizing system, and thereby stabilize its chunking dynamics. We introduce a radial sheaf structure that penalizes distance-dependent radial motion between pairs of variables. Experimental results show that the proposed method achieves the highest normalized mutual information (NMI) among the evaluated SyncMap variants on 12 of 18 probabilistic Continual General Chunking Problem (CGCP) <span class="search-hit mathjax">graphs</span> with two-state memory and on 17 of 18 <span class="search-hit mathjax">graphs</span> with dynamic memory. In the sequential adaptation experiment, Sheaf SyncMap also achieves high NMI after shifts in the input <span class="search-hit mathjax">distribution</span>, indicating that it can adapt to new knowledge while avoiding the negative transfer commonly observed in modern machine learning systems such as <span class="search-hit mathjax">neural</span> <span class="search-hit mathjax">networks</span>.
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.25143v1-abstract-full').style.display = 'none'; document.getElementById('2609.25143v1-abstract-short').style.display = 'inline';">&#9651; Less</a>
+      </span>
+    </p>
+    
+
+    <p class="is-size-7"><span class="has-text-black-bis has-text-weight-semibold">Submitted</span> 21 September, 2026; 
+      <span class="has-text-black-bis has-text-weight-semibold">originally announced</span> September 2026.
+      
+    </p>
+    
+
+    
+
+    
+  </li>
+
+  <li class="arxiv-result">
+    <div class="is-marginless">
+      <p class="list-title is-inline-block"><a href="https://arxiv.org/abs/2609.24280">arXiv:2609.24280</a>
+        <span>&nbsp;[<a href="https://arxiv.org/pdf/2609.24280">pdf</a>, <a href="https://arxiv.org/ps/2609.24280">ps</a>, <a href="https://arxiv.org/format/2609.24280">other</a>]&nbsp;</span>
+      </p>
+      <div class="tags is-inline-block">
+        <span class="tag is-small is-link tooltip is-tooltip-top" data-tooltip="Cryptography and Security">cs.CR</span>
+        
+          
+            <span class="tag is-small is-grey tooltip is-tooltip-top" data-tooltip="Artificial Intelligence">cs.AI</span>
+          
+            <span class="tag is-small is-grey tooltip is-tooltip-top" data-tooltip="Machine Learning">cs.LG</span>
+          
+        </div>
+      
+    </div>
+    
+    <p class="title is-5 mathjax">
+      
+        Temporal Generalization and Explanation Stability of Control Flow Graph Neural Networks for Malware Detection
+      
+    </p>
+    <p class="authors">
+      <span class="has-text-black-bis has-text-weight-semibold">Authors:</span>
+      
+      <a href="/search/?searchtype=author&amp;query=Sajeed%2C+M+A">Md. Asif Sajeed</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Mondal%2C+M+N+I">Md. Nazrul Islam Mondal</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Akash%2C+M+A+H">Md Ashraful Hossen Akash</a>
+      
+    </p>
+    
+    <p class="abstract mathjax">
+      <span class="search-hit">Abstract</span>:
+      <span class="abstract-short has-text-grey-dark mathjax" id="2609.24280v1-abstract-short" style="display: inline;">
+        Malware detection is a critical task in cybersecurity, and <span class="search-hit mathjax">graph</span>&hellip;
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.24280v1-abstract-full').style.display = 'inline'; document.getElementById('2609.24280v1-abstract-short').style.display = 'none';">&#9661; More</a>
+      </span>
+      <span class="abstract-full has-text-grey-dark mathjax" id="2609.24280v1-abstract-full" style="display: none;">
+        Malware detection is a critical task in cybersecurity, and <span class="search-hit mathjax">graph</span> <span class="search-hit mathjax">neural</span> <span class="search-hit mathjax">networks</span> over control flow <span class="search-hit mathjax">graphs</span> have shown promising results for it. However, detectors are usually evaluated on a random split of a corpus collected over a single period, which cannot show how well a model generalizes to later samples. This study addresses that limitation with a strict temporal split: every model is trained on one period and scored once on a later one. Two corpora of control flow <span class="search-hit mathjax">graphs</span>, each node carrying 37 features, were extracted statically from 1,989 Windows portable executables: 459 <span class="search-hit mathjax">graphs</span> from 2024-2025 for training and 223 from 2026 for evaluation. Twelve variants and a flat-feature control were trained on the earlier corpus. The choice of message-passing operator changes robustness to the shift significantly, and every pairwise gap that survives correction separates an aggregating architecture from one built around a learned attentional readout. The ranking also reverses: the flat control, which sees node features but no topology, is the best in-<span class="search-hit mathjax">distribution</span> model and among the worst across the boundary, so a conventional benchmark would have rejected message passing. Neither recalibration nor ensembling substitutes for the operator choice. Attributions do not shift, but explanation validity is architecture-specific, and the most accurate operator on the later corpus is the hardest to explain. An architecture derived from the finding matches the best searched operator without search. The shift affects both malware and benign classes alike, so these are results about robustness to <span class="search-hit mathjax">distribution</span> shift, not malware evolution.
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.24280v1-abstract-full').style.display = 'none'; document.getElementById('2609.24280v1-abstract-short').style.display = 'inline';">&#9651; Less</a>
+      </span>
+    </p>
+    
+
+    <p class="is-size-7"><span class="has-text-black-bis has-text-weight-semibold">Submitted</span> 21 September, 2026; 
+      <span class="has-text-black-bis has-text-weight-semibold">originally announced</span> September 2026.
+      
+    </p>
+    
+    <p class="comments is-size-7">
+      <span class="has-text-black-bis has-text-weight-semibold">Comments:</span>
+      <span class="has-text-grey-dark mathjax">47 pages, 9 figures, 17 tables. Code available at https://github.com/Ho9pe/TG-CFG</span>
+    </p>
+    
+
+    
+      <p class="comments is-size-7">
+        
+
+        
+          <span class="has-text-black-bis has-text-weight-semibold">MSC Class:</span>
+          68T05; 68M25
+        
+
+        
+          <span class="has-text-black-bis has-text-weight-semibold">ACM Class:</span>
+          K.6.5; I.2.6; D.4.6
+        
+      </p>
+    
+
+    
+  </li>
+
+  <li class="arxiv-result">
+    <div class="is-marginless">
+      <p class="list-title is-inline-block"><a href="https://arxiv.org/abs/2609.23982">arXiv:2609.23982</a>
+        <span>&nbsp;[<a href="https://arxiv.org/pdf/2609.23982">pdf</a>, <a href="https://arxiv.org/ps/2609.23982">ps</a>, <a href="https://arxiv.org/format/2609.23982">other</a>]&nbsp;</span>
+      </p>
+      <div class="tags is-inline-block">
+        <span class="tag is-small is-link tooltip is-tooltip-top" data-tooltip="Astrophysics of Galaxies">astro-ph.GA</span>
+        
+          
+            <span class="tag is-small is-grey tooltip is-tooltip-top" data-tooltip="Cosmology and Nongalactic Astrophysics">astro-ph.CO</span>
+          
+        </div>
+      
+    </div>
+    
+    <p class="title is-5 mathjax">
+      
+        The CAMELS-CROCODILE Simulation Suite: A New Cosmology--Astrophysics Playground for Machine Learning
+      
+    </p>
+    <p class="authors">
+      <span class="has-text-black-bis has-text-weight-semibold">Authors:</span>
+      
+      <a href="/search/?searchtype=author&amp;query=Nagamine%2C+K">Kentaro Nagamine</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Oku%2C+Y">Yuri Oku</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Nishizawa%2C+A+J">Atsushi J. Nishizawa</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Lee%2C+J">Jun-Young Lee</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Villaescusa-Navarro%2C+F">Francisco Villaescusa-Navarro</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Genel%2C+S">Shy Genel</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Angl%C3%A9s-Alc%C3%A1zar%2C+D">Daniel Anglés-Alcázar</a>
+      
+    </p>
+    
+    <p class="abstract mathjax">
+      <span class="search-hit">Abstract</span>:
+      <span class="abstract-short has-text-grey-dark mathjax" id="2609.23982v1-abstract-short" style="display: inline;">
+        &hellip;absorption around galaxies. As a first ML application, we apply a <span class="search-hit mathjax">graph</span> <span class="search-hit mathjax">neural</span> <span class="search-hit mathjax">network</span> trained on IllustrisTNG galaxy catalogs, with frozen weights, to CAMELS-CROCODILE. It fails to recover $Ω_{\rm m}$ and $σ_8$ and returns overconfident posteriors, mainly for simulations contai&hellip;
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.23982v1-abstract-full').style.display = 'inline'; document.getElementById('2609.23982v1-abstract-short').style.display = 'none';">&#9661; More</a>
+      </span>
+      <span class="abstract-full has-text-grey-dark mathjax" id="2609.23982v1-abstract-full" style="display: none;">
+        We present CAMELS-CROCODILE, a suite of cosmological hydrodynamic simulations that extends the CAMELS framework with the \gadget{} smoothed particle hydrodynamics code and the Osaka feedback model. As a companion to the IllustrisTNG-based second-generation CAMELS suite, it provides an independent implementation of the baryonic physics that shapes galaxies, the intergalactic medium, and large-scale structure, broadening the range of subgrid models over which machine-learning (ML) inference can be marginalized and tested. The suite comprises $25$ and $50Mpc/h$ boxes organized into one-parameter, cosmic-variance, and Sobol-sequence sets that vary $26$ cosmological and astrophysical parameters around a fiducial Osaka model. We describe the simulation design and validate the suite against benchmarks and other CAMELS suites. Compared with IllustrisTNG, the fiducial model suppresses the matter power spectrum by only a few per cent, against up to ${\sim}27\%$ at $z=0$, and forms stars with similar efficiency below $10^{12.2} M_\odot/h$ but up to $2.5$ times more efficiently in group-scale halos, both consistent with weaker AGN feedback. We also present the stellar and black hole bias and the Ly$α$ absorption around galaxies. As a first ML application, we apply a <span class="search-hit mathjax">graph</span> <span class="search-hit mathjax">neural</span> <span class="search-hit mathjax">network</span> trained on IllustrisTNG galaxy catalogs, with frozen weights, to CAMELS-CROCODILE. It fails to recover $Ω_{\rm m}$ and $σ_8$ and returns overconfident posteriors, mainly for simulations containing more galaxies than any in its training set; within that range $Ω_{\rm m}$ is recovered with an error only $1.5$ times the in-<span class="search-hit mathjax">distribution</span> value. These results underline the need to train and test ML inference across physically distinct galaxy formation models.
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.23982v1-abstract-full').style.display = 'none'; document.getElementById('2609.23982v1-abstract-short').style.display = 'inline';">&#9651; Less</a>
+      </span>
+    </p>
+    
+
+    <p class="is-size-7"><span class="has-text-black-bis has-text-weight-semibold">Submitted</span> 20 September, 2026; 
+      <span class="has-text-black-bis has-text-weight-semibold">originally announced</span> September 2026.
+      
+    </p>
+    
+    <p class="comments is-size-7">
+      <span class="has-text-black-bis has-text-weight-semibold">Comments:</span>
+      <span class="has-text-grey-dark mathjax">26 pages, 10 figures, submitted</span>
+    </p>
+    
+
+    
+
+    
+  </li>
+
+  <li class="arxiv-result">
+    <div class="is-marginless">
+      <p class="list-title is-inline-block"><a href="https://arxiv.org/abs/2609.23782">arXiv:2609.23782</a>
+        <span>&nbsp;[<a href="https://arxiv.org/pdf/2609.23782">pdf</a>, <a href="https://arxiv.org/ps/2609.23782">ps</a>, <a href="https://arxiv.org/format/2609.23782">other</a>]&nbsp;</span>
+      </p>
+      <div class="tags is-inline-block">
+        <span class="tag is-small is-link tooltip is-tooltip-top" data-tooltip="Graphics">cs.GR</span>
+        </div>
+      
+    </div>
+    
+    <p class="title is-5 mathjax">
+      
+        Edge-centric Brain Transformer: An Edge-centric Functional Connectivity Learning Framework for fMRI-based Brain Disorder Diagnosis
+      
+    </p>
+    <p class="authors">
+      <span class="has-text-black-bis has-text-weight-semibold">Authors:</span>
+      
+      <a href="/search/?searchtype=author&amp;query=Zhao%2C+D">Dengyi Zhao</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Zhou%2C+Z">Zhiheng Zhou</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Zhou%2C+M">Mengyao Zhou</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Wang%2C+Y">Yunping Wang</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Qi%2C+X">Xingqin Qi</a>
+      
+    </p>
+    
+    <p class="abstract mathjax">
+      <span class="search-hit">Abstract</span>:
+      <span class="abstract-short has-text-grey-dark mathjax" id="2609.23782v1-abstract-short" style="display: inline;">
+        Resting-state functional magnetic resonance imaging (rs-fMRI) enables the characterization of functional interactions among <span class="search-hit mathjax">distributed</span> brain regions and has shown promise for brain disorder diagnosis. However, existing deep learning methods predominantly rely on node-centric representations, where brain regions serve as the primary learning units, potential&hellip;
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.23782v1-abstract-full').style.display = 'inline'; document.getElementById('2609.23782v1-abstract-short').style.display = 'none';">&#9661; More</a>
+      </span>
+      <span class="abstract-full has-text-grey-dark mathjax" id="2609.23782v1-abstract-full" style="display: none;">
+        Resting-state functional magnetic resonance imaging (rs-fMRI) enables the characterization of functional interactions among <span class="search-hit mathjax">distributed</span> brain regions and has shown promise for brain disorder diagnosis. However, existing deep learning methods predominantly rely on node-centric representations, where brain regions serve as the primary learning units, potentially overlooking discriminative alterations embedded in functional connections. Here, we propose an edge-centric brain transformer (EBT) framework that reformulates rs-fMRI analysis as functional connection representation learning. Instead of modeling brain regions independently, EBT constructs edge time-series representations to capture dynamic co-fluctuation patterns of functional connections and organizes discriminative connections into a line <span class="search-hit mathjax">graph</span> for explicit connection-to-connection modeling. A structure-aware transformer is developed to learn both local dependencies among anatomically related connections and global interactions across <span class="search-hit mathjax">distributed</span> functional <span class="search-hit mathjax">networks</span>. Furthermore, an edge-level orthogonal clustering readout module is introduced to derive subject-level representations and identify latent connectivity modules associated with brain disorders. Evaluations on multiple neuroimaging datasets demonstrate that EBT consistently outperforms representative <span class="search-hit mathjax">graph</span> <span class="search-hit mathjax">neural</span> <span class="search-hit mathjax">networks</span>, brain transformers, and conventional connectivity-based approaches. Interpretability analyses further reveal stable disease-associated functional connections and connectivity modules that align with known pathological <span class="search-hit mathjax">network</span> alterations. These findings establish an edge-centric perspective for rs-fMRI-based brain disorder diagnosis and provide a promising framework for discovering interpretable connectivity biomarkers. The source code is publicly available at: https://github.com/Zdy12/Edge-centric-Brain-Transformer.
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.23782v1-abstract-full').style.display = 'none'; document.getElementById('2609.23782v1-abstract-short').style.display = 'inline';">&#9651; Less</a>
+      </span>
+    </p>
+    
+
+    <p class="is-size-7"><span class="has-text-black-bis has-text-weight-semibold">Submitted</span> 20 September, 2026; 
+      <span class="has-text-black-bis has-text-weight-semibold">originally announced</span> September 2026.
+      
+    </p>
+    
+    <p class="comments is-size-7">
+      <span class="has-text-black-bis has-text-weight-semibold">Comments:</span>
+      <span class="has-text-grey-dark mathjax">14 pages, 6 figures</span>
+    </p>
+    
+
+    
+
+    
+  </li>
+
+  <li class="arxiv-result">
+    <div class="is-marginless">
+      <p class="list-title is-inline-block"><a href="https://arxiv.org/abs/2609.23723">arXiv:2609.23723</a>
+        <span>&nbsp;[<a href="https://arxiv.org/pdf/2609.23723">pdf</a>, <a href="https://arxiv.org/ps/2609.23723">ps</a>, <a href="https://arxiv.org/format/2609.23723">other</a>]&nbsp;</span>
+      </p>
+      <div class="tags is-inline-block">
+        <span class="tag is-small is-link tooltip is-tooltip-top" data-tooltip="Emerging Technologies">cs.ET</span>
+        </div>
+      
+    </div>
+    
+    <p class="title is-5 mathjax">
+      
+        Droop-Aware Foundation Model Power Flow
+      
+    </p>
+    <p class="authors">
+      <span class="has-text-black-bis has-text-weight-semibold">Authors:</span>
+      
+      <a href="/search/?searchtype=author&amp;query=Sanjani%2C+K">Khezr Sanjani</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Zhang%2C+P">Peng Zhang</a>
+      
+    </p>
+    
+    <p class="abstract mathjax">
+      <span class="search-hit">Abstract</span>:
+      <span class="abstract-short has-text-grey-dark mathjax" id="2609.23723v1-abstract-short" style="display: inline;">
+        &hellip;parameters as structured node features, with deadband discontinuities handled through a smooth tanh approximation that preserves solver differentiability. A transformer-based <span class="search-hit mathjax">graph</span>&hellip;
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.23723v1-abstract-full').style.display = 'inline'; document.getElementById('2609.23723v1-abstract-short').style.display = 'none';">&#9661; More</a>
+      </span>
+      <span class="abstract-full has-text-grey-dark mathjax" id="2609.23723v1-abstract-full" style="display: none;">
+        This paper develops a droop-aware extension of the GridFM power systems foundation model, embedding droop gains and frequency/voltage deadband parameters as per-bus node features to enable control-aware AC power-flow analysis. Existing power-flow datasets encode only static electrical features, conflating operating points from qualitatively different control regimes; this work resolves that gap by exposing droop and deadband parameters as structured node features, with deadband discontinuities handled through a smooth tanh approximation that preserves solver differentiability. A transformer-based <span class="search-hit mathjax">graph</span> <span class="search-hit mathjax">neural</span> <span class="search-hit mathjax">network</span> is pre-trained on masked reconstruction and fine-tuned on the resulting control-aware datasets. The framework is validated against PSCAD electromagnetic-transient simulations on a two-bus system (0.11% maximum steady-state error) and cross-validated against an independent PyPower droop solver on the IEEE 24-bus RTS. On the 24-bus system the surrogate attains R2 = 0.9996 for active generation and 0.0015 p.u. voltage-magnitude RMSE; scalability is confirmed on the IEEE 300-bus system (0.0036 p.u. RMSE, R2 = 0.9841 for voltage magnitude across 299,700 predictions). A three-mode control study further shows that the deadband widens the control-error <span class="search-hit mathjax">distribution</span> while leaving total droop compensation unchanged, establishing deadband width as an actionable node-level design feature.
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.23723v1-abstract-full').style.display = 'none'; document.getElementById('2609.23723v1-abstract-short').style.display = 'inline';">&#9651; Less</a>
+      </span>
+    </p>
+    
+
+    <p class="is-size-7"><span class="has-text-black-bis has-text-weight-semibold">Submitted</span> 20 September, 2026; 
+      <span class="has-text-black-bis has-text-weight-semibold">originally announced</span> September 2026.
+      
+    </p>
+    
+
+    
+
+    
+  </li>
+
+  <li class="arxiv-result">
+    <div class="is-marginless">
+      <p class="list-title is-inline-block"><a href="https://arxiv.org/abs/2609.23365">arXiv:2609.23365</a>
+        <span>&nbsp;[<a href="https://arxiv.org/pdf/2609.23365">pdf</a>, <a href="https://arxiv.org/ps/2609.23365">ps</a>, <a href="https://arxiv.org/format/2609.23365">other</a>]&nbsp;</span>
+      </p>
+      <div class="tags is-inline-block">
+        <span class="tag is-small is-link tooltip is-tooltip-top" data-tooltip="Information Theory">cs.IT</span>
+        </div>
+      
+    </div>
+    
+    <p class="title is-5 mathjax">
+      
+        GNN-Based Global CSI Reconstruction for Fronthaul-Limited Distributed MIMO Systems
+      
+    </p>
+    <p class="authors">
+      <span class="has-text-black-bis has-text-weight-semibold">Authors:</span>
+      
+      <a href="/search/?searchtype=author&amp;query=Li%2C+H">Haojin Li</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Qu%2C+K">Kaiqian Qu</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Zhang%2C+A">Anbang Zhang</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Sun%2C+C">Chen Sun</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Zhang%2C+W">Wenqi Zhang</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Zhang%2C+H">Haijun Zhang</a>
+      
+    </p>
+    
+    <p class="abstract mathjax">
+      <span class="search-hit">Abstract</span>:
+      <span class="abstract-short has-text-grey-dark mathjax" id="2609.23365v1-abstract-short" style="display: inline;">
+        Global channel state information (CSI) acquisition is essential for cooperative precoding in <span class="search-hit mathjax">distributed</span> multiple-input multiple-output (DMIMO) systems, but uploading full instantaneous CSI from all&hellip;
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.23365v1-abstract-full').style.display = 'inline'; document.getElementById('2609.23365v1-abstract-short').style.display = 'none';">&#9661; More</a>
+      </span>
+      <span class="abstract-full has-text-grey-dark mathjax" id="2609.23365v1-abstract-full" style="display: none;">
+        Global channel state information (CSI) acquisition is essential for cooperative precoding in <span class="search-hit mathjax">distributed</span> multiple-input multiple-output (DMIMO) systems, but uploading full instantaneous CSI from all <span class="search-hit mathjax">distributed</span> antennas creates heavy fronthaul overhead. This paper proposes a fronthaul-efficient acquisition framework based on <span class="search-hit mathjax">graph</span> <span class="search-hit mathjax">neural</span> <span class="search-hit mathjax">network</span> (GNN) reconstruction and task-driven antenna selection. Each transmission and reception point (TRP) uploads only selected antenna CSI, while the centralized unit (CU) reconstructs the full global CSI from partial observations. A universal mask-conditioned GNN is trained with random upload masks, used to evaluate antenna subsets under a fronthaul budget, and then fine-tuned for the selected deployment mask. Simulation results show improved CSI reconstruction accuracy with lower fronthaul and pilot overhead.
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.23365v1-abstract-full').style.display = 'none'; document.getElementById('2609.23365v1-abstract-short').style.display = 'inline';">&#9651; Less</a>
+      </span>
+    </p>
+    
+
+    <p class="is-size-7"><span class="has-text-black-bis has-text-weight-semibold">Submitted</span> 20 September, 2026; 
+      <span class="has-text-black-bis has-text-weight-semibold">originally announced</span> September 2026.
+      
+    </p>
+    
+
+    
+
+    
+  </li>
+
+  <li class="arxiv-result">
+    <div class="is-marginless">
+      <p class="list-title is-inline-block"><a href="https://arxiv.org/abs/2609.19210">arXiv:2609.19210</a>
+        <span>&nbsp;[<a href="https://arxiv.org/pdf/2609.19210">pdf</a>, <a href="https://arxiv.org/ps/2609.19210">ps</a>, <a href="https://arxiv.org/format/2609.19210">other</a>]&nbsp;</span>
+      </p>
+      <div class="tags is-inline-block">
+        <span class="tag is-small is-link tooltip is-tooltip-top" data-tooltip="Social and Information Networks">cs.SI</span>
+        
+          
+            <span class="tag is-small is-grey tooltip is-tooltip-top" data-tooltip="Artificial Intelligence">cs.AI</span>
+          
+            <span class="tag is-small is-grey tooltip is-tooltip-top" data-tooltip="Machine Learning">cs.LG</span>
+          
+            <span class="tag is-small is-grey tooltip is-tooltip-top" data-tooltip="Machine Learning">stat.ML</span>
+          
+        </div>
+      
+    </div>
+    
+    <p class="title is-5 mathjax">
+      
+        Not All Nodes Are Created Equal: Homophily-Aware Stratification for Stable GNN Evaluation
+      
+    </p>
+    <p class="authors">
+      <span class="has-text-black-bis has-text-weight-semibold">Authors:</span>
+      
+      <a href="/search/?searchtype=author&amp;query=Jami%2C+N+V+S+J">Naga Venkata Sai Jitin Jami</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Altstidl%2C+T">Thomas Altstidl</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Hoefler%2C+S">Sebastian Hoefler</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Mueller%2C+J">Jonas Mueller</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Zanca%2C+D">Dario Zanca</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Eskofier%2C+B">Bjoern Eskofier</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Leutheuser%2C+H">Heike Leutheuser</a>
+      
+    </p>
+    
+    <p class="abstract mathjax">
+      <span class="search-hit">Abstract</span>:
+      <span class="abstract-short has-text-grey-dark mathjax" id="2609.19210v1-abstract-short" style="display: inline;">
+        <span class="search-hit mathjax">Graph</span>&hellip;
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.19210v1-abstract-full').style.display = 'inline'; document.getElementById('2609.19210v1-abstract-short').style.display = 'none';">&#9661; More</a>
+      </span>
+      <span class="abstract-full has-text-grey-dark mathjax" id="2609.19210v1-abstract-full" style="display: none;">
+        <span class="search-hit mathjax">Graph</span> <span class="search-hit mathjax">neural</span> <span class="search-hit mathjax">networks</span> are widely used for transductive node classification, with accuracy typically measured on randomly drawn train/validation/test splits. Reported accuracy has been shown to shift substantially across different random splits of the same dataset, making published comparisons between architectures unreliable. The classical remedy in non-<span class="search-hit mathjax">graph</span> settings is stratified $k$-fold cross-validation, which ensures each test fold reflects the full class <span class="search-hit mathjax">distribution</span> of the dataset. We argue that class stratification alone is insufficient for <span class="search-hit mathjax">graphs</span>: nodes are not isolated but connected, and folds that differ in their <span class="search-hit mathjax">distribution</span> of local neighbourhood homophily expose the model to systematically different relational conditions that directly affect message-passing behaviour. The resulting cross-fold variation reflects the homophily composition of each split, inflating reported variance beyond what model behaviour alone would produce. To address this, we propose \hp{}, a topology-aware stratification procedure that treats node homophily as the primary stratification axis, aligning folds with respect to local relational consistency alongside the class marginal that standard stratification already controls. Stratifying on homophily alone does not guarantee class balance, so \hp{} incorporates class label as a secondary axis, preserving class representativeness as a natural consequence of the procedure. We evaluate \hp{} on a broad benchmark suite comprising 15 node-classification datasets spanning the full homophily spectrum and 7 GNN architectures. \hp{} achieves a mean stability rank of 1.49 compared to 2.31 for random $k$-fold, achieving the lowest mean stability rank on 13 of 15 datasets while preserving class balance close to class-stratified splits and substantially better than random. We argue that homophily-aware split construction merits broader adoption for GNN evaluation.
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.19210v1-abstract-full').style.display = 'none'; document.getElementById('2609.19210v1-abstract-short').style.display = 'inline';">&#9651; Less</a>
+      </span>
+    </p>
+    
+
+    <p class="is-size-7"><span class="has-text-black-bis has-text-weight-semibold">Submitted</span> 16 September, 2026; 
+      <span class="has-text-black-bis has-text-weight-semibold">originally announced</span> September 2026.
+      
+    </p>
+    
+    <p class="comments is-size-7">
+      <span class="has-text-black-bis has-text-weight-semibold">Comments:</span>
+      <span class="has-text-grey-dark mathjax">10 pages</span>
+    </p>
+    
+
+    
+
+    
+  </li>
+
+  <li class="arxiv-result">
+    <div class="is-marginless">
+      <p class="list-title is-inline-block"><a href="https://arxiv.org/abs/2609.18759">arXiv:2609.18759</a>
+        <span>&nbsp;[<a href="https://arxiv.org/pdf/2609.18759">pdf</a>, <a href="https://arxiv.org/ps/2609.18759">ps</a>, <a href="https://arxiv.org/format/2609.18759">other</a>]&nbsp;</span>
+      </p>
+      <div class="tags is-inline-block">
+        <span class="tag is-small is-link tooltip is-tooltip-top" data-tooltip="Signal Processing">eess.SP</span>
+        
+          
+            <span class="tag is-small is-grey tooltip is-tooltip-top" data-tooltip="Machine Learning">cs.LG</span>
+          
+            <span class="tag is-small is-grey tooltip is-tooltip-top" data-tooltip="Machine Learning">stat.ML</span>
+          
+        </div>
+      
+    </div>
+    
+    <p class="title is-5 mathjax">
+      
+        Stable Filters for Generative Modeling of Graph Signals
+      
+    </p>
+    <p class="authors">
+      <span class="has-text-black-bis has-text-weight-semibold">Authors:</span>
+      
+      <a href="/search/?searchtype=author&amp;query=Schmidt%2C+M">Martin Schmidt</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Mateos%2C+G">Gonzalo Mateos</a>
+      
+    </p>
+    
+    <p class="abstract mathjax">
+      <span class="search-hit">Abstract</span>:
+      <span class="abstract-short has-text-grey-dark mathjax" id="2609.18759v1-abstract-short" style="display: inline;">
+        Generating signals on <span class="search-hit mathjax">graphs</span> requires permutation-equivariant models that exhibit stability with respect to relative structural perturbations. While recent&hellip;
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.18759v1-abstract-full').style.display = 'inline'; document.getElementById('2609.18759v1-abstract-short').style.display = 'none';">&#9661; More</a>
+      </span>
+      <span class="abstract-full has-text-grey-dark mathjax" id="2609.18759v1-abstract-full" style="display: none;">
+        Generating signals on <span class="search-hit mathjax">graphs</span> requires permutation-equivariant models that exhibit stability with respect to relative structural perturbations. While recent <span class="search-hit mathjax">graph</span>-aware Schrödinger bridge models incorporate topology information directly into their reference dynamics, it is unclear how perturbations of the <span class="search-hit mathjax">graph</span> propagate through these dynamics and affect the resulting generated <span class="search-hit mathjax">distributions</span>. In this paper, we analyze the structural stability of <span class="search-hit mathjax">graph</span>-aware continuous-time generative models whose drift combines a <span class="search-hit mathjax">graph</span> filter with a learned <span class="search-hit mathjax">graph</span> <span class="search-hit mathjax">neural</span> <span class="search-hit mathjax">network</span>. We derive explicit Wasserstein stability bounds that quantify the effect of relative <span class="search-hit mathjax">graph</span> perturbations on the generated <span class="search-hit mathjax">distributions</span>. Motivated by these bounds, we introduce a principled framework for designing stable <span class="search-hit mathjax">graph</span> filters that preserve the smoothing behavior of <span class="search-hit mathjax">graph</span> heat diffusion, while boosting structural stability. Experiments on synthetic and fMRI signals show our stable filters enhance structural robustness while matching or exceeding the generative quality of the heat equation baseline.
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.18759v1-abstract-full').style.display = 'none'; document.getElementById('2609.18759v1-abstract-short').style.display = 'inline';">&#9651; Less</a>
+      </span>
+    </p>
+    
+
+    <p class="is-size-7"><span class="has-text-black-bis has-text-weight-semibold">Submitted</span> 16 September, 2026; 
+      <span class="has-text-black-bis has-text-weight-semibold">originally announced</span> September 2026.
+      
+    </p>
+    
+    <p class="comments is-size-7">
+      <span class="has-text-black-bis has-text-weight-semibold">Comments:</span>
+      <span class="has-text-grey-dark mathjax">5 pages, submitted to ICASSP&#39;27</span>
+    </p>
+    
+
+    
+
+    
+  </li>
+
+  <li class="arxiv-result">
+    <div class="is-marginless">
+      <p class="list-title is-inline-block"><a href="https://arxiv.org/abs/2609.18534">arXiv:2609.18534</a>
+        <span>&nbsp;[<a href="https://arxiv.org/pdf/2609.18534">pdf</a>, <a href="https://arxiv.org/ps/2609.18534">ps</a>, <a href="https://arxiv.org/format/2609.18534">other</a>]&nbsp;</span>
+      </p>
+      <div class="tags is-inline-block">
+        <span class="tag is-small is-link tooltip is-tooltip-top" data-tooltip="High Energy Physics - Experiment">hep-ex</span>
+        </div>
+      
+    </div>
+    
+    <p class="title is-5 mathjax">
+      
+        Search for Visible Dark Photon Decays at the Future SHINE Facility with the DarkSHINE Experiment
+      
+    </p>
+    <p class="authors">
+      <span class="has-text-black-bis has-text-weight-semibold">Authors:</span>
+      
+      <a href="/search/?searchtype=author&amp;query=Lu%2C+Z">Zejia Lu</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Wang%2C+H">Huayang Wang</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Chen%2C+X">Xiang Chen</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Wu%2C+J">Jiahui Wu</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Zhang%2C+Y">Yulei Zhang</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Li%2C+L">Liang Li</a>
+      
+    </p>
+    
+    <p class="abstract mathjax">
+      <span class="search-hit">Abstract</span>:
+      <span class="abstract-short has-text-grey-dark mathjax" id="2609.18534v1-abstract-short" style="display: inline;">
+        &hellip;at tree level with CalcHEP, and the generated events are propagated through a detailed Geant4 detector simulation. A dedicated close tracker, the TrackNet algorithm based on a <span class="search-hit mathjax">graph</span>&hellip;
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.18534v1-abstract-full').style.display = 'inline'; document.getElementById('2609.18534v1-abstract-short').style.display = 'none';">&#9661; More</a>
+      </span>
+      <span class="abstract-full has-text-grey-dark mathjax" id="2609.18534v1-abstract-full" style="display: none;">
+        We investigate the sensitivity of the proposed DarkSHINE experiment to displaced dark photon decays, $A&#39;\to e^+e^-$, using an 8 GeV electron beam incident on a tungsten target. The study focuses on masses $2m_e&lt;m_{A&#39;}&lt;2m_μ$ and assumes a unit branching fraction to electron and positron pairs. Signal production is calculated at tree level with CalcHEP, and the generated events are propagated through a detailed Geant4 detector simulation. A dedicated close tracker, the TrackNet algorithm based on a <span class="search-hit mathjax">graph</span> <span class="search-hit mathjax">neural</span> <span class="search-hit mathjax">network</span>, and displaced vertex selections suppress prompt backgrounds from pair production and photon conversion. Extrapolation of the residual background vertex <span class="search-hit mathjax">distribution</span> yields an expected background of 0.3 events for three years of operation, corresponding to $9\times10^{14}$ electrons on target. For this exposure, the median expected exclusion region at 90% confidence level spans dark photon masses of approximately 30--70 MeV and kinetic mixing parameters of approximately $5\times10^{-5}$--$2\times10^{-4}$, with mass-dependent coupling boundaries. This study establishes a visible decay search strategy at DarkSHINE that complements searches for invisible dark photon decays.
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.18534v1-abstract-full').style.display = 'none'; document.getElementById('2609.18534v1-abstract-short').style.display = 'inline';">&#9651; Less</a>
+      </span>
+    </p>
+    
+
+    <p class="is-size-7"><span class="has-text-black-bis has-text-weight-semibold">Submitted</span> 16 September, 2026; 
+      <span class="has-text-black-bis has-text-weight-semibold">originally announced</span> September 2026.
+      
+    </p>
+    
+    <p class="comments is-size-7">
+      <span class="has-text-black-bis has-text-weight-semibold">Comments:</span>
+      <span class="has-text-grey-dark mathjax">18 pages, 13 figures, and 3 tables</span>
+    </p>
+    
+
+    
+
+    
+  </li>
+
+  <li class="arxiv-result">
+    <div class="is-marginless">
+      <p class="list-title is-inline-block"><a href="https://arxiv.org/abs/2609.16977">arXiv:2609.16977</a>
+        <span>&nbsp;[<a href="https://arxiv.org/pdf/2609.16977">pdf</a>, <a href="https://arxiv.org/ps/2609.16977">ps</a>, <a href="https://arxiv.org/format/2609.16977">other</a>]&nbsp;</span>
+      </p>
+      <div class="tags is-inline-block">
+        <span class="tag is-small is-link tooltip is-tooltip-top" data-tooltip="Machine Learning">cs.LG</span>
+        
+          
+            <span class="tag is-small is-grey tooltip is-tooltip-top" data-tooltip="Distributed, Parallel, and Cluster Computing">cs.DC</span>
+          
+        </div>
+      
+    </div>
+    
+    <p class="title is-5 mathjax">
+      
+        Structural Negative Transfer in Federated Graph Neural Networks: Diagnosis, Causal Investigation, and the Limits of Divergence-Aware Mitigation
+      
+    </p>
+    <p class="authors">
+      <span class="has-text-black-bis has-text-weight-semibold">Authors:</span>
+      
+      <a href="/search/?searchtype=author&amp;query=Kabgere%2C+C+P">Chethana Prasad Kabgere</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=SS%2C+S">Shylaja SS</a>
+      
+    </p>
+    
+    <p class="abstract mathjax">
+      <span class="search-hit">Abstract</span>:
+      <span class="abstract-short has-text-grey-dark mathjax" id="2609.16977v1-abstract-short" style="display: inline;">
+        &hellip;problem when participants&#39; data are broadly similar. Work on non-IID federated learning has shown that this assumption can withstand differences in label and feature <span class="search-hit mathjax">distributions</span>. We ask whether it survives a different strain specific to&hellip;
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.16977v1-abstract-full').style.display = 'inline'; document.getElementById('2609.16977v1-abstract-short').style.display = 'none';">&#9661; More</a>
+      </span>
+      <span class="abstract-full has-text-grey-dark mathjax" id="2609.16977v1-abstract-full" style="display: none;">
+        Federated learning lets multiple participants train a shared model without pooling raw data, by exchanging locally trained model updates instead. Federated averaging assumes that averaging local models is a reasonable way to solve one shared problem when participants&#39; data are broadly similar. Work on non-IID federated learning has shown that this assumption can withstand differences in label and feature <span class="search-hit mathjax">distributions</span>. We ask whether it survives a different strain specific to <span class="search-hit mathjax">graph</span> <span class="search-hit mathjax">neural</span> <span class="search-hit mathjax">networks</span>, where client <span class="search-hit mathjax">graphs</span> differ not in label or feature <span class="search-hit mathjax">distribution</span> but in structure itself, requiring the same shared weights to operate over fundamentally different topologies. We call the resulting harm structural negative transfer. In a federation of real citation <span class="search-hit mathjax">networks</span> and synthetic structural proxies, a structurally atypical client lost more than half its achievable accuracy simply by joining. In an initial six-client federation, two label-free structural statistics computable before training were strongly associated with this harm. Expanding to twenty clients showed that degree divergence remained associated with harm, although more weakly, and survived removal of domain contrast. Spectral divergence did not replicate, which we trace to a confound caused by the composition of the reference pool used for leave-one-out statistics. A causal intervention isolating topology found no significant effect. A degree-normalization mechanism held across twenty-four seeds but did not explain the harm when corrected. The best of five candidate fixes beat a tuned baseline only until a matched, structurally blind control was applied, after which the gain disappeared. What survives is a modest, partially replicated, degree-specific signal that is not yet a validated predictor at scale.
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.16977v1-abstract-full').style.display = 'none'; document.getElementById('2609.16977v1-abstract-short').style.display = 'inline';">&#9651; Less</a>
+      </span>
+    </p>
+    
+
+    <p class="is-size-7"><span class="has-text-black-bis has-text-weight-semibold">Submitted</span> 15 September, 2026; 
+      <span class="has-text-black-bis has-text-weight-semibold">originally announced</span> September 2026.
+      
+    </p>
+    
+    <p class="comments is-size-7">
+      <span class="has-text-black-bis has-text-weight-semibold">Comments:</span>
+      <span class="has-text-grey-dark mathjax">Working Paper Draft</span>
+    </p>
+    
+
+    
+
+    
+  </li>
+
+  <li class="arxiv-result">
+    <div class="is-marginless">
+      <p class="list-title is-inline-block"><a href="https://arxiv.org/abs/2609.15239">arXiv:2609.15239</a>
+        <span>&nbsp;[<a href="https://arxiv.org/pdf/2609.15239">pdf</a>, <a href="https://arxiv.org/ps/2609.15239">ps</a>, <a href="https://arxiv.org/format/2609.15239">other</a>]&nbsp;</span>
+      </p>
+      <div class="tags is-inline-block">
+        <span class="tag is-small is-link tooltip is-tooltip-top" data-tooltip="Machine Learning">cs.LG</span>
+        
+          
+            <span class="tag is-small is-grey tooltip is-tooltip-top" data-tooltip="Artificial Intelligence">cs.AI</span>
+          
+            <span class="tag is-small is-grey tooltip is-tooltip-top" data-tooltip="Physics and Society">physics.soc-ph</span>
+          
+        </div>
+      
+    </div>
+    
+    <p class="title is-5 mathjax">
+      
+        ProtoGuide: Prototype-Driven Guidance for Class-Conditional Graph Generation
+      
+    </p>
+    <p class="authors">
+      <span class="has-text-black-bis has-text-weight-semibold">Authors:</span>
+      
+      <a href="/search/?searchtype=author&amp;query=Romano%2C+S">Salvatore Romano</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Grassia%2C+M">Marco Grassia</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Li%C3%B2%2C+P">Pietro Liò</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Mangioni%2C+G">Giuseppe Mangioni</a>
+      
+    </p>
+    
+    <p class="abstract mathjax">
+      <span class="search-hit">Abstract</span>:
+      <span class="abstract-short has-text-grey-dark mathjax" id="2609.15239v1-abstract-short" style="display: inline;">
+        Discrete diffusion models are a prominent family for <span class="search-hit mathjax">graph</span> generation, but standard class-conditional mechanisms embed the class signal in the denoiser during training, tying the conditioning mechanism to the trained model. Classifier guidance avoids this coupling in continuous domains by steering a frozen model with a classifier&#39;s gradient, but discrete&hellip;
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.15239v1-abstract-full').style.display = 'inline'; document.getElementById('2609.15239v1-abstract-short').style.display = 'none';">&#9661; More</a>
+      </span>
+      <span class="abstract-full has-text-grey-dark mathjax" id="2609.15239v1-abstract-full" style="display: none;">
+        Discrete diffusion models are a prominent family for <span class="search-hit mathjax">graph</span> generation, but standard class-conditional mechanisms embed the class signal in the denoiser during training, tying the conditioning mechanism to the trained model. Classifier guidance avoids this coupling in continuous domains by steering a frozen model with a classifier&#39;s gradient, but discrete <span class="search-hit mathjax">graph</span> diffusion samples discrete edge states, so gradients cannot propagate through the sampled <span class="search-hit mathjax">graph</span>. We introduce ProtoGuide, a post-hoc, backbone-agnostic framework that recovers an analogous mechanism. At each reverse step the denoiser&#39;s per-edge output is relaxed into a differentiable soft adjacency, embedded by a frozen Siamese <span class="search-hit mathjax">graph</span> <span class="search-hit mathjax">neural</span> <span class="search-hit mathjax">network</span>, and scored against a target-class prototype and its nearest competitor; the resulting per-edge gradient, damped by a cosine schedule, is injected back into the denoiser output. All components stay frozen, so guidance is retargeted by supplying a different prototype. On five classes of real-world <span class="search-hit mathjax">networks</span> and two architecturally different backbones, EDGE and DiGress, ProtoGuide raises macro classification accuracy from 50.7% to 73.5% and from 73.6% to 83.8%, and outperforms DiGress&#39;s built-in conditional training under our configuration. Gains are largest where the unguided models are weakest, and are not uniform across classes. Per-<span class="search-hit mathjax">graph</span> coverage remains high in most settings, while <span class="search-hit mathjax">distributional</span> effects are class-dependent. A Best-of-N selection baseline matches this accuracy given enough oversampling, but at a substantial cost in <span class="search-hit mathjax">graph</span> diversity. An independently initialized classifier, a directionality test, and a few-shot analysis support target-directed steering and robustness to very small support sets.
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.15239v1-abstract-full').style.display = 'none'; document.getElementById('2609.15239v1-abstract-short').style.display = 'inline';">&#9651; Less</a>
+      </span>
+    </p>
+    
+
+    <p class="is-size-7"><span class="has-text-black-bis has-text-weight-semibold">Submitted</span> 14 September, 2026; 
+      <span class="has-text-black-bis has-text-weight-semibold">originally announced</span> September 2026.
+      
+    </p>
+    
+    <p class="comments is-size-7">
+      <span class="has-text-black-bis has-text-weight-semibold">Comments:</span>
+      <span class="has-text-grey-dark mathjax">Preprint. Submitted to IEEE Transactions on Pattern Analysis and Machine Intelligence. 35 pages, 2 figures, 33 tables</span>
+    </p>
+    
+
+    
+
+    
+  </li>
+
+  <li class="arxiv-result">
+    <div class="is-marginless">
+      <p class="list-title is-inline-block"><a href="https://arxiv.org/abs/2609.13920">arXiv:2609.13920</a>
+        <span>&nbsp;[<a href="https://arxiv.org/pdf/2609.13920">pdf</a>, <a href="https://arxiv.org/ps/2609.13920">ps</a>, <a href="https://arxiv.org/format/2609.13920">other</a>]&nbsp;</span>
+      </p>
+      <div class="tags is-inline-block">
+        <span class="tag is-small is-link tooltip is-tooltip-top" data-tooltip="Machine Learning">cs.LG</span>
+        
+          
+            <span class="tag is-small is-grey tooltip is-tooltip-top" data-tooltip="Artificial Intelligence">cs.AI</span>
+          
+        </div>
+      
+    </div>
+    
+    <p class="title is-5 mathjax">
+      
+        Finite-Time Node Separation in Recurrent Graph Neural Networks with Persistent Gaussian Perturbations
+      
+    </p>
+    <p class="authors">
+      <span class="has-text-black-bis has-text-weight-semibold">Authors:</span>
+      
+      <a href="/search/?searchtype=author&amp;query=Chehreghani%2C+M+H">Mostafa Haghir Chehreghani</a>
+      
+    </p>
+    
+    <p class="abstract mathjax">
+      <span class="search-hit">Abstract</span>:
+      <span class="abstract-short has-text-grey-dark mathjax" id="2609.13920v1-abstract-short" style="display: inline;">
+        Persistent Gaussian perturbations have been shown to prevent asymptotic oversmoothing in recurrent <span class="search-hit mathjax">Graph</span>&hellip;
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.13920v1-abstract-full').style.display = 'inline'; document.getElementById('2609.13920v1-abstract-short').style.display = 'none';">&#9661; More</a>
+      </span>
+      <span class="abstract-full has-text-grey-dark mathjax" id="2609.13920v1-abstract-full" style="display: none;">
+        Persistent Gaussian perturbations have been shown to prevent asymptotic oversmoothing in recurrent <span class="search-hit mathjax">Graph</span> <span class="search-hit mathjax">Neural</span> <span class="search-hit mathjax">Networks</span> (GNNs) by ensuring a positive stationary Dirichlet energy. However, this global energy bound does not guarantee that individual node representations remain distinct at finite depths. In this paper, we provide a complementary finite-time analysis of the same persistent-noise architecture. Let \(d\) denote the representation dimension and \(σ\) the noise standard deviation. We first prove an exact second-moment decomposition for the expected squared distance between any two node representations, yielding the universal lower bound \(2σ^2 d\) at every positive time step without contraction or stationarity assumptions. More precisely, conditional pairwise distances have a noncentral chi-square characterization: the noncentrality parameter is the deterministic message-passing separation normalized by \(2σ^2\). This yields dynamics-aware fixed-time and finite-horizon near-collision bounds that retain information discarded by the central worst-case analysis. The earlier central Gaussian bound is recovered as the worst-case zero-separation case. We additionally prove almost-sure pairwise noncollision, derive a uniform finite-horizon guarantee, and establish permutation equivariance in <span class="search-hit mathjax">distribution</span> for the stochastic dynamics and permutation-invariant <span class="search-hit mathjax">graph</span> outputs. Our results complement the asymptotic energy analysis of prior work and provide rigorous finite-time guarantees on node-level representation separation.
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.13920v1-abstract-full').style.display = 'none'; document.getElementById('2609.13920v1-abstract-short').style.display = 'inline';">&#9651; Less</a>
+      </span>
+    </p>
+    
+
+    <p class="is-size-7"><span class="has-text-black-bis has-text-weight-semibold">Submitted</span> 12 September, 2026; 
+      <span class="has-text-black-bis has-text-weight-semibold">originally announced</span> September 2026.
+      
+    </p>
+    
+
+    
+
+    
+  </li>
+
+  <li class="arxiv-result">
+    <div class="is-marginless">
+      <p class="list-title is-inline-block"><a href="https://arxiv.org/abs/2609.13836">arXiv:2609.13836</a>
+        <span>&nbsp;[<a href="https://arxiv.org/pdf/2609.13836">pdf</a>, <a href="https://arxiv.org/ps/2609.13836">ps</a>, <a href="https://arxiv.org/format/2609.13836">other</a>]&nbsp;</span>
+      </p>
+      <div class="tags is-inline-block">
+        <span class="tag is-small is-link tooltip is-tooltip-top" data-tooltip="Machine Learning">cs.LG</span>
+        
+          
+            <span class="tag is-small is-grey tooltip is-tooltip-top" data-tooltip="Social and Information Networks">cs.SI</span>
+          
+        </div>
+      
+    </div>
+    
+    <p class="title is-5 mathjax">
+      
+        Graph Neural Networks for Influence Maximization in Social Networks: An Unsupervised Minimum Dominating Set Approach
+      
+    </p>
+    <p class="authors">
+      <span class="has-text-black-bis has-text-weight-semibold">Authors:</span>
+      
+      <a href="/search/?searchtype=author&amp;query=Ahmadi%2C+E">Erfan Ahmadi</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Shirazi%2C+M">Mina Shirazi</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Bahrak%2C+B">Behnam Bahrak</a>
+      
+    </p>
+    
+    <p class="abstract mathjax">
+      <span class="search-hit">Abstract</span>:
+      <span class="abstract-short has-text-grey-dark mathjax" id="2609.13836v1-abstract-short" style="display: inline;">
+        The Minimum Dominating Set (MDS) problem is a classic NP-hard combinatorial optimization problem with critical applications in social <span class="search-hit mathjax">network</span> analysis, including viral marketing, influence maximization, public health interventions, and information dissemination. Identifying a minimal set of influential individuals whose reach covers an entire social&hellip;
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.13836v1-abstract-full').style.display = 'inline'; document.getElementById('2609.13836v1-abstract-short').style.display = 'none';">&#9661; More</a>
+      </span>
+      <span class="abstract-full has-text-grey-dark mathjax" id="2609.13836v1-abstract-full" style="display: none;">
+        The Minimum Dominating Set (MDS) problem is a classic NP-hard combinatorial optimization problem with critical applications in social <span class="search-hit mathjax">network</span> analysis, including viral marketing, influence maximization, public health interventions, and information dissemination. Identifying a minimal set of influential individuals whose reach covers an entire social <span class="search-hit mathjax">network</span> is central to these applications, yet remains computationally challenging at scale. <span class="search-hit mathjax">Graph</span> <span class="search-hit mathjax">neural</span> <span class="search-hit mathjax">networks</span> (GNNs) have emerged as powerful tools for learning over <span class="search-hit mathjax">graphs</span>, and recent work explores their application to hard combinatorial problems. This paper presents a novel unsupervised GNN framework for the MDS problem that eliminates the need for ground-truth solutions during training. Trained on 12,000 synthetic <span class="search-hit mathjax">graphs</span> with diverse structural properties, our method achieves up to 55x faster inference than metaheuristic baselines and up to 14x faster inference than supervised learning approaches, while finding optimal or near-optimal dominating sets on real-world social <span class="search-hit mathjax">network</span> benchmarks. Our learned heuristic generalizes effectively to unseen <span class="search-hit mathjax">graph</span> <span class="search-hit mathjax">distributions</span>, demonstrating strong practical applicability for large-scale social <span class="search-hit mathjax">network</span> analysis.
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.13836v1-abstract-full').style.display = 'none'; document.getElementById('2609.13836v1-abstract-short').style.display = 'inline';">&#9651; Less</a>
+      </span>
+    </p>
+    
+
+    <p class="is-size-7"><span class="has-text-black-bis has-text-weight-semibold">Submitted</span> 12 September, 2026; 
+      <span class="has-text-black-bis has-text-weight-semibold">originally announced</span> September 2026.
+      
+    </p>
+    
+    <p class="comments is-size-7">
+      <span class="has-text-black-bis has-text-weight-semibold">Comments:</span>
+      <span class="has-text-grey-dark mathjax">16 pages, 1 figure, 4 tables. Submitted to the International Journal of Data Science and Analytics</span>
+    </p>
+    
+
+    
+      <p class="comments is-size-7">
+        
+
+        
+
+        
+          <span class="has-text-black-bis has-text-weight-semibold">ACM Class:</span>
+          I.2.6; G.2.2
+        
+      </p>
+    
+
+    
+  </li>
+
+  <li class="arxiv-result">
+    <div class="is-marginless">
+      <p class="list-title is-inline-block"><a href="https://arxiv.org/abs/2609.13655">arXiv:2609.13655</a>
+        <span>&nbsp;[<a href="https://arxiv.org/pdf/2609.13655">pdf</a>, <a href="https://arxiv.org/ps/2609.13655">ps</a>, <a href="https://arxiv.org/format/2609.13655">other</a>]&nbsp;</span>
+      </p>
+      <div class="tags is-inline-block">
+        <span class="tag is-small is-link tooltip is-tooltip-top" data-tooltip="Machine Learning">cs.LG</span>
+        
+          
+            <span class="tag is-small is-grey tooltip is-tooltip-top" data-tooltip="Methodology">stat.ME</span>
+          
+            <span class="tag is-small is-grey tooltip is-tooltip-top" data-tooltip="Machine Learning">stat.ML</span>
+          
+        </div>
+      
+    </div>
+    
+    <p class="title is-5 mathjax">
+      
+        Online Bayesian Node Classification on Inductive Graphs under Distribution Shift
+      
+    </p>
+    <p class="authors">
+      <span class="has-text-black-bis has-text-weight-semibold">Authors:</span>
+      
+      <a href="/search/?searchtype=author&amp;query=Xu%2C+J">Jinwen Xu</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Buckstein%2C+G+M">Gonzalo Mateos Buckstein</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Lu%2C+Q">Qin Lu</a>
+      
+    </p>
+    
+    <p class="abstract mathjax">
+      <span class="search-hit">Abstract</span>:
+      <span class="abstract-short has-text-grey-dark mathjax" id="2609.13655v1-abstract-short" style="display: inline;">
+        On evolving <span class="search-hit mathjax">graphs</span>, node classifiers must satisfy two key requirements: inductive generalization to newly arriving nodes under&hellip;
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.13655v1-abstract-full').style.display = 'inline'; document.getElementById('2609.13655v1-abstract-short').style.display = 'none';">&#9661; More</a>
+      </span>
+      <span class="abstract-full has-text-grey-dark mathjax" id="2609.13655v1-abstract-full" style="display: none;">
+        On evolving <span class="search-hit mathjax">graphs</span>, node classifiers must satisfy two key requirements: inductive generalization to newly arriving nodes under <span class="search-hit mathjax">distribution</span> shift and calibrated uncertainty for safety-sensitive applications. Standard <span class="search-hit mathjax">graph</span> <span class="search-hit mathjax">neural</span> <span class="search-hit mathjax">networks</span> (GNNs) are typically trained once and address neither requirement. We adapt the Bayesian last-layer (BLL) model by placing random last-layer parameters on top of a deterministic GNN encoder for uncertainty quantification. The categorical softmax likelihood required for classification breaks Gaussian conjugacy, so neither the training posterior nor the test-time streaming update has a closed-form solution. To address both challenges, we introduce a variational Bayesian last-layer (VBLL) objective that jointly trains the encoder and an approximate last-layer posterior by maximizing an evidence lower bound with a Monte Carlo expected log-likelihood. At test time, we freeze the encoder and apply an online Laplace update to the last-layer posterior. This update corresponds to a power-prior Bayesian model with exponential forgetting and a Kullback-Leibler anchor to the training posterior. Across five node-classification benchmarks under <span class="search-hit mathjax">distribution</span> shift, online GVBLL is the only method to achieve the best accuracy and negative log-likelihood on every dataset. It improves accuracy by up to 17 percentage points on Cora and 14 percentage points on ogbn-arxiv over the strongest non-GVBLL baseline, while remaining competitive in calibration with MC Dropout, Deep Ensembles, Temperature Scaling, and Gaussian-process classifiers.
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.13655v1-abstract-full').style.display = 'none'; document.getElementById('2609.13655v1-abstract-short').style.display = 'inline';">&#9651; Less</a>
+      </span>
+    </p>
+    
+
+    <p class="is-size-7"><span class="has-text-black-bis has-text-weight-semibold">Submitted</span> 11 September, 2026; 
+      <span class="has-text-black-bis has-text-weight-semibold">originally announced</span> September 2026.
+      
+    </p>
+    
+
+    
+
+    
+  </li>
+
+  <li class="arxiv-result">
+    <div class="is-marginless">
+      <p class="list-title is-inline-block"><a href="https://arxiv.org/abs/2609.11212">arXiv:2609.11212</a>
+        <span>&nbsp;[<a href="https://arxiv.org/pdf/2609.11212">pdf</a>, <a href="https://arxiv.org/ps/2609.11212">ps</a>, <a href="https://arxiv.org/format/2609.11212">other</a>]&nbsp;</span>
+      </p>
+      <div class="tags is-inline-block">
+        <span class="tag is-small is-link tooltip is-tooltip-top" data-tooltip="Software Engineering">cs.SE</span>
+        </div>
+      
+    </div>
+    
+    <p class="title is-5 mathjax">
+      
+        TripleBound: Triplet-Guided Heterogeneous Graph Learning for Microservice Decomposition
+      
+    </p>
+    <p class="authors">
+      <span class="has-text-black-bis has-text-weight-semibold">Authors:</span>
+      
+      <a href="/search/?searchtype=author&amp;query=Weerasinghe%2C+M">Mineth Weerasinghe</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Kularathne%2C+H">Himindu Kularathne</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Madhushika%2C+M">Methmini Madhushika</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Lakshan%2C+D">Danuka Lakshan</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=de+Silva%2C+N">Nisansa de Silva</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Wijayasiri%2C+A">Adeesha Wijayasiri</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Perera%2C+S">Srinath Perera</a>
+      
+    </p>
+    
+    <p class="abstract mathjax">
+      <span class="search-hit">Abstract</span>:
+      <span class="abstract-short has-text-grey-dark mathjax" id="2609.11212v1-abstract-short" style="display: inline;">
+        &hellip;representation learning objective. This paper proposes TripleBound, a hybrid framework for automated monolith-to-microservices decomposition that augments a heterogeneous <span class="search-hit mathjax">graph</span>&hellip;
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.11212v1-abstract-full').style.display = 'inline'; document.getElementById('2609.11212v1-abstract-short').style.display = 'none';">&#9661; More</a>
+      </span>
+      <span class="abstract-full has-text-grey-dark mathjax" id="2609.11212v1-abstract-full" style="display: none;">
+        Cloud computing and DevOps have made microservices a common architecture for scalable, maintainable software systems. However, migrating monoliths to microservices remains challenging due to tight coupling and unclear service boundaries. Existing decomposition approaches typically rely on either structural dependencies or semantic similarity signals, but rarely integrate both within a unified representation learning objective. This paper proposes TripleBound, a hybrid framework for automated monolith-to-microservices decomposition that augments a heterogeneous <span class="search-hit mathjax">graph</span> <span class="search-hit mathjax">neural</span> <span class="search-hit mathjax">network</span> with weakly supervised triplet constraints derived from parser-inferred service groups based on package structure, naming conventions, and code location. TripleBound injects triplet-based constraints directly into the shared structural latent space, enabling both signals to be jointly optimized during representation learning. Structural dependencies are captured using CHGNN, which models the monolith as a heterogeneous <span class="search-hit mathjax">graph</span> with program nodes, resource nodes, CALL edges, and CRUD edges. Semantic relationships are incorporated through triplet constraints generated from parser-inferred service groups. Evaluation on AcmeAir, DayTrader, PlantsByWebSphere, and JPetStore shows that TripleBound achieves the highest composite decomposition score under the selected weighting on AcmeAir, DayTrader, and JPetStore compared to CHGNN and MonoEmbed, while CHGNN remains stronger on PlantsByWebSphere. Per-metric analysis reveals trade-offs: gains in structural modularity and inter-partition coupling are accompanied by higher entity <span class="search-hit mathjax">distribution</span> imbalance on some datasets. Alternative composite weightings preserve TripleBound&#39;s first-place ranking on AcmeAir and DayTrader but not on JPetStore, showing that the aggregate ranking is metric-dependent.
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.11212v1-abstract-full').style.display = 'none'; document.getElementById('2609.11212v1-abstract-short').style.display = 'inline';">&#9651; Less</a>
+      </span>
+    </p>
+    
+
+    <p class="is-size-7"><span class="has-text-black-bis has-text-weight-semibold">Submitted</span> 10 September, 2026; 
+      <span class="has-text-black-bis has-text-weight-semibold">originally announced</span> September 2026.
+      
+    </p>
+    
+    <p class="comments is-size-7">
+      <span class="has-text-black-bis has-text-weight-semibold">Comments:</span>
+      <span class="has-text-grey-dark mathjax">13 pages, 4 figures. Replication package available on GitHub</span>
+    </p>
+    
+
+    
+
+    
+  </li>
+
+  <li class="arxiv-result">
+    <div class="is-marginless">
+      <p class="list-title is-inline-block"><a href="https://arxiv.org/abs/2609.10742">arXiv:2609.10742</a>
+        <span>&nbsp;[<a href="https://arxiv.org/pdf/2609.10742">pdf</a>, <a href="https://arxiv.org/ps/2609.10742">ps</a>, <a href="https://arxiv.org/format/2609.10742">other</a>]&nbsp;</span>
+      </p>
+      <div class="tags is-inline-block">
+        <span class="tag is-small is-link tooltip is-tooltip-top" data-tooltip="Social and Information Networks">cs.SI</span>
+        
+          
+            <span class="tag is-small is-grey tooltip is-tooltip-top" data-tooltip="Machine Learning">cs.LG</span>
+          
+        </div>
+      
+    </div>
+    
+    <p class="title is-5 mathjax">
+      
+        SynCo: Synthetic Community-Aware Attributed Graph Generator for Graph Neural Network Benchmarking
+      
+    </p>
+    <p class="authors">
+      <span class="has-text-black-bis has-text-weight-semibold">Authors:</span>
+      
+      <a href="/search/?searchtype=author&amp;query=Messias%2C+G+H">Guilherme Henrique Messias</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=de+Souza%2C+M+C">Mariana Caravanti de Souza</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Iasulaitis%2C+S">Sylvia Iasulaitis</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Valejo%2C+A+D+B">Alan Demétrius Baria Valejo</a>
+      
+    </p>
+    
+    <p class="abstract mathjax">
+      <span class="search-hit">Abstract</span>:
+      <span class="abstract-short has-text-grey-dark mathjax" id="2609.10742v1-abstract-short" style="display: inline;">
+        <span class="search-hit mathjax">Graph</span>&hellip;
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.10742v1-abstract-full').style.display = 'inline'; document.getElementById('2609.10742v1-abstract-short').style.display = 'none';">&#9661; More</a>
+      </span>
+      <span class="abstract-full has-text-grey-dark mathjax" id="2609.10742v1-abstract-full" style="display: none;">
+        <span class="search-hit mathjax">Graph</span> <span class="search-hit mathjax">Neural</span> <span class="search-hit mathjax">Networks</span> (GNNs) are powerful models for handling attributed <span class="search-hit mathjax">graphs</span> in tasks such as classification, link prediction, and community detection, as they enable the aggregation of information from both structural and semantic sources. However, progress in community detection is hindered by the lack of high-quality datasets, since ground-truth community labels are often unavailable and most algorithms proposed in recent literature rely on the same benchmark datasets for model training and evaluation. To address this issue, attributed random <span class="search-hit mathjax">graph</span> generators are commonly employed to create synthetic <span class="search-hit mathjax">graphs</span> for assessing the strengths and limitations of GNN-based models. Nevertheless, most existing generators rely heavily on power-law degree <span class="search-hit mathjax">distributions</span>, despite recent evidence indicating that scale-free <span class="search-hit mathjax">networks</span> are rare, particularly in social <span class="search-hit mathjax">network</span> contexts. Moreover, state-of-the-art attributed <span class="search-hit mathjax">graph</span> generators provide limited flexibility, as they do not allow users to construct communities with varying densities, degree <span class="search-hit mathjax">distributions</span>, and sub-community structures. To overcome these limitations, we introduce the Synthetic Community-Aware Attributed <span class="search-hit mathjax">Graph</span> Generator (SynCo), a <span class="search-hit mathjax">graph</span> generation algorithm that allows users to control the node degree <span class="search-hit mathjax">distribution</span> and sub-community structure. We evaluate SynCo across three different tasks: <span class="search-hit mathjax">graph</span> mimicking, hyperparameter evaluation, and node clustering tuning. The results show that our model outperforms state-of-the-art approaches in synthetic <span class="search-hit mathjax">graph</span> generation and data augmentation, while preserving the original <span class="search-hit mathjax">distributions</span> of duplicated and augmented datasets, as confirmed by statistical tests well know in literature. We also demonstrate the ability of SynCo to generate nodes in large scale, up to 2.1 million nodes.
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.10742v1-abstract-full').style.display = 'none'; document.getElementById('2609.10742v1-abstract-short').style.display = 'inline';">&#9651; Less</a>
+      </span>
+    </p>
+    
+
+    <p class="is-size-7"><span class="has-text-black-bis has-text-weight-semibold">Submitted</span> 9 September, 2026; 
+      <span class="has-text-black-bis has-text-weight-semibold">originally announced</span> September 2026.
+      
+    </p>
+    
+    <p class="comments is-size-7">
+      <span class="has-text-black-bis has-text-weight-semibold">Comments:</span>
+      <span class="has-text-grey-dark mathjax">15 pages</span>
+    </p>
+    
+
+    
+
+    
+  </li>
+
+  <li class="arxiv-result">
+    <div class="is-marginless">
+      <p class="list-title is-inline-block"><a href="https://arxiv.org/abs/2609.09745">arXiv:2609.09745</a>
+        <span>&nbsp;[<a href="https://arxiv.org/pdf/2609.09745">pdf</a>, <a href="https://arxiv.org/ps/2609.09745">ps</a>, <a href="https://arxiv.org/format/2609.09745">other</a>]&nbsp;</span>
+      </p>
+      <div class="tags is-inline-block">
+        <span class="tag is-small is-link tooltip is-tooltip-top" data-tooltip="Robotics">cs.RO</span>
+        </div>
+      
+    </div>
+    
+    <p class="title is-5 mathjax">
+      
+        PccDiffuser: Multi-solution Motion Planning for Continuum Robots
+      
+    </p>
+    <p class="authors">
+      <span class="has-text-black-bis has-text-weight-semibold">Authors:</span>
+      
+      <a href="/search/?searchtype=author&amp;query=Qiu%2C+K">Ke Qiu</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Chen%2C+S">Sifan Chen</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Wang%2C+S">Si Wang</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Xiong%2C+R">Rong Xiong</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Wang%2C+Y">Yue Wang</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Lu%2C+H">Haojian Lu</a>
+      
+    </p>
+    
+    <p class="abstract mathjax">
+      <span class="search-hit">Abstract</span>:
+      <span class="abstract-short has-text-grey-dark mathjax" id="2609.09745v1-abstract-short" style="display: inline;">
+        We present the PccDiffuser, a conditional diffusion framework for continuum robots that learns a multimodal <span class="search-hit mathjax">distribution</span> over complete configuration-space paths and samples multiple candidate solutions in parallel, which are subsequently converted into an executable trajectory by time allocation considering actuator constraints. Under the piecewise constant-&hellip;
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.09745v1-abstract-full').style.display = 'inline'; document.getElementById('2609.09745v1-abstract-short').style.display = 'none';">&#9661; More</a>
+      </span>
+      <span class="abstract-full has-text-grey-dark mathjax" id="2609.09745v1-abstract-full" style="display: none;">
+        We present the PccDiffuser, a conditional diffusion framework for continuum robots that learns a multimodal <span class="search-hit mathjax">distribution</span> over complete configuration-space paths and samples multiple candidate solutions in parallel, which are subsequently converted into an executable trajectory by time allocation considering actuator constraints. Under the piecewise constant-curvature model, we use exponential co-ordinates to describe the robot kinematics, and use <span class="search-hit mathjax">graph</span> <span class="search-hit mathjax">neural</span> <span class="search-hit mathjax">network</span> to encode a variable number of environment obstacles. Analytical differential kinematics is incorporated in the denoising process to improve terminal accuracy and whole-body clearance. On a mixed test set comprising workspace with zero to four obstacles, PccDiffuser achieved a success rate of 91\%. Compared with existing sampling- and optimisation-based benchmarks, it delivered both a higher success rate and greater computational efficiency, with the latter advantage becoming more substantial when sampling more candidate solutions. Experiments on a three-section tendon-driven continuum robot further demonstrate consecutive planning, multi-solution planning, and whole-body obstacle avoidance.
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.09745v1-abstract-full').style.display = 'none'; document.getElementById('2609.09745v1-abstract-short').style.display = 'inline';">&#9651; Less</a>
+      </span>
+    </p>
+    
+
+    <p class="is-size-7"><span class="has-text-black-bis has-text-weight-semibold">Submitted</span> 9 September, 2026; 
+      <span class="has-text-black-bis has-text-weight-semibold">originally announced</span> September 2026.
+      
+    </p>
+    
+    <p class="comments is-size-7">
+      <span class="has-text-black-bis has-text-weight-semibold">Comments:</span>
+      <span class="has-text-grey-dark mathjax">8 pages, 8 figures, 1 video</span>
+    </p>
+    
+
+    
+
+    
+  </li>
+
+  <li class="arxiv-result">
+    <div class="is-marginless">
+      <p class="list-title is-inline-block"><a href="https://arxiv.org/abs/2609.09504">arXiv:2609.09504</a>
+        <span>&nbsp;[<a href="https://arxiv.org/pdf/2609.09504">pdf</a>, <a href="https://arxiv.org/ps/2609.09504">ps</a>, <a href="https://arxiv.org/format/2609.09504">other</a>]&nbsp;</span>
+      </p>
+      <div class="tags is-inline-block">
+        <span class="tag is-small is-link tooltip is-tooltip-top" data-tooltip="Cosmology and Nongalactic Astrophysics">astro-ph.CO</span>
+        
+          
+            <span class="tag is-small is-grey tooltip is-tooltip-top" data-tooltip="Machine Learning">cs.LG</span>
+          
+        </div>
+      
+    </div>
+    
+    <p class="title is-5 mathjax">
+      
+        Inductive Biases in Field-Level Cosmological Inference from Galaxy Catalogs
+      
+    </p>
+    <p class="authors">
+      <span class="has-text-black-bis has-text-weight-semibold">Authors:</span>
+      
+      <a href="/search/?searchtype=author&amp;query=Baldwin%2C+J+O">James O. Baldwin</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Genel%2C+S">Shy Genel</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Villaescusa-Navarro%2C+F">Francisco Villaescusa-Navarro</a>
+      
+    </p>
+    
+    <p class="abstract mathjax">
+      <span class="search-hit">Abstract</span>:
+      <span class="abstract-short has-text-grey-dark mathjax" id="2609.09504v1-abstract-short" style="display: inline;">
+        &hellip;peculiar velocities, separately and jointly, and compare permutation-invariant Deep Sets, implemented with either multilayer perceptrons (MLPs) or Kolmogorov-Arnold <span class="search-hit mathjax">Networks</span> (KANs), to&hellip;
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.09504v1-abstract-full').style.display = 'inline'; document.getElementById('2609.09504v1-abstract-short').style.display = 'none';">&#9661; More</a>
+      </span>
+      <span class="abstract-full has-text-grey-dark mathjax" id="2609.09504v1-abstract-full" style="display: none;">
+        We perform field-level likelihood-free inference of the matter density parameter $Ω_m$ from simulated galaxy catalogs using machine learning models with differing inductive biases. Using hydrodynamic simulations from CAMELS, we examine how observable choice and architecture govern cosmological information extraction. We consider galaxy positions and line-of-sight peculiar velocities, separately and jointly, and compare permutation-invariant Deep Sets, implemented with either multilayer perceptrons (MLPs) or Kolmogorov-Arnold <span class="search-hit mathjax">Networks</span> (KANs), to <span class="search-hit mathjax">graph</span> <span class="search-hit mathjax">neural</span> <span class="search-hit mathjax">networks</span> (GNNs), which explicitly encode spatial relations. We test in-<span class="search-hit mathjax">distribution</span> and out-of-<span class="search-hit mathjax">distribution</span> (OOD) performance across simulations with different subgrid galaxy-formation prescriptions. Deep Sets infer $Ω_m$ from velocities alone with mean relative errors of approximately $18\%$ in-<span class="search-hit mathjax">distribution</span> and $\sim25\%$ OOD, with KANs and MLPs achieving comparable performance. In contrast, the same set-based approach does not yield useful $σ_8$ predictions in either in-<span class="search-hit mathjax">distribution</span> or cross-suite tests. Adding positions does not improve Deep Sets, while GNNs infer $Ω_m$ with mean relative errors of about $10\%$ in-<span class="search-hit mathjax">distribution</span> and $10$--$17\%$ OOD. These results indicate that peculiar velocities provide the dominant source of $Ω_m$ information for set-based models in this setting, while spatial information is most effectively used by architectures that explicitly encode galaxy-galaxy relations. Because the velocity inputs are exact simulated peculiar velocities, applications to survey data will require validation under realistic velocity-measurement noise, selection effects, and survey geometry.
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.09504v1-abstract-full').style.display = 'none'; document.getElementById('2609.09504v1-abstract-short').style.display = 'inline';">&#9651; Less</a>
+      </span>
+    </p>
+    
+
+    <p class="is-size-7"><span class="has-text-black-bis has-text-weight-semibold">Submitted</span> 8 September, 2026; 
+      <span class="has-text-black-bis has-text-weight-semibold">originally announced</span> September 2026.
+      
+    </p>
+    
+    <p class="comments is-size-7">
+      <span class="has-text-black-bis has-text-weight-semibold">Comments:</span>
+      <span class="has-text-grey-dark mathjax">23 pages, 8 figures, 5 tables. Accepted for publication in The Astrophysical Journal</span>
+    </p>
+    
+
+    
+
+    
+  </li>
+
+</ol>
+
+
+  <nav class="pagination is-small is-centered breathe-horizontal" role="navigation" aria-label="pagination">
+    
+    <a href=""
+      class="pagination-previous is-invisible">Previous
+    </a>
+    
+    
+      <a href="/search/advanced?advanced=&amp;classification-include_cross_list=include&amp;abstracts=show&amp;size=25&amp;order=-announced_date_first&amp;terms-0-operator=AND&amp;terms-0-term=distributed&amp;terms-0-field=abstract&amp;terms-1-operator=AND&amp;terms-1-term=graph&amp;terms-1-field=abstract&amp;terms-2-operator=AND&amp;terms-2-term=neural&amp;terms-2-field=abstract&amp;terms-3-operator=AND&amp;terms-3-term=network&amp;terms-3-field=abstract&amp;start=25"
+        class="pagination-next" >Next
+      </a>
+    
+    <ul class="pagination-list">
+
+      <li>
+        <a href="/search/advanced?advanced=&amp;classification-include_cross_list=include&amp;abstracts=show&amp;size=25&amp;order=-announced_date_first&amp;terms-0-operator=AND&amp;terms-0-term=distributed&amp;terms-0-field=abstract&amp;terms-1-operator=AND&amp;terms-1-term=graph&amp;terms-1-field=abstract&amp;terms-2-operator=AND&amp;terms-2-term=neural&amp;terms-2-field=abstract&amp;terms-3-operator=AND&amp;terms-3-term=network&amp;terms-3-field=abstract&amp;start=0"
+          class="pagination-link is-current"
+          aria-label="Goto page 1">1
+        </a>
+      </li>
+
+      
+                                     
+          
+          <li>
+            <a href="/search/advanced?advanced=&amp;classification-include_cross_list=include&amp;abstracts=show&amp;size=25&amp;order=-announced_date_first&amp;terms-0-operator=AND&amp;terms-0-term=distributed&amp;terms-0-field=abstract&amp;terms-1-operator=AND&amp;terms-1-term=graph&amp;terms-1-field=abstract&amp;terms-2-operator=AND&amp;terms-2-term=neural&amp;terms-2-field=abstract&amp;terms-3-operator=AND&amp;terms-3-term=network&amp;terms-3-field=abstract&amp;start=25"
+              class="pagination-link "
+              aria-label="Page 2"
+              aria-current="page">2
+            </a>
+          </li>
+          
+          <li>
+            <a href="/search/advanced?advanced=&amp;classification-include_cross_list=include&amp;abstracts=show&amp;size=25&amp;order=-announced_date_first&amp;terms-0-operator=AND&amp;terms-0-term=distributed&amp;terms-0-field=abstract&amp;terms-1-operator=AND&amp;terms-1-term=graph&amp;terms-1-field=abstract&amp;terms-2-operator=AND&amp;terms-2-term=neural&amp;terms-2-field=abstract&amp;terms-3-operator=AND&amp;terms-3-term=network&amp;terms-3-field=abstract&amp;start=50"
+              class="pagination-link "
+              aria-label="Page 3"
+              aria-current="page">3
+            </a>
+          </li>
+          
+          <li>
+            <a href="/search/advanced?advanced=&amp;classification-include_cross_list=include&amp;abstracts=show&amp;size=25&amp;order=-announced_date_first&amp;terms-0-operator=AND&amp;terms-0-term=distributed&amp;terms-0-field=abstract&amp;terms-1-operator=AND&amp;terms-1-term=graph&amp;terms-1-field=abstract&amp;terms-2-operator=AND&amp;terms-2-term=neural&amp;terms-2-field=abstract&amp;terms-3-operator=AND&amp;terms-3-term=network&amp;terms-3-field=abstract&amp;start=75"
+              class="pagination-link "
+              aria-label="Page 4"
+              aria-current="page">4
+            </a>
+          </li>
+          
+          <li>
+            <a href="/search/advanced?advanced=&amp;classification-include_cross_list=include&amp;abstracts=show&amp;size=25&amp;order=-announced_date_first&amp;terms-0-operator=AND&amp;terms-0-term=distributed&amp;terms-0-field=abstract&amp;terms-1-operator=AND&amp;terms-1-term=graph&amp;terms-1-field=abstract&amp;terms-2-operator=AND&amp;terms-2-term=neural&amp;terms-2-field=abstract&amp;terms-3-operator=AND&amp;terms-3-term=network&amp;terms-3-field=abstract&amp;start=100"
+              class="pagination-link "
+              aria-label="Page 5"
+              aria-current="page">5
+            </a>
+          </li>
+          
+          <li><span class="pagination-ellipsis">&hellip;</span></li>
+        
+      
+    </ul>
+  </nav>
+  
+
+    
+  
+
+      <div class="is-hidden-tablet">
+        <!-- feedback for mobile only -->
+        <span class="help" style="display: inline-block;"><a href="https://github.com/arXiv/arxiv-search/releases">Search v0.5.6 released 2020-02-24</a>&nbsp;&nbsp;</span>
+      </div>
+    </div>
+
+  </main>
+  <footer>
+    
+<footer class="ds-site-footer">
+  <div class="ds-site-footer-grid">
+    <div class="ds-site-footer-main">
+      <div class="ds-site-footer-ack">
+        We gratefully acknowledge support from
+        our <strong>major funders</strong>,
+        <a href="https://info.arxiv.org/about/ourmembers.html"><strong>member institutions</strong></a><span class="ack-member-inline" hidden>, <strong></strong></span>,
+        and all contributors.
+      </div>
+      <nav class="ds-site-footer-links" aria-label="Site navigation">
+        <a href="https://info.arxiv.org/about">About</a>
+        <span class="ds-site-footer-sep" aria-hidden="true">&middot;</span>
+        <a href="https://info.arxiv.org/help">Help</a>
+        <span class="ds-site-footer-sep" aria-hidden="true">&middot;</span>
+        <a href="https://info.arxiv.org/help/contact.html">Contact</a>
+        <span class="ds-site-footer-sep" aria-hidden="true">&middot;</span>
+        <a href="https://info.arxiv.org/help/subscribe">Subscribe</a>
+        <span class="ds-site-footer-sep" aria-hidden="true">&middot;</span>
+        <a href="https://info.arxiv.org/help/license/index.html">Copyright</a>
+        <span class="ds-site-footer-sep" aria-hidden="true">&middot;</span>
+        <a href="https://info.arxiv.org/help/policies/privacy_policy.html">Privacy</a>
+        <span class="ds-site-footer-sep" aria-hidden="true">&middot;</span>
+        <a href="https://info.arxiv.org/help/web_accessibility.html">Accessibility</a>
+        <span class="ds-site-footer-sep" aria-hidden="true">&middot;</span>
+        <a href="https://status.arxiv.org" target="_blank" rel="noopener noreferrer">Operational Status<span class="is-sr-only"> (opens in new tab)</span></a>
+      </nav>
+    </div>
+    <div class="ds-site-footer-funders" aria-label="Major funders">
+      <div class="ds-site-footer-funders-label">Major funding support from</div>
+      <div class="ds-site-footer-funders-logos">
+        <a class="ds-funder-link" href="https://www.simonsfoundation.org/" target="_blank" rel="noopener noreferrer">
+          <img class="ds-funder-logo" src="https://static.arxiv.org/static/base/1.0.1/images/funders/simons-foundation.png" alt="Simons Foundation"></a>
+        <a class="ds-funder-link" href="https://www.sfi.org.bm/" target="_blank" rel="noopener noreferrer">
+          <img class="ds-funder-logo" src="https://static.arxiv.org/static/base/1.0.1/images/funders/simons-foundation-international.png" alt="Simons Foundation International"></a>
+        <a class="ds-funder-link" href="https://www.schmidtsciences.org/" target="_blank" rel="noopener noreferrer">
+          <img class="ds-funder-logo" src="https://static.arxiv.org/static/base/1.0.1/images/funders/schmidt-sciences.png" alt="Schmidt Sciences"></a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+  </footer>
+  <script src="https://static.arxiv.org/static/base/1.0.0a5/js/member_acknowledgement.js"></script>
+  </body>
+</html>

@@ -1,0 +1,60 @@
+Traceback (most recent call last):
+  File "/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py", line 1262, in run
+    asyncio.get_running_loop()
+RuntimeError: no running event loop
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/scripts/run_full_workflow_live.py", line 263, in <module>
+    main()
+  File "/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/scripts/run_full_workflow_live.py", line 157, in main
+    result = workflow.run(paper, run_identity=identity)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py", line 1264, in run
+    return asyncio.run(self.arun(paper, run_identity=run_identity))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/asyncio/runners.py", line 190, in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+  File "/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/asyncio/base_events.py", line 654, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py", line 1220, in arun
+    final = await self.graph.ainvoke(
+            ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/site-packages/langgraph/pregel/main.py", line 4090, in ainvoke
+    async for chunk in self.astream(
+  File "/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/site-packages/langgraph/pregel/main.py", line 3440, in astream
+    async for _ in runner.atick(
+  File "/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/site-packages/langgraph/pregel/_runner.py", line 396, in atick
+    await arun_with_retry(
+  File "/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/site-packages/langgraph/pregel/_retry.py", line 744, in arun_with_retry
+    return await task.proc.ainvoke(task.input, config)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/site-packages/langgraph/_internal/_runnable.py", line 756, in ainvoke
+    input = await asyncio.create_task(
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/site-packages/langgraph/_internal/_runnable.py", line 522, in ainvoke
+    ret = await self.afunc(*args, **kwargs)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py", line 323, in recorded
+    output = await function(state)
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py", line 1067, in _synthesize_report
+    report_value = self.services.coordinator.synthesize(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/agents/coordinator.py", line 271, in synthesize
+    response = self._client().complete(messages, options=options)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/env/model_client.py", line 318, in complete
+    _emit_model_call(ModelCallEvent(**common, duration_ms=0, phase="START"))
+  File "/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/env/model_client.py", line 139, in _emit_model_call
+    observer(event)
+  File "/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/runtime_artifacts.py", line 399, in record_model_call
+    raise ModelCallBudgetExceeded("model_call_budget_exhausted")
+backend.env.model_client.ModelCallBudgetExceeded: model_call_budget_exhausted
+During task with name 'synthesize_report' and id '1006c7a9-ef1d-159f-a510-c5c82e7ef54b'

@@ -1,0 +1,129 @@
+{
+  "agent_arguments": {
+    "full_text_source_record_ids": [
+      ""
+    ],
+    "source_id": "arxiv",
+    "toolbench_rapidapi_key": "***REDACTED***"
+  },
+  "agent_tool_call_id": "chatcmpl-tool-a2b14c4673d34660912fc7ba13ff94fe",
+  "business_status": "NORMAL",
+  "duration": 0.000431,
+  "duration_ms": 0,
+  "error": {
+    "message": "2 validation errors for DatabaseSearchArguments\nfull_text_source_record_ids.0\n  String should have at least 1 character [type=string_too_short, input_value='', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_too_short\ntoolbench_rapidapi_key\n  Extra inputs are not permitted [type=extra_forbidden, input_value='', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/extra_forbidden",
+    "stage": "run_research_task",
+    "timestamp": "2026-09-27T20:03:16.083922+00:00",
+    "tool_call_id": "tool_0002",
+    "traceback": "  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/scripts/run_full_workflow_live.py\", line 263, in <module>\n    main()\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/scripts/run_full_workflow_live.py\", line 157, in main\n    result = workflow.run(paper, run_identity=identity)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py\", line 1264, in run\n    return asyncio.run(self.arun(paper, run_identity=run_identity))\n  File \"/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/asyncio/runners.py\", line 190, in run\n    return runner.run(main)\n  File \"/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/asyncio/runners.py\", line 118, in run\n    return self._loop.run_until_complete(task)\n  File \"/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/asyncio/base_events.py\", line 641, in run_until_complete\n    self.run_forever()\n  File \"/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/asyncio/base_events.py\", line 608, in run_forever\n    self._run_once()\n  File \"/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/asyncio/base_events.py\", line 1936, in _run_once\n    handle._run()\n  File \"/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/asyncio/events.py\", line 84, in _run\n    self._context.run(self._callback, *self._args)\n  File \"/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/site-packages/langgraph/_internal/_runnable.py\", line 522, in ainvoke\n    ret = await self.afunc(*args, **kwargs)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py\", line 323, in recorded\n    output = await function(state)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py\", line 548, in _run_research_task\n    await self.services.task_researcher.ainvoke(request)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/research_task.py\", line 120, in ainvoke\n    result, trace = await self._research(request, harness=harness)\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/research_task.py\", line 140, in _research\n    harness_result = await (harness or self.harness).run(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/tool_call_harness.py\", line 129, in run\n    return await self._run(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/tool_call_harness.py\", line 515, in _run\n    runtime.finish_tool_call(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/runtime_artifacts.py\", line 709, in finish_tool_call\n    error_payload = self._coerce_error(\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/core/runtime_artifacts.py\", line 1057, in _coerce_error\n    \"traceback\": \"\".join(traceback_module.format_stack()),\n",
+    "type": "ValidationError"
+  },
+  "execution_status": "FAILED",
+  "failure_phase": "TOOL_EXECUTION",
+  "finished_at": "2026-09-27T20:03:16.083945+00:00",
+  "normalized_result": {
+    "error": "ValidationError: 2 validation errors for DatabaseSearchArguments\nfull_text_source_record_ids.0\n  String should have at least 1 character [type=string_too_short, input_value='', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_too_short\ntoolbench_rapidapi_key\n  Extra inputs are not permitted [type=extra_forbidden, input_value='', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/extra_forbidden",
+    "error_type": "ValidationError",
+    "failure": {
+      "category": "arguments",
+      "cause_event_ids": [],
+      "code": "tool.arguments",
+      "conclusion_effect": "limits_coverage",
+      "event_id": "failure_917a9947094f65ead09aadd8",
+      "evidence_refs": [],
+      "execution_status": "incomplete",
+      "layer": "harness",
+      "message": "Tool request failed at the registered action boundary; no scientific finding was established.",
+      "recovery": "repair_arguments",
+      "retry": {
+        "allowed": true,
+        "max_additional_attempts": 1,
+        "requires_input_change": true,
+        "retry_after_seconds": null
+      },
+      "schema_version": 1,
+      "scope": {
+        "artifact_id": null,
+        "attempt": 1,
+        "card_id": null,
+        "feature_ids": [],
+        "paper_id": "MF2033k6lC",
+        "point_id": "NP-1",
+        "provider": null,
+        "run_id": "run-a36b256d94614b42b0962bea7e024727",
+        "task_id": "T-1"
+      },
+      "semantic_status": "not_adjudicated"
+    },
+    "succeeded": false,
+    "summary": ""
+  },
+  "parent_llm_call_id": "llm_0008",
+  "parent_stage_id": "stage_0007",
+  "raw_result": {
+    "arguments": {
+      "full_text_source_record_ids": [
+        ""
+      ],
+      "source_id": "arxiv",
+      "toolbench_rapidapi_key": "***REDACTED***"
+    },
+    "elapsed_ms": 0,
+    "error": "ValidationError: 2 validation errors for DatabaseSearchArguments\nfull_text_source_record_ids.0\n  String should have at least 1 character [type=string_too_short, input_value='', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_too_short\ntoolbench_rapidapi_key\n  Extra inputs are not permitted [type=extra_forbidden, input_value='', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/extra_forbidden",
+    "payload": {
+      "error_type": "ValidationError",
+      "failure": {
+        "category": "arguments",
+        "cause_event_ids": [],
+        "code": "tool.arguments",
+        "conclusion_effect": "limits_coverage",
+        "event_id": "failure_917a9947094f65ead09aadd8",
+        "evidence_refs": [],
+        "execution_status": "incomplete",
+        "layer": "harness",
+        "message": "Tool request failed at the registered action boundary; no scientific finding was established.",
+        "recovery": "repair_arguments",
+        "retry": {
+          "allowed": true,
+          "max_additional_attempts": 1,
+          "requires_input_change": true,
+          "retry_after_seconds": null
+        },
+        "schema_version": 1,
+        "scope": {
+          "artifact_id": null,
+          "attempt": 1,
+          "card_id": null,
+          "feature_ids": [],
+          "paper_id": "MF2033k6lC",
+          "point_id": "NP-1",
+          "provider": null,
+          "run_id": "run-a36b256d94614b42b0962bea7e024727",
+          "task_id": "T-1"
+        },
+        "semantic_status": "not_adjudicated"
+      }
+    },
+    "succeeded": false,
+    "summary": "",
+    "tool_name": "database_search"
+  },
+  "resolved_arguments": {
+    "full_text_source_record_ids": [
+      ""
+    ],
+    "source_id": "arxiv",
+    "toolbench_rapidapi_key": "***REDACTED***"
+  },
+  "result_count": 0,
+  "run_id": "run-a36b256d94614b42b0962bea7e024727",
+  "scope": {
+    "attempt": 1,
+    "point_id": "NP-1",
+    "task_id": "T-1"
+  },
+  "stage_name": "run_research_task",
+  "started_at": "2026-09-27T20:03:16.082069+00:00",
+  "tool_call_id": "tool_0002",
+  "tool_name": "database_search"
+}

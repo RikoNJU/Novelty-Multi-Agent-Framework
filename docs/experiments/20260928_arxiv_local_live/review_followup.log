@@ -1,0 +1,31 @@
+Traceback (most recent call last):
+  File "/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/docs/experiments/20260928_arxiv_local_live/review_saved_card.py", line 47, in <module>
+    asyncio.run(main())
+  File "/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/asyncio/runners.py", line 190, in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+  File "/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/asyncio/base_events.py", line 654, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/docs/experiments/20260928_arxiv_local_live/review_saved_card.py", line 38, in main
+    summary=await reviewer.summarize_with_checkpoint(request,rows,output_root=dest,run_id='review-saved-card')
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/agents/evidence_reviewer.py", line 356, in summarize_with_checkpoint
+    checkpoint = ReviewerSummaryCheckpoint.create(self, request, card_reviews,
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/agents/reviewer_checkpoint.py", line 154, in create
+    rows = _rows(session.request, rows)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/agents/reviewer_checkpoint.py", line 49, in _rows
+    _compact_summary_rows(request, rows)  # Original binding/reference checks.
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/agents/evidence_reviewer.py", line 1031, in _compact_summary_rows
+    compact = {key: row[key] for key in ("index", "card_id", "novelty_point_id", "status")}
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/agents/evidence_reviewer.py", line 1031, in <dictcomp>
+    compact = {key: row[key] for key in ("index", "card_id", "novelty_point_id", "status")}
+                    ~~~^^^^^
+KeyError: 'index'
