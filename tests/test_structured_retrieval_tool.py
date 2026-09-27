@@ -260,6 +260,12 @@ def test_search_execution_failure_stops_chain(tmp_path):
                item.parameters["not_run_reason"] == "provider_failed"
                for item in bundle.search_executions[1:])
     assert "secret-token" not in bundle.search_executions[0].error
+    blocker = bundle.search_executions[0]
+    for skipped in bundle.search_executions[1:]:
+        assert skipped.parameters["blocked_by_execution_id"] == blocker.execution_id
+        assert skipped.parameters["blocked_by_failure_event_id"] == blocker.failure.event_id
+        assert skipped.parameters["blocked_by_failure_code"] == blocker.failure.code.value
+
 
 
 def test_search_execution_rank_and_empty_success(tmp_path):

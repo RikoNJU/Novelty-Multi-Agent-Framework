@@ -370,3 +370,36 @@ def test_invalid_tool_arguments_have_a_distinct_code_and_never_execute():
     assert result.payload['failure']['code']=='tool.arguments'
     assert registry.project_model_context('database_search',result)['failure']['code']=='tool.arguments'
     assert not database.calls
+
+
+def test_406_routes_to_configured_provider_and_executes_only_that_target():
+    workflow, _ = build_workflow(max_rounds=2, recovery_provider_order=('arxiv', 'openalex'))
+    state = _final_evidence_sufficiency_state(0)
+    original = scope()
+    failure = failed_search()
+    state.update(all_research_tasks=[original.research_task], search_plans=[original.search_plan],
+                 task_research_results=[task_result(search_executions=[failure])])
+    checked = asyncio.run(workflow._check_final_evidence_sufficiency(state))
+    combined = {**state, **checked}
+    assert asyncio.run(workflow._route_after_evidence_sufficiency_check(combined)) == 'supplement'
+    decision = checked['recovery_decisions'][0]
+    assert decision.action == A.CHANGE_PROVIDER and decision.source_id == 'openalex'
+    assert failure.failure.event_id in decision.cause_event_ids
+    updated = workflow._targeted_supplement(combined, 2)
+    task = updated['research_tasks'][0]
+    key = next(iter(updated['recovery_search_plans']))
+    plan = updated['recovery_search_plans'][key]
+    assert plan.strategies == original.search_plan.strategies
+    request = original.model_copy(update={'research_task': task, 'search_plan': plan,
+        'recovery': updated['recovery_directives'][key]})
+    database = RecordingTool('database_search', DatabaseSearchArguments)
+    registry = RecoveryToolRegistry(ResearcherToolRegistry([database]), request)
+
+    async def execute():
+        denied = await registry.execute('database_search', {'source_id': 'arxiv'}, scope=request)
+        assert not denied.succeeded
+        allowed = await registry.execute('database_search', {'source_id': 'openalex'}, scope=request)
+        assert allowed.succeeded
+    asyncio.run(execute())
+    assert len(database.calls) == 1
+    assert database.calls[0][0].source_id == 'openalex'

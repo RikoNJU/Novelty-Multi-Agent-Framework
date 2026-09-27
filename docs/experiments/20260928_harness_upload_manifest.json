@@ -3364,7 +3364,40 @@
         "docs/experiments/20260928_harness_upload_index.md",
         "docs/experiments/20260928_harness_upload_manifest.json"
       ],
-      "notes": "24次直接HTTP请求、零模型，同连接200/406/406/200；具体服务端拒绝原因未定。离线确认5个不同旧式ID被截断。仅诊断及归档，生产代码未改，整体验收仍未通过。"
+      "notes": "24次直接HTTP请求、零模型，同连接200/406/406/200；具体服务端拒绝原因未定。离线确认5个不同旧式ID被截断。仅诊断及归档，生产代码未改，整体验收仍未通过。",
+      "commit": "4878decc26835c2996c3b0ae6441d93bdfb39f9d"
+    },
+    {
+      "sequence": 19,
+      "commit": "a917677af8578815988faf5e88a1062667df77dc",
+      "title": "Preserve legacy arXiv identifiers in search and metadata matching",
+      "files": [
+        "backend/src/novelty_agent_framework/tools/database_search/providers/arxiv.py",
+        "backend/src/novelty_agent_framework/tools/database_search/providers/arxiv_identifiers.py",
+        "backend/src/novelty_agent_framework/tools/database_search/providers/arxiv_scheduler.py",
+        "tests/test_arxiv_tools.py"
+      ],
+      "notes": "用户授权修复后修改生产代码；共用完整Atom ID提取，保留分类前缀，增加搜索→元数据→全文定位测试。"
+    },
+    {
+      "sequence": 20,
+      "title": "Link skipped searches to provider failures and verify configured recovery",
+      "files": [
+        "backend/src/novelty_agent_framework/tools/database_search/structured_retrieval.py",
+        "tests/test_recovery_closure.py",
+        "tests/test_structured_retrieval_tool.py",
+        "docs/experiments/20260928_arxiv_repair/README.md",
+        "docs/experiments/20260928_arxiv_repair/after.log",
+        "docs/experiments/20260928_arxiv_repair/before.log",
+        "docs/experiments/20260928_arxiv_repair/identifier_replay.json",
+        "docs/experiments/20260928_arxiv_repair/replay_identifiers.py",
+        "docs/experiments/20260928_arxiv_repair/tests.xml",
+        "docs/experiments/20260928_arxiv_repair/validation.json",
+        "docs/experiments/20260928_harness_config_review_summary.md",
+        "docs/experiments/20260928_harness_upload_index.md",
+        "docs/experiments/20260928_harness_upload_manifest.json"
+      ],
+      "notes": "not_run保留直接失败执行/事件/码；验证既有备用源恢复衔接。120项检查通过；0新增网络/模型。406外部根因及整体验收未解决。"
     }
   ],
   "excluded": [

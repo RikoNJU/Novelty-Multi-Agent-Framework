@@ -518,6 +518,7 @@ class StructuredSourceRetrievalTool:
         base_hit: dict[str, bool] = {}
         execution_index = 0
         provider_failed = False
+        blocking_execution: SearchExecution | None = None
         physical_budget_exhausted = False
 
         ordered = list(chain) if self.legacy_candidate_stop else [
@@ -572,6 +573,11 @@ class StructuredSourceRetrievalTool:
                         query=query.query,
                         parameters={**_query_parameters(query, self.per_query_limit, variant=variant),
                                     "not_run_reason": reason,
+                                    **({"blocked_by_execution_id": blocking_execution.execution_id,
+                                        "blocked_by_failure_event_id": blocking_execution.failure.event_id,
+                                        "blocked_by_failure_code": blocking_execution.failure.code.value}
+                                       if reason == "provider_failed" and blocking_execution is not None
+                                       and blocking_execution.failure is not None else {}),
                                     "requests_used": requests_used,
                                     "max_provider_requests": self.max_provider_requests},
                         status=SearchExecutionStatus.NOT_RUN,
@@ -681,6 +687,7 @@ class StructuredSourceRetrievalTool:
                             ), occurrence_id=execution_id),
                         )
                     )
+                    blocking_execution = failed[-1]
                     provider_failed = True
                     continue
                 pending.append(
