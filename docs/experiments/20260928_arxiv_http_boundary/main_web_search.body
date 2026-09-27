@@ -1,0 +1,2079 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<!-- new favicon config and versions by realfavicongenerator.net -->
+<link rel="apple-touch-icon" sizes="180x180" href="https://static.arxiv.org/static/base/1.0.0a5/images/icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://static.arxiv.org/static/base/1.0.0a5/images/icons/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="https://static.arxiv.org/static/base/1.0.0a5/images/icons/favicon-16x16.png">
+<link rel="manifest" href="https://static.arxiv.org/static/base/1.0.0a5/images/icons/site.webmanifest">
+<link rel="mask-icon" href="https://static.arxiv.org/static/base/1.0.0a5/images/icons/safari-pinned-tab.svg" color="#b31b1b">
+<link rel="shortcut icon" href="https://static.arxiv.org/static/base/1.0.0a5/images/icons/favicon.ico">
+<meta name="msapplication-TileColor" content="#b31b1b">
+<meta name="msapplication-config" content="images/icons/browserconfig.xml">
+<meta name="theme-color" content="#b31b1b">
+<!-- end favicon config -->
+<title>Search | arXiv e-print repository</title>
+<script defer src="https://static.arxiv.org/static/base/1.0.0a5/fontawesome-free-5.11.2-web/js/all.js"></script>
+<link rel="stylesheet" href="https://static.arxiv.org/static/base/1.0.0a5/css/arxivstyle.css" />
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    messageStyle: "none",
+    extensions: ["tex2jax.js"],
+    jax: ["input/TeX", "output/HTML-CSS"],
+    tex2jax: {
+      inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+      displayMath: [ ['$$','$$'], ["\\[","\\]"] ],
+      processEscapes: true,
+      ignoreClass: '.*',
+      processClass: 'mathjax.*'
+    },
+    TeX: {
+        extensions: ["AMSmath.js", "AMSsymbols.js", "noErrors.js"],
+        noErrors: {
+          inlineDelimiters: ["$","$"],
+          multiLine: false,
+          style: {
+            "font-size": "normal",
+            "border": ""
+          }
+        }
+    },
+    "HTML-CSS": { availableFonts: ["TeX"] }
+  });
+</script>
+<script src='//static.arxiv.org/MathJax-2.7.3/MathJax.js'></script>
+<script src="https://static.arxiv.org/static/base/1.0.0a5/js/notification.js"></script>
+
+    
+  <script>document.documentElement.classList.add('js');</script>
+  <link rel="stylesheet" type="text/css" media="screen" href="https://static.arxiv.org/static/base/1.0.1/css/arxiv-header-footer.css?v=20260626" />
+  <script defer src="https://static.arxiv.org/static/base/1.0.1/js/arxiv-header.js?v=20260626"></script>
+  <link rel="stylesheet" href="https://static.arxiv.org/static/search/0.5.6/css/bulma-tooltip.min.css" />
+  <link rel="stylesheet" href="https://static.arxiv.org/static/search/0.5.6/css/search.css" />
+  <script
+    src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
+    integrity="sha256-k2WSCIexGzOj3Euiig+TlR8gA0EmPjuc79OEeY5L45g="
+    crossorigin="anonymous"></script>
+
+  <script src="https://static.arxiv.org/static/search/0.5.6/js/fieldset.js"></script>
+  <style>
+  radio#cf-customfield_11400 {
+    display: none;
+  }
+  /* Render the spinout .ds-site-footer standalone / full-bleed. search extends the
+     legacy base, whose bare wrapping <footer> (in base/base.html, outside any
+     overridable block — so it can't be removed from here) is styled by
+     arxivstyle.css with a grey background (hsl(0,0%,95%)) + 1em 2em padding,
+     boxing our warm-wash footer inside a second grey band. display:contents drops
+     the wrapper's box entirely (cleaner than zeroing individual properties) so
+     .ds-site-footer renders in its place; it inherits flex-shrink:0 from the same
+     legacy `footer` rule, so the sticky footer still works. Search-specific
+     legacy-base integration; the shared chrome CSS stays byte-identical to the SSOT. */
+  body > footer {
+    display: contents;
+  }
+  </style>
+
+  </head>
+  <body>
+  
+  
+  <header><a href="#main-container" class="is-sr-only">Skip to main content</a>
+    <div class="ds-announcement" id="announcement-banner" role="region" aria-label="Announcement" data-banner-name="spinout-nonprofit">
+  <img class="ds-announcement-glyph" src="https://static.arxiv.org/static/base/1.0.1/images/icons/smileybones-small.svg" alt="" aria-hidden="true">
+  <span class="ds-announcement-text">arXiv is now an independent nonprofit!</span>
+  <a class="ds-announcement-link" href="https://info.arxiv.org/about">Learn more</a>
+  <button type="button" class="ds-announcement-close" aria-label="Dismiss announcement">&times;</button>
+</div>
+<header class="ds-site-header">
+  <a href="https://arxiv.org/" class="ds-site-header-logo" aria-label="archive home">
+    <img src="https://static.arxiv.org/static/base/1.0.1/images/arxiv-logo-primary-light.svg" alt="archive">
+  </a>
+  <button type="button" id="ds-nav-toggle" class="ds-site-header-nav-toggle"
+    aria-label="Open menu" aria-controls="ds-site-header-nav" aria-expanded="false">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+      <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+    </svg>
+  </button>
+  <nav class="ds-site-header-nav" id="ds-site-header-nav" aria-label="Main navigation">
+    <a id="arxiv-search-toggle" href="/search" aria-controls="arxiv-search-overlay" aria-expanded="false">
+      <svg class="ds-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      Search
+    </a>
+    <a href="https://arxiv.org/user/create">Submit</a>
+    <a href="https://info.arxiv.org/about/donate.html">Donate</a>
+    <span class="ds-site-header-divider" aria-hidden="true"></span>
+    <a href="https://arxiv.org/login" class="ds-site-header-login">Log in</a>
+  </nav>
+</header>
+
+<div class="arxiv-search-overlay" id="arxiv-search-overlay" hidden>
+  <div class="arxiv-search-panel" role="search">
+    <form method="GET" action="/search">
+      <label for="arxiv-search-input" class="is-sr-only">Search arXiv</label>
+      <input type="text" name="query" id="arxiv-search-input" autocomplete="off"
+        placeholder="Search papers by title, author, abstract, or ID...">
+      <input type="hidden" name="searchtype" value="all">
+      <input type="hidden" name="source" value="header">
+    </form>
+    <div class="arxiv-search-hint">
+      Press Enter to search &middot; <a href="/search/advanced">Advanced search</a>
+    </div>
+  </div>
+</div>
+
+  </header>
+  <main class="container" id="main-container">
+    
+
+
+    
+  <div class="level is-marginless">
+    <div class="level-left">
+      <h1 class="title is-clearfix">
+    
+        Showing 1&ndash;25 of 186,698 results for all: <span class="mathjax">electron</span>
+    
+</h1>
+    </div>
+    <div class="level-right is-hidden-mobile">
+      <!-- feedback for mobile is moved to footer -->
+      <span class="help" style="display: inline-block;"><a href="https://github.com/arXiv/arxiv-search/releases">Search v0.5.6 released 2020-02-24</a>&nbsp;&nbsp;</span>
+    </div>
+  </div>
+    <div class="content">
+      
+  <form method="GET" action="/search/"  aria-role="search">
+    
+
+    
+    <div class="field has-addons-tablet">
+      <div class="control is-expanded">
+        <label for="query" class="hidden-label">Search term or terms</label>
+        
+          <input class="input is-medium" id="query" name="query" placeholder="Search term..." type="text" value="electron">
+        
+        
+      </div>
+      <div class="select control is-medium">
+        <label class="is-hidden" for="searchtype">Field</label>
+        <select class="is-medium" id="searchtype" name="searchtype"><option selected value="all">All fields</option><option value="title">Title</option><option value="author">Author(s)</option><option value="abstract">Abstract</option><option value="comments">Comments</option><option value="journal_ref">Journal reference</option><option value="acm_class">ACM classification</option><option value="msc_class">MSC classification</option><option value="report_num">Report number</option><option value="paper_id">arXiv identifier</option><option value="doi">DOI</option><option value="orcid">ORCID</option><option value="license">License (URI)</option><option value="author_id">arXiv author ID</option><option value="help">Help pages</option><option value="full_text">Full text</option></select>
+      </div>
+      <div class="control">
+          <button class="button is-link is-medium">Search</button>
+      </div>
+    </div>
+    <div class="field">
+      <div class="control is-size-7">
+        
+        <label class="radio">
+          <input checked id="abstracts-0" name="abstracts" type="radio" value="show"> Show abstracts
+        </label>
+        
+        <label class="radio">
+          <input id="abstracts-1" name="abstracts" type="radio" value="hide"> Hide abstracts
+        </label>
+        
+      </div>
+    </div>
+    <div class="is-clearfix" style="height: 2.5em"> 
+      <div class="is-pulled-right">
+        
+        <a href="/search/advanced?terms-0-term=electron&amp;terms-0-field=all&amp;size=25&amp;order=-announced_date_first">Advanced Search</a>
+        
+      </div>
+    </div>
+    <input type="hidden" name="order" value="-announced_date_first">
+    <input type="hidden" name="size" value="25">
+  </form>
+
+  
+
+  
+      
+<div class="level breathe-horizontal">
+  <div class="level-left">
+    <form method="GET" action="/search/">
+      <div style="display: none;">
+        
+          
+            <select id="searchtype" name="searchtype"><option selected value="all">All fields</option><option value="title">Title</option><option value="author">Author(s)</option><option value="abstract">Abstract</option><option value="comments">Comments</option><option value="journal_ref">Journal reference</option><option value="acm_class">ACM classification</option><option value="msc_class">MSC classification</option><option value="report_num">Report number</option><option value="paper_id">arXiv identifier</option><option value="doi">DOI</option><option value="orcid">ORCID</option><option value="license">License (URI)</option><option value="author_id">arXiv author ID</option><option value="help">Help pages</option><option value="full_text">Full text</option></select>
+          
+        
+          
+            <input id="query" name="query" type="text" value="electron">
+          
+        
+          
+        
+          
+        
+          
+            <ul id="abstracts"><li><input checked id="abstracts-0" name="abstracts" type="radio" value="show"> <label for="abstracts-0">Show abstracts</label></li><li><input id="abstracts-1" name="abstracts" type="radio" value="hide"> <label for="abstracts-1">Hide abstracts</label></li></ul>
+          
+        
+      </div>
+      <div class="box field is-grouped is-grouped-multiline level-item">
+        <div class="control">
+          <span class="select is-small">
+            <select id="size" name="size"><option selected value="25">25</option><option value="50">50</option><option value="100">100</option><option value="200">200</option></select>
+          </span>
+          <label for="size">results per page</label>.
+        </div>
+        <div class="control">
+          <label for="order">Sort results by</label>
+          <span class="select is-small">
+            <select id="order" name="order"><option selected value="-announced_date_first">Announcement date (newest first)</option><option value="announced_date_first">Announcement date (oldest first)</option><option value="-submitted_date">Submission date (newest first)</option><option value="submitted_date">Submission date (oldest first)</option><option value="">Relevance</option></select>
+          </span>
+        </div>
+        <div class="control">
+          <button class="button is-small is-link">Go</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+      
+
+
+  <nav class="pagination is-small is-centered breathe-horizontal" role="navigation" aria-label="pagination">
+    
+    <a href=""
+      class="pagination-previous is-invisible">Previous
+    </a>
+    
+    
+      <a href="/search/?query=electron&amp;searchtype=all&amp;abstracts=show&amp;order=-announced_date_first&amp;size=25&amp;start=25"
+        class="pagination-next" >Next
+      </a>
+    
+    <ul class="pagination-list">
+
+      <li>
+        <a href="/search/?query=electron&amp;searchtype=all&amp;abstracts=show&amp;order=-announced_date_first&amp;size=25&amp;start=0"
+          class="pagination-link is-current"
+          aria-label="Goto page 1">1
+        </a>
+      </li>
+
+      
+                                     
+          
+          <li>
+            <a href="/search/?query=electron&amp;searchtype=all&amp;abstracts=show&amp;order=-announced_date_first&amp;size=25&amp;start=25"
+              class="pagination-link "
+              aria-label="Page 2"
+              aria-current="page">2
+            </a>
+          </li>
+          
+          <li>
+            <a href="/search/?query=electron&amp;searchtype=all&amp;abstracts=show&amp;order=-announced_date_first&amp;size=25&amp;start=50"
+              class="pagination-link "
+              aria-label="Page 3"
+              aria-current="page">3
+            </a>
+          </li>
+          
+          <li>
+            <a href="/search/?query=electron&amp;searchtype=all&amp;abstracts=show&amp;order=-announced_date_first&amp;size=25&amp;start=75"
+              class="pagination-link "
+              aria-label="Page 4"
+              aria-current="page">4
+            </a>
+          </li>
+          
+          <li>
+            <a href="/search/?query=electron&amp;searchtype=all&amp;abstracts=show&amp;order=-announced_date_first&amp;size=25&amp;start=100"
+              class="pagination-link "
+              aria-label="Page 5"
+              aria-current="page">5
+            </a>
+          </li>
+          
+          <li><span class="pagination-ellipsis">&hellip;</span></li>
+        
+      
+    </ul>
+  </nav>
+  
+
+
+
+<ol class="breathe-horizontal" start="1"> 
+
+
+  <li class="arxiv-result">
+    <div class="is-marginless">
+      <p class="list-title is-inline-block"><a href="https://arxiv.org/abs/2609.30229">arXiv:2609.30229</a>
+        <span>&nbsp;[<a href="https://arxiv.org/pdf/2609.30229">pdf</a>, <a href="https://arxiv.org/ps/2609.30229">ps</a>, <a href="https://arxiv.org/format/2609.30229">other</a>]&nbsp;</span>
+      </p>
+      <div class="tags is-inline-block">
+        <span class="tag is-small is-link tooltip is-tooltip-top" data-tooltip="Materials Science">cond-mat.mtrl-sci</span>
+        </div>
+      
+    </div>
+    
+    <p class="title is-5 mathjax">
+      
+        Molecular Beam Epitaxy of AgTaO3
+      
+    </p>
+    <p class="authors">
+      <span class="has-text-black-bis has-text-weight-semibold">Authors:</span>
+      
+      <a href="/search/?searchtype=author&amp;query=Schwaigert%2C+T">Tobias Schwaigert</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Maile%2C+J">Joshua Maile</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Peek%2C+O">Olivia Peek</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Biedke%2C+E">Eric Biedke</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Malinowski%2C+P+T">Paul T. Malinowski</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Shen%2C+K+M">Kyle M. Shen</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Salmani-Rezaie%2C+S">Salva Salmani-Rezaie</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Schlom%2C+D+G">Darrell G. Schlom</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Ahadi%2C+K">Kaveh Ahadi</a>
+      
+    </p>
+    
+    <p class="abstract mathjax">
+      <span class="search-hit">Abstract</span>:
+      <span class="abstract-short has-text-grey-dark mathjax" id="2609.30229v1-abstract-short" style="display: inline;">
+        &hellip;to the SrTiO3 substrates with sharp rocking curves comparable to the substrates, indicating high structural perfection. High-angle annular dark-field scanning trans- mission <span class="search-hit mathjax">electron</span> microscopy (HAADF-STEM) confirms coherent, low defect growth for (001)pc-oriented films. For (111)pc-oriented films, initial coherent growth proceeds up to 10 nm before transiti&hellip;
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.30229v1-abstract-full').style.display = 'inline'; document.getElementById('2609.30229v1-abstract-short').style.display = 'none';">&#9661; More</a>
+      </span>
+      <span class="abstract-full has-text-grey-dark mathjax" id="2609.30229v1-abstract-full" style="display: none;">
+        We report the first synthesis of single-crystal AgTaO3 thin films using molecular-beam epitaxy (MBE). High-quality epitaxial AgTaO3 films were grown on both (001)- and (111)-oriented SrTiO3 substrates using sequential deposition of atomic silver and TaO2 layers under an ozone/oxygen atmosphere (80 % O3 + 20 % O2). X-ray diffrac- tion and reciprocal space mapping demonstrate that the films are coherently strained to the SrTiO3 substrates with sharp rocking curves comparable to the substrates, indicating high structural perfection. High-angle annular dark-field scanning trans- mission <span class="search-hit mathjax">electron</span> microscopy (HAADF-STEM) confirms coherent, low defect growth for (001)pc-oriented films. For (111)pc-oriented films, initial coherent growth proceeds up to 10 nm before transitioning into a Ta-rich surface region. Energy-dispersive X-ray spectroscopy (EDX) reveals a narrow cation intermixing region at the sub- strate interface for both orientations. This work demonstrates an effective synthesis route for single-crystal AgTaO3 thin films, providing a platform to investigate strain engineering and emergent interfacial properties in silver-based tantalates.
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.30229v1-abstract-full').style.display = 'none'; document.getElementById('2609.30229v1-abstract-short').style.display = 'inline';">&#9651; Less</a>
+      </span>
+    </p>
+    
+
+    <p class="is-size-7"><span class="has-text-black-bis has-text-weight-semibold">Submitted</span> 24 September, 2026; 
+      <span class="has-text-black-bis has-text-weight-semibold">originally announced</span> September 2026.
+      
+    </p>
+    
+
+    
+
+    
+  </li>
+
+  <li class="arxiv-result">
+    <div class="is-marginless">
+      <p class="list-title is-inline-block"><a href="https://arxiv.org/abs/2609.30205">arXiv:2609.30205</a>
+        <span>&nbsp;[<a href="https://arxiv.org/pdf/2609.30205">pdf</a>, <a href="https://arxiv.org/ps/2609.30205">ps</a>, <a href="https://arxiv.org/format/2609.30205">other</a>]&nbsp;</span>
+      </p>
+      <div class="tags is-inline-block">
+        <span class="tag is-small is-link tooltip is-tooltip-top" data-tooltip="Artificial Intelligence">cs.AI</span>
+        </div>
+      
+    </div>
+    
+    <p class="title is-5 mathjax">
+      
+        A Living Benchmark for Information Retrieval from <span class="search-hit mathjax">Electronic</span> Health Records
+      
+    </p>
+    <p class="authors">
+      <span class="has-text-black-bis has-text-weight-semibold">Authors:</span>
+      
+      <a href="/search/?searchtype=author&amp;query=Cahoon%2C+J+L">Jordan L. Cahoon</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Stanwyck%2C+C+O">Chloe O. Stanwyck</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Somani%2C+S">Sulaiman Somani</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Chung%2C+P">Philip Chung</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Keet%2C+K+R">Kevin R Keet</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Black%2C+K+C">Kameron C. Black</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Fisher%2C+A+T">Andrea T. Fisher</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Khemani%2C+S">Sarita Khemani</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Liu%2C+J">Jerry Liu</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Ma%2C+S">Stephen Ma</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Maharaj%2C+S+K">Saloni K. Maharaj</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Pandya%2C+R+M">Rita M. Pandya</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Perez-Guerrero%2C+E">Eduardo Perez-Guerrero</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Pillai%2C+P">Priyanka Pillai</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Shieh%2C+L">Lisa Shieh</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Wu%2C+D+J+H">David J. H. Wu</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Xie%2C+J">James Xie</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=McAvoy%2C+J+C">James C. McAvoy</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Nguyen%2C+T">Teresa Nguyen</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Tran%2C+J">Jessica Tran</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Yin%2C+L">Lucy Yin</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Lin%2C+B">Bridget Lin</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Callahan%2C+A">Alison Callahan</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Fries%2C+J+A">Jason A. Fries</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Shah%2C+N+H">Nigam H. Shah</a>
+      , et al. (1 additional authors not shown)
+    </p>
+    
+    <p class="abstract mathjax">
+      <span class="search-hit">Abstract</span>:
+      <span class="abstract-short has-text-grey-dark mathjax" id="2609.30205v1-abstract-short" style="display: inline;">
+        Large language model (LLM)-based clinical assistants are increasingly being integrated into <span class="search-hit mathjax">electronic</span> health record (EHR) systems, transforming how clinicians retrieve and synthesize information from patient records. Their safety and utility depend on rigorous evaluation, yet existing benchmarks are manually curated, costly to update, and rapidly become obs&hellip;
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.30205v1-abstract-full').style.display = 'inline'; document.getElementById('2609.30205v1-abstract-short').style.display = 'none';">&#9661; More</a>
+      </span>
+      <span class="abstract-full has-text-grey-dark mathjax" id="2609.30205v1-abstract-full" style="display: none;">
+        Large language model (LLM)-based clinical assistants are increasingly being integrated into <span class="search-hit mathjax">electronic</span> health record (EHR) systems, transforming how clinicians retrieve and synthesize information from patient records. Their safety and utility depend on rigorous evaluation, yet existing benchmarks are manually curated, costly to update, and rapidly become obsolete with evolving technological advancements. We present a scalable framework that automatically generates question--answer pairs from longitudinal EHR notes. Nineteen clinicians validate the benchmark generator, producing the Benchmark for Retrieving Information in EHRs (BRIE), a continuously maintainable evaluation dataset. Across nine LLMs and five inference strategies, state-of-the-art systems frequently omit clinically important information, particularly for questions requiring synthesis across multiple documents and encounters. Because the generator itself is validated, BRIE supports evaluations that static benchmarks cannot, including the generation of multiple answers that reflect variation in clinician reasoning for robust performance assessment and continuously refreshing benchmark content to guard against leakage. Our results demonstrate that scalable benchmark generation enables rigorous, up-to-date evaluation of clinical LLMs as they are deployed in rapidly evolving healthcare settings.
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.30205v1-abstract-full').style.display = 'none'; document.getElementById('2609.30205v1-abstract-short').style.display = 'inline';">&#9651; Less</a>
+      </span>
+    </p>
+    
+
+    <p class="is-size-7"><span class="has-text-black-bis has-text-weight-semibold">Submitted</span> 24 September, 2026; 
+      <span class="has-text-black-bis has-text-weight-semibold">originally announced</span> September 2026.
+      
+    </p>
+    
+
+    
+
+    
+  </li>
+
+  <li class="arxiv-result">
+    <div class="is-marginless">
+      <p class="list-title is-inline-block"><a href="https://arxiv.org/abs/2609.30202">arXiv:2609.30202</a>
+        <span>&nbsp;[<a href="https://arxiv.org/pdf/2609.30202">pdf</a>, <a href="https://arxiv.org/ps/2609.30202">ps</a>, <a href="https://arxiv.org/format/2609.30202">other</a>]&nbsp;</span>
+      </p>
+      <div class="tags is-inline-block">
+        <span class="tag is-small is-link tooltip is-tooltip-top" data-tooltip="Mesoscale and Nanoscale Physics">cond-mat.mes-hall</span>
+        
+          
+            <span class="tag is-small is-grey tooltip is-tooltip-top" data-tooltip="Strongly Correlated Electrons">cond-mat.str-el</span>
+          
+            <span class="tag is-small is-grey tooltip is-tooltip-top" data-tooltip="Superconductivity">cond-mat.supr-con</span>
+          
+        </div>
+      
+    </div>
+    
+    <p class="title is-5 mathjax">
+      
+        Incipient superconductivity and tunable Chern insulators in twisted Bernal bilayer-trilayer graphene
+      
+    </p>
+    <p class="authors">
+      <span class="has-text-black-bis has-text-weight-semibold">Authors:</span>
+      
+      <a href="/search/?searchtype=author&amp;query=Waleffe%2C+D">Derek Waleffe</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Bhattacharyya%2C+A">Aryana Bhattacharyya</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Kumar%2C+M">Manish Kumar</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Maginnis%2C+E">Eric Maginnis</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Okounkova%2C+A">Anna Okounkova</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Faehndrich%2C+T">Tobias Faehndrich</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Watanabe%2C+K">Kenji Watanabe</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Taniguchi%2C+T">Takashi Taniguchi</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Folk%2C+J">Joshua Folk</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Yankowitz%2C+M">Matthew Yankowitz</a>
+      
+    </p>
+    
+    <p class="abstract mathjax">
+      <span class="search-hit">Abstract</span>:
+      <span class="abstract-short has-text-grey-dark mathjax" id="2609.30202v1-abstract-short" style="display: inline;">
+        &hellip;, Chern insulators form at integer and fractional moiré fillings for <span class="search-hit mathjax">electron</span> doping, with Chern numbers up to |C| = 3 set by twist angle and tuned by doping. At $θ= 1.18^\circ$, a symmetry-broken metallic region forms for hole doping and hosts a trivial insulator at band filling $ν= -2$. Displacement field alone drives this insulator into a pocket of incipi&hellip;
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.30202v1-abstract-full').style.display = 'inline'; document.getElementById('2609.30202v1-abstract-short').style.display = 'none';">&#9661; More</a>
+      </span>
+      <span class="abstract-full has-text-grey-dark mathjax" id="2609.30202v1-abstract-full" style="display: none;">
+        Moiré superlattices assembled by twisting Bernal and rhombohedral multilayer graphene host a rich set of interaction-driven magnetic and topological states, yet superconductivity has not been observed in these systems except in proximity to a transition-metal dichalcogenide. Here we report incipient superconductivity and tunable Chern insulators in twisted Bernal bilayer-trilayer graphene encapsulated by hexagonal boron nitride. Across twist angles from $θ= 1.05^\circ$ to $1.50^\circ$, Chern insulators form at integer and fractional moiré fillings for <span class="search-hit mathjax">electron</span> doping, with Chern numbers up to |C| = 3 set by twist angle and tuned by doping. At $θ= 1.18^\circ$, a symmetry-broken metallic region forms for hole doping and hosts a trivial insulator at band filling $ν= -2$. Displacement field alone drives this insulator into a pocket of incipient superconductivity with a sharp transition, a well-defined critical current, and a critical temperature that peaks near the insulating boundary, although the resistance does not fall to zero. In-plane magnetic field expands the pocket, which persists to more than four times the weak-coupling Pauli limit, and stabilizes a second pocket in which Fraunhofer-like modulation of the critical current signals phase-coherent pairing. Twisted Bernal bilayer-trilayer graphene thus offers a single gate-tunable system in which pairing can be interfaced with Chern insulators whose topology is itself an adjustable parameter.
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.30202v1-abstract-full').style.display = 'none'; document.getElementById('2609.30202v1-abstract-short').style.display = 'inline';">&#9651; Less</a>
+      </span>
+    </p>
+    
+
+    <p class="is-size-7"><span class="has-text-black-bis has-text-weight-semibold">Submitted</span> 24 September, 2026; 
+      <span class="has-text-black-bis has-text-weight-semibold">originally announced</span> September 2026.
+      
+    </p>
+    
+    <p class="comments is-size-7">
+      <span class="has-text-black-bis has-text-weight-semibold">Comments:</span>
+      <span class="has-text-grey-dark mathjax">23 pages, 23 figures, 1 table</span>
+    </p>
+    
+
+    
+
+    
+  </li>
+
+  <li class="arxiv-result">
+    <div class="is-marginless">
+      <p class="list-title is-inline-block"><a href="https://arxiv.org/abs/2609.30168">arXiv:2609.30168</a>
+        <span>&nbsp;[<a href="https://arxiv.org/pdf/2609.30168">pdf</a>, <a href="https://arxiv.org/ps/2609.30168">ps</a>, <a href="https://arxiv.org/format/2609.30168">other</a>]&nbsp;</span>
+      </p>
+      <div class="tags is-inline-block">
+        <span class="tag is-small is-link tooltip is-tooltip-top" data-tooltip="High Energy Physics - Experiment">hep-ex</span>
+        
+          
+            <span class="tag is-small is-grey tooltip is-tooltip-top" data-tooltip="High Energy Physics - Phenomenology">hep-ph</span>
+          
+            <span class="tag is-small is-grey tooltip is-tooltip-top" data-tooltip="Nuclear Experiment">nucl-ex</span>
+          
+        </div>
+      
+    </div>
+    
+    <p class="title is-5 mathjax">
+      
+        Separating coherent and incoherent photoproduction at an <span class="search-hit mathjax">Electron</span>-Ion Collider: Comparing lead, gold and silver beams
+      
+    </p>
+    <p class="authors">
+      <span class="has-text-black-bis has-text-weight-semibold">Authors:</span>
+      
+      <a href="/search/?searchtype=author&amp;query=Klein%2C+S+R">Spencer R. Klein</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Labonte%2C+M+C">Mathias C. Labonte</a>
+      
+    </p>
+    
+    <p class="abstract mathjax">
+      <span class="search-hit">Abstract</span>:
+      <span class="abstract-short has-text-grey-dark mathjax" id="2609.30168v1-abstract-short" style="display: inline;">
+        &hellip;is sensitive to fluctuations such as gluonic hotspots. Efficiently separating coherent and incoherent interactions is a key challenge for experiments at the future <span class="search-hit mathjax">Electron</span>-Ion Collider (EIC). In this article, we study nuclear de-excitation via photon emission, and see how the finite photon detection efficiency leads to misidentification of incoherent emissi&hellip;
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.30168v1-abstract-full').style.display = 'inline'; document.getElementById('2609.30168v1-abstract-short').style.display = 'none';">&#9661; More</a>
+      </span>
+      <span class="abstract-full has-text-grey-dark mathjax" id="2609.30168v1-abstract-full" style="display: none;">
+        Exclusive photoproduction is an important probe of nuclear parton distributions at low Bjorken-$x$. The Good-Walker paradigm relates coherent photoproduction to the average nuclear configuration, giving access to the transverse distribution of gluons in a target, while incoherent photoproduction is sensitive to fluctuations such as gluonic hotspots. Efficiently separating coherent and incoherent interactions is a key challenge for experiments at the future <span class="search-hit mathjax">Electron</span>-Ion Collider (EIC). In this article, we study nuclear de-excitation via photon emission, and see how the finite photon detection efficiency leads to misidentification of incoherent emission. We compare the detection efficiency for incoherent $J/ψ$ production using the BeAGLE event generator for Ag-107, Au-197, and Pb-208 targets, for two different forward photon energy thresholds: 50 MeV and 200 MeV. The shell structures of the three species exhibit different incoherent tagging efficiencies due to differences in the lifetimes and energy levels of their excited states. Some of the low-lying states live long enough so that they decay outside the EIC detectors. Especially for the lower photon energy threshold, lead allows a higher tagging efficiency than gold, due to its lack of low-lying and/or long-lived excited states.
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.30168v1-abstract-full').style.display = 'none'; document.getElementById('2609.30168v1-abstract-short').style.display = 'inline';">&#9651; Less</a>
+      </span>
+    </p>
+    
+
+    <p class="is-size-7"><span class="has-text-black-bis has-text-weight-semibold">Submitted</span> 24 September, 2026; 
+      <span class="has-text-black-bis has-text-weight-semibold">originally announced</span> September 2026.
+      
+    </p>
+    
+    <p class="comments is-size-7">
+      <span class="has-text-black-bis has-text-weight-semibold">Comments:</span>
+      <span class="has-text-grey-dark mathjax">9 pages, 6 figures. Comments are welcome</span>
+    </p>
+    
+
+    
+
+    
+  </li>
+
+  <li class="arxiv-result">
+    <div class="is-marginless">
+      <p class="list-title is-inline-block"><a href="https://arxiv.org/abs/2609.30138">arXiv:2609.30138</a>
+        <span>&nbsp;[<a href="https://arxiv.org/pdf/2609.30138">pdf</a>, <a href="https://arxiv.org/ps/2609.30138">ps</a>, <a href="https://arxiv.org/format/2609.30138">other</a>]&nbsp;</span>
+      </p>
+      <div class="tags is-inline-block">
+        <span class="tag is-small is-link tooltip is-tooltip-top" data-tooltip="Numerical Analysis">math.NA</span>
+        
+          
+            <span class="tag is-small is-grey tooltip is-tooltip-top" data-tooltip="Optimization and Control">math.OC</span>
+          
+            <span class="tag is-small is-grey tooltip is-tooltip-top" data-tooltip="Computational Physics">physics.comp-ph</span>
+          
+        </div>
+      
+    </div>
+    
+    <p class="title is-5 mathjax">
+      
+        High-dimensional extreme eigenvalue problems: low-rank tensor parametrization and optimization
+      
+    </p>
+    <p class="authors">
+      <span class="has-text-black-bis has-text-weight-semibold">Authors:</span>
+      
+      <a href="/search/?searchtype=author&amp;query=Hao%2C+P">Pengfei Hao</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Peng%2C+R">Renfeng Peng</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Kuang%2C+Y">Yang Kuang</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Gao%2C+B">Bin Gao</a>
+      
+    </p>
+    
+    <p class="abstract mathjax">
+      <span class="search-hit">Abstract</span>:
+      <span class="abstract-short has-text-grey-dark mathjax" id="2609.30138v1-abstract-short" style="display: inline;">
+        High-dimensional extreme eigenvalue problems often arise from molecular vibrational models, <span class="search-hit mathjax">electronic</span> structure calculations, and quantum mechanics. Directly solving these problems suffers from the curse of dimensionality. Instead of tackling the problem in high-dimensional ambient space, we reformulate the problem through low-rank tensor formats, which can&hellip;
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.30138v1-abstract-full').style.display = 'inline'; document.getElementById('2609.30138v1-abstract-short').style.display = 'none';">&#9661; More</a>
+      </span>
+      <span class="abstract-full has-text-grey-dark mathjax" id="2609.30138v1-abstract-full" style="display: none;">
+        High-dimensional extreme eigenvalue problems often arise from molecular vibrational models, <span class="search-hit mathjax">electronic</span> structure calculations, and quantum mechanics. Directly solving these problems suffers from the curse of dimensionality. Instead of tackling the problem in high-dimensional ambient space, we reformulate the problem through low-rank tensor formats, which can significantly reduce the computational cost and storage. Specifically, we consider the Rayleigh--Ritz problem on bounded-rank tensors in the tensor train format, which enables a more flexible choice of rank parameters. Moreover, we consider a smooth parametrization for bounded-rank tensors by introducing slack variables, leading to a smooth manifold structure. The original Rayleigh--Ritz problem is therefore transferred to an optimization problem on the manifold. We develop the Riemannian geometry and propose optimization methods for solving extreme eigenvalue problems. In practice, the Kronecker-product structure in Hamiltonian and PDE operators is employed to simplify the computation. Numerical experiments on the harmonic oscillator, the Laplace operator, the Schrödinger equation, the layered cluster problem, and the Bose--Einstein model demonstrate that the proposed method achieves accuracy comparable to full-space eigensolvers with reduced computation time and avoids storing full vectors. The results also show numerical rank reduction during iteration and robustness when the rank parameter is over-estimated. In addition, the fixed-point iterations illustrate that the proposed methods are able to serve as an inner eigensolver for solving nonlinear eigenvalue problems.
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.30138v1-abstract-full').style.display = 'none'; document.getElementById('2609.30138v1-abstract-short').style.display = 'inline';">&#9651; Less</a>
+      </span>
+    </p>
+    
+
+    <p class="is-size-7"><span class="has-text-black-bis has-text-weight-semibold">Submitted</span> 24 September, 2026; 
+      <span class="has-text-black-bis has-text-weight-semibold">originally announced</span> September 2026.
+      
+    </p>
+    
+    <p class="comments is-size-7">
+      <span class="has-text-black-bis has-text-weight-semibold">Comments:</span>
+      <span class="has-text-grey-dark mathjax">28 pages, 14 figures, 2 tables</span>
+    </p>
+    
+
+    
+
+    
+  </li>
+
+  <li class="arxiv-result">
+    <div class="is-marginless">
+      <p class="list-title is-inline-block"><a href="https://arxiv.org/abs/2609.30128">arXiv:2609.30128</a>
+        <span>&nbsp;[<a href="https://arxiv.org/pdf/2609.30128">pdf</a>, <a href="https://arxiv.org/ps/2609.30128">ps</a>, <a href="https://arxiv.org/format/2609.30128">other</a>]&nbsp;</span>
+      </p>
+      <div class="tags is-inline-block">
+        <span class="tag is-small is-link tooltip is-tooltip-top" data-tooltip="Mesoscale and Nanoscale Physics">cond-mat.mes-hall</span>
+        
+          
+            <span class="tag is-small is-grey tooltip is-tooltip-top" data-tooltip="Materials Science">cond-mat.mtrl-sci</span>
+          
+        </div>
+      
+    </div>
+    
+    <p class="title is-5 mathjax">
+      
+        Pomeranchuk-like <span class="search-hit mathjax">electronic</span> localization above 100 K in twisted MoS$_{2}$
+      
+    </p>
+    <p class="authors">
+      <span class="has-text-black-bis has-text-weight-semibold">Authors:</span>
+      
+      <a href="/search/?searchtype=author&amp;query=Xiong%2C+Z">Zhiren Xiong</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Huang%2C+J">Jianqi Huang</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Han%2C+R">Ruyue Han</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Wang%2C+H">Hanwen Wang</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Ding%2C+H">Hui Ding</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Watannabe%2C+K">Kenji Watannabe</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Taniguchi%2C+T">Takashi Taniguchi</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Lu%2C+J">Jianming Lu</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Liu%2C+J">Jianpeng Liu</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Han%2C+Z+V">Zheng Vitto Han</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Sun%2C+X">Xingdan Sun</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Zhao%2C+S">Siwen Zhao</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Dong%2C+B">Baojuan Dong</a>
+      
+    </p>
+    
+    <p class="abstract mathjax">
+      <span class="search-hit">Abstract</span>:
+      <span class="abstract-short has-text-grey-dark mathjax" id="2609.30128v1-abstract-short" style="display: inline;">
+        &hellip;manifested a rich variety of emerging physical phenomena, yet experimental studies have so far been largely limited in their valence bands (p-doped). Here, we show correlated <span class="search-hit mathjax">electronic</span> states in the conduction bands (n-doped) of near-AA-twisted bilayer MoS$_2$ with twist angles ranging from $\sim2.3^\circ$ to $\sim3.5^\circ$, down to the mK temperature regi&hellip;
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.30128v1-abstract-full').style.display = 'inline'; document.getElementById('2609.30128v1-abstract-short').style.display = 'none';">&#9661; More</a>
+      </span>
+      <span class="abstract-full has-text-grey-dark mathjax" id="2609.30128v1-abstract-full" style="display: none;">
+        Twisted transition-metal dichalcogenides (TMDs) have manifested a rich variety of emerging physical phenomena, yet experimental studies have so far been largely limited in their valence bands (p-doped). Here, we show correlated <span class="search-hit mathjax">electronic</span> states in the conduction bands (n-doped) of near-AA-twisted bilayer MoS$_2$ with twist angles ranging from $\sim2.3^\circ$ to $\sim3.5^\circ$, down to the mK temperature regime. A strongly reconstructed correlated phase diagram as a function of twist-angle has been observed - correlated gaps persist to temperatures approaching $160$ K at small twist angles, but collapse to only $\sim20$ K at intermediate angles, where a richer landscape of interaction-driven states emerges. At the largest twist-angle $\sim 3.5\,^{\circ}$, correlated resistance at 1 <span class="search-hit mathjax">electron</span> per moiré unit cell is enhanced upon heating, consistent with thermally assisted localization, or, a Pomeranchuk-like behaviour. Its magnetic-field response, however, is highly anisotropic, which differs markedly from that of canonical isospin moiré Pomeranchuk effect in graphene systems. Strikingly, such signature can persist even above 100 K around a filling of 2 <span class="search-hit mathjax">electrons</span> per moiré, despite of its weak resistive nature. Our results establish the twisted MoS$_2$ as a platform for studying the complexity of charge localization, internal flavour degrees of freedom, and band topology in conduction bands of semiconducting moiré systems.
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.30128v1-abstract-full').style.display = 'none'; document.getElementById('2609.30128v1-abstract-short').style.display = 'inline';">&#9651; Less</a>
+      </span>
+    </p>
+    
+
+    <p class="is-size-7"><span class="has-text-black-bis has-text-weight-semibold">Submitted</span> 24 September, 2026; 
+      <span class="has-text-black-bis has-text-weight-semibold">originally announced</span> September 2026.
+      
+    </p>
+    
+    <p class="comments is-size-7">
+      <span class="has-text-black-bis has-text-weight-semibold">Comments:</span>
+      <span class="has-text-grey-dark mathjax">14 pages, 8 figures</span>
+    </p>
+    
+
+    
+
+    
+  </li>
+
+  <li class="arxiv-result">
+    <div class="is-marginless">
+      <p class="list-title is-inline-block"><a href="https://arxiv.org/abs/2609.30124">arXiv:2609.30124</a>
+        <span>&nbsp;[<a href="https://arxiv.org/pdf/2609.30124">pdf</a>, <a href="https://arxiv.org/ps/2609.30124">ps</a>, <a href="https://arxiv.org/format/2609.30124">other</a>]&nbsp;</span>
+      </p>
+      <div class="tags is-inline-block">
+        <span class="tag is-small is-link tooltip is-tooltip-top" data-tooltip="Quantum Gases">cond-mat.quant-gas</span>
+        
+          
+            <span class="tag is-small is-grey tooltip is-tooltip-top" data-tooltip="Strongly Correlated Electrons">cond-mat.str-el</span>
+          
+        </div>
+      
+    </div>
+    
+    <p class="title is-5 mathjax">
+      
+        Characterizing quasiparticles in strongly correlated systems using nonlinear spectroscopy in quantum simulators
+      
+    </p>
+    <p class="authors">
+      <span class="has-text-black-bis has-text-weight-semibold">Authors:</span>
+      
+      <a href="/search/?searchtype=author&amp;query=Skolc%2C+L">Luka Skolc</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Bhattacharya%2C+U">Utso Bhattacharya</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Curtis%2C+J+B">Jonathan B. Curtis</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Bloch%2C+I">Immanuel Bloch</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Demler%2C+E">Eugene Demler</a>
+      
+    </p>
+    
+    <p class="abstract mathjax">
+      <span class="search-hit">Abstract</span>:
+      <span class="abstract-short has-text-grey-dark mathjax" id="2609.30124v1-abstract-short" style="display: inline;">
+        &hellip;charge. We demonstrate that second-order density and current responses to finite-momentum quenches and drives-as well as equilibrium third-order density cumulants-distinguish <span class="search-hit mathjax">electron</span>- from hole-like quasiparticles. For a Fermi-Hubbard multi-leg ladder on a square lattice, numerical simulations reveal a crossover from hole- to&hellip;
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.30124v1-abstract-full').style.display = 'inline'; document.getElementById('2609.30124v1-abstract-short').style.display = 'none';">&#9661; More</a>
+      </span>
+      <span class="abstract-full has-text-grey-dark mathjax" id="2609.30124v1-abstract-full" style="display: none;">
+        Characterizing carrier type in strongly correlated quantum systems conventionally relies on the Hall effect. In cold-atom quantum simulators, implementing Hall transport measurements typically requires synthetic gauge fields, which introduces significant heating. Here, we present nonlinear spectroscopic and fluctuation-based protocols that establish an alternative route to identifying the sign of quasiparticle charge. We demonstrate that second-order density and current responses to finite-momentum quenches and drives-as well as equilibrium third-order density cumulants-distinguish <span class="search-hit mathjax">electron</span>- from hole-like quasiparticles. For a Fermi-Hubbard multi-leg ladder on a square lattice, numerical simulations reveal a crossover from hole- to <span class="search-hit mathjax">electron</span>-like carriers upon hole-doping away from half-filling, matching the sign change in the Hall coefficient. To demonstrate the applicability of our protocols beyond fermionic systems, we show that the nonlinear density response to a finite-momentum, finite-frequency drive reveals the sign of charge carriers in a hard-core boson ladder, and that the nonlinear signal can be significantly enhanced when driving near resonance with a nonlinear collective mode. Our results establish nonlinear density and current response and equilibrium non-Gaussian fluctuations as complementary probes, offering quantum simulators a direct route to characterize the carrier sign, without the experimental hurdles of conventional transport setups.
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.30124v1-abstract-full').style.display = 'none'; document.getElementById('2609.30124v1-abstract-short').style.display = 'inline';">&#9651; Less</a>
+      </span>
+    </p>
+    
+
+    <p class="is-size-7"><span class="has-text-black-bis has-text-weight-semibold">Submitted</span> 24 September, 2026; 
+      <span class="has-text-black-bis has-text-weight-semibold">originally announced</span> September 2026.
+      
+    </p>
+    
+    <p class="comments is-size-7">
+      <span class="has-text-black-bis has-text-weight-semibold">Comments:</span>
+      <span class="has-text-grey-dark mathjax">30 pages, 16 figures</span>
+    </p>
+    
+
+    
+
+    
+  </li>
+
+  <li class="arxiv-result">
+    <div class="is-marginless">
+      <p class="list-title is-inline-block"><a href="https://arxiv.org/abs/2609.30112">arXiv:2609.30112</a>
+        <span>&nbsp;[<a href="https://arxiv.org/pdf/2609.30112">pdf</a>, <a href="https://arxiv.org/ps/2609.30112">ps</a>, <a href="https://arxiv.org/format/2609.30112">other</a>]&nbsp;</span>
+      </p>
+      <div class="tags is-inline-block">
+        <span class="tag is-small is-link tooltip is-tooltip-top" data-tooltip="Nuclear Theory">nucl-th</span>
+        
+          
+            <span class="tag is-small is-grey tooltip is-tooltip-top" data-tooltip="High Energy Astrophysical Phenomena">astro-ph.HE</span>
+          
+        </div>
+      
+    </div>
+    
+    <p class="title is-5 mathjax">
+      
+        Extending multi-messenger constraints on neutron star matter through the inclusion of direct Urca cooling
+      
+    </p>
+    <p class="authors">
+      <span class="has-text-black-bis has-text-weight-semibold">Authors:</span>
+      
+      <a href="/search/?searchtype=author&amp;query=Danarianto%2C+M+D">M. Dio Danarianto</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Grams%2C+G">Guilherme Grams</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Wouters%2C+T">Thibeau Wouters</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Dietrich%2C+T">Tim Dietrich</a>
+      
+    </p>
+    
+    <p class="abstract mathjax">
+      <span class="search-hit">Abstract</span>:
+      <span class="abstract-short has-text-grey-dark mathjax" id="2609.30112v1-abstract-short" style="display: inline;">
+        &hellip;-equilibrium and charge neutrality in the \textsc{jester} framework, including the calculation of the proton fraction and the onset of nucleonic dUrca in the presence of <span class="search-hit mathjax">electrons</span> and muons. We combine constraints from chiral effective field theory, astrophysical measurements of NS masses, radii, and tidal deformabilities, and observations of rapidly and slo&hellip;
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.30112v1-abstract-full').style.display = 'inline'; document.getElementById('2609.30112v1-abstract-short').style.display = 'none';">&#9661; More</a>
+      </span>
+      <span class="abstract-full has-text-grey-dark mathjax" id="2609.30112v1-abstract-full" style="display: none;">
+        The properties and behavior of strongly interacting matter at extreme densities can not only be determined through terrestrial experiments or through theoretical considerations, but also astrophysical observations of neutron stars (NSs) and binary neutron star systems become increasingly important to obtain complementary information. In light of these findings, we perform a Bayesian study inferring the NS equation of state (EoS) by incorporating constraints from the direct Urca (dUrca) process, thereby including information on matter composition in addition to traditionally used macroscopic observables. We implement a self-consistent treatment of $β$-equilibrium and charge neutrality in the \textsc{jester} framework, including the calculation of the proton fraction and the onset of nucleonic dUrca in the presence of <span class="search-hit mathjax">electrons</span> and muons. We combine constraints from chiral effective field theory, astrophysical measurements of NS masses, radii, and tidal deformabilities, and observations of rapidly and slowly cooling neutron stars. The dUrca constraint seems to be in favor of stiffer EoSs, but --at the current stage-- has only a minor impact on macroscopic NS properties once we include other nuclear and astrophysical constraints. In contrast, the dUrca information provides a constraint on the composition of canonical-mass NSs favoring a higher proton fraction inside the star, illustrating the complementary information carried by cooling observations. Our results demonstrate the potential of incorporating composition-sensitive observables into multimessenger inference and provide a step toward a more comprehensive treatment of dUrca constraints with microscopically motivated EoS models.
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.30112v1-abstract-full').style.display = 'none'; document.getElementById('2609.30112v1-abstract-short').style.display = 'inline';">&#9651; Less</a>
+      </span>
+    </p>
+    
+
+    <p class="is-size-7"><span class="has-text-black-bis has-text-weight-semibold">Submitted</span> 24 September, 2026; 
+      <span class="has-text-black-bis has-text-weight-semibold">originally announced</span> September 2026.
+      
+    </p>
+    
+
+    
+
+    
+  </li>
+
+  <li class="arxiv-result">
+    <div class="is-marginless">
+      <p class="list-title is-inline-block"><a href="https://arxiv.org/abs/2609.30084">arXiv:2609.30084</a>
+        <span>&nbsp;[<a href="https://arxiv.org/pdf/2609.30084">pdf</a>]&nbsp;</span>
+      </p>
+      <div class="tags is-inline-block">
+        <span class="tag is-small is-link tooltip is-tooltip-top" data-tooltip="Materials Science">cond-mat.mtrl-sci</span>
+        
+          
+            <span class="tag is-small is-grey tooltip is-tooltip-top" data-tooltip="Chemical Physics">physics.chem-ph</span>
+          
+            <span class="tag is-small is-grey tooltip is-tooltip-top" data-tooltip="Instrumentation and Detectors">physics.ins-det</span>
+          
+        </div>
+      
+    </div>
+    
+    <p class="title is-5 mathjax">
+      
+        Ultrafast <span class="search-hit mathjax">Electron</span> Microscopy: A Quantitative Platform for Nonequilibrium Materials Research
+      
+    </p>
+    <p class="authors">
+      <span class="has-text-black-bis has-text-weight-semibold">Authors:</span>
+      
+      <a href="/search/?searchtype=author&amp;query=Flannigan%2C+D+J">David J. Flannigan</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Shadman%2C+S+A">Swarit Ahmed Shadman</a>
+      
+    </p>
+    
+    <p class="abstract mathjax">
+      <span class="search-hit">Abstract</span>:
+      <span class="abstract-short has-text-grey-dark mathjax" id="2609.30084v1-abstract-short" style="display: inline;">
+        &hellip;not merely by equilibrium structure, but by how carriers, phonons, fields, defects, interfaces, and collective order dynamically evolve after perturbation. Ultrafast <span class="search-hit mathjax">electron</span> microscopy (UEM) uniquely bridges this gap, coupling femtosecond-to-nanosecond timing with real-space, reciprocal-space, and energy-resolved contrast. Here, we review how these integrat&hellip;
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.30084v1-abstract-full').style.display = 'inline'; document.getElementById('2609.30084v1-abstract-short').style.display = 'none';">&#9661; More</a>
+      </span>
+      <span class="abstract-full has-text-grey-dark mathjax" id="2609.30084v1-abstract-full" style="display: none;">
+        Macroscopic materials function is determined not merely by equilibrium structure, but by how carriers, phonons, fields, defects, interfaces, and collective order dynamically evolve after perturbation. Ultrafast <span class="search-hit mathjax">electron</span> microscopy (UEM) uniquely bridges this gap, coupling femtosecond-to-nanosecond timing with real-space, reciprocal-space, and energy-resolved contrast. Here, we review how these integrated capabilities now quantitatively map energy flow and conversion in <span class="search-hit mathjax">electronic</span> materials, decode <span class="search-hit mathjax">electronic</span>-structural coupling in quantum and correlated systems, and isolate the localized propagation of carriers, polaritons, strain, and phonons across optoelectronic and nanomechanical architectures. We emphasize the predictive design rules now emerging from direct metrology of carrier-lattice coupling, momentum-resolved phonon thermalization, defect-controlled phase transformations, and authentic operando switching. We critically assess UEM&#39;s ongoing maturation from a qualitative, proof-of-concept experiment into a rigorous, quantitative materials platform. This paradigm shift is actively driven by integrated multimodal detection, advanced energy-resolved spectroscopy, high-repetition-rate sources, multidimensional (4D and 5D) acquisition, and physically constrained forward modeling. Ultimately, the central opportunity lies in establishing a complete, causal link from initial excitation to localized energy flow, transient structure, and macroscopic device function. By prioritizing quantitative reproducibility and robust mechanistic interpretation, UEM is positioned to engineer materials in functional states that equilibrium thermodynamics simply cannot describe.
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.30084v1-abstract-full').style.display = 'none'; document.getElementById('2609.30084v1-abstract-short').style.display = 'inline';">&#9651; Less</a>
+      </span>
+    </p>
+    
+
+    <p class="is-size-7"><span class="has-text-black-bis has-text-weight-semibold">Submitted</span> 24 September, 2026; 
+      <span class="has-text-black-bis has-text-weight-semibold">originally announced</span> September 2026.
+      
+    </p>
+    
+
+    
+
+    
+  </li>
+
+  <li class="arxiv-result">
+    <div class="is-marginless">
+      <p class="list-title is-inline-block"><a href="https://arxiv.org/abs/2609.30027">arXiv:2609.30027</a>
+        <span>&nbsp;[<a href="https://arxiv.org/pdf/2609.30027">pdf</a>, <a href="https://arxiv.org/ps/2609.30027">ps</a>, <a href="https://arxiv.org/format/2609.30027">other</a>]&nbsp;</span>
+      </p>
+      <div class="tags is-inline-block">
+        <span class="tag is-small is-link tooltip is-tooltip-top" data-tooltip="Artificial Intelligence">cs.AI</span>
+        
+          
+            <span class="tag is-small is-grey tooltip is-tooltip-top" data-tooltip="Databases">cs.DB</span>
+          
+        </div>
+      
+    </div>
+    
+    <p class="title is-5 mathjax">
+      
+        Synthetic Hospital: An Open, Verifiable, Physician-Validated Longitudinal EHR Benchmark
+      
+    </p>
+    <p class="authors">
+      <span class="has-text-black-bis has-text-weight-semibold">Authors:</span>
+      
+      <a href="/search/?searchtype=author&amp;query=Park%2C+C">Christine Park</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Chen%2C+V">Valerie Chen</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Dettmers%2C+T">Tim Dettmers</a>
+      
+    </p>
+    
+    <p class="abstract mathjax">
+      <span class="search-hit">Abstract</span>:
+      <span class="abstract-short has-text-grey-dark mathjax" id="2609.30027v1-abstract-short" style="display: inline;">
+        Frontier language models are rarely used in clinical workflows because the realistic, longitudinal benchmarks needed to develop them are scarce. Real <span class="search-hit mathjax">electronic</span> health record (EHR) data cannot be openly shared due to privacy, ethics or data use issues and it does not contain verifiable ground truth since the chart records only reflect what clinicians documen&hellip;
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.30027v1-abstract-full').style.display = 'inline'; document.getElementById('2609.30027v1-abstract-short').style.display = 'none';">&#9661; More</a>
+      </span>
+      <span class="abstract-full has-text-grey-dark mathjax" id="2609.30027v1-abstract-full" style="display: none;">
+        Frontier language models are rarely used in clinical workflows because the realistic, longitudinal benchmarks needed to develop them are scarce. Real <span class="search-hit mathjax">electronic</span> health record (EHR) data cannot be openly shared due to privacy, ethics or data use issues and it does not contain verifiable ground truth since the chart records only reflect what clinicians documented. We introduce Synthetic Hospital, an open, fully synthetic, fact-grounded longitudinal EHR benchmark that resolves the open sharing and verifiable ground truth barriers. Built entirely from public medical-education material with no protected health information, it comprises 1,268 longitudinal patients and 5,602 encounters, where every diagnosis, finding, and temporal relation is grounded in standard ontologies (ICD-10-CM, SNOMED CT, LOINC) and with a complete provenance chain back to its source medical education material. Synthetic Hospital is served through a simulated hospital record system that mirrors real EHR infrastructure (standard interoperability APIs, role-based access and function-calling interface). In a blinded review, physicians distinguished its records from real patient charts at near-chance rates (53\%). Across 10 frontier and open models, none approaches ceiling: the best model reconstructs a patient&#39;s longitudinal problem list with a severity-weighted F1 of 0.73, level with the mean of seven physicians on a matched subset but well below the best of them (0.89), and misses roughly half of clinically relevant findings when summarizing a chart. Overall, these results highlight that Synthetic Hospital is a difficult and realistic test of clinical AI performance.
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.30027v1-abstract-full').style.display = 'none'; document.getElementById('2609.30027v1-abstract-short').style.display = 'inline';">&#9651; Less</a>
+      </span>
+    </p>
+    
+
+    <p class="is-size-7"><span class="has-text-black-bis has-text-weight-semibold">Submitted</span> 24 September, 2026; 
+      <span class="has-text-black-bis has-text-weight-semibold">originally announced</span> September 2026.
+      
+    </p>
+    
+    <p class="comments is-size-7">
+      <span class="has-text-black-bis has-text-weight-semibold">Comments:</span>
+      <span class="has-text-grey-dark mathjax">29 pages, 2 figures, 12 tables</span>
+    </p>
+    
+
+    
+
+    
+  </li>
+
+  <li class="arxiv-result">
+    <div class="is-marginless">
+      <p class="list-title is-inline-block"><a href="https://arxiv.org/abs/2609.30016">arXiv:2609.30016</a>
+        <span>&nbsp;[<a href="https://arxiv.org/pdf/2609.30016">pdf</a>, <a href="https://arxiv.org/ps/2609.30016">ps</a>, <a href="https://arxiv.org/format/2609.30016">other</a>]&nbsp;</span>
+      </p>
+      <div class="tags is-inline-block">
+        <span class="tag is-small is-link tooltip is-tooltip-top" data-tooltip="Applied Physics">physics.app-ph</span>
+        
+          
+            <span class="tag is-small is-grey tooltip is-tooltip-top" data-tooltip="Mesoscale and Nanoscale Physics">cond-mat.mes-hall</span>
+          
+            <span class="tag is-small is-grey tooltip is-tooltip-top" data-tooltip="Materials Science">cond-mat.mtrl-sci</span>
+          
+        </div>
+      
+    </div>
+    
+    <p class="title is-5 mathjax">
+      
+        Topological-Insulator Heterophase Gate Stacks for Transistor Electrostatics
+      
+    </p>
+    <p class="authors">
+      <span class="has-text-black-bis has-text-weight-semibold">Authors:</span>
+      
+      <a href="/search/?searchtype=author&amp;query=Song%2C+M">Minuk Song</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Kim%2C+J">Jiwan Kim</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Uddin%2C+M+G">MD Gius Uddin</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Kim%2C+W">Wonseok Kim</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Park%2C+J">Jihun Park</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Lee%2C+H+U">Han Uk Lee</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Jeon%2C+D+W">Dong Won Jeon</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Lee%2C+D">Dohyung Lee</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Yao%2C+L">Lide Yao</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Lahtinen%2C+J">Jouko Lahtinen</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Jang%2C+G">Gyunghyun Jang</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Min%2C+S">Soohyun Min</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Megra%2C+Y+T">Yonas Tsegaye Megra</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Cui%2C+X">Xiaoqi Cui</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Choi%2C+S">Seungwoo Choi</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Dai%2C+Y">Yunyun Dai</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Chae%2C+S+H">Sang Hoon Chae</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Kim%2C+K+S">Keun Su Kim</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Kang%2C+D">Dong-Ho Kang</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Shin%2C+H">Hyeon-Jin Shin</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Song%2C+W">Wooseok Song</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Tongay%2C+S+A">Seth Ariel Tongay</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Lee%2C+C">Chul-Ho Lee</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Chhowalla%2C+M">Manish Chhowalla</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Cho%2C+S+B">Sung Beom Cho</a>
+      , et al. (3 additional authors not shown)
+    </p>
+    
+    <p class="abstract mathjax">
+      <span class="search-hit">Abstract</span>:
+      <span class="abstract-short has-text-grey-dark mathjax" id="2609.30016v1-abstract-short" style="display: inline;">
+        Conventional gate-stack scaling reduces dielectric thickness and increases permittivity while largely treating the position and <span class="search-hit mathjax">electronic</span> character of the gate-side screening boundary as fixed. As equivalent oxide thickness is reduced, however, finite interfacial responses can increasingly constrain gate control [1-5]. Here we show that this screening bound&hellip;
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.30016v1-abstract-full').style.display = 'inline'; document.getElementById('2609.30016v1-abstract-short').style.display = 'none';">&#9661; More</a>
+      </span>
+      <span class="abstract-full has-text-grey-dark mathjax" id="2609.30016v1-abstract-full" style="display: none;">
+        Conventional gate-stack scaling reduces dielectric thickness and increases permittivity while largely treating the position and <span class="search-hit mathjax">electronic</span> character of the gate-side screening boundary as fixed. As equivalent oxide thickness is reduced, however, finite interfacial responses can increasingly constrain gate control [1-5]. Here we show that this screening boundary can itself be engineered by converting the surface of the topological insulator Bi2Se3 into insulating high-kappa$ BiF3. Position-resolved calculations reveal a gap-opened immediate amorphous-BiF3/crystalline-Bi2Se3 interface and a reconstructed gap-closed Bi2Se3-derived state in the adjacent subinterface layer, accompanied by a localized interfacial dipole. Independently, capacitor measurements resolve a finite series response consistent with the <span class="search-hit mathjax">electronic</span> compressibility of this buried boundary, which reduces rather than enhances the nominal stack capacitance. Despite this capacitance penalty, MoS2 transistors with closely matched BiF3 thicknesses and a common BiF3/MoS2 channel-side material interface exhibit near-thermionic switching, negligible hysteresis, and approximately sevenfold lower drain-induced barrier lowering than BiF3-only controls. These results identify the position and <span class="search-hit mathjax">electronic</span> character of the gate-side screening boundary as additional design variables for transistor electrostatics beyond nominal dielectric capacitance.
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.30016v1-abstract-full').style.display = 'none'; document.getElementById('2609.30016v1-abstract-short').style.display = 'inline';">&#9651; Less</a>
+      </span>
+    </p>
+    
+
+    <p class="is-size-7"><span class="has-text-black-bis has-text-weight-semibold">Submitted</span> 24 September, 2026; 
+      <span class="has-text-black-bis has-text-weight-semibold">originally announced</span> September 2026.
+      
+    </p>
+    
+    <p class="comments is-size-7">
+      <span class="has-text-black-bis has-text-weight-semibold">Comments:</span>
+      <span class="has-text-grey-dark mathjax">37 total pages, 24 main pages, 13 supplementary information pages, 4 main figures, 8 extended data figures, 2 extended data tables</span>
+    </p>
+    
+
+    
+
+    
+  </li>
+
+  <li class="arxiv-result">
+    <div class="is-marginless">
+      <p class="list-title is-inline-block"><a href="https://arxiv.org/abs/2609.29990">arXiv:2609.29990</a>
+        <span>&nbsp;[<a href="https://arxiv.org/pdf/2609.29990">pdf</a>]&nbsp;</span>
+      </p>
+      <div class="tags is-inline-block">
+        <span class="tag is-small is-link tooltip is-tooltip-top" data-tooltip="Applied Physics">physics.app-ph</span>
+        </div>
+      
+    </div>
+    
+    <p class="title is-5 mathjax">
+      
+        Integration of p-type Cr2O3 on Ultra-Wide Bandgap AlGaN PolFETs with 2.5 kV Breakdown Voltage
+      
+    </p>
+    <p class="authors">
+      <span class="has-text-black-bis has-text-weight-semibold">Authors:</span>
+      
+      <a href="/search/?searchtype=author&amp;query=Pratt%2C+J">Jonathan Pratt</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Liu%2C+Y">Yizheng Liu</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Mohamed%2C+I">Ijaas Mohamed</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Shin%2C+S">Seungheon Shin</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Srikanth%2C+A">Akilesh Srikanth</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Morshed%2C+M+S">Md Saklain Morshed</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Klein%2C+B+A">Brianna A. Klein</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Armstrong%2C+A">Andrew Armstrong</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Allerman%2C+A+A">Andrew A. Allerman</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Krishnamoorthy%2C+S">Sriram Krishnamoorthy</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Rajan%2C+S">Siddharth Rajan</a>
+      
+    </p>
+    
+    <p class="abstract mathjax">
+      <span class="search-hit">Abstract</span>:
+      <span class="abstract-short has-text-grey-dark mathjax" id="2609.29990v1-abstract-short" style="display: inline;">
+        &hellip;These results showcase sputtered p-Cr2O3 as a viable, low thermal budget P-N junction gate technology for high-Al-composition AlGaN transistors in RF and power <span class="search-hit mathjax">electronics</span>.
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.29990v1-abstract-full').style.display = 'inline'; document.getElementById('2609.29990v1-abstract-short').style.display = 'none';">&#9661; More</a>
+      </span>
+      <span class="abstract-full has-text-grey-dark mathjax" id="2609.29990v1-abstract-full" style="display: none;">
+        We demonstrate UWBG AlGaN polarization-graded field-effect transistors (PolFETs) incorporating room-temperature sputtered p-type oxide Cr2O3 as a P-N heterojunction gate, enabling superior field management for lateral device breakdown compared to conventional Schottky gates. Devices using reverse-graded n-AlGaN contact layers achieved a record-low Rc of 0.56 Ω-mm. The Cr2O3 gate exhibits a turn-on voltage VON &gt; 3.5 V and a positive threshold voltage shift of +1.63 V relative to Schottky gates, displaying enhanced channel depletion from the P-N junction. Fabricated devices show high Imax (590 mA/mm) and ION/IOFF of 3x10^7. Devices exhibited state-of-the-art VBR &gt; 2.5 kV with 11.2 mΩ-cm^2 specific on-resistance (LGD = 9.55 um, average breakdown field &gt; 2.5 MV/cm), while shorter gate-drain devices showed high breakdown fields up to 5.3 MV/cm with 0.28 mΩ-cm^2 specific on-resistance. These results showcase sputtered p-Cr2O3 as a viable, low thermal budget P-N junction gate technology for high-Al-composition AlGaN transistors in RF and power <span class="search-hit mathjax">electronics</span>.
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.29990v1-abstract-full').style.display = 'none'; document.getElementById('2609.29990v1-abstract-short').style.display = 'inline';">&#9651; Less</a>
+      </span>
+    </p>
+    
+
+    <p class="is-size-7"><span class="has-text-black-bis has-text-weight-semibold">Submitted</span> 24 September, 2026; 
+      <span class="has-text-black-bis has-text-weight-semibold">originally announced</span> September 2026.
+      
+    </p>
+    
+    <p class="comments is-size-7">
+      <span class="has-text-black-bis has-text-weight-semibold">Comments:</span>
+      <span class="has-text-grey-dark mathjax">16 pages, 7 figures</span>
+    </p>
+    
+
+    
+
+    
+  </li>
+
+  <li class="arxiv-result">
+    <div class="is-marginless">
+      <p class="list-title is-inline-block"><a href="https://arxiv.org/abs/2609.29896">arXiv:2609.29896</a>
+        <span>&nbsp;[<a href="https://arxiv.org/pdf/2609.29896">pdf</a>, <a href="https://arxiv.org/ps/2609.29896">ps</a>, <a href="https://arxiv.org/format/2609.29896">other</a>]&nbsp;</span>
+      </p>
+      <div class="tags is-inline-block">
+        <span class="tag is-small is-link tooltip is-tooltip-top" data-tooltip="Superconductivity">cond-mat.supr-con</span>
+        </div>
+      
+    </div>
+    
+    <p class="title is-5 mathjax">
+      
+        Bounds on Bose-Einstein Condensation of Higgs modes in a Superconductor
+      
+    </p>
+    <p class="authors">
+      <span class="has-text-black-bis has-text-weight-semibold">Authors:</span>
+      
+      <a href="/search/?searchtype=author&amp;query=Krix%2C+Z+E">Z. E. Krix</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Loss%2C+D">Daniel Loss</a>
+      
+    </p>
+    
+    <p class="abstract mathjax">
+      <span class="search-hit">Abstract</span>:
+      <span class="abstract-short has-text-grey-dark mathjax" id="2609.29896v1-abstract-short" style="display: inline;">
+        &hellip;(Higgs mode) or the phase (Goldstone mode) of the order parameter. Starting from the BCS Hamiltonian, we derive a microscopic Hamiltonian for the coupled Higgs-Goldstone-<span class="search-hit mathjax">electron</span> system that contains all interactions among these degrees of freedom. The Higgs subsystem is a weakly interacting Bose gas: Higgs modes experience a mutual attraction mediated by th&hellip;
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.29896v1-abstract-full').style.display = 'inline'; document.getElementById('2609.29896v1-abstract-short').style.display = 'none';">&#9661; More</a>
+      </span>
+      <span class="abstract-full has-text-grey-dark mathjax" id="2609.29896v1-abstract-full" style="display: none;">
+        Collective modes in a superconductor correspond to fluctuations in the amplitude (Higgs mode) or the phase (Goldstone mode) of the order parameter. Starting from the BCS Hamiltonian, we derive a microscopic Hamiltonian for the coupled Higgs-Goldstone-<span class="search-hit mathjax">electron</span> system that contains all interactions among these degrees of freedom. The Higgs subsystem is a weakly interacting Bose gas: Higgs modes experience a mutual attraction mediated by the virtual exchange of Bogoliubov quasi-particle pairs. They also interact with external electromagnetic-fields with a coupling constant that we derive explicitly. We use this theory to examine whether an optically pumped gas of Higgs modes can undergo Bose-Einstein condensation. We identify a density window, bounded below by the equilibrium condensation criterion and above by collapse due to the attractive interaction, in which condensation can occur and we derive the expected density of Higgs-modes due to external pumping. This pumping depends crucially on non-parabolic corrections to the <span class="search-hit mathjax">electron</span> dispersion around the Fermi-energy. We show that the pumped mode density is compatible with condensation for realistic material parameters. We suggest possible experimental signatures of this non-equilibrium condensate.
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.29896v1-abstract-full').style.display = 'none'; document.getElementById('2609.29896v1-abstract-short').style.display = 'inline';">&#9651; Less</a>
+      </span>
+    </p>
+    
+
+    <p class="is-size-7"><span class="has-text-black-bis has-text-weight-semibold">Submitted</span> 24 September, 2026; 
+      <span class="has-text-black-bis has-text-weight-semibold">originally announced</span> September 2026.
+      
+    </p>
+    
+    <p class="comments is-size-7">
+      <span class="has-text-black-bis has-text-weight-semibold">Comments:</span>
+      <span class="has-text-grey-dark mathjax">18 pages, 1 figure</span>
+    </p>
+    
+
+    
+
+    
+  </li>
+
+  <li class="arxiv-result">
+    <div class="is-marginless">
+      <p class="list-title is-inline-block"><a href="https://arxiv.org/abs/2609.29868">arXiv:2609.29868</a>
+        <span>&nbsp;[<a href="https://arxiv.org/pdf/2609.29868">pdf</a>]&nbsp;</span>
+      </p>
+      <div class="tags is-inline-block">
+        <span class="tag is-small is-link tooltip is-tooltip-top" data-tooltip="Signal Processing">eess.SP</span>
+        </div>
+      
+    </div>
+    
+    <p class="title is-5 mathjax">
+      
+        Dynamic Metasurface Antennas: From Programmable Microwave Hardware to Next-Generation Wireless Systems
+      
+    </p>
+    <p class="authors">
+      <span class="has-text-black-bis has-text-weight-semibold">Authors:</span>
+      
+      <a href="/search/?searchtype=author&amp;query=Jabbar%2C+A">Abdul Jabbar</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Whittow%2C+W">William Whittow</a>
+      
+    </p>
+    
+    <p class="abstract mathjax">
+      <span class="search-hit">Abstract</span>:
+      <span class="abstract-short has-text-grey-dark mathjax" id="2609.29868v1-abstract-short" style="display: inline;">
+        &hellip;to diverse communication, sensing, and imaging requirements. Dynamic metasurface antennas (DMAs) offer a promising hardware pathway toward this vision by integrating <span class="search-hit mathjax">electronically</span> addressable metamaterial elements within microwave and millimeter-wave (mmWave) radiating apertures. Unlike conventional phased arrays relying on dedicated phase-shifting networks&hellip;
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.29868v1-abstract-full').style.display = 'inline'; document.getElementById('2609.29868v1-abstract-short').style.display = 'none';">&#9661; More</a>
+      </span>
+      <span class="abstract-full has-text-grey-dark mathjax" id="2609.29868v1-abstract-full" style="display: none;">
+        As wireless systems evolve toward 6G and beyond, antenna apertures are increasingly expected to become more programmable, multifunctional, and responsive to diverse communication, sensing, and imaging requirements. Dynamic metasurface antennas (DMAs) offer a promising hardware pathway toward this vision by integrating <span class="search-hit mathjax">electronically</span> addressable metamaterial elements within microwave and millimeter-wave (mmWave) radiating apertures. Unlike conventional phased arrays relying on dedicated phase-shifting networks, DMAs manipulate guided waves in microwave structures through <span class="search-hit mathjax">electronically</span> controlled resonant elements. In this way, DMAs offer phase-shifter-less beam-steering, multibeam radiation, and programmable wavefront control. This article explores state-of-the-art DMA technology from a microwave-engineering perspective, spanning guided-wave excitation, reconfigurable resonant meta-elements, microwave tuning technologies, RF-digital integration, and FPGA-controlled beamforming. Closely related <span class="search-hit mathjax">electronically</span> steered metasurface antenna architectures are also discussed within a unified microwave-hardware framework. Recent advances illustrating how guided-wave DMA hardware and high-speed <span class="search-hit mathjax">electronics</span> facilitate programmable communication, sensing, imaging, and space-time functionalities are reviewed. Key microwave design challenges toward wideband, scalable, and highly integrated DMA apertures are highlighted. Finally, emerging opportunities in satellite communications, near-field connectivity, fixed wireless access, wave-domain computing, and integrated wireless functionalities are explored as future directions for DMA technology. This article provides a unified microwave engineering perspective on the design, practical implementation, and emerging capabilities of DMAs as programmable front-ends for next-generation wireless systems.
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.29868v1-abstract-full').style.display = 'none'; document.getElementById('2609.29868v1-abstract-short').style.display = 'inline';">&#9651; Less</a>
+      </span>
+    </p>
+    
+
+    <p class="is-size-7"><span class="has-text-black-bis has-text-weight-semibold">Submitted</span> 24 September, 2026; 
+      <span class="has-text-black-bis has-text-weight-semibold">originally announced</span> September 2026.
+      
+    </p>
+    
+
+    
+
+    
+  </li>
+
+  <li class="arxiv-result">
+    <div class="is-marginless">
+      <p class="list-title is-inline-block"><a href="https://arxiv.org/abs/2609.29857">arXiv:2609.29857</a>
+        <span>&nbsp;[<a href="https://arxiv.org/pdf/2609.29857">pdf</a>]&nbsp;</span>
+      </p>
+      <div class="tags is-inline-block">
+        <span class="tag is-small is-link tooltip is-tooltip-top" data-tooltip="Mesoscale and Nanoscale Physics">cond-mat.mes-hall</span>
+        
+          
+            <span class="tag is-small is-grey tooltip is-tooltip-top" data-tooltip="Materials Science">cond-mat.mtrl-sci</span>
+          
+            <span class="tag is-small is-grey tooltip is-tooltip-top" data-tooltip="Applied Physics">physics.app-ph</span>
+          
+        </div>
+      
+        
+          <div class="is-inline-block" style="margin-left: 0.5rem">
+            <div class="tags has-addons">
+              <span class="tag is-dark is-size-7">doi</span>
+              <span class="tag is-light is-size-7"><a class="" href="https://doi.org/10.1002/metm.70049">10.1002/metm.70049 <i class="fa fa-external-link" aria-hidden="true"></i></a></span>
+            </div>
+          </div>
+        
+      
+    </div>
+    
+    <p class="title is-5 mathjax">
+      
+        Spin-Polarized Magnetic Metal Electrodes for Magnetic Tunnel Junctions
+      
+    </p>
+    <p class="authors">
+      <span class="has-text-black-bis has-text-weight-semibold">Authors:</span>
+      
+      <a href="/search/?searchtype=author&amp;query=Duan%2C+Z">Zhiyuan Duan</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Qin%2C+P">Peixin Qin</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Liu%2C+L">Li Liu</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Zhao%2C+G">Guojian Zhao</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Jiang%2C+S">Sixu Jiang</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Tan%2C+X">Xiaoyang Tan</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Li%2C+J">Jingyu Li</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Wang%2C+X">Xiaoning Wang</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Meng%2C+Z">Ziang Meng</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Liu%2C+Z">Zhiqi Liu</a>
+      
+    </p>
+    
+    <p class="abstract mathjax">
+      <span class="search-hit">Abstract</span>:
+      <span class="abstract-short has-text-grey-dark mathjax" id="2609.29857v1-abstract-short" style="display: inline;">
+        &hellip;distinct microscopic mechanisms that generate spin-selective tunneling. Conventional ferromagnets, including CoFeB and half-metallic Heusler alloys, support exchange-split <span class="search-hit mathjax">electronic</span> states and symmetry-filtered tunneling, whereas compensated collinear and noncollinear antiferromagnets exploit sublattice selectivity, spin-orbit anisotropy, vector spin textur&hellip;
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.29857v1-abstract-full').style.display = 'inline'; document.getElementById('2609.29857v1-abstract-short').style.display = 'none';">&#9661; More</a>
+      </span>
+      <span class="abstract-full has-text-grey-dark mathjax" id="2609.29857v1-abstract-full" style="display: none;">
+        Magnetic tunnel junctions are foundational components of spintronic memory, sensing, and computing, and their performance depends critically on the magnetic metallic electrodes. This Perspective examines electrode materials through the lens of magnetic order and the distinct microscopic mechanisms that generate spin-selective tunneling. Conventional ferromagnets, including CoFeB and half-metallic Heusler alloys, support exchange-split <span class="search-hit mathjax">electronic</span> states and symmetry-filtered tunneling, whereas compensated collinear and noncollinear antiferromagnets exploit sublattice selectivity, spin-orbit anisotropy, vector spin textures, and magnetic multipoles. Altermagnets provide a collinear, zero-net-moment route based on symmetry-allowed momentum-dependent spin splitting. Across these material classes, we compare the origins of tunneling polarization, the roles of barrier evanescent states and interface termination, and strategies for electrically writing and reading the relevant magnetic order. This comparison reveals a broader design principle: effective electrode polarization is not a scalar bulk quantity, but a momentum-, orbital-, symmetry-, and interface-resolved transport property. Beyond the pursuit of ever larger tunneling magnetoresistance, future progress will depend on converting the unconventional spin polarization of emerging magnetic metals into electrically addressable, thermally robust, and reproducible tunneling functionality at realistic interfaces.
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.29857v1-abstract-full').style.display = 'none'; document.getElementById('2609.29857v1-abstract-short').style.display = 'inline';">&#9651; Less</a>
+      </span>
+    </p>
+    
+
+    <p class="is-size-7"><span class="has-text-black-bis has-text-weight-semibold">Submitted</span> 24 September, 2026; 
+      <span class="has-text-black-bis has-text-weight-semibold">originally announced</span> September 2026.
+      
+    </p>
+    
+    <p class="comments is-size-7">
+      <span class="has-text-black-bis has-text-weight-semibold">Comments:</span>
+      <span class="has-text-grey-dark mathjax">40 pages, 7 figures, Invited perspective published online at MetalMat</span>
+    </p>
+    
+
+    
+
+    
+  </li>
+
+  <li class="arxiv-result">
+    <div class="is-marginless">
+      <p class="list-title is-inline-block"><a href="https://arxiv.org/abs/2609.29789">arXiv:2609.29789</a>
+        <span>&nbsp;[<a href="https://arxiv.org/pdf/2609.29789">pdf</a>, <a href="https://arxiv.org/ps/2609.29789">ps</a>, <a href="https://arxiv.org/format/2609.29789">other</a>]&nbsp;</span>
+      </p>
+      <div class="tags is-inline-block">
+        <span class="tag is-small is-link tooltip is-tooltip-top" data-tooltip="Materials Science">cond-mat.mtrl-sci</span>
+        </div>
+      
+    </div>
+    
+    <p class="title is-5 mathjax">
+      
+        Unified description of exciton, phonon and plasmon dispersions in 2D materials from an optical conductivity approximation
+      
+    </p>
+    <p class="authors">
+      <span class="has-text-black-bis has-text-weight-semibold">Authors:</span>
+      
+      <a href="/search/?searchtype=author&amp;query=Guandalini%2C+A">Alberto Guandalini</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Ferretti%2C+A">Andrea Ferretti</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Varsano%2C+D">Daniele Varsano</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Barone%2C+P">Paolo Barone</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Mauri%2C+F">Francesco Mauri</a>
+      
+    </p>
+    
+    <p class="abstract mathjax">
+      <span class="search-hit">Abstract</span>:
+      <span class="abstract-short has-text-grey-dark mathjax" id="2609.29789v1-abstract-short" style="display: inline;">
+        &hellip;of longitudinal excitations by introducing the optical conductivity approximation (OCA), a unified framework that evaluates the finite-q longitudinal response probed by <span class="search-hit mathjax">electron</span> energy-loss spectroscopy (q-EELS) by only using the q = 0 optical conductivity. By doing so, the approach demonstrates that the linear dispersion of all the above mentioned excitatio&hellip;
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.29789v1-abstract-full').style.display = 'inline'; document.getElementById('2609.29789v1-abstract-short').style.display = 'none';">&#9661; More</a>
+      </span>
+      <span class="abstract-full has-text-grey-dark mathjax" id="2609.29789v1-abstract-full" style="display: none;">
+        The modified Coulomb interaction in two-dimensional (2D) materials gives rise to unique, non-analytic low-momentum dispersions of excitons, phonons, and plasmons. Here, we describe the 2D dispersion of longitudinal excitations by introducing the optical conductivity approximation (OCA), a unified framework that evaluates the finite-q longitudinal response probed by <span class="search-hit mathjax">electron</span> energy-loss spectroscopy (q-EELS) by only using the q = 0 optical conductivity. By doing so, the approach demonstrates that the linear dispersion of all the above mentioned excitations is mainly due to the form of the 2D macroscopic Coulomb interaction rather than to the dispersion of the underlying band structure. Applying this approach to hexagonal boron nitride and graphene we accurately reproduce the energy and intensity dispersions of the hBN longitudinal-optical phonon and low-energy bright excitons, along with the graphene pi-plasmon. Our work also provides an efficient computational scheme to describe low momentum EELS data without the need to calculate the response functions at dense moment
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.29789v1-abstract-full').style.display = 'none'; document.getElementById('2609.29789v1-abstract-short').style.display = 'inline';">&#9651; Less</a>
+      </span>
+    </p>
+    
+
+    <p class="is-size-7"><span class="has-text-black-bis has-text-weight-semibold">Submitted</span> 24 September, 2026; 
+      <span class="has-text-black-bis has-text-weight-semibold">originally announced</span> September 2026.
+      
+    </p>
+    
+
+    
+
+    
+  </li>
+
+  <li class="arxiv-result">
+    <div class="is-marginless">
+      <p class="list-title is-inline-block"><a href="https://arxiv.org/abs/2609.29717">arXiv:2609.29717</a>
+        <span>&nbsp;[<a href="https://arxiv.org/pdf/2609.29717">pdf</a>, <a href="https://arxiv.org/ps/2609.29717">ps</a>, <a href="https://arxiv.org/format/2609.29717">other</a>]&nbsp;</span>
+      </p>
+      <div class="tags is-inline-block">
+        <span class="tag is-small is-link tooltip is-tooltip-top" data-tooltip="Computer Vision and Pattern Recognition">cs.CV</span>
+        </div>
+      
+    </div>
+    
+    <p class="title is-5 mathjax">
+      
+        TopoFuse: Topology-Aware Tri-Planar Fusion for 3D Cryo-<span class="search-hit mathjax">Electron</span> Tomography Segmentation
+      
+    </p>
+    <p class="authors">
+      <span class="has-text-black-bis has-text-weight-semibold">Authors:</span>
+      
+      <a href="/search/?searchtype=author&amp;query=Salla%2C+R+K">Rohit Kumar Salla</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Gupta%2C+N">Neelesh Gupta</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Li%2C+X">Xingjian Li</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Xu%2C+M">Min Xu</a>
+      
+    </p>
+    
+    <p class="abstract mathjax">
+      <span class="search-hit">Abstract</span>:
+      <span class="abstract-short has-text-grey-dark mathjax" id="2609.29717v1-abstract-short" style="display: inline;">
+        Automated segmentation of cryo-<span class="search-hit mathjax">electron</span> tomograms routinely produces masks that are voxel-accurate but topologically broken: membranes fragment, organelles merge into one another, and enclosed cavities collapse. Existing topology-aware losses reduce these violations but cannot eliminate them, because topology is encouraged through gradient pressure rather th&hellip;
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.29717v1-abstract-full').style.display = 'inline'; document.getElementById('2609.29717v1-abstract-short').style.display = 'none';">&#9661; More</a>
+      </span>
+      <span class="abstract-full has-text-grey-dark mathjax" id="2609.29717v1-abstract-full" style="display: none;">
+        Automated segmentation of cryo-<span class="search-hit mathjax">electron</span> tomograms routinely produces masks that are voxel-accurate but topologically broken: membranes fragment, organelles merge into one another, and enclosed cavities collapse. Existing topology-aware losses reduce these violations but cannot eliminate them, because topology is encouraged through gradient pressure rather than structurally enforced. We introduce TopoFuse, which reframes topology as a differentiable projection operator rather than a loss penalty. At each forward pass, the projection operator $\mathrm{Proj}_T$ (a PH-guided sparse edit) identifies the critical voxels responsible for topological violations via bottleneck matching and applies sparse edits to satisfy a specified topology target (diagram feature counts and lifetime budgets) for dimensions $d \in \{0,2\}$. If the projection converges, the output satisfies those constraints on the downsampled grid ($s=2$); when it does not, a repair certificate exposes this explicitly, enabling downstream filtering. A topology prior head predicts the correction target directly from input features, removing any dependence on ground-truth topology at inference. Across three cryo-ET benchmarks, TopoFuse reduces Betti number error by 54% over the strongest soft-loss baseline ($p &lt; 0.001$), improves Dice by 4.6 points, and edits only 3.1% of voxels to achieve this.
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.29717v1-abstract-full').style.display = 'none'; document.getElementById('2609.29717v1-abstract-short').style.display = 'inline';">&#9651; Less</a>
+      </span>
+    </p>
+    
+
+    <p class="is-size-7"><span class="has-text-black-bis has-text-weight-semibold">Submitted</span> 31 August, 2026; 
+      <span class="has-text-black-bis has-text-weight-semibold">originally announced</span> September 2026.
+      
+    </p>
+    
+
+    
+
+    
+  </li>
+
+  <li class="arxiv-result">
+    <div class="is-marginless">
+      <p class="list-title is-inline-block"><a href="https://arxiv.org/abs/2609.29635">arXiv:2609.29635</a>
+        <span>&nbsp;[<a href="https://arxiv.org/pdf/2609.29635">pdf</a>, <a href="https://arxiv.org/ps/2609.29635">ps</a>, <a href="https://arxiv.org/format/2609.29635">other</a>]&nbsp;</span>
+      </p>
+      <div class="tags is-inline-block">
+        <span class="tag is-small is-link tooltip is-tooltip-top" data-tooltip="Materials Science">cond-mat.mtrl-sci</span>
+        </div>
+      
+    </div>
+    
+    <p class="title is-5 mathjax">
+      
+        Exact benchmarks for the plasmon-pole approximation: Multi-scale screening and the breakdown of the quasiparticle picture
+      
+    </p>
+    <p class="authors">
+      <span class="has-text-black-bis has-text-weight-semibold">Authors:</span>
+      
+      <a href="/search/?searchtype=author&amp;query=Atambo%2C+M+O">Michael O. Atambo</a>
+      
+    </p>
+    
+    <p class="abstract mathjax">
+      <span class="search-hit">Abstract</span>:
+      <span class="abstract-short has-text-grey-dark mathjax" id="2609.29635v1-abstract-short" style="display: inline;">
+        &hellip;transitions introduce a low-energy screening channel that competes with high-energy Mott fluctuations, the PPA systematically misjudges the quasiparticle gap by several <span class="search-hit mathjax">electron</span>-volts. Furthermore, we show that strong multi-pole screening can drive the exact quasiparticle weight $Z \to 0$, destroying the quasiparticle picture-an effect entirely missed by the&hellip;
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.29635v1-abstract-full').style.display = 'inline'; document.getElementById('2609.29635v1-abstract-short').style.display = 'none';">&#9661; More</a>
+      </span>
+      <span class="abstract-full has-text-grey-dark mathjax" id="2609.29635v1-abstract-full" style="display: none;">
+        The $GW$ approximation is the gold standard for calculating quasiparticle band structures, yet its computational cost frequently necessitates the use of the plasmon-pole approximation (PPA). While PPA is known to be highly accurate for simple metals and weakly correlated semiconductors, its regime of validity in materials with competing energy scales remains poorly quantified. Here, we construct an exact, numerical benchmark of the PPA using the Lehmann representation of the density response on finite one-dimensional Hubbard clusters. By analytically convolving the exact non-interacting Green&#39;s function $G_0$ with the exact pole representation of the screened interaction $W$, we compute the $GW$ self-energy without numerical frequency integration. We demonstrate that in single-scale Mott insulators, the moment-conserving PPA is essentially exact. However, in multi-band semiconductors where interband transitions introduce a low-energy screening channel that competes with high-energy Mott fluctuations, the PPA systematically misjudges the quasiparticle gap by several <span class="search-hit mathjax">electron</span>-volts. Furthermore, we show that strong multi-pole screening can drive the exact quasiparticle weight $Z \to 0$, destroying the quasiparticle picture-an effect entirely missed by the PPA, which artificially stabilizes sharp quasiparticles. Finally, we propose a computationally inexpensive diagnostic based on the polydispersity of the loss function&#39;s spectral weight, which accurately predicts PPA failure \textit{ab initio}. Our results provide a rigorous framework for assessing the validity of dynamical screening approximations in strongly correlated materials.
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.29635v1-abstract-full').style.display = 'none'; document.getElementById('2609.29635v1-abstract-short').style.display = 'inline';">&#9651; Less</a>
+      </span>
+    </p>
+    
+
+    <p class="is-size-7"><span class="has-text-black-bis has-text-weight-semibold">Submitted</span> 29 August, 2026; 
+      <span class="has-text-black-bis has-text-weight-semibold">originally announced</span> September 2026.
+      
+    </p>
+    
+
+    
+
+    
+  </li>
+
+  <li class="arxiv-result">
+    <div class="is-marginless">
+      <p class="list-title is-inline-block"><a href="https://arxiv.org/abs/2609.29634">arXiv:2609.29634</a>
+        <span>&nbsp;[<a href="https://arxiv.org/pdf/2609.29634">pdf</a>, <a href="https://arxiv.org/ps/2609.29634">ps</a>, <a href="https://arxiv.org/format/2609.29634">other</a>]&nbsp;</span>
+      </p>
+      <div class="tags is-inline-block">
+        <span class="tag is-small is-link tooltip is-tooltip-top" data-tooltip="Materials Science">cond-mat.mtrl-sci</span>
+        </div>
+      
+    </div>
+    
+    <p class="title is-5 mathjax">
+      
+        Symmetry-protected intraband exciton-phonon scattering and its breakdown by mass asymmetry
+      
+    </p>
+    <p class="authors">
+      <span class="has-text-black-bis has-text-weight-semibold">Authors:</span>
+      
+      <a href="/search/?searchtype=author&amp;query=Atambo%2C+M+O">Michael O. Atambo</a>
+      
+    </p>
+    
+    <p class="abstract mathjax">
+      <span class="search-hit">Abstract</span>:
+      <span class="abstract-short has-text-grey-dark mathjax" id="2609.29634v1-abstract-short" style="display: inline;">
+        &hellip;separate long-range Fröhlich and short-range Holstein interactions. Recent analytical work has established that, in the delocalized limit, Fröhlich scattering is suppressed by <span class="search-hit mathjax">electron</span>--hole interference. Here we present a model-space Bethe--Salpeter framework to evaluate exciton--phonon coupling across the extended-to-localized crossover. We establish a fun&hellip;
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.29634v1-abstract-full').style.display = 'inline'; document.getElementById('2609.29634v1-abstract-short').style.display = 'none';">&#9661; More</a>
+      </span>
+      <span class="abstract-full has-text-grey-dark mathjax" id="2609.29634v1-abstract-full" style="display: none;">
+        The coupling of excitons to lattice vibrations is typically treated via phenomenological models that artificially separate long-range Fröhlich and short-range Holstein interactions. Recent analytical work has established that, in the delocalized limit, Fröhlich scattering is suppressed by <span class="search-hit mathjax">electron</span>--hole interference. Here we present a model-space Bethe--Salpeter framework to evaluate exciton--phonon coupling across the extended-to-localized crossover. We establish a fundamental distinction between the \emph{inclusive} exciton--phonon coupling weight, obtainable via an exact completeness sum rule without summation over excited states, and the \emph{exclusive} intraband (internal-state-preserving) scattering amplitude that governs low-energy decoherence. We prove an exact symmetry theorem: for an inversion-symmetric relative-coordinate Hamiltonian with equal <span class="search-hit mathjax">electron</span> and hole masses, the intraband Fröhlich vertex vanishes identically, protecting the exciton from low-energy polar phonon scattering. When mass asymmetry is introduced, the finite-momentum relative wavefunction acquires a complex phase twist that breaks this protection. By analyzing the long-wavelength limit, we derive a controlled small-$q$ activation law showing that the intraband vertex scales as $F_{00}(q) \propto Δq^2 \langle r^2 \rangle$, where $Δ$ parameterizes the mass asymmetry. Finally, we compute the second-order polaron self-energy shift and demonstrate that mass asymmetry dramatically enhances phonon dressing, confirming that the symmetry theorem directly governs the many-body energy renormalization of the exciton. These results provide a rigorous conceptual framework for understanding the competition between long-range and local exciton--phonon coupling in polar semiconductors.
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.29634v1-abstract-full').style.display = 'none'; document.getElementById('2609.29634v1-abstract-short').style.display = 'inline';">&#9651; Less</a>
+      </span>
+    </p>
+    
+
+    <p class="is-size-7"><span class="has-text-black-bis has-text-weight-semibold">Submitted</span> 28 August, 2026; 
+      <span class="has-text-black-bis has-text-weight-semibold">originally announced</span> September 2026.
+      
+    </p>
+    
+
+    
+
+    
+  </li>
+
+  <li class="arxiv-result">
+    <div class="is-marginless">
+      <p class="list-title is-inline-block"><a href="https://arxiv.org/abs/2609.29628">arXiv:2609.29628</a>
+        <span>&nbsp;[<a href="https://arxiv.org/pdf/2609.29628">pdf</a>, <a href="https://arxiv.org/ps/2609.29628">ps</a>, <a href="https://arxiv.org/format/2609.29628">other</a>]&nbsp;</span>
+      </p>
+      <div class="tags is-inline-block">
+        <span class="tag is-small is-link tooltip is-tooltip-top" data-tooltip="Dynamical Systems">math.DS</span>
+        
+          
+            <span class="tag is-small is-grey tooltip is-tooltip-top" data-tooltip="Numerical Analysis">math.NA</span>
+          
+            <span class="tag is-small is-grey tooltip is-tooltip-top" data-tooltip="Optimization and Control">math.OC</span>
+          
+        </div>
+      
+    </div>
+    
+    <p class="title is-5 mathjax">
+      
+        Mathematical modelling of a multicluster open system: transfer-operator recovery from aggregate data under a least-action prior
+      
+    </p>
+    <p class="authors">
+      <span class="has-text-black-bis has-text-weight-semibold">Authors:</span>
+      
+      <a href="/search/?searchtype=author&amp;query=Nevecheria%2C+A+P">A. P. Nevecheria</a>
+      
+    </p>
+    
+    <p class="abstract mathjax">
+      <span class="search-hit">Abstract</span>:
+      <span class="abstract-short has-text-grey-dark mathjax" id="2609.29628v1-abstract-short" style="display: inline;">
+        &hellip;transport, to Perron-Frobenius coarse-graining, and to the Schrödinger bridge. Two instantiations carry it: the Russian labour market and a radiation-damped relativistic <span class="search-hit mathjax">electron</span> ensemble. The construction holds the balance to machine precision where temporal smoothing corrupts it by twelve percent on the labour series and sixty percent in the physical one.&hellip;
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.29628v1-abstract-full').style.display = 'inline'; document.getElementById('2609.29628v1-abstract-short').style.display = 'none';">&#9661; More</a>
+      </span>
+      <span class="abstract-full has-text-grey-dark mathjax" id="2609.29628v1-abstract-full" style="display: none;">
+        Many open systems are observed only through aggregate snapshots, while the rule that moves objects between states stays hidden. This paper studies the inverse problem of recovering the transfer operator of a multicluster open system from two adjacent snapshots. The consistent operators fill an affine manifold: the data fix the aggregate flows and leave the internal routing free, so every recovery method commits to a prior that selects one operator. Tikhonov regularisation with a zero reference gives the uniform outflow on each source simplex, which underestimates retention in an inertial system. We propose least action on the operator trajectory, under which the rule changes as little as the data permit. In discrete time this is exact as a probability statement: the action prices a trajectory by its likelihood under a Gaussian reference drawn toward full retention, so least action selects the most probable trajectory consistent with the balance. A causal construction keeps the balance exact by moving the operator only inside the null space of the constraints, and we relate it to optimal transport, to Perron-Frobenius coarse-graining, and to the Schrödinger bridge. Two instantiations carry it: the Russian labour market and a radiation-damped relativistic <span class="search-hit mathjax">electron</span> ensemble. The construction holds the balance to machine precision where temporal smoothing corrupts it by twelve percent on the labour series and sixty percent in the physical one. The spectral gap is non-identifiable from aggregate snapshots but available from micro-trajectories, where Ulam&#39;s method reproduces the Landau-Lifshitz rate to within six percent. On the short labour series no method beats the naive forecast in point accuracy at conventional significance levels. The value is structural: an interpretable operator, an exactly preserved balance, and an explicit information limit of aggregate observation.
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.29628v1-abstract-full').style.display = 'none'; document.getElementById('2609.29628v1-abstract-short').style.display = 'inline';">&#9651; Less</a>
+      </span>
+    </p>
+    
+
+    <p class="is-size-7"><span class="has-text-black-bis has-text-weight-semibold">Submitted</span> 28 August, 2026; 
+      <span class="has-text-black-bis has-text-weight-semibold">originally announced</span> September 2026.
+      
+    </p>
+    
+    <p class="comments is-size-7">
+      <span class="has-text-black-bis has-text-weight-semibold">Comments:</span>
+      <span class="has-text-grey-dark mathjax">42 pages, 10 figures, 5 tables. Extended version of an article accepted in Mathematical Modeling and Computational Methods (BMSTU). Code and data: doi:10.5281/zenodo.21140416. Preprint record: doi:10.5281/zenodo.21758814</span>
+    </p>
+    
+
+    
+      <p class="comments is-size-7">
+        
+
+        
+          <span class="has-text-black-bis has-text-weight-semibold">MSC Class:</span>
+          65J22; 47B65; 37M25; 60J22; 49Q22
+        
+
+        
+      </p>
+    
+
+    
+  </li>
+
+  <li class="arxiv-result">
+    <div class="is-marginless">
+      <p class="list-title is-inline-block"><a href="https://arxiv.org/abs/2609.29472">arXiv:2609.29472</a>
+        <span>&nbsp;[<a href="https://arxiv.org/pdf/2609.29472">pdf</a>, <a href="https://arxiv.org/ps/2609.29472">ps</a>, <a href="https://arxiv.org/format/2609.29472">other</a>]&nbsp;</span>
+      </p>
+      <div class="tags is-inline-block">
+        <span class="tag is-small is-link tooltip is-tooltip-top" data-tooltip="Materials Science">cond-mat.mtrl-sci</span>
+        
+          
+            <span class="tag is-small is-grey tooltip is-tooltip-top" data-tooltip="Mesoscale and Nanoscale Physics">cond-mat.mes-hall</span>
+          
+            <span class="tag is-small is-grey tooltip is-tooltip-top" data-tooltip="Strongly Correlated Electrons">cond-mat.str-el</span>
+          
+        </div>
+      
+        
+          <div class="is-inline-block" style="margin-left: 0.5rem">
+            <div class="tags has-addons">
+              <span class="tag is-dark is-size-7">doi</span>
+              <span class="tag is-light is-size-7"><a class="" href="https://doi.org/10.1103/6789-9w6m">10.1103/6789-9w6m <i class="fa fa-external-link" aria-hidden="true"></i></a></span>
+            </div>
+          </div>
+        
+      
+    </div>
+    
+    <p class="title is-5 mathjax">
+      
+        Selective strain tuning of nonequilibrium multiferroic dynamics in BiFeO$_\text3$
+      
+    </p>
+    <p class="authors">
+      <span class="has-text-black-bis has-text-weight-semibold">Authors:</span>
+      
+      <a href="/search/?searchtype=author&amp;query=Xu%2C+C">Chenhang Xu</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Liu%2C+P">Patrick Liu</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Zhang%2C+B">Bo Zhang</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Han%2C+M">Minyong Han</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Bell%2C+H+G">Henry G. Bell</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Duncan%2C+C+J+R">Cameron J. R. Duncan</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Liu%2C+Y">Yusong Liu</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Kramer%2C+P+L">Patrick L. Kramer</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Lemons%2C+R">Randy Lemons</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Koralek%2C+J+D">Jake D. Koralek</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Reid%2C+A+H">Alexander H. Reid</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Qian%2C+D">Dong Qian</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Hwang%2C+H+Y">Harold Y. Hwang</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Zong%2C+A">Alfred Zong</a>
+      
+    </p>
+    
+    <p class="abstract mathjax">
+      <span class="search-hit">Abstract</span>:
+      <span class="abstract-short has-text-grey-dark mathjax" id="2609.29472v1-abstract-short" style="display: inline;">
+        &hellip;. By applying MeV ultrafast <span class="search-hit mathjax">electron</span> diffraction to freestanding BiFeO$_3$ membranes under tunable strain, we showed that tensile strain markedly suppresses the ultrafast photoinduced reduction of the ferroelectric displacement. By contrast, the photoinduced dynamics of the antiferrodistortive rotation of the oxygen octahedra, which modulates the magnetic or&hellip;
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.29472v1-abstract-full').style.display = 'inline'; document.getElementById('2609.29472v1-abstract-short').style.display = 'none';">&#9661; More</a>
+      </span>
+      <span class="abstract-full has-text-grey-dark mathjax" id="2609.29472v1-abstract-full" style="display: none;">
+        Quantum materials are characterized by intertwined orders, and a fundamental goal in condensed matter physics is to achieve their selective control in such a way that one order parameter can be tuned while leaving others largely unaffected. Although significant progress has been made in thermal equilibrium, realizing such control out of equilibrium remains highly challenging. Here we employed \textit{in situ} tensile strain to selectively manipulate the photoinduced lattice dynamics associated with ferroelectric and magnetic orders in multiferroic BiFeO$_3$. By applying MeV ultrafast <span class="search-hit mathjax">electron</span> diffraction to freestanding BiFeO$_3$ membranes under tunable strain, we showed that tensile strain markedly suppresses the ultrafast photoinduced reduction of the ferroelectric displacement. By contrast, the photoinduced dynamics of the antiferrodistortive rotation of the oxygen octahedra, which modulates the magnetic order, remains insensitive to strain. Not only do these findings reveal distinct microscopic pathways underlying nonequilibrium multiferroic dynamics, they also establish tunable strain as an effective route for engineering ultrafast phase control in correlated materials.
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.29472v1-abstract-full').style.display = 'none'; document.getElementById('2609.29472v1-abstract-short').style.display = 'inline';">&#9651; Less</a>
+      </span>
+    </p>
+    
+
+    <p class="is-size-7"><span class="has-text-black-bis has-text-weight-semibold">Submitted</span> 24 September, 2026; 
+      <span class="has-text-black-bis has-text-weight-semibold">originally announced</span> September 2026.
+      
+    </p>
+    
+    <p class="comments is-size-7">
+      <span class="has-text-black-bis has-text-weight-semibold">Comments:</span>
+      <span class="has-text-grey-dark mathjax">15 pages, 4 main figures and 8 Supplemental Material figures</span>
+    </p>
+    
+
+    
+
+    
+  </li>
+
+  <li class="arxiv-result">
+    <div class="is-marginless">
+      <p class="list-title is-inline-block"><a href="https://arxiv.org/abs/2609.29459">arXiv:2609.29459</a>
+        <span>&nbsp;[<a href="https://arxiv.org/pdf/2609.29459">pdf</a>, <a href="https://arxiv.org/ps/2609.29459">ps</a>, <a href="https://arxiv.org/format/2609.29459">other</a>]&nbsp;</span>
+      </p>
+      <div class="tags is-inline-block">
+        <span class="tag is-small is-link tooltip is-tooltip-top" data-tooltip="Mesoscale and Nanoscale Physics">cond-mat.mes-hall</span>
+        </div>
+      
+    </div>
+    
+    <p class="title is-5 mathjax">
+      
+        Library of carbon nanotube junctions: data-driven insights into structure-magnetotransport relationships
+      
+    </p>
+    <p class="authors">
+      <span class="has-text-black-bis has-text-weight-semibold">Authors:</span>
+      
+      <a href="/search/?searchtype=author&amp;query=Canch%C3%A9-Mart%C3%ADn%2C+J+A">Juan Alberto Canché-Martín</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Kulka%2C+T">Teresa Kulka</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Majewski%2C+J+A">Jacek A. Majewski</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Lebedeva%2C+I+V">Irina V. Lebedeva</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Marchwiany%2C+M">Maciej Marchwiany</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Milowska%2C+K+Z">Karolina Z. Milowska</a>
+      
+    </p>
+    
+    <p class="abstract mathjax">
+      <span class="search-hit">Abstract</span>:
+      <span class="abstract-short has-text-grey-dark mathjax" id="2609.29459v1-abstract-short" style="display: inline;">
+        <span class="search-hit mathjax">Electronic</span> transport in carbon nanotube (CNT) assemblies is controlled by a heterogeneous population of CNT--CNT junctions, yet most microscopic studies consider only a few representative systems. Here, we construct a library of 146 single-walled carbon nanotube (SWCNT)--SWCNT junctions spanning broad structural and&hellip;
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.29459v1-abstract-full').style.display = 'inline'; document.getElementById('2609.29459v1-abstract-short').style.display = 'none';">&#9661; More</a>
+      </span>
+      <span class="abstract-full has-text-grey-dark mathjax" id="2609.29459v1-abstract-full" style="display: none;">
+        <span class="search-hit mathjax">Electronic</span> transport in carbon nanotube (CNT) assemblies is controlled by a heterogeneous population of CNT--CNT junctions, yet most microscopic studies consider only a few representative systems. Here, we construct a library of 146 single-walled carbon nanotube (SWCNT)--SWCNT junctions spanning broad structural and <span class="search-hit mathjax">electronic</span> diversity and analyse their magnetotransport using an automated workflow combining molecular dynamics, tight-binding theory, Peierls magnetic coupling, and non-equilibrium Green&#39;s functions.The resulting transport data are subsequently analysed using machine-learning methods. Two complementary transport descriptors reveal distinct structure--transport hierarchies. The averaged first transmission-step value is governed primarily by the mean chiral angle of the two nanotubes forming a junction, whereas the energy gap of the junction depends predominantly on the metallic or semiconducting character of the constituent CNTs. Temperature generally suppresses the averaged transmission while reducing the extracted gap, whereas a perpendicular magnetic field affects transmission much more strongly than the gap. Signatures of interference-driven transport remain visible even at $300~\mathrm{K}$. Notably, semiconducting--semiconducting junctions retain the largest gaps but, once shifted into their conducting regime, can exhibit transmission comparable to or exceeding that of metallic junctions. These results establish statistically robust junction-level trends that can inform future network-scale models of CNT assemblies.
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.29459v1-abstract-full').style.display = 'none'; document.getElementById('2609.29459v1-abstract-short').style.display = 'inline';">&#9651; Less</a>
+      </span>
+    </p>
+    
+
+    <p class="is-size-7"><span class="has-text-black-bis has-text-weight-semibold">Submitted</span> 24 September, 2026; 
+      <span class="has-text-black-bis has-text-weight-semibold">originally announced</span> September 2026.
+      
+    </p>
+    
+
+    
+
+    
+  </li>
+
+  <li class="arxiv-result">
+    <div class="is-marginless">
+      <p class="list-title is-inline-block"><a href="https://arxiv.org/abs/2609.29391">arXiv:2609.29391</a>
+        <span>&nbsp;[<a href="https://arxiv.org/pdf/2609.29391">pdf</a>]&nbsp;</span>
+      </p>
+      <div class="tags is-inline-block">
+        <span class="tag is-small is-link tooltip is-tooltip-top" data-tooltip="Accelerator Physics">physics.acc-ph</span>
+        
+          
+            <span class="tag is-small is-grey tooltip is-tooltip-top" data-tooltip="Plasma Physics">physics.plasm-ph</span>
+          
+        </div>
+      
+    </div>
+    
+    <p class="title is-5 mathjax">
+      
+        Production of a Titanium Ion Beam Using Fluorides and Fluorine-Forming Precursors in an ECR Ion Source
+      
+    </p>
+    <p class="authors">
+      <span class="has-text-black-bis has-text-weight-semibold">Authors:</span>
+      
+      <a href="/search/?searchtype=author&amp;query=Pugachev%2C+D+K">D. K. Pugachev</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Berestov%2C+K+I">K. I. Berestov</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Bondarchenko%2C+A+E">A. E. Bondarchenko</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Loginov%2C+V+N">V. N. Loginov</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Lebedev%2C+A+N">A. N. Lebedev</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Kidanova%2C+E+Y">E. Yu. Kidanova</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Kuzmenkov%2C+K+I">K. I. Kuzmenkov</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Mironov%2C+V+E">V. E. Mironov</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Podoinikov%2C+D+S">D. S. Podoinikov</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Yakovlev%2C+D+S">D. S. Yakovlev</a>
+      
+    </p>
+    
+    <p class="abstract mathjax">
+      <span class="search-hit">Abstract</span>:
+      <span class="abstract-short has-text-grey-dark mathjax" id="2609.29391v1-abstract-short" style="display: inline;">
+        &hellip;and applications in nuclear physics. Due to the low saturated vapor pressure of titanium at temperatures below 1000 °C, the generation of titanium ion beams from an <span class="search-hit mathjax">electron</span> cyclotron resonance ion source (ECRIS) remains a challenging task. The choice of titanium vapor injection methods into the ECR plasma plays a key role in achieving high ionization effic&hellip;
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.29391v1-abstract-full').style.display = 'inline'; document.getElementById('2609.29391v1-abstract-short').style.display = 'none';">&#9661; More</a>
+      </span>
+      <span class="abstract-full has-text-grey-dark mathjax" id="2609.29391v1-abstract-full" style="display: none;">
+        The production of multiply charged titanium ions is of significant interest for accelerator-based experiments, surface modification technologies, and applications in nuclear physics. Due to the low saturated vapor pressure of titanium at temperatures below 1000 °C, the generation of titanium ion beams from an <span class="search-hit mathjax">electron</span> cyclotron resonance ion source (ECRIS) remains a challenging task. The choice of titanium vapor injection methods into the ECR plasma plays a key role in achieving high ionization efficiency, plasma stability, and reliable long-term source operation. In this work, alternative approaches for the injection of neutral titanium atoms into the ECR plasma are investigated, focusing on the use of fluorine-containing compounds. Titanium fluorides (TiF3, TiF4) possess a relatively high saturated vapor pressure at moderate temperatures, allowing to use standard resistively heated ovens operating up to 1000 °C. Another method involves the in-situ formation of titanium fluorides inside the plasma chamber via chemical reactions between metal titanium and the dissociation products of sulfur hexafluoride (SF6). These approaches enable controlled and efficient titanium injection into the ECRIS plasma with satisfactory extracted ion beam stability.
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.29391v1-abstract-full').style.display = 'none'; document.getElementById('2609.29391v1-abstract-short').style.display = 'inline';">&#9651; Less</a>
+      </span>
+    </p>
+    
+
+    <p class="is-size-7"><span class="has-text-black-bis has-text-weight-semibold">Submitted</span> 24 September, 2026; 
+      <span class="has-text-black-bis has-text-weight-semibold">originally announced</span> September 2026.
+      
+    </p>
+    
+
+    
+
+    
+  </li>
+
+  <li class="arxiv-result">
+    <div class="is-marginless">
+      <p class="list-title is-inline-block"><a href="https://arxiv.org/abs/2609.29361">arXiv:2609.29361</a>
+        <span>&nbsp;[<a href="https://arxiv.org/pdf/2609.29361">pdf</a>, <a href="https://arxiv.org/ps/2609.29361">ps</a>, <a href="https://arxiv.org/format/2609.29361">other</a>]&nbsp;</span>
+      </p>
+      <div class="tags is-inline-block">
+        <span class="tag is-small is-link tooltip is-tooltip-top" data-tooltip="Materials Science">cond-mat.mtrl-sci</span>
+        </div>
+      
+    </div>
+    
+    <p class="title is-5 mathjax">
+      
+        Hamiltonian learning reveals optoelectronic mechanisms across thermodynamic state space in soft semiconductors
+      
+    </p>
+    <p class="authors">
+      <span class="has-text-black-bis has-text-weight-semibold">Authors:</span>
+      
+      <a href="/search/?searchtype=author&amp;query=Vonhoff%2C+F">Frederik Vonhoff</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Pedersen%2C+J+R">Jesper R. Pedersen</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Delgado%2C+F+P">Frederico P. Delgado</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Schwade%2C+M">Martin Schwade</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Beck%2C+P">Peter Beck</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Oldenstaedt%2C+J+A">Jonas A. Oldenstaedt</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Castelli%2C+I+E">Ivano E. Castelli</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Egger%2C+D+A">David A. Egger</a>
+      
+    </p>
+    
+    <p class="abstract mathjax">
+      <span class="search-hit">Abstract</span>:
+      <span class="abstract-short has-text-grey-dark mathjax" id="2609.29361v1-abstract-short" style="display: inline;">
+        Predicting optoelectronic response across thermodynamic state space requires coupling finite-temperature nuclear dynamics to <span class="search-hit mathjax">electronic</span> structure at scales where direct first-principles calculations are impractical. Machine-learning force fields and Hamiltonian-learning models provide scalable predictions, but integrating them into reliable and interpretable&hellip;
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.29361v1-abstract-full').style.display = 'inline'; document.getElementById('2609.29361v1-abstract-short').style.display = 'none';">&#9661; More</a>
+      </span>
+      <span class="abstract-full has-text-grey-dark mathjax" id="2609.29361v1-abstract-full" style="display: none;">
+        Predicting optoelectronic response across thermodynamic state space requires coupling finite-temperature nuclear dynamics to <span class="search-hit mathjax">electronic</span> structure at scales where direct first-principles calculations are impractical. Machine-learning force fields and Hamiltonian-learning models provide scalable predictions, but integrating them into reliable and interpretable workflows remains challenging. Here, we introduce FLOW-OTTER, a modular, model-agnostic framework that automates molecular dynamics, Hamiltonian prediction, observable extraction, reliability assessment, and Hamiltonian-level interpretation. We demonstrate FLOW-OTTER in halide perovskites, soft semiconductors whose anharmonic fluctuations strongly modulate <span class="search-hit mathjax">electronic</span> response. Using FLOW-OTTER, we show that independently learned nuclear and <span class="search-hit mathjax">electronic</span> models remain predictive when composed end-to-end, reproducing experimental temperature- and pressure-dependent band-gap trends using models trained only on first-principles targets at zero pressure. By resolving the nonlinear evolution of Pb-$s$/Br-$p$ antibonding at the valence-band maximum, it identifies the microscopic origin of the asymmetric pressure response. FLOW-OTTER thus establishes Hamiltonian learning as a general route from thermodynamic trajectories to experimentally grounded optoelectronic mechanisms.
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.29361v1-abstract-full').style.display = 'none'; document.getElementById('2609.29361v1-abstract-short').style.display = 'inline';">&#9651; Less</a>
+      </span>
+    </p>
+    
+
+    <p class="is-size-7"><span class="has-text-black-bis has-text-weight-semibold">Submitted</span> 24 September, 2026; 
+      <span class="has-text-black-bis has-text-weight-semibold">originally announced</span> September 2026.
+      
+    </p>
+    
+
+    
+
+    
+  </li>
+
+  <li class="arxiv-result">
+    <div class="is-marginless">
+      <p class="list-title is-inline-block"><a href="https://arxiv.org/abs/2609.29357">arXiv:2609.29357</a>
+        <span>&nbsp;[<a href="https://arxiv.org/pdf/2609.29357">pdf</a>, <a href="https://arxiv.org/ps/2609.29357">ps</a>, <a href="https://arxiv.org/format/2609.29357">other</a>]&nbsp;</span>
+      </p>
+      <div class="tags is-inline-block">
+        <span class="tag is-small is-link tooltip is-tooltip-top" data-tooltip="Numerical Analysis">math.NA</span>
+        
+          
+            <span class="tag is-small is-grey tooltip is-tooltip-top" data-tooltip="Mathematical Physics">math-ph</span>
+          
+        </div>
+      
+    </div>
+    
+    <p class="title is-5 mathjax">
+      
+        A Regularization Based Computational Method for Quantum Incommensurate Problems
+      
+    </p>
+    <p class="authors">
+      <span class="has-text-black-bis has-text-weight-semibold">Authors:</span>
+      
+      <a href="/search/?searchtype=author&amp;query=Ding%2C+Z">Zhenan Ding</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Li%2C+Y">Yan Li</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Zhou%2C+A">Aihui Zhou</a>, 
+      
+      <a href="/search/?searchtype=author&amp;query=Zhou%2C+Y">Yuzhi Zhou</a>
+      
+    </p>
+    
+    <p class="abstract mathjax">
+      <span class="search-hit">Abstract</span>:
+      <span class="abstract-short has-text-grey-dark mathjax" id="2609.29357v1-abstract-short" style="display: inline;">
+        &hellip;incommensurate systems mathematically well-defined and computationally accessible with theoretical guarantees. Based on this framework, taking the density of states and the <span class="search-hit mathjax">electron</span> density as representative examples, we establish their mathematical characterization, derive their planewave approximations, and provide a rigorous convergence analysis. Numerica&hellip;
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.29357v1-abstract-full').style.display = 'inline'; document.getElementById('2609.29357v1-abstract-short').style.display = 'none';">&#9661; More</a>
+      </span>
+      <span class="abstract-full has-text-grey-dark mathjax" id="2609.29357v1-abstract-full" style="display: none;">
+        Quantum incommensurate systems have attracted widespread interest due to their unique physical properties. Related studies have made notable progress in recent years. To gain deeper insight, it is both significant and challenging to study a broader range of physical observables for these systems, which requires a comprehensive understanding of their spectral properties and wavefunction behavior. Based on the regularized model recently proposed, this work introduces a regularization framework, rendering physical observables for incommensurate systems mathematically well-defined and computationally accessible with theoretical guarantees. Based on this framework, taking the density of states and the <span class="search-hit mathjax">electron</span> density as representative examples, we establish their mathematical characterization, derive their planewave approximations, and provide a rigorous convergence analysis. Numerical experiments validate the effectiveness of our method, demonstrating its practical applicability for generic 1D and 2D incommensurate systems.
+        <a class="is-size-7" style="white-space: nowrap;" onclick="document.getElementById('2609.29357v1-abstract-full').style.display = 'none'; document.getElementById('2609.29357v1-abstract-short').style.display = 'inline';">&#9651; Less</a>
+      </span>
+    </p>
+    
+
+    <p class="is-size-7"><span class="has-text-black-bis has-text-weight-semibold">Submitted</span> 24 September, 2026; 
+      <span class="has-text-black-bis has-text-weight-semibold">originally announced</span> September 2026.
+      
+    </p>
+    
+
+    
+
+    
+  </li>
+
+</ol>
+
+
+  <nav class="pagination is-small is-centered breathe-horizontal" role="navigation" aria-label="pagination">
+    
+    <a href=""
+      class="pagination-previous is-invisible">Previous
+    </a>
+    
+    
+      <a href="/search/?query=electron&amp;searchtype=all&amp;abstracts=show&amp;order=-announced_date_first&amp;size=25&amp;start=25"
+        class="pagination-next" >Next
+      </a>
+    
+    <ul class="pagination-list">
+
+      <li>
+        <a href="/search/?query=electron&amp;searchtype=all&amp;abstracts=show&amp;order=-announced_date_first&amp;size=25&amp;start=0"
+          class="pagination-link is-current"
+          aria-label="Goto page 1">1
+        </a>
+      </li>
+
+      
+                                     
+          
+          <li>
+            <a href="/search/?query=electron&amp;searchtype=all&amp;abstracts=show&amp;order=-announced_date_first&amp;size=25&amp;start=25"
+              class="pagination-link "
+              aria-label="Page 2"
+              aria-current="page">2
+            </a>
+          </li>
+          
+          <li>
+            <a href="/search/?query=electron&amp;searchtype=all&amp;abstracts=show&amp;order=-announced_date_first&amp;size=25&amp;start=50"
+              class="pagination-link "
+              aria-label="Page 3"
+              aria-current="page">3
+            </a>
+          </li>
+          
+          <li>
+            <a href="/search/?query=electron&amp;searchtype=all&amp;abstracts=show&amp;order=-announced_date_first&amp;size=25&amp;start=75"
+              class="pagination-link "
+              aria-label="Page 4"
+              aria-current="page">4
+            </a>
+          </li>
+          
+          <li>
+            <a href="/search/?query=electron&amp;searchtype=all&amp;abstracts=show&amp;order=-announced_date_first&amp;size=25&amp;start=100"
+              class="pagination-link "
+              aria-label="Page 5"
+              aria-current="page">5
+            </a>
+          </li>
+          
+          <li><span class="pagination-ellipsis">&hellip;</span></li>
+        
+      
+    </ul>
+  </nav>
+  
+
+  
+
+
+      <div class="is-hidden-tablet">
+        <!-- feedback for mobile only -->
+        <span class="help" style="display: inline-block;"><a href="https://github.com/arXiv/arxiv-search/releases">Search v0.5.6 released 2020-02-24</a>&nbsp;&nbsp;</span>
+      </div>
+    </div>
+
+  </main>
+  <footer>
+    
+<footer class="ds-site-footer">
+  <div class="ds-site-footer-grid">
+    <div class="ds-site-footer-main">
+      <div class="ds-site-footer-ack">
+        We gratefully acknowledge support from
+        our <strong>major funders</strong>,
+        <a href="https://info.arxiv.org/about/ourmembers.html"><strong>member institutions</strong></a><span class="ack-member-inline" hidden>, <strong></strong></span>,
+        and all contributors.
+      </div>
+      <nav class="ds-site-footer-links" aria-label="Site navigation">
+        <a href="https://info.arxiv.org/about">About</a>
+        <span class="ds-site-footer-sep" aria-hidden="true">&middot;</span>
+        <a href="https://info.arxiv.org/help">Help</a>
+        <span class="ds-site-footer-sep" aria-hidden="true">&middot;</span>
+        <a href="https://info.arxiv.org/help/contact.html">Contact</a>
+        <span class="ds-site-footer-sep" aria-hidden="true">&middot;</span>
+        <a href="https://info.arxiv.org/help/subscribe">Subscribe</a>
+        <span class="ds-site-footer-sep" aria-hidden="true">&middot;</span>
+        <a href="https://info.arxiv.org/help/license/index.html">Copyright</a>
+        <span class="ds-site-footer-sep" aria-hidden="true">&middot;</span>
+        <a href="https://info.arxiv.org/help/policies/privacy_policy.html">Privacy</a>
+        <span class="ds-site-footer-sep" aria-hidden="true">&middot;</span>
+        <a href="https://info.arxiv.org/help/web_accessibility.html">Accessibility</a>
+        <span class="ds-site-footer-sep" aria-hidden="true">&middot;</span>
+        <a href="https://status.arxiv.org" target="_blank" rel="noopener noreferrer">Operational Status<span class="is-sr-only"> (opens in new tab)</span></a>
+      </nav>
+    </div>
+    <div class="ds-site-footer-funders" aria-label="Major funders">
+      <div class="ds-site-footer-funders-label">Major funding support from</div>
+      <div class="ds-site-footer-funders-logos">
+        <a class="ds-funder-link" href="https://www.simonsfoundation.org/" target="_blank" rel="noopener noreferrer">
+          <img class="ds-funder-logo" src="https://static.arxiv.org/static/base/1.0.1/images/funders/simons-foundation.png" alt="Simons Foundation"></a>
+        <a class="ds-funder-link" href="https://www.sfi.org.bm/" target="_blank" rel="noopener noreferrer">
+          <img class="ds-funder-logo" src="https://static.arxiv.org/static/base/1.0.1/images/funders/simons-foundation-international.png" alt="Simons Foundation International"></a>
+        <a class="ds-funder-link" href="https://www.schmidtsciences.org/" target="_blank" rel="noopener noreferrer">
+          <img class="ds-funder-logo" src="https://static.arxiv.org/static/base/1.0.1/images/funders/schmidt-sciences.png" alt="Schmidt Sciences"></a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+  </footer>
+  <script src="https://static.arxiv.org/static/base/1.0.0a5/js/member_acknowledgement.js"></script>
+  </body>
+</html>
