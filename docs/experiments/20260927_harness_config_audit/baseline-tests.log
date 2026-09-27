@@ -1,0 +1,58 @@
+........................................................................ [  7%]
+........................................................................ [ 15%]
+.............................................F.......................... [ 22%]
+........................................................................ [ 30%]
+........................................................................ [ 37%]
+........................................................................ [ 45%]
+........................................................................ [ 52%]
+........................................................................ [ 60%]
+........................................................................ [ 67%]
+................................................F....................... [ 75%]
+....................................................F................... [ 82%]
+........................................................................ [ 90%]
+........................................................................ [ 97%]
+........................                                                 [100%]
+=================================== FAILURES ===================================
+___________ test_fetch_collects_rendered_content_and_applies_limits ____________
+tests/test_browser_playwright.py:146: in test_fetch_collects_rendered_content_and_applies_limits
+    result = asyncio.run(backend.fetch("https://example.com/requested"))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../miniconda3/envs/Novelty-web/lib/python3.11/asyncio/runners.py:190: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+../../miniconda3/envs/Novelty-web/lib/python3.11/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../miniconda3/envs/Novelty-web/lib/python3.11/asyncio/base_events.py:654: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+backend/src/novelty_agent_framework/tools/browser_backend.py:67: in fetch
+    launch_kwargs, _network, _runtime = playwright_launch_kwargs(
+backend/src/novelty_agent_framework/tools/browser_runtime.py:112: in playwright_launch_kwargs
+    runtime = resolve_chromium_runtime(
+backend/src/novelty_agent_framework/tools/browser_runtime.py:150: in resolve_chromium_runtime
+    raise BrowserDependencyError(
+E   novelty_agent_framework.tools.browser_runtime.BrowserDependencyError: Chromium runtime libraries are unavailable in both the system loader and the current Python environment; install them with 'playwright install-deps chromium' during deployment
+____________ test_reader_uses_canonical_arguments_and_legacy_alias _____________
+tests/test_research_tool_schemas.py:32: in test_reader_uses_canonical_arguments_and_legacy_alias
+    assert ReaderTool.args_schema is ReaderArguments
+E   AssertionError: assert <class 'novelty_agent_framework.schemas.research_tools.ReaderCallArguments'> is ReaderArguments
+E    +  where <class 'novelty_agent_framework.schemas.research_tools.ReaderCallArguments'> = ReaderTool.args_schema
+_____________ test_paper_input_entrypoint_uses_numbered_workspace ______________
+tests/test_run_full_workflow_live.py:105: in test_paper_input_entrypoint_uses_numbered_workspace
+    live.main()
+scripts/run_full_workflow_live.py:113: in main
+    config.project.runtime_debug.max_model_calls = args.max_model_calls
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'types.SimpleNamespace' object has no attribute 'runtime_debug'
+=============================== warnings summary ===============================
+../../miniconda3/envs/Novelty-web/lib/python3.11/site-packages/starlette/testclient.py:53
+  /home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/site-packages/starlette/testclient.py:53: DeprecationWarning: The anyio.abc.BlockingPortal alias is deprecated, use anyio.from_thread.BlockingPortal instead.
+    _PortalFactoryType = Callable[[], AbstractContextManager[anyio.abc.BlockingPortal]]
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_browser_playwright.py::test_fetch_collects_rendered_content_and_applies_limits
+FAILED tests/test_research_tool_schemas.py::test_reader_uses_canonical_arguments_and_legacy_alias
+FAILED tests/test_run_full_workflow_live.py::test_paper_input_entrypoint_uses_numbered_workspace
+3 failed, 957 passed, 6 deselected, 1 warning in 21.85s

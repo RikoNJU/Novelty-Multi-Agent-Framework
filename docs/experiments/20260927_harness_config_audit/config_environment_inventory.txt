@@ -1,0 +1,37 @@
+scripts/run_single_research_task.py:19:    from dotenv import load_dotenv
+scripts/run_single_research_task.py:21:    load_dotenv(PROJECT_ROOT / "backend" / ".env")
+scripts/run_single_research_task.py:127:                                     environ={} if getattr(args, "isolated_config", False) else None)
+backend/env/model_client.py:32:        from dotenv import load_dotenv
+backend/env/model_client.py:36:    load_dotenv(env_path, override=False)
+backend/env/model_client.py:198:            return os.getenv(f"{prefix}_{name}") or os.getenv(f"LLM_{name}") or default
+scripts/run_full_workflow_live.py:44:                        help="Ignore configuration environment overrides; credentials still resolve normally.")
+scripts/run_full_workflow_live.py:122:                                         environ={} if args.isolated_config else None)
+backend/src/novelty_agent_framework/config/factory.py:86:        timeout = raw.get("timeout_seconds") or os.getenv("NOVELTY_TIMEOUT_SECONDS")
+backend/src/novelty_agent_framework/config/factory.py:103:        value = os.getenv(env_name)
+backend/src/novelty_agent_framework/config/factory.py:106:    return os.getenv("NOVELTY_API_KEY") or os.getenv("LLM_API_KEY")
+backend/src/novelty_agent_framework/config/factory.py:826:        env_value = os.getenv(f"NOVELTY_{role.upper()}_MODEL")
+backend/src/novelty_agent_framework/config/loader.py:42:    environ: Mapping[str, str] | None = None,
+backend/src/novelty_agent_framework/config/loader.py:55:    values = os.environ if environ is None else environ
+backend/src/novelty_agent_framework/config/loader.py:56:    # All callers share: split files < profile < environment < explicit overrides.
+backend/src/novelty_agent_framework/config/loader.py:67:    origins.update({key: "environment" for key, value in _leaf_paths(raw).items()
+backend/src/novelty_agent_framework/config/loader.py:77:            origins[f"{role}.model.alias"] = "environment"
+backend/src/novelty_agent_framework/config/loader.py:80:            origins[f"project.processing.{field}"] = "environment"
+backend/src/novelty_agent_framework/config/loader.py:82:        origins["researcher.tools.database_search.providers.springer.enabled"] = "environment"
+backend/src/novelty_agent_framework/config/loader.py:93:        "precedence": ["schema_defaults", "split_files", "profile", "environment", "explicit_override"],
+backend/src/novelty_agent_framework/config/loader.py:124:def _apply_model_overrides(raw: dict[str, Any], environ: Mapping[str, str]) -> None:
+backend/src/novelty_agent_framework/config/loader.py:133:        value = next((environ[name] for name in names if environ.get(name)), None)
+backend/src/novelty_agent_framework/config/loader.py:140:        if environ.get(name):
+backend/src/novelty_agent_framework/config/loader.py:141:            raw["project"]["processing"][field] = environ[name]
+backend/src/novelty_agent_framework/config/loader.py:145:    raw: dict[str, Any], environ: Mapping[str, str]
+backend/src/novelty_agent_framework/config/loader.py:147:    value = environ.get("NOVELTY_SPRINGER_ENABLED")
+backend/src/novelty_agent_framework/config/loader.py:248:    """Reproducible runtime view without API keys or environment values."""
+backend/src/novelty_agent_framework/config/experiment.py:79:    # Includes uncommitted code and config without recording environment files.
+backend/src/novelty_agent_framework/config/experiment.py:97:def preflight_config(config: ApplicationConfig, *, environ: Mapping[str, str] | None = None,
+backend/src/novelty_agent_framework/config/experiment.py:100:    values = os.environ if environ is None else environ
+backend/src/novelty_agent_framework/config/experiment.py:121:                "Model client requires a credential reference with a nonempty environment value.")
+backend/src/novelty_agent_framework/config/settings.py:26:        origins = os.getenv("NOVELTY_CORS_ORIGINS")
+backend/src/novelty_agent_framework/config/settings.py:27:        workflow_mode = os.getenv("NOVELTY_WORKFLOW_MODE", cls.workflow_mode).strip().lower()
+backend/src/novelty_agent_framework/config/settings.py:30:        max_upload_mb = int(os.getenv("NOVELTY_MAX_UPLOAD_MB", "30"))
+backend/src/novelty_agent_framework/config/settings.py:34:            host=os.getenv("NOVELTY_HOST", cls.host),
+backend/src/novelty_agent_framework/config/settings.py:35:            port=int(os.getenv("NOVELTY_PORT", str(cls.port))),
+backend/src/novelty_agent_framework/config/settings.py:37:            runs_root=Path(os.getenv("NOVELTY_RUNS_ROOT", str(cls.runs_root))),

@@ -1,0 +1,82 @@
+FF                                                                       [100%]
+=================================== FAILURES ===================================
+_________________ test_search_recognizes_verified_no_match_404 _________________
+
+    def test_search_recognizes_verified_no_match_404() -> None:
+        tool = _search_tool(lambda request: httpx.Response(404, json=NO_MATCH_RESPONSE))
+>       assert list(tool.search("no matching data")) == []
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_springer_provider.py:354: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+backend/src/novelty_agent_framework/tools/database_search/providers/springer.py:175: in search
+    raise_for_provider_status(response, provider="Springer Nature")
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+response = <Response [404 Not Found]>, provider = 'Springer Nature'
+
+    def raise_for_provider_status(response: httpx.Response, *, provider: str) -> None:
+        """Raise a sanitized error because some providers put API keys in the URL."""
+    
+        if response.is_error:
+>           raise ProviderRequestError(
+                f"{provider} API returned HTTP {response.status_code}"
+            )
+E           novelty_agent_framework.tools.database_search.providers.common.ProviderRequestError: Springer Nature API returned HTTP 404
+
+backend/src/novelty_agent_framework/tools/database_search/providers/common.py:39: ProviderRequestError
+_____________ test_no_match_404_keeps_retrieval_fallback_available _____________
+
+tmp_path = PosixPath('/tmp/pytest-of-lya3106643285/pytest-12/test_no_match_404_keeps_retrie0')
+
+    def test_no_match_404_keeps_retrieval_fallback_available(tmp_path) -> None:
+        import asyncio
+        from novelty_agent_framework.persistence import ReferenceStore
+        from novelty_agent_framework.schemas import (
+            NoveltyPoint, ResearchTask, StructuredSourceRetrievalRequest,
+        )
+        from novelty_agent_framework.tools.database_search import (
+            RetrievalSource, StructuredSourceRetrievalTool,
+        )
+        queries = []
+    
+        def handler(request):
+            queries.append(request.url.params["q"])
+            if len(queries) == 1:
+                return httpx.Response(404, json=NO_MATCH_RESPONSE)
+            return httpx.Response(200, json={"records": [{
+                "doi": "10.1007/fallback", "title": "Fallback Paper",
+                "abstract": "The broader query found this abstract.",
+            }]})
+    
+        tool = StructuredSourceRetrievalTool(
+            source=RetrievalSource(
+                source_id="springer", query_adapter=SpringerNatureQueryAdapter(),
+                search_tool=_search_tool(handler),
+            ),
+            reference_store=ReferenceStore(tmp_path), full_text_limit=0,
+        )
+        plan = _plan().model_copy(update={
+            "concepts": [*_plan().concepts, SearchConcept(
+                concept_id="C2", name="compression", terms=["compression"]
+            )],
+            "strategies": [SearchStrategy(
+                strategy_id="S1", level="strict", expression="C1 AND C2"
+            )],
+            "protected_concept_ids": ["C1"],
+        })
+        bundle = asyncio.run(tool.ainvoke(StructuredSourceRetrievalRequest(
+            subject_paper_id="paper", run_id="springer-empty-regression",
+            source_id="springer",
+            novelty_point=NoveltyPoint(point_id="NP1", claim="graph model", technical_features=["graph model"]),
+            research_task=ResearchTask(task_id="T1", novelty_point_id="NP1", task_type="search", language="en"),
+            search_plan=plan,
+        )))
+>       assert len(queries) >= 2
+E       assert 1 >= 2
+E        +  where 1 = len(['("graph neural network" OR "GNN") NOT "survey" AND "compression"'])
+
+tests/test_springer_provider.py:423: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_springer_provider.py::test_search_recognizes_verified_no_match_404
+FAILED tests/test_springer_provider.py::test_no_match_404_keeps_retrieval_fallback_available

@@ -1,0 +1,106 @@
+{
+  "started_at": "2026-09-27T14:18:17.028669+00:00",
+  "scope": "read_only_provider_probe_no_llm",
+  "http": [
+    {
+      "host": "export.arxiv.org",
+      "path": "/api/query",
+      "method": "GET",
+      "status": 406,
+      "elapsed_seconds": 2.246,
+      "content_type": null
+    },
+    {
+      "host": "export.arxiv.org",
+      "path": "/api/query",
+      "method": "GET",
+      "status": 200,
+      "elapsed_seconds": 0.509,
+      "content_type": "application/atom+xml; charset=utf-8"
+    },
+    {
+      "host": "api.springernature.com",
+      "path": "/meta/v2/json",
+      "method": "GET",
+      "status": 200,
+      "elapsed_seconds": 3.896,
+      "content_type": "application/json"
+    },
+    {
+      "host": "api.springernature.com",
+      "path": "/meta/v2/json",
+      "method": "GET",
+      "status": 404,
+      "elapsed_seconds": 1.019,
+      "content_type": "application/json",
+      "response_message": "No data was found for the given query.",
+      "response_error": {
+        "error": "Not Found",
+        "error_description": "No matching data is available for the requested query."
+      }
+    }
+  ],
+  "probes": [
+    {
+      "probe": "arxiv_search",
+      "status": "failed",
+      "exception_type": "HTTPStatusError",
+      "error": "Client error '406 Not Acceptable' for url 'https://export.arxiv.org/api/query?search_query=all%3A%22graph+neural+network%22&start=0&max_results=1'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/406",
+      "elapsed_seconds": 2.246
+    },
+    {
+      "probe": "arxiv_known_id",
+      "known_id": "1706.03762",
+      "resolved": true,
+      "status": "completed",
+      "elapsed_seconds": 2.264
+    },
+    {
+      "probe": "springer_search",
+      "query": "\"graph neural network\"",
+      "hits": 1,
+      "items": [
+        {
+          "document_id": "10.1007/978-3-032-31170-2_15",
+          "abstract_chars": 1157
+        }
+      ],
+      "status": "completed",
+      "elapsed_seconds": 3.897
+    },
+    {
+      "probe": "springer_historical_404_query",
+      "status": "failed",
+      "exception_type": "ProviderRequestError",
+      "error": "Springer Nature API returned HTTP 404",
+      "elapsed_seconds": 1.019
+    },
+    {
+      "probe": "springer_known_oa_fulltext",
+      "document_id": "10.1038/s41586-021-03819-2",
+      "has_full_text": false,
+      "text_chars": 0,
+      "content_extent": null,
+      "status": "completed",
+      "elapsed_seconds": 0.0
+    }
+  ],
+  "credentials_present": {
+    "ELSEVIER_API_KEY": false,
+    "ELSEVIER_INST_TOKEN": false,
+    "SPRINGER_NATURE_META_API_KEY": true,
+    "SPRINGER_NATURE_OPEN_ACCESS_API_KEY": true,
+    "SPRINGER_NATURE_TDM_API_METRIC": false,
+    "IEEE_XPLORE_API_KEY": false,
+    "BAIDU_QIANFAN_API_KEY": true
+  },
+  "effective_enabled_sources": [
+    "arxiv",
+    "springer"
+  ],
+  "configured_optional_tools": {
+    "web_search": false,
+    "browser": false
+  },
+  "finished_at": "2026-09-27T14:18:26.522529+00:00"
+}

@@ -1,0 +1,2556 @@
+diff --git a/backend/src/novelty_agent_framework/agents/point_extractor.py b/backend/src/novelty_agent_framework/agents/point_extractor.py
+index bfae7d1..35a77d0 100644
+--- a/backend/src/novelty_agent_framework/agents/point_extractor.py
++++ b/backend/src/novelty_agent_framework/agents/point_extractor.py
+@@ -32,13 +32,22 @@ TRUNCATION_MARK = "…[截断]"
+ 
+ DELETE_SCHEMA = {
+     "type": "object",
++    "additionalProperties": False,
+     "properties": {
+-        "delete_indices": {
++        "deletions": {
+             "type": "array",
+-            "items": {"type": "integer"},
++            "items": {
++                "type": "object", "additionalProperties": False,
++                "properties": {
++                    "index": {"type": "integer", "minimum": 1},
++                    "duplicate_of": {"type": "integer", "minimum": 1},
++                    "reason": {"type": "string", "minLength": 1},
++                },
++                "required": ["index", "duplicate_of", "reason"],
++            },
+         }
+     },
+-    "required": ["delete_indices"],
++    "required": ["deletions"],
+ }
+ _POINT_OUTPUT_SCHEMA = {
+     "type": "object",
+@@ -231,7 +240,7 @@ class NoveltyPointExtractorAgent(NoveltyPointExtractor):
+         previous_brief: NoveltyBrief | None,
+         attempt: int,
+     ) -> list[NoveltyPoint]:
+-        """审查步：模型只判定重复条目编号，代码删除后原样保留其余。"""
++        """Only execute auditable duplicate mappings to retained candidates."""
+ 
+         numbered = [
+             {"index": index, "claim": point.claim,
+@@ -252,36 +261,30 @@ class NoveltyPointExtractorAgent(NoveltyPointExtractor):
+             },
+             payload={"points": numbered, "contribution_context": contribution_context},
+             fallback_user_prompt=(
+-                "请判断候选查新点中哪些是重复条目，输出 {\"delete_indices\": [编号列表]}；"
++                "判断重复项，输出 {\"deletions\": [{\"index\": 2, \"duplicate_of\": 1, \"reason\": \"等价依据\"}]}；"
++                "每个删除项必须指向一个保留项并给出等价理由；无重复输出空 deletions。"
+                 "只有技术目标、核心机制和适用范围等价且仅为复述时才删除；"
+                 "框架与独立子算法不能仅因包含关系被删除。无重复输出空数组。"
+             ),
+         )
+-        delete_indices = _parse_delete_indices(data)
+-        raw_indices = data.get("delete_indices", data.get("delete", data.get("indices"))) if isinstance(data, dict) else data
+-        invalid_entries = [entry for entry in raw_indices if type(entry) is not int] if isinstance(raw_indices, list) else []
+-        invalid_indices = sorted(index for index in delete_indices
+-                                 if index < 1 or index > len(candidates))
+-        delete_indices -= set(invalid_indices)
+-        kept = [
+-            point
+-            for index, point in enumerate(candidates, start=1)
+-            if index not in delete_indices
+-        ]
+-        if not kept and candidates:
+-            kept = list(candidates)  # 安全兜底：不允许删空
+-            delete_indices.clear()
++        deletion_audit = _validated_deletion_mappings(data, len(candidates))
++        delete_indices = {item["index"] for item in deletion_audit["accepted_deletions"]}
++        kept = [point for index, point in enumerate(candidates, start=1)
++                if index not in delete_indices]
+         self.last_trace["deduplication"] = {
+             "input": numbered,
+             "contribution_context": contribution_context,
+             "raw_delete_indices": data,
+-            "invalid_entries": invalid_entries,
+-            "invalid_indices": invalid_indices,
++            **deletion_audit,
+             "deleted_indices": sorted(delete_indices),
+             "retained_indices": [i for i in range(1, len(candidates) + 1)
+                                  if i not in delete_indices],
+-            "deletion_reason": "not provided by model",
++            "semantic_equivalence_verified_by_harness": False,
+         }
++        if deletion_audit["contract_issues"]:
++            self.last_trace["scope_status"] = "pending_dedup"
++        else:
++            self.last_trace["scope_status"] = "deduplication_contract_valid"
+         if len(kept) < MIN_POINTS and len(candidates) >= MIN_POINTS \
+                 and self._model_calls_used < MAX_MODEL_CALLS:
+             # One bounded coverage check after deletion; do not regenerate all points.
+@@ -482,17 +485,61 @@ def renumber_points(points: Sequence[NoveltyPoint]) -> list[NoveltyPoint]:
+     ]
+ 
+ 
+-def _parse_delete_indices(data: Any) -> set[int]:
+-    """从模型输出中解析要删除的编号集合（兼容多种包装形态）。"""
++def _validated_deletion_mappings(data: Any, candidate_count: int) -> dict[str, Any]:
++    """Validate deletion authority, not the model's semantic equivalence claim.
+ 
+-    if isinstance(data, dict):
+-        value = data.get("delete_indices") or data.get("delete") or data.get("indices")
+-    else:
+-        value = data
+-    if not isinstance(value, list):
+-        return set()
+-    indices: set[int] = set()
+-    for item in value:
+-        if type(item) is int:
+-            indices.add(item)
+-    return indices
++    A surviving representative and a recorded reason are mandatory. Legacy bare
++    indices cannot authorize deletion; affected candidates remain pending.
++    """
++    issues: list[str] = []
++    pending: set[int] = set()
++    valid: dict[int, dict[str, Any]] = {}
++    seen: set[int] = set()
++    invalid_entries: list[Any] = []
++    invalid_indices: list[int] = []
++    records = data.get("deletions") if isinstance(data, dict) else None
++    if not isinstance(records, list):
++        legacy = data.get("delete_indices", data.get("delete", data.get("indices"))) if isinstance(data, dict) else data
++        legacy = legacy if isinstance(legacy, list) else []
++        invalid_entries = [x for x in legacy if type(x) is not int]
++        invalid_indices = sorted({x for x in legacy if type(x) is int and not 1 <= x <= candidate_count})
++        pending = {x for x in legacy if type(x) is int and 1 <= x <= candidate_count}
++        # An explicit legacy empty deletion list is harmless and remains accepted.
++        if not (isinstance(data, dict) and "delete_indices" in data and data["delete_indices"] == []):
++            issues.append("missing_deletion_mappings")
++            if not pending:
++                pending.update(range(1, candidate_count + 1))
++        records = []
++    elif set(data) != {"deletions"}:
++        issues.append("unexpected_deletion_payload_fields")
++        pending.update(range(1, candidate_count + 1))
++        records = []
++    for item in records:
++        source = item.get("index") if isinstance(item, dict) else None
++        if type(source) is not int or not 1 <= source <= candidate_count:
++            issues.append("invalid_deletion_index")
++            continue
++        target, reason = item.get("duplicate_of"), item.get("reason")
++        if source in seen:
++            issues.append(f"duplicate_deletion_index:{source}")
++            valid.pop(source, None)
++            pending.add(source)
++            continue
++        seen.add(source)
++        if set(item) != {"index", "duplicate_of", "reason"} or type(target) is not int \
++                or not 1 <= target <= candidate_count or target == source \
++                or not isinstance(reason, str) or not reason.strip():
++            issues.append(f"invalid_deletion_mapping:{source}")
++            pending.add(source)
++            continue
++        valid[source] = {"index": source, "duplicate_of": target, "reason": reason.strip()}
++    accepted = []
++    for source, item in valid.items():
++        if item["duplicate_of"] in valid:
++            issues.append(f"representative_also_marked_for_deletion:{source}")
++            pending.add(source)
++        else:
++            accepted.append(item)
++    return {"accepted_deletions": accepted, "pending_indices": sorted(pending),
++            "contract_issues": issues, "invalid_entries": invalid_entries,
++            "invalid_indices": invalid_indices}
+diff --git a/backend/src/novelty_agent_framework/config/factory.py b/backend/src/novelty_agent_framework/config/factory.py
+index 0818a3c..be1a562 100644
+--- a/backend/src/novelty_agent_framework/config/factory.py
++++ b/backend/src/novelty_agent_framework/config/factory.py
+@@ -516,6 +516,9 @@ def _build_workflow_from_application_config(
+ ) -> NoveltyWorkflow:
+     """Build the production workflow directly from validated typed fields."""
+ 
++    from .experiment import freeze_config
++
++    ApplicationConfig.model_validate(config.model_dump(mode="json"))
+     registry = build_model_registry(config)
+     prompts = build_prompt_library()
+     coordinator = NoveltyCoordinatorAgent(
+@@ -655,6 +658,7 @@ def _build_workflow_from_application_config(
+         EvidenceCardBuilder(store),
+         prompts=prompts,
+         config=TaskResearcherConfig(
++            reuse_reader_results=researcher.harness.reuse_reader_results,
+             max_steps=researcher.harness.max_turns,
+             max_tool_calls=researcher.harness.max_total_tool_calls,
+             max_chars_per_read=reader.max_chars_per_read,
+@@ -666,6 +670,9 @@ def _build_workflow_from_application_config(
+     )
+     workflow = config.project.workflow
+     runtime_debug = config.project.runtime_debug
++    frozen = freeze_config(config, output_root=resolved_output_root)
++    runtime_snapshot = dict(frozen.pop("effective_config"))
++    runtime_snapshot["configuration_manifest"] = frozen
+     return NoveltyWorkflow(
+         NoveltyWorkflowServices(
+             coordinator=coordinator,
+@@ -696,7 +703,7 @@ def _build_workflow_from_application_config(
+             ),
+         ),
+         runtime_config=_runtime_config_with_output_root(
+-            config.model_dump(mode="json"), resolved_output_root
++            runtime_snapshot, resolved_output_root
+         ),
+         output_root=resolved_output_root,
+     )
+diff --git a/backend/src/novelty_agent_framework/config/loader.py b/backend/src/novelty_agent_framework/config/loader.py
+index f511295..b7dd038 100644
+--- a/backend/src/novelty_agent_framework/config/loader.py
++++ b/backend/src/novelty_agent_framework/config/loader.py
+@@ -3,6 +3,8 @@
+ from __future__ import annotations
+ 
+ import json
++import copy
++import hashlib
+ import os
+ from pathlib import Path
+ from typing import Any, Mapping
+@@ -38,6 +40,8 @@ def load_application_config(
+     point_extractor_path: str | Path = DEFAULT_POINT_EXTRACTOR_PATH,
+     reviewer_path: str | Path = DEFAULT_REVIEWER_PATH,
+     environ: Mapping[str, str] | None = None,
++    profile_path: str | Path | None = None,
++    overrides: Mapping[str, Any] | None = None,
+ ) -> ApplicationConfig:
+     raw = {
+         "project": read_json(project_path),
+@@ -49,9 +53,72 @@ def load_application_config(
+         "reviewer": read_json(reviewer_path),
+     }
+     values = os.environ if environ is None else environ
++    # All callers share: split files < profile < environment < explicit overrides.
++    origins = {key: "split_files" for key in _leaf_paths(raw)}
++    selected_profile = profile_path or values.get("NOVELTY_EXPERIMENT_PROFILE")
++    if selected_profile:
++        profile = read_json(selected_profile)
++        _merge_config(raw, profile)
++        origins.update({key: "profile" for key in _leaf_paths(profile)})
++    before_env = copy.deepcopy(raw)
+     _apply_model_overrides(raw, values)
+     _apply_database_overrides(raw, values)
+-    return ApplicationConfig.model_validate(raw)
++    old_leaves = _leaf_paths(before_env)
++    origins.update({key: "environment" for key, value in _leaf_paths(raw).items()
++                    if value != old_leaves.get(key)})
++    for role, names in {
++        "researcher": ("NOVELTY_RESEARCHER_MODEL", "NOVELTY_RESEARCH_MODEL"),
++        "search_planner": ("NOVELTY_SEARCH_PLANNER_MODEL",),
++        "coordinator": ("NOVELTY_COORDINATOR_MODEL",),
++        "point_extractor": ("NOVELTY_POINT_EXTRACTOR_MODEL",),
++        "reviewer": ("NOVELTY_REVIEWER_MODEL",),
++    }.items():
++        if any(values.get(name) for name in names):
++            origins[f"{role}.model.alias"] = "environment"
++    for field in ("llm_model", "ocr_model"):
++        if values.get(f"NOVELTY_PROCESSING_{field.upper()}"):
++            origins[f"project.processing.{field}"] = "environment"
++    if values.get("NOVELTY_SPRINGER_ENABLED") is not None:
++        origins["researcher.tools.database_search.providers.springer.enabled"] = "environment"
++    if overrides:
++        _merge_config(raw, overrides)
++        origins.update({key: "explicit_override" for key in _leaf_paths(overrides)})
++    config = ApplicationConfig.model_validate(raw)
++    paths = dict(project=project_path, models=models_path, researcher=researcher_path,
++                 search_planner=search_planner_path, coordinator=coordinator_path,
++                 point_extractor=point_extractor_path, reviewer=reviewer_path)
++    if selected_profile:
++        paths["profile"] = selected_profile
++    config._resolution = {
++        "precedence": ["schema_defaults", "split_files", "profile", "environment", "explicit_override"],
++        "sources": {name: {"path": str(Path(path).resolve()),
++                           "sha256": hashlib.sha256(Path(path).read_bytes()).hexdigest()}
++                    for name, path in paths.items()},
++        "field_sources": {key: origins.get(key, "schema_default")
++                          for key in _leaf_paths(config.model_dump(mode="json"))},
++    }
++    config._loaded_values = _leaf_paths(config.model_dump(mode="json"))
++    return config
++
++
++def _merge_config(target: dict[str, Any], overlay: Mapping[str, Any]) -> None:
++    """Merge objects, replace arrays/scalars; typed schema rejects unknown keys."""
++    for key, value in overlay.items():
++        if isinstance(value, Mapping) and isinstance(target.get(key), dict):
++            _merge_config(target[key], value)
++        else:
++            target[key] = copy.deepcopy(value)
++
++
++def _leaf_paths(value: Mapping[str, Any], prefix: str = "") -> dict[str, Any]:
++    result: dict[str, Any] = {}
++    for key, item in value.items():
++        path = f"{prefix}.{key}" if prefix else key
++        if isinstance(item, Mapping) and item:
++            result.update(_leaf_paths(item, path))
++        else:
++            result[path] = item
++    return result
+ 
+ 
+ def _apply_model_overrides(raw: dict[str, Any], environ: Mapping[str, str]) -> None:
+@@ -180,7 +247,9 @@ def legacy_shape(config: ApplicationConfig) -> dict[str, Any]:
+ def effective_safe_config(config: ApplicationConfig) -> dict[str, Any]:
+     """Reproducible runtime view without API keys or environment values."""
+ 
+-    return {
++    from .experiment import redact_config
++
++    return redact_config({
+         "workflow": config.project.workflow.model_dump(mode="json"),
+         "runtime_debug": config.project.runtime_debug.model_dump(mode="json"),
+         "processing": config.project.processing,
+@@ -202,4 +271,4 @@ def effective_safe_config(config: ApplicationConfig) -> dict[str, Any]:
+             }
+             for alias, profile in config.models.items()
+         },
+-    }
++    })
+diff --git a/backend/src/novelty_agent_framework/config/schemas.py b/backend/src/novelty_agent_framework/config/schemas.py
+index 6999f72..0e7c8e9 100644
+--- a/backend/src/novelty_agent_framework/config/schemas.py
++++ b/backend/src/novelty_agent_framework/config/schemas.py
+@@ -4,11 +4,11 @@ from __future__ import annotations
+ 
+ from typing import Any, Literal
+ 
+-from pydantic import BaseModel, ConfigDict, Field, model_validator
++from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, model_validator
+ 
+ 
+ class ConfigModel(BaseModel):
+-    model_config = ConfigDict(extra="forbid")
++    model_config = ConfigDict(extra="forbid", hide_input_in_errors=True)
+ 
+ 
+ class ModelProfileConfig(ConfigModel):
+@@ -32,6 +32,7 @@ class ModelInvocationConfig(ConfigModel):
+ 
+ 
+ class HarnessConfig(ConfigModel):
++    reuse_reader_results: bool = False
+     max_turns: int = Field(gt=0)
+     max_total_tool_calls: int = Field(gt=0)
+     per_tool_limits: dict[str, int]
+@@ -198,6 +199,8 @@ class ProjectSettingsConfig(ConfigModel):
+ 
+ 
+ class ApplicationConfig(ConfigModel):
++    _resolution: dict[str, Any] = PrivateAttr(default_factory=dict)
++    _loaded_values: dict[str, Any] = PrivateAttr(default_factory=dict)
+     project: ProjectSettingsConfig
+     models: dict[str, ModelProfileConfig]
+     researcher: ResearcherConfig
+diff --git a/backend/src/novelty_agent_framework/core/runtime_artifacts.py b/backend/src/novelty_agent_framework/core/runtime_artifacts.py
+index b31c7b1..b3db8ad 100644
+--- a/backend/src/novelty_agent_framework/core/runtime_artifacts.py
++++ b/backend/src/novelty_agent_framework/core/runtime_artifacts.py
+@@ -1310,6 +1310,14 @@ def _summarize_provider_requests(
+     return summary
+ 
+ 
++def _format_known_cost(totals: Mapping[str, Any]) -> str:
++    amount = totals.get("amount_rmb")
++    if isinstance(amount, (int, float)):
++        return f"{amount:.8f}"
++    subtotal = totals.get("known_amount_rmb", 0)
++    return f"Unknown (priced subtotal {subtotal:.8f})"
++
++
+ def _summarize_llm_usage(records: list[dict[str, Any]]) -> dict[str, Any]:
+     def blank(label: str | None = None) -> dict[str, Any]:
+         return {
+@@ -1367,9 +1375,15 @@ def _summarize_llm_usage(records: list[dict[str, Any]]) -> dict[str, Any]:
+             if isinstance(amount, (int, float)) and not isinstance(amount, bool):
+                 target["amount_rmb"] = round(target["amount_rmb"] + amount, 8)
+ 
+-    totals["cost_completeness"] = (
+-        "PARTIAL" if totals["unpriced_calls"] else "COMPLETE"
+-    )
++    for target in (totals, *by_model.values()):
++        incomplete = bool(target["unpriced_calls"] or target["usage_unavailable_calls"])
++        target["cost_completeness"] = "PARTIAL" if incomplete else "COMPLETE"
++        # Keep the priced subtotal distinct from the unknown total. A failed
++        # transport can still have incurred provider charges; absent usage is
++        # not proof of a zero bill, nor is an unpriced local model free compute.
++        target["known_amount_rmb"] = target["amount_rmb"]
++        if incomplete:
++            target["amount_rmb"] = None
+     totals["currency"] = "RMB"
+     return {"totals": totals, "by_model": list(by_model.values())}
+ 
+@@ -1789,7 +1803,7 @@ def _render_summary(summary: Mapping[str, Any]) -> str:
+             f"Output tokens: {llm_totals.get('output_tokens', 0)}",
+             f"Reasoning tokens: {llm_totals.get('reasoning_tokens', 0)}",
+             f"Total tokens: {llm_totals.get('total_tokens', 0)}",
+-            f"Cost: RMB {llm_totals.get('amount_rmb', 0):.8f}",
++            f"Estimated API cost (RMB): {_format_known_cost(llm_totals)}",
+             f"Cost completeness: {llm_totals.get('cost_completeness', 'COMPLETE')}",
+             "",
+             "| Model | Calls | Input | Cached | Output | Total | Cost (RMB) | Unpriced |",
+@@ -1799,7 +1813,7 @@ def _render_summary(summary: Mapping[str, Any]) -> str:
+     lines.extend(
+         f"| {item['model']} | {item['calls']} | {item['input_tokens']} | "
+         f"{item['cached_input_tokens']} | {item['output_tokens']} | "
+-        f"{item['total_tokens']} | {item['amount_rmb']:.8f} | "
++        f"{item['total_tokens']} | {_format_known_cost(item)} | "
+         f"{item['unpriced_calls']} |"
+         for item in llm_usage.get("by_model", [])
+     )
+diff --git a/backend/src/novelty_agent_framework/core/tool_call_harness.py b/backend/src/novelty_agent_framework/core/tool_call_harness.py
+index 2258443..2274ef4 100644
+--- a/backend/src/novelty_agent_framework/core/tool_call_harness.py
++++ b/backend/src/novelty_agent_framework/core/tool_call_harness.py
+@@ -71,6 +71,7 @@ class ToolCallBudgetExhausted(ToolCallHarnessError):
+ class ToolCallHarnessConfig:
+     finalize_on_budget: bool = False
+     reuse_database_results: bool = False
++    reuse_reader_results: bool = False
+     max_turns: int = 12
+     max_tool_calls: int = 10
+     per_tool_limits: dict[str, int] = field(default_factory=dict)
+@@ -193,6 +194,7 @@ class ToolCallHarness:
+         read_budget_rejections = 0
+         required_reader_artifact_ids: set[str] = set()
+         database_results = {}  # Per invocation: never crosses task/plan/run scopes.
++        reader_state = _ReaderState()
+ 
+         exploration_turns = self.config.max_turns - int(self.config.reserve_final_turn)
+         if exploration_turns < 1:
+@@ -202,6 +204,10 @@ class ToolCallHarness:
+                     and tool_calls_used >= self.config.max_tool_calls:
+                 raise ToolCallBudgetExhausted("tool-call exploration limit reached", trace=tuple(log))
+             context = _build_context(system_prompt, tuple(log))
++            if self.config.reuse_reader_results and reader_state.reads:
++                context[0] = replace(context[0], content=context[0].content +
++                    "\nReader state (verified observations in this task): " +
++                    json.dumps(reader_state.project(), ensure_ascii=False))
+             if self.config.finalize_on_budget or self.config.report_budget:
+                 context[0] = replace(context[0], content=context[0].content + "\nBudget context: " + json.dumps({
+                     "remaining_research_turns": exploration_turns - turn + 1,
+@@ -307,6 +313,28 @@ class ToolCallHarness:
+                 else None
+             )
+ 
++            # A replay is a model action, not new I/O or new evidence. max_turns
++            # still bounds repetitive models. EOF applies only at/after the
++            # known artifact end, so earlier unread ranges remain available.
++            replay = (reader_state.replay(resolved_arguments)
++                      if self.config.reuse_reader_results and tool_call.name == "reader"
++                      and validated_arguments is not None
++                      and (not required_reader_artifact_ids or
++                           _reader_artifact_ids(resolved_arguments).intersection(required_reader_artifact_ids))
++                      else None)
++            if replay is not None:
++                replay_reads = replay.get("read_results", [replay.get("read_result", {})])
++                required_reader_artifact_ids.difference_update(
++                    row.get("artifact_id") for row in replay_reads if row.get("text")
++                )
++                if runtime is not None and runtime_call is not None:
++                    runtime.finish_tool_call(runtime_call, raw_result=None,
++                        normalized_result=replay, succeeded=True, error=None)
++                log.append(ToolCallHarnessEvent(kind="tool_result", tool_call=tool_call,
++                    detail="reader_state_reused", message=ChatMessage(role="tool",
++                        tool_call_id=tool_call.id, content=_serialize_tool_result(replay))))
++                continue
++
+             if tool_calls_used >= self.config.max_tool_calls:
+                 detail = "total tool-call budget exhausted"
+                 _append_error(log, detail)
+@@ -489,6 +517,8 @@ class ToolCallHarness:
+                         _reader_artifact_ids(resolved_arguments)
+                     )
+             if tool_call.name == "reader" and observation.succeeded:
++                if self.config.reuse_reader_results:
++                    reader_state.remember(resolved_arguments, observation, model_context)
+                 for read in _reader_results(observation):
+                     start, end = read.get("char_start"), read.get("char_end")
+                     if isinstance(start, int) and isinstance(end, int):
+@@ -520,6 +550,61 @@ class ToolCallHarness:
+         raise ToolCallBudgetExhausted(detail, trace=tuple(log))
+ 
+ 
++class _ReaderState:
++    """Invocation-local read facts; never synthesizes evidence or novel text."""
++
++    def __init__(self) -> None:
++        self.results: dict[str, dict[str, Any]] = {}
++        self.reads: dict[tuple[str, str, str], dict[str, Any]] = {}
++
++    def remember(self, arguments, observation, model_context) -> None:
++        rows = _reader_results(observation)
++        if not rows or observation.payload.get("read_errors"):
++            return
++        # Require provenance and text, not a success-shaped stub/result.
++        if any(not all(key in row for key in ("artifact_id", "read_id", "namespace",
++                   "sha256", "char_start", "char_end", "text", "has_more")) for row in rows):
++            return
++        self.results[json.dumps(arguments, sort_keys=True)] = model_context
++        for row in rows:
++            self.reads[(row["namespace"], row["artifact_id"], row["read_id"])] = row
++
++    def replay(self, arguments) -> dict[str, Any] | None:
++        requests = arguments.get("reads") or [arguments]
++        addresses = []
++        for request in requests:
++            artifact_id = request.get("artifact_id")
++            namespace = request.get("namespace")
++            if namespace is None:
++                namespaces = {row["namespace"] for row in self.reads.values()
++                              if row["artifact_id"] == artifact_id}
++                if len(namespaces) != 1:
++                    return None
++                namespace = next(iter(namespaces))
++            addresses.append((namespace, artifact_id))
++        previous = self.results.get(json.dumps(arguments, sort_keys=True))
++        if previous is not None:
++            return {**previous, "reused_result": True, "reader_state": self.project(),
++                "instruction": "This exact request was already read. The same verified text and read handles are replayed; no new evidence or read budget was consumed. Read an unread range or another artifact, or finish from existing evidence."}
++        known_ends = {}
++        for row in self.reads.values():
++            # An empty out-of-range request does not establish the true EOF.
++            if row["has_more"] is False and row["char_end"] > row["char_start"]:
++                known_ends[(row["namespace"], row["artifact_id"])] = row["char_end"]
++        if requests and all(address in known_ends and
++                request.get("char_start", 0) >= known_ends[address]
++                for request, address in zip(requests, addresses)):
++            return {"succeeded": True, "read_status": "artifact_eof",
++                "reused_result": True, "read_results": [], "reader_state": self.project(),
++                "instruction": "All requested offsets are at or beyond a previously verified artifact end. No new read was executed. EOF applies only to these artifacts, not to their whole papers; earlier unread ranges and other artifacts remain readable."}
++        return None
++
++    def project(self) -> list[dict[str, Any]]:
++        return [{key: row[key] for key in ("namespace", "artifact_id", "read_id",
++                    "char_start", "char_end", "has_more")}
++                for row in self.reads.values()]
++
++
+ def _reader_artifact_ids(arguments):
+     reads = arguments.get("reads")
+     rows = reads if isinstance(reads, list) else [arguments]
+diff --git a/backend/src/novelty_agent_framework/diagnostics/reader_failures.py b/backend/src/novelty_agent_framework/diagnostics/reader_failures.py
+index 6a2c2d6..b95ea54 100644
+--- a/backend/src/novelty_agent_framework/diagnostics/reader_failures.py
++++ b/backend/src/novelty_agent_framework/diagnostics/reader_failures.py
+@@ -153,6 +153,40 @@ def _classify(
+     return "OTHER", manifest_presence, [ns for ns, _ in disk_matches], file_presence
+ 
+ 
++def _reader_items(record: dict[str, Any], arguments: dict[str, Any]):
++    """Expand batch item outcomes without mistaking its absent top-level ID for corruption."""
++    requests = arguments.get("reads")
++    if not isinstance(requests, list) or not requests:
++        return [(record, arguments, None)]
++    raw = record.get("raw_result")
++    payload = record.get("normalized_result") or (raw.get("payload") if isinstance(raw, dict) else {})
++    payload = payload if isinstance(payload, dict) else {}
++    failures = payload.get("read_errors")
++    failures = failures if isinstance(failures, list) else []
++    errors = {item.get("index"): item for item in failures if isinstance(item, dict)}
++    successes = payload.get("read_results")
++    successes = list(successes) if isinstance(successes, list) else []
++    result = []
++    for index, request in enumerate(requests):
++        item = dict(record)
++        request = request if isinstance(request, dict) else {}
++        failure = errors.get(index)
++        if failure is not None:
++            item.update(execution_status="FAILED", error={"type": failure.get("error_type"),
++                                                        "message": failure.get("message")})
++        elif record.get("execution_status") == "SUCCESS":
++            match = next((row for row in successes if isinstance(row, dict) and
++                row.get("artifact_id") == request.get("artifact_id") and
++                row.get("char_start") == request.get("char_start", 0)), None)
++            if match is not None:
++                successes.remove(match)
++                item.update(execution_status="SUCCESS", error=None)
++            elif not (payload.get("reused_result") and payload.get("read_status") == "artifact_eof"):
++                item.update(execution_status="RUNNING", error=None)  # Missing per-item terminal fact.
++        result.append((item, request, index))
++    return result
++
++
+ def inspect_reader_failures(context: RuntimeDiagnosticContext) -> dict[str, Any]:
+     errors: list[str] = []
+     warnings: list[str] = []
+@@ -163,6 +197,7 @@ def inspect_reader_failures(context: RuntimeDiagnosticContext) -> dict[str, Any]
+     findings: list[dict[str, Any]] = []
+     succeeded = 0
+     reader_calls = 0
++    reader_items = 0
+     incomplete = 0
+     tools_dir = context.run_dir / "tools"
+     for path in sorted(tools_dir.glob("*.json")):
+@@ -180,35 +215,38 @@ def inspect_reader_failures(context: RuntimeDiagnosticContext) -> dict[str, Any]
+         arguments = record.get("resolved_arguments") or record.get("agent_arguments") or {}
+         if not isinstance(arguments, dict):
+             arguments = {}
+-        code, manifest_presence, disk_namespaces, file_presence = _classify(
+-            record, arguments, manifests, context.workspace
+-        )
+-        if code == "SUCCEEDED":
+-            succeeded += 1
+-            continue
+-        if code == "INCOMPLETE_RECORD":
+-            incomplete += 1
+-        error = record.get("error") if isinstance(record.get("error"), dict) else {}
+-        actual_namespaces = manifest_presence or disk_namespaces
+-        findings.append(
+-            {
+-                "reason_code": code,
+-                "tool_call_id": record.get("tool_call_id"),
+-                "agent_tool_call_id": record.get("agent_tool_call_id"),
+-                "stage_name": record.get("stage_name"),
+-                "execution_status": record.get("execution_status"),
+-                "artifact_id": arguments.get("artifact_id"),
+-                "namespace": arguments.get("namespace"),
+-                "actual_namespace": (
+-                    actual_namespaces[0] if len(actual_namespaces) == 1 else None
+-                ),
+-                "manifest_presence": manifest_presence,
+-                "file_presence": file_presence,
+-                "error_type": error.get("type"),
+-                "error_message": _safe_message(error.get("message")),
+-                "recommended_action": _ACTIONS[code],
+-            }
+-        )
++        for item_record, item_arguments, batch_index in _reader_items(record, arguments):
++            reader_items += 1
++            code, manifest_presence, disk_namespaces, file_presence = _classify(
++                item_record, item_arguments, manifests, context.workspace
++            )
++            if code == "SUCCEEDED":
++                succeeded += 1
++                continue
++            if code == "INCOMPLETE_RECORD":
++                incomplete += 1
++            error = item_record.get("error") if isinstance(item_record.get("error"), dict) else {}
++            actual_namespaces = manifest_presence or disk_namespaces
++            findings.append(
++                {
++                    "reason_code": code,
++                    **({"batch_index": batch_index} if batch_index is not None else {}),
++                    "tool_call_id": item_record.get("tool_call_id"),
++                    "agent_tool_call_id": item_record.get("agent_tool_call_id"),
++                    "stage_name": item_record.get("stage_name"),
++                    "execution_status": item_record.get("execution_status"),
++                    "artifact_id": item_arguments.get("artifact_id"),
++                    "namespace": item_arguments.get("namespace"),
++                    "actual_namespace": (
++                        actual_namespaces[0] if len(actual_namespaces) == 1 else None
++                    ),
++                    "manifest_presence": manifest_presence,
++                    "file_presence": file_presence,
++                    "error_type": error.get("type"),
++                    "error_message": _safe_message(error.get("message")),
++                    "recommended_action": _ACTIONS[code],
++                }
++            )
+     classification_counts = dict(Counter(item["reason_code"] for item in findings))
+     failed = len(findings) - incomplete
+     if errors:
+@@ -235,11 +273,12 @@ def inspect_reader_failures(context: RuntimeDiagnosticContext) -> dict[str, Any]
+     }
+     return {
+         "diagnostic_name": "reader",
+-        "schema_version": "1.0",
++        "schema_version": "1.1",
+         "status": status,
+         "scope": {"paper_id": context.paper_id, "run_id": context.run_id},
+         "counts": {
+             "reader_calls": reader_calls,
++            "reader_items": reader_items,
+             "succeeded": succeeded,
+             "failed": failed,
+             "incomplete": incomplete,
+@@ -262,7 +301,7 @@ def inspect_reader_failures(context: RuntimeDiagnosticContext) -> dict[str, Any]
+ 
+ class ReaderFailureDiagnostic:
+     name = "reader"
+-    schema_version = "1.0"
++    schema_version = "1.1"
+ 
+     def inspect(self, context: RuntimeDiagnosticContext) -> dict[str, Any]:
+         return inspect_reader_failures(context)
+diff --git a/backend/src/novelty_agent_framework/prompts/reviewer/review_points.md b/backend/src/novelty_agent_framework/prompts/reviewer/review_points.md
+index 598b3ac..3444c9f 100644
+--- a/backend/src/novelty_agent_framework/prompts/reviewer/review_points.md
++++ b/backend/src/novelty_agent_framework/prompts/reviewer/review_points.md
+@@ -1,6 +1,6 @@
+ ---
+ name: reviewer.review_points
+-version: 5
++version: 6
+ system: |
+   ## 规则
+   你是论文查新系统的查新点审查 Agent。你的任务只是判断候选查新点中哪些是重复条目：
+@@ -18,11 +18,13 @@ system: |
+   禁止重写、合并或新增任何查新点。
+   你的输出必须严格符合要求的 JSON schema。
+   ## 输出要求：
+-  输出 JSON 对象 {{"delete_indices": []}}；delete_indices 是要删除的条目编号（从 1 开始），
+-  无重复时为空数组 []。
++  输出 JSON 对象 {{"deletions": [{{"index": 2, "duplicate_of": 1, "reason": "技术目标、机制和范围等价的具体依据"}}]}}。
++  index 是要删除的条目编号，duplicate_of 是与其等价且必须保留的条目编号（均从 1 开始）。
++  每项必须给出非空的等价理由；不得指向自身、其他待删除条目或不存在的编号。
++  不能只给删除编号。无法给出等价依据或保留代表时，保留该候选；无重复输出 {{"deletions": []}}。
+   ## 注意：禁止输出任何开场白、解释或总结，只输出模板内容。
+ ---
+-请判断以下候选查新点中哪些是重复条目，只输出 {{"delete_indices": [...]}}。
++请判断以下候选查新点中哪些是重复条目，只输出 {{"deletions": [...]}}，每项包含 index、duplicate_of 和 reason。
+ 
+ 候选查新点（编号从 1 开始）：
+ {points_json}
+diff --git a/backend/src/novelty_agent_framework/tools/database_search/providers/springer.py b/backend/src/novelty_agent_framework/tools/database_search/providers/springer.py
+index 8179239..dcd5675 100644
+--- a/backend/src/novelty_agent_framework/tools/database_search/providers/springer.py
++++ b/backend/src/novelty_agent_framework/tools/database_search/providers/springer.py
+@@ -168,6 +168,10 @@ class SpringerNatureSearchTool(SearchTool):
+             },
+             headers={"Accept": "application/json"},
+         )
++        # Meta API uses this specific 404 body for an exhausted query. A plain
++        # 404 (missing endpoint/resource) must remain a technical failure.
++        if _is_meta_no_match_response(response):
++            return ()
+         raise_for_provider_status(response, provider="Springer Nature")
+         payload = response.json()
+         if not isinstance(payload, Mapping):
+@@ -187,6 +191,28 @@ class SpringerNatureSearchTool(SearchTool):
+         return hits
+ 
+ 
++def _is_meta_no_match_response(response: httpx.Response) -> bool:
++    """Recognize only the no-data contract confirmed in live Meta API traces."""
++    if response.status_code != 404:
++        return False
++    try:
++        payload = response.json()
++    except ValueError:
++        return False
++    if not isinstance(payload, Mapping):
++        return False
++    error = payload.get("error")
++    return (
++        payload.get("status") == "Fail"
++        and payload.get("message") == "No data was found for the given query."
++        and payload.get("records") in (None, [])
++        and isinstance(error, Mapping)
++        and error.get("error") == "Not Found"
++        and error.get("error_description")
++        == "No matching data is available for the requested query."
++    )
++
++
+ class SpringerNatureFullTextTool(FullTextTool):
+     source_id = "springer"
+ 
+diff --git a/backend/src/novelty_agent_framework/tools/reader.py b/backend/src/novelty_agent_framework/tools/reader.py
+index c30b596..57c94f2 100644
+--- a/backend/src/novelty_agent_framework/tools/reader.py
++++ b/backend/src/novelty_agent_framework/tools/reader.py
+@@ -78,7 +78,8 @@ class ReaderTool:
+                 f"读取 artifact {result.artifact_id} 字符 "
+                 f"[{result.char_start}, {result.char_end})"
+             ),
+-            payload={"read_result": result.model_dump(mode="json")},
++            payload={"read_result": result.model_dump(mode="json"),
++                     "read_status": "content" if result.char_end > result.char_start else "artifact_eof"},
+             elapsed_ms=int((time.monotonic() - started) * 1000),
+         )
+ 
+diff --git a/backend/src/novelty_agent_framework/workflows/novelty.py b/backend/src/novelty_agent_framework/workflows/novelty.py
+index e2f4c40..14ec781 100644
+--- a/backend/src/novelty_agent_framework/workflows/novelty.py
++++ b/backend/src/novelty_agent_framework/workflows/novelty.py
+@@ -120,10 +120,12 @@ def _safe_error(exc: Exception) -> str:
+ def _insufficient_point_review(
+     point_id: str, reason: str
+ ) -> NoveltyPointReview:
++    """Workflow execution fallback; no semantic evidence judgment took place."""
+     return NoveltyPointReview(
+         novelty_point_id=point_id,
+         status=ReviewStatus.INSUFFICIENT_EVIDENCE,
+         supplement_request=SupplementRequest(reason=reason),
++        incomplete_reason="technical_error",
+     )
+ 
+ 
+@@ -357,6 +359,13 @@ class NoveltyWorkflow:
+         ]
+         issues: list[WorkflowIssue] = []
+         trace = getattr(self.point_extractor, "last_trace", None)
++        if trace and trace.get("scope_status") == "pending_dedup":
++            issues.append(WorkflowIssue(
++                node="extract_points", code="point_deduplication_unresolved",
++                message=("部分候选缺少合法的重复项映射，已保留为待核验研究范围；"
++                         "保留不代表其独立贡献已确认。"),
++                severity=IssueSeverity.WARNING,
++            ))
+         if trace and trace.get("exit_reason") == "below_target_review_scope":
+             issues.append(WorkflowIssue(
+                 node="extract_points", code="point_scope_below_target",
+@@ -750,6 +759,12 @@ class NoveltyWorkflow:
+                 except Exception as exc:
+                     safe_error = _safe_error(exc)
+                     accepted = []
++                    reviews = [
++                        _insufficient_point_review(
++                            point.point_id, f"Reviewer 执行失败：{safe_error}"
++                        )
++                        for point in state.get("novelty_points", [])
++                    ]
+                     rejected.extend(
+                         RejectedEvidence(card_id=card.card_id, reason="review_failed")
+                         for card in validator_accepted
+@@ -990,6 +1005,12 @@ class NoveltyWorkflow:
+ 
+         if report.paper_id != state["paper"].paper_id:
+             raise WorkflowExecutionError("NoveltyReport.paper_id 与输入论文不一致")
++        scope_limitations = [issue.message for issue in state.get("issues", [])
++                             if issue.code in {"point_deduplication_unresolved", "point_scope_below_target"}]
++        if scope_limitations:
++            report = report.model_copy(update={"limitations": list(dict.fromkeys(
++                [*report.limitations, *scope_limitations]
++            ))})
+         return {"report": report}
+ 
+     async def _validate_report_integrity(
+diff --git a/backend/src/novelty_agent_framework/workflows/research_task.py b/backend/src/novelty_agent_framework/workflows/research_task.py
+index adc6490..a100e57 100644
+--- a/backend/src/novelty_agent_framework/workflows/research_task.py
++++ b/backend/src/novelty_agent_framework/workflows/research_task.py
+@@ -63,6 +63,7 @@ class TaskResearcherConfig:
+         default_factory=lambda: ModelCallOptions(temperature=0.0, tool_choice="auto")
+     )
+     prompt_name: str = "research/native_tool_loop"
++    reuse_reader_results: bool = False
+ 
+     def __post_init__(self) -> None:
+         if min(self.max_steps, self.max_tool_calls, self.max_chars_per_read,
+@@ -93,6 +94,7 @@ class TaskResearcherWorkflow:
+             config=ToolCallHarnessConfig(
+                 finalize_on_budget=True,
+                 reuse_database_results=True,
++                reuse_reader_results=self.config.reuse_reader_results,
+                 max_turns=self.config.max_steps,
+                 max_tool_calls=self.config.max_tool_calls,
+                 per_tool_limits=dict(self.config.per_tool_limits),
+diff --git a/scripts/run_full_workflow_live.py b/scripts/run_full_workflow_live.py
+index f597e3f..af189d1 100644
+--- a/scripts/run_full_workflow_live.py
++++ b/scripts/run_full_workflow_live.py
+@@ -24,7 +24,10 @@ from backend.env.model_client import _load_dev_env
+ from novelty_agent_framework.config import (
+     build_standard_full_workflow,
+     load_application_config,
++    ReviewerRequiredError,
+ )
++from novelty_agent_framework.config.experiment import freeze_config, preflight_config, redact_config
++from pydantic import ValidationError
+ from novelty_agent_framework.core.run_identity import file_run_identity
+ from novelty_agent_framework.processing import prepare_paper_input_references
+ from novelty_agent_framework.schemas import PaperInput
+@@ -37,10 +40,14 @@ def parser() -> argparse.ArgumentParser:
+     result.add_argument("--paper-json", required=True, type=Path)
+     result.add_argument("--runs-root", type=Path, default=Path("outputs/runs"))
+     result.add_argument("--run-number", type=int)
+-    result.add_argument("--max-rounds", type=int, default=1)
+-    result.add_argument("--max-concurrency", type=int, default=1)
+-    result.add_argument("--max-model-calls", type=int, default=80)
+-    result.add_argument("--max-physical-provider-requests", type=int, default=48)
++    result.add_argument("--profile", type=Path)
++    result.add_argument("--isolated-config", action="store_true",
++                        help="Ignore configuration environment overrides; credentials still resolve normally.")
++    result.add_argument("--check-config", action="store_true")
++    result.add_argument("--max-rounds", type=int)
++    result.add_argument("--max-concurrency", type=int)
++    result.add_argument("--max-model-calls", type=int)
++    result.add_argument("--max-physical-provider-requests", type=int)
+     result.add_argument("--force-reference-bootstrap", action="store_true")
+     return result
+ 
+@@ -79,8 +86,6 @@ def main() -> None:
+     _load_dev_env()
+     args = parser().parse_args()
+     paper_json = args.paper_json.resolve(strict=True)
+-    if args.max_model_calls < 1 or args.max_physical_provider_requests < 1:
+-        raise ValueError("request caps must be positive")
+     paper = PaperInput.model_validate_json(paper_json.read_text(encoding="utf-8"))
+     run_number, run_dir = allocate_run_directory(args.runs_root, args.run_number)
+     run_dir = run_dir.resolve()
+@@ -107,12 +112,34 @@ def main() -> None:
+ 
+     workflow = None
+     try:
+-        config = load_application_config()
+-        config.project.workflow.max_rounds = args.max_rounds
+-        config.project.workflow.max_concurrency = args.max_concurrency
+-        config.project.runtime_debug.max_model_calls = args.max_model_calls
+-        config.project.runtime_debug.max_physical_provider_requests = args.max_physical_provider_requests
+-        _write_json(run_dir / "effective-config.json", config.model_dump(mode="json"))
++        overrides = {"project": {"workflow": {}, "runtime_debug": {}}}
++        for field in ("max_rounds", "max_concurrency"):
++            if getattr(args, field) is not None:
++                overrides["project"]["workflow"][field] = getattr(args, field)
++        for field in ("max_model_calls", "max_physical_provider_requests"):
++            if getattr(args, field) is not None:
++                overrides["project"]["runtime_debug"][field] = getattr(args, field)
++        config = load_application_config(profile_path=args.profile, overrides=overrides,
++                                         environ={} if args.isolated_config else None)
++        frozen = freeze_config(config, entrypoint="paper_input", input_path=paper_json, output_root=run_dir)
++        issues = preflight_config(config)
++        _write_json(run_dir / "effective-config.json", frozen["effective_config"])
++        _write_json(run_dir / "experiment-manifest.json", frozen)
++        _write_json(run_dir / "preflight.json", issues)
++        run_manifest.update(max_rounds=config.project.workflow.max_rounds,
++                            max_concurrency=config.project.workflow.max_concurrency,
++                            max_model_calls=config.project.runtime_debug.max_model_calls,
++                            max_physical_provider_requests=config.project.runtime_debug.max_physical_provider_requests,
++                            effective_config_sha256=frozen["effective_config_sha256"])
++        if any(item["code"] == "reviewer_required" for item in issues):
++            raise ReviewerRequiredError("reviewer_required: reviewer.enabled=false or reviewer config missing")
++        if any(item["severity"] == "error" for item in issues):
++            raise ValueError("configuration preflight failed; see preflight.json")
++        if args.check_config:
++            _finish_manifest(run_manifest, manifest_path, status="PREFLIGHT_PASSED",
++                             started=monotonic_started, workflow=None)
++            print(json.dumps(issues, ensure_ascii=False, indent=2))
++            return
+         _write_json(run_dir / "paper-input.json", paper.model_dump(mode="json"))
+         workflow = build_standard_full_workflow(config, output_root=run_dir)
+         stable_root = _stable_output_root(paper_json, paper.paper_id)
+@@ -121,7 +148,7 @@ def main() -> None:
+             stable_output_root=stable_root,
+             run_output_root=run_dir,
+             force=args.force_reference_bootstrap,
+-            max_concurrency=args.max_concurrency,
++            max_concurrency=config.project.workflow.max_concurrency,
+         )
+         result = workflow.run(paper, run_identity=identity)
+         payload = json.loads(result.model_dump_json())
+@@ -194,7 +221,15 @@ def _finish_manifest(
+         }
+     )
+     if error is not None:
+-        manifest["error"] = f"{type(error).__name__}: {error}"[:1000]
++        if isinstance(error, ValidationError):
++            # Never serialize Pydantic's input_value: a malformed config may
++            # itself contain a misplaced credential before snapshot redaction.
++            details = [{"type": item["type"], "loc": item["loc"]}
++                       for item in error.errors(include_input=False, include_context=False, include_url=False)]
++            manifest["error"] = "ValidationError: invalid configuration or input"
++            manifest["validation_errors"] = details
++        else:
++            manifest["error"] = redact_config(f"{type(error).__name__}: {error}"[:1000])
+     _write_json(path, manifest)
+ 
+ 
+diff --git a/scripts/run_single_research_task.py b/scripts/run_single_research_task.py
+index a59f998..f5f8f24 100644
+--- a/scripts/run_single_research_task.py
++++ b/scripts/run_single_research_task.py
+@@ -4,6 +4,7 @@ from __future__ import annotations
+ 
+ import argparse
+ import asyncio
++import hashlib
+ import json
+ import sys
+ import time
+@@ -24,6 +25,7 @@ except Exception:
+ 
+ from novelty_agent_framework.config.factory import build_workflow
+ from novelty_agent_framework.config.loader import load_application_config
++from novelty_agent_framework.config.experiment import freeze_config, preflight_config
+ from novelty_agent_framework.core.integrity_gates import validate_synthesis_input
+ from novelty_agent_framework.core.run_identity import file_run_identity
+ from novelty_agent_framework.core.runtime_artifacts import RuntimeArtifactManager, RuntimeDebugConfig
+@@ -51,10 +53,10 @@ def build_request(
+     run_id: str,
+     point_id: str,
+     task_id: str,
++    source_contents: dict[str, bytes] | None = None,
+ ) -> TaskResearchRequest:
+-    raw_points = json.loads(
+-        (output_root / paper_id / "novelty-points.json").read_text(encoding="utf-8")
+-    )["novelty_points"]
++    contents = source_contents if source_contents is not None else load_task_sources(output_root, paper_id)
++    raw_points = json.loads(contents["novelty-points.json"])["novelty_points"]
+     matched_points = [item for item in raw_points if item.get("point_id") == point_id]
+     if len(matched_points) != 1:
+         raise SystemExit(
+@@ -62,9 +64,7 @@ def build_request(
+             f"matched={len(matched_points)}"
+         )
+     point = NoveltyPoint.model_validate(matched_points[0])
+-    plans = json.loads(
+-        (output_root / paper_id / "retrieval-plans.json").read_text(encoding="utf-8")
+-    )["novelty_point_plans"]
++    plans = json.loads(contents["retrieval-plans.json"])["novelty_point_plans"]
+     matched_bundles = [item for item in plans if item.get("novelty_point_id") == point_id]
+     if len(matched_bundles) != 1:
+         raise SystemExit(
+@@ -96,6 +96,36 @@ def build_request(
+     )
+ 
+ 
++def load_task_sources(output_root: Path, paper_id: str) -> dict[str, bytes]:
++    """Capture precisely the source bytes consumed when constructing a request."""
++    return {name: (output_root / paper_id / name).read_bytes()
++            for name in ("novelty-points.json", "retrieval-plans.json")}
++
++
++def task_input_provenance(request: TaskResearchRequest, output_root: Path,
++                          source_contents: dict[str, bytes]) -> dict:
++    payload = request.model_dump(mode="json")
++
++    def digest(value):
++        return hashlib.sha256(json.dumps(value, sort_keys=True, ensure_ascii=False,
++                                         separators=(",", ":")).encode()).hexdigest()
++
++    return {
++        "task_request_sha256": digest(payload),
++        "task_input_sha256": digest({key: value for key, value in payload.items() if key != "run_id"}),
++        "task_source_files": {
++            name: {"path": str((output_root / request.subject_paper_id / name).resolve()),
++                   "sha256": hashlib.sha256(content).hexdigest()}
++            for name, content in source_contents.items()
++        },
++    }
++
++
++def _project_path(value: str | Path) -> Path:
++    path = Path(value)
++    return (path if path.is_absolute() else PROJECT_ROOT / path).resolve()
++
++
+ def terminal_result(task_status: TaskResearchStatus, gate_rejected: int) -> tuple[str, int]:
+     if task_status == TaskResearchStatus.FAILED:
+         return "SUCCESS", 1
+@@ -105,28 +135,51 @@ def terminal_result(task_status: TaskResearchStatus, gate_rejected: int) -> tupl
+ 
+ 
+ async def main(args: argparse.Namespace) -> int:
+-    output_root = PROJECT_ROOT / "outputs"
++    config = load_application_config(profile_path=getattr(args, "profile", None),
++                                     environ={} if getattr(args, "isolated_config", False) else None)
++    issues = preflight_config(config, require_reviewer=False, active_roles=("researcher",))
++    if any(issue["severity"] == "error" for issue in issues):
++        raise ValueError("configuration preflight failed: " + json.dumps(issues))
++    settings = config.project.runtime_debug
++    output_root = _project_path(settings.output_root)
++    # This diagnostic entrypoint requires recording; freeze the override too.
++    settings.enabled = True
++    settings.output_root = str(output_root)
++    settings.archive_root = str(_project_path(settings.archive_root))
++    settings.llm_pricing_path = str(_project_path(
++        settings.llm_pricing_path or RuntimeDebugConfig().llm_pricing_path
++    ))
++    runtime = RuntimeDebugConfig(
++        **{**settings.model_dump(mode="python"),
++           "output_root": output_root, "archive_root": Path(settings.archive_root),
++           "llm_pricing_path": Path(settings.llm_pricing_path)}
++    )
+     paper_json = Path(args.paper_json).resolve(strict=True)
+     paper = PaperInput.model_validate_json(paper_json.read_text(encoding="utf-8"))
+     paper_id = paper.paper_id
+     run_id = new_run_id(args.task_id)
++    source_contents = load_task_sources(output_root, paper_id)
+     request = build_request(
+         output_root,
+         paper_id,
+         run_id=run_id,
+         point_id=args.point_id,
+         task_id=args.task_id,
++        source_contents=source_contents,
+     )
+     label = f"{request.novelty_point.point_id}/{request.research_task.task_id}"
+     print(f"论文 : {paper_id}")
+     print(f"任务 : {label}  language={request.research_task.language}")
+     print(f"Run  : {run_id}")
+ 
+-    workflow = build_workflow(load_application_config())
++    workflow = build_workflow(config, output_root=output_root)
++    frozen = freeze_config(config, entrypoint="single_task", input_path=paper_json,
++                           output_root=output_root)
++    frozen["input"].update(task_input_provenance(request, output_root, source_contents))
+     researcher = workflow.services.task_researcher
+     manager = RuntimeArtifactManager(
+         paper_id,
+-        config=RuntimeDebugConfig(enabled=True, output_root=output_root),
++        config=runtime,
+         run_id=run_id,
+         run_identity=file_run_identity(
+             "single_task",
+@@ -137,6 +190,8 @@ async def main(args: argparse.Namespace) -> int:
+             search_plan_id=request.search_plan.task_id,
+         ),
+         runtime_config={
++            **frozen["effective_config"],
++            "configuration_manifest": {key: value for key, value in frozen.items() if key != "effective_config"},
+             "script_mode": "single_research_task_diagnostics",
+             "point_id": request.novelty_point.point_id,
+             "task_id": request.research_task.task_id,
+@@ -231,6 +286,8 @@ async def main(args: argparse.Namespace) -> int:
+ if __name__ == "__main__":
+     parser = argparse.ArgumentParser(description=__doc__)
+     parser.add_argument("--paper-json", required=True, type=Path)
++    parser.add_argument("--profile", type=Path)
++    parser.add_argument("--isolated-config", action="store_true")
+     parser.add_argument("--point-id", required=True)
+     parser.add_argument("--task-id", required=True)
+     raise SystemExit(asyncio.run(main(parser.parse_args())))
+diff --git a/tests/test_browser_playwright.py b/tests/test_browser_playwright.py
+index bc363a8..2232757 100644
+--- a/tests/test_browser_playwright.py
++++ b/tests/test_browser_playwright.py
+@@ -141,6 +141,11 @@ def test_fetch_collects_rendered_content_and_applies_limits(monkeypatch) -> None
+         "novelty_agent_framework.tools.browser_backend._load_async_playwright",
+         lambda: lambda: manager,
+     )
++    # This test uses a fake browser; system-library checks belong to runtime tests.
++    monkeypatch.setattr(
++        "novelty_agent_framework.tools.browser_backend.playwright_launch_kwargs",
++        lambda *args, **kwargs: ({"headless": True}, {}, {}),
++    )
+     backend = PlaywrightBrowserBackend(max_html_chars=20, max_text_chars=13)
+ 
+     result = asyncio.run(backend.fetch("https://example.com/requested"))
+diff --git a/tests/test_llm_usage_tracking.py b/tests/test_llm_usage_tracking.py
+index ce68b54..9631e70 100644
+--- a/tests/test_llm_usage_tracking.py
++++ b/tests/test_llm_usage_tracking.py
+@@ -438,3 +438,35 @@ def test_completion_before_async_cancel_is_not_lost(tmp_path: Path) -> None:
+     assert call["status"] == "CANCELLED"
+     assert call["transport_completion_before_cancel"]["response"]["content"] == "answer"
+     assert call["transport_completion_before_cancel"]["request_id"] == "remote-id"
++
++
++def test_unknown_or_missing_usage_has_unknown_total_cost_and_keeps_priced_subtotal():
++    from novelty_agent_framework.core.runtime_artifacts import _summarize_llm_usage, _format_known_cost
++
++    priced = {"model": "priced", "status": "SUCCESS", "tokens": {"input_tokens": 5},
++              "billing": {"status": "PRICED", "amount": 0.25}}
++    for status in ("UNPRICED", "USAGE_UNAVAILABLE", "USAGE_INCOMPLETE", "PRICING_UNAVAILABLE"):
++        summary = _summarize_llm_usage([priced, {"model": "local", "status": "FAILED",
++            "tokens": {}, "billing": {"status": status, "amount": None}}])
++        totals = summary["totals"]
++        assert totals["cost_completeness"] == "PARTIAL"
++        assert totals["amount_rmb"] is None
++        assert totals["known_amount_rmb"] == 0.25
++        assert totals["failed_calls"] == 1
++        assert _format_known_cost(totals) == "Unknown (priced subtotal 0.25000000)"
++        local = next(row for row in summary["by_model"] if row["model"] == "local")
++        assert local["amount_rmb"] is None
++        assert local["cost_completeness"] == "PARTIAL"
++    failed_only = _summarize_llm_usage([{"model": "local", "status": "FAILED",
++        "tokens": {}, "billing": {"status": "USAGE_UNAVAILABLE", "amount": None}}])["totals"]
++    assert failed_only["amount_rmb"] is None
++    assert failed_only["cost_completeness"] == "PARTIAL"
++
++
++def test_fully_priced_usage_retains_numeric_total_cost():
++    from novelty_agent_framework.core.runtime_artifacts import _summarize_llm_usage
++
++    totals = _summarize_llm_usage([{"model": "priced", "status": "SUCCESS",
++        "tokens": {}, "billing": {"status": "PRICED", "amount": 0.25}}])["totals"]
++    assert totals["cost_completeness"] == "COMPLETE"
++    assert totals["amount_rmb"] == totals["known_amount_rmb"] == 0.25
+diff --git a/tests/test_point_extractor.py b/tests/test_point_extractor.py
+index c20d688..9d85b4b 100644
+--- a/tests/test_point_extractor.py
++++ b/tests/test_point_extractor.py
+@@ -9,7 +9,7 @@ from novelty_agent_framework.agents import (
+     NoveltyPointExtractorAgent,
+     build_paper_digest,
+ )
+-from novelty_agent_framework.agents.point_extractor import _extract_points_list
++from novelty_agent_framework.agents.point_extractor import _extract_points_list, _validated_deletion_mappings
+ from novelty_agent_framework.persistence import persist_novelty_points
+ from novelty_agent_framework.schemas import PaperDigest, PaperInput
+ 
+@@ -123,7 +123,7 @@ def test_extractor_incremental_retry_supplements():
+ 
+ def test_extractor_review_dedupes_only():
+     two = three_items()[:2]
+-    client = SequencedClient([json.dumps(two), json.dumps({"delete_indices": [1]})])
++    client = SequencedClient([json.dumps(two), json.dumps({"deletions": [{"index": 1, "duplicate_of": 2, "reason": "等价复述"}]})])
+ 
+     points = make_agent(client).extract(
+         build_paper_digest(make_paper()),
+@@ -136,7 +136,7 @@ def test_extractor_review_dedupes_only():
+ 
+ def test_extractor_review_deletes_by_index():
+     client = SequencedClient(
+-        [json.dumps(three_items()), json.dumps({"delete_indices": [2]})]
++        [json.dumps(three_items()), json.dumps({"deletions": [{"index": 2, "duplicate_of": 1, "reason": "等价复述"}]})]
+     )
+ 
+     points = make_agent(client).extract(
+@@ -288,7 +288,7 @@ def test_extractor_coverage_followup_shares_budget_and_records_numbering():
+     items = three_items()
+     client = SequencedClient([
+         json.dumps({"novelty_points": items}),
+-        json.dumps({"delete_indices": [3]}),
++        json.dumps({"deletions": [{"index": 3, "duplicate_of": 1, "reason": "等价复述"}]}),
+         json.dumps({"novelty_points": [dict(items[2], claim="独立补核查机制")]}),
+     ])
+     agent = make_agent(client)
+@@ -513,3 +513,46 @@ def test_persist_novelty_points_writes_file(tmp_path):
+     assert data["paper_id"] == "paper-1"
+     assert data["storage"] == "test-version-local-file"
+     assert [point["point_id"] for point in data["novelty_points"]] == ["NP-1", "NP-2"]
++
++
++def test_unmapped_deletions_keep_candidates_pending_without_semantic_confirmation():
++    agent = make_agent(SequencedClient([
++        json.dumps({"novelty_points": three_items()}),
++        json.dumps({"delete_indices": [2, 3]}),
++    ]))
++    points = agent.extract(build_paper_digest(make_paper()), previous_brief=None, attempt=1)
++    assert [point.claim for point in points] == [item["claim"] for item in three_items()]
++    audit = agent.last_trace["deduplication"]
++    assert audit["deleted_indices"] == []
++    assert audit["pending_indices"] == [2, 3]
++    assert audit["semantic_equivalence_verified_by_harness"] is False
++    assert agent.last_trace["scope_status"] == "pending_dedup"
++
++
++@pytest.mark.parametrize("deletions", [
++    [{"index": 2, "duplicate_of": 2, "reason": "self"}],
++    [{"index": 2, "duplicate_of": 99, "reason": "outside"}],
++    [{"index": 2, "duplicate_of": True, "reason": "wrong type"}],
++    [{"index": 2, "duplicate_of": 1, "reason": "  "}],
++    [{"index": 2, "duplicate_of": 1}],
++    [{"index": 2, "duplicate_of": 1, "reason": "first"},
++     {"index": 2, "duplicate_of": 3, "reason": "conflict"}],
++    [{"index": 1, "duplicate_of": 2, "reason": "cycle"},
++     {"index": 2, "duplicate_of": 1, "reason": "cycle"}],
++])
++def test_unsafe_deletion_mappings_remain_pending(deletions):
++    audit = _validated_deletion_mappings({"deletions": deletions}, 3)
++    assert audit["accepted_deletions"] == []
++    assert audit["contract_issues"]
++    assert audit["pending_indices"]
++
++
++def test_deletion_chain_cannot_remove_a_representative():
++    audit = _validated_deletion_mappings({"deletions": [
++        {"index": 2, "duplicate_of": 1, "reason": "same mechanism"},
++        {"index": 3, "duplicate_of": 2, "reason": "same mechanism"},
++    ]}, 3)
++    deleted = {item["index"] for item in audit["accepted_deletions"]}
++    assert deleted == {2}
++    assert audit["pending_indices"] == [3]
++    assert all(item["duplicate_of"] not in deleted for item in audit["accepted_deletions"])
+diff --git a/tests/test_reader_failure_diagnostics.py b/tests/test_reader_failure_diagnostics.py
+index b1718e7..120d77d 100644
+--- a/tests/test_reader_failure_diagnostics.py
++++ b/tests/test_reader_failure_diagnostics.py
+@@ -284,3 +284,36 @@ def test_successful_reader_call_passes_and_running_call_warns(tmp_path) -> None:
+     assert report["status"] == "WARNING"
+     assert report["counts"]["incomplete"] == 1
+     assert report["classification_counts"] == {"INCOMPLETE_RECORD": 1}
++
++
++def test_successful_batch_is_not_reported_as_incomplete(tmp_path):
++    workspace = tmp_path / "outputs" / PAPER_ID
++    _write(workspace / "runtime/run-1/tools/0001_reader.json", {
++        "tool_name": "reader", "tool_call_id": "tool_0001", "execution_status": "SUCCESS",
++        "resolved_arguments": {"reads": [{"artifact_id": "a"}, {"artifact_id": "b", "char_start": 5}]},
++        "normalized_result": {"read_results": [{"artifact_id": "a", "char_start": 0},
++                                                  {"artifact_id": "b", "char_start": 5}], "read_errors": []},
++        "error": None,
++    })
++    result = _inspect(workspace)
++    assert result["status"] == "OK"
++    assert result["counts"] == {"reader_calls": 1, "reader_items": 2, "succeeded": 2, "failed": 0, "incomplete": 0}
++
++
++def test_mixed_batch_preserves_individual_failure_classification(tmp_path):
++    workspace = tmp_path / "outputs" / PAPER_ID
++    _write(workspace / "runtime/run-1/tools/0001_reader.json", {
++        "tool_name": "reader", "tool_call_id": "tool_0001", "execution_status": "SUCCESS",
++        "resolved_arguments": {"reads": [{"artifact_id": "a"}, {"artifact_id": "ghost"}]},
++        "normalized_result": {"read_results": [{"artifact_id": "a", "char_start": 0}],
++            "read_errors": [{"index": 1, "artifact_id": "ghost", "error_type": "ValueError",
++                             "message": "unknown artifact_id 'ghost' in the research or subject reference manifest"}]},
++        "error": None,
++    })
++    result = _inspect(workspace)
++    assert result["status"] == "WARNING"
++    assert result["classification_counts"] == {"NEVER_PERSISTED": 1}
++    assert result["counts"]["incomplete"] == 0
++    assert result["counts"]["succeeded"] == 1
++    assert result["findings"][0]["artifact_id"] == "ghost"
++    assert result["findings"][0]["batch_index"] == 1
+diff --git a/tests/test_reader_tool_call_harness_integration.py b/tests/test_reader_tool_call_harness_integration.py
+index 1c9615d..df0bd15 100644
+--- a/tests/test_reader_tool_call_harness_integration.py
++++ b/tests/test_reader_tool_call_harness_integration.py
+@@ -311,3 +311,178 @@ def test_batch_default_limits_and_exclusive_modes(tmp_path):
+                     {"reads": [{"artifact_id": ARTIFACT_ID}], "max_chars": 1}):
+         with pytest.raises(ValidationError):
+             reader.args_schema.model_validate(invalid)
++
++
++@pytest.mark.parametrize("enabled,physical_reads", [(False, 2), (True, 1)])
++def test_exact_reader_replay_keeps_provenance_without_new_reads(tmp_path, enabled, physical_reads):
++    from novelty_agent_framework.workflows.research_task import _trusted_reads
++
++    low_level = ReferenceArtifactReaderTool(prepare_store(tmp_path))
++    original = low_level.ainvoke
++    dispatched = []
++
++    async def counted(request):
++        dispatched.append(request)
++        return await original(request)
++
++    low_level.ainvoke = counted
++    args = {"artifact_id": ARTIFACT_ID, "max_chars": 16}
++    model = ScriptedModelClient(tool_request(args, "first"), tool_request(args, "again"),
++                                ModelResponse(content="done"))
++    result = asyncio.run(ToolCallHarness(model, ResearcherToolRegistry([ReaderTool(low_level)]),
++        config=ToolCallHarnessConfig(reuse_reader_results=enabled)).run(
++            system_prompt="test", initial_user_message="test", scope=research_scope()))
++    assert len(dispatched) == physical_reads
++    assert result.tool_calls_used == physical_reads
++    payloads = [json.loads(e.message.content) for e in result.trace if e.kind == "tool_result"]
++    assert payloads[0]["read_result"] == payloads[1]["read_result"]
++    assert payloads[1].get("reused_result", False) == enabled
++    reads, warnings = _trusted_reads(result.trace)
++    assert not warnings
++    assert len(reads) == physical_reads
++    assert reads[0].text == TEXT[:16]
++    assert len({r.read_id for r in reads}) == 1
++
++
++def test_reader_replay_remains_available_after_execution_and_character_budget(tmp_path):
++    model = ScriptedModelClient(tool_request({"artifact_id": ARTIFACT_ID, "max_chars": 16}, "first"),
++        tool_request({"artifact_id": ARTIFACT_ID, "max_chars": 16}, "again"), ModelResponse(content="done"))
++    result = asyncio.run(ToolCallHarness(model, ResearcherToolRegistry([
++        ReaderTool(ReferenceArtifactReaderTool(prepare_store(tmp_path)))]),
++        config=ToolCallHarnessConfig(reuse_reader_results=True, max_tool_calls=1,
++            per_tool_limits={"reader": 1}, max_total_read_chars=16)).run(
++                system_prompt="test", initial_user_message="test", scope=research_scope()))
++    assert result.tool_calls_used == 1
++    assert result.turns_used == 3
++    assert result.final_content == "done"
++
++
++def test_reader_eof_guard_preserves_unread_prefix_and_changed_ranges(tmp_path):
++    from novelty_agent_framework.workflows.research_task import _trusted_reads
++
++    requests = [
++        {"artifact_id": ARTIFACT_ID, "char_start": len(TEXT) - 10, "max_chars": 16},
++        {"artifact_id": ARTIFACT_ID, "char_start": len(TEXT), "max_chars": 16},
++        {"artifact_id": ARTIFACT_ID, "char_start": len(TEXT) + 10, "max_chars": 16},
++        {"artifact_id": ARTIFACT_ID, "char_start": 0, "max_chars": 16},
++        {"artifact_id": ARTIFACT_ID, "char_start": 8, "max_chars": 16},
++    ]
++    model = ScriptedModelClient(*(tool_request(args, f"r{i}") for i, args in enumerate(requests)),
++                                ModelResponse(content="done"))
++    result = asyncio.run(ToolCallHarness(model, ResearcherToolRegistry([
++        ReaderTool(ReferenceArtifactReaderTool(prepare_store(tmp_path)))]),
++        config=ToolCallHarnessConfig(reuse_reader_results=True)).run(
++            system_prompt="test", initial_user_message="test", scope=research_scope()))
++    assert result.tool_calls_used == 3
++    replayed = [e for e in result.trace if e.detail == "reader_state_reused"]
++    assert len(replayed) == 2
++    assert all(json.loads(e.message.content)["read_status"] == "artifact_eof" for e in replayed)
++    reads, warnings = _trusted_reads(result.trace)
++    assert not warnings
++    assert [r.text for r in reads] == [TEXT[-10:], TEXT[:16], TEXT[8:24]]
++    assert "Reader state" in model.calls[-1][0][0].content
++
++
++def test_reader_cache_is_invocation_scoped_and_failed_reads_are_not_cached(tmp_path):
++    low_level = ReferenceArtifactReaderTool(prepare_store(tmp_path))
++    original = low_level.ainvoke
++    dispatched = []
++
++    async def counted(request):
++        dispatched.append(request)
++        if len(dispatched) == 1:
++            raise OSError("transient local read failure")
++        return await original(request)
++
++    low_level.ainvoke = counted
++    model = ScriptedModelClient()
++    harness = ToolCallHarness(model, ResearcherToolRegistry([ReaderTool(low_level)]),
++        config=ToolCallHarnessConfig(reuse_reader_results=True))
++    for _ in range(2):
++        model.responses = [tool_request({"artifact_id": ARTIFACT_ID, "max_chars": 16}, "first"),
++            tool_request({"artifact_id": ARTIFACT_ID, "max_chars": 16}, "again"), ModelResponse(content="done")]
++        asyncio.run(harness.run(system_prompt="test", initial_user_message="test", scope=research_scope()))
++    assert len(dispatched) == 3  # first failure + successful retry + new invocation
++
++
++def test_reader_repetition_is_still_bounded_by_model_turn_budget(tmp_path):
++    args = {"artifact_id": ARTIFACT_ID, "max_chars": 16}
++    model = ScriptedModelClient(*(tool_request(args, f"repeat-{i}") for i in range(3)))
++    harness = ToolCallHarness(model, ResearcherToolRegistry([
++        ReaderTool(ReferenceArtifactReaderTool(prepare_store(tmp_path)))]),
++        config=ToolCallHarnessConfig(reuse_reader_results=True, max_turns=3))
++    with pytest.raises(ToolCallBudgetExhausted, match="turn budget") as error:
++        asyncio.run(harness.run(system_prompt="test", initial_user_message="test", scope=research_scope()))
++    assert len(model.calls) == 3
++    assert sum(e.kind == "tool_call" for e in error.value.trace) == 1
++    assert sum(e.detail == "reader_state_reused" for e in error.value.trace) == 2
++
++
++def test_batch_replay_preserves_all_handles_and_mixed_eof_batch_is_not_dropped(tmp_path):
++    from novelty_agent_framework.workflows.research_task import _trusted_reads
++
++    full = {"artifact_id": ARTIFACT_ID, "max_chars": len(TEXT)}
++    mixed = {"reads": [{"artifact_id": ARTIFACT_ID, "char_start": len(TEXT), "max_chars": 16},
++                       {"artifact_id": ARTIFACT_ID, "char_start": 5, "max_chars": 16}]}
++    model = ScriptedModelClient(tool_request(full, "full"), tool_request(mixed, "mixed"),
++        tool_request(mixed, "mixed-again"), ModelResponse(content="done"))
++    result = asyncio.run(ToolCallHarness(model, ResearcherToolRegistry([
++        ReaderTool(ReferenceArtifactReaderTool(prepare_store(tmp_path)))]),
++        config=ToolCallHarnessConfig(reuse_reader_results=True)).run(
++            system_prompt="test", initial_user_message="test", scope=research_scope()))
++    assert result.tool_calls_used == 2
++    reads, warnings = _trusted_reads(result.trace)
++    assert not warnings
++    assert [r.text for r in reads] == [TEXT, "", TEXT[5:21]]
++    assert result.trace[-3].detail == "reader_state_reused"
++
++
++def test_reader_state_never_shares_eof_across_namespaces():
++    from novelty_agent_framework.core.tool_call_harness import _ReaderState
++    from novelty_agent_framework.schemas import ResearcherToolObservation
++
++    state = _ReaderState()
++    def remember(namespace):
++        row = {"namespace": namespace, "artifact_id": "same", "read_id": "same-read",
++               "sha256": namespace, "char_start": 0, "char_end": 3, "text": "abc", "has_more": False}
++        arguments = {"namespace": namespace, "artifact_id": "same", "char_start": 0, "max_chars": 3}
++        state.remember(arguments, ResearcherToolObservation(tool_name="reader", succeeded=True,
++            arguments=arguments, payload={"read_result": row}), {"read_result": row})
++
++    remember("research_reference")
++    assert state.replay({"namespace": "research_reference", "artifact_id": "same", "char_start": 3})
++    assert state.replay({"namespace": "subject_reference", "artifact_id": "same", "char_start": 3}) is None
++    remember("subject_reference")
++    assert len(state.reads) == 2
++    assert state.replay({"artifact_id": "same", "char_start": 3}) is None
++
++
++@pytest.mark.parametrize("eof,remaining", [(False, ["other"]), (True, [ARTIFACT_ID, "other"])])
++def test_reader_replay_only_discharges_nonempty_matching_mandatory_reads(tmp_path, eof, remaining):
++    from novelty_agent_framework.schemas import StrictModel, ResearcherToolObservation
++
++    class Arguments(StrictModel):
++        pass
++    class Database:
++        name = "database_search"
++        description = "fixed fixture"
++        args_schema = Arguments
++        async def ainvoke(self, arguments, *, scope):
++            return ResearcherToolObservation(tool_name=self.name, succeeded=True,
++                payload={"database_search_result": {"results": [{"artifact_ids": [ARTIFACT_ID, "other"]}]}})
++    def db(name):
++        return ModelResponse(content=None, tool_calls=(ModelToolCall(name, "database_search", {}),))
++
++    first = {"artifact_id": ARTIFACT_ID, "max_chars": len(TEXT)}
++    replay = {"artifact_id": ARTIFACT_ID, "char_start": len(TEXT), "max_chars": 16} if eof else first
++    model = ScriptedModelClient(tool_request(first), db("db1"), tool_request(replay, "again"),
++                                db("db2"), tool_request(first, "unrelated"), db("db3"), ModelResponse(content="done"))
++    result = asyncio.run(ToolCallHarness(model, ResearcherToolRegistry([
++        ReaderTool(ReferenceArtifactReaderTool(prepare_store(tmp_path))), Database()]),
++        config=ToolCallHarnessConfig(reuse_reader_results=True)).run(
++            system_prompt="test", initial_user_message="test", scope=research_scope()))
++    results = [json.loads(e.message.content) for e in result.trace if e.kind == "tool_result"]
++    assert results[3]["required_artifact_ids"] == sorted(remaining)
++    assert results[-1]["required_artifact_ids"] == ["other"]
++    if not eof:
++        assert results[-2]["required_artifact_ids"] == ["other"]
+diff --git a/tests/test_research_tool_schemas.py b/tests/test_research_tool_schemas.py
+index 76e3294..bbd097f 100644
+--- a/tests/test_research_tool_schemas.py
++++ b/tests/test_research_tool_schemas.py
+@@ -29,7 +29,7 @@ def test_tool_schema_module_imports_without_implementations() -> None:
+ 
+ 
+ def test_reader_uses_canonical_arguments_and_legacy_alias() -> None:
+-    assert ReaderTool.args_schema is ReaderArguments
++    assert ReaderTool.args_schema is research_tools.ReaderCallArguments
+     assert ReferenceReaderToolArguments is ReaderArguments
+     with pytest.raises(ValidationError):
+         ReaderTool.args_schema.model_validate(
+diff --git a/tests/test_run_full_workflow_live.py b/tests/test_run_full_workflow_live.py
+index 499be17..b8bde4a 100644
+--- a/tests/test_run_full_workflow_live.py
++++ b/tests/test_run_full_workflow_live.py
+@@ -3,7 +3,6 @@ from __future__ import annotations
+ import json
+ import sys
+ from concurrent.futures import ThreadPoolExecutor
+-from types import SimpleNamespace
+ 
+ import pytest
+ 
+@@ -72,13 +71,11 @@ def test_paper_input_entrypoint_uses_numbered_workspace(tmp_path, monkeypatch) -
+             captured["run_identity"] = run_identity
+             return Result()
+ 
+-    config = SimpleNamespace(
+-        project=SimpleNamespace(
+-            workflow=SimpleNamespace(max_rounds=None, max_concurrency=None)
+-        )
+-    )
++    from novelty_agent_framework.config import load_application_config
++    config = load_application_config(environ={})
+     monkeypatch.setattr(live, "_load_dev_env", lambda: None)
+-    monkeypatch.setattr(live, "load_application_config", lambda: config)
++    monkeypatch.setattr(live, "load_application_config", lambda **kwargs: config)
++    monkeypatch.setattr(live, "preflight_config", lambda config: [])
+ 
+     def build(_config, *, output_root):
+         captured["output_root"] = output_root
+@@ -119,3 +116,20 @@ def test_paper_input_entrypoint_uses_numbered_workspace(tmp_path, monkeypatch) -
+     assert manifest["status"] == "SUCCESS"
+     assert manifest["runtime_run_id"] == "run-runtime-id"
+     assert manifest["result_path"] == str((run_dir / "result.json").resolve())
++
++
++def test_invalid_secret_in_config_never_enters_failed_run_manifest(tmp_path):
++    from novelty_agent_framework.config import load_application_config
++    from pydantic import ValidationError
++    manifest = {}
++    try:
++        load_application_config(environ={}, overrides={
++            'models': {'local-qwen2.5-7b': {'api_key': 'SENTINEL_CONFIG_SECRET'}}})
++    except ValidationError as error:
++        assert 'SENTINEL_CONFIG_SECRET' not in str(error)
++        live._finish_manifest(manifest, tmp_path / 'run.json', status='FAILED',
++                              started=live.time.monotonic(), workflow=None, error=error)
++    serialized = (tmp_path / 'run.json').read_text()
++    assert 'SENTINEL_CONFIG_SECRET' not in serialized
++    assert 'extra_forbidden' in serialized
++    assert manifest['status'] == 'FAILED'
+diff --git a/tests/test_single_research_task_diagnostics.py b/tests/test_single_research_task_diagnostics.py
+index 1ac7771..a5f0e9b 100644
+--- a/tests/test_single_research_task_diagnostics.py
++++ b/tests/test_single_research_task_diagnostics.py
+@@ -3,12 +3,12 @@ from __future__ import annotations
+ import argparse
+ import asyncio
+ import json
++import hashlib
+ from types import SimpleNamespace
+ 
+ import pytest
+ 
+ from conftest import minimal_search_plan
+-from novelty_agent_framework.core.runtime_artifacts import RuntimeDebugConfig
+ from novelty_agent_framework.schemas import (
+     NoveltyPoint,
+     ResearchTask,
+@@ -61,6 +61,13 @@ def _write_inputs(tmp_path):
+     return tmp_path / "outputs", paper_json
+ 
+ 
++def _offline_config(tmp_path):
++    from novelty_agent_framework.config import load_application_config
++    config = load_application_config(environ={})
++    config.project.runtime_debug.archive_root = str(tmp_path / "archive")
++    return config
++
++
+ def test_request_and_runtime_use_the_same_unique_run_id(tmp_path) -> None:
+     output_root, _ = _write_inputs(tmp_path)
+     run_id = new_run_id("T-2")
+@@ -105,8 +112,19 @@ def test_terminal_status_and_exit_code(task_status, rejected, expected) -> None:
+ 
+ 
+ def test_main_persists_task_gate_outcome_and_finishes_once(tmp_path, monkeypatch) -> None:
+-    _, paper_json = _write_inputs(tmp_path)
++    original_root, paper_json = _write_inputs(tmp_path)
++    output_root = tmp_path / "custom-output"
++    original_root.rename(output_root)
++    config = _offline_config(tmp_path)
++    config.project.runtime_debug.output_root = "custom-output"
++    config.project.runtime_debug.max_model_calls = 3
++    config.project.runtime_debug.max_physical_provider_requests = 4
++    config.project.runtime_debug.max_inline_bytes = 50000
++    config.project.runtime_debug.enabled = False
+     captured_requests = []
++    preflights = []
++    workflow_roots = []
++    gate_roots = []
+ 
+     class Researcher:
+         tools = SimpleNamespace(names=("reader",))
+@@ -150,23 +168,24 @@ def test_main_persists_task_gate_outcome_and_finishes_once(tmp_path, monkeypatch
+ 
+     monkeypatch.setattr(single, "PROJECT_ROOT", tmp_path)
+     monkeypatch.setattr(single, "new_run_id", lambda _language: "single-fixed-run")
+-    monkeypatch.setattr(single, "load_application_config", lambda: {})
+-    monkeypatch.setattr(
+-        single,
+-        "build_workflow",
+-        lambda _config: SimpleNamespace(
+-            services=SimpleNamespace(task_researcher=Researcher())
+-        ),
+-    )
+-    monkeypatch.setattr(single, "validate_synthesis_input", lambda *args, **kwargs: Gate())
++    monkeypatch.setattr(single, "load_application_config", lambda **kwargs: config)
++
++    def check_config(_config, **kwargs):
++        preflights.append(kwargs)
++        return []
++
++    def build(_config, *, output_root):
++        workflow_roots.append(output_root)
++        return SimpleNamespace(services=SimpleNamespace(task_researcher=Researcher()))
++
++    def gate(*args, **kwargs):
++        gate_roots.append(kwargs["reference_store"].output_root)
++        return Gate()
++
++    monkeypatch.setattr(single, "preflight_config", check_config)
++    monkeypatch.setattr(single, "build_workflow", build)
++    monkeypatch.setattr(single, "validate_synthesis_input", gate)
+     monkeypatch.setattr(single, "RuntimeArtifactManager", CountingManager)
+-    monkeypatch.setattr(
+-        single,
+-        "RuntimeDebugConfig",
+-        lambda **kwargs: RuntimeDebugConfig(
+-            **kwargs, archive_root=tmp_path / "archive"
+-        ),
+-    )
+     args = argparse.Namespace(paper_json=paper_json, point_id="NP-1", task_id="T-1")
+ 
+     exit_code = asyncio.run(single.main(args))
+@@ -186,6 +205,28 @@ def test_main_persists_task_gate_outcome_and_finishes_once(tmp_path, monkeypatch
+     assert summary["run"]["entrypoint"] == "single_task"
+     assert summary["run"]["input_identity"]["novelty_point_id"] == "NP-1"
+     assert summary["run"]["input_identity"]["task_id"] == "T-1"
++    assert preflights == [{"require_reviewer": False, "active_roles": ("researcher",)}]
++    assert workflow_roots == gate_roots == [output_root]
++    assert manager.config.output_root == output_root
++    assert manager.config.max_model_calls == 3
++    assert manager.config.max_physical_provider_requests == 4
++    assert manager.config.max_inline_bytes == 50000
++    assert manager.config.archive_root == tmp_path / "archive"
++    actual = manager.runtime_config["project"]["runtime_debug"]
++    assert actual["enabled"] is True
++    assert actual["output_root"] == str(output_root)
++    assert actual["max_model_calls"] == manager.config.max_model_calls
++    assert actual["max_physical_provider_requests"] == manager.config.max_physical_provider_requests
++    assert actual["llm_pricing_path"] == str(manager.config.llm_pricing_path)
++    manifest_input = manager.runtime_config["configuration_manifest"]["input"]
++    canonical = json.dumps(captured_requests[0].model_dump(mode="json"), sort_keys=True,
++                           ensure_ascii=False, separators=(",", ":")).encode()
++    assert manifest_input["task_request_sha256"] == hashlib.sha256(canonical).hexdigest()
++    for name in ("novelty-points.json", "retrieval-plans.json"):
++        source = output_root / "paper-1" / name
++        assert manifest_input["task_source_files"][name] == {
++            "path": str(source), "sha256": hashlib.sha256(source.read_bytes()).hexdigest()
++        }
+ 
+ 
+ def test_researcher_exception_finishes_failed_and_does_not_run_gate(
+@@ -207,22 +248,16 @@ def test_researcher_exception_finishes_failed_and_does_not_run_gate(
+ 
+     monkeypatch.setattr(single, "PROJECT_ROOT", tmp_path)
+     monkeypatch.setattr(single, "new_run_id", lambda _task_id: "single-failed-run")
+-    monkeypatch.setattr(single, "load_application_config", lambda: {})
++    monkeypatch.setattr(single, "load_application_config", lambda **kwargs: _offline_config(tmp_path))
++    monkeypatch.setattr(single, "preflight_config", lambda *args, **kwargs: [])
+     monkeypatch.setattr(
+         single,
+         "build_workflow",
+-        lambda _config: SimpleNamespace(
++        lambda _config, **_kwargs: SimpleNamespace(
+             services=SimpleNamespace(task_researcher=FailingResearcher())
+         ),
+     )
+     monkeypatch.setattr(single, "validate_synthesis_input", unexpected_gate)
+-    monkeypatch.setattr(
+-        single,
+-        "RuntimeDebugConfig",
+-        lambda **kwargs: RuntimeDebugConfig(
+-            **kwargs, archive_root=tmp_path / "archive"
+-        ),
+-    )
+ 
+     exit_code = asyncio.run(
+         single.main(
+@@ -240,3 +275,39 @@ def test_researcher_exception_finishes_failed_and_does_not_run_gate(
+     assert manifest["status"] == "FAILED"
+     assert summary["run"]["status"] == "FAILED"
+     assert [item["status"] for item in summary["stages"]] == ["FAILED", "NOT_RUN"]
++
++
++def test_task_input_hash_tracks_plan_changes_and_ignores_run_identity(tmp_path):
++    output_root, _ = _write_inputs(tmp_path)
++    sources = single.load_task_sources(output_root, "paper-1")
++    request = build_request(output_root, "paper-1", run_id="run-a", point_id="NP-1",
++                            task_id="T-1", source_contents=sources)
++    original = single.task_input_provenance(request, output_root, sources)
++    other_run = single.task_input_provenance(request.model_copy(update={"run_id": "run-b"}),
++                                             output_root, sources)
++    assert original["task_request_sha256"] != other_run["task_request_sha256"]
++    assert original["task_input_sha256"] == other_run["task_input_sha256"]
++    plans = json.loads(sources["retrieval-plans.json"])
++    plans["novelty_point_plans"][0]["search_plans"][0]["concepts"][0]["terms"] = ["different term"]
++    changed_sources = {**sources, "retrieval-plans.json": json.dumps(plans).encode()}
++    changed = build_request(output_root, "paper-1", run_id="run-a", point_id="NP-1",
++                            task_id="T-1", source_contents=changed_sources)
++    changed_provenance = single.task_input_provenance(changed, output_root, changed_sources)
++    assert original["task_input_sha256"] != changed_provenance["task_input_sha256"]
++    assert original["task_source_files"]["retrieval-plans.json"]["sha256"] != (
++        changed_provenance["task_source_files"]["retrieval-plans.json"]["sha256"]
++    )
++
++
++def test_request_uses_captured_source_bytes_even_if_files_change(tmp_path):
++    output_root, _ = _write_inputs(tmp_path)
++    sources = single.load_task_sources(output_root, "paper-1")
++    path = output_root / "paper-1" / "retrieval-plans.json"
++    path.write_text("not valid JSON")
++    request = build_request(output_root, "paper-1", run_id="run-a", point_id="NP-1",
++                            task_id="T-1", source_contents=sources)
++    provenance = single.task_input_provenance(request, output_root, sources)
++    assert request.research_task.task_id == "T-1"
++    assert provenance["task_source_files"]["retrieval-plans.json"]["sha256"] == (
++        hashlib.sha256(sources["retrieval-plans.json"]).hexdigest()
++    )
+diff --git a/tests/test_springer_provider.py b/tests/test_springer_provider.py
+index 92d0d24..ab0370b 100644
+--- a/tests/test_springer_provider.py
++++ b/tests/test_springer_provider.py
+@@ -326,3 +326,102 @@ def test_tdm_builder_requires_metric(monkeypatch) -> None:
+                 "tdm_api_metric_env": "SPRINGER_MISSING_METRIC",
+             }
+         )
++
++# Exact no-data payload observed from Meta API on 2026-09-15 and 2026-09-27.
++NO_MATCH_RESPONSE = {
++    "status": "Fail",
++    "message": "No data was found for the given query.",
++    "error": {
++        "error": "Not Found",
++        "error_description": "No matching data is available for the requested query.",
++    },
++}
++
++
++def _search_tool(handler) -> SpringerNatureSearchTool:
++    transport = _transport(handler)
++    article_client = SpringerNatureArticleClient(
++        transport, base_url=BASE_URL, meta_api_key="meta-key",
++        open_access_api_key=None, full_text_mode="disabled",
++    )
++    return SpringerNatureSearchTool(
++        transport, article_client, base_url=BASE_URL, meta_api_key="meta-key"
++    )
++
++
++def test_search_recognizes_verified_no_match_404() -> None:
++    tool = _search_tool(lambda request: httpx.Response(404, json=NO_MATCH_RESPONSE))
++    assert list(tool.search("no matching data")) == []
++
++
++@pytest.mark.parametrize("status,payload", [
++    (404, {"error": "Not Found"}),
++    (404, {**NO_MATCH_RESPONSE, "message": "API endpoint not found"}),
++    (404, {**NO_MATCH_RESPONSE, "error": {"error": "Not Found"}}),
++    (404, {**NO_MATCH_RESPONSE, "records": [{"doi": "10.1007/conflict"}]}),
++    (404, []),
++    (401, NO_MATCH_RESPONSE),
++    (403, NO_MATCH_RESPONSE),
++    (429, NO_MATCH_RESPONSE),
++    (500, NO_MATCH_RESPONSE),
++])
++def test_search_preserves_other_http_failures(status, payload) -> None:
++    tool = _search_tool(lambda request: httpx.Response(status, json=payload))
++    with pytest.raises(ProviderRequestError, match=f"HTTP {status}"):
++        tool.search("query")
++
++
++def test_search_preserves_html_404() -> None:
++    tool = _search_tool(lambda request: httpx.Response(404, text="<html>Not Found</html>"))
++    with pytest.raises(ProviderRequestError, match="HTTP 404"):
++        tool.search("query")
++
++
++def test_no_match_404_keeps_retrieval_fallback_available(tmp_path) -> None:
++    import asyncio
++    from novelty_agent_framework.persistence import ReferenceStore
++    from novelty_agent_framework.schemas import (
++        NoveltyPoint, ResearchTask, StructuredSourceRetrievalRequest,
++    )
++    from novelty_agent_framework.tools.database_search import (
++        RetrievalSource, StructuredSourceRetrievalTool,
++    )
++    queries = []
++
++    def handler(request):
++        queries.append(request.url.params["q"])
++        if len(queries) == 1:
++            return httpx.Response(404, json=NO_MATCH_RESPONSE)
++        return httpx.Response(200, json={"records": [{
++            "doi": "10.1007/fallback", "title": "Fallback Paper",
++            "abstract": "The broader query found this abstract.",
++        }]})
++
++    tool = StructuredSourceRetrievalTool(
++        source=RetrievalSource(
++            source_id="springer", query_adapter=SpringerNatureQueryAdapter(),
++            search_tool=_search_tool(handler),
++        ),
++        reference_store=ReferenceStore(tmp_path), full_text_limit=0,
++    )
++    plan = _plan().model_copy(update={
++        "concepts": [*_plan().concepts, SearchConcept(
++            concept_id="C2", name="compression", terms=["compression"]
++        )],
++        "strategies": [SearchStrategy(
++            strategy_id="S1", level="strict", expression="C1 AND C2"
++        )],
++        "protected_concept_ids": ["C1"],
++    })
++    bundle = asyncio.run(tool.ainvoke(StructuredSourceRetrievalRequest(
++        subject_paper_id="paper", run_id="springer-empty-regression",
++        source_id="springer",
++        novelty_point=NoveltyPoint(point_id="NP1", claim="graph model", technical_features=["graph model"]),
++        research_task=ResearchTask(task_id="T1", novelty_point_id="NP1", task_type="search", language="en"),
++        search_plan=plan,
++    )))
++    assert len(queries) >= 2
++    assert queries[0] != queries[1]
++    assert all(item.status.value == "succeeded" for item in bundle.search_executions)
++    assert bundle.search_executions[0].results == []
++    assert len(bundle.source_records) == 1
+diff --git a/tests/test_standard_full_entrypoints.py b/tests/test_standard_full_entrypoints.py
+index a6bc8d7..49e6003 100644
+--- a/tests/test_standard_full_entrypoints.py
++++ b/tests/test_standard_full_entrypoints.py
+@@ -12,7 +12,7 @@ from scripts import run_full_pipeline_experiment as experiment
+ from scripts import run_full_workflow_live as live
+ 
+ 
+-def _disabled_config():
++def _disabled_config(**kwargs):
+     config = load_application_config()
+     return config.model_copy(
+         update={"reviewer": config.reviewer.model_copy(update={"enabled": False})}
+diff --git a/tests/test_workflow_reviewer.py b/tests/test_workflow_reviewer.py
+index 0aa983b..cb75a2d 100644
+--- a/tests/test_workflow_reviewer.py
++++ b/tests/test_workflow_reviewer.py
+@@ -9,16 +9,21 @@ import pytest
+ 
+ from novelty_agent_framework.agents import DemoCoordinator, DemoPointExtractor, DemoSearchPlanner, DemoTaskResearcher
+ from novelty_agent_framework.ports import ReviewResult, ValidationResult
++from novelty_agent_framework.core.report_binding import assemble_report_from_draft
+ from novelty_agent_framework.schemas import (
++    Evidence,
+     EvidenceCard,
+     EvidenceReviewDecision,
+     EvidenceReviewIssue,
+     EvidenceSource,
+     IssueSeverity,
++    NoveltyBrief,
+     NoveltyPoint,
++    NoveltyPointReview,
+     PaperInput,
+     ResearchTask,
+     ReviewVerdict,
++    ReportNarrativeDraft,
+ )
+ from novelty_agent_framework.workflows import NoveltyWorkflow, NoveltyWorkflowServices
+ 
+@@ -147,6 +152,7 @@ def test_reviewer_none_transparently_preserves_legacy_format():
+     assert "review_decisions" not in persisted
+     assert result["issues"][0].code == "reviewer_unavailable"
+     assert result["issues"][0].severity == IssueSeverity.ERROR
++    assert result["novelty_reviews"][0].incomplete_reason == "technical_error"
+ 
+ 
+ def test_reviewer_crash_is_fail_closed_and_audited():
+@@ -159,3 +165,87 @@ def test_reviewer_crash_is_fail_closed_and_audited():
+     assert result["evidence_cards"] == []
+     assert result["rejected_evidence"][0].reason == "review_failed"
+     assert result["issues"][0].code == "review_failed"
++    assert result["novelty_reviews"][0].incomplete_reason == "technical_error"
++
++
++@pytest.mark.parametrize("failure_stage", ["point", "card", "summary"])
++def test_reviewer_execution_failure_remains_technical_in_report(failure_stage):
++    class FailingReviewer:
++        async def review(self, request):
++            raise RuntimeError("review service unavailable")
++
++    class FailingTwoStageReviewer(FailingReviewer):
++        async def review_card(self, request):
++            if failure_stage == "card":
++                raise RuntimeError("reader unavailable")
++            return {"novelty_point_id": "NP1", "status": "insufficient_evidence",
++                    "incomplete_reason": "semantic_evidence"}
++
++        async def summarize_reviews(self, request, rows):
++            raise RuntimeError("summary service unavailable")
++
++    card = _card("accepted").model_copy(update={"evidence_ids": ["E1"]})
++    evidence = Evidence(evidence_id="E1", work_id="W1", artifact_id="A1",
++                        novelty_point_id="NP1", task_id="T1", quote="quote",
++                        interpretation="partial overlap", confidence=0.8)
++    reviewer = FailingReviewer() if failure_stage == "point" else FailingTwoStageReviewer()
++    state = {**_state([card]), "validator_accepted_cards": [card], "raw_evidence": [evidence]}
++    result = asyncio.run(_workflow(reviewer=reviewer)._review_evidence(state))
++    review = result["novelty_reviews"][0]
++    assert review.incomplete_reason == "technical_error"
++    assert result["evidence_cards"] == [card]
++    persisted = json.loads(open("outputs/review/novelty-reviews.json", encoding="utf-8").read())
++    assert persisted["reviews"][0]["incomplete_reason"] == "technical_error"
++    report = assemble_report_from_draft(
++        ReportNarrativeDraft.model_validate({"conclusions": [
++            {"novelty_point_id": "NP1", "summary": "untrusted narrative"}
++        ]}),
++        paper_id="review", novelty_reviews=[review], novelty_points=[_point()],
++        evidence_cards=[card],
++    )
++    conclusion = report.conclusions[0]
++    assert conclusion.incomplete_reason == "technical_error"
++    assert conclusion.verdict is None
++    assert "核验未完成" in conclusion.summary
++    assert "关键比较证据不足" not in conclusion.summary
++
++
++def test_semantic_insufficiency_is_preserved_by_workflow():
++    class SemanticReviewer:
++        async def review(self, request):
++            return NoveltyPointReview(novelty_point_id="NP1", status="insufficient_evidence",
++                                      incomplete_reason="semantic_evidence")
++
++    result = asyncio.run(_workflow(reviewer=SemanticReviewer())._review_evidence(_state([])))
++    assert result["novelty_reviews"][0].incomplete_reason == "semantic_evidence"
++    assert result["issues"] == []
++
++
++def test_pending_dedup_scope_is_exposed_without_claiming_independent_contributions():
++    class PendingExtractor:
++        last_trace = {"scope_status": "pending_dedup", "exit_reason": "target_reached"}
++
++        def extract(self, *args, **kwargs):
++            return [_point()]
++
++    workflow = _workflow()
++    workflow.point_extractor = PendingExtractor()
++    result = asyncio.run(workflow._extract_points({"paper": _paper()}))
++    issue = next(item for item in result["issues"] if item.code == "point_deduplication_unresolved")
++    assert "保留不代表其独立贡献已确认" in issue.message
++    assert result["novelty_points"] == [_point()]
++
++
++def test_scope_limits_survive_report_synthesis():
++    from novelty_agent_framework.schemas import WorkflowIssue
++
++    issue = WorkflowIssue(node="extract_points", code="point_deduplication_unresolved",
++                          message="保留为待核验范围，不代表独立贡献已确认。")
++    state = {"paper": _paper(), "novelty_points": [_point()],
++             "brief": NoveltyBrief(paper_summary="summary", novelty_points=[_point()], research_tasks=[]),
++             "novelty_reviews": [NoveltyPointReview(novelty_point_id="NP1", status="insufficient_evidence",
++                                                    incomplete_reason="material_unavailable")],
++             "issues": [issue]}
++    report = asyncio.run(_workflow()._synthesize_report(state))["report"]
++    assert issue.message in report.limitations
++    assert report.conclusions[0].incomplete_reason == "material_unavailable"
+diff --git a/backend/src/novelty_agent_framework/config/experiment.py b/backend/src/novelty_agent_framework/config/experiment.py
+new file mode 100644
+--- /dev/null
++++ b/backend/src/novelty_agent_framework/config/experiment.py
+@@ -0,0 +1,190 @@
++"""Experiment preflight and reproducible, secret-free configuration manifests."""
++from __future__ import annotations
++
++import hashlib
++import copy
++import json
++import os
++import platform
++from importlib.metadata import PackageNotFoundError, version
++import re
++import subprocess
++from pathlib import Path
++from typing import Any, Mapping
++from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
++
++from .schemas import ApplicationConfig
++
++PROMPTS_ROOT = Path(__file__).resolve().parents[1] / "prompts"
++PROJECT_ROOT = Path(__file__).resolve().parents[4]
++
++
++def _secret_key(key: str) -> bool:
++    normalized = re.sub(r"[^a-z0-9]", "", key.lower())
++    if normalized.endswith("env"):
++        return False
++    return any(word in normalized for word in
++               ("apikey", "credential", "password", "secret", "authorization", "cookie", "privatekey", "accesskey", "signature")) or normalized.endswith("token") or normalized in {
++                   "key", "sig", "sas", "jwt", "token", "accesstoken", "refreshtoken", "institutiontoken", "signature"}
++
++
++def redact_config(value: Any) -> Any:
++    """Preserve credential *references*, never credential values or signed URLs."""
++    if isinstance(value, Mapping):
++        return {str(key): "[REDACTED]" if _secret_key(str(key)) else redact_config(item)
++                for key, item in value.items()}
++    if isinstance(value, (list, tuple)):
++        return [redact_config(item) for item in value]
++    if isinstance(value, str):
++        if value.startswith(("http://", "https://")):
++            parts = urlsplit(value)
++            netloc = parts.netloc.rsplit("@", 1)[-1]
++            query = urlencode([(key, "[REDACTED]" if _secret_key(key) or key.lower() == "key" else item)
++                               for key, item in parse_qsl(parts.query, keep_blank_values=True)])
++            value = urlunsplit((parts.scheme, netloc, parts.path, query, parts.fragment))
++        value = re.sub(r"(?i)\bBearer\s+[^\s\"']+", "Bearer [REDACTED]", value)
++        value = re.sub(r"(?i)\b(api[_-]?key|token|secret|password)\s*[=:]\s*[^\s,;&]+",
++                       r"\1=[REDACTED]", value)
++    return value
++
++
++def _sha(value: Any) -> str:
++    return hashlib.sha256(json.dumps(value, sort_keys=True, ensure_ascii=False,
++                                     separators=(",", ":")).encode()).hexdigest()
++
++
++def freeze_config(config: ApplicationConfig, *, entrypoint: str = "workflow",
++                  input_path: Path | None = None, output_root: Path | None = None) -> dict[str, Any]:
++    """Validate again after caller mutations, then snapshot actual run settings."""
++    raw = config.model_dump(mode="json")
++    if output_root is not None:
++        raw["project"]["runtime_debug"]["output_root"] = str(output_root)
++    effective = redact_config(ApplicationConfig.model_validate(raw).model_dump(mode="json"))
++    from .loader import _leaf_paths
++    resolution = copy.deepcopy(config._resolution)
++    origins = resolution.setdefault("field_sources", {})
++    for path, value in _leaf_paths(raw).items():
++        if path not in config._loaded_values or value != config._loaded_values[path]:
++            origins[path] = "runtime_override"
++    if output_root is not None:
++        origins["project.runtime_debug.output_root"] = "runtime_output_root"
++
++    prompts = {p.relative_to(PROMPTS_ROOT).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
++               for p in sorted(PROMPTS_ROOT.rglob("*.md"))}
++    try:
++        commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=PROJECT_ROOT,
++                                         text=True, stderr=subprocess.DEVNULL).strip()
++        dirty = bool(subprocess.check_output(["git", "status", "--porcelain"], cwd=PROJECT_ROOT,
++                                            text=True, stderr=subprocess.DEVNULL).strip())
++    except (OSError, subprocess.CalledProcessError):
++        commit, dirty = None, None
++    # Includes uncommitted code and config without recording environment files.
++    source_files = [p for folder in (PROJECT_ROOT / "backend", PROJECT_ROOT / "scripts")
++                    for p in folder.rglob("*.py") if "__pycache__" not in p.parts]
++    source_hash = _sha({p.relative_to(PROJECT_ROOT).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
++                        for p in sorted(source_files)})
++    packages = {}
++    for name in ("pydantic", "langgraph", "httpx", "python-dotenv", "PyMuPDF"):
++        try:
++            packages[name] = version(name)
++        except PackageNotFoundError:
++            packages[name] = None
++    return {
++        "schema_version": 1, "entrypoint": entrypoint,
++        "environment": {"python": platform.python_version(), "packages": packages},
++        "effective_config": effective, "effective_config_sha256": _sha(effective),
++        "resolution": redact_config(resolution),
++        "prompt_sha256": prompts, "code": {"commit": commit, "dirty": dirty,
++                                           "python_sources_sha256": source_hash},
++        "input": ({"path": str(input_path.resolve()),
++                   "sha256": hashlib.sha256(input_path.read_bytes()).hexdigest()}
++                  if input_path else None),
++        "secret_values_included": False,
++    }
++
++
++def preflight_config(config: ApplicationConfig, *, environ: Mapping[str, str] | None = None,
++                     require_reviewer: bool = True,
++                     active_roles: tuple[str, ...] | None = None) -> list[dict[str, str]]:
++    """Offline checks only. A present credential is not proof of authorization."""
++    values = os.environ if environ is None else environ
++    # Reject invalid assignments made after loading.
++    ApplicationConfig.model_validate(config.model_dump(mode="json"))
++    issues: list[dict[str, str]] = []
++
++    def add(code: str, path: str, message: str, severity: str = "error") -> None:
++        issues.append(dict(code=code, path=path, message=message, severity=severity))
++
++    roles = {name: getattr(config, name) for name in
++             ("researcher", "search_planner", "coordinator", "point_extractor")}
++    if config.reviewer and config.reviewer.enabled:
++        roles["reviewer"] = config.reviewer
++    elif require_reviewer:
++        add("reviewer_required", "reviewer", "This entrypoint requires an enabled Reviewer.")
++    if active_roles is not None:
++        unknown_roles = set(active_roles) - set(roles)
++        if unknown_roles:
++            add("unknown_active_role", "active_roles", "Requested role is missing or disabled.")
++        roles = {name: role for name, role in roles.items() if name in active_roles}
++    for name, role in roles.items():
++        profile = config.models[role.model.alias]
++        if role.model.max_tokens >= profile.context_window:
++            add("context_budget_conflict", f"{name}.model.max_tokens",
++                "Output token limit must leave room for input within the context window.")
++        if not (values.get(profile.api_key_env or "") or values.get("NOVELTY_API_KEY") or values.get("LLM_API_KEY")):
++            add("model_credential_missing", f"models.{role.model.alias}.api_key_env",
++                "Model client requires a credential reference with a nonempty environment value.")
++        for param in ("enable_thinking", "thinking_budget", "reasoning_effort"):
++            value = getattr(role.model, param)
++            if value not in (None, False) and param not in profile.supported_params:
++                add("unsupported_model_parameter", f"{name}.model.{param}",
++                    "The client would silently discard this parameter.")
++    db = config.researcher.tools.database_search
++    from ..tools.database_search.factory import build_source_registry
++    registry = build_source_registry()
++    known = set(registry._builders)
++    enabled = []
++    for name, provider in db.providers.items():
++        if name not in known:
++            add("unknown_provider", f"researcher.tools.database_search.providers.{name}", "Provider is not registered.")
++        if any(type(provider.get(flag, False)) is not bool for flag in ("enabled", "testing_only")):
++            add("invalid_provider_switch", f"providers.{name}",
++                "enabled and testing_only must be JSON booleans, never strings.")
++            continue
++        if not provider.get("enabled", False) or provider.get("testing_only", False):
++            continue
++        enabled.append(name)
++        credentials = {
++            "sciencedirect": [("api_key_env", "ELSEVIER_API_KEY")],
++            "ieee_xplore": [("api_key_env", "IEEE_XPLORE_API_KEY")],
++            "springer": [("meta_api_key_env", "SPRINGER_NATURE_META_API_KEY")],
++        }.get(name, [])
++        if name == "springer":
++            mode = str(provider.get("full_text_mode", "openaccess")).strip().lower()
++            if mode == "openaccess":
++                credentials.append(("open_access_api_key_env", "SPRINGER_NATURE_OPEN_ACCESS_API_KEY"))
++            elif mode == "tdm":
++                credentials.append(("tdm_api_metric_env", "SPRINGER_NATURE_TDM_API_METRIC"))
++            elif mode != "disabled":
++                add("invalid_provider_mode", "providers.springer.full_text_mode", "Unknown full text mode.")
++        for credential, default_env in credentials:
++            env_name = str(provider.get(credential, default_env) or "").strip()
++            if not values.get(env_name):
++                add("provider_credential_missing", f"providers.{name}.{credential}",
++                    "Enabled Provider requires a credential; availability remains unverified.")
++    if db.active_source not in enabled:
++        add("active_provider_unavailable", "researcher.tools.database_search.active_source",
++            "Active source must be enabled and available outside testing-only mode.")
++    if config.researcher.tools.web_search.enabled and not values.get("BAIDU_QIANFAN_API_KEY"):
++        add("provider_credential_missing", "researcher.tools.web_search.baidu",
++            "Enabled Baidu search requires BAIDU_QIANFAN_API_KEY.")
++    for name in ("researcher", "search_planner", "reviewer"):
++        role = roles.get(name)
++        if role and not (PROMPTS_ROOT / f"{role.prompt}.md").is_file():
++            add("prompt_missing", f"{name}.prompt", "Configured prompt file does not exist.")
++    # These lists are historical metadata, not wired to the corresponding agents.
++    add("role_prompt_lists_not_bound", "coordinator.prompts,point_extractor.prompts",
++        "These legacy lists do not select prompts; all actual prompt files are hashed in the manifest.", "warning")
++    add("context_input_not_preflighted", "models.context_window",
++        "Output limits are checked; exact input token admission still depends on the runtime.", "warning")
++    return issues
+diff --git a/scripts/inspect_config.py b/scripts/inspect_config.py
+new file mode 100644
+--- /dev/null
++++ b/scripts/inspect_config.py
+@@ -0,0 +1,37 @@
++"""Validate and freeze experiment conditions without making network requests."""
++from __future__ import annotations
++
++import argparse
++import json
++import sys
++from pathlib import Path
++
++PROJECT_ROOT = Path(__file__).resolve().parents[1]
++sys.path.insert(0, str(PROJECT_ROOT))
++sys.path.insert(0, str(PROJECT_ROOT / "backend" / "src"))
++
++from novelty_agent_framework.config import load_application_config
++from novelty_agent_framework.config.experiment import freeze_config, preflight_config
++
++
++def main() -> int:
++    parser = argparse.ArgumentParser(description=__doc__)
++    parser.add_argument("--profile", type=Path)
++    parser.add_argument("--isolated-config", action="store_true")
++    parser.add_argument("--entrypoint", choices=("paper_input", "full_workflow", "single_task"), default="paper_input")
++    parser.add_argument("--paper-json", type=Path)
++    parser.add_argument("--output", type=Path, required=True)
++    args = parser.parse_args()
++    config = load_application_config(profile_path=args.profile,
++                                     environ={} if args.isolated_config else None)
++    result = freeze_config(config, entrypoint=args.entrypoint, input_path=args.paper_json)
++    result["preflight"] = preflight_config(config, require_reviewer=args.entrypoint != "single_task")
++    args.output.parent.mkdir(parents=True, exist_ok=True)
++    args.output.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
++    counts = {level: sum(i["severity"] == level for i in result["preflight"]) for level in ("error", "warning")}
++    print(json.dumps({"manifest": str(args.output), "effective_config_sha256": result["effective_config_sha256"], **counts}))
++    return int(counts["error"] > 0)
++
++
++if __name__ == "__main__":
++    raise SystemExit(main())
+diff --git a/tests/test_experiment_config.py b/tests/test_experiment_config.py
+new file mode 100644
+--- /dev/null
++++ b/tests/test_experiment_config.py
+@@ -0,0 +1,142 @@
++"""Configuration control, preflight and secret-free experiment provenance."""
++import json
++from pathlib import Path
++
++import pytest
++from pydantic import ValidationError
++
++from novelty_agent_framework.config import build_workflow, effective_safe_config, load_application_config
++from novelty_agent_framework.config.experiment import freeze_config, preflight_config
++
++
++def profile(tmp_path, data):
++    path = tmp_path / "profile.json"
++    path.write_text(json.dumps(data))
++    return path
++
++
++def test_profile_environment_and_explicit_precedence(tmp_path):
++    path = profile(tmp_path, {"researcher": {"model": {"alias": "glm4.7"}},
++                              "project": {"workflow": {"max_rounds": 3}}})
++    config = load_application_config(profile_path=path,
++        environ={"NOVELTY_RESEARCHER_MODEL": "deepseek-flash"},
++        overrides={"researcher": {"model": {"alias": "local-qwen2.5-7b"}}})
++    assert config.researcher.model.alias == "local-qwen2.5-7b"
++    assert config.project.workflow.max_rounds == 3
++    assert config._resolution["field_sources"]["researcher.model.alias"] == "explicit_override"
++    assert config._resolution["field_sources"]["project.workflow.max_rounds"] == "profile"
++
++
++def test_environment_profile_reaches_existing_callers(tmp_path):
++    path = profile(tmp_path, {"project": {"workflow": {"research_languages": ["zh"]}}})
++    config = load_application_config(environ={"NOVELTY_EXPERIMENT_PROFILE": str(path)})
++    assert config.project.workflow.research_languages == ["zh"]
++    assert config.researcher.model.alias == "local-qwen2.5-7b"
++
++
++def test_environment_same_value_still_has_environment_origin():
++    config = load_application_config(environ={"NOVELTY_RESEARCHER_MODEL": "local-qwen2.5-7b"})
++    assert config._resolution["field_sources"]["researcher.model.alias"] == "environment"
++
++
++@pytest.mark.parametrize("overlay", [
++    {"project": {"workflow": {"max_rounds": 0}}},
++    {"researcher": {"harenss": {"max_turns": 3}}},
++    {"researcher": {"model": {"alias": "unknown"}}},
++])
++def test_invalid_profile_or_cli_override_fails_before_build(overlay):
++    with pytest.raises(ValidationError):
++        load_application_config(environ={}, overrides=overlay)
++
++
++def test_snapshot_masks_nested_secrets_urls_and_headers(tmp_path):
++    config = load_application_config(environ={})
++    provider = config.researcher.tools.database_search.providers["arxiv"]
++    provider.update(api_key="sentinel-secret", headers={"Authorization": "Bearer sentinel-header"},
++                    endpoint="https://user:sentinel-password@example.org/path?api_key=sentinel-query")
++    config.models["local-qwen2.5-7b"].base_url = "http://user:sentinel-local@localhost:8000/v1"
++    for snapshot in (effective_safe_config(config), freeze_config(config)):
++        encoded = json.dumps(snapshot)
++        assert "sentinel-" not in encoded
++        assert "LOCAL_VLLM_API_KEY" in encoded
++    assert freeze_config(config)["resolution"]["field_sources"]["models.local-qwen2.5-7b.base_url"] == "runtime_override"
++
++
++def test_snapshot_freezes_input_prompt_code_and_effective_output_root(tmp_path):
++    config = load_application_config(environ={})
++    source = tmp_path / "input.json"
++    source.write_text('{"paper_id":"audit"}')
++    snapshot = freeze_config(config, entrypoint="single_task", input_path=source, output_root=tmp_path)
++    assert snapshot["entrypoint"] == "single_task"
++    assert len(snapshot["input"]["sha256"]) == 64
++    assert snapshot["prompt_sha256"]["research/native_tool_loop.md"]
++    assert len(snapshot["code"]["python_sources_sha256"]) == 64
++    assert snapshot["effective_config"]["project"]["runtime_debug"]["output_root"] == str(tmp_path)
++    before = snapshot["effective_config_sha256"]
++    config.researcher.harness.max_turns += 1
++    assert freeze_config(config, output_root=tmp_path)["effective_config_sha256"] != before
++
++
++def test_snapshot_revalidates_post_load_mutation():
++    config = load_application_config(environ={})
++    config.project.workflow.max_rounds = 0
++    with pytest.raises(ValidationError):
++        freeze_config(config)
++    with pytest.raises(ValidationError):
++        build_workflow(config)
++
++
++def test_preflight_classifies_provider_context_model_and_reviewer_errors():
++    config = load_application_config(environ={})
++    config.reviewer.enabled = False
++    config.researcher.tools.database_search.providers["not_registered"] = {"enabled": True}
++    config.researcher.tools.database_search.providers["ieee_xplore"]["enabled"] = True
++    config.researcher.model.max_tokens = 40000
++    config.researcher.model.enable_thinking = True
++    errors = {issue["code"] for issue in preflight_config(config, environ={}) if issue["severity"] == "error"}
++    assert {"unknown_provider", "provider_credential_missing", "context_budget_conflict",
++            "model_credential_missing", "reviewer_required", "unsupported_model_parameter"} <= errors
++
++
++def test_local_preflight_has_no_errors_with_explicit_credential():
++    config = load_application_config(environ={})
++    issues = preflight_config(config, environ={"LOCAL_VLLM_API_KEY": "local"})
++    assert not [i for i in issues if i["severity"] == "error"]
++    assert {i["code"] for i in issues} >= {"context_input_not_preflighted", "role_prompt_lists_not_bound"}
++
++
++@pytest.mark.parametrize("flag", ["enabled", "testing_only"])
++def test_preflight_rejects_truthy_false_provider_strings(flag):
++    config = load_application_config(environ={}, overrides={
++        "researcher": {"tools": {"database_search": {"providers": {"arxiv": {flag: "false"}}}}}})
++    errors = {i["code"] for i in preflight_config(config, environ={"LOCAL_VLLM_API_KEY": "local"})}
++    assert "invalid_provider_switch" in errors
++
++
++def test_signed_url_and_new_runtime_field_are_safe_and_tracked():
++    config = load_application_config(environ={})
++    config.researcher.tools.database_search.providers['arxiv']['endpoint'] = 'https://example.test/?sig=SENTINEL_SAS'
++    frozen = freeze_config(config)
++    assert 'SENTINEL_SAS' not in json.dumps(frozen)
++    assert frozen['resolution']['field_sources']['researcher.tools.database_search.providers.arxiv.endpoint'] == 'runtime_override'
++
++
++def test_preflight_matches_provider_default_credentials_and_fulltext_mode():
++    config = load_application_config(environ={})
++    providers = config.researcher.tools.database_search.providers
++    providers['ieee_xplore'].update(enabled=True)
++    providers['ieee_xplore'].pop('api_key_env')
++    providers['springer'].update(enabled=True, full_text_mode='openaccess')
++    values = {'LOCAL_VLLM_API_KEY': 'local', 'IEEE_XPLORE_API_KEY': 'dummy-ieee',
++              'SPRINGER_NATURE_META_API_KEY': 'dummy-meta'}
++    errors = [i for i in preflight_config(config, environ=values) if i['severity'] == 'error']
++    assert [i['path'] for i in errors] == ['providers.springer.open_access_api_key_env']
++    values['SPRINGER_NATURE_OPEN_ACCESS_API_KEY'] = 'dummy-oa'
++    assert not [i for i in preflight_config(config, environ=values) if i['severity'] == 'error']
++
++
++def test_single_task_preflight_does_not_require_unused_role_credentials():
++    config = load_application_config(environ={}, overrides={'coordinator': {'model': {'alias': 'glm4.7'}}})
++    issues = preflight_config(config, require_reviewer=False, active_roles=('researcher',),
++                              environ={'LOCAL_VLLM_API_KEY': 'local'})
++    assert not [i for i in issues if i['severity'] == 'error']
+diff --git a/config/profiles/local-baseline.json b/config/profiles/local-baseline.json
+new file mode 100644
+--- /dev/null
++++ b/config/profiles/local-baseline.json
+@@ -0,0 +1,61 @@
++{
++  "project": {
++    "workflow": {
++      "max_rounds": 1,
++      "max_concurrency": 1
++    },
++    "runtime_debug": {
++      "max_model_calls": 80,
++      "max_physical_provider_requests": 48
++    },
++    "processing": {
++      "llm_model": "local-qwen2.5-7b"
++    }
++  },
++  "researcher": {
++    "harness": {
++      "reuse_reader_results": false
++    },
++    "tools": {
++      "database_search": {
++        "providers": {
++          "arxiv": {
++            "enabled": true
++          },
++          "springer": {
++            "enabled": false
++          },
++          "sciencedirect": {
++            "enabled": false
++          },
++          "ieee_xplore": {
++            "enabled": false
++          }
++        }
++      }
++    },
++    "model": {
++      "alias": "local-qwen2.5-7b"
++    }
++  },
++  "reviewer": {
++    "model": {
++      "alias": "local-qwen2.5-7b"
++    }
++  },
++  "search_planner": {
++    "model": {
++      "alias": "local-qwen2.5-7b"
++    }
++  },
++  "coordinator": {
++    "model": {
++      "alias": "local-qwen2.5-7b"
++    }
++  },
++  "point_extractor": {
++    "model": {
++      "alias": "local-qwen2.5-7b"
++    }
++  }
++}
+diff --git a/config/profiles/local-reader-reuse.json b/config/profiles/local-reader-reuse.json
+new file mode 100644
+--- /dev/null
++++ b/config/profiles/local-reader-reuse.json
+@@ -0,0 +1,61 @@
++{
++  "project": {
++    "workflow": {
++      "max_rounds": 1,
++      "max_concurrency": 1
++    },
++    "runtime_debug": {
++      "max_model_calls": 80,
++      "max_physical_provider_requests": 48
++    },
++    "processing": {
++      "llm_model": "local-qwen2.5-7b"
++    }
++  },
++  "researcher": {
++    "harness": {
++      "reuse_reader_results": true
++    },
++    "tools": {
++      "database_search": {
++        "providers": {
++          "arxiv": {
++            "enabled": true
++          },
++          "springer": {
++            "enabled": false
++          },
++          "sciencedirect": {
++            "enabled": false
++          },
++          "ieee_xplore": {
++            "enabled": false
++          }
++        }
++      }
++    },
++    "model": {
++      "alias": "local-qwen2.5-7b"
++    }
++  },
++  "reviewer": {
++    "model": {
++      "alias": "local-qwen2.5-7b"
++    }
++  },
++  "search_planner": {
++    "model": {
++      "alias": "local-qwen2.5-7b"
++    }
++  },
++  "coordinator": {
++    "model": {
++      "alias": "local-qwen2.5-7b"
++    }
++  },
++  "point_extractor": {
++    "model": {
++      "alias": "local-qwen2.5-7b"
++    }
++  }
++}
+diff --git a/config/profiles/remote-baseline.json b/config/profiles/remote-baseline.json
+new file mode 100644
+--- /dev/null
++++ b/config/profiles/remote-baseline.json
+@@ -0,0 +1,61 @@
++{
++  "project": {
++    "workflow": {
++      "max_rounds": 1,
++      "max_concurrency": 1
++    },
++    "runtime_debug": {
++      "max_model_calls": 80,
++      "max_physical_provider_requests": 48
++    },
++    "processing": {
++      "llm_model": "glm4.7"
++    }
++  },
++  "researcher": {
++    "harness": {
++      "reuse_reader_results": false
++    },
++    "tools": {
++      "database_search": {
++        "providers": {
++          "arxiv": {
++            "enabled": true
++          },
++          "springer": {
++            "enabled": false
++          },
++          "sciencedirect": {
++            "enabled": false
++          },
++          "ieee_xplore": {
++            "enabled": false
++          }
++        }
++      }
++    },
++    "model": {
++      "alias": "glm4.7"
++    }
++  },
++  "reviewer": {
++    "model": {
++      "alias": "glm4.7"
++    }
++  },
++  "search_planner": {
++    "model": {
++      "alias": "glm4.7"
++    }
++  },
++  "coordinator": {
++    "model": {
++      "alias": "glm4.7"
++    }
++  },
++  "point_extractor": {
++    "model": {
++      "alias": "glm4.7"
++    }
++  }
++}
