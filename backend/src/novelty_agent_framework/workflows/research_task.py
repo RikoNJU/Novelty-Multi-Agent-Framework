@@ -22,7 +22,10 @@ from ..schemas import (
 from ..schemas import TaskResearchResult, TaskResearchStatus
 from ..schemas.references import SearchExecution
 from ..tools import EvidenceCardBuilder, ResearcherToolRegistry
+from ..tools.evidence_checkpoint import EvidenceCheckpointSession, EvidenceCheckpointRegistry
 from .candidate_audit import build_candidate_audit
+from ..tools.recovery_registry import RecoveryToolRegistry
+from ..schemas.failures import FailureEvent, FailureScope, FailureCode, make_failure
 
 
 def _extract_finish_json(content: str | None) -> str:
@@ -63,6 +66,9 @@ class TaskResearcherConfig:
         default_factory=lambda: ModelCallOptions(temperature=0.0, tool_choice="auto")
     )
     prompt_name: str = "research/native_tool_loop"
+    reuse_reader_results: bool = False
+    enable_evidence_checkpoint: bool = False
+    runtime_state_projection: bool = False
 
     def __post_init__(self) -> None:
         if min(self.max_steps, self.max_tool_calls, self.max_chars_per_read,
@@ -93,6 +99,8 @@ class TaskResearcherWorkflow:
             config=ToolCallHarnessConfig(
                 finalize_on_budget=True,
                 reuse_database_results=True,
+                reuse_reader_results=self.config.reuse_reader_results,
+                runtime_state_projection=self.config.runtime_state_projection,
                 max_turns=self.config.max_steps,
                 max_tool_calls=self.config.max_tool_calls,
                 per_tool_limits=dict(self.config.per_tool_limits),
@@ -101,17 +109,35 @@ class TaskResearcherWorkflow:
         )
 
     async def ainvoke(self, request: TaskResearchRequest) -> TaskResearchResult:
-        result, trace = await self._research(request)
-        return result.model_copy(update={"search_executions": _search_audit(trace), "candidate_audit": build_candidate_audit(
+        request = TaskResearchRequest.model_validate(request)
+        checkpoint = (EvidenceCheckpointSession(self.evidence_builder, request)
+                      if self.config.enable_evidence_checkpoint else None)
+        registry = EvidenceCheckpointRegistry(self.tools, checkpoint) if checkpoint else self.tools
+        if request.recovery is not None:
+            registry = RecoveryToolRegistry(registry, request)
+        harness = (ToolCallHarness(self.model_client, registry, config=self.harness.config)
+                   if checkpoint or request.recovery is not None else self.harness)
+        result, trace = await self._research(request, harness=harness)
+        if checkpoint is not None:
+            result = checkpoint.merge_into(result)
+        failures = [*result.execution_failures, *(failure for bundle in result.research_bundles for failure in bundle.execution_failures),
+                    *_observed_tool_failures(trace, request)]
+        return result.model_copy(update={"execution_failures": list({f.event_id:f for f in failures}.values()),
+                                        "search_executions": _search_audit(trace), "candidate_audit": build_candidate_audit(
             trace, result.read_results, result.evidence, result.evidence_cards,
             interrupted=result.status == TaskResearchStatus.PARTIAL,
         )})
 
-    async def _research(self, request: TaskResearchRequest):
+    def recover_checkpoint(self, request: TaskResearchRequest, *, invocation_id: str) -> TaskResearchResult:
+        """Explicit recovery only; no task is restarted and no verdict is promoted."""
+        return EvidenceCheckpointSession.recover(self.evidence_builder, request,
+                                                invocation_id=invocation_id)
+
+    async def _research(self, request: TaskResearchRequest, *, harness=None):
         request = TaskResearchRequest.model_validate(request)
-        system_prompt, user_message = self._render_prompt(request)
+        system_prompt, user_message = self._render_prompt(request, tool_names=(harness or self.harness).registry.names)
         try:
-            harness_result = await self.harness.run(
+            harness_result = await (harness or self.harness).run(
                 system_prompt=system_prompt,
                 initial_user_message=user_message,
                 scope=request,
@@ -125,16 +151,18 @@ class TaskResearcherWorkflow:
                 reads=reads,
                 bundles=bundles,
                 warnings=[
-                    f"native tool harness failed: {exc}",
+                    f"native tool harness failed: {_safe_error(exc)}",
                     *read_warnings,
                     *bundle_warnings,
                 ],
                 steps=_turns_in_trace(exc.trace),
+                failures=[_execution_failure(request, exc)],
             ), exc.trace
         except Exception as exc:
             return _partial(
                 request,
                 warnings=[f"native tool harness failed: {_safe_error(exc)}"],
+                failures=[_execution_failure(request, exc)],
             ), ()
 
         reads, read_warnings = _trusted_reads(harness_result.trace)
@@ -156,6 +184,7 @@ class TaskResearcherWorkflow:
                 warnings=[*read_warnings, *bundle_warnings,
                           f"invalid ResearchFinishDraft after bounded recovery: {_safe_error(exc)}"],
                 steps=harness_result.turns_used + format_turns,
+                failures=[_execution_failure(request, exc, default=FailureCode.MODEL_OUTPUT_SCHEMA)],
             ), harness_result.trace
 
         try:
@@ -170,6 +199,7 @@ class TaskResearcherWorkflow:
                 warnings=[*read_warnings, *bundle_warnings,
                           f"evidence builder failed: {_safe_error(exc)}"],
                 steps=harness_result.turns_used + format_turns,
+                failures=[_execution_failure(request, exc, default=FailureCode.MODEL_OUTPUT_REFERENCE)],
             ), harness_result.trace
 
         correction_turns = 0
@@ -192,6 +222,9 @@ class TaskResearcherWorkflow:
             evidence_cards=built.evidence_cards,
             warnings=[*stop_warnings, *read_warnings, *bundle_warnings, *format_warnings, *built.warnings],
             steps_used=harness_result.turns_used + format_turns + correction_turns,
+            execution_failures=([make_failure(FailureCode.BUDGET_EXHAUSTED, scope=_failure_scope(request),
+                message="Research exploration budget exhausted; bounded finalization retained available evidence.",
+                occurrence_id="exploration-finalization")] if harness_result.stop_reason else []),
         ), harness_result.trace
 
     async def _correct_rejected_cards(self, draft, built, reads, request):
@@ -236,7 +269,7 @@ class TaskResearcherWorkflow:
                 *built.warnings, f"single quote correction failed: {_safe_error(exc)}",
             ]})
 
-    def _render_prompt(self, request: TaskResearchRequest) -> tuple[str, str]:
+    def _render_prompt(self, request: TaskResearchRequest, *, tool_names=None) -> tuple[str, str]:
         variables = {
             "novelty_point_json": json.dumps(
                 _project_novelty_point(request.novelty_point), ensure_ascii=False
@@ -251,13 +284,15 @@ class TaskResearcherWorkflow:
                 ResearchFinishDraft.model_json_schema(), ensure_ascii=False
             ),
         }
+        recovery_note = ("\nRuntime-owned recovery directive (tool permissions are enforced): " +
+                         request.recovery.model_dump_json() if request.recovery else "")
         if self.prompts is not None:
             rendered = self.prompts.render(self.config.prompt_name, **variables)
-            return rendered.system + self._research_skills(), rendered.user + "\n\n" + self._capability_note()
+            return rendered.system + self._research_skills(), rendered.user + "\n\n" + self._capability_note(tool_names) + recovery_note
         return (
             "Use only registered tools. Finish with strict ResearchFinishDraft JSON. "
             "Never invent provenance handles." + self._research_skills(),
-            "\n".join(f"{key}: {value}" for key, value in variables.items()) + "\n" + self._capability_note(),
+            "\n".join(f"{key}: {value}" for key, value in variables.items()) + "\n" + self._capability_note(tool_names) + recovery_note,
         )
 
     @staticmethod
@@ -268,8 +303,9 @@ class TaskResearcherWorkflow:
             for name in ("database_research", "web_supplement")
         )
 
-    def _capability_note(self):
-        names = self.tools.names
+    def _capability_note(self, tool_names=None):
+        names = (tuple(tool_names) if tool_names is not None else
+                 self.tools.names + (("submit_evidence",) if self.config.enable_evidence_checkpoint else ()))
         note = "Available tools: " + ", ".join(names) + ". "
         if "browser" not in names:
             note += (
@@ -279,6 +315,11 @@ class TaskResearcherWorkflow:
                 "web searches when there is no acquisition path. Finish with available evidence "
                 "or explain the acquisition limitation."
             )
+        if self.config.enable_evidence_checkpoint:
+            note += (" After a useful Reader result, submit grounded partial cards with submit_evidence "
+                     "before further exploration; accepted cards survive later execution failure. "
+                     "This shares the existing tool-call budget and does not imply final Validator/Reviewer approval. "
+                     "The original ResearchFinishDraft final response is still required.")
         return note
 
 
@@ -357,7 +398,7 @@ def _turns_in_trace(trace) -> int:
 
 
 def _partial(
-    request, *, reads=None, bundles=None, warnings=None, steps=0
+    request, *, reads=None, bundles=None, warnings=None, steps=0, failures=None
 ) -> TaskResearchResult:
     return TaskResearchResult(
         task_id=request.research_task.task_id,
@@ -367,11 +408,15 @@ def _partial(
         research_bundles=bundles or [],
         warnings=warnings or [],
         steps_used=steps,
+        execution_failures=failures or [],
     )
 
 
 def _safe_error(exc: Exception) -> str:
-    return f"{type(exc).__name__}: {exc}"[:500]
+    detail = f"{type(exc).__name__}: {exc}"
+    if exc.__cause__ is not None:
+        detail += f"; caused by {type(exc.__cause__).__name__}: {exc.__cause__}"
+    return detail[:500]
 
 def _project_novelty_point(point: Any) -> dict:
     """模型上下文投影：剔除 ``source_locations``。
@@ -408,3 +453,71 @@ def _project_search_plan(plan: SearchPlan) -> dict:
             {"expression": strategy.expression} for strategy in plan.strategies
         ],
     }
+
+
+def _failure_scope(request):
+    return FailureScope(paper_id=request.subject_paper_id, run_id=request.run_id,
+        point_id=request.novelty_point.point_id, task_id=request.research_task.task_id)
+
+
+def _execution_failure(request, exc, *, default=FailureCode.UNKNOWN):
+    """Classify explicit exception facts, never infer a scientific negative."""
+    from backend.env.model_client import (ModelCallBudgetExceeded, ModelContextAdmissionError,
+        ModelTransportTimeout, ModelClientError)
+    from ..core.tool_call_harness import ToolCallBudgetExhausted
+    chain, seen = [], set()
+    current = exc
+    while current is not None and id(current) not in seen:
+        seen.add(id(current))
+        chain.append(current)
+        current = current.__cause__
+    code = default
+    for error in reversed(chain):
+        if isinstance(error, (ModelCallBudgetExceeded, ToolCallBudgetExhausted)):
+            code = FailureCode.BUDGET_EXHAUSTED
+        elif isinstance(error, ModelContextAdmissionError):
+            code = (FailureCode.MODEL_CONTEXT_LIMIT if error.code == 'CONTEXT_LIMIT_EXCEEDED'
+                    else FailureCode.MODEL_CONTEXT_UNAVAILABLE)
+        elif isinstance(error, (ModelTransportTimeout, TimeoutError)):
+            code = FailureCode.MODEL_TIMEOUT
+        elif isinstance(error, ModelClientError):
+            code = FailureCode.MODEL_TRANSPORT
+        elif isinstance(error, ValidationError):
+            code = FailureCode.MODEL_OUTPUT_SCHEMA
+    return make_failure(code, scope=_failure_scope(request),
+        message='Task execution did not complete; preserved observations do not establish a scientific conclusion.',
+        occurrence_id=type(exc).__name__)
+
+
+def _observed_tool_failures(trace, request):
+    failures = []
+    for index, event in enumerate(trace):
+        observation = event.observation
+        if event.kind != 'tool_result' or observation is None:
+            continue
+        payload = observation.payload
+        declared = [*payload.get('execution_issues', [])]
+        if payload.get('failure'):
+            declared.append(payload['failure'])
+        for value in declared:
+            try:
+                failures.append(FailureEvent.model_validate(value))
+            except (ValueError, TypeError):
+                failures.append(make_failure(FailureCode.UNKNOWN, scope=_failure_scope(request),
+                    message='Tool failure metadata did not satisfy the failure contract; observations are retained.',
+                    occurrence_id=f'{index}-invalid-audit'))
+        errors = list(payload.get('read_errors', []))
+        if not observation.succeeded and not declared and not errors:
+            errors = [{'error_type':payload.get('error_type')}]
+        for error_index, error in enumerate(errors):
+            if error.get('error_type') == 'ReaderUnavailable' and declared:
+                continue
+            code = {'PermissionError':FailureCode.TOOL_SCOPE,
+                    'ValidationError':FailureCode.TOOL_ARGUMENTS}.get(error.get('error_type'),FailureCode.UNKNOWN)
+            if observation.tool_name == 'reader' and error.get('error_type') in {'OSError','FileNotFoundError'}:
+                code = FailureCode.MATERIAL_UNAVAILABLE
+            failures.append(make_failure(code, scope=_failure_scope(request).model_copy(update={
+                'artifact_id':error.get('artifact_id')}),
+                message='A tool operation failed; successful observations from this task remain available.',
+                occurrence_id=f'{index}-{error_index}-{observation.tool_name}'))
+    return failures
