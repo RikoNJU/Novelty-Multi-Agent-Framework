@@ -6,7 +6,7 @@
 
 ## 按方面审阅实现
 
-当前实现按依赖顺序拆分提交，而不是把最终代码伪装成每次历史实验时的源码。具体文件及提交主题见 [提交范围清单](20260928_harness_upload_manifest.json)。
+共 12 个提交：8 个实现方面、3 个实验阶段，以及独立导出时发现的测试输入归档修复。当前实现按依赖顺序拆分提交，而不是把最终代码伪装成每次历史实验时的源码。具体文件及提交主题见 [提交范围清单](20260928_harness_upload_manifest.json)。
 
 1. 模型请求、上下文准入与用量核算。
 2. Provider 返回分类与检索错误保留。
@@ -31,6 +31,6 @@
 
 ## 验证与保留范围
 
-当前源码的已有完整非在线回归为 **1,263 passed、6 deselected**，见 [日志](20260927_harness_config_closure/full-tests.log) 和 [校验汇总](20260927_harness_config_closure/validation_summary.json)。该结果证明代码回归断言，不能代替真实正例、修后消融、整合流程和模型差距归因。发布前另行检查提交范围、哈希、补丁及凭据泄漏风险。独立导出首次发现一项测试依赖未提交输入，失败与后续修复单独保留，见 [独立导出验证](20260927_harness_config_closure/publication_validation/README.md)。
+当前源码的已有完整非在线回归为 **1,263 passed、6 deselected**，见 [日志](20260927_harness_config_closure/full-tests.log) 和 [校验汇总](20260927_harness_config_closure/validation_summary.json)。该结果证明代码回归断言，不能代替真实正例、修后消融、整合流程和模型差距归因。发布前另行检查提交范围、哈希、补丁及凭据泄漏风险。独立导出首次发现一项测试依赖未提交输入，失败与后续修复单独保留，修复后独立导出全量复测 1,263 passed、6 deselected，见 [独立导出验证](20260927_harness_config_closure/publication_validation/README.md)。
 
 上传保留原始失败、输出、用量、代码快照，以及复现所需的已处理论文正文和结构化输入。排除 Python 缓存、演示运行 `paper-1fa48a8cb5d121220ba897a0_2026-09-27`、本地任务书，以及用户已有的 `docs/Novelty_本地LLM使用手册.md` 改动。原文件仍保留在本地。

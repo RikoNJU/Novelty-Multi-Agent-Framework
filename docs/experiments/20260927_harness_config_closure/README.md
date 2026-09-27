@@ -1,5 +1,7 @@
 # Harness 与配置审查：阶段成果（验收未完成）
 
+发布补充：独立导出发现并修复了一项测试对本地输出的依赖，复测 **1,263 passed、6 deselected**。原实验快照不改写，历史清单与最终上传清单的区别见 [独立导出验证](publication_validation/README.md)。
+
 2026-09-28。目录名保留本轮开始日期。原任务书的逐条证据、实际结论及尚未知边界见 [task_acceptance.md](task_acceptance.md)。
 
 **当前为阶段成果，任务尚未完成整体验收。** 已撤回“探索审查已完成”的判断，见[状态纠正与剩余验收](acceptance_correction.md)。 最终代码1263项非live回归通过、6项live排除，1条既有弃用警告。Reader六次真实摘要实验均0卡/partial；Reviewer三次引用合法但语义不通过；arXiv公共查询仍406，根因Unknown。没有把这些结果改写为成功，也没有追加云模型能力。

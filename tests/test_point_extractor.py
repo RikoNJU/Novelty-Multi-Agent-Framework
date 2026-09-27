@@ -303,7 +303,7 @@ def test_legacy_mapping_coverage_followup_shares_budget_and_records_numbering():
 
 
 def test_real_paper_digest_includes_bounded_independent_contribution():
-    path = Path("outputs/MF2033k6lC/paper-input/others/paper.json")
+    path = Path(__file__).parent / "fixtures" / "extractor" / "real_paper_input.json"
     digest = build_paper_digest(PaperInput.model_validate_json(path.read_text()))
     assert "Sketch-DBH" in digest.full_text_excerpt
     assert "Count-Min Sketch" in digest.full_text_excerpt
