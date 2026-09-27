@@ -1,0 +1,193 @@
+FFFFF                                                                    [100%]
+=================================== FAILURES ===================================
+_______ test_failed_reader_then_valid_insufficient_is_not_pure_semantic ________
+
+    def test_failed_reader_then_valid_insufficient_is_not_pure_semantic():
+        client = ScriptedClient(ModelResponse(content=None, tool_calls=(ModelToolCall(
+            id='bad', name='reader', arguments={'artifact_id': 'outside'}),)),
+            ModelResponse(content=_review_json('insufficient_evidence')))
+        result = asyncio.run(_reviewer(client, RecordingReader()).review(_request()))
+>       assert result.incomplete_reason == 'technical_error'
+E       AssertionError: assert 'semantic_evidence' == 'technical_error'
+E         
+E         - technical_error
+E         + semantic_evidence
+
+tests/test_reviewer_failure_classification.py:23: AssertionError
+______ test_unneeded_failed_read_does_not_override_valid_reviewed_result _______
+
+    def test_unneeded_failed_read_does_not_override_valid_reviewed_result():
+        client = ScriptedClient(ModelResponse(content=None, tool_calls=(ModelToolCall(
+            id='bad', name='reader', arguments={'artifact_id': 'outside'}),)),
+            ModelResponse(content=_review_json()))
+        result = asyncio.run(_reviewer(client, RecordingReader()).review(_request()))
+        assert result.status.value == 'reviewed'
+        assert result.verdict.value == 'partially_novel'
+        assert result.incomplete_reason is None
+>       assert result.execution_issues[0].code == 'tool.scope'
+               ^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_reviewer_failure_classification.py:36: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = NoveltyPointReview(novelty_point_id='NP-1', status=<ReviewStatus.REVIEWED: 'reviewed'>, verdict=<NoveltyVerdict.PARTIA...特征。')], supplement_request=None, read_citations=[], review_evidence=[], feature_comparisons=[], incomplete_reason=None)
+item = 'execution_issues'
+
+    def __getattr__(self, item: str) -> Any:
+        private_attributes = object.__getattribute__(self, '__private_attributes__')
+        if item in private_attributes:
+            attribute = private_attributes[item]
+            if hasattr(attribute, '__get__'):
+                return attribute.__get__(self, type(self))  # type: ignore
+    
+            try:
+                # Note: self.__pydantic_private__ cannot be None if self.__private_attributes__ has items
+                return self.__pydantic_private__[item]  # type: ignore
+            except KeyError as exc:
+                raise AttributeError(f'{type(self).__name__!r} object has no attribute {item!r}') from exc
+        else:
+            # `__pydantic_extra__` can fail to be set if the model is not yet fully initialized.
+            # See `BaseModel.__repr_args__` for more details
+            try:
+                pydantic_extra = object.__getattribute__(self, '__pydantic_extra__')
+            except AttributeError:
+                pydantic_extra = None
+    
+            if pydantic_extra and item in pydantic_extra:
+                return pydantic_extra[item]
+            else:
+                if hasattr(self.__class__, item):
+                    return super().__getattribute__(item)  # Raises AttributeError if appropriate
+                else:
+                    # this is the current error
+>                   raise AttributeError(f'{type(self).__name__!r} object has no attribute {item!r}')
+E                   AttributeError: 'NoveltyPointReview' object has no attribute 'execution_issues'
+
+../../miniconda3/envs/Novelty-web/lib/python3.11/site-packages/pydantic/main.py:1042: AttributeError
+_ test_authorized_unreadable_artifact_is_not_outside_scope[missing-material.unavailable] _
+
+tmp_path = PosixPath('/tmp/pytest-of-lya3106643285/pytest-45/test_authorized_unreadable_art0')
+mutation = 'missing', code = 'material.unavailable'
+
+    @pytest.mark.parametrize('mutation,code', [('missing','material.unavailable'), ('hash','material.integrity')])
+    def test_authorized_unreadable_artifact_is_not_outside_scope(tmp_path, mutation, code):
+        request, tool, path = local_tool(tmp_path)
+        if mutation == 'missing':
+            path.unlink()
+        else:
+            path.write_text('changed', encoding='utf-8')
+>       result = asyncio.run(tool.ainvoke(ReaderArguments(artifact_id=BODY_ID, max_chars=10), scope=request))
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_reviewer_failure_classification.py:56: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../../miniconda3/envs/Novelty-web/lib/python3.11/asyncio/runners.py:190: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+../../miniconda3/envs/Novelty-web/lib/python3.11/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../miniconda3/envs/Novelty-web/lib/python3.11/asyncio/base_events.py:654: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <novelty_agent_framework.tools.reader.ReviewerReaderTool object at 0x7e4d58896210>
+arguments = ReaderArguments(artifact_id='art_ebc47b0e70f5b363f3d871f2', char_start=0, max_chars=10)
+scope = NoveltyPointReviewRequest(subject_paper_id='MF2033k6lC', novelty_point=NoveltyPoint(point_id='NP-3', claim='提出一种基于边分割的...18de94ed910d0cdaa2786d7f', 'source_kind': 'structured_database', 'source_record_id': 'src_185d339c2255a694e06b5cd3'})])
+
+    async def ainvoke(
+        self,
+        arguments: ReaderArguments,
+        *,
+        scope: NoveltyPointReviewRequest,
+    ) -> ResearcherToolObservation:
+        if getattr(arguments, "reads", None) is not None:
+            return await self._read_batch(arguments, scope=scope)
+        catalog = self.material_catalog(scope)
+        matches = [item for item in catalog if item["artifact_id"] == arguments.artifact_id]
+        if len(matches) != 1:
+>           raise PermissionError(
+                f"artifact {arguments.artifact_id!r} is outside reviewer scope"
+            )
+E           PermissionError: artifact 'art_ebc47b0e70f5b363f3d871f2' is outside reviewer scope
+
+backend/src/novelty_agent_framework/tools/reader.py:239: PermissionError
+_ test_authorized_unreadable_artifact_is_not_outside_scope[hash-material.integrity] _
+
+tmp_path = PosixPath('/tmp/pytest-of-lya3106643285/pytest-45/test_authorized_unreadable_art1')
+mutation = 'hash', code = 'material.integrity'
+
+    @pytest.mark.parametrize('mutation,code', [('missing','material.unavailable'), ('hash','material.integrity')])
+    def test_authorized_unreadable_artifact_is_not_outside_scope(tmp_path, mutation, code):
+        request, tool, path = local_tool(tmp_path)
+        if mutation == 'missing':
+            path.unlink()
+        else:
+            path.write_text('changed', encoding='utf-8')
+>       result = asyncio.run(tool.ainvoke(ReaderArguments(artifact_id=BODY_ID, max_chars=10), scope=request))
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_reviewer_failure_classification.py:56: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../../miniconda3/envs/Novelty-web/lib/python3.11/asyncio/runners.py:190: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+../../miniconda3/envs/Novelty-web/lib/python3.11/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../miniconda3/envs/Novelty-web/lib/python3.11/asyncio/base_events.py:654: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <novelty_agent_framework.tools.reader.ReviewerReaderTool object at 0x7e4d588a0510>
+arguments = ReaderArguments(artifact_id='art_ebc47b0e70f5b363f3d871f2', char_start=0, max_chars=10)
+scope = NoveltyPointReviewRequest(subject_paper_id='MF2033k6lC', novelty_point=NoveltyPoint(point_id='NP-3', claim='提出一种基于边分割的...18de94ed910d0cdaa2786d7f', 'source_kind': 'structured_database', 'source_record_id': 'src_185d339c2255a694e06b5cd3'})])
+
+    async def ainvoke(
+        self,
+        arguments: ReaderArguments,
+        *,
+        scope: NoveltyPointReviewRequest,
+    ) -> ResearcherToolObservation:
+        if getattr(arguments, "reads", None) is not None:
+            return await self._read_batch(arguments, scope=scope)
+        catalog = self.material_catalog(scope)
+        matches = [item for item in catalog if item["artifact_id"] == arguments.artifact_id]
+        if len(matches) != 1:
+>           raise PermissionError(
+                f"artifact {arguments.artifact_id!r} is outside reviewer scope"
+            )
+E           PermissionError: artifact 'art_ebc47b0e70f5b363f3d871f2' is outside reviewer scope
+
+backend/src/novelty_agent_framework/tools/reader.py:239: PermissionError
+_ test_partial_batch_failure_preserves_good_read_and_classifies_insufficiency __
+
+tmp_path = PosixPath('/tmp/pytest-of-lya3106643285/pytest-45/test_partial_batch_failure_pre0')
+
+    def test_partial_batch_failure_preserves_good_read_and_classifies_insufficiency(tmp_path):
+        request, tool, path = local_tool(tmp_path)
+        path.unlink()
+        good_id = request.evidence[0].artifact_id
+        client = ScriptedClient(ModelResponse(content=None, tool_calls=(ModelToolCall(
+            id='batch', name='reader', arguments={'reads':[{'artifact_id':good_id,'max_chars':30},
+                                                         {'artifact_id':BODY_ID,'max_chars':30}]}),)),
+            ModelResponse(content=json.dumps({'novelty_point_id':'NP-3','status':'insufficient_evidence',
+                                             'supplement_request':{'reason':'remaining comparison unavailable'}})))
+        result = asyncio.run(NoveltyEvidenceReviewer(client,
+            tool_registry=ResearcherToolRegistry([tool])).review_card(request))
+>       assert result.incomplete_reason == 'material_unavailable'
+E       AssertionError: assert 'semantic_evidence' == 'material_unavailable'
+E         
+E         - material_unavailable
+E         + semantic_evidence
+
+tests/test_reviewer_failure_classification.py:75: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_reviewer_failure_classification.py::test_failed_reader_then_valid_insufficient_is_not_pure_semantic
+FAILED tests/test_reviewer_failure_classification.py::test_unneeded_failed_read_does_not_override_valid_reviewed_result
+FAILED tests/test_reviewer_failure_classification.py::test_authorized_unreadable_artifact_is_not_outside_scope[missing-material.unavailable]
+FAILED tests/test_reviewer_failure_classification.py::test_authorized_unreadable_artifact_is_not_outside_scope[hash-material.integrity]
+FAILED tests/test_reviewer_failure_classification.py::test_partial_batch_failure_preserves_good_read_and_classifies_insufficiency
+5 failed in 1.58s

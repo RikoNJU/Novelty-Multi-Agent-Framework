@@ -1,0 +1,779 @@
+........................................................................ [ 72%]
+.............F...FF..FFFFFF                                              [100%]
+=================================== FAILURES ===================================
+___________ test_each_task_is_isolated_and_fan_out_runs_concurrently ___________
+
+self = <novelty_agent_framework.workflows.novelty.NoveltyWorkflow object at 0x722e05c6b190>
+paper = PaperInput(paper_id='paper-test', title='证据驱动论文查新', abstract='测试摘要', english_abstract='', full_text='测试正文', references...ed_contributions=['创新声明 1', '创新声明 2'], keywords_zh=[], keywords_en=[], metadata={}, images=[], tables=[], equations=[])
+run_identity = None
+
+    def run(
+        self,
+        paper: PaperInput | dict[str, Any],
+        *,
+        run_identity: Mapping[str, Any] | None = None,
+    ) -> NoveltyRunResult:
+        """同步入口；异步应用应直接调用 arun。"""
+    
+        try:
+>           asyncio.get_running_loop()
+E           RuntimeError: no running event loop
+
+/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py:1262: RuntimeError
+
+During handling of the above exception, another exception occurred:
+
+    def test_each_task_is_isolated_and_fan_out_runs_concurrently():
+        planner = RecordingPlanner()
+        workflow, researcher = build_workflow(planner=planner, max_concurrency=4)
+>       result = workflow.run(make_paper(claims=2))
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/tests/test_workflow.py:331: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py:1264: in run
+    return asyncio.run(self.arun(paper, run_identity=run_identity))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/asyncio/runners.py:190: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/asyncio/base_events.py:654: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py:1220: in arun
+    final = await self.graph.ainvoke(
+/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/site-packages/langgraph/pregel/main.py:4090: in ainvoke
+    async for chunk in self.astream(
+/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/site-packages/langgraph/pregel/main.py:3440: in astream
+    async for _ in runner.atick(
+/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/site-packages/langgraph/pregel/_runner.py:396: in atick
+    await arun_with_retry(
+/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/site-packages/langgraph/pregel/_retry.py:744: in arun_with_retry
+    return await task.proc.ainvoke(task.input, config)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/site-packages/langgraph/_internal/_runnable.py:756: in ainvoke
+    input = await asyncio.create_task(
+/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/site-packages/langgraph/_internal/_runnable.py:522: in ainvoke
+    ret = await self.afunc(*args, **kwargs)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py:323: in recorded
+    output = await function(state)
+             ^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <novelty_agent_framework.workflows.novelty.NoveltyWorkflow object at 0x722e05c6b190>
+state = {'paper': PaperInput(paper_id='paper-test', title='证据驱动论文查新', abstract='测试摘要', english_abstract='', full_text='测试正文', ...ovelty_point_id='NP-2', task_type='literature_search', language='en', description='针对该查新点执行英文文献检索。', attempt=1)]), ...}
+
+    async def _validate_report_integrity(
+        self, state: NoveltyState
+    ) -> dict[str, Any]:
+        """Gate B: observe report reference failures without blocking output."""
+    
+>       result = validate_report_integrity(
+            state["report"],
+            novelty_points=state.get("novelty_points", []),
+            evidence_cards=state.get("evidence_cards", []),
+            novelty_reviews=state.get("novelty_reviews", []),
+            evidence=state.get("raw_evidence", []),
+            reference_store=self.reference_store,
+        )
+E       TypeError: validate_report_integrity() got an unexpected keyword argument 'evidence'
+E       During task with name 'validate_report_integrity' and id '63ad663c-7fb9-94cb-6e6b-db5a2140ede1'
+
+/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py:1130: TypeError
+___________ test_sequential_runs_with_same_paper_id_do_not_overwrite ___________
+
+self = <novelty_agent_framework.workflows.novelty.NoveltyWorkflow object at 0x722e06d50b90>
+paper = PaperInput(paper_id='paper-test', title='Run A', abstract='测试摘要', english_abstract='', full_text='测试正文', references=[], claimed_contributions=['创新声明 1'], keywords_zh=[], keywords_en=[], metadata={}, images=[], tables=[], equations=[])
+run_identity = None
+
+    def run(
+        self,
+        paper: PaperInput | dict[str, Any],
+        *,
+        run_identity: Mapping[str, Any] | None = None,
+    ) -> NoveltyRunResult:
+        """同步入口；异步应用应直接调用 arun。"""
+    
+        try:
+>           asyncio.get_running_loop()
+E           RuntimeError: no running event loop
+
+/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py:1262: RuntimeError
+
+During handling of the above exception, another exception occurred:
+
+tmp_path = PosixPath('/tmp/pytest-of-lya3106643285/pytest-81/test_sequential_runs_with_same0')
+
+    def test_sequential_runs_with_same_paper_id_do_not_overwrite(tmp_path):
+        first_root = tmp_path / "runs" / "0001"
+        second_root = tmp_path / "runs" / "0002"
+        first, _ = build_workflow(output_root=first_root, max_rounds=1)
+        second, _ = build_workflow(output_root=second_root, max_rounds=1)
+    
+>       first.run(make_paper().model_copy(update={"title": "Run A"}))
+
+/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/tests/test_workflow.py:408: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py:1264: in run
+    return asyncio.run(self.arun(paper, run_identity=run_identity))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/asyncio/runners.py:190: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/asyncio/base_events.py:654: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py:1220: in arun
+    final = await self.graph.ainvoke(
+/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/site-packages/langgraph/pregel/main.py:4090: in ainvoke
+    async for chunk in self.astream(
+/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/site-packages/langgraph/pregel/main.py:3440: in astream
+    async for _ in runner.atick(
+/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/site-packages/langgraph/pregel/_runner.py:396: in atick
+    await arun_with_retry(
+/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/site-packages/langgraph/pregel/_retry.py:744: in arun_with_retry
+    return await task.proc.ainvoke(task.input, config)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/site-packages/langgraph/_internal/_runnable.py:756: in ainvoke
+    input = await asyncio.create_task(
+/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/site-packages/langgraph/_internal/_runnable.py:522: in ainvoke
+    ret = await self.afunc(*args, **kwargs)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py:323: in recorded
+    output = await function(state)
+             ^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <novelty_agent_framework.workflows.novelty.NoveltyWorkflow object at 0x722e06d50b90>
+state = {'paper': PaperInput(paper_id='paper-test', title='Run A', abstract='测试摘要', english_abstract='', full_text='测试正文', ref...ovelty_point_id='NP-1', task_type='literature_search', language='en', description='针对该查新点执行英文文献检索。', attempt=1)]), ...}
+
+    async def _validate_report_integrity(
+        self, state: NoveltyState
+    ) -> dict[str, Any]:
+        """Gate B: observe report reference failures without blocking output."""
+    
+>       result = validate_report_integrity(
+            state["report"],
+            novelty_points=state.get("novelty_points", []),
+            evidence_cards=state.get("evidence_cards", []),
+            novelty_reviews=state.get("novelty_reviews", []),
+            evidence=state.get("raw_evidence", []),
+            reference_store=self.reference_store,
+        )
+E       TypeError: validate_report_integrity() got an unexpected keyword argument 'evidence'
+E       During task with name 'validate_report_integrity' and id 'ebf6e53f-b525-196f-1e06-a1450fe45284'
+
+/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py:1130: TypeError
+_____________ test_validator_runs_once_after_current_round_fan_in ______________
+
+self = <novelty_agent_framework.workflows.novelty.NoveltyWorkflow object at 0x722df7fa4cd0>
+paper = PaperInput(paper_id='paper-test', title='证据驱动论文查新', abstract='测试摘要', english_abstract='', full_text='测试正文', references=[], claimed_contributions=['创新声明 1'], keywords_zh=[], keywords_en=[], metadata={}, images=[], tables=[], equations=[])
+run_identity = None
+
+    def run(
+        self,
+        paper: PaperInput | dict[str, Any],
+        *,
+        run_identity: Mapping[str, Any] | None = None,
+    ) -> NoveltyRunResult:
+        """同步入口；异步应用应直接调用 arun。"""
+    
+        try:
+>           asyncio.get_running_loop()
+E           RuntimeError: no running event loop
+
+/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py:1262: RuntimeError
+
+During handling of the above exception, another exception occurred:
+
+    def test_validator_runs_once_after_current_round_fan_in():
+        researcher = RecordingTaskResearcher()
+        validator = RecordingValidator(researcher)
+        workflow, _ = build_workflow(researcher, validator, max_rounds=1)
+>       workflow.run(make_paper())
+
+/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/tests/test_workflow.py:425: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py:1264: in run
+    return asyncio.run(self.arun(paper, run_identity=run_identity))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/asyncio/runners.py:190: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/asyncio/base_events.py:654: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py:1220: in arun
+    final = await self.graph.ainvoke(
+/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/site-packages/langgraph/pregel/main.py:4090: in ainvoke
+    async for chunk in self.astream(
+/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/site-packages/langgraph/pregel/main.py:3440: in astream
+    async for _ in runner.atick(
+/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/site-packages/langgraph/pregel/_runner.py:396: in atick
+    await arun_with_retry(
+/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/site-packages/langgraph/pregel/_retry.py:744: in arun_with_retry
+    return await task.proc.ainvoke(task.input, config)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/site-packages/langgraph/_internal/_runnable.py:756: in ainvoke
+    input = await asyncio.create_task(
+/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/site-packages/langgraph/_internal/_runnable.py:522: in ainvoke
+    ret = await self.afunc(*args, **kwargs)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py:323: in recorded
+    output = await function(state)
+             ^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <novelty_agent_framework.workflows.novelty.NoveltyWorkflow object at 0x722df7fa4cd0>
+state = {'paper': PaperInput(paper_id='paper-test', title='证据驱动论文查新', abstract='测试摘要', english_abstract='', full_text='测试正文', ...ovelty_point_id='NP-1', task_type='literature_search', language='en', description='针对该查新点执行英文文献检索。', attempt=1)]), ...}
+
+    async def _validate_report_integrity(
+        self, state: NoveltyState
+    ) -> dict[str, Any]:
+        """Gate B: observe report reference failures without blocking output."""
+    
+>       result = validate_report_integrity(
+            state["report"],
+            novelty_points=state.get("novelty_points", []),
+            evidence_cards=state.get("evidence_cards", []),
+            novelty_reviews=state.get("novelty_reviews", []),
+            evidence=state.get("raw_evidence", []),
+            reference_store=self.reference_store,
+        )
+E       TypeError: validate_report_integrity() got an unexpected keyword argument 'evidence'
+E       During task with name 'validate_report_integrity' and id 'ce7fcb9b-3044-41ca-6fe4-0a9be34f1f8e'
+
+/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py:1130: TypeError
+______________ test_single_task_failure_does_not_cancel_siblings _______________
+
+self = <novelty_agent_framework.workflows.novelty.NoveltyWorkflow object at 0x722df7fd3310>
+paper = PaperInput(paper_id='paper-test', title='证据驱动论文查新', abstract='测试摘要', english_abstract='', full_text='测试正文', references=[], claimed_contributions=['创新声明 1'], keywords_zh=[], keywords_en=[], metadata={}, images=[], tables=[], equations=[])
+run_identity = None
+
+    def run(
+        self,
+        paper: PaperInput | dict[str, Any],
+        *,
+        run_identity: Mapping[str, Any] | None = None,
+    ) -> NoveltyRunResult:
+        """同步入口；异步应用应直接调用 arun。"""
+    
+        try:
+>           asyncio.get_running_loop()
+E           RuntimeError: no running event loop
+
+/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py:1262: RuntimeError
+
+During handling of the above exception, another exception occurred:
+
+    def test_single_task_failure_does_not_cancel_siblings():
+        researcher = RecordingTaskResearcher(fail_task="T-1")
+        workflow, _ = build_workflow(researcher, max_rounds=1)
+>       result = workflow.run(make_paper())
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/tests/test_workflow.py:486: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py:1264: in run
+    return asyncio.run(self.arun(paper, run_identity=run_identity))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/asyncio/runners.py:190: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/asyncio/base_events.py:654: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py:1220: in arun
+    final = await self.graph.ainvoke(
+/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/site-packages/langgraph/pregel/main.py:4090: in ainvoke
+    async for chunk in self.astream(
+/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/site-packages/langgraph/pregel/main.py:3440: in astream
+    async for _ in runner.atick(
+/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/site-packages/langgraph/pregel/_runner.py:396: in atick
+    await arun_with_retry(
+/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/site-packages/langgraph/pregel/_retry.py:744: in arun_with_retry
+    return await task.proc.ainvoke(task.input, config)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/site-packages/langgraph/_internal/_runnable.py:756: in ainvoke
+    input = await asyncio.create_task(
+/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/site-packages/langgraph/_internal/_runnable.py:522: in ainvoke
+    ret = await self.afunc(*args, **kwargs)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py:323: in recorded
+    output = await function(state)
+             ^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <novelty_agent_framework.workflows.novelty.NoveltyWorkflow object at 0x722df7fd3310>
+state = {'paper': PaperInput(paper_id='paper-test', title='证据驱动论文查新', abstract='测试摘要', english_abstract='', full_text='测试正文', ...ovelty_point_id='NP-1', task_type='literature_search', language='en', description='针对该查新点执行英文文献检索。', attempt=1)]), ...}
+
+    async def _validate_report_integrity(
+        self, state: NoveltyState
+    ) -> dict[str, Any]:
+        """Gate B: observe report reference failures without blocking output."""
+    
+>       result = validate_report_integrity(
+            state["report"],
+            novelty_points=state.get("novelty_points", []),
+            evidence_cards=state.get("evidence_cards", []),
+            novelty_reviews=state.get("novelty_reviews", []),
+            evidence=state.get("raw_evidence", []),
+            reference_store=self.reference_store,
+        )
+E       TypeError: validate_report_integrity() got an unexpected keyword argument 'evidence'
+E       During task with name 'validate_report_integrity' and id '5558d06a-b265-56f9-3fdf-ab6e3fa5cccf'
+
+/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py:1130: TypeError
+__________________ test_supplement_dispatches_only_new_tasks ___________________
+
+self = <novelty_agent_framework.workflows.novelty.NoveltyWorkflow object at 0x722e049b8c10>
+paper = PaperInput(paper_id='paper-test', title='证据驱动论文查新', abstract='测试摘要', english_abstract='', full_text='测试正文', references=[], claimed_contributions=['创新声明 1'], keywords_zh=[], keywords_en=[], metadata={}, images=[], tables=[], equations=[])
+run_identity = None
+
+    def run(
+        self,
+        paper: PaperInput | dict[str, Any],
+        *,
+        run_identity: Mapping[str, Any] | None = None,
+    ) -> NoveltyRunResult:
+        """同步入口；异步应用应直接调用 arun。"""
+    
+        try:
+>           asyncio.get_running_loop()
+E           RuntimeError: no running event loop
+
+/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py:1262: RuntimeError
+
+During handling of the above exception, another exception occurred:
+
+    def test_supplement_dispatches_only_new_tasks():
+        researcher = RecordingTaskResearcher(first_round_empty=True)
+        planner = RecordingPlanner()
+        workflow, _ = build_workflow(researcher, planner=planner, max_rounds=2)
+>       result = workflow.run(make_paper())
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/tests/test_workflow.py:496: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py:1264: in run
+    return asyncio.run(self.arun(paper, run_identity=run_identity))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/asyncio/runners.py:190: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/asyncio/base_events.py:654: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py:1220: in arun
+    final = await self.graph.ainvoke(
+/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/site-packages/langgraph/pregel/main.py:4090: in ainvoke
+    async for chunk in self.astream(
+/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/site-packages/langgraph/pregel/main.py:3440: in astream
+    async for _ in runner.atick(
+/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/site-packages/langgraph/pregel/_runner.py:396: in atick
+    await arun_with_retry(
+/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/site-packages/langgraph/pregel/_retry.py:744: in arun_with_retry
+    return await task.proc.ainvoke(task.input, config)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/site-packages/langgraph/_internal/_runnable.py:756: in ainvoke
+    input = await asyncio.create_task(
+/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/site-packages/langgraph/_internal/_runnable.py:522: in ainvoke
+    ret = await self.afunc(*args, **kwargs)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py:323: in recorded
+    output = await function(state)
+             ^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <novelty_agent_framework.workflows.novelty.NoveltyWorkflow object at 0x722e049b8c10>
+state = {'paper': PaperInput(paper_id='paper-test', title='证据驱动论文查新', abstract='测试摘要', english_abstract='', full_text='测试正文', ...red threshold; plan only the unresolved point.\n{"missing_feature_ids": [], "missing_aspects": []}', attempt=2)]), ...}
+
+    async def _validate_report_integrity(
+        self, state: NoveltyState
+    ) -> dict[str, Any]:
+        """Gate B: observe report reference failures without blocking output."""
+    
+>       result = validate_report_integrity(
+            state["report"],
+            novelty_points=state.get("novelty_points", []),
+            evidence_cards=state.get("evidence_cards", []),
+            novelty_reviews=state.get("novelty_reviews", []),
+            evidence=state.get("raw_evidence", []),
+            reference_store=self.reference_store,
+        )
+E       TypeError: validate_report_integrity() got an unexpected keyword argument 'evidence'
+E       During task with name 'validate_report_integrity' and id '08a80e97-5974-e154-8620-a3b92233477b'
+
+/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py:1130: TypeError
+______________________ test_no_tasks_branch_does_not_hang ______________________
+
+self = <novelty_agent_framework.workflows.novelty.NoveltyWorkflow object at 0x722e05e7d8d0>
+paper = PaperInput(paper_id='paper-test', title='证据驱动论文查新', abstract='测试摘要', english_abstract='', full_text='测试正文', references=[], claimed_contributions=['创新声明 1'], keywords_zh=[], keywords_en=[], metadata={}, images=[], tables=[], equations=[])
+run_identity = None
+
+    def run(
+        self,
+        paper: PaperInput | dict[str, Any],
+        *,
+        run_identity: Mapping[str, Any] | None = None,
+    ) -> NoveltyRunResult:
+        """同步入口；异步应用应直接调用 arun。"""
+    
+        try:
+>           asyncio.get_running_loop()
+E           RuntimeError: no running event loop
+
+/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py:1262: RuntimeError
+
+During handling of the above exception, another exception occurred:
+
+    def test_no_tasks_branch_does_not_hang():
+        researcher = RecordingTaskResearcher()
+        workflow = NoveltyWorkflow(
+            NoveltyWorkflowServices(
+                coordinator=NoTaskCoordinator(),
+                task_researcher=researcher,
+                search_planner=DemoSearchPlanner(),
+                point_extractor=DemoPointExtractor(),
+            ),
+            NoveltyWorkflowConfig(max_rounds=1),
+        )
+>       result = workflow.run(make_paper())
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/tests/test_workflow.py:545: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py:1264: in run
+    return asyncio.run(self.arun(paper, run_identity=run_identity))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/asyncio/runners.py:190: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/asyncio/base_events.py:654: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py:1220: in arun
+    final = await self.graph.ainvoke(
+/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/site-packages/langgraph/pregel/main.py:4090: in ainvoke
+    async for chunk in self.astream(
+/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/site-packages/langgraph/pregel/main.py:3440: in astream
+    async for _ in runner.atick(
+/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/site-packages/langgraph/pregel/_runner.py:396: in atick
+    await arun_with_retry(
+/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/site-packages/langgraph/pregel/_retry.py:744: in arun_with_retry
+    return await task.proc.ainvoke(task.input, config)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/site-packages/langgraph/_internal/_runnable.py:756: in ainvoke
+    input = await asyncio.create_task(
+/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/site-packages/langgraph/_internal/_runnable.py:522: in ainvoke
+    ret = await self.afunc(*args, **kwargs)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py:323: in recorded
+    output = await function(state)
+             ^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <novelty_agent_framework.workflows.novelty.NoveltyWorkflow object at 0x722e05e7d8d0>
+state = {'paper': PaperInput(paper_id='paper-test', title='证据驱动论文查新', abstract='测试摘要', english_abstract='', full_text='测试正文', ...en=[], source_locations=['claimed_contributions'])], keywords_zh=['证据驱动论文查新'], keywords_en=[], research_tasks=[]), ...}
+
+    async def _validate_report_integrity(
+        self, state: NoveltyState
+    ) -> dict[str, Any]:
+        """Gate B: observe report reference failures without blocking output."""
+    
+>       result = validate_report_integrity(
+            state["report"],
+            novelty_points=state.get("novelty_points", []),
+            evidence_cards=state.get("evidence_cards", []),
+            novelty_reviews=state.get("novelty_reviews", []),
+            evidence=state.get("raw_evidence", []),
+            reference_store=self.reference_store,
+        )
+E       TypeError: validate_report_integrity() got an unexpected keyword argument 'evidence'
+E       During task with name 'validate_report_integrity' and id '5a4a8ecf-cb3a-697a-6466-181b99e2ccc2'
+
+/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py:1130: TypeError
+_____________ test_task_audit_and_compatibility_files_are_written ______________
+
+self = <novelty_agent_framework.workflows.novelty.NoveltyWorkflow object at 0x722e05d28d10>
+paper = PaperInput(paper_id='paper-test', title='证据驱动论文查新', abstract='测试摘要', english_abstract='', full_text='测试正文', references=[], claimed_contributions=['创新声明 1'], keywords_zh=[], keywords_en=[], metadata={}, images=[], tables=[], equations=[])
+run_identity = None
+
+    def run(
+        self,
+        paper: PaperInput | dict[str, Any],
+        *,
+        run_identity: Mapping[str, Any] | None = None,
+    ) -> NoveltyRunResult:
+        """同步入口；异步应用应直接调用 arun。"""
+    
+        try:
+>           asyncio.get_running_loop()
+E           RuntimeError: no running event loop
+
+/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py:1262: RuntimeError
+
+During handling of the above exception, another exception occurred:
+
+    def test_task_audit_and_compatibility_files_are_written():
+        workflow, _ = build_workflow(max_rounds=1)
+>       workflow.run(make_paper())
+
+/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/tests/test_workflow.py:559: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py:1264: in run
+    return asyncio.run(self.arun(paper, run_identity=run_identity))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/asyncio/runners.py:190: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/asyncio/base_events.py:654: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py:1220: in arun
+    final = await self.graph.ainvoke(
+/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/site-packages/langgraph/pregel/main.py:4090: in ainvoke
+    async for chunk in self.astream(
+/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/site-packages/langgraph/pregel/main.py:3440: in astream
+    async for _ in runner.atick(
+/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/site-packages/langgraph/pregel/_runner.py:396: in atick
+    await arun_with_retry(
+/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/site-packages/langgraph/pregel/_retry.py:744: in arun_with_retry
+    return await task.proc.ainvoke(task.input, config)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/site-packages/langgraph/_internal/_runnable.py:756: in ainvoke
+    input = await asyncio.create_task(
+/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/site-packages/langgraph/_internal/_runnable.py:522: in ainvoke
+    ret = await self.afunc(*args, **kwargs)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py:323: in recorded
+    output = await function(state)
+             ^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <novelty_agent_framework.workflows.novelty.NoveltyWorkflow object at 0x722e05d28d10>
+state = {'paper': PaperInput(paper_id='paper-test', title='证据驱动论文查新', abstract='测试摘要', english_abstract='', full_text='测试正文', ...ovelty_point_id='NP-1', task_type='literature_search', language='en', description='针对该查新点执行英文文献检索。', attempt=1)]), ...}
+
+    async def _validate_report_integrity(
+        self, state: NoveltyState
+    ) -> dict[str, Any]:
+        """Gate B: observe report reference failures without blocking output."""
+    
+>       result = validate_report_integrity(
+            state["report"],
+            novelty_points=state.get("novelty_points", []),
+            evidence_cards=state.get("evidence_cards", []),
+            novelty_reviews=state.get("novelty_reviews", []),
+            evidence=state.get("raw_evidence", []),
+            reference_store=self.reference_store,
+        )
+E       TypeError: validate_report_integrity() got an unexpected keyword argument 'evidence'
+E       During task with name 'validate_report_integrity' and id 'dea09265-5183-4e36-4253-e064dab46807'
+
+/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py:1130: TypeError
+________________________ test_default_demo_runs_offline ________________________
+
+self = <novelty_agent_framework.workflows.novelty.NoveltyWorkflow object at 0x722e05c3f1d0>
+paper = PaperInput(paper_id='paper-test', title='证据驱动论文查新', abstract='测试摘要', english_abstract='', full_text='测试正文', references=[], claimed_contributions=['创新声明 1'], keywords_zh=[], keywords_en=[], metadata={}, images=[], tables=[], equations=[])
+run_identity = None
+
+    def run(
+        self,
+        paper: PaperInput | dict[str, Any],
+        *,
+        run_identity: Mapping[str, Any] | None = None,
+    ) -> NoveltyRunResult:
+        """同步入口；异步应用应直接调用 arun。"""
+    
+        try:
+>           asyncio.get_running_loop()
+E           RuntimeError: no running event loop
+
+/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py:1262: RuntimeError
+
+During handling of the above exception, another exception occurred:
+
+    def test_default_demo_runs_offline():
+>       result = NoveltyWorkflow.default().run(make_paper())
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/tests/test_workflow.py:572: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py:1264: in run
+    return asyncio.run(self.arun(paper, run_identity=run_identity))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/asyncio/runners.py:190: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/asyncio/base_events.py:654: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py:1220: in arun
+    final = await self.graph.ainvoke(
+/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/site-packages/langgraph/pregel/main.py:4090: in ainvoke
+    async for chunk in self.astream(
+/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/site-packages/langgraph/pregel/main.py:3440: in astream
+    async for _ in runner.atick(
+/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/site-packages/langgraph/pregel/_runner.py:396: in atick
+    await arun_with_retry(
+/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/site-packages/langgraph/pregel/_retry.py:744: in arun_with_retry
+    return await task.proc.ainvoke(task.input, config)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/site-packages/langgraph/_internal/_runnable.py:756: in ainvoke
+    input = await asyncio.create_task(
+/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/site-packages/langgraph/_internal/_runnable.py:522: in ainvoke
+    ret = await self.afunc(*args, **kwargs)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py:323: in recorded
+    output = await function(state)
+             ^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <novelty_agent_framework.workflows.novelty.NoveltyWorkflow object at 0x722e05c3f1d0>
+state = {'paper': PaperInput(paper_id='paper-test', title='证据驱动论文查新', abstract='测试摘要', english_abstract='', full_text='测试正文', ...ovelty_point_id='NP-1', task_type='literature_search', language='en', description='针对该查新点执行英文文献检索。', attempt=1)]), ...}
+
+    async def _validate_report_integrity(
+        self, state: NoveltyState
+    ) -> dict[str, Any]:
+        """Gate B: observe report reference failures without blocking output."""
+    
+>       result = validate_report_integrity(
+            state["report"],
+            novelty_points=state.get("novelty_points", []),
+            evidence_cards=state.get("evidence_cards", []),
+            novelty_reviews=state.get("novelty_reviews", []),
+            evidence=state.get("raw_evidence", []),
+            reference_store=self.reference_store,
+        )
+E       TypeError: validate_report_integrity() got an unexpected keyword argument 'evidence'
+E       During task with name 'validate_report_integrity' and id '40528781-dadd-8cda-cacd-372ed84faa86'
+
+/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py:1130: TypeError
+___________ test_trace_switch_keeps_offline_workflow_business_result ___________
+
+self = <novelty_agent_framework.workflows.novelty.NoveltyWorkflow object at 0x722e05d220d0>
+paper = PaperInput(paper_id='paper-test', title='证据驱动论文查新', abstract='测试摘要', english_abstract='', full_text='测试正文', references=[], claimed_contributions=['创新声明 1'], keywords_zh=[], keywords_en=[], metadata={}, images=[], tables=[], equations=[])
+run_identity = None
+
+    def run(
+        self,
+        paper: PaperInput | dict[str, Any],
+        *,
+        run_identity: Mapping[str, Any] | None = None,
+    ) -> NoveltyRunResult:
+        """同步入口；异步应用应直接调用 arun。"""
+    
+        try:
+>           asyncio.get_running_loop()
+E           RuntimeError: no running event loop
+
+/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py:1262: RuntimeError
+
+During handling of the above exception, another exception occurred:
+
+tmp_path = PosixPath('/tmp/pytest-of-lya3106643285/pytest-81/test_trace_switch_keeps_offlin0')
+
+    def test_trace_switch_keeps_offline_workflow_business_result(tmp_path):
+        results = []
+        for enabled in (False, True):
+            root = tmp_path / str(enabled)
+            workflow, _ = build_workflow(
+                output_root=root,
+                runtime_debug=RuntimeDebugConfig(
+                    enabled=enabled, output_root=root,
+                    archive_root=tmp_path / f"archive-{enabled}"),
+            )
+>           results.append(workflow.run(make_paper()))
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/tests/test_workflow.py:587: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py:1264: in run
+    return asyncio.run(self.arun(paper, run_identity=run_identity))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/asyncio/runners.py:190: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/asyncio/base_events.py:654: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py:1220: in arun
+    final = await self.graph.ainvoke(
+/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/site-packages/langgraph/pregel/main.py:4090: in ainvoke
+    async for chunk in self.astream(
+/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/site-packages/langgraph/pregel/main.py:3440: in astream
+    async for _ in runner.atick(
+/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/site-packages/langgraph/pregel/_runner.py:396: in atick
+    await arun_with_retry(
+/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/site-packages/langgraph/pregel/_retry.py:744: in arun_with_retry
+    return await task.proc.ainvoke(task.input, config)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/site-packages/langgraph/_internal/_runnable.py:756: in ainvoke
+    input = await asyncio.create_task(
+/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/site-packages/langgraph/_internal/_runnable.py:522: in ainvoke
+    ret = await self.afunc(*args, **kwargs)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py:320: in recorded
+    return await function(state)
+           ^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <novelty_agent_framework.workflows.novelty.NoveltyWorkflow object at 0x722e05d220d0>
+state = {'paper': PaperInput(paper_id='paper-test', title='证据驱动论文查新', abstract='测试摘要', english_abstract='', full_text='测试正文', ...ovelty_point_id='NP-1', task_type='literature_search', language='en', description='针对该查新点执行英文文献检索。', attempt=1)]), ...}
+
+    async def _validate_report_integrity(
+        self, state: NoveltyState
+    ) -> dict[str, Any]:
+        """Gate B: observe report reference failures without blocking output."""
+    
+>       result = validate_report_integrity(
+            state["report"],
+            novelty_points=state.get("novelty_points", []),
+            evidence_cards=state.get("evidence_cards", []),
+            novelty_reviews=state.get("novelty_reviews", []),
+            evidence=state.get("raw_evidence", []),
+            reference_store=self.reference_store,
+        )
+E       TypeError: validate_report_integrity() got an unexpected keyword argument 'evidence'
+E       During task with name 'validate_report_integrity' and id '5f1009f0-c7eb-f8f9-afb0-04921886889b'
+
+/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/workflows/novelty.py:1130: TypeError
+=========================== short test summary info ============================
+FAILED tests/test_workflow.py::test_each_task_is_isolated_and_fan_out_runs_concurrently
+FAILED tests/test_workflow.py::test_sequential_runs_with_same_paper_id_do_not_overwrite
+FAILED tests/test_workflow.py::test_validator_runs_once_after_current_round_fan_in
+FAILED tests/test_workflow.py::test_single_task_failure_does_not_cancel_siblings
+FAILED tests/test_workflow.py::test_supplement_dispatches_only_new_tasks - Ty...
+FAILED tests/test_workflow.py::test_no_tasks_branch_does_not_hang - TypeError...
+FAILED tests/test_workflow.py::test_task_audit_and_compatibility_files_are_written
+FAILED tests/test_workflow.py::test_default_demo_runs_offline - TypeError: va...
+FAILED tests/test_workflow.py::test_trace_switch_keeps_offline_workflow_business_result
+9 failed, 90 passed in 4.35s

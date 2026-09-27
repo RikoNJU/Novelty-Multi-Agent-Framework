@@ -1,0 +1,281 @@
+FFFFFF.                                                                  [100%]
+=================================== FAILURES ===================================
+_ test_cancellation_race_accounts_once_and_reconciles_finished_summary[cancel_then_complete] _
+
+tmp_path = PosixPath('/tmp/pytest-of-lya3106643285/pytest-43/test_cancellation_race_account0')
+order = 'cancel_then_complete'
+
+    @pytest.mark.parametrize("order", ["cancel_then_complete", "complete_then_cancel"])
+    def test_cancellation_race_accounts_once_and_reconciles_finished_summary(tmp_path, order):
+        manager = manager_at(tmp_path)
+        common = {"alias": "priced", "provider": "openai_compatible", "model": MODEL,
+            "started_at": datetime(2026, 9, 6, 19, tzinfo=timezone.utc), "duration_ms": 1,
+            "message_count": 1, "call_id": "same-call"}
+        complete = ModelCallEvent(**common, response=ModelResponse(content="ok", usage=USAGE, raw={"id": "response"}))
+        cancelled = ModelCallEvent(**common, phase="CANCELLED", error=asyncio.CancelledError())
+        manager.record_model_call(ModelCallEvent(**common, phase="START"))
+        manager.record_model_call(ModelCallEvent(**common, phase="TRANSPORT_INVOKED"))
+        first, second = (cancelled, complete) if order == "cancel_then_complete" else (complete, cancelled)
+        manager.record_model_call(first)
+        _, archive = manager.finish_run("FAILED")
+        original_run = summary(manager)["run"]
+        manager.record_model_call(second)
+        # Duplicate event delivery is not an additional provider generation.
+        manager.record_model_call(second)
+        record = records(manager)[0]
+        assert record["status"] == "CANCELLED"
+>       assert record["provider_usage"] == USAGE
+E       AssertionError: assert {} == {'prompt_toke...s': 200}, ...}
+E         
+E         Right contains 5 more items:
+E         {'completion_tokens': 500,
+E          'completion_tokens_details': {'reasoning_tokens': 100},
+E          'prompt_tokens': 1000,
+E          'prompt_tokens_details': {'cached_tokens': 200},
+E          'total_tokens': 1500}
+E         Use -v to get more diff
+
+tests/test_usage_accounting_closure.py:68: AssertionError
+_ test_cancellation_race_accounts_once_and_reconciles_finished_summary[complete_then_cancel] _
+
+tmp_path = PosixPath('/tmp/pytest-of-lya3106643285/pytest-43/test_cancellation_race_account1')
+order = 'complete_then_cancel'
+
+    @pytest.mark.parametrize("order", ["cancel_then_complete", "complete_then_cancel"])
+    def test_cancellation_race_accounts_once_and_reconciles_finished_summary(tmp_path, order):
+        manager = manager_at(tmp_path)
+        common = {"alias": "priced", "provider": "openai_compatible", "model": MODEL,
+            "started_at": datetime(2026, 9, 6, 19, tzinfo=timezone.utc), "duration_ms": 1,
+            "message_count": 1, "call_id": "same-call"}
+        complete = ModelCallEvent(**common, response=ModelResponse(content="ok", usage=USAGE, raw={"id": "response"}))
+        cancelled = ModelCallEvent(**common, phase="CANCELLED", error=asyncio.CancelledError())
+        manager.record_model_call(ModelCallEvent(**common, phase="START"))
+        manager.record_model_call(ModelCallEvent(**common, phase="TRANSPORT_INVOKED"))
+        first, second = (cancelled, complete) if order == "cancel_then_complete" else (complete, cancelled)
+        manager.record_model_call(first)
+        _, archive = manager.finish_run("FAILED")
+        original_run = summary(manager)["run"]
+        manager.record_model_call(second)
+        # Duplicate event delivery is not an additional provider generation.
+        manager.record_model_call(second)
+        record = records(manager)[0]
+        assert record["status"] == "CANCELLED"
+>       assert record["provider_usage"] == USAGE
+E       AssertionError: assert {} == {'prompt_toke...s': 200}, ...}
+E         
+E         Right contains 5 more items:
+E         {'completion_tokens': 500,
+E          'completion_tokens_details': {'reasoning_tokens': 100},
+E          'prompt_tokens': 1000,
+E          'prompt_tokens_details': {'cached_tokens': 200},
+E          'total_tokens': 1500}
+E         Use -v to get more diff
+
+tests/test_usage_accounting_closure.py:68: AssertionError
+__________ test_response_parse_failure_keeps_provider_usage[choices0] __________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x710ad80a3d10>
+tmp_path = PosixPath('/tmp/pytest-of-lya3106643285/pytest-43/test_response_parse_failure_ke0')
+choices = []
+
+    @pytest.mark.parametrize("choices", [[], [{"message": {"content": 17}}],
+        [{"message": {"content": None, "tool_calls": [{"id": "call", "type": "function",
+            "function": {"name": "reader", "arguments": "{bad-json"}}]}}]])
+    def test_response_parse_failure_keeps_provider_usage(monkeypatch, tmp_path, choices):
+        raw = {"id": "malformed-response", "choices": choices, "usage": USAGE}
+        monkeypatch.setattr("urllib.request.urlopen", lambda *a, **k: Response(raw))
+        manager = manager_at(tmp_path)
+        manager.activate()
+        try:
+            with pytest.raises(ModelClientError):
+                client().complete([ChatMessage("user", "input")])
+        finally:
+            manager.finish_run("FAILED")
+            manager.deactivate()
+        record = records(manager)[0]
+        assert record["status"] == "FAILED"
+>       assert record["provider_usage"] == USAGE
+E       AssertionError: assert {} == {'prompt_toke...s': 200}, ...}
+E         
+E         Right contains 5 more items:
+E         {'completion_tokens': 500,
+E          'completion_tokens_details': {'reasoning_tokens': 100},
+E          'prompt_tokens': 1000,
+E          'prompt_tokens_details': {'cached_tokens': 200},
+E          'total_tokens': 1500}
+E         Use -v to get more diff
+
+tests/test_usage_accounting_closure.py:114: AssertionError
+__________ test_response_parse_failure_keeps_provider_usage[choices1] __________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x710ad8103350>
+tmp_path = PosixPath('/tmp/pytest-of-lya3106643285/pytest-43/test_response_parse_failure_ke1')
+choices = [{'message': {'content': 17}}]
+
+    @pytest.mark.parametrize("choices", [[], [{"message": {"content": 17}}],
+        [{"message": {"content": None, "tool_calls": [{"id": "call", "type": "function",
+            "function": {"name": "reader", "arguments": "{bad-json"}}]}}]])
+    def test_response_parse_failure_keeps_provider_usage(monkeypatch, tmp_path, choices):
+        raw = {"id": "malformed-response", "choices": choices, "usage": USAGE}
+        monkeypatch.setattr("urllib.request.urlopen", lambda *a, **k: Response(raw))
+        manager = manager_at(tmp_path)
+        manager.activate()
+        try:
+            with pytest.raises(ModelClientError):
+                client().complete([ChatMessage("user", "input")])
+        finally:
+            manager.finish_run("FAILED")
+            manager.deactivate()
+        record = records(manager)[0]
+        assert record["status"] == "FAILED"
+>       assert record["provider_usage"] == USAGE
+E       AssertionError: assert {} == {'prompt_toke...s': 200}, ...}
+E         
+E         Right contains 5 more items:
+E         {'completion_tokens': 500,
+E          'completion_tokens_details': {'reasoning_tokens': 100},
+E          'prompt_tokens': 1000,
+E          'prompt_tokens_details': {'cached_tokens': 200},
+E          'total_tokens': 1500}
+E         Use -v to get more diff
+
+tests/test_usage_accounting_closure.py:114: AssertionError
+__________ test_response_parse_failure_keeps_provider_usage[choices2] __________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x710ad8163510>
+tmp_path = PosixPath('/tmp/pytest-of-lya3106643285/pytest-43/test_response_parse_failure_ke2')
+choices = [{'message': {'content': None, 'tool_calls': [{'id': 'call', 'type': 'function', 'function': {'name': 'reader', 'arguments': '{bad-json'}}]}}]
+
+    @pytest.mark.parametrize("choices", [[], [{"message": {"content": 17}}],
+        [{"message": {"content": None, "tool_calls": [{"id": "call", "type": "function",
+            "function": {"name": "reader", "arguments": "{bad-json"}}]}}]])
+    def test_response_parse_failure_keeps_provider_usage(monkeypatch, tmp_path, choices):
+        raw = {"id": "malformed-response", "choices": choices, "usage": USAGE}
+        monkeypatch.setattr("urllib.request.urlopen", lambda *a, **k: Response(raw))
+        manager = manager_at(tmp_path)
+        manager.activate()
+        try:
+            with pytest.raises(ModelClientError):
+                client().complete([ChatMessage("user", "input")])
+        finally:
+            manager.finish_run("FAILED")
+            manager.deactivate()
+        record = records(manager)[0]
+        assert record["status"] == "FAILED"
+>       assert record["provider_usage"] == USAGE
+E       AssertionError: assert {} == {'prompt_toke...s': 200}, ...}
+E         
+E         Right contains 5 more items:
+E         {'completion_tokens': 500,
+E          'completion_tokens_details': {'reasoning_tokens': 100},
+E          'prompt_tokens': 1000,
+E          'prompt_tokens_details': {'cached_tokens': 200},
+E          'total_tokens': 1500}
+E         Use -v to get more diff
+
+tests/test_usage_accounting_closure.py:114: AssertionError
+_________ test_cancelled_transport_parse_failure_reconciles_late_usage _________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x710ad8163c10>
+tmp_path = PosixPath('/tmp/pytest-of-lya3106643285/pytest-43/test_cancelled_transport_parse0')
+
+    def test_cancelled_transport_parse_failure_reconciles_late_usage(monkeypatch, tmp_path):
+        entered, release = threading.Event(), threading.Event()
+        class SlowMalformed(Response):
+            def read(self):
+                entered.set()
+                assert release.wait(timeout=3)
+                return super().read()
+        monkeypatch.setattr("urllib.request.urlopen", lambda *a, **k: SlowMalformed(
+            {"id": "late-malformed", "choices": [], "usage": USAGE}))
+        manager = manager_at(tmp_path)
+        manager.activate()
+        async def run():
+            task = asyncio.create_task(client().acomplete([ChatMessage("user", "input")]))
+            for _ in range(100):
+                if entered.is_set():
+                    break
+                await asyncio.sleep(0.01)
+            assert entered.is_set()
+            task.cancel()
+            with pytest.raises(asyncio.CancelledError):
+                await task
+            manager.finish_run("FAILED")
+            original_run = summary(manager)["run"]
+            release.set()
+            for _ in range(100):
+                if records(manager)[0].get("late_completion"):
+                    break
+                await asyncio.sleep(0.01)
+            assert records(manager)[0].get("late_completion")
+            # Allow the writer to finish the atomic summary replacement as well.
+            for _ in range(100):
+                if summary(manager)["llm_usage"]["totals"]["total_tokens"] == 1500:
+                    break
+                await asyncio.sleep(0.01)
+            assert records(manager)[0]["status"] == "CANCELLED"
+            assert records(manager)[0]["late_completion"]["status"] == "FAILED"
+            assert records(manager)[0]["provider_usage"] == USAGE
+            assert summary(manager)["run"] == original_run
+            assert_consumption(summary(manager)["llm_usage"]["totals"])
+        try:
+>           asyncio.run(run())
+
+tests/test_usage_accounting_closure.py:160: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../../miniconda3/envs/Novelty-web/lib/python3.11/asyncio/runners.py:190: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+../../miniconda3/envs/Novelty-web/lib/python3.11/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../miniconda3/envs/Novelty-web/lib/python3.11/asyncio/base_events.py:654: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    async def run():
+        task = asyncio.create_task(client().acomplete([ChatMessage("user", "input")]))
+        for _ in range(100):
+            if entered.is_set():
+                break
+            await asyncio.sleep(0.01)
+        assert entered.is_set()
+        task.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await task
+        manager.finish_run("FAILED")
+        original_run = summary(manager)["run"]
+        release.set()
+        for _ in range(100):
+            if records(manager)[0].get("late_completion"):
+                break
+            await asyncio.sleep(0.01)
+        assert records(manager)[0].get("late_completion")
+        # Allow the writer to finish the atomic summary replacement as well.
+        for _ in range(100):
+            if summary(manager)["llm_usage"]["totals"]["total_tokens"] == 1500:
+                break
+            await asyncio.sleep(0.01)
+        assert records(manager)[0]["status"] == "CANCELLED"
+        assert records(manager)[0]["late_completion"]["status"] == "FAILED"
+>       assert records(manager)[0]["provider_usage"] == USAGE
+E       AssertionError: assert {} == {'prompt_toke...s': 200}, ...}
+E         
+E         Right contains 5 more items:
+E         {'completion_tokens': 500,
+E          'completion_tokens_details': {'reasoning_tokens': 100},
+E          'prompt_tokens': 1000,
+E          'prompt_tokens_details': {'cached_tokens': 200},
+E          'total_tokens': 1500}
+E         Use -v to get more diff
+
+tests/test_usage_accounting_closure.py:156: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_usage_accounting_closure.py::test_cancellation_race_accounts_once_and_reconciles_finished_summary[cancel_then_complete]
+FAILED tests/test_usage_accounting_closure.py::test_cancellation_race_accounts_once_and_reconciles_finished_summary[complete_then_cancel]
+FAILED tests/test_usage_accounting_closure.py::test_response_parse_failure_keeps_provider_usage[choices0]
+FAILED tests/test_usage_accounting_closure.py::test_response_parse_failure_keeps_provider_usage[choices1]
+FAILED tests/test_usage_accounting_closure.py::test_response_parse_failure_keeps_provider_usage[choices2]
+FAILED tests/test_usage_accounting_closure.py::test_cancelled_transport_parse_failure_reconciles_late_usage
+6 failed, 1 passed in 2.78s

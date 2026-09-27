@@ -1,0 +1,304 @@
+{
+  "provider.authentication": {
+    "layer": "provider",
+    "category": "authentication",
+    "actions": [
+      "change_provider",
+      "manual"
+    ],
+    "retry_limit": 0,
+    "input_change": false,
+    "effect": "limits_coverage"
+  },
+  "provider.authorization": {
+    "layer": "provider",
+    "category": "authorization",
+    "actions": [
+      "change_provider",
+      "manual"
+    ],
+    "retry_limit": 0,
+    "input_change": false,
+    "effect": "limits_coverage"
+  },
+  "provider.rate_limit": {
+    "layer": "provider",
+    "category": "rate_limit",
+    "actions": [
+      "retry_request",
+      "change_provider",
+      "stop"
+    ],
+    "retry_limit": 1,
+    "input_change": false,
+    "effect": "limits_coverage"
+  },
+  "provider.network": {
+    "layer": "provider",
+    "category": "network",
+    "actions": [
+      "retry_request",
+      "change_provider",
+      "stop"
+    ],
+    "retry_limit": 1,
+    "input_change": false,
+    "effect": "limits_coverage"
+  },
+  "provider.service": {
+    "layer": "provider",
+    "category": "service",
+    "actions": [
+      "retry_request",
+      "change_provider",
+      "stop"
+    ],
+    "retry_limit": 1,
+    "input_change": false,
+    "effect": "limits_coverage"
+  },
+  "provider.protocol": {
+    "layer": "provider",
+    "category": "protocol",
+    "actions": [
+      "change_provider",
+      "manual"
+    ],
+    "retry_limit": 0,
+    "input_change": false,
+    "effect": "limits_coverage"
+  },
+  "provider.resource_missing": {
+    "layer": "provider",
+    "category": "resource",
+    "actions": [
+      "change_provider",
+      "manual"
+    ],
+    "retry_limit": 0,
+    "input_change": false,
+    "effect": "limits_coverage"
+  },
+  "provider.unknown": {
+    "layer": "provider",
+    "category": "unknown",
+    "actions": [
+      "manual",
+      "stop"
+    ],
+    "retry_limit": 0,
+    "input_change": false,
+    "effect": "limits_coverage"
+  },
+  "material.unavailable": {
+    "layer": "reader",
+    "category": "resource",
+    "actions": [
+      "fetch_fulltext",
+      "manual"
+    ],
+    "retry_limit": 0,
+    "input_change": false,
+    "effect": "limits_coverage"
+  },
+  "material.integrity": {
+    "layer": "reader",
+    "category": "integrity",
+    "actions": [
+      "manual",
+      "stop"
+    ],
+    "retry_limit": 0,
+    "input_change": false,
+    "effect": "blocks_card"
+  },
+  "tool.scope": {
+    "layer": "harness",
+    "category": "policy",
+    "actions": [
+      "repair_arguments",
+      "stop"
+    ],
+    "retry_limit": 1,
+    "input_change": true,
+    "effect": "blocks_card"
+  },
+  "tool.arguments": {
+    "layer": "harness",
+    "category": "arguments",
+    "actions": [
+      "repair_arguments",
+      "stop"
+    ],
+    "retry_limit": 1,
+    "input_change": true,
+    "effect": "limits_coverage"
+  },
+  "tool.unavailable": {
+    "layer": "harness",
+    "category": "policy",
+    "actions": [
+      "manual",
+      "stop"
+    ],
+    "retry_limit": 0,
+    "input_change": false,
+    "effect": "limits_coverage"
+  },
+  "model.timeout": {
+    "layer": "model",
+    "category": "network",
+    "actions": [
+      "restore_checkpoint",
+      "retry_request",
+      "stop"
+    ],
+    "retry_limit": 1,
+    "input_change": false,
+    "effect": "blocks_point"
+  },
+  "model.transport": {
+    "layer": "model",
+    "category": "network",
+    "actions": [
+      "restore_checkpoint",
+      "retry_request",
+      "stop"
+    ],
+    "retry_limit": 1,
+    "input_change": false,
+    "effect": "blocks_point"
+  },
+  "model.context_limit": {
+    "layer": "model",
+    "category": "context",
+    "actions": [
+      "restore_checkpoint",
+      "stop"
+    ],
+    "retry_limit": 0,
+    "input_change": false,
+    "effect": "blocks_point"
+  },
+  "model.context_unavailable": {
+    "layer": "model",
+    "category": "context",
+    "actions": [
+      "manual",
+      "stop"
+    ],
+    "retry_limit": 0,
+    "input_change": false,
+    "effect": "blocks_point"
+  },
+  "model.output_schema": {
+    "layer": "model",
+    "category": "contract",
+    "actions": [
+      "repair_output",
+      "stop"
+    ],
+    "retry_limit": 1,
+    "input_change": true,
+    "effect": "blocks_point"
+  },
+  "model.output_reference": {
+    "layer": "reviewer",
+    "category": "integrity",
+    "actions": [
+      "repair_output",
+      "stop"
+    ],
+    "retry_limit": 1,
+    "input_change": true,
+    "effect": "blocks_point"
+  },
+  "model.usage_unavailable": {
+    "layer": "runtime",
+    "category": "unknown",
+    "actions": [
+      "none"
+    ],
+    "retry_limit": 0,
+    "input_change": false,
+    "effect": "accounting_unknown"
+  },
+  "harness.budget_exhausted": {
+    "layer": "harness",
+    "category": "budget",
+    "actions": [
+      "stop"
+    ],
+    "retry_limit": 0,
+    "input_change": false,
+    "effect": "blocks_point"
+  },
+  "coverage.not_executed": {
+    "layer": "researcher",
+    "category": "coverage",
+    "actions": [
+      "research_gap",
+      "stop"
+    ],
+    "retry_limit": 0,
+    "input_change": false,
+    "effect": "limits_coverage"
+  },
+  "coverage.no_match": {
+    "layer": "provider",
+    "category": "coverage",
+    "actions": [
+      "replan_query",
+      "stop"
+    ],
+    "retry_limit": 0,
+    "input_change": false,
+    "effect": "limits_coverage"
+  },
+  "evidence.missing": {
+    "layer": "researcher",
+    "category": "coverage",
+    "actions": [
+      "research_gap",
+      "stop"
+    ],
+    "retry_limit": 0,
+    "input_change": false,
+    "effect": "limits_coverage"
+  },
+  "review.missing_features": {
+    "layer": "reviewer",
+    "category": "semantic",
+    "actions": [
+      "read_artifact",
+      "fetch_fulltext",
+      "research_gap",
+      "stop"
+    ],
+    "retry_limit": 0,
+    "input_change": false,
+    "effect": "blocks_point"
+  },
+  "review.summary_failed": {
+    "layer": "reviewer",
+    "category": "contract",
+    "actions": [
+      "resume_review",
+      "stop"
+    ],
+    "retry_limit": 1,
+    "input_change": false,
+    "effect": "blocks_point"
+  },
+  "execution.unknown": {
+    "layer": "runtime",
+    "category": "unknown",
+    "actions": [
+      "manual",
+      "stop"
+    ],
+    "retry_limit": 0,
+    "input_change": false,
+    "effect": "unknown"
+  }
+}

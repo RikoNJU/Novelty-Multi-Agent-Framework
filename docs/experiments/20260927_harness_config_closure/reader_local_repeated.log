@@ -1,0 +1,32 @@
+FROZEN_SOURCE /home/lya3106643285/projects/Novelty-Multi-Agent-Framework/docs/experiments/20260927_harness_config_closure/reader_local_repeated/startup
+START off_1
+Traceback (most recent call last):
+  File "/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/docs/experiments/20260927_harness_config_closure/reader_local_repeated/startup/inputs/runner.py", line 137, in worker
+    runtime.finish_run('SUCCESS' if result.status.value == 'completed' else 'PARTIAL')
+  File "/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/docs/experiments/20260927_harness_config_closure/reader_local_repeated/startup/source/backend/src/novelty_agent_framework/core/runtime_artifacts.py", line 768, in finish_run
+    raise ValueError(f"invalid terminal run status {status!r}")
+ValueError: invalid terminal run status 'PARTIAL'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/docs/experiments/20260927_harness_config_closure/reader_local_repeated/startup/inputs/runner.py", line 196, in <module>
+    asyncio.run(worker(Path(sys.argv[2]), Path(sys.argv[3])))
+  File "/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/asyncio/runners.py", line 190, in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+  File "/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/asyncio/base_events.py", line 654, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/docs/experiments/20260927_harness_config_closure/reader_local_repeated/startup/inputs/runner.py", line 140, in worker
+    runtime.finish_run('FAILED', error=exception)
+  File "/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/docs/experiments/20260927_harness_config_closure/reader_local_repeated/startup/source/backend/src/novelty_agent_framework/core/runtime_artifacts.py", line 773, in finish_run
+    self._persist_error(self._error_payload(error, stage=_current_stage.get()))
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/docs/experiments/20260927_harness_config_closure/reader_local_repeated/startup/source/backend/src/novelty_agent_framework/core/runtime_artifacts.py", line 1074, in _error_payload
+    traceback_module.format_exception(type(exc), exc, exc.__traceback__)
+                                                      ^^^^^^^^^^^^^^^^^
+AttributeError: 'dict' object has no attribute '__traceback__'

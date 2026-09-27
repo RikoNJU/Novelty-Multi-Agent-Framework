@@ -1,0 +1,35 @@
+FF                                                                       [100%]
+=================================== FAILURES ===================================
+_ test_protocol_failure_does_not_repeat_same_search_without_configured_alternative _
+
+    def test_protocol_failure_does_not_repeat_same_search_without_configured_alternative():
+        workflow, _ = build_workflow(max_rounds=2)
+        state = _final_evidence_sufficiency_state(0)
+        state['task_research_results'] = [TaskResearchResult(task_id='T-1',novelty_point_id='NP-1',status='completed',steps_used=2,search_executions=[failed_search()])]
+        checked=asyncio.run(workflow._check_final_evidence_sufficiency(state))
+>       assert asyncio.run(workflow._route_after_evidence_sufficiency_check({**state,**checked}))=='synthesize'
+E       AssertionError: assert 'supplement' == 'synthesize'
+E         
+E         - synthesize
+E         + supplement
+
+tests/test_recovery_closure.py:27: AssertionError
+_____ test_semantic_feature_gap_can_supplement_even_when_card_count_passes _____
+
+    def test_semantic_feature_gap_can_supplement_even_when_card_count_passes():
+        workflow, _ = build_workflow(max_rounds=2)
+        state=_final_evidence_sufficiency_state(1)
+        state['novelty_reviews']=[NoveltyPointReview(novelty_point_id='NP-1',status='insufficient_evidence',incomplete_reason='semantic_evidence',supplement_request=SupplementRequest(reason='missing method description',missing_aspects=['mechanism']))]
+        checked=asyncio.run(workflow._check_final_evidence_sufficiency(state))
+        assert checked['insufficient_final_evidence_points']==[]
+>       assert asyncio.run(workflow._route_after_evidence_sufficiency_check({**state,**checked}))=='supplement'
+E       AssertionError: assert 'synthesize' == 'supplement'
+E         
+E         - supplement
+E         + synthesize
+
+tests/test_recovery_closure.py:38: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_recovery_closure.py::test_protocol_failure_does_not_repeat_same_search_without_configured_alternative
+FAILED tests/test_recovery_closure.py::test_semantic_feature_gap_can_supplement_even_when_card_count_passes
+2 failed in 0.25s

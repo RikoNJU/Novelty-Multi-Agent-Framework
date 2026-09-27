@@ -1,0 +1,135 @@
+{
+  "profile": {
+    "alias": "local-qwen2.5-7b",
+    "model": "qwen2.5-7b-instruct",
+    "base_url": "http://127.0.0.1:8000/v1",
+    "context_window": 32768,
+    "defaults": {
+      "timeout_seconds": 120,
+      "max_tokens": 2048
+    },
+    "context_admission": {
+      "mode": "off",
+      "counter": "none",
+      "on_unavailable": "reject",
+      "timeout_seconds": 5.0,
+      "tokenize_path": "/tokenize",
+      "vllm_tools_mode": "native"
+    }
+  },
+  "task_config": {
+    "max_steps": 4,
+    "max_tool_calls": 4,
+    "max_chars_per_read": 16000,
+    "max_total_read_chars": 64000,
+    "per_tool_limits": {
+      "reader": 4
+    },
+    "model_options": {
+      "temperature": 0,
+      "max_tokens": 2048,
+      "timeout_seconds": 120,
+      "response_format": null,
+      "top_p": null,
+      "stop": null,
+      "tools": null,
+      "tool_choice": "auto",
+      "extra_body": {}
+    },
+    "prompt_name": "research/native_tool_loop",
+    "reuse_reader_results": false,
+    "enable_evidence_checkpoint": false,
+    "runtime_state_projection": false
+  },
+  "actual_tools": [
+    {
+      "name": "reader",
+      "description": "按 Artifact ID 读取可验证文本。发现多个候选后优先一次批量读取必要片段：reads=[{\"artifact_id\":\"...\",\"max_chars\":2000}, ...]，最多4段；每段保留独立 read_id、来源和字符范围。也支持单个 artifact_id。",
+      "arguments_schema": {
+        "$defs": {
+          "ConfiguredReaderArguments8000_16000": {
+            "additionalProperties": false,
+            "properties": {
+              "artifact_id": {
+                "minLength": 1,
+                "title": "Artifact Id",
+                "type": "string"
+              },
+              "char_start": {
+                "default": 0,
+                "minimum": 0,
+                "title": "Char Start",
+                "type": "integer"
+              },
+              "max_chars": {
+                "default": 8000,
+                "maximum": 16000,
+                "minimum": 1,
+                "title": "Max Chars",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "artifact_id"
+            ],
+            "title": "ConfiguredReaderArguments8000_16000",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "artifact_id": {
+            "anyOf": [
+              {
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Artifact Id"
+          },
+          "char_start": {
+            "default": 0,
+            "minimum": 0,
+            "title": "Char Start",
+            "type": "integer"
+          },
+          "max_chars": {
+            "default": 8000,
+            "maximum": 16000,
+            "minimum": 1,
+            "title": "Max Chars",
+            "type": "integer"
+          },
+          "reads": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/$defs/ConfiguredReaderArguments8000_16000"
+                },
+                "maxItems": 4,
+                "minItems": 1,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Reads"
+          }
+        },
+        "title": "ConfiguredReaderCall8000_16000",
+        "type": "object"
+      }
+    }
+  ],
+  "source_snapshot": "/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/docs/experiments/20260927_harness_config_closure/reader_local_repeated/startup",
+  "source_module": "/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/docs/experiments/20260927_harness_config_closure/reader_local_repeated/startup/source/backend/src/novelty_agent_framework/workflows/research_task.py",
+  "fixture_source": "historical archived real publications; no synthetic document text",
+  "max_model_calls": 6,
+  "only_group_difference": "reuse_reader_results"
+}

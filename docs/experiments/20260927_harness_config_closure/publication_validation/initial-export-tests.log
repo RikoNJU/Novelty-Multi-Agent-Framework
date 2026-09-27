@@ -1,0 +1,58 @@
+........................................................................ [  5%]
+........................................................................ [ 11%]
+........................................................................ [ 17%]
+........................................................................ [ 22%]
+........................................................................ [ 28%]
+........................................................................ [ 34%]
+........................................................................ [ 39%]
+........................................................................ [ 45%]
+..................................F..................................... [ 51%]
+........................................................................ [ 57%]
+........................................................................ [ 62%]
+........................................................................ [ 68%]
+........................................................................ [ 74%]
+........................................................................ [ 79%]
+........................................................................ [ 85%]
+........................................................................ [ 91%]
+........................................................................ [ 96%]
+.......................................                                  [100%]
+=================================== FAILURES ===================================
+_______ test_real_paper_digest_includes_bounded_independent_contribution _______
+
+    def test_real_paper_digest_includes_bounded_independent_contribution():
+        path = Path("outputs/MF2033k6lC/paper-input/others/paper.json")
+>       digest = build_paper_digest(PaperInput.model_validate_json(path.read_text()))
+                                                                   ^^^^^^^^^^^^^^^^
+
+tests/test_point_extractor.py:307: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/pathlib.py:1058: in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('outputs/MF2033k6lC/paper-input/others/paper.json'), mode = 'r'
+buffering = -1, encoding = 'locale', errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+>       return io.open(self, mode, buffering, encoding, errors, newline)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'outputs/MF2033k6lC/paper-input/others/paper.json'
+
+/home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/pathlib.py:1044: FileNotFoundError
+=============================== warnings summary ===============================
+../../../home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/site-packages/starlette/testclient.py:53
+  /home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/site-packages/starlette/testclient.py:53: DeprecationWarning: The anyio.abc.BlockingPortal alias is deprecated, use anyio.from_thread.BlockingPortal instead.
+    _PortalFactoryType = Callable[[], AbstractContextManager[anyio.abc.BlockingPortal]]
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_point_extractor.py::test_real_paper_digest_includes_bounded_independent_contribution
+1 failed, 1262 passed, 6 deselected, 1 warning in 31.94s

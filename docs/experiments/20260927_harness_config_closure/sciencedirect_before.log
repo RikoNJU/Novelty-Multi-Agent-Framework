@@ -1,0 +1,154 @@
+........FF...F                                                           [100%]
+=================================== FAILURES ===================================
+__ test_abstract_transport_failure_preserves_retained_candidates[ReadTimeout] __
+
+transport_error = <class 'httpx.ReadTimeout'>
+
+    @pytest.mark.parametrize("transport_error", [httpx.ReadTimeout, httpx.ConnectError])
+    def test_abstract_transport_failure_preserves_retained_candidates(transport_error) -> None:
+        requests: list[httpx.Request] = []
+    
+        def handler(request: httpx.Request) -> httpx.Response:
+            requests.append(request)
+            if request.method == "PUT":
+                return httpx.Response(200, json={"results": [
+                    {"pii": f"S{i}", "title": f"Candidate {i}", "doi": f"10.1016/item{i}"}
+                    for i in (1, 2, 3)
+                ]})
+            if request.url.path.endswith("/S1"):
+                raise transport_error("private-details-must-not-be-recorded", request=request)
+            assert request.url.path.endswith("/S2")
+            return httpx.Response(200, json={"full-text-retrieval-response": {
+                "coredata": {"dc:description": "Abstract of the second candidate."}}})
+    
+        transport = _transport(handler)
+        article_client = ScienceDirectArticleClient(transport, base_url=BASE_URL, headers=HEADERS)
+        search = ScienceDirectSearchTool(transport, article_client, base_url=BASE_URL,
+                                        headers=HEADERS, abstract_enrichment_limit=2)
+>       hits = search.search('"graph neural network"', limit=3)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_sciencedirect_provider.py:235: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+backend/src/novelty_agent_framework/tools/database_search/providers/sciencedirect.py:187: in search
+    metadata = self.article_client.fetch_metadata(hit.document_id)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/src/novelty_agent_framework/tools/database_search/providers/sciencedirect.py:99: in fetch_metadata
+    response = self.transport.get(
+backend/src/novelty_agent_framework/tools/database_search/providers/common.py:143: in get
+    return self.request("GET", url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <novelty_agent_framework.tools.database_search.providers.common.ResilientHttpClient object at 0x768458932890>
+method = 'GET', url = 'https://api.elsevier.test/content/article/pii/S1'
+kwargs = {'params': {'view': 'META_ABS'}, 'headers': {'X-ELS-APIKey': 'test-key', 'Accept': 'application/json'}}
+
+    def request(self, method: str, url: str, **kwargs: Any) -> httpx.Response:
+        response: httpx.Response | None = None
+        for attempt in range(self.policy.max_retries + 1):
+            self._throttle()
+            runtime = current_runtime_artifacts()
+            if runtime is not None:
+                runtime.reserve_provider_request(provider="authenticated_database",
+                                                 operation=method.upper())
+            try:
+                response = self.client.request(method, url, **kwargs)
+            except httpx.RequestError as exc:
+                # httpx exception messages can include the complete request URL,
+                # including provider credentials supplied as query parameters.
+>               raise ProviderRequestError(
+                    f"provider HTTP request failed: {type(exc).__name__}",
+                    transport_error_type=type(exc).__name__
+                ) from None
+E               novelty_agent_framework.tools.database_search.providers.common.ProviderRequestError: provider HTTP request failed: ReadTimeout
+
+backend/src/novelty_agent_framework/tools/database_search/providers/common.py:129: ProviderRequestError
+_ test_abstract_transport_failure_preserves_retained_candidates[ConnectError] __
+
+transport_error = <class 'httpx.ConnectError'>
+
+    @pytest.mark.parametrize("transport_error", [httpx.ReadTimeout, httpx.ConnectError])
+    def test_abstract_transport_failure_preserves_retained_candidates(transport_error) -> None:
+        requests: list[httpx.Request] = []
+    
+        def handler(request: httpx.Request) -> httpx.Response:
+            requests.append(request)
+            if request.method == "PUT":
+                return httpx.Response(200, json={"results": [
+                    {"pii": f"S{i}", "title": f"Candidate {i}", "doi": f"10.1016/item{i}"}
+                    for i in (1, 2, 3)
+                ]})
+            if request.url.path.endswith("/S1"):
+                raise transport_error("private-details-must-not-be-recorded", request=request)
+            assert request.url.path.endswith("/S2")
+            return httpx.Response(200, json={"full-text-retrieval-response": {
+                "coredata": {"dc:description": "Abstract of the second candidate."}}})
+    
+        transport = _transport(handler)
+        article_client = ScienceDirectArticleClient(transport, base_url=BASE_URL, headers=HEADERS)
+        search = ScienceDirectSearchTool(transport, article_client, base_url=BASE_URL,
+                                        headers=HEADERS, abstract_enrichment_limit=2)
+>       hits = search.search('"graph neural network"', limit=3)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_sciencedirect_provider.py:235: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+backend/src/novelty_agent_framework/tools/database_search/providers/sciencedirect.py:187: in search
+    metadata = self.article_client.fetch_metadata(hit.document_id)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/src/novelty_agent_framework/tools/database_search/providers/sciencedirect.py:99: in fetch_metadata
+    response = self.transport.get(
+backend/src/novelty_agent_framework/tools/database_search/providers/common.py:143: in get
+    return self.request("GET", url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <novelty_agent_framework.tools.database_search.providers.common.ResilientHttpClient object at 0x768458914110>
+method = 'GET', url = 'https://api.elsevier.test/content/article/pii/S1'
+kwargs = {'params': {'view': 'META_ABS'}, 'headers': {'X-ELS-APIKey': 'test-key', 'Accept': 'application/json'}}
+
+    def request(self, method: str, url: str, **kwargs: Any) -> httpx.Response:
+        response: httpx.Response | None = None
+        for attempt in range(self.policy.max_retries + 1):
+            self._throttle()
+            runtime = current_runtime_artifacts()
+            if runtime is not None:
+                runtime.reserve_provider_request(provider="authenticated_database",
+                                                 operation=method.upper())
+            try:
+                response = self.client.request(method, url, **kwargs)
+            except httpx.RequestError as exc:
+                # httpx exception messages can include the complete request URL,
+                # including provider credentials supplied as query parameters.
+>               raise ProviderRequestError(
+                    f"provider HTTP request failed: {type(exc).__name__}",
+                    transport_error_type=type(exc).__name__
+                ) from None
+E               novelty_agent_framework.tools.database_search.providers.common.ProviderRequestError: provider HTTP request failed: ConnectError
+
+backend/src/novelty_agent_framework/tools/database_search/providers/common.py:129: ProviderRequestError
+_____ test_abstract_http_failure_keeps_metadata_and_explicit_failed_status _____
+
+    def test_abstract_http_failure_keeps_metadata_and_explicit_failed_status() -> None:
+        def handler(request: httpx.Request) -> httpx.Response:
+            if request.method == "PUT":
+                return httpx.Response(200, json={"results": [{"pii": "S1", "title": "Candidate"}]})
+            return httpx.Response(503, text="private-error-body")
+    
+        transport = _transport(handler)
+        search = ScienceDirectSearchTool(transport,
+            ScienceDirectArticleClient(transport, base_url=BASE_URL, headers=HEADERS),
+            base_url=BASE_URL, headers=HEADERS)
+        hits = search.search("fixed query")
+        assert len(hits) == 1 and hits[0].abstract == ""
+>       assert hits[0].raw_metadata["abstract_enrichment"]["http_status"] == 503
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'abstract_enrichment'
+
+tests/test_sciencedirect_provider.py:295: KeyError
+=========================== short test summary info ============================
+FAILED tests/test_sciencedirect_provider.py::test_abstract_transport_failure_preserves_retained_candidates[ReadTimeout]
+FAILED tests/test_sciencedirect_provider.py::test_abstract_transport_failure_preserves_retained_candidates[ConnectError]
+FAILED tests/test_sciencedirect_provider.py::test_abstract_http_failure_keeps_metadata_and_explicit_failed_status
+3 failed, 11 passed in 0.18s

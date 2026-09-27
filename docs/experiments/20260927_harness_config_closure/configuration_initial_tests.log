@@ -1,0 +1,84 @@
+........................................F................                [100%]
+=================================== FAILURES ===================================
+_______ test_researcher_exception_finishes_failed_and_does_not_run_gate ________
+
+tmp_path = PosixPath('/tmp/pytest-of-lya3106643285/pytest-61/test_researcher_exception_fini0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7b7eb414cd90>
+
+    def test_researcher_exception_finishes_failed_and_does_not_run_gate(
+        tmp_path, monkeypatch
+    ) -> None:
+        _, paper_json = _write_inputs(tmp_path)
+        gate_called = False
+    
+        class FailingResearcher:
+            tools = SimpleNamespace(names=("reader",))
+    
+            async def ainvoke(self, _request):
+                raise RuntimeError("research failed")
+    
+        def unexpected_gate(*_args, **_kwargs):
+            nonlocal gate_called
+            gate_called = True
+            raise AssertionError("Gate A must not run after a Researcher exception")
+    
+        monkeypatch.setattr(single, "PROJECT_ROOT", tmp_path)
+        monkeypatch.setattr(single, "new_run_id", lambda _task_id: "single-failed-run")
+        monkeypatch.setattr(single, "load_application_config", lambda **kwargs: _offline_config(tmp_path))
+        monkeypatch.setattr(single, "preflight_config", lambda *args, **kwargs: [])
+        monkeypatch.setattr(
+            single,
+            "build_workflow",
+            lambda _config, **_kwargs: SimpleNamespace(
+                services=SimpleNamespace(task_researcher=FailingResearcher())
+            ),
+        )
+        monkeypatch.setattr(single, "validate_synthesis_input", unexpected_gate)
+    
+>       exit_code = asyncio.run(
+            single.main(
+                argparse.Namespace(
+                    paper_json=paper_json, point_id="NP-1", task_id="T-1"
+                )
+            )
+        )
+
+tests/test_single_research_task_diagnostics.py:263: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../../miniconda3/envs/Novelty-web/lib/python3.11/asyncio/runners.py:190: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+../../miniconda3/envs/Novelty-web/lib/python3.11/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../miniconda3/envs/Novelty-web/lib/python3.11/asyncio/base_events.py:654: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+scripts/run_single_research_task.py:175: in main
+    frozen = prepare_startup(config, entrypoint="single_task", input_path=paper_json,
+backend/src/novelty_agent_framework/config/experiment.py:350: in prepare_startup
+    issues = require_preflight(config, include_processing=include_processing,
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+config = ApplicationConfig(project=ProjectSettingsConfig(server=ServerConfig(host='0.0.0.0', port=8010), cors=CorsConfig(origin...onfig(generate='extractor/extract_points', deduplicate='reviewer/review_points', coverage='extractor/extract_points')))
+kwargs = {'include_processing': False, 'active_roles': ('researcher',), 'require_reviewer': False}
+
+    def require_preflight(config: ApplicationConfig, **kwargs: Any) -> list[dict[str, str]]:
+        issues = preflight_config(config, **kwargs)
+        if any(item["severity"] == "error" for item in issues):
+>           raise ConfigurationPreflightError(issues)
+E           novelty_agent_framework.config.experiment.ConfigurationPreflightError: configuration preflight failed: model_credential_missing at models.local-qwen2.5-7b.api_key_env: Model client requires a credential reference with a nonempty environment value.
+
+backend/src/novelty_agent_framework/config/experiment.py:303: ConfigurationPreflightError
+----------------------------- Captured stdout call -----------------------------
+论文 : paper-1
+任务 : NP-1/T-1  language=en
+Run  : single-failed-run
+=============================== warnings summary ===============================
+../../miniconda3/envs/Novelty-web/lib/python3.11/site-packages/starlette/testclient.py:53
+  /home/lya3106643285/miniconda3/envs/Novelty-web/lib/python3.11/site-packages/starlette/testclient.py:53: DeprecationWarning: The anyio.abc.BlockingPortal alias is deprecated, use anyio.from_thread.BlockingPortal instead.
+    _PortalFactoryType = Callable[[], AbstractContextManager[anyio.abc.BlockingPortal]]
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_single_research_task_diagnostics.py::test_researcher_exception_finishes_failed_and_does_not_run_gate
