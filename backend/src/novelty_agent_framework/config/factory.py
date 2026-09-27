@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any, Mapping
 
 from backend.env import ModelCallOptions, ModelProfile, ModelRegistry, PromptLibrary
+from backend.env.context_admission import ContextAdmissionConfig
 
 from ..agents import (
     EvidenceReviewerConfig,
@@ -83,7 +84,11 @@ def build_model_registry(
     )
     for alias, value in model_items:
         raw = value.model_dump(mode="python") if hasattr(value, "model_dump") else value
-        timeout = raw.get("timeout_seconds") or os.getenv("NOVELTY_TIMEOUT_SECONDS")
+        timeout = raw.get("timeout_seconds")
+        if timeout is None and not isinstance(config, ApplicationConfig):
+            timeout = os.getenv("NOVELTY_TIMEOUT_SECONDS")
+        if timeout is None:
+            timeout = 60.0
         profiles[alias] = ModelProfile(
             alias=alias,
             provider=raw.get("provider", "openai_compatible"),
@@ -91,6 +96,7 @@ def build_model_registry(
             base_url=raw.get("base_url", "https://api.openai.com/v1"),
             api_key=_resolve_api_key(raw),
             context_window=int(raw.get("context_window", 128_000)),
+            context_admission=ContextAdmissionConfig(**raw.get("context_admission", {})),
             supported_params=frozenset(raw.get("supported_params", [])),
             defaults={"timeout_seconds": float(timeout) if timeout else 60.0},
         )
@@ -132,7 +138,11 @@ def build_agents(
         prompts=prompts,
         models=registry,
         model_alias=coordinator_cfg.get("model", "coordinator"),
+        supplement_prompt_name=coordinator_cfg.get("prompt_names", {}).get("supplement", "coordinator/supplement"),
+        synthesis_prompt_name=coordinator_cfg.get("prompt_names", {}).get("synthesize", "coordinator/synthesize"),
         temperature=float(coordinator_cfg.get("temperature", 0.2)),
+        model_options=(_model_options(coordinator_cfg["model_options"], response_format={"type": "json_object"})
+                       if coordinator_cfg.get("model_options") else None),
         research_languages=config.get("workflow", {}).get(
             "research_languages", ("en",)
         ),
@@ -148,7 +158,13 @@ def build_agents(
         prompts=prompts,
         models=registry,
         model_alias=point_extractor_cfg.get("model", "point_extractor"),
+        conservative_dedup=bool(point_extractor_cfg.get("conservative_dedup", True)),
+        generation_prompt_name=point_extractor_cfg.get("prompt_names", {}).get("generate", "extractor/extract_points"),
+        review_prompt_name=point_extractor_cfg.get("prompt_names", {}).get("deduplicate", "reviewer/review_points"),
+        coverage_prompt_name=point_extractor_cfg.get("prompt_names", {}).get("coverage", "extractor/extract_points"),
         temperature=float(point_extractor_cfg.get("temperature", 0.2)),
+        model_options=(_model_options(point_extractor_cfg["model_options"], response_format={"type": "json_object"})
+                       if point_extractor_cfg.get("model_options") else None),
     )
     search_planner = build_search_planner(
         config, registry, prompts, retrieval_cfg=retrieval_cfg
@@ -258,6 +274,16 @@ def build_workflow(
         load_config(config_path) if config is None else copy.deepcopy(dict(config))
     )
     _apply_env_overrides(raw)
+    timeout_origins = {}
+    for alias, model in raw.get("models", {}).items():
+        if model.get("timeout_seconds") is None:
+            model["timeout_seconds"] = float(os.getenv("NOVELTY_TIMEOUT_SECONDS") or 60.0)
+            timeout_origins[f"models.{alias}.timeout_seconds"] = "environment" if os.getenv("NOVELTY_TIMEOUT_SECONDS") else "schema_default"
+        else:
+            timeout_origins[f"models.{alias}.timeout_seconds"] = "legacy_config"
+    origins = raw.setdefault("configuration_resolution", {}).setdefault("field_sources", {})
+    for field, source in timeout_origins.items():
+        origins.setdefault(field, source)
 
     registry = build_model_registry(raw)
     prompts = build_prompt_library()
@@ -274,7 +300,11 @@ def build_workflow(
         prompts=prompts,
         models=registry,
         model_alias=coordinator_cfg.get("model", "coordinator"),
+        supplement_prompt_name=coordinator_cfg.get("prompt_names", {}).get("supplement", "coordinator/supplement"),
+        synthesis_prompt_name=coordinator_cfg.get("prompt_names", {}).get("synthesize", "coordinator/synthesize"),
         temperature=float(coordinator_cfg.get("temperature", 0.2)),
+        model_options=(_model_options(coordinator_cfg["model_options"], response_format={"type": "json_object"})
+                       if coordinator_cfg.get("model_options") else None),
         research_languages=raw.get("workflow", {}).get(
             "research_languages", ("en",)
         ),
@@ -283,7 +313,13 @@ def build_workflow(
         prompts=prompts,
         models=registry,
         model_alias=point_extractor_cfg.get("model", "point_extractor"),
+        conservative_dedup=bool(point_extractor_cfg.get("conservative_dedup", True)),
+        generation_prompt_name=point_extractor_cfg.get("prompt_names", {}).get("generate", "extractor/extract_points"),
+        review_prompt_name=point_extractor_cfg.get("prompt_names", {}).get("deduplicate", "reviewer/review_points"),
+        coverage_prompt_name=point_extractor_cfg.get("prompt_names", {}).get("coverage", "extractor/extract_points"),
         temperature=float(point_extractor_cfg.get("temperature", 0.2)),
+        model_options=(_model_options(point_extractor_cfg["model_options"], response_format={"type": "json_object"})
+                       if point_extractor_cfg.get("model_options") else None),
     )
     research_model = registry.client_for(research_cfg.get("model", "research"))
     search_planner = build_search_planner(
@@ -403,6 +439,9 @@ def build_workflow(
         EvidenceCardBuilder(store),
         prompts=prompts,
         config=TaskResearcherConfig(
+            runtime_state_projection=bool(budget_cfg.get("runtime_state_projection", False)),
+            reuse_reader_results=bool(budget_cfg.get("reuse_reader_results", False)),
+            enable_evidence_checkpoint=bool(budget_cfg.get("enable_evidence_checkpoint", False)),
             max_steps=int(budget_cfg.get("max_steps", 12)),
             max_tool_calls=int(budget_cfg.get("max_tool_calls", 10)),
             max_chars_per_read=int(budget_cfg.get("max_chars_per_read", 8_000)),
@@ -440,6 +479,7 @@ def build_workflow(
         ),
         config=NoveltyWorkflowConfig(
             max_rounds=int(workflow_cfg.get("max_rounds", 2)),
+            recovery_provider_order=tuple(workflow_cfg.get("recovery_provider_order", [])),
             max_concurrency=int(workflow_cfg.get("max_concurrency", 4)),
             min_final_evidence_cards_per_point=int(
                 workflow_cfg.get("min_final_evidence_cards_per_point", 1)
@@ -497,6 +537,9 @@ def build_standard_full_workflow(
             "reviewer_required: Standard full workflow requires Reviewer, "
             "but reviewer.enabled=false"
         )
+    from .experiment import prepare_startup
+    resolved_root = Path(output_root if output_root is not None else config.project.runtime_debug.output_root)
+    prepare_startup(config, output_root=resolved_root, entrypoint="standard_full_workflow")
     workflow = build_workflow(
         config, source_registry=source_registry, output_root=output_root
     )
@@ -516,12 +559,20 @@ def _build_workflow_from_application_config(
 ) -> NoveltyWorkflow:
     """Build the production workflow directly from validated typed fields."""
 
+    from .experiment import freeze_config
+
+    ApplicationConfig.model_validate(config.model_dump(mode="json"))
     registry = build_model_registry(config)
-    prompts = build_prompt_library()
+    snapshot = config._startup_manifest.get("code", {}).get("source_snapshot", {})
+    prompt_root = (Path(snapshot["path"]) / "source" / PROMPTS_ROOT.relative_to(Path(__file__).resolve().parents[4])
+                   if snapshot else None)
+    prompts = build_prompt_library(prompt_root)
     coordinator = NoveltyCoordinatorAgent(
         prompts=prompts,
         models=registry,
         model_alias=config.coordinator.model.alias,
+        supplement_prompt_name=config.coordinator.prompt_names.supplement,
+        synthesis_prompt_name=config.coordinator.prompt_names.synthesize,
         temperature=config.coordinator.model.temperature,
         model_options=_typed_model_options(
             config.coordinator.model,
@@ -533,6 +584,10 @@ def _build_workflow_from_application_config(
         prompts=prompts,
         models=registry,
         model_alias=config.point_extractor.model.alias,
+        conservative_dedup=config.point_extractor.conservative_dedup,
+        generation_prompt_name=config.point_extractor.prompt_names.generate,
+        review_prompt_name=config.point_extractor.prompt_names.deduplicate,
+        coverage_prompt_name=config.point_extractor.prompt_names.coverage,
         temperature=config.point_extractor.model.temperature,
         model_options=_typed_model_options(
             config.point_extractor.model,
@@ -655,6 +710,9 @@ def _build_workflow_from_application_config(
         EvidenceCardBuilder(store),
         prompts=prompts,
         config=TaskResearcherConfig(
+            runtime_state_projection=researcher.harness.runtime_state_projection,
+            reuse_reader_results=researcher.harness.reuse_reader_results,
+            enable_evidence_checkpoint=researcher.harness.enable_evidence_checkpoint,
             max_steps=researcher.harness.max_turns,
             max_tool_calls=researcher.harness.max_total_tool_calls,
             max_chars_per_read=reader.max_chars_per_read,
@@ -666,6 +724,9 @@ def _build_workflow_from_application_config(
     )
     workflow = config.project.workflow
     runtime_debug = config.project.runtime_debug
+    frozen = copy.deepcopy(config._startup_manifest) if config._startup_manifest else freeze_config(config, output_root=resolved_output_root)
+    runtime_snapshot = dict(frozen.pop("effective_config"))
+    runtime_snapshot["configuration_manifest"] = frozen
     return NoveltyWorkflow(
         NoveltyWorkflowServices(
             coordinator=coordinator,
@@ -676,6 +737,7 @@ def _build_workflow_from_application_config(
         ),
         config=NoveltyWorkflowConfig(
             max_rounds=workflow.max_rounds,
+            recovery_provider_order=tuple(workflow.recovery_provider_order),
             max_concurrency=workflow.max_concurrency,
             min_final_evidence_cards_per_point=(
                 workflow.min_final_evidence_cards_per_point
@@ -696,7 +758,7 @@ def _build_workflow_from_application_config(
             ),
         ),
         runtime_config=_runtime_config_with_output_root(
-            config.model_dump(mode="json"), resolved_output_root
+            runtime_snapshot, resolved_output_root
         ),
         output_root=resolved_output_root,
     )
@@ -819,6 +881,7 @@ def _apply_env_overrides(config: dict[str, Any]) -> None:
         env_value = os.getenv(f"NOVELTY_{role.upper()}_MODEL")
         if env_value:
             agent_cfg["model"] = env_value
+            config.setdefault("configuration_resolution", {}).setdefault("field_sources", {})[f"agents.{role}.model"] = "environment"
 
 
 def _model_options(

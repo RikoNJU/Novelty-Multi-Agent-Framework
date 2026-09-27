@@ -61,6 +61,8 @@ class NoveltyCoordinatorAgent(NoveltyCoordinator):
         temperature: float = 0.2,
         model_options: ModelCallOptions | None = None,
         research_languages: Sequence[str] = ("en",),
+        supplement_prompt_name: str = "coordinator/supplement",
+        synthesis_prompt_name: str = "coordinator/synthesize",
     ) -> None:
         self.model_client = model_client
         self._prompts = prompts
@@ -68,6 +70,8 @@ class NoveltyCoordinatorAgent(NoveltyCoordinator):
         self._model_alias = model_alias
         self.temperature = temperature
         self.model_options = model_options
+        self.supplement_prompt_name = supplement_prompt_name
+        self.synthesis_prompt_name = synthesis_prompt_name
         languages = tuple(dict.fromkeys(research_languages))
         if not languages or any(item not in {"en", "zh"} for item in languages):
             raise ValueError("research_languages must contain en and/or zh")
@@ -130,7 +134,7 @@ class NoveltyCoordinatorAgent(NoveltyCoordinator):
             "attempt": attempt,
         }
         data = self._complete_json(
-            prompt_name="coordinator/supplement",
+            prompt_name=self.supplement_prompt_name,
             variables={
                 "paper_json": json.dumps(payload["paper"], ensure_ascii=False),
                 "brief_json": json.dumps(payload["brief"], ensure_ascii=False),
@@ -244,7 +248,7 @@ class NoveltyCoordinatorAgent(NoveltyCoordinator):
                 ),
             }
         if self._prompts is not None:
-            rendered = self._prompts.render("coordinator/synthesize", **variables)
+            rendered = self._prompts.render(self.synthesis_prompt_name, **variables)
             system, user = rendered.system, rendered.user
         else:
             system = self._system_prompt()

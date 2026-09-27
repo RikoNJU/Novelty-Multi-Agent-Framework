@@ -3,6 +3,7 @@ import logging
 from pathlib import Path
 
 from ..config import build_model_registry, build_standard_full_workflow, load_application_config
+from ..config.experiment import prepare_startup
 from ..processing import DefaultPaperProcessor, prepare_paper_input_references
 from ..processing.mineru_parser import MineruSettings
 from ..persistence import paper_workspace
@@ -21,10 +22,13 @@ STAGES = {
 def execute(directory: Path, update, publish) -> Path:
     config = load_application_config()
     processing = config.project.processing
+    prepare_startup(config, output_root=directory / "outputs", entrypoint="web_pdf",
+                    snapshot_dir=directory / "startup", input_path=directory / "input.pdf",
+                    include_processing=True)
     registry = build_model_registry(config)
     processor = DefaultPaperProcessor(
-        parser='mineru',
-        ocr_client=registry.client_for(processing['ocr_model']) if processing.get('ocr_model') else None,
+        parser=str(processing.get('parser', 'mineru')),
+        ocr_client=registry.client_for(processing['ocr_model']) if processing.get('ocr_model') and processing.get('ocr_fallback_enabled', True) else None,
         llm_client=registry.client_for(processing['llm_model']) if processing.get('llm_model') else None,
         dpi=int(processing.get('dpi', 200)),
         min_chars_per_page=int(processing.get('quality_min_chars_per_page', 200)),

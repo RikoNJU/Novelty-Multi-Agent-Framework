@@ -138,8 +138,10 @@ def test_reviewer_composition_root_respects_enabled_switch():
     assert build_workflow(disabled).services.reviewer is None
 
 
-def test_standard_full_workflow_requires_enabled_reviewer(monkeypatch):
-    config = load_application_config()
+def test_standard_full_workflow_requires_enabled_reviewer(monkeypatch, tmp_path):
+    monkeypatch.setenv("LOCAL_VLLM_API_KEY", "offline-test")
+    config = load_application_config(environ={})
+    config.project.runtime_debug.output_root = str(tmp_path)
     assert build_standard_full_workflow(config).services.reviewer is not None
 
     disabled = config.model_copy(

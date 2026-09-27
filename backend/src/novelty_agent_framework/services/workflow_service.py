@@ -22,6 +22,7 @@ from novelty_agent_framework.config import (
     build_standard_full_workflow,
     load_application_config,
 )
+from novelty_agent_framework.config.experiment import (ConfigurationPreflightError, prepare_startup, require_preflight, _startup_source_files)
 from novelty_agent_framework.schemas import PaperInput
 from novelty_agent_framework.services.jobs import (
     InMemoryRunStore,
@@ -196,6 +197,8 @@ class NoveltyWorkflowService:
             )
             return
         try:
+            # Construct/preflight and freeze the run before PDF processing can call a model.
+            workflow = self.workflow_factory(self._run_dir(task_id))
             document = await asyncio.to_thread(
                 self.processor.process, path, paper_id=task_id
             )
@@ -213,11 +216,12 @@ class NoveltyWorkflowService:
                 ),
             )
             return
-        await self._execute_workflow(task_id, paper)
+        await self._execute_workflow(task_id, paper, workflow=workflow)
 
-    async def _execute_workflow(self, task_id: str, paper: PaperInput) -> None:
+    async def _execute_workflow(self, task_id: str, paper: PaperInput,
+                                *, workflow: NoveltyWorkflow | None = None) -> None:
         run_dir = self._run_dir(task_id)
-        workflow = self.workflow_factory(run_dir)
+        (run_dir / "paper-input.json").write_text(paper.model_dump_json(), encoding="utf-8")
 
         def progress(stage: str, round: int | None) -> None:
             mapped = _INTERNAL_STAGE_MAP.get(stage)
@@ -225,6 +229,7 @@ class NoveltyWorkflowService:
                 self.store.mark_progress(task_id, mapped, round=round)
 
         try:
+            workflow = workflow or self.workflow_factory(run_dir)
             result = await workflow.arun(paper, progress_callback=progress)
             rendered = workflow.last_rendered_report_path
             report_path = Path(rendered).resolve() if rendered else None
@@ -295,42 +300,15 @@ def build_real_workflow_service(settings: NoveltyWebSettings) -> NoveltyWorkflow
     config = load_application_config()
     if config.reviewer is None or not config.reviewer.enabled:
         raise WorkflowConfigurationError("真实工作流必须启用 Reviewer")
-    database = config.researcher.tools.database_search
-    active_provider = database.providers.get(database.active_source)
-    if not active_provider or not active_provider.get("enabled", False):
-        raise WorkflowConfigurationError(
-            f"真实工作流的数据源 {database.active_source!r} 未启用"
-        )
+    try:
+        require_preflight(config, include_processing=True)
+    except ConfigurationPreflightError as exc:
+        raise WorkflowConfigurationError(str(exc)) from exc
     registry = build_model_registry(config)
-    aliases = {
-        config.researcher.model.alias,
-        config.search_planner.model.alias,
-        config.coordinator.model.alias,
-        config.point_extractor.model.alias,
-    }
-    if config.reviewer and config.reviewer.enabled:
-        aliases.add(config.reviewer.model.alias)
     processing = config.project.processing
-    aliases.update(
-        alias
-        for alias in (processing.get("ocr_model"), processing.get("llm_model"))
-        if alias
-    )
-    missing = sorted(
-        alias
-        for alias in aliases
-        if not getattr(getattr(registry.client_for(alias), "profile", None), "api_key", None)
-    )
-    if missing:
-        variables = sorted(
-            {
-                config.models[alias].api_key_env or "NOVELTY_API_KEY"
-                for alias in missing
-            }
-        )
-        raise WorkflowConfigurationError(
-            "真实工作流缺少模型凭据：" + ", ".join(variables)
-        )
+    # Long-lived services must restart after source edits; archive the same source
+    # version used to construct their shared processor, not a later working tree.
+    source_at_service_start = {str(p): hashlib.sha256(p.read_bytes()).hexdigest() for p in _startup_source_files()}
 
     from novelty_agent_framework.processing import DefaultPaperProcessor, MineruSettings
 
@@ -338,7 +316,7 @@ def build_real_workflow_service(settings: NoveltyWebSettings) -> NoveltyWorkflow
         parser=str(processing.get("parser", "mineru")),
         ocr_client=(
             registry.client_for(processing["ocr_model"])
-            if processing.get("ocr_model")
+            if processing.get("ocr_model") and processing.get("ocr_fallback_enabled", True)
             else None
         ),
         llm_client=(
@@ -368,17 +346,29 @@ def build_real_workflow_service(settings: NoveltyWebSettings) -> NoveltyWorkflow
         run_config.project.runtime_debug.archive_root = str(
             output_root / "runtime-archive"
         )
+        current_sources = {str(p): hashlib.sha256(p.read_bytes()).hexdigest() for p in _startup_source_files()}
+        if current_sources != source_at_service_start:
+            raise WorkflowConfigurationError("Source changed after service construction; restart before starting another run.")
+        input_path = next((p for p in (output_root / "input" / "paper.pdf", output_root / "paper-input.json") if p.is_file()), None)
+        prepare_startup(run_config, output_root=output_root, entrypoint="workflow_service",
+                        snapshot_dir=output_root / "startup", input_path=input_path,
+                        include_processing=input_path is not None and input_path.suffix == ".pdf",
+                        runtime_controls={"model_budget_rmb": str(budget_rmb) if budget_rmb is not None else None,
+                                          "model_max_attempts": max_attempts,
+                                          "sources": {"model_budget_rmb": "NOVELTY_RUN_MODEL_BUDGET_RMB",
+                                                      "model_max_attempts": "NOVELTY_RUN_MODEL_MAX_ATTEMPTS or default 80"}})
         return build_standard_full_workflow(run_config, output_root=output_root)
 
+    budget_rmb = Decimal(os.environ["NOVELTY_RUN_MODEL_BUDGET_RMB"]) if os.getenv("NOVELTY_RUN_MODEL_BUDGET_RMB") else None
+    max_attempts = (None if os.getenv("NOVELTY_RUN_MODEL_MAX_ATTEMPTS", "80").strip().lower() == "none"
+                    else int(os.getenv("NOVELTY_RUN_MODEL_MAX_ATTEMPTS", "80")))
     return NoveltyWorkflowService(
         workflow_factory=workflow_factory,
         processor=processor,
         runs_root=settings.runs_root,
         max_upload_bytes=settings.max_upload_bytes,
-        run_model_budget_rmb=(Decimal(os.environ["NOVELTY_RUN_MODEL_BUDGET_RMB"])
-                              if os.getenv("NOVELTY_RUN_MODEL_BUDGET_RMB") else None),
-        run_model_max_attempts=(None if os.getenv("NOVELTY_RUN_MODEL_MAX_ATTEMPTS", "80").strip().lower() == "none"
-                                else int(os.getenv("NOVELTY_RUN_MODEL_MAX_ATTEMPTS", "80"))),
+        run_model_budget_rmb=budget_rmb,
+        run_model_max_attempts=max_attempts,
     )
 
 

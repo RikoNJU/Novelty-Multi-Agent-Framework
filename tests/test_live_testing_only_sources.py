@@ -18,8 +18,9 @@ def test_live_factory_hides_testing_only_source_but_explicit_test_can_use_it(tmp
     assert set(test.tools_by_source) == {"arxiv", "null_catalog"}
 
 
-def test_standard_full_workflow_model_tool_schema_omits_null_catalog(tmp_path):
-    workflow = build_standard_full_workflow(load_application_config(), output_root=tmp_path)
+def test_standard_full_workflow_model_tool_schema_omits_null_catalog(tmp_path, monkeypatch):
+    monkeypatch.setenv("LOCAL_VLLM_API_KEY", "offline-test")
+    workflow = build_standard_full_workflow(load_application_config(environ={}), output_root=tmp_path)
     registry = workflow.services.task_researcher.tools
     database = registry.get("database_search")
     assert "null_catalog" not in database.tools_by_source

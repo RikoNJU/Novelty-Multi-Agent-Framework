@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import hashlib
 import json
 import sys
 import time
@@ -24,6 +25,7 @@ except Exception:
 
 from novelty_agent_framework.config.factory import build_workflow
 from novelty_agent_framework.config.loader import load_application_config
+from novelty_agent_framework.config.experiment import freeze_config, preflight_config, prepare_startup
 from novelty_agent_framework.core.integrity_gates import validate_synthesis_input
 from novelty_agent_framework.core.run_identity import file_run_identity
 from novelty_agent_framework.core.runtime_artifacts import RuntimeArtifactManager, RuntimeDebugConfig
@@ -51,10 +53,10 @@ def build_request(
     run_id: str,
     point_id: str,
     task_id: str,
+    source_contents: dict[str, bytes] | None = None,
 ) -> TaskResearchRequest:
-    raw_points = json.loads(
-        (output_root / paper_id / "novelty-points.json").read_text(encoding="utf-8")
-    )["novelty_points"]
+    contents = source_contents if source_contents is not None else load_task_sources(output_root, paper_id)
+    raw_points = json.loads(contents["novelty-points.json"])["novelty_points"]
     matched_points = [item for item in raw_points if item.get("point_id") == point_id]
     if len(matched_points) != 1:
         raise SystemExit(
@@ -62,9 +64,7 @@ def build_request(
             f"matched={len(matched_points)}"
         )
     point = NoveltyPoint.model_validate(matched_points[0])
-    plans = json.loads(
-        (output_root / paper_id / "retrieval-plans.json").read_text(encoding="utf-8")
-    )["novelty_point_plans"]
+    plans = json.loads(contents["retrieval-plans.json"])["novelty_point_plans"]
     matched_bundles = [item for item in plans if item.get("novelty_point_id") == point_id]
     if len(matched_bundles) != 1:
         raise SystemExit(
@@ -96,6 +96,36 @@ def build_request(
     )
 
 
+def load_task_sources(output_root: Path, paper_id: str) -> dict[str, bytes]:
+    """Capture precisely the source bytes consumed when constructing a request."""
+    return {name: (output_root / paper_id / name).read_bytes()
+            for name in ("novelty-points.json", "retrieval-plans.json")}
+
+
+def task_input_provenance(request: TaskResearchRequest, output_root: Path,
+                          source_contents: dict[str, bytes]) -> dict:
+    payload = request.model_dump(mode="json")
+
+    def digest(value):
+        return hashlib.sha256(json.dumps(value, sort_keys=True, ensure_ascii=False,
+                                         separators=(",", ":")).encode()).hexdigest()
+
+    return {
+        "task_request_sha256": digest(payload),
+        "task_input_sha256": digest({key: value for key, value in payload.items() if key != "run_id"}),
+        "task_source_files": {
+            name: {"path": str((output_root / request.subject_paper_id / name).resolve()),
+                   "sha256": hashlib.sha256(content).hexdigest()}
+            for name, content in source_contents.items()
+        },
+    }
+
+
+def _project_path(value: str | Path) -> Path:
+    path = Path(value)
+    return (path if path.is_absolute() else PROJECT_ROOT / path).resolve()
+
+
 def terminal_result(task_status: TaskResearchStatus, gate_rejected: int) -> tuple[str, int]:
     if task_status == TaskResearchStatus.FAILED:
         return "SUCCESS", 1
@@ -105,28 +135,54 @@ def terminal_result(task_status: TaskResearchStatus, gate_rejected: int) -> tupl
 
 
 async def main(args: argparse.Namespace) -> int:
-    output_root = PROJECT_ROOT / "outputs"
+    config = load_application_config(profile_path=getattr(args, "profile", None),
+                                     environ={} if getattr(args, "isolated_config", False) else None)
+    issues = preflight_config(config, require_reviewer=False, active_roles=("researcher",))
+    if any(issue["severity"] == "error" for issue in issues):
+        raise ValueError("configuration preflight failed: " + json.dumps(issues))
+    settings = config.project.runtime_debug
+    output_root = _project_path(settings.output_root)
+    # This diagnostic entrypoint requires recording; freeze the override too.
+    settings.enabled = True
+    settings.output_root = str(output_root)
+    settings.archive_root = str(_project_path(settings.archive_root))
+    settings.llm_pricing_path = str(_project_path(
+        settings.llm_pricing_path or RuntimeDebugConfig().llm_pricing_path
+    ))
+    runtime = RuntimeDebugConfig(
+        **{**settings.model_dump(mode="python"),
+           "output_root": output_root, "archive_root": Path(settings.archive_root),
+           "llm_pricing_path": Path(settings.llm_pricing_path)}
+    )
     paper_json = Path(args.paper_json).resolve(strict=True)
     paper = PaperInput.model_validate_json(paper_json.read_text(encoding="utf-8"))
     paper_id = paper.paper_id
     run_id = new_run_id(args.task_id)
+    source_contents = load_task_sources(output_root, paper_id)
     request = build_request(
         output_root,
         paper_id,
         run_id=run_id,
         point_id=args.point_id,
         task_id=args.task_id,
+        source_contents=source_contents,
     )
     label = f"{request.novelty_point.point_id}/{request.research_task.task_id}"
     print(f"论文 : {paper_id}")
     print(f"任务 : {label}  language={request.research_task.language}")
     print(f"Run  : {run_id}")
 
-    workflow = build_workflow(load_application_config())
+    frozen = prepare_startup(config, entrypoint="single_task", input_path=paper_json,
+                             output_root=output_root,
+                             snapshot_dir=output_root / ".startup" / run_id,
+                             input_contents={**source_contents, "task-request.json": request.model_dump_json().encode()},
+                             active_roles=("researcher",), require_reviewer=False)
+    workflow = build_workflow(config, output_root=output_root)
+    frozen["input"].update(task_input_provenance(request, output_root, source_contents))
     researcher = workflow.services.task_researcher
     manager = RuntimeArtifactManager(
         paper_id,
-        config=RuntimeDebugConfig(enabled=True, output_root=output_root),
+        config=runtime,
         run_id=run_id,
         run_identity=file_run_identity(
             "single_task",
@@ -137,6 +193,8 @@ async def main(args: argparse.Namespace) -> int:
             search_plan_id=request.search_plan.task_id,
         ),
         runtime_config={
+            **frozen["effective_config"],
+            "configuration_manifest": {key: value for key, value in frozen.items() if key != "effective_config"},
             "script_mode": "single_research_task_diagnostics",
             "point_id": request.novelty_point.point_id,
             "task_id": request.research_task.task_id,
@@ -231,6 +289,8 @@ async def main(args: argparse.Namespace) -> int:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--paper-json", required=True, type=Path)
+    parser.add_argument("--profile", type=Path)
+    parser.add_argument("--isolated-config", action="store_true")
     parser.add_argument("--point-id", required=True)
     parser.add_argument("--task-id", required=True)
     raise SystemExit(asyncio.run(main(parser.parse_args())))

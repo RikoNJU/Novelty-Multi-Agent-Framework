@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import copy
+import hashlib
 import os
 from pathlib import Path
 from typing import Any, Mapping
@@ -38,6 +40,8 @@ def load_application_config(
     point_extractor_path: str | Path = DEFAULT_POINT_EXTRACTOR_PATH,
     reviewer_path: str | Path = DEFAULT_REVIEWER_PATH,
     environ: Mapping[str, str] | None = None,
+    profile_path: str | Path | None = None,
+    overrides: Mapping[str, Any] | None = None,
 ) -> ApplicationConfig:
     raw = {
         "project": read_json(project_path),
@@ -49,9 +53,77 @@ def load_application_config(
         "reviewer": read_json(reviewer_path),
     }
     values = os.environ if environ is None else environ
+    # All callers share: split files < profile < environment < explicit overrides.
+    origins = {key: "split_files" for key in _leaf_paths(raw)}
+    selected_profile = profile_path or values.get("NOVELTY_EXPERIMENT_PROFILE")
+    if selected_profile:
+        profile = read_json(selected_profile)
+        _merge_config(raw, profile)
+        origins.update({key: "profile" for key in _leaf_paths(profile)})
+    before_env = copy.deepcopy(raw)
     _apply_model_overrides(raw, values)
+    if values.get("NOVELTY_TIMEOUT_SECONDS"):
+        for model in raw["models"].values():
+            model["timeout_seconds"] = values["NOVELTY_TIMEOUT_SECONDS"]
     _apply_database_overrides(raw, values)
-    return ApplicationConfig.model_validate(raw)
+    old_leaves = _leaf_paths(before_env)
+    origins.update({key: "environment" for key, value in _leaf_paths(raw).items()
+                    if value != old_leaves.get(key)})
+    for role, names in {
+        "researcher": ("NOVELTY_RESEARCHER_MODEL", "NOVELTY_RESEARCH_MODEL"),
+        "search_planner": ("NOVELTY_SEARCH_PLANNER_MODEL",),
+        "coordinator": ("NOVELTY_COORDINATOR_MODEL",),
+        "point_extractor": ("NOVELTY_POINT_EXTRACTOR_MODEL",),
+        "reviewer": ("NOVELTY_REVIEWER_MODEL",),
+    }.items():
+        if any(values.get(name) for name in names):
+            origins[f"{role}.model.alias"] = "environment"
+    for field in ("llm_model", "ocr_model"):
+        if values.get(f"NOVELTY_PROCESSING_{field.upper()}"):
+            origins[f"project.processing.{field}"] = "environment"
+    if values.get("NOVELTY_SPRINGER_ENABLED") is not None:
+        origins["researcher.tools.database_search.providers.springer.enabled"] = "environment"
+    if values.get("NOVELTY_TIMEOUT_SECONDS"):
+        origins.update({f"models.{alias}.timeout_seconds": "environment" for alias in raw["models"]})
+    if overrides:
+        _merge_config(raw, overrides)
+        origins.update({key: "explicit_override" for key in _leaf_paths(overrides)})
+    config = ApplicationConfig.model_validate(raw)
+    paths = dict(project=project_path, models=models_path, researcher=researcher_path,
+                 search_planner=search_planner_path, coordinator=coordinator_path,
+                 point_extractor=point_extractor_path, reviewer=reviewer_path)
+    if selected_profile:
+        paths["profile"] = selected_profile
+    config._resolution = {
+        "precedence": ["schema_defaults", "split_files", "profile", "environment", "explicit_override"],
+        "sources": {name: {"path": str(Path(path).resolve()),
+                           "sha256": hashlib.sha256(Path(path).read_bytes()).hexdigest()}
+                    for name, path in paths.items()},
+        "field_sources": {key: origins.get(key, "schema_default")
+                          for key in _leaf_paths(config.model_dump(mode="json"))},
+    }
+    config._loaded_values = _leaf_paths(config.model_dump(mode="json"))
+    return config
+
+
+def _merge_config(target: dict[str, Any], overlay: Mapping[str, Any]) -> None:
+    """Merge objects, replace arrays/scalars; typed schema rejects unknown keys."""
+    for key, value in overlay.items():
+        if isinstance(value, Mapping) and isinstance(target.get(key), dict):
+            _merge_config(target[key], value)
+        else:
+            target[key] = copy.deepcopy(value)
+
+
+def _leaf_paths(value: Mapping[str, Any], prefix: str = "") -> dict[str, Any]:
+    result: dict[str, Any] = {}
+    for key, item in value.items():
+        path = f"{prefix}.{key}" if prefix else key
+        if isinstance(item, Mapping) and item:
+            result.update(_leaf_paths(item, path))
+        else:
+            result[path] = item
+    return result
 
 
 def _apply_model_overrides(raw: dict[str, Any], environ: Mapping[str, str]) -> None:
@@ -109,10 +181,15 @@ def legacy_shape(config: ApplicationConfig) -> dict[str, Any]:
             },
             "coordinator": {
                 "model": config.coordinator.model.alias,
+                "model_options": config.coordinator.model.model_dump(mode="python"),
+                "prompt_names": config.coordinator.prompt_names.model_dump(mode="json"),
                 "temperature": config.coordinator.model.temperature,
             },
             "point_extractor": {
                 "model": config.point_extractor.model.alias,
+                "model_options": config.point_extractor.model.model_dump(mode="python"),
+                "conservative_dedup": config.point_extractor.conservative_dedup,
+                "prompt_names": config.point_extractor.prompt_names.model_dump(mode="json"),
                 "temperature": config.point_extractor.model.temperature,
             },
             "reviewer": {
@@ -153,6 +230,9 @@ def legacy_shape(config: ApplicationConfig) -> dict[str, Any]:
             },
         },
         "task_researcher": {
+            "runtime_state_projection": config.researcher.harness.runtime_state_projection,
+            "reuse_reader_results": config.researcher.harness.reuse_reader_results,
+            "enable_evidence_checkpoint": config.researcher.harness.enable_evidence_checkpoint,
             "max_steps": config.researcher.harness.max_turns,
             "max_tool_calls": config.researcher.harness.max_total_tool_calls,
             "max_chars_per_read": config.researcher.tools.reader.max_chars_per_read,
@@ -172,6 +252,7 @@ def legacy_shape(config: ApplicationConfig) -> dict[str, Any]:
             "max_concurrency": db.max_concurrency,
             "sources": db.providers,
         },
+        "configuration_resolution": copy.deepcopy(config._resolution),
         "researcher_runtime": config.researcher.model_dump(mode="python"),
         "search_planner_runtime": config.search_planner.model_dump(mode="python"),
     }
@@ -180,7 +261,9 @@ def legacy_shape(config: ApplicationConfig) -> dict[str, Any]:
 def effective_safe_config(config: ApplicationConfig) -> dict[str, Any]:
     """Reproducible runtime view without API keys or environment values."""
 
-    return {
+    from .experiment import redact_config
+
+    return redact_config({
         "workflow": config.project.workflow.model_dump(mode="json"),
         "runtime_debug": config.project.runtime_debug.model_dump(mode="json"),
         "processing": config.project.processing,
@@ -197,9 +280,12 @@ def effective_safe_config(config: ApplicationConfig) -> dict[str, Any]:
                 "base_url": profile.base_url,
                 "model": profile.model,
                 "context_window": profile.context_window,
+                "context_admission": profile.context_admission.model_dump(mode="json"),
                 "supported_params": profile.supported_params,
+                "timeout_seconds": profile.timeout_seconds,
+                "capabilities": profile.capabilities.model_dump(mode="json"),
                 "api_key_env": profile.api_key_env,
             }
             for alias, profile in config.models.items()
         },
-    }
+    })

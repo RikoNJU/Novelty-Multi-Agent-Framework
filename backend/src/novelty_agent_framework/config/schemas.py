@@ -4,11 +4,39 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, model_validator
 
 
 class ConfigModel(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", hide_input_in_errors=True)
+
+
+class ContextAdmissionSettings(ConfigModel):
+    mode: Literal["off", "observe", "enforce"] = "off"
+    counter: Literal["none", "vllm"] = "none"
+    vllm_tools_mode: Literal["native", "v0_8_5_kwargs"] = "native"
+    on_unavailable: Literal["allow", "reject"] = "reject"
+    timeout_seconds: float = Field(default=5.0, gt=0, le=60)
+    tokenize_path: str = Field(default="/tokenize", min_length=1)
+
+    @model_validator(mode="after")
+    def same_origin_tokenize_path(self):
+        from urllib.parse import urlsplit
+        parsed = urlsplit(self.tokenize_path)
+        if (not self.tokenize_path.startswith("/") or self.tokenize_path.startswith("//")
+                or parsed.scheme or parsed.netloc or parsed.query or parsed.fragment):
+            raise ValueError("tokenize_path must be a same-origin absolute path")
+        return self
+
+
+class ModelCapabilities(ConfigModel):
+    """Explicit deployment declarations; null means unverified, never inferred."""
+
+    tool_calling: bool | None = None
+    json_object: bool | None = None
+    vision: bool | None = None
+    tool_choices: list[str] = Field(default_factory=list)
+    evidence: dict[str, str] = Field(default_factory=dict)
 
 
 class ModelProfileConfig(ConfigModel):
@@ -17,7 +45,10 @@ class ModelProfileConfig(ConfigModel):
     model: str
     api_key_env: str | None = None
     context_window: int = Field(gt=0)
+    timeout_seconds: float = Field(default=60.0, gt=0)
+    capabilities: ModelCapabilities = Field(default_factory=ModelCapabilities)
     supported_params: list[str] = Field(default_factory=list)
+    context_admission: ContextAdmissionSettings = Field(default_factory=ContextAdmissionSettings)
 
 
 class ModelInvocationConfig(ConfigModel):
@@ -32,6 +63,9 @@ class ModelInvocationConfig(ConfigModel):
 
 
 class HarnessConfig(ConfigModel):
+    runtime_state_projection: bool = False
+    enable_evidence_checkpoint: bool = False
+    reuse_reader_results: bool = False
     max_turns: int = Field(gt=0)
     max_total_tool_calls: int = Field(gt=0)
     per_tool_limits: dict[str, int]
@@ -156,7 +190,28 @@ class ReviewerConfig(ConfigModel):
 class RoleAgentConfig(ConfigModel):
     version: int = Field(ge=1)
     model: ModelInvocationConfig
-    prompts: list[str] = Field(min_length=1)
+    # Legacy inventory only. New selection is keyed by operation below.
+    prompts: list[str] = Field(default_factory=list)
+
+
+class CoordinatorPromptConfig(ConfigModel):
+    supplement: str = Field(default="coordinator/supplement", min_length=1)
+    synthesize: str = Field(default="coordinator/synthesize", min_length=1)
+
+
+class PointExtractorPromptConfig(ConfigModel):
+    generate: str = Field(default="extractor/extract_points", min_length=1)
+    deduplicate: str = Field(default="reviewer/review_points", min_length=1)
+    coverage: str = Field(default="extractor/extract_points", min_length=1)
+
+
+class CoordinatorConfig(RoleAgentConfig):
+    prompt_names: CoordinatorPromptConfig = Field(default_factory=CoordinatorPromptConfig)
+
+
+class PointExtractorConfig(RoleAgentConfig):
+    conservative_dedup: bool = True
+    prompt_names: PointExtractorPromptConfig = Field(default_factory=PointExtractorPromptConfig)
 
 
 class ServerConfig(ConfigModel):
@@ -169,6 +224,7 @@ class CorsConfig(ConfigModel):
 
 
 class WorkflowConfig(ConfigModel):
+    recovery_provider_order: list[str] = Field(default_factory=list)
     max_rounds: int = Field(gt=0)
     max_concurrency: int = Field(gt=0)
     min_final_evidence_cards_per_point: int = Field(ge=1)
@@ -197,14 +253,28 @@ class ProjectSettingsConfig(ConfigModel):
     )
 
 
+    @model_validator(mode="after")
+    def explicit_processing_switch(self):
+        self.processing.setdefault("ocr_fallback_enabled", True)
+        if type(self.processing["ocr_fallback_enabled"]) is not bool:
+            raise ValueError("processing.ocr_fallback_enabled must be a JSON boolean")
+        if self.processing["ocr_fallback_enabled"] and not self.processing.get("ocr_model"):
+            # No OCR alias has always meant no OCR client; preserve that contract.
+            self.processing["ocr_fallback_enabled"] = False
+        return self
+
+
 class ApplicationConfig(ConfigModel):
+    _resolution: dict[str, Any] = PrivateAttr(default_factory=dict)
+    _loaded_values: dict[str, Any] = PrivateAttr(default_factory=dict)
+    _startup_manifest: dict[str, Any] = PrivateAttr(default_factory=dict)
     project: ProjectSettingsConfig
     models: dict[str, ModelProfileConfig]
     researcher: ResearcherConfig
     search_planner: SearchPlannerConfig
     reviewer: ReviewerConfig | None = None
-    coordinator: RoleAgentConfig
-    point_extractor: RoleAgentConfig
+    coordinator: CoordinatorConfig
+    point_extractor: PointExtractorConfig
 
     @model_validator(mode="after")
     def known_model_aliases(self):

@@ -3,7 +3,6 @@ from __future__ import annotations
 import json
 import sys
 from concurrent.futures import ThreadPoolExecutor
-from types import SimpleNamespace
 
 import pytest
 
@@ -72,13 +71,12 @@ def test_paper_input_entrypoint_uses_numbered_workspace(tmp_path, monkeypatch) -
             captured["run_identity"] = run_identity
             return Result()
 
-    config = SimpleNamespace(
-        project=SimpleNamespace(
-            workflow=SimpleNamespace(max_rounds=None, max_concurrency=None)
-        )
-    )
+    from novelty_agent_framework.config import load_application_config
+    config = load_application_config(environ={})
     monkeypatch.setattr(live, "_load_dev_env", lambda: None)
-    monkeypatch.setattr(live, "load_application_config", lambda: config)
+    monkeypatch.setenv("LOCAL_VLLM_API_KEY", "offline-test")
+    monkeypatch.setattr(live, "load_application_config", lambda **kwargs: config)
+    monkeypatch.setattr(live, "preflight_config", lambda config: [])
 
     def build(_config, *, output_root):
         captured["output_root"] = output_root
@@ -119,3 +117,20 @@ def test_paper_input_entrypoint_uses_numbered_workspace(tmp_path, monkeypatch) -
     assert manifest["status"] == "SUCCESS"
     assert manifest["runtime_run_id"] == "run-runtime-id"
     assert manifest["result_path"] == str((run_dir / "result.json").resolve())
+
+
+def test_invalid_secret_in_config_never_enters_failed_run_manifest(tmp_path):
+    from novelty_agent_framework.config import load_application_config
+    from pydantic import ValidationError
+    manifest = {}
+    try:
+        load_application_config(environ={}, overrides={
+            'models': {'local-qwen2.5-7b': {'api_key': 'SENTINEL_CONFIG_SECRET'}}})
+    except ValidationError as error:
+        assert 'SENTINEL_CONFIG_SECRET' not in str(error)
+        live._finish_manifest(manifest, tmp_path / 'run.json', status='FAILED',
+                              started=live.time.monotonic(), workflow=None, error=error)
+    serialized = (tmp_path / 'run.json').read_text()
+    assert 'SENTINEL_CONFIG_SECRET' not in serialized
+    assert 'extra_forbidden' in serialized
+    assert manifest['status'] == 'FAILED'

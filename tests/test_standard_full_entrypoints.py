@@ -12,7 +12,7 @@ from scripts import run_full_pipeline_experiment as experiment
 from scripts import run_full_workflow_live as live
 
 
-def _disabled_config():
+def _disabled_config(**kwargs):
     config = load_application_config()
     return config.model_copy(
         update={"reviewer": config.reviewer.model_copy(update={"enabled": False})}

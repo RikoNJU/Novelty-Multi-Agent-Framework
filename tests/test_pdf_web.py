@@ -131,6 +131,7 @@ def test_pdf_adapter_runs_existing_graph_offline(tmp_path, monkeypatch):
     from novelty_agent_framework.processing import DefaultPaperProcessor
     from novelty_agent_framework.workflows import NoveltyWorkflow
     monkeypatch.setattr(runner, 'load_application_config', lambda: SimpleNamespace(project=SimpleNamespace(processing={})))
+    monkeypatch.setattr(runner, 'prepare_startup', lambda *args, **kwargs: {})  # Demo graph has no configured clients.
     monkeypatch.setattr(runner, 'build_model_registry', lambda config: None)
     monkeypatch.setattr(runner, 'DefaultPaperProcessor', lambda **kw: DefaultPaperProcessor(parser='text', min_chars_per_page=1))
     monkeypatch.setattr(runner, 'prepare_paper_input_references', lambda *a, **kw: None)
