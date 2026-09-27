@@ -170,6 +170,7 @@ class RuntimeArtifactManager:
         self._llm_call_counter = 0
         self._llm_call_paths: dict[str, Path] = {}
         self._archived_run_dir: Path | None = None
+        self._finished_summary: dict[str, Any] | None = None
         self._error_counter = 0
         self._provider_request_counter = 0
         self._provider_dispatch_count = 0
@@ -348,36 +349,35 @@ class RuntimeArtifactManager:
 
         if not self.config.enabled or self.run_dir is None:
             return
-        usage = event.response.usage if event.response is not None else {}
-        if self._pricing_catalog is not None:
-            accounting = self._pricing_catalog.calculate(
-                event.model, usage, occurred_at=event.started_at
-            )
-        else:
-            from ..diagnostics.llm_usage import normalize_usage
-
-            accounting = {
-                "tokens": normalize_usage(usage),
-                "billing": {
-                    "status": "PRICING_UNAVAILABLE",
-                    "currency": "RMB",
-                    "amount": None,
-                    "unit_tokens": None,
-                    "rate_name": None,
-                    "rates_per_unit": None,
-                    "pricing_table": str(self.config.llm_pricing_path),
-                },
-            }
+        reported_usage = event.provider_usage
+        if reported_usage is None and event.response is not None:
+            reported_usage = event.response.usage
         with self._lock:
             call_key = event.call_id or uuid.uuid4().hex
             existing = next((item for item in self._llm_call_records
                              if item.get("client_call_id") == call_key), None)
+            # Cancellation/error notifications contain no consumption payload.
+            # They must never erase usage already observed for this call ID.
+            usage = (dict(reported_usage) if isinstance(reported_usage, Mapping) and reported_usage
+                     else dict(existing.get("provider_usage") or {}) if existing else {})
+            occurred_at = (datetime.fromisoformat(existing["started_at"])
+                           if existing else event.started_at)
+            accounting = self._model_accounting(event.model, usage, occurred_at)
             milestone_phases = {"TRANSPORT_INVOKED", "RESPONSE_HEADERS",
-                                "RESPONSE_BODY_COMPLETE", "RESPONSE_PARSED"}
+                                "RESPONSE_BODY_COMPLETE", "RESPONSE_PARSED", "CONTEXT_ADMISSION",
+                                "CONTEXT_MEASUREMENT_REQUEST", "CONTEXT_MEASUREMENT_RESPONSE",
+                                "CONTEXT_MEASUREMENT_FAILED", "CONTEXT_MEASUREMENT_VERIFIED"}
             if existing is not None and event.phase in milestone_phases:
                 existing.setdefault("timeline", []).append({
                     "phase": event.phase, "at": _iso(event.started_at),
                     **dict(event.details)})
+                existing.update(provider_usage=usage, **accounting)
+                if event.phase == "RESPONSE_PARSED" and event.details.get("response_id") is not None:
+                    existing["request_id"] = event.details["response_id"]
+                if event.phase == "CONTEXT_ADMISSION":
+                    existing["context_admission"] = dict(event.details)
+                elif event.phase == "CONTEXT_MEASUREMENT_VERIFIED":
+                    existing["context_measurement_verification"] = dict(event.details)
                 self._write_model_record(call_key, existing)
                 return
             if existing is not None and existing["status"] == "CANCELLED" and event.phase != "CANCELLED":
@@ -388,6 +388,9 @@ class RuntimeArtifactManager:
                     "usage": dict(usage), "billing": accounting["billing"],
                     "error": (f"{type(event.error).__name__}: {event.error}" if event.error else None),
                 }
+                existing.update(provider_usage=usage, **accounting)
+                if event.response is not None and isinstance(event.response.raw, Mapping):
+                    existing["request_id"] = event.response.raw.get("id") or existing.get("request_id")
                 existing["transport_inflight_unknown"] = False
                 self._write_model_record(call_key, existing)
                 return
@@ -436,16 +439,24 @@ class RuntimeArtifactManager:
                     event.response.raw.get("id")
                     if event.response is not None
                     and isinstance(event.response.raw, Mapping)
-                    else None
+                    else existing.get("request_id") if existing else None
                 ),
                 **accounting,
                 "provider_usage": dict(usage),
                 "error": (
-                    {"type": type(event.error).__name__, "message": str(event.error)}
+                    {"type": type(event.error).__name__, "message": str(event.error),
+                     **({"code": event.error.code} if hasattr(event.error, "code") else {})}
                     if event.error is not None
                     else None
                 ),
                 "timeline": existing.get("timeline", []) if existing else [],
+                "context_admission": existing.get("context_admission") if existing else None,
+                "context_measurement_verification": existing.get("context_measurement_verification") if existing else None,
+                "chat_transport_invoked": bool(existing and any(
+                    item["phase"] == "TRANSPORT_INVOKED" for item in existing.get("timeline", []))),
+                "context_measurement_requests": sum(
+                    item["phase"] == "CONTEXT_MEASUREMENT_REQUEST"
+                    for item in (existing.get("timeline", []) if existing else [])),
                 "transport_inflight_unknown": (
                     event.phase == "CANCELLED" and existing is not None
                     and any(item["phase"] == "TRANSPORT_INVOKED"
@@ -454,6 +465,10 @@ class RuntimeArtifactManager:
                                 for item in existing.get("timeline", []))
                 ),
             }
+            if existing is not None:
+                for prior_detail in ("late_completion", "transport_completion_before_cancel"):
+                    if prior_detail in existing:
+                        record[prior_detail] = existing[prior_detail]
             if existing is not None and event.phase == "CANCELLED" and existing["status"] in {"SUCCESS", "FAILED"}:
                 record["transport_completion_before_cancel"] = {
                     "status": existing["status"], "response": existing["response"],
@@ -468,11 +483,34 @@ class RuntimeArtifactManager:
                 self._llm_call_records[prior] = record
             self._write_model_record(call_key, record)
 
+    def _model_accounting(self, model: str, usage: Mapping[str, Any],
+                          occurred_at: datetime) -> dict[str, Any]:
+        if self._pricing_catalog is not None:
+            return self._pricing_catalog.calculate(model, usage, occurred_at=occurred_at)
+        from ..diagnostics.llm_usage import normalize_usage
+
+        return {"tokens": normalize_usage(usage), "billing": {
+            "status": "PRICING_UNAVAILABLE", "currency": "RMB", "amount": None,
+            "unit_tokens": None, "rate_name": None, "rates_per_unit": None,
+            "pricing_table": str(self.config.llm_pricing_path),
+        }}
+
     def _write_model_record(self, call_key: str, record: Mapping[str, Any]) -> None:
         path = self._llm_call_paths[call_key]
         self._write_json(path, record)
         if self._archived_run_dir is not None:
             self._write_json(self._archived_run_dir / "llm_calls" / path.name, record)
+        if self._finished_summary is not None:
+            usage = _summarize_llm_usage(self._llm_call_records)
+            if usage != self._finished_summary["llm_usage"]:
+                # Reconcile only accounting. Run outcome, terminal time and
+                # duration describe execution, not the arrival of a late bill.
+                self._finished_summary = {**self._finished_summary,
+                    "llm_usage": usage, "llm_usage_reconciled_at": _iso(_now())}
+                for directory in (self.run_dir, self._archived_run_dir):
+                    if directory is not None:
+                        self._write_json(directory / "summary.json", self._finished_summary)
+                        _atomic_write_text(directory / "summary.md", _render_summary(self._finished_summary))
 
     def start_stage(self, stage_name: str, stage_input: Any) -> StageHandle:
         started = _now()
@@ -753,6 +791,7 @@ class RuntimeArtifactManager:
             archive.mkdir(parents=True, exist_ok=False)
             shutil.copytree(self.run_dir, archive, dirs_exist_ok=True)
             self._archived_run_dir = archive
+            self._finished_summary = summary
             workspace = Path(self.config.output_root) / _safe_segment(self.paper_id)
             if workspace.is_dir():
                 shutil.copytree(
@@ -1310,6 +1349,14 @@ def _summarize_provider_requests(
     return summary
 
 
+def _format_known_cost(totals: Mapping[str, Any]) -> str:
+    amount = totals.get("amount_rmb")
+    if isinstance(amount, (int, float)):
+        return f"{amount:.8f}"
+    subtotal = totals.get("known_amount_rmb", 0)
+    return f"Unknown (priced subtotal {subtotal:.8f})"
+
+
 def _summarize_llm_usage(records: list[dict[str, Any]]) -> dict[str, Any]:
     def blank(label: str | None = None) -> dict[str, Any]:
         return {
@@ -1321,6 +1368,9 @@ def _summarize_llm_usage(records: list[dict[str, Any]]) -> dict[str, Any]:
             "free_calls": 0,
             "unpriced_calls": 0,
             "usage_unavailable_calls": 0,
+            "chat_transport_calls": 0,
+            "context_measurement_requests": 0,
+            "context_pre_dispatch_rejections": 0,
             "input_tokens": 0,
             "cached_input_tokens": 0,
             "output_tokens": 0,
@@ -1339,6 +1389,11 @@ def _summarize_llm_usage(records: list[dict[str, Any]]) -> dict[str, Any]:
         billing_status = billing.get("status")
         for target in targets:
             target["calls"] += 1
+            target["chat_transport_calls"] += int(bool(record.get("chat_transport_invoked")))
+            target["context_measurement_requests"] += record.get("context_measurement_requests", 0)
+            target["context_pre_dispatch_rejections"] += int(
+                (record.get("context_admission") or {}).get("decision") == "reject"
+                and not record.get("chat_transport_invoked"))
             status_key = (
                 "successful_calls"
                 if record.get("status") == "SUCCESS"
@@ -1367,9 +1422,15 @@ def _summarize_llm_usage(records: list[dict[str, Any]]) -> dict[str, Any]:
             if isinstance(amount, (int, float)) and not isinstance(amount, bool):
                 target["amount_rmb"] = round(target["amount_rmb"] + amount, 8)
 
-    totals["cost_completeness"] = (
-        "PARTIAL" if totals["unpriced_calls"] else "COMPLETE"
-    )
+    for target in (totals, *by_model.values()):
+        incomplete = bool(target["unpriced_calls"] or target["usage_unavailable_calls"])
+        target["cost_completeness"] = "PARTIAL" if incomplete else "COMPLETE"
+        # Keep the priced subtotal distinct from the unknown total. A failed
+        # transport can still have incurred provider charges; absent usage is
+        # not proof of a zero bill, nor is an unpriced local model free compute.
+        target["known_amount_rmb"] = target["amount_rmb"]
+        if incomplete:
+            target["amount_rmb"] = None
     totals["currency"] = "RMB"
     return {"totals": totals, "by_model": list(by_model.values())}
 
@@ -1439,8 +1500,12 @@ def _stage_debug_details(
     reported = _reported_insufficient_points(stage_output)
     rounds = state.get("rounds")
     max_rounds = workflow_config.get("max_rounds")
+    output = _as_mapping(stage_output) or {}
+    decisions = output.get("recovery_decisions")
+    actionable = (any(_field_value(d, "action") not in {"stop", "none", "manual"}
+                      for d in _as_sequence(decisions)) if decisions is not None else bool(reported))
     round_limit_allows_supplement = (
-        bool(reported)
+        actionable
         and isinstance(rounds, int)
         and isinstance(max_rounds, int)
         and rounds < max_rounds
@@ -1473,6 +1538,8 @@ def _stage_debug_details(
                 else None
             ),
             "round_limit_allows_supplement": round_limit_allows_supplement,
+            "recovery_decisions": [dict(_as_mapping(d) or {}) for d in _as_sequence(decisions)] if decisions is not None else None,
+            "routing_basis": "recovery_decisions" if decisions is not None else "legacy_card_count",
         }
     }
 
@@ -1789,7 +1856,7 @@ def _render_summary(summary: Mapping[str, Any]) -> str:
             f"Output tokens: {llm_totals.get('output_tokens', 0)}",
             f"Reasoning tokens: {llm_totals.get('reasoning_tokens', 0)}",
             f"Total tokens: {llm_totals.get('total_tokens', 0)}",
-            f"Cost: RMB {llm_totals.get('amount_rmb', 0):.8f}",
+            f"Estimated API cost (RMB): {_format_known_cost(llm_totals)}",
             f"Cost completeness: {llm_totals.get('cost_completeness', 'COMPLETE')}",
             "",
             "| Model | Calls | Input | Cached | Output | Total | Cost (RMB) | Unpriced |",
@@ -1799,7 +1866,7 @@ def _render_summary(summary: Mapping[str, Any]) -> str:
     lines.extend(
         f"| {item['model']} | {item['calls']} | {item['input_tokens']} | "
         f"{item['cached_input_tokens']} | {item['output_tokens']} | "
-        f"{item['total_tokens']} | {item['amount_rmb']:.8f} | "
+        f"{item['total_tokens']} | {_format_known_cost(item)} | "
         f"{item['unpriced_calls']} |"
         for item in llm_usage.get("by_model", [])
     )

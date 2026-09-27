@@ -438,3 +438,35 @@ def test_completion_before_async_cancel_is_not_lost(tmp_path: Path) -> None:
     assert call["status"] == "CANCELLED"
     assert call["transport_completion_before_cancel"]["response"]["content"] == "answer"
     assert call["transport_completion_before_cancel"]["request_id"] == "remote-id"
+
+
+def test_unknown_or_missing_usage_has_unknown_total_cost_and_keeps_priced_subtotal():
+    from novelty_agent_framework.core.runtime_artifacts import _summarize_llm_usage, _format_known_cost
+
+    priced = {"model": "priced", "status": "SUCCESS", "tokens": {"input_tokens": 5},
+              "billing": {"status": "PRICED", "amount": 0.25}}
+    for status in ("UNPRICED", "USAGE_UNAVAILABLE", "USAGE_INCOMPLETE", "PRICING_UNAVAILABLE"):
+        summary = _summarize_llm_usage([priced, {"model": "local", "status": "FAILED",
+            "tokens": {}, "billing": {"status": status, "amount": None}}])
+        totals = summary["totals"]
+        assert totals["cost_completeness"] == "PARTIAL"
+        assert totals["amount_rmb"] is None
+        assert totals["known_amount_rmb"] == 0.25
+        assert totals["failed_calls"] == 1
+        assert _format_known_cost(totals) == "Unknown (priced subtotal 0.25000000)"
+        local = next(row for row in summary["by_model"] if row["model"] == "local")
+        assert local["amount_rmb"] is None
+        assert local["cost_completeness"] == "PARTIAL"
+    failed_only = _summarize_llm_usage([{"model": "local", "status": "FAILED",
+        "tokens": {}, "billing": {"status": "USAGE_UNAVAILABLE", "amount": None}}])["totals"]
+    assert failed_only["amount_rmb"] is None
+    assert failed_only["cost_completeness"] == "PARTIAL"
+
+
+def test_fully_priced_usage_retains_numeric_total_cost():
+    from novelty_agent_framework.core.runtime_artifacts import _summarize_llm_usage
+
+    totals = _summarize_llm_usage([{"model": "priced", "status": "SUCCESS",
+        "tokens": {}, "billing": {"status": "PRICED", "amount": 0.25}}])["totals"]
+    assert totals["cost_completeness"] == "COMPLETE"
+    assert totals["amount_rmb"] == totals["known_amount_rmb"] == 0.25

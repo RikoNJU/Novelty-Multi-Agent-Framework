@@ -1,3 +1,4 @@
+from .context_admission import ContextAdmissionConfig, ContextTokenMeasurement, ContextMeasurementUnavailable
 from .model_client import (
     ChatMessage,
     ContentPart,
@@ -6,6 +7,7 @@ from .model_client import (
     ModelCallEvent,
     ModelClient,
     ModelClientError,
+    ModelContextAdmissionError,
     ModelTransportTimeout,
     ModelCallBudgetExceeded,
     ModelTraceError,
@@ -38,6 +40,10 @@ __all__ = [
     "ModelCallEvent",
     "ModelClient",
     "ModelClientError",
+    "ModelContextAdmissionError",
+    "ContextAdmissionConfig",
+    "ContextTokenMeasurement",
+    "ContextMeasurementUnavailable",
     "ModelTransportTimeout",
     "ModelCallBudgetExceeded",
     "ModelTraceError",

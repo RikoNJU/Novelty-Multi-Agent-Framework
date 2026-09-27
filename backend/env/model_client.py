@@ -21,6 +21,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Protocol
 
+from .context_admission import (ContextAdmissionConfig, ContextTokenMeasurement, ContextRecordingError, ContextMeasurementUnavailable,
+    TokenCounter, count_vllm_tokens, diagnostic_endpoint, evaluate_context_admission)
+
 
 def _load_dev_env() -> None:
     """开发环境可选加载 ``backend/.env``；未安装 python-dotenv 时静默跳过。"""
@@ -41,6 +44,15 @@ _load_dev_env()
 
 class ModelClientError(RuntimeError):
     """模型客户端调用失败。"""
+
+
+class ModelContextAdmissionError(ModelClientError):
+    """A context policy refused this request before chat transport."""
+
+    def __init__(self, admission: Mapping[str, Any]) -> None:
+        self.admission = dict(admission)
+        self.code = str(admission["code"])
+        super().__init__(f"{self.code}: {admission.get('reason') or 'input plus output exceeds effective context window'}")
 
 
 class ModelTransportTimeout(ModelClientError):
@@ -72,9 +84,14 @@ class ModelCallEvent:
     request_payload: Mapping[str, Any] | None = None
     request_options: Mapping[str, Any] | None = None
     details: Mapping[str, Any] = field(default_factory=dict)
+    # Provider consumption can be known before choices/tool arguments validate.
+    provider_usage: Mapping[str, Any] | None = None
 
 
 ModelCallObserver = Callable[[ModelCallEvent], None]
+_serialized_call_payload: contextvars.ContextVar[dict[str, Any] | None] = (
+    contextvars.ContextVar("novelty_serialized_call_payload", default=None)
+)
 _model_call_observer: contextvars.ContextVar[ModelCallObserver | None] = (
     contextvars.ContextVar("novelty_model_call_observer", default=None)
 )
@@ -83,6 +100,9 @@ _model_call_budget: contextvars.ContextVar[ModelCallObserver | None] = (
 )
 _async_call_id: contextvars.ContextVar[str | None] = contextvars.ContextVar(
     "novelty_async_model_call_id", default=None
+)
+_async_cancel_event: contextvars.ContextVar[threading.Event | None] = contextvars.ContextVar(
+    "novelty_async_model_cancel_event", default=None
 )
 
 
@@ -230,6 +250,7 @@ class ModelProfile:
     context_window: int = 128_000
     supported_params: frozenset[str] = frozenset()
     defaults: Mapping[str, Any] = field(default_factory=dict)
+    context_admission: ContextAdmissionConfig = field(default_factory=ContextAdmissionConfig)
 
 
 class ModelClient(Protocol):
@@ -253,7 +274,8 @@ class ModelClient(Protocol):
 class OpenAICompatibleChatClient:
     """兼容 OpenAI chat completions 格式的模型客户端。"""
 
-    def __init__(self, profile: ModelProfile | ModelRuntimeConfig) -> None:
+    def __init__(self, profile: ModelProfile | ModelRuntimeConfig, *,
+                 token_counter: TokenCounter | None = None) -> None:
         if isinstance(profile, ModelRuntimeConfig):
             profile = ModelProfile(
                 alias="default",
@@ -267,6 +289,8 @@ class OpenAICompatibleChatClient:
                 },
             )
         self.profile = profile
+        self._token_counter = token_counter
+        self._context_measurement_mismatch: dict[str, Any] | None = None
 
     def complete(
         self,
@@ -278,12 +302,14 @@ class OpenAICompatibleChatClient:
         monotonic_started = time.monotonic()
         call_id = _async_call_id.get() or uuid.uuid4().hex
         effective_options = options or ModelCallOptions()
-        request_payload = self._build_payload(messages, effective_options)
+        # Snapshot once: count, trace and transport must refer to identical
+        # serialized input even if a caller later mutates a defaults mapping.
+        request_payload = json.loads(json.dumps(self._build_payload(messages, effective_options), ensure_ascii=False))
         request_options = {
             "timeout_seconds": (effective_options.timeout_seconds
                                 if effective_options.timeout_seconds is not None
                                 else self.profile.defaults.get("timeout_seconds", 60.0)),
-            "endpoint": f"{self.profile.base_url.rstrip('/')}/chat/completions",
+            "endpoint": diagnostic_endpoint(f"{self.profile.base_url.rstrip('/')}/chat/completions"),
         }
         common = dict(alias=self.profile.alias, provider=self.profile.provider,
                       model=self.profile.model, started_at=started_at,
@@ -291,8 +317,47 @@ class OpenAICompatibleChatClient:
                       request_payload=request_payload, request_options=request_options)
         _emit_model_call(ModelCallEvent(**common, duration_ms=0, phase="START"))
         call_token = _async_call_id.set(call_id)
+        payload_token = _serialized_call_payload.set(request_payload)
         try:
+            def measurement_event(phase, details):
+                try:
+                    _emit_model_call(ModelCallEvent(**common, duration_ms=0,
+                        phase=phase, details=details))
+                except Exception as exc:
+                    raise ContextRecordingError("context admission trace could not be recorded") from exc
+
+            config = self.profile.context_admission
+            counter = self._token_counter
+            if counter is None and config.counter == "vllm":
+                counter = lambda payload: count_vllm_tokens(payload,
+                    base_url=self.profile.base_url, api_key=self.profile.api_key,
+                    config=config, observe=measurement_event)
+            if self._context_measurement_mismatch is not None:
+                def invalid_counter(_payload):
+                    raise ContextMeasurementUnavailable("prior_measurement_usage_mismatch",
+                        previous=self._context_measurement_mismatch)
+                counter = invalid_counter
+            admission = evaluate_context_admission(request_payload,
+                profile_context_window=self.profile.context_window, config=config, counter=counter)
+            if config.mode != "off":
+                measurement_event("CONTEXT_ADMISSION", admission)
+            if admission["decision"] == "reject":
+                raise ModelContextAdmissionError(admission)
+            cancellation = _async_cancel_event.get()
+            if cancellation is not None and cancellation.is_set():
+                raise asyncio.CancelledError("model call cancelled before chat dispatch")
             response = self._complete(messages, options=options)
+            if admission["exact"]:
+                usage = response.usage if isinstance(response.usage, Mapping) else {}
+                actual = usage.get("prompt_tokens", usage.get("input_tokens"))
+                comparable = isinstance(actual, int) and not isinstance(actual, bool) and actual >= 0
+                verification = {"status": ("matched" if actual == admission["input_tokens"] else "mismatched")
+                                if comparable else "usage_unavailable",
+                    "measured_input_tokens": admission["input_tokens"], "provider_input_tokens": actual,
+                    "payload_sha256": admission["payload_sha256"]}
+                if verification["status"] == "mismatched":
+                    self._context_measurement_mismatch = verification
+                measurement_event("CONTEXT_MEASUREMENT_VERIFIED", verification)
         except BaseException as exc:
             _emit_model_call(
                 ModelCallEvent(
@@ -307,6 +372,7 @@ class OpenAICompatibleChatClient:
             )
             raise
         finally:
+            _serialized_call_payload.reset(payload_token)
             _async_call_id.reset(call_token)
         _emit_model_call(
             ModelCallEvent(
@@ -329,7 +395,9 @@ class OpenAICompatibleChatClient:
             raise ModelClientError("缺少模型 API Key，请配置 NOVELTY_API_KEY 或 LLM_API_KEY")
 
         call_options = options or ModelCallOptions()
-        payload = self._build_payload(messages, call_options)
+        payload = _serialized_call_payload.get()
+        if payload is None:
+            payload = self._build_payload(messages, call_options)
         endpoint = f"{self.profile.base_url.rstrip('/')}/chat/completions"
         timeout = call_options.timeout_seconds
         if timeout is None:
@@ -344,12 +412,14 @@ class OpenAICompatibleChatClient:
             method="POST",
         )
 
-        def milestone(phase: str, **details: Any) -> None:
+        def milestone(phase: str, *, provider_usage: Mapping[str, Any] | None = None,
+                      **details: Any) -> None:
             _emit_model_call(ModelCallEvent(
                 alias=self.profile.alias, provider=self.profile.provider,
                 model=self.profile.model, started_at=datetime.now(timezone.utc),
                 duration_ms=0, message_count=len(messages),
                 call_id=_async_call_id.get() or "", phase=phase, details=details,
+                provider_usage=provider_usage,
             ))
 
         try:
@@ -361,8 +431,10 @@ class OpenAICompatibleChatClient:
                 body = response.read()
                 milestone("RESPONSE_BODY_COMPLETE", body_bytes=len(body))
                 raw = json.loads(body.decode("utf-8"))
+                provider_usage = raw.get("usage") if isinstance(raw, Mapping) else None
                 milestone("RESPONSE_PARSED", response_id=raw.get("id") if isinstance(raw, Mapping) else None,
-                          usage_available=isinstance(raw, Mapping) and bool(raw.get("usage")))
+                          usage_available=isinstance(provider_usage, Mapping) and bool(provider_usage),
+                          provider_usage=provider_usage if isinstance(provider_usage, Mapping) else None)
         except urllib.error.HTTPError as exc:
             detail = exc.read().decode("utf-8", errors="replace")
             raise ModelClientError(f"模型 HTTP 调用失败: {exc.code} {detail}") from exc
@@ -391,7 +463,7 @@ class OpenAICompatibleChatClient:
             content=content,
             tool_calls=tool_calls,
             raw=raw,
-            usage=raw.get("usage", {}),
+            usage=provider_usage if isinstance(provider_usage, Mapping) else {},
         )
 
     def _build_payload(
@@ -462,6 +534,8 @@ class OpenAICompatibleChatClient:
     ) -> ModelResponse:
         call_id = uuid.uuid4().hex
         token = _async_call_id.set(call_id)
+        cancellation = threading.Event()
+        cancel_token = _async_cancel_event.set(cancellation)
         started_at = datetime.now(timezone.utc)
         try:
             # Poll a daemon transport thread. Some hosted event loops do not wake
@@ -484,6 +558,7 @@ class OpenAICompatibleChatClient:
                 await asyncio.sleep(0.02)
             return result.result()
         except asyncio.CancelledError as exc:
+            cancellation.set()
             effective_options = options or ModelCallOptions()
             _emit_model_call(ModelCallEvent(
                 alias=self.profile.alias, provider=self.profile.provider,
@@ -495,11 +570,12 @@ class OpenAICompatibleChatClient:
                     "timeout_seconds": (effective_options.timeout_seconds
                                         if effective_options.timeout_seconds is not None
                                         else self.profile.defaults.get("timeout_seconds", 60.0)),
-                    "endpoint": f"{self.profile.base_url.rstrip('/')}/chat/completions",
+                    "endpoint": diagnostic_endpoint(f"{self.profile.base_url.rstrip('/')}/chat/completions"),
                 }, error=exc,
             ))
             raise
         finally:
+            _async_cancel_event.reset(cancel_token)
             _async_call_id.reset(token)
 
 
