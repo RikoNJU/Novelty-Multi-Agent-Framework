@@ -613,7 +613,15 @@ def test_gate_a_reasons_do_not_enter_formal_report() -> None:
             }
         )
     )
-    assert output["report"].limitations == []
+    # A missing execution audit remains an honest coverage limitation; Gate A
+    # implementation details must still stay out of the formal report.
+    assert output["report"].limitations == [
+        "本报告节点输入未提供完整检索执行事实，检索覆盖状态未知。"
+    ]
+    rendered = output["report"].model_dump_json()
+    assert "gate-only" not in rendered
+    assert "ev-missing" not in rendered
+    assert "missing Evidence" not in rendered
 
 
 class _BrokenArtifactResearcher:

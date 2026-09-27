@@ -32,12 +32,14 @@ from ..ports import (
 )
 from ..core.runtime_artifacts import RuntimeDebugConfig
 from ..schemas.research import TargetPaperIdentity
+from ..schemas.failures import FailureEvent, RecoveryDecision
 
 
 class NoveltyState(TypedDict, total=False):
     """一次查新任务在图中的共享状态。"""
 
     paper: PaperInput
+    point_coverage: dict
     novelty_points: list[NoveltyPoint]
     brief: NoveltyBrief
     research_tasks: list[ResearchTask]
@@ -58,6 +60,13 @@ class NoveltyState(TypedDict, total=False):
     review_decisions: list[EvidenceReviewDecision]
     novelty_reviews: list[NoveltyPointReview]
     insufficient_final_evidence_points: list[InsufficientFinalEvidence]
+    failure_events: list[FailureEvent]
+    recovery_decisions: list[RecoveryDecision]
+    recovery_history: list[RecoveryDecision]
+    recovery_directives: dict[str, RecoveryDecision]
+    recovery_search_plans: dict[str, SearchPlan]
+    current_recovery: RecoveryDecision
+    review_summary_attempts: list[dict]
     issues: Annotated[list[WorkflowIssue], add]
     rounds: int
     report: NoveltyReport
@@ -75,6 +84,7 @@ class NoveltyWorkflowConfig:
     max_concurrency: int = 4
     min_final_evidence_cards_per_point: int = 1
     candidate_limit_per_task: int = 8
+    recovery_provider_order: tuple[str, ...] = ()
     runtime_debug: RuntimeDebugConfig = field(default_factory=RuntimeDebugConfig)
 
     def __post_init__(self) -> None:

@@ -167,3 +167,141 @@ def test_binding_rejects_missing_duplicate_and_unknown_reviews(reviews, match):
             novelty_points=[_point()],
             evidence_cards=[],
         )
+
+
+def _execution(execution_id, status, *, source="arxiv", error=None):
+    from datetime import datetime, timezone
+    from novelty_agent_framework.schemas import SearchExecution
+
+    return SearchExecution(
+        execution_id=execution_id,
+        tool_name="database_search",
+        source_id=source,
+        query="query",
+        status=status,
+        started_at=datetime(2026, 9, 27, tzinfo=timezone.utc),
+        error=error,
+    )
+
+
+def _task_result(executions, point_id="NP-1"):
+    from novelty_agent_framework.schemas import TaskResearchResult
+
+    return TaskResearchResult(
+        task_id="T-1", novelty_point_id=point_id, status="completed",
+        steps_used=3, search_executions=executions,
+    )
+
+
+def _unavailable_report(*point_ids):
+    return NoveltyReport(
+        paper_id="paper-1",
+        conclusions=[NoveltyConclusion(
+            novelty_point_id=point_id,
+            review_status="insufficient_evidence",
+            incomplete_reason="material_unavailable",
+            summary="Reviewer 核验未完成，尚不能作出新颖性裁定。",
+        ) for point_id in point_ids],
+        limitations=[
+            "保留已确认的范围限制。",
+            "本报告节点输入未提供完整检索执行事实，检索覆盖状态未知。",
+        ],
+    )
+
+
+def test_search_coverage_reports_all_failed_without_absence_or_error_secrets():
+    from novelty_agent_framework.core.report_binding import bind_search_coverage_to_report
+    from novelty_agent_framework.schemas import ResearchBundle
+
+    failed = _execution(
+        "E-1", "failed",
+        error="HTTPStatusError: Client error '406 Not Acceptable' for url "
+              "'https://example.test/?api_key=secret-canary'",
+    )
+    result = _task_result([failed, _execution("E-2", "not_run")])
+    # The same execution appears in the bundle and the flattened task audit.
+    result.research_bundles = [ResearchBundle(
+        bundle_id="B-1", producer="database_search", search_executions=[failed]
+    )]
+    original = _unavailable_report("NP-1")
+    report = bind_search_coverage_to_report(
+        original, novelty_points=[_point()], task_research_results=[result]
+    )
+
+    text = "\n".join(report.limitations)
+    assert "arxiv 成功 0 次、失败 1 次、未执行 1 项" in text
+    assert "HTTP 406：1 次" in text
+    assert "未获得可供核验的绑定材料" in text
+    assert "不能据此推断无相关文献" in text
+    assert "状态未知" not in text
+    assert "secret-canary" not in text and "example.test" not in text
+    assert "NOT_FOUND" not in text and "零命中" not in text
+    assert report.conclusions == original.conclusions
+    assert original.limitations[-1].endswith("检索覆盖状态未知。")
+
+
+def test_search_coverage_keeps_mixed_statuses_providers_and_points_separate():
+    from novelty_agent_framework.core.report_binding import bind_search_coverage_to_report
+
+    original = _unavailable_report("NP-1", "NP-2", "NP-3")
+    report = bind_search_coverage_to_report(
+        original,
+        novelty_points=[_point("NP-1"), _point("NP-2"), _point("NP-3")],
+        task_research_results=[
+            _task_result([
+                _execution("E-1", "succeeded"),
+                _execution("E-2", "failed", error="HTTP 429"),
+                _execution("E-3", "partial"),
+                _execution("E-4", "requires_human"),
+                _execution("E-5", "not_run"),
+            ]),
+            _task_result([_execution("E-6", "succeeded", source="springer")], "NP-2"),
+        ],
+    )
+
+    np1 = next(item for item in report.limitations if item.startswith("NP-1："))
+    np2 = next(item for item in report.limitations if item.startswith("NP-2："))
+    assert "成功 1 次、失败 1 次、未执行 1 项" in np1
+    assert "部分成功 1 次、需人工处理 1 次" in np1
+    assert "HTTP 429：1 次" in np1 and "springer" not in np1
+    assert "springer 成功 1 次、失败 0 次、未执行 0 项" in np2
+    assert "HTTP 429" not in np2 and "arxiv" not in np2
+    assert "NP-3：未记录检索执行事实，检索覆盖状态未知。" in report.limitations
+    assert report.conclusions == original.conclusions
+
+
+@pytest.mark.parametrize("task_results", [[], [_task_result([])]])
+def test_search_coverage_without_executions_remains_unknown(task_results):
+    from novelty_agent_framework.core.report_binding import bind_search_coverage_to_report
+
+    report = bind_search_coverage_to_report(
+        _unavailable_report("NP-1"),
+        novelty_points=[_point()], task_research_results=task_results,
+    )
+    assert report.limitations == [
+        "保留已确认的范围限制。",
+        "本报告节点输入未提供完整检索执行事实，检索覆盖状态未知。",
+    ]
+    assert report.conclusions[0].verdict is None
+
+
+def test_workflow_binds_existing_task_search_failures_into_report():
+    review = NoveltyPointReview(
+        novelty_point_id="NP-1", status="insufficient_evidence",
+        incomplete_reason="material_unavailable",
+    )
+    workflow = NoveltyWorkflow.default()
+    report = asyncio.run(workflow._synthesize_report({
+        "paper": PaperInput(paper_id="paper-1", title="Paper", full_text="body"),
+        "novelty_points": [_point()],
+        "brief": NoveltyBrief(paper_summary="summary", novelty_points=[_point()]),
+        "novelty_reviews": [review],
+        "task_research_results": [_task_result([
+            _execution("E-1", "failed", error="HTTPStatusError: Client error '406 Not Acceptable'")
+        ])],
+    }))["report"]
+
+    assert any("HTTP 406：1 次" in item for item in report.limitations)
+    assert all("未提供完整检索执行事实" not in item for item in report.limitations)
+    assert report.conclusions[0].incomplete_reason == "material_unavailable"
+    assert report.conclusions[0].verdict is None

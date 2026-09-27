@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from collections import Counter
 from collections.abc import Sequence
 
@@ -12,6 +13,14 @@ from ..schemas import (
     NoveltyPointReview,
     NoveltyReport,
     ReportNarrativeDraft,
+    TaskResearchResult,
+)
+
+
+_SEARCH_COVERAGE_UNKNOWN = "本报告节点输入未提供完整检索执行事实，检索覆盖状态未知。"
+_HTTP_STATUS = re.compile(
+    r"(?:\b(?:Client|Server) error [\"']|\bHTTP(?: status)?[ :=]*)([1-5]\d{2})\b",
+    re.IGNORECASE,
 )
 
 
@@ -68,12 +77,77 @@ def assemble_report_from_draft(
             f"被拒绝证据：{rejected}" if ": " in rejected
             else f"被拒绝证据：{rejected}；来源未提供拒绝原因。"
         )
-    limitations.append("本报告节点输入未提供完整检索执行事实，检索覆盖状态未知。")
+    limitations.append(_SEARCH_COVERAGE_UNKNOWN)
     return NoveltyReport.model_validate({
         "paper_id": paper_id,
         "conclusions": conclusions,
         "limitations": list(dict.fromkeys(limitations)),
     })
+
+
+def bind_search_coverage_to_report(
+    report: NoveltyReport,
+    *,
+    novelty_points: Sequence[NoveltyPoint],
+    task_research_results: Sequence[TaskResearchResult],
+) -> NoveltyReport:
+    """Publish recorded execution states without converting failures into absence.
+
+    SearchExecution counts are logical query executions, not physical HTTP counts.
+    Only recognized HTTP status numbers leave the error field; raw errors/URLs do not.
+    """
+    limitations = [item for item in report.limitations if item != _SEARCH_COVERAGE_UNKNOWN]
+    conclusions = {item.novelty_point_id: item for item in report.conclusions}
+    by_point = {}
+    for point in novelty_points:
+        executions = {}
+        for result in task_research_results:
+            if result.novelty_point_id != point.point_id:
+                continue
+            rows = [execution for bundle in result.research_bundles
+                    for execution in bundle.search_executions]
+            for execution in [*rows, *result.search_executions]:
+                key = (result.task_id, execution.execution_id, execution.started_at)
+                executions[key] = execution
+        by_point[point.point_id] = list(executions.values())
+    if not any(by_point.values()):
+        limitations.append(_SEARCH_COVERAGE_UNKNOWN)
+    else:
+        for point_id, executions in by_point.items():
+            if not executions:
+                limitations.append(f"{point_id}：未记录检索执行事实，检索覆盖状态未知。")
+                continue
+            source_summaries = []
+            for source_id in sorted({item.source_id for item in executions}):
+                source_rows = [item for item in executions if item.source_id == source_id]
+                counts = Counter(item.status.value for item in source_rows)
+                summary = (
+                    f"{source_id} 成功 {counts['succeeded']} 次、"
+                    f"失败 {counts['failed']} 次、未执行 {counts['not_run']} 项"
+                )
+                for status, label in (("partial", "部分成功"), ("requires_human", "需人工处理")):
+                    if counts[status]:
+                        summary += f"、{label} {counts[status]} 次"
+                codes = Counter(
+                    match.group(1) for item in source_rows
+                    if item.status.value not in {"succeeded", "not_run"}
+                    and (match := _HTTP_STATUS.search(item.error or ""))
+                )
+                if codes:
+                    summary += "（已记录 " + "、".join(
+                        f"HTTP {code}：{count} 次" for code, count in sorted(codes.items())
+                    ) + "）"
+                source_summaries.append(summary)
+            message = f"{point_id}：已记录检索执行：" + "；".join(source_summaries) + "。"
+            if any(item.status.value == "failed" for item in executions):
+                conclusion = conclusions.get(point_id)
+                if conclusion is not None and conclusion.incomplete_reason == "material_unavailable":
+                    message += "存在检索执行失败，且未获得可供核验的绑定材料；不能据此推断无相关文献。"
+                else:
+                    message += "存在检索执行失败；不能据此推断无相关文献。"
+            message += "以上仅为已记录的执行范围，不代表完整检索或新颖性裁定。"
+            limitations.append(message)
+    return report.model_copy(update={"limitations": list(dict.fromkeys(limitations))})
 
 
 def bind_reviews_to_report(
@@ -177,3 +251,36 @@ def _require_exact_coverage(
         problems.append(f"unknown {label}: {point_id}")
     if problems:
         raise ValueError("; ".join(problems))
+
+
+def bind_point_lifecycle_to_report(report, *, state):
+    """Track every extracted candidate through execution without asserting coverage."""
+    rows = []
+    reviews = {review.novelty_point_id: review for review in state.get('novelty_reviews', [])}
+    conclusions = {row.novelty_point_id: row for row in report.conclusions}
+    for point in state.get('novelty_points', []):
+        pid = point.point_id
+        tasks = [t for t in state.get('all_research_tasks', []) if t.novelty_point_id == pid]
+        plans = [p for p in state.get('search_plans', []) if p.novelty_point_id == pid]
+        results = [r for r in state.get('task_research_results', []) if r.novelty_point_id == pid]
+        cards = [c for c in state.get('evidence_cards', []) if c.novelty_point_id == pid]
+        review, conclusion = reviews.get(pid), conclusions.get(pid)
+        gaps = []
+        if not tasks: gaps.append('task_not_created')
+        planned = {p.task_id for p in plans}
+        completed = {r.task_id for r in results}
+        if any(t.task_id not in planned for t in tasks): gaps.append('search_plan_missing')
+        if any(t.task_id not in completed for t in tasks): gaps.append('task_result_missing')
+        if not cards: gaps.append('validated_evidence_missing')
+        if review is None: gaps.append('review_missing')
+        elif review.incomplete_reason: gaps.append('review_' + review.incomplete_reason)
+        if conclusion is None: gaps.append('report_conclusion_missing')
+        rows.append({'point_id':pid, 'task_ids':[t.task_id for t in tasks],
+            'planned_task_ids':sorted(planned), 'result_task_ids':sorted(completed),
+            'raw_card_ids':[c.card_id for r in results for c in r.evidence_cards],
+            'validated_card_ids':[c.card_id for c in cards],
+            'review_status':review.status.value if review else None,
+            'review_incomplete_reason':review.incomplete_reason if review else None,
+            'report_present':conclusion is not None, 'gaps':gaps,
+            'semantic_scope_complete':None})
+    return report.model_copy(update={'point_lifecycle':rows})

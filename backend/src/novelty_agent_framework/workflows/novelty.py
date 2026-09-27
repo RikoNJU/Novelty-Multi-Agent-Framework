@@ -22,7 +22,11 @@ from novelty_agent_framework.core.integrity_gates import (
     validate_report_integrity,
     validate_synthesis_input,
 )
-from novelty_agent_framework.core.report_binding import bind_reviews_to_report
+from novelty_agent_framework.core.report_binding import (
+    bind_reviews_to_report,
+    bind_point_lifecycle_to_report,
+    bind_search_coverage_to_report,
+)
 from novelty_agent_framework.core.target_paper_identity import identity_from_paper
 from novelty_agent_framework.core.runtime_artifacts import (
     RuntimeDebugConfig,
@@ -41,6 +45,8 @@ from novelty_agent_framework.persistence import (
     persist_workflow_input,
 )
 from novelty_agent_framework.tools.renderer import render_report
+
+from ..schemas.domain import PartialCardReview
 
 from ..agents import (
     DefaultEvidenceValidator,
@@ -72,6 +78,8 @@ from ..schemas import (
     WorkflowIssue,
 )
 from .state import NoveltyState, NoveltyWorkflowConfig, NoveltyWorkflowServices
+from ..core.recovery_policy import plan_recovery
+from ..schemas.failures import RecoveryAction, FailureCode, FailureScope, make_failure
 
 T = TypeVar("T")
 ProgressCallback = Callable[[str, int | None], None | Awaitable[None]]
@@ -120,10 +128,12 @@ def _safe_error(exc: Exception) -> str:
 def _insufficient_point_review(
     point_id: str, reason: str
 ) -> NoveltyPointReview:
+    """Workflow execution fallback; no semantic evidence judgment took place."""
     return NoveltyPointReview(
         novelty_point_id=point_id,
         status=ReviewStatus.INSUFFICIENT_EVIDENCE,
         supplement_request=SupplementRequest(reason=reason),
+        incomplete_reason="technical_error",
     )
 
 
@@ -357,10 +367,17 @@ class NoveltyWorkflow:
         ]
         issues: list[WorkflowIssue] = []
         trace = getattr(self.point_extractor, "last_trace", None)
+        if trace and trace.get("scope_status") in {"pending_dedup", "pending_coverage"}:
+            issues.append(WorkflowIssue(
+                node="extract_points", code=("point_deduplication_unresolved" if trace.get("scope_status") == "pending_dedup" else "point_coverage_unresolved"),
+                message=("查新候选已保留供逐点研究；保留不代表其独立贡献已确认。"
+                         "特征保留账本不代表作者贡献已获语义确认，提取范围仍待核查。"),
+                severity=IssueSeverity.WARNING,
+            ))
         if trace and trace.get("exit_reason") == "below_target_review_scope":
             issues.append(WorkflowIssue(
                 node="extract_points", code="point_scope_below_target",
-                message=(f"提取器只确认 {len(validated)} 个查新点；"
+                message=(f"提取器只产生 {len(validated)} 个查新候选；"
                          "目标数量未达到，后续检索范围可能不完整。"),
                 severity=IssueSeverity.WARNING,
             ))
@@ -377,7 +394,8 @@ class NoveltyWorkflow:
                     severity=IssueSeverity.WARNING,
                 )
             )
-        return {"novelty_points": validated, "issues": issues}
+        return {"novelty_points": validated, "issues": issues,
+                "point_coverage": (trace or {}).get("coverage_ledger", {})}
 
     async def _plan(self, state: NoveltyState) -> dict[str, Any]:
         try:
@@ -414,6 +432,7 @@ class NoveltyWorkflow:
                     "current_point": points[task.novelty_point_id],
                     "current_task": task,
                     "subject_paper_id": state["paper"].paper_id,
+                    "recovery_search_plans": state.get("recovery_search_plans", {}),
                 },
             )
             for task in tasks
@@ -424,6 +443,9 @@ class NoveltyWorkflow:
     async def _plan_research_task(self, state: NoveltyState) -> dict[str, Any]:
         point = state["current_point"]
         task = state["current_task"]
+        prior_plan = state.get("recovery_search_plans", {}).get(_recovery_key(point.point_id, task.task_id))
+        if prior_plan is not None:
+            return {"search_plans": [prior_plan]}
         try:
             plan_value = self.services.search_planner.plan(point, task)
             plan = SearchPlan.model_validate(await _resolve(plan_value))
@@ -503,6 +525,7 @@ class NoveltyWorkflow:
                         "current_task": task,
                         "current_search_plan": plan,
                         "target_identity": identity_from_paper(state["paper"]),
+                        "current_recovery": state.get("recovery_directives", {}).get(_recovery_key(point.point_id, task.task_id)),
                     },
                 )
             )
@@ -518,6 +541,7 @@ class NoveltyWorkflow:
             research_task=task,
             search_plan=state["current_search_plan"],
             target_identity=state.get("target_identity"),
+            recovery=state.get("current_recovery"),
         )
         try:
             result = TaskResearchResult.model_validate(
@@ -531,6 +555,9 @@ class NoveltyWorkflow:
                 novelty_point_id=point.point_id,
                 status=TaskResearchStatus.FAILED,
                 warnings=[f"task researcher failed: {safe_error}"],
+                execution_failures=[make_failure(FailureCode.UNKNOWN, scope=FailureScope(
+                    paper_id=request.subject_paper_id, run_id=request.run_id, point_id=point.point_id,
+                    task_id=task.task_id), message="Research task raised an unclassified execution error.")],
                 steps_used=0,
             )
             issues = [
@@ -607,6 +634,7 @@ class NoveltyWorkflow:
         issues: list[WorkflowIssue] = []
         audit_decisions = None
         card_reviews = None
+        summary_attempts = []
 
         if self.services.reviewer is None:
             reviews = [
@@ -719,7 +747,15 @@ class NoveltyWorkflow:
                         if all(row["status"] == "failed" for row in rows):
                             return _insufficient_point_review(point.point_id, "全部单卡评审执行失败。")
                         async with semaphore:
-                            review = await _resolve(self.services.reviewer.summarize_reviews(request, rows))
+                            save_summary = getattr(self.services.reviewer, "summarize_with_checkpoint", None)
+                            if callable(save_summary):
+                                attempt = await _resolve(save_summary(request, rows, output_root=self.output_root,
+                                    run_id=state.get("run_id", "untracked")))
+                                review = attempt.review
+                                summary_attempts.append({"point_id":point.point_id,
+                                    **attempt.model_dump(mode="json")})
+                            else:
+                                review = await _resolve(self.services.reviewer.summarize_reviews(request, rows))
                     else:
                         async with semaphore:
                             review = await _resolve(self.services.reviewer.review(request))
@@ -750,6 +786,12 @@ class NoveltyWorkflow:
                 except Exception as exc:
                     safe_error = _safe_error(exc)
                     accepted = []
+                    reviews = [
+                        _insufficient_point_review(
+                            point.point_id, f"Reviewer 执行失败：{safe_error}"
+                        )
+                        for point in state.get("novelty_points", [])
+                    ]
                     rejected.extend(
                         RejectedEvidence(card_id=card.card_id, reason="review_failed")
                         for card in validator_accepted
@@ -833,6 +875,7 @@ class NoveltyWorkflow:
             "rejected_evidence": rejected,
             "review_decisions": decisions,
             "novelty_reviews": reviews,
+            "review_summary_attempts": summary_attempts,
             "issues": issues,
         }
 
@@ -843,7 +886,7 @@ class NoveltyWorkflow:
 
         输入是 Validator 和 Provenance Integrity Gate 保留的 Card；Reviewer 只产出
         查新点级判断，不参与 Card 过滤。
-        本节点只判断数量，不评价检索范围、来源多样性、证据质量或结论可信度。
+        数量检查不评价语义质量；独立恢复策略结合技术执行事实和 Reviewer 缺口选择下一步。
         """
         brief = state["brief"]
         counts: dict[str, int] = {point.point_id: 0 for point in brief.novelty_points}
@@ -861,7 +904,25 @@ class NoveltyWorkflow:
             for point in brief.novelty_points
             if counts[point.point_id] < configured_cut
         ]
-        return {"insufficient_final_evidence_points": insufficient}
+        decisions, failures = plan_recovery(
+            paper_id=state["paper"].paper_id, run_id=state.get("run_id"),
+            points=brief.novelty_points, results=state.get("task_research_results", []),
+            reviews=state.get("novelty_reviews", []), insufficient=insufficient,
+            round_number=state.get("rounds", 1), max_rounds=self.config.max_rounds,
+            provider_order=self.config.recovery_provider_order,
+            history=state.get("recovery_history", []),
+        )
+        failures = list({event.event_id:event for event in [*state.get("failure_events", []), *failures]}.values())
+        from ..persistence import _atomic_write_json, paper_workspace
+        _atomic_write_json(paper_workspace(state["paper"], output_root=self.output_root) /
+            f"recovery-round-{state.get('rounds', 1)}.json", {
+                "schema_version": 1,
+                "failures": [f.model_dump(mode="json") for f in failures],
+                "decisions": [d.model_dump(mode="json") for d in decisions],
+                "semantic_verdict_created": False,
+            })
+        return {"insufficient_final_evidence_points": insufficient,
+                "recovery_decisions": decisions, "failure_events": failures}
 
     async def _validate_synthesis_input(
         self, state: NoveltyState
@@ -922,15 +983,18 @@ class NoveltyWorkflow:
         self, state: NoveltyState
     ) -> str:
         """根据数量检查事实和轮次上限选择补检或汇总。"""
-        if (
-            state.get("insufficient_final_evidence_points")
-            and state.get("rounds", 0) < self.config.max_rounds
-        ):
+        if "recovery_decisions" in state:
+            actionable = any(d.action not in {RecoveryAction.STOP, RecoveryAction.MANUAL, RecoveryAction.NONE}
+                             for d in state["recovery_decisions"])
+            return "supplement" if actionable and state.get("rounds", 0) < self.config.max_rounds else "synthesize"
+        if state.get("insufficient_final_evidence_points") and state.get("rounds", 0) < self.config.max_rounds:
             return "supplement"
         return "synthesize"
 
     async def _plan_supplement(self, state: NoveltyState) -> dict[str, Any]:
         next_round = state.get("rounds", 1) + 1
+        if "recovery_decisions" in state:
+            return self._targeted_supplement(state, next_round)
         try:
             brief_value = self.services.coordinator.plan_supplement(
                 state["paper"],
@@ -957,6 +1021,38 @@ class NoveltyWorkflow:
             "all_research_tasks": all_tasks,
             "rounds": next_round,
         }
+
+    def _targeted_supplement(self, state, next_round):
+        tasks, directives, plans = [], {}, {}
+        decisions = [d for d in state["recovery_decisions"]
+                     if d.action not in {RecoveryAction.STOP, RecoveryAction.MANUAL, RecoveryAction.NONE}]
+        old_tasks = state.get("all_research_tasks", state["brief"].research_tasks)
+        direct_actions = {RecoveryAction.READ_ARTIFACT, RecoveryAction.FETCH_FULLTEXT,
+                          RecoveryAction.CHANGE_PROVIDER, RecoveryAction.RETRY_REQUEST}
+        for directive in decisions:
+            previous_tasks = [t for t in old_tasks if t.novelty_point_id == directive.point_id]
+            languages = list(dict.fromkeys(t.language for t in previous_tasks)) or ["en"]
+            if directive.action in direct_actions:
+                languages = languages[:1]
+            previous_plan = next((p for p in reversed(state.get("search_plans", []))
+                                  if p.novelty_point_id == directive.point_id), None)
+            for index, language in enumerate(languages, 1):
+                task = ResearchTask(task_id=f"T-R{next_round}-{index}", novelty_point_id=directive.point_id,
+                    task_type=directive.action.value, language=language, attempt=next_round,
+                    description=directive.reason + "\n" + json.dumps({
+                        "missing_feature_ids":directive.missing_feature_ids,
+                        "missing_aspects":directive.missing_aspects,
+                    }, ensure_ascii=False))
+                key = _recovery_key(task.novelty_point_id, task.task_id)
+                tasks.append(task)
+                directives[key] = directive
+                if directive.action in direct_actions and previous_plan is not None:
+                    plans[key] = previous_plan.model_copy(update={"task_id":task.task_id})
+        task_by_key = {_task_key(t):t for t in [*old_tasks, *tasks]}
+        return {"brief":state["brief"].model_copy(update={"research_tasks":tasks}),
+                "research_tasks":tasks, "all_research_tasks":list(task_by_key.values()),
+                "rounds":next_round, "recovery_directives":directives, "recovery_search_plans":plans,
+                "recovery_history":[*state.get("recovery_history", []), *decisions]}
 
     async def _synthesize_report(self, state: NoveltyState) -> dict[str, Any]:
         integrity_rejected_ids = set(
@@ -990,6 +1086,40 @@ class NoveltyWorkflow:
 
         if report.paper_id != state["paper"].paper_id:
             raise WorkflowExecutionError("NoveltyReport.paper_id 与输入论文不一致")
+        report = bind_search_coverage_to_report(
+            report,
+            novelty_points=state.get("novelty_points", []),
+            task_research_results=state.get("task_research_results", []),
+        )
+        scope_limitations = [issue.message for issue in state.get("issues", [])
+                             if issue.code in {"point_deduplication_unresolved", "point_scope_below_target", "point_coverage_unresolved"}]
+        if scope_limitations:
+            report = report.model_copy(update={"limitations": list(dict.fromkeys(
+                [*report.limitations, *scope_limitations]
+            ))})
+        partial_reviews = []
+        accepted_card_points = {card.card_id:card.novelty_point_id for card in state.get("evidence_cards", [])}
+        for attempt in state.get("review_summary_attempts", []):
+            if (attempt.get("review") or {}).get("incomplete_reason") not in {"technical_error", "budget_exhausted"}:
+                continue
+            for row in attempt.get("partial_card_results", []):
+                if (row.get("status") == "completed" and row.get("review")
+                        and accepted_card_points.get(row.get("card_id")) == attempt["point_id"]):
+                    partial_reviews.append(PartialCardReview(card_id=row["card_id"],
+                        novelty_point_id=attempt["point_id"], review=row["review"], summary_status="failed"))
+        limitations = list(report.limitations)
+        if partial_reviews:
+            limitations.append("部分单卡核验已保存，但查新点汇总未完成；局部核验不能替代最终裁定。")
+        terminal = [d for d in state.get("recovery_decisions", []) if d.action == RecoveryAction.STOP]
+        limitations += [f"{d.point_id} 恢复停止：{d.reason}" for d in terminal]
+        report = report.model_copy(update={
+            "partial_card_reviews": partial_reviews,
+            "execution_failures": state.get("failure_events", []),
+            "recovery_decisions": [*state.get("recovery_history", []), *state.get("recovery_decisions", [])],
+            "point_coverage": state.get("point_coverage", {}),
+            "limitations": list(dict.fromkeys(limitations)),
+        })
+        report = bind_point_lifecycle_to_report(report, state=state)
         return {"report": report}
 
     async def _validate_report_integrity(
@@ -1002,6 +1132,8 @@ class NoveltyWorkflow:
             novelty_points=state.get("novelty_points", []),
             evidence_cards=state.get("evidence_cards", []),
             novelty_reviews=state.get("novelty_reviews", []),
+            evidence=state.get("raw_evidence", []),
+            reference_store=self.reference_store,
         )
         return {"report_integrity": result.audit()}
 
@@ -1074,6 +1206,7 @@ class NoveltyWorkflow:
                         self.config.min_final_evidence_cards_per_point
                     ),
                     "candidate_limit_per_task": self.config.candidate_limit_per_task,
+                    "recovery_provider_order": list(self.config.recovery_provider_order),
                 }
             },
             model_provider=getattr(profile, "provider", None),
@@ -1090,6 +1223,8 @@ class NoveltyWorkflow:
             if "brief" not in final or "report" not in final:
                 raise WorkflowExecutionError("工作流结束时缺少 Brief 或 Report")
             result = NoveltyRunResult(
+                failure_events=final.get("failure_events", []),
+                recovery_decisions=[*final.get("recovery_history", []), *final.get("recovery_decisions", [])],
                 brief=final["brief"],
                 evidence_cards=final.get("evidence_cards", []),
                 rejected_evidence=final.get("rejected_evidence", []),
@@ -1128,6 +1263,10 @@ class NoveltyWorkflow:
         except RuntimeError:
             return asyncio.run(self.arun(paper, run_identity=run_identity))
         raise RuntimeError("检测到正在运行的事件循环，请改用 await workflow.arun(...) ")
+
+
+def _recovery_key(point_id: str, task_id: str) -> str:
+    return json.dumps([point_id, task_id], ensure_ascii=False)
 
 
 def _task_key(task: ResearchTask) -> tuple[str, str]:
