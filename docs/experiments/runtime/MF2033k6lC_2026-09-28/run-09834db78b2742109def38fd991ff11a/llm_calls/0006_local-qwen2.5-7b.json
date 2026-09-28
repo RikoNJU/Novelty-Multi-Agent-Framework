@@ -1,0 +1,226 @@
+{
+  "alias": "local-qwen2.5-7b",
+  "billing": {
+    "amount": null,
+    "currency": "RMB",
+    "pricing_table": "/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/config/llm_pricing.json",
+    "rate_name": null,
+    "rates_per_unit": null,
+    "status": "UNPRICED",
+    "unit_tokens": 1000000
+  },
+  "chat_transport_invoked": true,
+  "client_call_id": "77698795c2d044e7955e4044cc2b9c64",
+  "context_admission": {
+    "code": "CONTEXT_ADMITTED",
+    "counter": "vllm",
+    "decision": "allow",
+    "effective_context_window": 32768,
+    "exact": true,
+    "input_tokens": 1063,
+    "measurement_details": {
+      "endpoint": "http://127.0.0.1:8000/tokenize",
+      "schema_verified": true,
+      "server_version": "0.8.5.post1",
+      "template_fields": [
+        "add_generation_prompt",
+        "add_special_tokens",
+        "continue_final_message",
+        "messages",
+        "model"
+      ],
+      "tokenize_payload_sha256": "bf3ed4df1d0f0ab7b7e669c5e54ff4d190fe74d5729e8ceb55f2c6c05701652c",
+      "vllm_tools_mode": "v0_8_5_kwargs"
+    },
+    "mode": "enforce",
+    "on_unavailable": "reject",
+    "output_reservation_field": "max_tokens",
+    "output_tokens_reserved": 2048,
+    "payload_sha256": "e28c178a62b1bd789837fbbba7d4929006f0069b56a0c2c30cd161a86249279f",
+    "profile_context_window": 32768,
+    "requested_total_tokens": 3111,
+    "server_context_window": 32768,
+    "source": "vllm_tokenize",
+    "status": "admitted",
+    "vllm_tools_mode": "v0_8_5_kwargs",
+    "window_source": "minimum_of_profile_and_server",
+    "would_reject": false
+  },
+  "context_measurement_requests": 3,
+  "context_measurement_verification": {
+    "measured_input_tokens": 1063,
+    "payload_sha256": "e28c178a62b1bd789837fbbba7d4929006f0069b56a0c2c30cd161a86249279f",
+    "provider_input_tokens": 1063,
+    "status": "matched"
+  },
+  "duration_ms": 6542,
+  "error": null,
+  "finish_reason": "stop",
+  "llm_call_id": "llm_0006",
+  "message_count": 2,
+  "model": "qwen2.5-7b-instruct",
+  "parent_stage_id": "stage_0007",
+  "provider": "openai_compatible",
+  "provider_usage": {
+    "completion_tokens": 231,
+    "prompt_tokens": 1063,
+    "prompt_tokens_details": null,
+    "total_tokens": 1294
+  },
+  "request_id": "chatcmpl-a686f39895a04de096d06282a83a9207",
+  "request_options": {
+    "endpoint": "http://127.0.0.1:8000/v1/chat/completions",
+    "timeout_seconds": 180.0
+  },
+  "request_payload": {
+    "max_tokens": 2048,
+    "messages": [
+      {
+        "content": "## 角色\n你是科技查新系统中的 SearchPlanner。把 NoveltyPoint 和 ResearchTask 转换为\n最小检索草稿 SearchPlanDraft（v2）。你只生成语义载荷：概念的角色/词项/别名/\n排除词/重要性，以及策略的 level（与可选 focus_concepts）。布尔表达式由系统\n模板生成，你绝不输出 expression、concept_id、strategy_id 等机械字段。",
+        "role": "system"
+      },
+      {
+        "content": "请根据以下输入生成一个 SearchPlanDraft JSON 对象。\n\nNoveltyPoint：\n{\"point_id\": \"NP-4\", \"claim\": \"提出了一种新的基于边分割的图流划分算法——Sketch-DBH，用于处理大规模图流数据下的子图划分问题。\", \"claim_en\": \"Proposed a new edge-segmentation-based graph flow partition algorithm, Sketch-DBH, for subgraph partitioning in large-scale graph stream data scenarios.\", \"technical_features\": [\"通过Count-Min Sketch 存储每个节点的度数信息\", \"使用最小堆维护图流数据中的高频节点信息\", \"根据节点度数信息生成子图编号\"], \"technical_features_en\": [\"Stored degree information of each node using Count-Min Sketch\", \"Maintained high-frequency node information of graph stream data using a minimum heap\", \"Generated subgraph IDs based on node degree information\"], \"source_locations\": [\"Page 20\"]}\n\nResearchTask：\n{\"task_id\": \"T-1\", \"novelty_point_id\": \"NP-4\", \"task_type\": \"literature_search\", \"language\": \"en\", \"description\": \"针对该查新点执行英文文献检索。\", \"attempt\": 1}\n\n上次失败原因（首次为无）：\n无（首次生成）\n\nSearchPlanDraft schema：\n{\"$defs\": {\"SearchConceptDraft\": {\"additionalProperties\": false, \"description\": \"一个语义概念：角色、规范词项、别名、排除词与重要性。\\n\\nconcept_id 由系统按顺序分配 C1..Cn；terms 为 3~7 词名词短语（≤3 个），\\nalias 为同义/缩写/跨领域叫法（非 paraphrase，≤3 个），\\nexclude 为 NOT 词（≤2 个），importance 1~3（3=机制/方法，1=场景/应用）。\", \"properties\": {\"role\": {\"default\": \"object\", \"enum\": [\"object\", \"method\", \"feature\", \"setting\", \"escape\"], \"title\": \"Role\", \"type\": \"string\"}, \"terms\": {\"items\": {\"type\": \"string\"}, \"minItems\": 1, \"title\": \"Terms\", \"type\": \"array\"}, \"alias\": {\"items\": {\"type\": \"string\"}, \"title\": \"Alias\", \"type\": \"array\"}, \"exclude\": {\"items\": {\"type\": \"string\"}, \"title\": \"Exclude\", \"type\": \"array\"}, \"importance\": {\"default\": 2, \"maximum\": 3, \"minimum\": 1, \"title\": \"Importance\", \"type\": \"integer\"}}, \"required\": [\"terms\"], \"title\": \"SearchConceptDraft\", \"type\": \"object\"}, \"SearchStrategyDraft\": {\"additionalProperties\": false, \"description\": \"一条检索策略意图；strategy_id 与 expression 由系统生成。\\n\\nlevel 在 strict/medium/broad 中取值；focus_concepts 可选，引用 C1..Cn，\\n非空时覆盖模板的默认概念选择（仅在确有必要时使用）。\", \"properties\": {\"level\": {\"enum\": [\"strict\", \"medium\", \"broad\"], \"title\": \"Level\", \"type\": \"string\"}, \"focus_concepts\": {\"items\": {\"type\": \"string\"}, \"title\": \"Focus Concepts\", \"type\": \"array\"}}, \"required\": [\"level\"], \"title\": \"SearchStrategyDraft\", \"type\": \"object\"}}, \"additionalProperties\": false, \"description\": \"LLM 输出的最小检索计划（v2）。\\n\\n- concepts 按顺序编号为 C1..Cn；\\n- strategies 数量：literature_search 必须恰好三条（strict/medium/broad），\\n  补检任务 1~3 条且 level 不重复；\\n- 表达式由编译器按模板组装，LLM 不生成布尔表达式。\", \"properties\": {\"concepts\": {\"items\": {\"$ref\": \"#/$defs/SearchConceptDraft\"}, \"minItems\": 1, \"title\": \"Concepts\", \"type\": \"array\"}, \"strategies\": {\"items\": {\"$ref\": \"#/$defs/SearchStrategyDraft\"}, \"minItems\": 1, \"title\": \"Strategies\", \"type\": \"array\"}}, \"required\": [\"concepts\", \"strategies\"], \"title\": \"SearchPlanDraft\", \"type\": \"object\"}",
+        "role": "user"
+      }
+    ],
+    "model": "qwen2.5-7b-instruct",
+    "response_format": {
+      "type": "json_object"
+    },
+    "temperature": 0.2
+  },
+  "response": {
+    "content": "{\n  \"concepts\": [\n    {\n      \"role\": \"method\",\n      \"terms\": [\"edge-segmentation-based graph flow partition algorithm\"],\n      \"alias\": [\"edge segmentation-based graph flow partitioning\"],\n      \"exclude\": [],\n      \"importance\": 3\n    },\n    {\n      \"role\": \"feature\",\n      \"terms\": [\"Count-Min Sketch\"],\n      \"alias\": [\"CM Sketch\"],\n      \"exclude\": [],\n      \"importance\": 2\n    },\n    {\n      \"role\": \"feature\",\n      \"terms\": [\"minimum heap\"],\n      \"alias\": [\"min heap\"],\n      \"exclude\": [],\n      \"importance\": 2\n    },\n    {\n      \"role\": \"feature\",\n      \"terms\": [\"subgraph ID generation\"],\n      \"alias\": [\"subgraph ID creation\"],\n      \"exclude\": [],\n      \"importance\": 2\n    }\n  ],\n  \"strategies\": [\n    {\n      \"level\": \"strict\"\n    },\n    {\n      \"level\": \"medium\"\n    },\n    {\n      \"level\": \"broad\"\n    }\n  ]\n}",
+    "tool_calls": []
+  },
+  "run_id": "run-09834db78b2742109def38fd991ff11a",
+  "scope": {
+    "attempt": 1,
+    "point_id": "NP-4",
+    "task_id": "T-1"
+  },
+  "stage_name": "plan_research_task",
+  "started_at": "2026-09-28T07:04:04.734626+00:00",
+  "status": "SUCCESS",
+  "timeline": [
+    {
+      "at": "2026-09-28T07:04:04.734626+00:00",
+      "endpoint": "http://127.0.0.1:8000/openapi.json",
+      "kind": "schema",
+      "method": "GET",
+      "payload_sha256": null,
+      "phase": "CONTEXT_MEASUREMENT_REQUEST"
+    },
+    {
+      "at": "2026-09-28T07:04:04.734626+00:00",
+      "kind": "schema",
+      "phase": "CONTEXT_MEASUREMENT_RESPONSE"
+    },
+    {
+      "at": "2026-09-28T07:04:04.734626+00:00",
+      "endpoint": "http://127.0.0.1:8000/version",
+      "kind": "version",
+      "method": "GET",
+      "payload_sha256": null,
+      "phase": "CONTEXT_MEASUREMENT_REQUEST"
+    },
+    {
+      "at": "2026-09-28T07:04:04.734626+00:00",
+      "kind": "version",
+      "phase": "CONTEXT_MEASUREMENT_RESPONSE"
+    },
+    {
+      "at": "2026-09-28T07:04:04.734626+00:00",
+      "endpoint": "http://127.0.0.1:8000/tokenize",
+      "kind": "tokenize",
+      "method": "POST",
+      "payload_sha256": "bf3ed4df1d0f0ab7b7e669c5e54ff4d190fe74d5729e8ceb55f2c6c05701652c",
+      "phase": "CONTEXT_MEASUREMENT_REQUEST"
+    },
+    {
+      "at": "2026-09-28T07:04:04.734626+00:00",
+      "count": 1063,
+      "kind": "tokenize",
+      "max_model_len": 32768,
+      "phase": "CONTEXT_MEASUREMENT_RESPONSE"
+    },
+    {
+      "at": "2026-09-28T07:04:04.734626+00:00",
+      "code": "CONTEXT_ADMITTED",
+      "counter": "vllm",
+      "decision": "allow",
+      "effective_context_window": 32768,
+      "exact": true,
+      "input_tokens": 1063,
+      "measurement_details": {
+        "endpoint": "http://127.0.0.1:8000/tokenize",
+        "schema_verified": true,
+        "server_version": "0.8.5.post1",
+        "template_fields": [
+          "add_generation_prompt",
+          "add_special_tokens",
+          "continue_final_message",
+          "messages",
+          "model"
+        ],
+        "tokenize_payload_sha256": "bf3ed4df1d0f0ab7b7e669c5e54ff4d190fe74d5729e8ceb55f2c6c05701652c",
+        "vllm_tools_mode": "v0_8_5_kwargs"
+      },
+      "mode": "enforce",
+      "on_unavailable": "reject",
+      "output_reservation_field": "max_tokens",
+      "output_tokens_reserved": 2048,
+      "payload_sha256": "e28c178a62b1bd789837fbbba7d4929006f0069b56a0c2c30cd161a86249279f",
+      "phase": "CONTEXT_ADMISSION",
+      "profile_context_window": 32768,
+      "requested_total_tokens": 3111,
+      "server_context_window": 32768,
+      "source": "vllm_tokenize",
+      "status": "admitted",
+      "vllm_tools_mode": "v0_8_5_kwargs",
+      "window_source": "minimum_of_profile_and_server",
+      "would_reject": false
+    },
+    {
+      "at": "2026-09-28T07:04:04.802258+00:00",
+      "phase": "TRANSPORT_INVOKED",
+      "timeout_seconds": 180.0
+    },
+    {
+      "at": "2026-09-28T07:04:11.268114+00:00",
+      "http_status": 200,
+      "phase": "RESPONSE_HEADERS",
+      "provider_request_id": null
+    },
+    {
+      "at": "2026-09-28T07:04:11.271082+00:00",
+      "body_bytes": 1377,
+      "phase": "RESPONSE_BODY_COMPLETE"
+    },
+    {
+      "at": "2026-09-28T07:04:11.273193+00:00",
+      "phase": "RESPONSE_PARSED",
+      "response_id": "chatcmpl-a686f39895a04de096d06282a83a9207",
+      "usage_available": true
+    },
+    {
+      "at": "2026-09-28T07:04:04.734626+00:00",
+      "measured_input_tokens": 1063,
+      "payload_sha256": "e28c178a62b1bd789837fbbba7d4929006f0069b56a0c2c30cd161a86249279f",
+      "phase": "CONTEXT_MEASUREMENT_VERIFIED",
+      "provider_input_tokens": 1063,
+      "status": "matched"
+    }
+  ],
+  "tokens": {
+    "available": true,
+    "billable_breakdown_available": true,
+    "cached_input_tokens": 0,
+    "input_tokens": 1063,
+    "output_tokens": 231,
+    "reasoning_tokens": 0,
+    "total_tokens": 1294
+  },
+  "transport_inflight_unknown": false
+}
