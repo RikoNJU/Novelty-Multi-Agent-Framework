@@ -5,6 +5,8 @@ from __future__ import annotations
 import asyncio
 import shutil
 from pathlib import Path
+from collections.abc import Mapping
+from typing import Any
 
 from pydantic import ValidationError
 
@@ -14,7 +16,7 @@ from ..persistence import (
     subject_reference_workspace,
 )
 from ..schemas import PaperInput, ReferenceBootstrapManifest
-from ..tools.database_search.providers.arxiv import ArxivSearchTool
+from ..tools.database_search.providers.arxiv import build_arxiv_search_tool
 from .reference_bootstrap import (
     ReferenceBootstrapService,
     ReferenceProviderRegistry,
@@ -34,6 +36,7 @@ def prepare_paper_input_references(
     force: bool = False,
     max_concurrency: int = 4,
     service: ReferenceBootstrapService | None = None,
+    arxiv_options: Mapping[str, Any] | None = None,
 ) -> ReferenceBootstrapManifest:
     """Validate/refresh the stable cache and snapshot it into one isolated run."""
 
@@ -45,7 +48,7 @@ def prepare_paper_input_references(
 
     if force or cached is None:
         bootstrap = service or ReferenceBootstrapService(
-            ReferenceProviderRegistry([ArxivSearchTool()]),
+            ReferenceProviderRegistry([build_arxiv_search_tool(arxiv_options)]),
             stable_store,
             max_concurrency=max_concurrency,
         )

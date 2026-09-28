@@ -858,7 +858,7 @@ def _adapt_legacy_arxiv_provider(retrieval: dict[str, Any]) -> None:
     arxiv = retrieval.get("sources", {}).get("arxiv")
     if not isinstance(arxiv, dict):
         return
-    arxiv.setdefault("search_transport", "api")
+    arxiv.setdefault("search_transport", "web")
     arxiv.setdefault("min_interval_seconds", arxiv.pop("min_interval", 4.0))
     arxiv.setdefault("api_min_interval_seconds", arxiv["min_interval_seconds"])
     arxiv.setdefault("timeout_seconds", arxiv.pop("timeout", 20.0))

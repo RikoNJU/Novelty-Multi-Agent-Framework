@@ -29,3 +29,5 @@ PYTHONPATH=backend/src:. python scripts/inspect_config.py \
 改变模型能力需要该部署的明确声明，未知tool_calling/json_object/vision不会自动推断为支持。Context计数器示例针对本地vLLM 0.8.5协议；其他服务需选择正确计数方式，不能仅改窗口数字。
 
 `remote-baseline.json`、`local-baseline.json`、`local-reader-reuse.json` 和 `local-harness-guarded.json` 保留原实验条件。新实验使用新运行目录，不覆盖旧报告/配置/源码快照。配置冻结可以复现客户端条件，不保证远端模型或Provider随机结果一致。详细依据及恢复接口见 [本轮配置报告](../docs/experiments/20260927_harness_config_closure/configuration.md)、[恢复报告](../docs/experiments/20260927_harness_config_closure/recovery.md)和[Reviewer恢复说明](../docs/experiments/20260927_harness_config_closure/reviewer_recovery.md)。
+
+arXiv 默认使用现有网页检索通道（`search_transport: "web"`），PaperInput/Web 启动时的参考文献初始化也读取同一份 Provider 配置。需要 API 时，显式设置 `researcher.tools.database_search.providers.arxiv.search_transport` 为 `"api"`。已有参考文献缓存继续复用。

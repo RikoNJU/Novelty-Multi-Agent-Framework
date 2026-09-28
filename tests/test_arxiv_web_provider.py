@@ -636,18 +636,18 @@ def test_session_throttles_consecutive_requests() -> None:
 # ---- 开关 ------------------------------------------------------------------
 
 
-def test_transport_defaults_to_api_and_rejects_unknown_values() -> None:
-    assert DEFAULT_SEARCH_TRANSPORT == "api"
+def test_transport_defaults_to_web_and_rejects_unknown_values() -> None:
+    assert DEFAULT_SEARCH_TRANSPORT == "web"
     assert SEARCH_TRANSPORTS == ("api", "web")
-    assert resolve_search_transport({}) == "api"
+    assert resolve_search_transport({}) == "web"
     assert resolve_search_transport({"search_transport": " WEB "}) == "web"
     with pytest.raises(ValueError):
         resolve_search_transport({"search_transport": "main_site"})
 
 
 def test_build_search_tool_switches_channel() -> None:
-    web_tool = build_arxiv_search_tool({"search_transport": "web"})
-    api_tool = build_arxiv_search_tool({"min_interval_seconds": 6})
+    web_tool = build_arxiv_search_tool({})
+    api_tool = build_arxiv_search_tool({"search_transport": "api", "min_interval_seconds": 6})
 
     assert isinstance(web_tool, ArxivWebSearchTool)
     assert isinstance(api_tool, ArxivSearchTool)
@@ -672,8 +672,9 @@ def test_build_source_uses_web_channel_without_api_scheduler() -> None:
     assert source.full_text_tool is not None
 
 
-def test_build_source_keeps_api_channel_by_default() -> None:
+def test_build_source_keeps_explicit_api_channel() -> None:
     config = {
+        "search_transport": "api",
         "enabled": True,
         "min_interval_seconds": 6,
         "scheduler_enabled": False,
@@ -740,12 +741,12 @@ def test_legacy_retrieval_config_inherits_provider_transport() -> None:
     assert source["web_timeout_seconds"] == 45
 
 
-def test_legacy_retrieval_config_defaults_to_api() -> None:
+def test_legacy_retrieval_config_defaults_to_web() -> None:
     from novelty_agent_framework.config.factory import _normalized_retrieval_config
 
     source = _normalized_retrieval_config({"workflow": {}})["sources"]["arxiv"]
 
-    assert source["search_transport"] == "api"
+    assert source["search_transport"] == "web"
 
 
 def test_arp_web_tool_feeds_structured_retrieval_contract() -> None:

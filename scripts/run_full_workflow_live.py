@@ -152,6 +152,7 @@ def main() -> None:
             stable_output_root=stable_root,
             run_output_root=run_dir,
             force=args.force_reference_bootstrap,
+            arxiv_options=config.researcher.tools.database_search.providers["arxiv"],
             max_concurrency=config.project.workflow.max_concurrency,
         )
         result = workflow.run(paper, run_identity=identity)

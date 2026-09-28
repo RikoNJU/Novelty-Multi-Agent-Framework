@@ -53,7 +53,10 @@ def execute(directory: Path, update, publish) -> Path:
         raise ValueError('PDF 未解析出可用文本')
     update(done='parse', stage='research')
     output = directory / 'outputs'
-    prepare_paper_input_references(paper, stable_output_root=directory / 'references', run_output_root=output)
+    prepare_paper_input_references(
+        paper, stable_output_root=directory / 'references', run_output_root=output,
+        arxiv_options=config.researcher.tools.database_search.providers['arxiv'],
+    )
     workflow = build_standard_full_workflow(config, output_root=output)
     workspace = paper_workspace(paper, output_root=output)
     # Observe existing node entry/return without duplicating graph orchestration.

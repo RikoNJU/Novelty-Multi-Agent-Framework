@@ -108,6 +108,7 @@ def test_paper_input_entrypoint_uses_numbered_workspace(tmp_path, monkeypatch) -
     assert captured["paper"].paper_id == "paper-1"
     assert captured["output_root"] == run_dir.resolve()
     assert captured["bootstrap"][1]["run_output_root"] == run_dir.resolve()
+    assert captured["bootstrap"][1]["arxiv_options"]["search_transport"] == "web"
     assert identity["entrypoint"] == "paper_input"
     assert identity["run_number"] == 1
     assert len(identity["input_identity"]["paper_sha256"]) == 64

@@ -57,7 +57,7 @@ _VERSION_RE = re.compile(r"v\d+$")
 # Deprecated compatibility sentinel; scheduling state now lives in the scheduler.
 _LAST_REQUEST_AT = 0.0
 
-DEFAULT_SEARCH_TRANSPORT = "api"
+DEFAULT_SEARCH_TRANSPORT = "web"
 SEARCH_TRANSPORTS = ("api", "web")
 
 
