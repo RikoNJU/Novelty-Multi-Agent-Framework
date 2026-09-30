@@ -1,0 +1,95 @@
+{
+  "project": {
+    "workflow": {
+      "max_rounds": 2,
+      "max_concurrency": 1,
+      "recovery_provider_order": [
+        "arxiv",
+        "springer"
+      ]
+    },
+    "runtime_debug": {
+      "max_model_calls": 100,
+      "max_physical_provider_requests": 36,
+      "enabled": true,
+      "archive_root": "docs/experiments/20260930_issue_audit_live/archive"
+    },
+    "processing": {
+      "llm_model": "local-qwen2.5-7b"
+    }
+  },
+  "researcher": {
+    "harness": {
+      "reuse_reader_results": true,
+      "enable_evidence_checkpoint": true,
+      "runtime_state_projection": true
+    },
+    "tools": {
+      "database_search": {
+        "providers": {
+          "arxiv": {
+            "enabled": true,
+            "search_transport": "web"
+          },
+          "springer": {
+            "enabled": true
+          },
+          "sciencedirect": {
+            "enabled": false
+          },
+          "ieee_xplore": {
+            "enabled": false
+          },
+          "null_catalog": {
+            "enabled": false
+          }
+        },
+        "active_source": "arxiv",
+        "full_text_limit_per_task": 1,
+        "candidate_limit_per_task": 4
+      },
+      "web_search": {
+        "enabled": false
+      },
+      "browser": {
+        "enabled": false
+      }
+    },
+    "model": {
+      "alias": "local-qwen2.5-7b"
+    }
+  },
+  "reviewer": {
+    "model": {
+      "alias": "local-qwen2.5-7b"
+    }
+  },
+  "search_planner": {
+    "model": {
+      "alias": "local-qwen2.5-7b"
+    }
+  },
+  "coordinator": {
+    "model": {
+      "alias": "local-qwen2.5-7b"
+    }
+  },
+  "point_extractor": {
+    "model": {
+      "alias": "local-qwen2.5-7b"
+    },
+    "conservative_dedup": true
+  },
+  "models": {
+    "local-qwen2.5-7b": {
+      "context_admission": {
+        "mode": "enforce",
+        "counter": "vllm",
+        "vllm_tools_mode": "v0_8_5_kwargs",
+        "on_unavailable": "reject",
+        "timeout_seconds": 5.0,
+        "tokenize_path": "/tokenize"
+      }
+    }
+  }
+}
