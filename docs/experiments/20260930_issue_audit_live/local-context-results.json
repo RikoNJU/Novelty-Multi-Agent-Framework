@@ -1,0 +1,63 @@
+[
+  {
+    "case": "off-debug-True",
+    "configured_model_cap": 1,
+    "first": {
+      "status": "failed",
+      "error_type": "ModelClientError",
+      "detail": "模型 HTTP 调用失败: 400 {\"object\":\"error\",\"message\":\"This model's maximum context length is 32768 tokens. However, you requested 34033 tokens (34030 in the messages, 3 in the completion). Please reduce the length of the messages or completion.\",\"type\":\"BadRequestError\",\"param\":null,\"code\":400}",
+      "research_failure_code": "model.transport"
+    },
+    "second": {
+      "status": "failed",
+      "error_type": "ModelCallBudgetExceeded",
+      "detail": "model_call_budget_exhausted",
+      "research_failure_code": "harness.budget_exhausted"
+    },
+    "runtime_counter": 1
+  },
+  {
+    "case": "enforce-debug-True",
+    "configured_model_cap": 1,
+    "first": {
+      "status": "failed",
+      "error_type": "ModelContextAdmissionError",
+      "detail": "CONTEXT_LIMIT_EXCEEDED: input plus output exceeds effective context window",
+      "research_failure_code": "model.context_limit"
+    },
+    "second": {
+      "status": "failed",
+      "error_type": "ModelCallBudgetExceeded",
+      "detail": "model_call_budget_exhausted",
+      "research_failure_code": "harness.budget_exhausted"
+    },
+    "runtime_counter": 1
+  },
+  {
+    "case": "off-debug-False",
+    "configured_model_cap": 1,
+    "first": {
+      "status": "success",
+      "usage": {
+        "prompt_tokens": 36,
+        "total_tokens": 39,
+        "completion_tokens": 3,
+        "prompt_tokens_details": null
+      },
+      "finish_reason": "length",
+      "content": "Sure! Here"
+    },
+    "second": {
+      "status": "success",
+      "usage": {
+        "prompt_tokens": 36,
+        "total_tokens": 39,
+        "completion_tokens": 3,
+        "prompt_tokens_details": null
+      },
+      "finish_reason": "length",
+      "content": "Sure! Here"
+    },
+    "runtime_counter": 0
+  }
+]
