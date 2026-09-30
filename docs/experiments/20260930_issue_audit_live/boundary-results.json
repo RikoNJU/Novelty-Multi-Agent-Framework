@@ -1,0 +1,174 @@
+{
+  "debug_budget_bypass": [
+    {
+      "enabled": true,
+      "model_attempts": [
+        "allowed",
+        "ModelCallBudgetExceeded"
+      ],
+      "provider_reservations": [
+        1,
+        "ProviderPhysicalBudgetExceeded"
+      ]
+    },
+    {
+      "enabled": false,
+      "model_attempts": [
+        "allowed",
+        "allowed"
+      ],
+      "provider_reservations": [
+        0,
+        0
+      ]
+    }
+  ],
+  "reviewer_technical_recovery": [
+    {
+      "deficient": false,
+      "cards": 1,
+      "decisions": [],
+      "failure_codes": [
+        "model.transport"
+      ]
+    },
+    {
+      "deficient": true,
+      "cards": 1,
+      "decisions": [
+        {
+          "point_id": "NP-1",
+          "action": "stop",
+          "reason": "Reviewer execution is incomplete; recover its saved card/summary state instead of repeating literature searches.",
+          "cause_event_ids": [
+            "failure_50ce4972d908d50f536eaaea",
+            "failure_85e117c3fb423f9013a87397"
+          ],
+          "source_id": null,
+          "artifacts": [],
+          "source_record_ids": [],
+          "missing_feature_ids": [],
+          "missing_aspects": [],
+          "max_additional_attempts": 0
+        }
+      ],
+      "failure_codes": [
+        "model.transport",
+        "evidence.missing"
+      ]
+    }
+  ],
+  "all_card_failures_lose_issues": {
+    "input_issues": [
+      "model.transport"
+    ],
+    "output_issues": [],
+    "output_reason": "technical_error"
+  },
+  "reader_replay_and_range": [
+    {
+      "variant": "exact",
+      "physical_reads": 1,
+      "replay": true,
+      "reader_body_preserved": true,
+      "last_model_input_chars": 1655,
+      "full_body_occurrences_in_last_prompt": 2
+    },
+    {
+      "variant": "same_actual_range",
+      "physical_reads": 2,
+      "replay": false,
+      "reader_body_preserved": true,
+      "last_model_input_chars": 1223,
+      "full_body_occurrences_in_last_prompt": 2
+    }
+  ],
+  "namespace_diagnostic_false_positive": [
+    {
+      "batch": false,
+      "errors": [
+        "Reader namespace mismatch: runtime/audit/tools/0001_reader.json",
+        "Reader has invalid namespace: runtime/audit/tools/0001_reader.json"
+      ],
+      "reader_calls": [
+        {
+          "path": "runtime/audit/tools/0001_reader.json",
+          "execution_status": "SUCCESS",
+          "artifact_id": "art_test",
+          "request_namespace": null,
+          "result_namespace": "research_reference",
+          "namespace_match": false
+        }
+      ]
+    },
+    {
+      "batch": true,
+      "errors": [
+        "Reader has invalid namespace: runtime/audit/tools/0001_reader.json"
+      ],
+      "reader_calls": [
+        {
+          "path": "runtime/audit/tools/0001_reader.json",
+          "execution_status": "SUCCESS",
+          "artifact_id": null,
+          "request_namespace": null,
+          "result_namespace": null,
+          "namespace_match": true
+        }
+      ]
+    }
+  ],
+  "unreserved_finalization": [
+    {
+      "reserve_final_turn": false,
+      "configured_max_turns": 2,
+      "actual_calls": 3,
+      "tools": 2,
+      "reported_turns": 3
+    },
+    {
+      "reserve_final_turn": true,
+      "configured_max_turns": 2,
+      "actual_calls": 2,
+      "tools": 1,
+      "reported_turns": 2
+    }
+  ],
+  "config_transport_injection": [
+    {
+      "transport": "api",
+      "class": "ArxivSearchTool",
+      "interval": 0.07,
+      "timeout": 4.0,
+      "max_retries": 1
+    },
+    {
+      "transport": "web",
+      "class": "ArxivWebSearchTool",
+      "interval": 0.17,
+      "timeout": 6.0,
+      "max_retries": 0
+    }
+  ],
+  "web_usage_and_price_boundary": {
+    "network_requests": 0,
+    "runtime_usage": {
+      "prompt_tokens": 10,
+      "completion_tokens": 2,
+      "total_tokens": 12
+    },
+    "web_attempt": {
+      "attempt": 1,
+      "model": "deepseek-ai/DeepSeek-V4-Flash",
+      "payload_sha256": "ee2cb8edec2fe0d357a966ab84f90e3a592e83536b273ad9ff70430c177890fa",
+      "request_bytes": 91,
+      "max_output_tokens": 8,
+      "reserved_rmb": 0.000345,
+      "started_at": "2026-09-30T07:15:47.798185+00:00",
+      "status": "failed_billing_unknown",
+      "actual_bill_rmb": null,
+      "error_type": "ValueError"
+    },
+    "web_unpriced_model": "ModelCallBudgetExceeded: run budget has no price for this model"
+  }
+}

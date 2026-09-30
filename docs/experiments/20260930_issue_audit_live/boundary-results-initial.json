@@ -1,0 +1,151 @@
+{
+  "debug_budget_bypass": [
+    {
+      "enabled": true,
+      "model_attempts": [
+        "allowed",
+        "ModelCallBudgetExceeded"
+      ],
+      "provider_reservations": [
+        1,
+        "ProviderPhysicalBudgetExceeded"
+      ]
+    },
+    {
+      "enabled": false,
+      "model_attempts": [
+        "allowed",
+        "allowed"
+      ],
+      "provider_reservations": [
+        0,
+        0
+      ]
+    }
+  ],
+  "reviewer_technical_recovery": [
+    {
+      "deficient": false,
+      "cards": 1,
+      "decisions": [],
+      "failure_codes": [
+        "model.transport"
+      ]
+    },
+    {
+      "deficient": true,
+      "cards": 1,
+      "decisions": [
+        {
+          "point_id": "NP-1",
+          "action": "stop",
+          "reason": "Reviewer execution is incomplete; recover its saved card/summary state instead of repeating literature searches.",
+          "cause_event_ids": [
+            "failure_50ce4972d908d50f536eaaea",
+            "failure_85e117c3fb423f9013a87397"
+          ],
+          "source_id": null,
+          "artifacts": [],
+          "source_record_ids": [],
+          "missing_feature_ids": [],
+          "missing_aspects": [],
+          "max_additional_attempts": 0
+        }
+      ],
+      "failure_codes": [
+        "model.transport",
+        "evidence.missing"
+      ]
+    }
+  ],
+  "all_card_failures_lose_issues": {
+    "experiment_error": "NotImplementedError",
+    "detail": "NoveltyEvidenceReviewer 需要注入 ModelClient 或 ModelRegistry",
+    "traceback": "Traceback (most recent call last):\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/docs/experiments/20260930_issue_audit_live/reproduce_boundaries.py\", line 19, in case\n    try:results[name]=fn()\n                      ^^^^\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/docs/experiments/20260930_issue_audit_live/reproduce_boundaries.py\", line 57, in summary\n    result=asyncio.run(NoveltyEvidenceReviewer().summarize_reviews(request,[{'status':'completed','review':review.model_dump(mode='json')}]))\n                       ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/agents/evidence_reviewer.py\", line 196, in __init__\n    self._client(),\n    ^^^^^^^^^^^^^^\n  File \"/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/agents/evidence_reviewer.py\", line 656, in _client\n    raise NotImplementedError(\"NoveltyEvidenceReviewer 需要注入 ModelClient 或 ModelRegistry\")\nNotImplementedError: NoveltyEvidenceReviewer 需要注入 ModelClient 或 ModelRegistry\n"
+  },
+  "reader_replay_and_range": [
+    {
+      "variant": "exact",
+      "physical_reads": 1,
+      "replay": true,
+      "reader_body_preserved": true,
+      "last_model_input_chars": 1655,
+      "full_body_occurrences_in_last_prompt": 2
+    },
+    {
+      "variant": "same_actual_range",
+      "physical_reads": 2,
+      "replay": false,
+      "reader_body_preserved": true,
+      "last_model_input_chars": 1223,
+      "full_body_occurrences_in_last_prompt": 2
+    }
+  ],
+  "namespace_diagnostic_false_positive": [
+    {
+      "batch": false,
+      "errors": [
+        "Reader namespace mismatch: runtime/audit/tools/0001_reader.json",
+        "Reader has invalid namespace: runtime/audit/tools/0001_reader.json"
+      ],
+      "reader_calls": [
+        {
+          "path": "runtime/audit/tools/0001_reader.json",
+          "execution_status": "SUCCESS",
+          "artifact_id": "art_test",
+          "request_namespace": null,
+          "result_namespace": "research_reference",
+          "namespace_match": false
+        }
+      ]
+    },
+    {
+      "batch": true,
+      "errors": [
+        "Reader has invalid namespace: runtime/audit/tools/0001_reader.json"
+      ],
+      "reader_calls": [
+        {
+          "path": "runtime/audit/tools/0001_reader.json",
+          "execution_status": "SUCCESS",
+          "artifact_id": null,
+          "request_namespace": null,
+          "result_namespace": null,
+          "namespace_match": true
+        }
+      ]
+    }
+  ],
+  "unreserved_finalization": [
+    {
+      "reserve_final_turn": false,
+      "configured_max_turns": 2,
+      "actual_calls": 3,
+      "tools": 2,
+      "reported_turns": 3
+    },
+    {
+      "reserve_final_turn": true,
+      "configured_max_turns": 2,
+      "actual_calls": 2,
+      "tools": 1,
+      "reported_turns": 2
+    }
+  ],
+  "config_transport_injection": [
+    {
+      "transport": "api",
+      "class": "ArxivSearchTool",
+      "interval": 0.07,
+      "timeout": 4.0,
+      "max_retries": 1
+    },
+    {
+      "transport": "web",
+      "class": "ArxivWebSearchTool",
+      "interval": 0.17,
+      "timeout": 6.0,
+      "max_retries": 0
+    }
+  ]
+}
