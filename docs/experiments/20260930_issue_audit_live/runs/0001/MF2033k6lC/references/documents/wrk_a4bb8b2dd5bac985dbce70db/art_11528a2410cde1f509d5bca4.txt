@@ -1,0 +1,1775 @@
+EvoFormer: Learning Dynamic Graph-Level Representations with Structural and Temporal Bias Correction
+
+      Report GitHub Issue
+      ×
+
+      Title:
+
+Content selection saved. Describe the issue below:
+
+      Description:
+
+      Submit without GitHub
+      Submit in GitHub
+
+    arXiv is now an independent nonprofit!
+    Learn more
+    ×
+
+      Back to arXiv
+
+    Why HTML?
+
+      Report Issue
+
+      Back to Abstract
+
+      Download PDF
+
+Abstract.
+
+1 Introduction
+
+2 Related Work
+
+3 Problem statement
+
+4 Proposed method
+
+4.1 Structure-Aware Transformer Module
+
+4.2 Evolution-Sensitive Temporal Module
+
+4.3 Joint Optimization
+
+5 Experimental Evaluation
+
+5.1 Experimental Setup
+
+5.2 Experimental Tasks
+
+5.3 Experimental Results
+
+6 Conclusion
+
+Acknowledgements
+
+References
+
+    License: arXiv.org perpetual non-exclusive license
+
+arXiv:2508.15378v1 [cs.LG] 21 Aug 2025
+
+EvoFormer: Learning Dynamic Graph-Level Representations with Structural and Temporal Bias Correction
+
+Conference: Proceedings of the 34th ACM International Conference on Information and Knowledge
+Management; November 10–14, 2025; Seoul, Republic of KoreaProceedings of the 34th ACM International Conference on
+Information and Knowledge Management (CIKM ’25), November 10–14, 2025,
+Seoul, Republic of KoreaDOI: 10.1145/3746252.3761134ISBN: 979-8-4007-2040-6/2025/11CCS: Computing methodologies Neural networksCCS: Computing methodologies Unsupervised learningCCS: Information systems Data miningCCS: Mathematics of computing Graph algorithmsCCS: Computing methodologies Anomaly detection
+
+Haodi Zhong
+
+Affiliation: Xidian University, Xian, China
+
+email: zhonghaodi@xidian.edu.cn
+
+,
+Liuxin Zou
+
+Affiliation: Xidian University, Xian, China
+
+email: 23031212251@stu.xidian.edu.cn
+
+,
+Di Wang
+
+Affiliation: Xidian University, Xian, China
+
+email: wangdi@xidian.edu.cn
+
+Note: Corresponding author.
+
+,
+Bo Wan
+
+Affiliation: Xidian University, Xian, China
+
+email: wanbo@xidian.edu.cn
+
+,
+Zhenxing Niu
+
+Affiliation: Xidian University, Xian, China
+
+email: zxniu@xidian.edu.cn
+
+ and
+Quan Wang
+
+Affiliation: Xidian University, Xian, China
+
+email: qwang@xidian.edu.cn
+
+© acmlicensed
+
+Abstract.
+
+Dynamic graph-level embedding aims to capture structural evolution in networks, which is essential for modeling real-world scenarios. However, existing methods face two critical yet under-explored issues: Structural Visit Bias, where random walk sampling disproportionately emphasizes high-degree nodes, leading to redundant and noisy structural representations; and Abrupt Evolution Blindness, the failure to effectively detect sudden structural changes due to rigid or overly simplistic temporal modeling strategies, resulting in inconsistent temporal embeddings. To overcome these challenges, we propose EvoFormer, an evolution-aware Transformer framework tailored for dynamic graph-level representation learning. To mitigate Structural Visit Bias, EvoFormer introduces a Structure-Aware Transformer Module that incorporates positional encoding based on node structural roles, allowing the model to globally differentiate and accurately represent node structures. To overcome Abrupt Evolution Blindness, EvoFormer employs an Evolution-Sensitive Temporal Module, which explicitly models temporal evolution through a sequential three-step strategy: (I) Random Walk Timestamp Classification, generating initial timestamp-aware graph-level embeddings; (II) Graph-Level Temporal Segmentation, partitioning the graph stream into segments reflecting structurally coherent periods; and (III) Segment-Aware Temporal Self-Attention combined with an Edge Evolution Prediction task, enabling the model to precisely capture segment boundaries and perceive structural evolution trends, effectively adapting to rapid temporal shifts. Extensive evaluations on five benchmark datasets confirm that EvoFormer achieves state-of-the-art performance in graph similarity ranking, temporal anomaly detection, and temporal segmentation tasks, validating its effectiveness in correcting structural and temporal biases. Code is available at 11
+          1
+
+        https://github.com/zlx0823/EvoFormerCode.
+
+Keywords: Graph-level Embedding,
+Temporal Graphs,
+Graph Transformer,
+Temporal Segmentation,
+Temporal Anomaly Detection
+
+1. Introduction
+
+Dynamic graphs consist of nodes and edges whose topology evolves over discrete time intervals (e.g., edge additions/deletions). Formally, dynamic graphs are defined as a sequence of snapshots G={Gt}t=1TG=\{G_{t}\}_{t=1}^{T}, where each snapshot Gt=(Vt,Et)G_{t}=(V_{t},E_{t}) captures node interactions at time tt. Dynamic graph-level representation seeks to derive compact, meaningful representations that capture both structural and temporal characteristics of the entire graph. These embeddings are fundamental to various downstream tasks, such as dynamic graph classification (Zheng et al., 2025), graph-level anomaly detection (Goyal et al., 2018), and graph similarity ranking  (Bai et al., 2019).
+
+Existing methods for graph representation predominantly focus on static graphs, aggregating node interactions without explicitly modeling temporal dynamics. Such static embedding approaches inherently disregard crucial temporal information, such as the evolution of nodes and edges, thus restricting their applicability to dynamic scenarios that demand precise temporal modeling (Barros et al., 2021; Goyal et al., 2018; Béres et al., 2019). Recently, dynamic graph representation methods have emerged, predominantly emphasizing node-level embeddings, which typically encode individual nodes by explicitly incorporating node attributes, structural contexts, and temporal dependencies. Prominent node-level approaches integrate Graph Neural Networks (GNNs) with sequential models such as Recurrent Neural Networks (RNNs) or Transformer architectures (Pareja et al., 2020; Cong et al., 2023; Wu et al., 2024), employing mechanisms like recurrence or self-attention to effectively preserve node-level temporal dynamics. However, these node-level embeddings face inherent limitations when addressing tasks requiring holistic modeling of global graph structures and their temporal evolution. Tasks such as temporal graph-to-graph similarity assessment (Bai et al., 2019; Beladev et al., 2020), retrieving (Wang et al., 2016b; Wang et al., 2020), graph clustering (Zhong et al., 2022a; Zhong et al., 2021; Zhong et al., 2020), temporal anomaly detection, and trend analysis (Goyal et al., 2018; Savage et al., 2014) explicitly demand global, graph-level embeddings. To derive graph-level representations from node embeddings, prior methods usually rely on indirect, simplistic aggregation strategies such as mean or sum pooling (Duvenaud et al., 2015), virtual node insertion (Li et al., 2015), or set-based pooling (Gilmer et al., 2017). However, these approaches inherently lack the capability to preserve global hierarchical structures and temporal semantics (Ying et al., 2018), thereby significantly constraining their expressiveness in dynamic graph contexts. This limitation underscores the necessity of developing dedicated graph-level embedding approaches capable of accurately capturing both complex global structural patterns and evolving temporal dynamics.
+
+Explicitly graph-level embedding methods for dynamic graphs remain relatively scarce. To our best knowledge, tdGraphEmbed (Beladev et al., 2020) was the first approach to explicitly generate temporal graph-level embeddings. Specifically, tdGraphEmbed extended random walk-based node embedding techniques to directly compute entire graph embeddings for each snapshot. However, tdGraphEmbed treated dynamic graphs merely as sequences of independent static snapshots, lacking comprehensive modeling of inter-snapshot temporal correlations. To better capture temporal dependencies, teleEmbed (Huang et al., 2022) introduced temporal backtracking random walks, allowing the model to revisit previous temporal states. Nonetheless, this approach remains limited, as its random walk strategy can only sample local neighborhoods across time steps, thus restricting temporal modeling strictly to local structural contexts. Recently, GraphERT (Beladev et al., 2023) further advanced dynamic graph-level embedding by employing Transformer architectures to learn contextual node information directly from random walk sequences. Compared to tdGraphEmbed and teleEmbed, GraphERT utilizes a masking strategy that enables more precise modeling of local neighborhood contexts and predicts the temporal index of input random walk sequences to capture localized temporal evolution. Nevertheless, these advances remain confined to modeling temporal dynamics within local communities, and lack effective mechanisms for capturing global temporal evolution.
+
+Figure 1. Illustration of two key challenges in dynamic graph-level representation. The top figure shows Structural Visit Bias. The bottom figure highlights Abrupt Evolution Blindness.
+
+As a result, despite recent progress, existing dynamic graph-level embedding approaches still suffer from two critical yet under-explored limitations. Firstly, Structural Visit Bias (SVB), originating from random walk-based sampling, disproportionately emphasizes high-degree nodes, producing redundant and noisy structural representations. As shown in the top part of Fig. 1, high-degree nodes constitute merely 12.49% of all nodes but account for 34.66% of total visits, yielding a high-degree exposure index (HEI) of 2.78. Such excessive visitation highlights significant structural bias, resulting in redundant sampling and semantic distortions. Secondly, existing approaches suffer from Abrupt Evolution Blindness (AEB), which describes the failure of dynamic graph models to accurately perceive and respond to sudden, significant structural changes during graph evolution. As illustrated in the bottom part of Fig. 1, dynamic graphs typically exhibit non-uniform temporal patterns, characterized by long periods of gradual structural drift punctuated by rare but sharp transitions. These abrupt changes often correspond to real-world events, such as social unrest or system failures, that introduce semantically critical but temporally sparse structural mutations. However, current methods rely on fixed-size sliding windows or uniform temporal dependency assumptions. Such designs inherently smooth over or dilute these outlier events, resulting in semantic drift, where embeddings fail to reflect meaningful structural mutations at key timesteps. Consequently, the learned graph-level representations become temporally inconsistent and misaligned with the true evolution trajectory. This limits the model’s ability to generalize across distribution shifts and prevents accurate modeling of global temporal dynamics.
+
+To overcome these challenges, we propose EvoFormer, an evolution-aware Transformer framework. EvoFormer comprises two modules designed to systematically mitigate structural and temporal biases. The first component, the Structure-Aware Transformer Module (SATM), explicitly injects node structural roles into the Transformer, globally differentiating structurally similar but semantically distinct nodes, thereby effectively alleviating Structural Visit Bias and minimizing redundant structural representations. Furthermore, EvoFormer integrates an Evolution-Sensitive Temporal Module (ESTM). It initially generates timestamp-aware embeddings; subsequently, a Graph-Level Temporal Segmentation step partitions the embedding sequence into structurally coherent intervals. Finally, EvoFormer employs Segment-Aware Temporal Self-Attention combined with an Edge Evolution Prediction task to capture comprehensive global temporal patterns and sensitively detect abrupt structural changes. As a result, EvoFormer produces temporally consistent embeddings that accurately reflect both gradual and abrupt changes.
+
+The contributions of this work are threefold: (I) We formally identify and address two critical yet previously overlooked challenges in dynamic graph embedding: Structural Visit Bias and Abrupt Evolution Blindness; (II) We propose EvoFormer, which systematically integrates structure-aware positional encoding and temporal segmentation mechanisms to comprehensively mitigate these biases; (III) Comprehensive experiments on five benchmark datasets demonstrate EvoFormer’s state-of-the-art performance in graph similarity ranking, temporal anomaly detection, and temporal segmentation tasks.
+
+2. Related Work
+
+Node Level Embedding. These methods have gained considerable attention due to their effectiveness in modeling graph structures. For static graph embeddings, widely used techniques include matrix decomposition methods such as Singular Value Decomposition (SVD) (Belkin and Niyogi, 2001) and Locally Linear Embedding (LLE) (Roweis and Saul, 2000), as well as random walk-based approaches combined with the word2vec framework (Mikolov, 2013; Grover and Leskovec, 2016). Additionally, SDNE (Wang et al., 2016a) employs an autoencoder to simultaneously preserve first- and second-order proximities. Although these methods excel at capturing local structures, they typically neglect the global topology. GNNs (Kipf and Welling, 2016a; Veličković et al., 2018; Hamilton et al., 2017a; Kipf and Welling, 2016b) overcome this limitation through message-passing mechanisms that aggregate information from local neighborhoods, effectively integrating both local and global contexts. However, deeper GNN architectures often encounter oversmoothing issues, causing node representations to become indistinct and hindering the discrimination capability between nodes (Zhang et al., 2020). Recent works thus integrate Transformer layers into GNNs by modifying core components such as feature aggregation strategies (Cai and Lam, 2020; Ying et al., 2021).
+
+For dynamic graphs, node embedding methods usually extend static embedding approaches by independently embedding graph snapshots and then aligning these embeddings temporally (Liang et al., 2021; Singer et al., 2019). Other methods explicitly capture temporal dependencies. DynSDNE (Goyal et al., 2018) initializes current embeddings based on historical representations, while DynAERNN (Goyal et al., 2020) incorporates recurrent neural networks to model temporal dynamics. DynamicTriad (Zhou et al., 2018) explicitly models network evolution through triadic closure processes. Similarly, tNodeEmbed (Singer et al., 2019) integrates historical embeddings for improved node-level predictions. EvolveGCN (Pareja et al., 2020) dynamically adjusts GNN parameters via recurrent architectures like LSTM and GRU, effectively modeling graph evolution without explicit node embeddings. TREND (Wen and Fang, 2022) employs a Hawkes-process-based GNN for modeling event-driven dynamics, though it faces scalability issues. Additionally, MTSN (Liu et al., 2021) incorporates motif-based features within temporal shift mechanisms to capture intricate evolutionary patterns.
+
+Despite their effectiveness, node-level embeddings typically rely on heuristic pooling strategies, including mean, sum, virtual-node, or set-based readouts (Duvenaud et al., 2015; Li et al., 2015; Gilmer et al., 2017; Ying et al., 2018), which discard hierarchical structure and essential temporal semantics. To overcome these limitations, recent research increasingly emphasizes graph-level embedding methods capable of naturally encoding complete structural and temporal dynamics.
+
+Graph-Level Embedding. These methods primarily aim to represent entire graphs as unified vectors. Static graph embedding methods include Graph2vec (Narayanan et al., 2017), which treats graphs as documents and extracts embeddings from subgraph structures; UGraphEmb (Bai et al., 2019), preserving similarities using graph edit distance; and Sub2vec (Adhikari et al., 2018), learning subgraph embeddings through random walks. Other methods construct graph-level embedding based on degree histograms (Cai and Wang, 2018), spectral properties (Galland and Lelarge, 2019), characteristic functions derived from node neighborhoods (Rozemberczki and Sarkar, 2020), and diffusion wavelets (Wang et al., 2021).
+
+Dynamic graph embedding methods typically extend static frameworks temporally. tdGraphEmbed (Beladev et al., 2020) independently aggregates node embeddings per snapshot, ignoring temporal dependencies. teleEmbed (Huang et al., 2022) introduces temporal-backtracking walks to capture inter-snapshot relations but relies on simple aggregation. Recently, GraphERT (Beladev et al., 2023) significantly advanced dynamic embeddings by integrating Transformer architectures to directly model structural and temporal contexts from time-stamped walks, establishing the current state-of-the-art.
+
+However, existing methods remain limited by noisy structural representations from repeated hub-node visits and overly simplistic temporal modeling. To address these challenges, our method introduces structure-aware positional encodings and evolution-sensitive temporal module, effectively enhancing embedding robustness and temporal precision.
+
+Figure 2. The overall architecture of EvoFormer. The framework consists of two modules: (1) the Structure-Aware Transformer Module encodes random-walk sequences using structure-aware positional encodings based on return probability vectors; (2) the Evolution-Sensitive Temporal Module performs timestamp prediction, dynamic graph segmentation, segment-aware temporal attention, and edge prediction to capture non-uniform graph evolution.
+
+3. Problem statement
+
+Problem 1 (Dynamic Graph-Level Representations (DGR)).
+
+Let G={G1,G2,…,GT}G=\{G_{1},G_{2},\ldots,G_{T}\} denote a dynamic graph, where each graph snapshot Gt=(Vt,Et)G_{t}=(V_{t},E_{t}) represents the node set VtV_{t} and edge set EtE_{t} at time tt, t∈[T]t\in[T]. Let V=⋃t=1TVtV=\bigcup_{t=1}^{T}V_{t} denote the set of all nodes observed across all time steps, and E=⋃t=1TEtE=\bigcup_{t=1}^{T}E_{t} denote the set of all edges that appear in any snapshot.
+The objective of DGR is to learn an embedding function f:Gt→𝐠t∈ℝdf:G_{t}\rightarrow\mathbf{g}_{t}\in\mathbb{R}^{d} for each snapshot GtG_{t}, such that the resulting sequence {𝐠t}t=1T\{\mathbf{g}_{t}\}_{t=1}^{T} faithfully captures both the structural properties and temporal evolution of the underlying graph. Ideally, graph snapshots exhibiting similar topological and temporal patterns should be mapped to proximal locations in the embedding space.
+
+4. Proposed method
+
+This section introduces EvoFormer, a dynamic graph representation method that jointly addresses structural visit bias and abrupt evolution blindness. It integrates two core components: (I) a Structure-Aware Transformer Module, which encodes random-walk sequences enhanced by structure-aware positional encodings derived from return probability vectors; (II) an Evolution-Sensitive Temporal Module, which models non-uniform temporal evolution through timestamp classification, dynamic graph-level segmentation, segment-aware temporal self-attention, and edge prediction, thus accurately capturing abrupt structural transitions.
+
+4.1. Structure-Aware Transformer Module
+
+Random Walk–based Sequence Construction. Given a temporal graph snapshot Gt=(Vt,Et)G_{t}=(V_{t},E_{t}), we construct a sequence-based representation of its structure by performing multiple biased random walks. For each node vi∈Vtv_{i}\in V_{t}, i∈[|Vt|]i\in[|V_{t}|], we initiate WW random walks of fixed length LL (Grover and Leskovec, 2016), each defined as:
+
+(1)
+
+Rvi(t,m)={Rvi1,Rvi2,…,RviL},where ​Rvi1=vi,t∈[T],m∈[W].R_{v_{i}}^{(t,m)}=\{R_{v_{i}}^{1},R_{v_{i}}^{2},\ldots,R_{v_{i}}^{L}\},~\text{where }R_{v_{i}}^{1}=v_{i},~t\in[T],~m\in[W].
+
+At each step l∈[L−1]l\in[L-1], the next node Rvil+1R_{v_{i}}^{l+1} is sampled from the neighbors of RvilR_{v_{i}}^{l} according to the transition probabilities (Grover and Leskovec, 2016). Applying this procedure to every node across all TT graph snapshots results in a random walk corpus:
+
+(2)
+
+ℛ={Rvi(t,m)∣vi∈Vt,t∈[T],m∈[W]},\mathcal{R}=\{R_{v_{i}}^{(t,m)}\mid v_{i}\in V_{t},\ t\in[T],\ m\in[W]\},
+
+This corpus ℛ\mathcal{R} captures local structural patterns at each temporal step and serves as the input to the structure-aware Transformer module.
+
+Structure-Aware Positional Encoding. To alleviate Structural Visit Bias, we incorporate structure-aware positional signals into node tokens using the Random Walk Positional Encoding (RWPE) proposed by Dwivedi et al. (Dwivedi et al., [n. d.]). Unlike naive positional embeddings  (Vaswani et al., 2017), RWPE captures the topological context of each node by quantifying its likelihood of returning to itself over multiple random walk steps, thereby encoding structural centrality and role beyond raw degree.
+
+Formally, let 𝐀t∈{0,1}n×n\mathbf{A}_{t}\in\{0,1\}^{n\times n} denote the adjacency matrix of a temporal snapshot GtG_{t}, and let 𝐃t=diag⁡(d1,…,dn)\mathbf{D}_{t}=\mathrm{diag}(d_{1},\ldots,d_{n}) be the diagonal degree matrix, and n=|Vt|n=|V_{t}|. The one-step random walk transition matrix of GtG_{t} is defined as:
+
+(3)
+
+𝐓t=𝐀t​𝐃t−1\mathbf{T}_{t}=\mathbf{A}_{t}\mathbf{D}_{t}^{-1}
+
+For each node viv_{i}, we compute its kk-step return probability vector:
+
+(4)
+
+𝐫it=[(𝐓t)i​i,(𝐓t2)i​i,…,(𝐓tk)i​i],𝐫it∈ℝk\mathbf{r}_{i}^{t}=\big[(\mathbf{T}_{t})_{ii},(\mathbf{T}_{t}^{2})_{ii},\ldots,(\mathbf{T}_{t}^{k})_{ii}\big],~\mathbf{r}_{i}^{t}\in\mathbb{R}^{k}
+
+where each entry (𝐓tk)i​i(\mathbf{T}_{t}^{k})_{ii} represents the probability of returning to viv_{i} after kk random walk steps. This vector encodes the local diffusion behavior centered at viv_{i} and serves as a structural signature. Stacking these vectors for all nodes yields the positional encoding matrix:
+
+(5)
+
+𝐑t=[𝐫1t,𝐫2t,…,𝐫nt]⊤∈ℝn×k\mathbf{R}^{t}=\big[\mathbf{r}_{1}^{t},\mathbf{r}_{2}^{t},\ldots,\mathbf{r}_{n}^{t}\big]^{\top}\in\mathbb{R}^{\,n\times k}
+
+By injecting 𝐑t\mathbf{R}^{t} into the Transformer encoder, the model learns to differentiate structurally distinct nodes even when they occur in similar walk contexts. As a result, it mitigates redundancy and reduces the over-smoothing effects introduced by repeated visits to high-degree nodes.
+
+Transformer-based Structural Context Modeling. Given a random-walk sequence Rvi(t,m)={Rvi1,Rvi2,…,RviL}R_{v_{i}}^{(t,m)}=\{R_{v_{i}}^{1},R_{v_{i}}^{2},\ldots,R_{v_{i}}^{L}\}, where vi∈Vtv_{i}\in V_{t}, t∈[T]t\in[T], and m∈[W]m\in[W], we follow the BERT-style encoder architecture (Devlin et al., 2019) to encode its contextual structure. We first prepend a special classification token [CLS] and append a [SEP] token to each sequence, yielding:
+
+(6)
+
+Svi(t,m)=([CLS],Rvi1,Rvi2,…,[MASK],…,RviL,[SEP])S_{v_{i}}^{(t,m)}=(\texttt{[CLS]},R_{v_{i}}^{1},R_{v_{i}}^{2},\ldots,\texttt{[MASK]},\ldots,R_{v_{i}}^{L},\texttt{[SEP]})
+
+with total sequence length L′=L+2L^{\prime}=L+2. During training, some positions are randomly replaced with [MASK] to enable masked language modeling.
+
+To encode this sequence, we first embed each token using a learnable embedding matrix. Let 𝒯:𝒱→1,…,|𝒱|\mathcal{T}:\mathcal{V}\rightarrow{1,\ldots,|\mathcal{V}|} be a vocabulary lookup function mapping nodes and special tokens to unique token indices. The token embedding for the ll-th position in the sequence is computed as:
+
+(7)
+
+𝐞l=𝐖tok ​[𝒯⁡(Svi(t,m)​[l])],l∈[L′],𝐞l∈ℝd\mathbf{e}_{l}=\mathbf{W}_{\text{tok }}[\mathcal{T}(S_{v_{i}}^{(t,m)}[l])],~l\in[L^{\prime}~],~\mathbf{e}_{l}\in\mathbb{R}^{d}
+
+where 𝐖tok∈ℝ|𝒱|×d\mathbf{W}_{\text{tok}}\in\mathbb{R}^{|\mathcal{V}|\times d} is a learnable embedding matrix.
+
+Stacking all embeddings gives the token embedding matrix:
+
+(8)
+
+𝐄vi(t,m)=[𝐞1,𝐞2,…,𝐞L′]⊤∈ℝL′×d.\mathbf{E}_{v_{i}}^{(t,m)}=\left[\mathbf{e}_{1},\mathbf{e}_{2},\ldots,\mathbf{e}_{L^{\prime}}\right]^{\top}\in\mathbb{R}^{L^{\prime}\times d}.
+
+To incorporate structural role information and alleviate Structural Visit Bias, we further add structure-aware positional encodings. For each token 𝒯⁡(Rvil)\mathcal{T}(R_{v_{i}}^{l}) in the walk, we extract its return probability vector 𝐫lt∈ℝk\mathbf{r}_{l}^{t}\in\mathbb{R}^{k} from Eq. (4). Special tokens like [CLS], [MASK], and [SEP] are assigned zero vectors. Stacking these vectors yields:
+
+(9)
+
+𝐑vi(t,m)=[𝐫1t,𝐫2t,…,𝐫L′t]⊤∈ℝL′×k\mathbf{R}_{v_{i}}^{(t,m)}=\left[\mathbf{r}_{1}^{t},\mathbf{r}_{2}^{t},\ldots,\mathbf{r}_{L^{\prime}}^{t}\right]^{\top}\in\mathbb{R}^{L^{\prime}\times k}
+
+We project each row into dd-dimensional space using a two-layer MLP fθ:ℝk→ℝdf_{\theta}:\mathbb{R}^{k}\rightarrow\mathbb{R}^{d}:
+
+(10)
+
+𝐩lt=fθ​(𝐫lt)=𝐖2​ReLU⁡(𝐖1​𝐫lt+𝐛1)+𝐛2,l∈[L′]\mathbf{p}_{l}^{t}=f_{\theta}(\mathbf{r}_{l}^{t})=\mathbf{W}_{2}\operatorname{ReLU}(\mathbf{W}_{1}\mathbf{r}_{l}^{t}+\mathbf{b}_{1})+\mathbf{b}_{2},\quad l\in[L^{\prime}]
+
+Let 𝐏vi(t,m)∈ℝL′×d\mathbf{P}_{v_{i}}^{(t,m)}\in\mathbb{R}^{L^{\prime}\times d} be the resulting matrix. The final input to the Transformer encoder is the sum of the token and positional embeddings:
+
+(11)
+
+𝐗vi(t,m)=𝐄vi(t,m)+𝐏vi(t,m)∈ℝL′×d\mathbf{X}_{v_{i}}^{(t,m)}=\mathbf{E}_{v_{i}}^{(t,m)}+\mathbf{P}_{v_{i}}^{(t,m)}\in\mathbb{R}^{L^{\prime}\times d}
+
+We feed 𝐗vi(t,m)\mathbf{X}_{v_{i}}^{(t,m)} into a stack of ZZ Transformer layers. Let 𝐇(0)=𝐗vi(t,m)\mathbf{H}^{(0)}=\mathbf{X}_{v_{i}}^{(t,m)} and 𝐇(z)\mathbf{H}^{(z)} denote the output of the zz-th layer, z∈[Z]z\in[Z]:
+
+(12)
+
+𝐇(z)=TransformerLayer⁡(𝐇(z−1))\mathbf{H}^{(z)}=\operatorname{TransformerLayer}(\mathbf{H}^{(z-1)})
+
+We denote the final output by 𝐇vi(t,m)=𝐇(Z)∈ℝL′×d\mathbf{H}_{v_{i}}^{(t,m)}=\mathbf{H}^{(Z)}\in\mathbb{R}^{L^{\prime}\times d}. The output corresponding to the masked positions is used for reconstruction. Let 𝐡l\mathbf{h}_{l} be the representation at a masked position ll, its token prediction is given by:
+
+(13)
+
+P⁡(Svi(t,m)​[l]=v)=softmax⁡(𝐖p​𝐡l+𝐛p),P(S_{v_{i}}^{(t,m)}[l]=v)=\operatorname{softmax}(\mathbf{W}_{\text{p}}\mathbf{h}_{l}+\mathbf{b}_{\text{p}}),
+
+where 𝐖p∈ℝ|𝒱|×d\mathbf{W}_{\text{p}}\in\mathbb{R}^{|\mathcal{V}|\times d} and 𝐛p∈ℝ|𝒱|\mathbf{b}_{\text{p}}\in\mathbb{R}^{|\mathcal{V}|} are trainable parameters.
+
+4.2. Evolution-Sensitive Temporal Module
+
+Random Walk Timestamp Classification. Following GraphERT (Beladev et al., 2023), we incorporate a timestamp prediction task to model local temporal dynamics. For each Svi(t,m)S_{v_{i}}^{(t,m)}, we extract the contextualized [CLS] token embedding from the Transformer output:
+
+(14)
+
+𝐡CLS,i(t,m)=𝐇vi(t,m)​[1]∈ℝd,\mathbf{h}_{\mathrm{CLS},i}^{(t,m)}=\mathbf{H}_{v_{i}}^{(t,m)}[1]\in\mathbb{R}^{d},
+
+where 𝐇vi(t,m)\mathbf{H}_{v_{i}}^{(t,m)} is the final-layer hidden state matrix from Eq. (12). We feed 𝐡CLS ,i(t,m)\mathbf{h}_{\text{CLS },i}^{(t,m)} into a linear classifier to predict the timestamp:
+
+(15)
+
+𝐲^i(t,m)=softmax⁡(𝐖TM​𝐡CLS,i(t,m)+𝐛TM)∈ℝT,\hat{\mathbf{y}}_{i}^{(t,m)}=\operatorname{softmax}\left(\mathbf{W}_{\mathrm{TM}}\mathbf{h}_{\mathrm{CLS},i}^{(t,m)}+\mathbf{b}_{\mathrm{TM}}\right)\in\mathbb{R}^{T},
+
+where 𝐖TM∈ℝT×d\mathbf{W}_{\mathrm{TM}}\in\mathbb{R}^{T\times d} and 𝐛TM∈ℝT\mathbf{b}_{\mathrm{TM}}\in\mathbb{R}^{T} are learnable parameters.
+
+This task forces the model to infer temporal context from structural patterns alone, enhancing its sensitivity to local temporal variations across snapshots.
+
+Algorithm 1  Top-Down Segmentation(𝐖TM,p)(\mathbf{W}_{\mathrm{TM}},p)
+
+              1:
+
+            𝐖TM∈ℝT×d\mathbf{W}_{\mathrm{TM}}\in\mathbb{R}^{T\times d}: graph-level embeddings for TT time steps; pp: number of desired segments
+
+              2:
+
+            Segmentation vector 𝐯∈{1,…,p}T\mathbf{v}\in\{1,\dots,p\}^{T}, where 𝐯⁡[t]\mathbf{v}[t] is the segment index of time step tt
+
+              3:
+
+            Initialize 𝒮←{[1,T]}\mathcal{S}\leftarrow\{[1,T]\} ⊳\triangleright Start with full time span
+
+              4:
+
+            while |𝒮|<p|\mathcal{S}|<p do
+
+              5:
+
+               Select [s,e]∈𝒮[s,e]\in\mathcal{S} with largest length
+
+              6:
+
+               Initialize j∗←−1j^{*}\leftarrow-1, best_score←−∞\text{best\_score}\leftarrow-\infty
+
+              7:
+
+               for j=s+1j=s+1 to e−1e-1 do
+
+              8:
+
+                Compute summary vectors:
+
+𝐬1=mean(𝐖TM[s:j,:]),𝐬2=mean(𝐖TM[j+1:e,:])\mathbf{s}_{1}=\text{mean}(\mathbf{W}_{\mathrm{TM}}[s:j,:]),\hskip 8.50012pt\mathbf{s}_{2}=\text{mean}(\mathbf{W}_{\mathrm{TM}}[j+1:e,:])
+
+              9:
+
+                Compute cosine similarity score:
+
+score1=∑t=sjcos⁡(𝐰t,𝐬1),score2=∑t=j+1ecos⁡(𝐰t,𝐬2)\text{score}_{1}=\sum_{t=s}^{j}\cos(\mathbf{w}_{t},\mathbf{s}_{1}),\hskip 8.50012pt\text{score}_{2}=\sum_{t=j+1}^{e}\cos(\mathbf{w}_{t},\mathbf{s}_{2})
+
+              10:
+
+                if score1+score2>best_score\text{score}_{1}+\text{score}_{2}>\text{best\_score} then
+
+              11:
+
+                  j∗←jj^{*}\leftarrow j, best_score←score1+score2\text{best\_score}\leftarrow\text{score}_{1}+\text{score}_{2}
+       
+
+              12:
+
+               Replace [s,e][s,e] in 𝒮\mathcal{S} with [s,j∗][s,j^{*}] and [j∗+1,e][j^{*}+1,e]
+
+              13:
+
+            Initialize 𝐯←𝟎∈ℝT\mathbf{v}\leftarrow\mathbf{0}\in\mathbb{R}^{T}
+
+              14:
+
+            for i=1i=1 to pp do
+
+              15:
+
+               Let [s,e][s,e] be the ii-th segment in 𝒮\mathcal{S}
+
+              16:
+
+               for t=st=s to ee do
+
+              17:
+
+                𝐯⁡[t]←i\mathbf{v}[t]\leftarrow i
+   
+
+              18:
+
+            return 𝐯\mathbf{v}
+
+Time-Aware Graph Segmentation.  To enhance global temporal modeling and better capture non-uniform structural evolution, we apply a top-down segmentation strategy (Terzi and Tsaparas, 2006) over graph-level embeddings. Standard self-attention often assigns disproportionate weights to distant time steps, which dilutes the impact of local transitions and hinder responsiveness to recent structural changes (Xing et al., 2024). To address this, we partition the timeline into semantically coherent segments and restrict attention computation within each segment.
+
+Given graph embeddings 𝐖TM∈ℝT×d\mathbf{W}_{\mathrm{TM}}\in\mathbb{R}^{T\times d} over TT time steps, we recursively divide the time axis into pp disjoint intervals that maximize intra-segment coherence. Each split is chosen to maximize the sum of cosine similarities between embeddings and their respective segment-level mean vectors (see Algorithm 1).22
+              2
+
+            Each segmentation step considers 𝒪⁡(T)\mathcal{O}(T) candidate splits and computes 𝒪⁡(T​d)\mathcal{O}(Td) cosine similarities, yielding an overall complexity of 𝒪⁡(T​p​d)\mathcal{O}(Tpd).
+
+The resulting segmentation vector 𝐯\mathbf{v} is later used in the Segment-Aware Temporal Self-Attention module to constrain temporal attention within each segment. This reduces noise from unrelated intervals and improves sensitivity to phase-specific transitions, especially abrupt changes.
+
+Figure 3. Segment-Aware Temporal Self-Attention: each graph attends only to others within the same temporal segment, while attention to other segments is masked.
+
+Segment-Aware Temporal Self-Attention. To model global temporal dependencies while respecting temporal locality, we apply a modified temporal self-attention mechanism (inspired by  (Sankar et al., 2018)) over the graph-level embedding matrix 𝐖TM∈ℝT×d\mathbf{W}_{\mathrm{TM}}\in\mathbb{R}^{T\times d} (See Fig. 3). We also utilize the segmentation vector 𝐯∈{1,…,p}T\mathbf{v}\in\{1,\ldots,p\}^{T} generated by Algorithm 1, where 𝐯⁡[i]\mathbf{v}[i] denotes the segment index of time step ii.
+
+The attention output Zg∈ℝT×dZ_{g}\in\mathbb{R}^{T\times d} is computed as:
+
+(16)
+
+Zg=βg⋅(𝐖TM​WV),Z_{g}=\beta_{g}\cdot(\mathbf{W}_{\mathrm{TM}}W_{V}),
+
+where WV∈ℝd×dW_{V}\in\mathbb{R}^{d\times d} is the learnable value projection matrix, and βg∈ℝT×T\beta_{g}\in\mathbb{R}^{T\times T} denotes the segment-aware attention weight matrix. Specifically, for each time step ii, the attention weight βgi​j\beta_{g}^{ij} assigned to time step jj is computed as:
+
+(17)
+
+βgi​j=exp⁡(egi​j)∑t=1Texp⁡(egi​t),\beta_{g}^{ij}=\frac{\exp(e_{g}^{ij})}{\sum_{t=1}^{T}\exp(e_{g}^{it})},
+
+where the attention score egi​je_{g}^{ij} is defined by:
+
+(18)
+
+egi​j=(𝐖TM​WQ)​(𝐖TM​WK)i​j⊤d+Mi​j.e_{g}^{ij}=\frac{(\mathbf{W}_{\mathrm{TM}}W_{Q})(\mathbf{W}_{\mathrm{TM}}W_{K})^{\top}_{ij}}{\sqrt{d}}+M_{ij}.
+
+Here, WQ,WK∈ℝd×dW_{Q},W_{K}\in\mathbb{R}^{d\times d} are the learnable query and key projection matrices, and M∈ℝT×TM\in\mathbb{R}^{T\times T} is a segment-aware causal mask given by:
+
+(19)
+
+Mi​j={0,if ​i≤j​ and ​𝐯​[i]=𝐯⁡[j],−∞,otherwise.M_{ij}=\begin{cases}0,&\text{if }i\leq j\text{ and }\mathbf{v}[i]=\mathbf{v}[j],\\
+-\infty,&\text{otherwise}.\end{cases}
+
+This masking enforces two constraints: (I) each time step ii can only attend to itself and earlier time steps j≤ij\leq i; and (II) attention is restricted within the same segment, i.e., 𝐯⁡[i]=𝐯⁡[j]\mathbf{v}[i]=\mathbf{v}[j]. Together, these constraints ensure that the attention mechanism captures meaningful intra-phase temporal dependencies.
+
+Edge Evolution Prediction. To further enhance the model’s sensitivity to abrupt changes, we introduce an auxiliary prediction task that estimates edge count fluctuations across time steps. This component complements the Segment-Aware Temporal Self-Attention by explicitly supervising the model to recognize discrete transitions in graph dynamics.
+
+Given the output of the temporal attention layer, 𝐖TM∈ℝT×d\mathbf{W}_{\mathrm{TM}}\in\mathbb{R}^{T\times d}, where each row 𝐰TMt\mathbf{w}_{\mathrm{TM}}^{t} represents the embedding of the graph at time step tt, we form concatenated representations for each consecutive pair of timesteps:
+
+(20)
+
+𝐳t=[𝐰TMt−1||𝐰TMt],t=[2,…,T].\mathbf{z}^{t}=[\mathbf{w}^{t-1}_{\mathrm{TM}}||\mathbf{w}^{t}_{\mathrm{TM}}],\quad t=[2,\dots,T].
+
+Each 𝐳t∈ℝ2​d\mathbf{z}^{t}\in\mathbb{R}^{2d} is then fed into a binary classifier f⁡(⋅)f(\cdot) to predict whether the number of edges increases at time tt :
+
+(21)
+
+y^t=σ⁡(f⁡(𝐳t)),\hat{y}^{t}=\sigma(f(\mathbf{z}^{t})),
+
+where σ⁡(⋅)\sigma(\cdot) denotes the sigmoid function, and y^t∈[0,1]\hat{y}^{t}\in[0,1] denotes the predicted probability of an edge count increase between time steps t−1t-1 and tt.
+
+4.3. Joint Optimization
+
+Our model is optimized using a multi-task objective comprising three components: masked language modeling, random walk timestamp classification, and edge evolution prediction.
+
+To reconstruct masked nodes within random walks, we apply a standard cross-entropy loss:
+
+(22)
+
+ℒ1=−1|ℛ|∑i=1|ℛ|∑(l,v)log((Wp𝐡l)v),\mathcal{L}_{1}=-\frac{1}{|\mathcal{R}|}\sum_{i=1}^{|\mathcal{R}|}\sum_{(l,v)}\log\left((W_{\text{p}}\mathbf{h}_{l})_{v}\right),
+
+where ℛ\mathcal{R} is the training set, 𝐡l\mathbf{h}_{l} is the hidden representation at a masked position ll, and (Wp​𝐡l)v(W_{\text{p}}\mathbf{h}_{l})_{v} is the predicted probability of the true token vv.
+
+To capture local temporal context, we classify each random walk to its originating timestamp using the [CLS] token embedding:
+
+(23)
+
+ℒ2=−1|ℛ|∑i=1|ℛ|log((WTM⋅𝐡CLS,i(t,m))t),\mathcal{L}_{2}=-\frac{1}{|\mathcal{R}|}\sum_{i=1}^{|\mathcal{R}|}\log\left((W_{\text{TM}}\cdot\mathbf{h}^{(t,m)}_{\text{CLS},i})_{t}\right),
+
+where 𝐡CLS,i(t,m)\mathbf{h}^{(t,m)}_{\text{CLS},i} is the contextualized [CLS] vector for the ii-th sample, and tt is the ground-truth timestamp.
+
+To encourage temporal sensitivity to structural changes, we adopt a binary classification loss to predict whether the edge count increases between timesteps:
+
+(24)
+
+ℒ3=−∑t=2T[ytlogy^t+(1−yt)log(1−y^t)],\mathcal{L}_{3}=-\sum_{t=2}^{T}\left[y^{\,t}\log\hat{y}^{\,t}+(1-y^{\,t})\log(1-\hat{y}^{\,t})\right],
+
+where yt∈{0,1}y^{\,t}\in\{0,1\} indicates edge growth between Gt−1G_{t-1} and GtG_{t}, and y^t∈[0,1]\hat{y}^{\,t}\in[0,1] is the predicted probability.
+
+The total loss is a weighted combination of the three components:
+
+(25)
+
+ℒtotal=λ1​ℒ1+λ2​ℒ2+λ3​ℒ3,\mathcal{L}_{\text{total}}=\lambda_{1}\mathcal{L}_{1}+\lambda_{2}\mathcal{L}_{2}+\lambda_{3}\mathcal{L}_{3},
+
+where λ1\lambda_{1}, λ2\lambda_{2}, and λ3\lambda_{3} control the relative importance of each task.
+
+Table 1. Datasets Statistics.
+
+Datasets
+Nodes
+Edges
+Timestamps
+Time Resolution
+
+FB
+46,873
+857,815
+30
+Monthly
+
+ER
+87,062
+1,146,800
+42
+Monthly
+
+R-GOT
+156,732
+834,753
+62
+Daily
+
+R-F1
+38,702
+254,731
+61
+Daily
+
+DBLP1
+554
+3,476
+25
+Yearly
+
+DBLP2
+483
+2,177
+30
+Yearly
+
+DBLP3
+495
+2,251
+30
+Yearly
+
+DBLP4
+644
+2,657
+26
+Yearly
+
+DBLP5
+488
+2,749
+38
+Yearly
+
+5. Experimental Evaluation
+
+5.1. Experimental Setup
+
+Datasets. We evaluate EvoFormer on five publicly available large-scale dynamic graph datasets, as summarized in Table 1. Specifically, Facebook (FB), Enron (ER), Reddit ’Game of Thrones’ (R-GOT), and Reddit ’Formula1’ (R-F1) (Beladev et al., 2020; Huang et al., 2022; Beladev et al., 2023) are used to assess performance on graph similarity ranking and temporal anomaly detection tasks, while DBLP1 through DBLP5 (Zhong et al., 2024; Zhong et al., 2022b) are used to evaluate temporal segmentation.
+
+Configuration Settings. EvoFormer is trained for 15 epochs using the Adam optimizer with a fixed learning rate of 1×10−41\times 10^{-4} and a batch size of 32. In the random walk-based sequence construction module, each node generates W=5W=5 walks of length L=32L=32. Return probability vectors are computed with k=16k=16 steps. The Transformer encoder consists of Z=8Z=8 layers, each with hidden dimension d=256d=256 and 88 attention heads. For temporal segmentation, the number of segments is set to p=8p=8. The total loss is a weighted combination of three objectives, with weights λ1=5\lambda_{1}=5, λ2=10\lambda_{2}=10, and λ3=5\lambda_{3}=5. All experiments are conducted using Python 3.8 and PyTorch 2.2.1 on a single NVIDIA GeForce RTX 4090 GPU.
+
+Baselines. We compare EvoFormer with a wide range of node-level and graph-level embedding baselines33
+              3
+
+            To ensure fair comparison, we run all baseline methods using their official open-source implementations and default hyperparameter settings. We report the best results obtained under these configurations.. For node-level methods, we obtain graph-level representations by averaging node embeddings across the graph. To compensate for the lack of temporal modeling in static methods, we apply temporal alignment following (Hamilton et al., 2017b).
+
+Node-level embedding methods. We consider both static and dynamic node embedding baselines.
+Node2Vec (Grover and Leskovec, 2016), SDNE (Wang et al., 2016a), and GAE (Kipf and Welling, 2016b) are classical static methods that learn node representations via biased random walks, deep autoencoders, and encoder-decoder architectures, respectively.
+DynamicTriad (Zhou et al., 2018), Dynamic SDNE (Goyal et al., 2018), and DynAERNN (Goyal et al., 2020) incorporate temporal dynamics through triadic closure modeling, proximity preservation, and RNN-based autoencoding.
+EvolveGCN (Pareja et al., 2020) adapts GCN parameters over time via recurrent units.
+MTSN (Liu et al., 2021) integrates motif-aware features and temporal shifts, while TREND (Wen and Fang, 2022) models fine-grained temporal events using Hawkes processes.
+
+Graph-level embedding methods. These methods directly learn representations for entire graphs.
+Graph2Vec (Narayanan et al., 2017), UGraphEmb (Bai et al., 2019), and Sub2Vec (Adhikari et al., 2018) capture global or subgraph-level patterns using WL kernels, proximity preservation, and neighborhood contexts.
+LDP (Cai and Wang, 2018), IGE (Galland and Lelarge, 2019), and FEATHER-G (Rozemberczki and Sarkar, 2020) generate graph embedding based on degree histograms, spectral features, and characteristic functions over random walks.
+D-Wavelets (Wang et al., 2021) encodes structural information using diffusion wavelets.
+Temporal graph baselines include tdGraphEmbed (Beladev et al., 2020) and teleEmbed (Huang et al., 2022), which perform time-aware random walks, and GraphERT (Beladev et al., 2023), which applies masked Transformer modeling with temporal classification.
+
+5.2. Experimental Tasks
+
+We evaluate EvoFormer on three graph-level tasks: graph similarity ranking, temporal anomaly detection, and temporal segmentation.
+
+Task 1: Graph Similarity Ranking. This task evaluates whether graph-level embeddings preserve semantic similarity. Given a query graph, the model ranks a set of candidate graphs based on embedding similarity. We adopt Maximum Common Subgraph (MCS) as the ground truth similarity measure. A model performs well if its embedding-based ranking aligns with MCS. We evaluate performance using three standard metrics (Beladev et al., 2023): Precision@K, Mean Reciprocal Rank (MRR), and Mean Average Precision@K (MAP@K). Precision@K measures the proportion of relevant results within the top-K retrieved items. MRR evaluates the inverse rank of the first relevant result, averaged over all queries. MAP@K captures the average precision of all relevant results within the top-K positions, averaged across queries.
+
+Task 2: Temporal Anomaly Detection. This task aims to identify time steps where the graph exhibits significant structural deviations from typical behavior, such as abrupt changes, community shifts, or the emergence of new hubs.
+For each time step, we compute an anomaly score based on the average classification confidence of path-level temporal predictions (Beladev et al., 2023).
+
+We evaluate performance on two benchmark datasets: R-GOT and R-F1. We report Mean Reciprocal Rank (MRR) to assess the model’s ability to rank true anomalies among all time steps. To further evaluate the correlation between the detected anomalies and real-world trends, we report the Spearman correlation coefficient between the anomaly score sequence and the corresponding Google Trends time series. The Spearman correlation measures the monotonic relationship between two variables by comparing the rankings of their values, thus quantifying how well the model’s anomaly detections align with fluctuations in public interest.
+
+Task 3: Temporal segmentation. This task aims to segment a dynamic graph sequence into distinct phases, each corresponding to a structurally coherent time interval. We conduct experiments on the DBLP dataset, which contains five temporal graph sequences annotated with ground-truth segment labels (Zhong et al., 2022b; Zhong et al., 2024). For each sequence, we first compute graph-level embeddings, then apply binary segmentation algorithm based on dynamic programming over the embedding trajectories. This procedure evaluates whether the learned representations capture meaningful temporal shifts in graph structure. Performance is measured using three standard clustering metrics: accuracy (ACC), normalized mutual information (NMI), and macro-averaged F1 score (F1-macro), which collectively assess the alignment between predicted segments and ground-truth segment labels.
+
+Table 2. Performance on Graph Similarity Ranking. The best results are in bold. The second-best results are underlined.
+
+Model
+FB
+ER
+
+P@5
+P@10
+MRR
+MAP@10
+P@5
+P@10
+MRR
+MAP@10
+
+Node2vec
+0.600
+0.670
+0.416
+0.779
+0.285
+0.366
+0.272
+0.478
+
+SDNE
+0.220
+0.393
+0.202
+0.402
+0.043
+0.093
+0.048
+0.091
+
+GAE
+0.480
+0.603
+0.373
+0.727
+0.237
+0.288
+0.166
+0.395
+
+DynamicTriad
+0.677
+0.743
+0.483
+0.840
+0.234
+0.323
+0.250
+0.408
+
+Dynamic SDNE
+0.386
+0.550
+0.207
+0.534
+0
+0.005
+0.022
+0
+
+DynAERNN
+0.220
+0.370
+0.177
+0.372
+0.024
+0.051
+0.030
+0.054
+
+EvolveGCN
+0.560
+0.703
+0.592
+0.349
+0.376
+0.431
+0.313
+0.506
+
+MTSN
+0.158
+0.297
+0.123
+0.327
+0.054
+0.116
+0.042
+0.157
+
+TREND
+0.64
+0.723
+0.383
+0.833
+0.197
+0.274
+0.129
+0.274
+
+Graph2vec
+0.220
+0.433
+0.162
+0.506
+0.032
+0.041
+0.038
+0.069
+
+UGraphEmb
+0.567
+0.750
+0.268
+0.815
+0.107
+0.162
+0.122
+0.204
+
+Sub2Vec
+0.293
+0.557
+0.194
+0.476
+0.042
+0.055
+0.089
+0.102
+
+LDP
+0.387
+0.517
+0.189
+0.606
+0.290
+0.474
+0.319
+0.550
+
+IGE
+0.193
+0.360
+0.182
+0.411
+0.138
+0.274
+0.154
+0.318
+
+FEATHER-G
+0.253
+0.407
+0.196
+0.429
+0.319
+0.452
+0.217
+0.499
+
+D-Wavelets
+0.333
+0.510
+0.228
+0.602
+0.290
+0.462
+0.247
+0.493
+
+tdGraphEmbed
+0.660
+0.760
+0.392
+0.831
+0.272
+0.369
+0.306
+0.445
+
+teleEmbed
+0.467
+0.610
+0.202
+0.683
+0.248
+0.376
+0.151
+0.433
+
+GraphERT
+0.7
+0.773
+0.508
+0.841
+0.523
+0.5
+0.645
+0.638
+
+EvoFormer
+0.707
+0.78
+0.453
+0.853
+0.585
+0.547
+0.703
+0.673
+
+Model
+R-GOT
+R-F1
+
+P@5
+P@10
+MRR
+MAP@10
+P@5
+P@10
+MRR
+MAP@10
+
+Node2vec
+0.310
+0.338
+0.358
+0.542
+0.167
+0.206
+0.204
+0.376
+
+SDNE
+0.252
+0.346
+0.305
+0.393
+0.151
+0.231
+0.201
+0.273
+
+GAE
+0.224
+0.267
+0.249
+0.409
+0.141
+0.204
+0.195
+0.333
+
+DynamicTriad
+0.282
+0.301
+0.402
+0.487
+0.190
+0.231
+0.208
+0.395
+
+Dynamic SDNE
+0.300
+0.316
+0.330
+0.494
+0.141
+0.201
+0.101
+0.289
+
+DynAERNN
+0.087
+0.166
+0.088
+0.196
+0.095
+0.203
+0.081
+0.255
+
+EvolveGCN
+0.138
+0.211
+0.107
+0.267
+0.203
+0.257
+0.166
+0.366
+
+MTSN
+0.097
+0.162
+0.074
+0.221
+0.093
+0.203
+0.131
+0.224
+
+TREND
+0.180
+0.295
+0.192
+0.355
+0.121
+0.226
+0.109
+0.282
+
+Graph2vec
+0.190
+0.274
+0.185
+0.329
+0.082
+0.168
+0.059
+0.215
+
+UGraphEmb
+0.245
+0.288
+0.225
+0.413
+0.170
+0.256
+0.122
+0.308
+
+Sub2Vec
+0.087
+0.193
+0.124
+0.168
+0.032
+0.114
+0.042
+0.149
+
+LDP
+0.210
+0.285
+0.178
+0.341
+0.157
+0.233
+0.127
+0.304
+
+IGE
+0.083
+0.176
+0.101
+0.202
+0.172
+0.372
+0.208
+0.360
+
+FEATHER-G
+0.219
+0.255
+0.158
+0.348
+0.147
+0.229
+0.073
+0.282
+
+D-Wavelets
+0.226
+0.279
+0.212
+0.378
+0.164
+0.242
+0.100
+0.311
+
+tdGraphEmbed
+0.351
+0.358
+0.450
+0.561
+0.229
+0.273
+0.257
+0.429
+
+teleEmbed
+0.077
+0.143
+0.069
+0.174
+0.134
+0.210
+0.103
+0.296
+
+GraphERT
+0.416
+0.417
+0.479
+0.582
+0.219
+0.272
+0.239
+0.46
+
+EvoFormer
+0.445
+0.434
+0.497
+0.622
+0.229
+0.293
+0.211
+0.402
+
+5.3. Experimental Results
+
+(a)
+
+(b)
+
+Figure 4. Graph-to-graph similarity heatmaps based on cosine similarity between graph embeddings over time. (a) Facebook: smooth evolution. (b) Enron: abrupt structural shifts.
+
+Table 3. MRR and Spearman results for temporal anomaly detection on R-GOT and R-F1 datasets.
+
+Model
+R-GOT
+R-F1
+
+MRR
+Spearman
+MRR
+Spearman
+
+Node2vec
+0.370
+0.559
+0.129
+0.449
+
+SDNE
+0.034
+0.630
+0.037
+-0.07
+
+GAE
+0.056
+0.363
+0.327
+0.585
+
+DynamicTriad
+0.239
+0.634
+0.425
+0.424
+
+Dynamic SDNE
+0.281
+0.134
+0.085
+0.502
+
+DynAERNN
+0.072
+-0.098
+0.027
+-0.396
+
+EvolveGCN
+0.071
+0.209
+0.191
+0.310
+
+MTSN
+0.062
+0.031
+0.061
+0.270
+
+TREND
+0.041
+-0.458
+0.051
+0.233
+
+tdGraphEmbed
+0.355
+0.751
+0.508
+0.485
+
+Graph2vec
+0.332
+0.647
+0.136
+0.424
+
+UGraphEmbed
+0.304
+0.363
+0.038
+0.252
+
+Sub2vec
+0.106
+0.534
+0.115
+0.413
+
+GraphERT
+0.370
+0.703
+0.521
+0.455
+
+EvoFormer
+0.370
+0.693
+0.521
+0.537
+
+Table 4. Temporal segmentation performance on DBLP1–DBLP5 using ACC, NMI, and F1-macro.
+
+Model
+DBLP1
+DBLP2
+DBLP3
+DBLP4
+DBLP5
+
+ACC
+NMI
+F1-macro
+ACC
+NMI
+F1-macro
+ACC
+NMI
+F1-macro
+ACC
+NMI
+F1-macro
+ACC
+NMI
+F1-macro
+
+tdGraphEmbed
+0.56
+0.653
+0.525
+0.566
+0.68
+0.548
+0.50
+0.679
+0.467
+0.538
+0.657
+0.467
+0.631
+0.732
+0.606
+
+node2vec
+0.68
+0.742
+0.649
+0.733
+0.748
+0.713
+0.60
+0.699
+0.572
+0.50
+0.601
+0.415
+0.763
+0.825
+0.742
+
+Graphert
+0.80
+0.776
+0.792
+0.866
+0.809
+0.865
+0.766
+0.772
+0.762
+0.769
+0.734
+0.681
+0.789
+0.785
+0.787
+
+EvoFormer
+0.84
+0.830
+0.829
+0.866
+0.809
+0.865
+0.84
+0.830
+0.829
+0.866
+0.809
+0.865
+0.921
+0.901
+0.924
+
+Performance on Graph Similarity Ranking. Table 2 reports the results of graph similarity ranking across four benchmark datasets. EvoFormer achieves the best overall performance across the majority of metrics and datasets, consistently ranking at or near the top among all 19 baselines.
+
+On the ER dataset, EvoFormer achieves the highest scores across all four metrics, with relative improvements over GraphERT of 11.9% (P@5), 9.4% (P@10), 9.0% (MRR), and 5.5% (MAP@10). For R-GOT, which exhibits narrative-driven structural evolution, EvoFormer also outperforms all baselines, with gains up to 7.0% (P@5), 4.1% (P@10), 3.8% (MRR), and 6.9% (MAP@10) over the second-best method GraphERT. On the FB dataset, EvoFormer achieves improvements of 1.0%, 0.9%, and 1.4% over the strongest baseline in P@5, P@10, and MAP@10, respectively. Although it does not achieve the best MRR, this may be related to the dataset’s smooth temporal evolution, where short-term structural similarity plays a larger role. In such cases, models with stronger local sensitivity may perform better in early ranking positions. On the R-F1 dataset, EvoFormer improves P@5 and P@10 by 4.6% and 7.7% compared to the best baselines. Its performance in MRR and MAP@10 is slightly lower. This may be due to the dataset’s stable structure over time, which reduces the effectiveness of phase-aware modeling designed for dynamic changes.
+
+Figure 4 shows the pairwise cosine similarity between graph embeddings over time. The FB dataset (a) displays a clear diagonal pattern, indicating smooth and consistent structural evolution. In contrast, the ER dataset (b) presents irregular and block-like patterns, with sharp drops in similarity across certain time intervals. This reflects periods of structural disruption, likely driven by organizational shifts or external events. These patterns support EvoFormer’s advantage in modeling irregular and dynamic graph sequences.
+
+Performance on Temporal Anomaly Detection. Table 3 reports the results on R-GOT and R-F1 datasets using MRR and Spearman correlation. EvoFormer achieves an MRR of 0.370 on R-GOT, matching GraphERT and node2vec, and successfully identifies all seven ground-truth anomalies. In Spearman correlation, EvoFormer ranks third (0.693), following tdGraphEmbed (0.751) and GraphERT (0.703). On the R-F1 dataset, EvoFormer also achieves the highest MRR (0.521), tied with GraphERT, and detects all four annotated anomalies. In Spearman correlation, it ranks second (0.537), behind GAE (0.585). These results demonstrate that EvoFormer effectively identifies annotated anomalies while maintaining strong temporal ranking consistency, particularly on graphs with irregular structural changes.
+
+Performance on Temporal Segmentation. Table 4 reports results on the dynamic segmentation task over five DBLP graph sequences. We compare EvoFormer against three strong baselines: tdGraphEmbed, node2vec, and GraphERT, using ACC, NMI, and F1-macro. EvoFormer achieves the highest performance on all three metrics across all datasets. Compared to the best-performing baseline GraphERT, EvoFormer improves segmentation quality notably. On DBLP1, EvoFormer achieves 0.84 (ACC), 0.83 (NMI), and 0.829 (F1-macro), representing relative gains of 5.0%, 7.0%, and 4.7%. On DBLP2, both models reach identical scores. On DBLP3, EvoFormer improves over GraphERT by 9.7% in ACC, 7.5% in NMI, and 8.8% in F1-macro. On DBLP4, the gains are larger, with 12.6%, 10.2%, and 27.0% improvements across the three metrics. The most significant gains appear on DBLP5, where EvoFormer surpasses GraphERT by 16.7%, 14.8%, and 17.4%. These results indicate that EvoFormer effectively captures temporal boundaries through its segmentation-aware self-attention.
+
+Table 5. Ablation results on ER and R-GOT datasets.
+
+Model
+ER
+R-GOT
+
+P@5
+P@10
+MRR
+MAP@10
+P@5
+P@10
+MRR
+MAP@10
+
+Base
+0.537
+0.500
+0.629
+0.646
+0.409
+0.391
+0.471
+0.589
+
+SAPE
+0.542
+0.502
+0.662
+0.655
+0.425
+0.412
+0.5
+0.605
+
+SATA
+0.547
+0.519
+0.636
+0.651
+0.461
+0.419
+0.509
+0.617
+
+EvoFormer
+0.585
+0.547
+0.703
+0.673
+0.445
+0.434
+0.497
+0.622
+
+Ablation Study.  Table 5 presents the ablation results on ER and R-GOT, evaluating the individual contributions of Structure-Aware Positional Encoding (SAPE) and Segment-Aware Temporal Self-Attention (SATA). The base model removes both modules, using a Transformer with timestamp and edge prediction. Adding SAPE alone yields consistent gains: on ER, the average improvement across four metrics is 1.99%, while on R-GOT it reaches 4.54%. This confirms SATM’s effectiveness in mitigating structural bias and enhancing topology modeling. Incorporating only SATA leads to stronger gains on R-GOT (avg. +8.18%) and a 1.89% boost on ER, demonstrating its ability to capture abrupt transitions and non-uniform evolution. Combining both modules gives the best results. EvoFormer improves over the base model by 8.57% on ER and 7.72% on R-GOT (averaged across all metrics), highlighting the complementary benefits of structural encoding and temporal segmentation.
+
+Parameter Sensitivity Analysis. We investigate the effect of three key hyperparameters on model performance: embedding dimension dd, number of walks per node WW, and walk length LL. Results are shown in Figure 5 using P@5, MRR, and MAP@10 as evaluation metrics.
+In Figure 5 (a), increasing log2⁡d\log_{2}d from 5 to 8 leads to consistent performance gains across all metrics. The best results are observed at d=256d=256, while a slight drop at d=512d=512 indicates potential overfitting or redundancy at very high dimensions. Figure 5 (b) shows that model performance is highest when W=5W=5. Increasing WW beyond this point results in a decline in all metrics, suggesting that excessive sampling introduces noise or redundant walks, which may impair representation quality. As shown in Figure 5 (c), longer walks improve performance up to L=32L=32, which achieves the peak for all metrics. Beyond this, gains saturate or slightly decline, implying that very long walks may dilute useful local context.
+
+Figure 5. Parameter sensitivity analysis of EvoFormer on graph similarity ranking.
+
+Scalability. We first report the per-batch execution time (batch size = 1) of each module across the FB, ER, R-GOT, and R-F1 datasets (Table 6). The Random Walk Timestamp Classification module is highly efficient, requiring only 0.16–0.17ms across all datasets, indicating that temporal label prediction is computationally negligible in our framework. The Structure-Aware Transformer Module consistently takes around 12–13ms, showing stable performance with minor variations among datasets. In contrast, the Evolution-Sensitive Temporal Module exhibits the highest computational cost, ranging from 18.06ms on FB to 31.6ms on R-F1, which can be attributed to its modeling of long-range temporal dependencies and more complex operations. To further examine scalability with respect to data volume, we varied the number of random walks from 10,000 to 100,000 and trained R-F1 dataset for one epoch on a single NVIDIA RTX 4090 GPU. As shown in Figure 6, the runtime increases approximately linearly with the sample size, from 150s (10k walks) to 900s (100k walks), confirming that EvoFormer scales efficiently to large networks.
+
+Table 6. Per-batch runtime (ms) of each module on different datasets.
+
+Component
+Execution Time / Batch Size = 1
+
+FB
+ER
+R-GOT
+R-F1
+
+Structure-Aware Transformer
+12.76
+12.09
+12.04
+13.47
+
+Timestamp Classification
+0.17
+0.16
+0.16
+0.17
+
+Evolution-Sensitive Temporal Module
+18.06
+19.8
+28.9
+31.6
+
+Figure 6. Scalability analysis of EvoForme on different numbers of random walks
+
+6. Conclusion
+
+In this paper, we introduced EvoFormer, a novel Transformer-based approach designed to effectively address two critical limitations in dynamic graph embedding: Structural Visit Bias and Abrupt Evolution Blindness. Our framework integrates a Structure-Aware Transformer Module, employing structure-informed positional encoding to mitigate redundancy and noise in node representations, and an Evolution-Sensitive Temporal Module, featuring timestamp classification, graph-level segmentation, segment-aware temporal attention, and edge prediction, enabling accurate detection of sudden structural transitions. Future work includes extending EvoFormer to heterogeneous and continuous-time dynamic graphs, and exploring its applications in other domains with evolving structures, such as bioinformatics and cybersecurity.
+
+Acknowledgements.
+This work was supported by the National Natural Science Foundation of China (62402368); the Outstanding Youth Science Foundation of Shaanxi Province (2025JC-JCQN-083); the Key Research and Development Program of Shaanxi Province (2025CY-YBXM-047); the Young Talent Fund of Xi’an Association for Science and Technology (0959202513020); the Natural Science Basic Research Program of Shaanxi Province (2024JC-YBQN-0715); and the Fundamental Research Funds for the Central Universities of China (XJSJ24015, QTZX23084).
+
+GenAI Usage Disclosure
+
+The authors confirm that no generative AI tools were used at any stage of the research process, including manuscript writing and code.
+
+References
+
+Adhikari et al. (2018)
+
+Bijaya Adhikari, Yao Zhang, Naren Ramakrishnan, and B Aditya Prakash. 2018.
+
+Sub2vec: Feature learning for subgraphs. In Advances in Knowledge Discovery and Data Mining: 22nd Pacific-Asia Conference, PAKDD 2018, Melbourne, VIC, Australia, June 3-6, 2018, Proceedings, Part II 22. Springer, 170–182.
+
+Bai et al. (2019)
+
+Yunsheng Bai, Hao Ding, Yang Qiao, Agustin Marinovic, Ken Gu, Ting Chen, Yizhou Sun, and Wei Wang. 2019.
+
+Unsupervised inductive graph-level representation learning via graph-graph proximity. In Proceedings of the 28th International Joint Conference on Artificial Intelligence. 1988–1994.
+
+Barros et al. (2021)
+
+Claudio DT Barros, Matheus RF Mendonça, Alex B Vieira, and Artur Ziviani. 2021.
+
+A survey on embedding dynamic graphs.
+
+ACM Computing Surveys (CSUR) 55, 1 (2021), 1–37.
+
+Beladev et al. (2023)
+
+Moran Beladev, Gilad Katz, Lior Rokach, Uriel Singer, and Kira Radinsky. 2023.
+
+GraphERT–Transformers-based Temporal Dynamic Graph Embedding. In Proceedings of the 32nd ACM International Conference on Information and Knowledge Management. 68–77.
+
+Beladev et al. (2020)
+
+Moran Beladev, Lior Rokach, Gilad Katz, Ido Guy, and Kira Radinsky. 2020.
+
+tdgraphembed: Temporal dynamic graph-level embedding. In Proceedings of the 29th ACM International Conference on Information & Knowledge Management. 55–64.
+
+Belkin and Niyogi (2001)
+
+Mikhail Belkin and Partha Niyogi. 2001.
+
+Laplacian eigenmaps and spectral techniques for embedding and clustering.
+
+Advances in neural information processing systems 14 (2001).
+
+Béres et al. (2019)
+
+Ferenc Béres, Domokos M Kelen, Róbert Pálovics, and András A Benczúr. 2019.
+
+Node embeddings in dynamic graphs.
+
+Applied Network Science 4, 1 (2019), 64.
+
+Cai and Wang (2018)
+
+Chen Cai and Yusu Wang. 2018.
+
+A simple yet effective baseline for non-attributed graph classification.
+
+arXiv preprint arXiv:1811.03508 (2018).
+
+Cai and Lam (2020)
+
+Deng Cai and Wai Lam. 2020.
+
+Graph transformer for graph-to-sequence learning. In Proceedings of the AAAI conference on artificial intelligence, Vol. 34. 7464–7471.
+
+Cong et al. (2023)
+
+Weilin Cong, Yanhong Wu, Yuandong Tian, Mengting Gu, Yinglong Xia, Chun-cheng Jason Chen, and Mehrdad Mahdavi. 2023.
+
+Dyformer: A scalable dynamic graph transformer with provable benefits on generalization ability. In Proceedings of the 2023 SIAM International Conference on Data Mining (SDM). SIAM, 442–450.
+
+Devlin et al. (2019)
+
+Jacob Devlin, Ming-Wei Chang, Kenton Lee, and Kristina Toutanova. 2019.
+
+Bert: Pre-training of deep bidirectional transformers for language understanding. In Proceedings of the 2019 conference of the North American chapter of the association for computational linguistics: human language technologies, volume 1 (long and short papers). 4171–4186.
+
+Duvenaud et al. (2015)
+
+David K Duvenaud, Dougal Maclaurin, Jorge Iparraguirre, Rafael Bombarell, Timothy Hirzel, Alán Aspuru-Guzik, and Ryan P Adams. 2015.
+
+Convolutional networks on graphs for learning molecular fingerprints.
+
+Advances in neural information processing systems 28 (2015).
+
+Dwivedi et al. ([n. d.])
+
+Vijay Prakash Dwivedi, Anh Tuan Luu, Thomas Laurent, Yoshua Bengio, and Xavier Bresson. [n. d.].
+
+Graph Neural Networks with Learnable Structural and Positional Representations. In International Conference on Learning Representations.
+
+Galland and Lelarge (2019)
+
+Alexis Galland and Marc Lelarge. 2019.
+
+Invariant embedding for graph classification. In ICML 2019 workshop on learning and reasoning with graph-structured data.
+
+Gao et al. (2022)
+
+Chao Gao, Junyou Zhu, Fan Zhang, Zhen Wang, and Xuelong Li. 2022.
+
+A novel representation learning for dynamic graphs based on graph convolutional networks.
+
+IEEE Transactions on Cybernetics 53, 6 (2022), 3599–3612.
+
+Gilmer et al. (2017)
+
+Justin Gilmer, Samuel S Schoenholz, Patrick F Riley, Oriol Vinyals, and George E Dahl. 2017.
+
+Neural message passing for quantum chemistry. In International conference on machine learning. PMLR, 1263–1272.
+
+Goyal et al. (2020)
+
+Palash Goyal, Sujit Rokka Chhetri, and Arquimedes Canedo. 2020.
+
+dyngraph2vec: Capturing network dynamics using dynamic graph representation learning.
+
+Knowledge-Based Systems 187 (2020), 104816.
+
+Goyal et al. (2018)
+
+Palash Goyal, Nitin Kamra, Xinran He, and Yan Liu. 2018.
+
+Dyngem: Deep embedding method for dynamic graphs.
+
+arXiv preprint arXiv:1805.11273 (2018).
+
+Grover and Leskovec (2016)
+
+Aditya Grover and Jure Leskovec. 2016.
+
+node2vec: Scalable feature learning for networks. In Proceedings of the 22nd ACM SIGKDD international conference on Knowledge discovery and data mining. 855–864.
+
+Hamilton et al. (2017a)
+
+Will Hamilton, Zhitao Ying, and Jure Leskovec. 2017a.
+
+Inductive representation learning on large graphs.
+
+Advances in neural information processing systems 30 (2017).
+
+Hamilton et al. (2016)
+
+William L Hamilton, Jure Leskovec, and Dan Jurafsky. 2016.
+
+Diachronic word embeddings reveal statistical laws of semantic change.
+
+arXiv preprint arXiv:1605.09096 (2016).
+
+Hamilton et al. (2017b)
+
+William L Hamilton, Rex Ying, and Jure Leskovec. 2017b.
+
+Representation learning on graphs: Methods and applications.
+
+arXiv preprint arXiv:1709.05584 (2017).
+
+Huang et al. (2022)
+
+Chenghan Huang, Lili Wang, Xinyuan Cao, Weicheng Ma, and Soroush Vosoughi. 2022.
+
+Learning dynamic graph embeddings using random walk with temporal backtracking. In NeurIPS 2022 Temporal Graph Learning Workshop.
+
+Kipf and Welling (2016a)
+
+Thomas N Kipf and Max Welling. 2016a.
+
+Semi-supervised classification with graph convolutional networks.
+
+arXiv preprint arXiv:1609.02907 (2016).
+
+Kipf and Welling (2016b)
+
+Thomas N Kipf and Max Welling. 2016b.
+
+Variational graph auto-encoders.
+
+arXiv preprint arXiv:1611.07308 (2016).
+
+Li and Sanna Passino (2024)
+
+Xiaohui Victor Li and Francesco Sanna Passino. 2024.
+
+Findkg: Dynamic knowledge graphs with large language models for detecting global trends in financial markets. In Proceedings of the 5th ACM International Conference on AI in Finance. 573–581.
+
+Li et al. (2015)
+
+Yujia Li, Daniel Tarlow, Marc Brockschmidt, and Richard Zemel. 2015.
+
+Gated graph sequence neural networks.
+
+arXiv preprint arXiv:1511.05493 (2015).
+
+Liang et al. (2021)
+
+Shangsong Liang, Shaowei Tang, Zaiqiao Meng, and Qiang Zhang. 2021.
+
+Cross-temporal snapshot alignment for dynamic networks.
+
+IEEE Transactions on Knowledge and Data Engineering 35, 3 (2021), 2406–2420.
+
+Liu et al. (2021)
+
+Zhijun Liu, Chao Huang, Yanwei Yu, and Junyu Dong. 2021.
+
+Motif-preserving dynamic attributed network embedding. In Proceedings of the Web Conference 2021. 1629–1638.
+
+Mikolov (2013)
+
+Tomas Mikolov. 2013.
+
+Efficient estimation of word representations in vector space.
+
+arXiv preprint arXiv:1301.3781 3781 (2013).
+
+Narayanan et al. (2017)
+
+Annamalai Narayanan, Mahinthan Chandramohan, Rajasekar Venkatesan, Lihui Chen, Yang Liu, and Shantanu Jaiswal. 2017.
+
+graph2vec: Learning distributed representations of graphs.
+
+arXiv preprint arXiv:1707.05005 (2017).
+
+Pareja et al. (2020)
+
+Aldo Pareja, Giacomo Domeniconi, Jie Chen, Tengfei Ma, Toyotaro Suzumura, Hiroki Kanezashi, Tim Kaler, Tao Schardl, and Charles Leiserson. 2020.
+
+Evolvegcn: Evolving graph convolutional networks for dynamic graphs. In Proceedings of the AAAI conference on artificial intelligence, Vol. 34. 5363–5370.
+
+Roweis and Saul (2000)
+
+Sam T Roweis and Lawrence K Saul. 2000.
+
+Nonlinear dimensionality reduction by locally linear embedding.
+
+science 290, 5500 (2000), 2323–2326.
+
+Rozemberczki and Sarkar (2020)
+
+Benedek Rozemberczki and Rik Sarkar. 2020.
+
+Characteristic functions on graphs: Birds of a feather, from statistical descriptors to parametric models. In Proceedings of the 29th ACM international conference on information & knowledge management. 1325–1334.
+
+Sankar et al. (2018)
+
+Aravind Sankar, Yanhong Wu, Liang Gou, Wei Zhang, and Hao Yang. 2018.
+
+Dynamic graph representation learning via self-attention networks.
+
+arXiv preprint arXiv:1812.09430 (2018).
+
+Savage et al. (2014)
+
+David Savage, Xiuzhen Zhang, Xinghuo Yu, Pauline Chou, and Qingmai Wang. 2014.
+
+Anomaly detection in online social networks.
+
+Social networks 39 (2014), 62–70.
+
+Shao et al. (2022)
+
+Zezhi Shao, Zhao Zhang, Wei Wei, Fei Wang, Yongjun Xu, Xin Cao, and Christian S Jensen. 2022.
+
+Decoupled dynamic spatial-temporal graph neural network for traffic forecasting.
+
+arXiv preprint arXiv:2206.09112 (2022).
+
+Singer et al. (2019)
+
+Uriel Singer, Ido Guy, and Kira Radinsky. 2019.
+
+Node embedding over temporal graphs.
+
+arXiv preprint arXiv:1903.08889 (2019).
+
+Terzi and Tsaparas (2006)
+
+Evimaria Terzi and Panayiotis Tsaparas. 2006.
+
+Efficient algorithms for sequence segmentation. In Proceedings of the 2006 SIAM International Conference on Data Mining. SIAM, 316–327.
+
+Vaswani et al. (2017)
+
+Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N Gomez, Łukasz Kaiser, and Illia Polosukhin. 2017.
+
+Attention is all you need.
+
+Advances in neural information processing systems 30 (2017).
+
+Veličković et al. (2018)
+
+Petar Veličković, Guillem Cucurull, Arantxa Casanova, Adriana Romero, Pietro Liò, and Yoshua Bengio. 2018.
+
+Graph Attention Networks. In International Conference on Learning Representations.
+
+Wang et al. (2016a)
+
+Daixin Wang, Peng Cui, and Wenwu Zhu. 2016a.
+
+Structural deep network embedding. In Proceedings of the 22nd ACM SIGKDD international conference on Knowledge discovery and data mining. 1225–1234.
+
+Wang et al. (2016b)
+
+Di Wang, Xinbo Gao, Xiumei Wang, Lihuo He, and Bo Yuan. 2016b.
+
+Multimodal discriminative binary embedding for large-scale cross-modal retrieval.
+
+IEEE Transactions on Image Processing 25, 10 (2016), 4540–4554.
+
+Wang et al. (2020)
+
+Di Wang, Quan Wang, Lihuo He, Xinbo Gao, and Yumin Tian. 2020.
+
+Joint and individual matrix factorization hashing for large-scale cross-modal retrieval.
+
+Pattern recognition 107 (2020), 107479.
+
+Wang et al. (2021)
+
+Lili Wang, Chenghan Huang, Weicheng Ma, Xinyuan Cao, and Soroush Vosoughi. 2021.
+
+Graph embedding via diffusion-wavelets-based node feature distribution characterization. In Proceedings of the 30th ACM international conference on information & knowledge management. 3478–3482.
+
+Wen and Fang (2022)
+
+Zhihao Wen and Yuan Fang. 2022.
+
+Trend: Temporal event and node dynamics for graph representation learning. In Proceedings of the ACM Web Conference 2022. 1159–1169.
+
+Wu et al. (2024)
+
+Yuxia Wu, Yuan Fang, and Lizi Liao. 2024.
+
+On the feasibility of simple transformer for dynamic graph modeling. In Proceedings of the ACM Web Conference 2024. 870–880.
+
+Xing et al. (2024)
+
+Yujie Xing, Xiao Wang, Yibo Li, Hai Huang, and Chuan Shi. 2024.
+
+Less is More: on the Over-Globalizing Problem in Graph Transformers. In International Conference on Machine Learning. PMLR, 54656–54672.
+
+Ying et al. (2021)
+
+Chengxuan Ying, Tianle Cai, Shengjie Luo, Shuxin Zheng, Guolin Ke, Di He, Yanming Shen, and Tie-Yan Liu. 2021.
+
+Do transformers really perform badly for graph representation?
+
+Advances in neural information processing systems 34 (2021), 28877–28888.
+
+Ying et al. (2018)
+
+Zhitao Ying, Jiaxuan You, Christopher Morris, Xiang Ren, Will Hamilton, and Jure Leskovec. 2018.
+
+Hierarchical graph representation learning with differentiable pooling.
+
+Advances in neural information processing systems 31 (2018).
+
+Zhang et al. (2020)
+
+Jiawei Zhang, Haopeng Zhang, Congying Xia, and Li Sun. 2020.
+
+Graph-bert: Only attention is needed for learning graph representations.
+
+arXiv preprint arXiv:2001.05140 (2020).
+
+Zheng et al. (2025)
+
+Yanping Zheng, Lu Yi, and Zhewei Wei. 2025.
+
+A survey of dynamic graph neural networks.
+
+Frontiers of Computer Science 19, 6 (2025), 1–18.
+
+Zhong et al. (2022b)
+
+Haodi Zhong, Grigorios Loukides, Alessio Conte, and Solon P Pissis. 2022b.
+
+Jaccard median for ego-network segmentation. In 2022 IEEE International Conference on Data Mining (ICDM). IEEE, 1353–1358.
+
+Zhong et al. (2024)
+
+Haodi Zhong, Grigorios Loukides, Alessio Conte, and Solon P Pissis. 2024.
+
+Ego-Network Segmentation via (Weighted) Jaccard Median.
+
+IEEE Transactions on Knowledge and Data Engineering (2024).
+
+Zhong et al. (2020)
+
+Haodi Zhong, Grigorios Loukides, and Robert Gwadera. 2020.
+
+Clustering datasets with demographics and diagnosis codes.
+
+Journal of biomedical informatics 102 (2020), 103360.
+
+Zhong et al. (2021)
+
+Haodi Zhong, Grigorios Loukides, and Solon P Pissis. 2021.
+
+Clustering demographics and sequences of diagnosis codes.
+
+IEEE Journal of Biomedical and Health Informatics 26, 5 (2021), 2351–2359.
+
+Zhong et al. (2022a)
+
+Haodi Zhong, Grigorios Loukides, and Solon P Pissis. 2022a.
+
+Clustering sequence graphs.
+
+Data & Knowledge Engineering 138 (2022), 101981.
+
+Zhou et al. (2018)
+
+Lekui Zhou, Yang Yang, Xiang Ren, Fei Wu, and Yueting Zhuang. 2018.
+
+Dynamic network embedding by modeling triadic closure process. In Proceedings of the AAAI conference on artificial intelligence, Vol. 32.
+
+Zhu et al. (2023)
+
+Yifan Zhu, Fangpeng Cong, Dan Zhang, Wenwen Gong, Qika Lin, Wenzheng Feng, Yuxiao Dong, and Jie Tang. 2023.
+
+WinGNN: dynamic graph neural networks with random gradient aggregation window. In Proceedings of the 29th ACM SIGKDD conference on knowledge discovery and data mining. 3650–3662.
+
+*
+
+    Experimental support, please
+    view the build logs
+    for errors. Generated by
+
+        L
+        A
+        T
+        E
+
+      xml
+
+    .
+
+Instructions for reporting errors
+
+We are continuing to improve HTML versions of papers, and your feedback helps enhance accessibility and mobile
+      support. To report errors in the HTML that will help us improve conversion and rendering, choose any of the
+      methods listed below:
+
+Click the "Report Issue" (
+
+          ) button, located in the page header.
+
+Tip: You can select the relevant text first, to include it in your report.
+
+Our team has already identified the following issues. We appreciate your time reviewing and reporting rendering errors we
+      may not have found yet. Your efforts will help us improve the HTML versions for all readers, because disability
+      should not be a barrier to accessing research. Thank you for your continued support in championing open access for
+      all.
+
+Have a free development cycle? Help support accessibility at arXiv! Our collaborators at LaTeXML maintain a list of packages that need conversion, and welcome developer contributions.
+
+        We gratefully acknowledge support from
+        our major funders,
+        member institutions, ,
+        and all contributors.
+
+        About
+        ·
+        Help
+        ·
+        Contact
+        ·
+        Subscribe
+        ·
+        Copyright
+        ·
+        Privacy
+        ·
+        Accessibility
+        ·
+        Operational Status (opens in new tab)
+
+Major funding support from

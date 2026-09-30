@@ -1,0 +1,2283 @@
+A shape-similarity latent space for fluid interfaces: invertible reduced-order modelling of droplet morphology
+
+      Report GitHub Issue
+      ×
+
+      Title:
+
+Content selection saved. Describe the issue below:
+
+      Description:
+
+      Submit without GitHub
+      Submit in GitHub
+
+    arXiv is now an independent nonprofit!
+    Learn more
+    ×
+
+      Back to arXiv
+
+    Why HTML?
+
+      Report Issue
+
+      Back to Abstract
+
+      Download PDF
+
+Abstract
+
+1 Introduction
+
+2 Theoretical background
+
+2.1 Elastic shape analysis and the SRVF\mathrm{SRVF}
+
+2.2 Dimensionality reduction and the invertibility gap
+
+2.3 Autoencoders and the geometry gap
+
+2.4 Graph regularisation of a latent space
+
+2.5 Multi-component shapes
+
+2.6 Positioning
+
+3 Methodology
+
+3.1 Overview
+
+3.2 Shape representation
+
+3.3 Assembling multi-component interfaces
+
+3.4 The shape-space neighbour graph
+
+3.5 The regularised objective
+
+3.6 Decoding and invertibility
+
+3.7 Diagnostics
+
+Effective dimensionality.
+
+Isometry defect.
+
+kkNN structure overlap.
+
+Trustworthiness.
+
+3.8 Reading the reported quantities
+
+3.9 Evaluation protocol
+
+Interpolation.
+
+Shape error.
+
+4 Experimental setup
+
+4.1 Data
+
+4.2 Two-stage cleaning
+
+Stage 1: per-component screening.
+
+Stage 2: per-cluster outlier removal.
+
+4.3 Representation and architecture
+
+4.4 Regularisation
+
+4.5 Neighbour-graph metric
+
+4.6 Interpolation protocol
+
+4.7 Baselines
+
+POD.
+
+Geometric-AE.
+
+4.8 Statistical protocol
+
+5 Results
+
+5.1 Ablation of the manifold-informed loss
+
+Improvement is confined to the expected proof of concept.
+
+5.2 Latent dimensionality
+
+5.3 Effect of data cleaning on the latent
+
+5.4 PoC-1: temporal interpolation
+
+Error reporting by regime.
+
+Variation across sequences.
+
+Composition of the error.
+
+Isolation by adjacent-frame interpolation.
+
+Failure regime.
+
+5.5 PoC-2: waveform to full contour
+
+5.6 PoC-3: structure recovery
+
+The ablation.
+
+Cluster quality.
+
+Cost.
+
+Limitations of the adjusted Rand index.
+
+5.7 Benchmark against linear and geometric baselines
+
+Transfer of the reconstruction advantage to interpolation.
+
+Similarity graph versus additional capacity.
+
+Grid occupancy, where the baseline leads.
+
+5.8 Variants
+
+5.9 Sensitivity to the neighbour-graph metric
+
+Interpretation of the per-metric grids.
+
+5.10 Regularisation strength and the locality–globality trade-off
+
+Effect of a more continuous latent.
+
+6 Discussion
+
+6.1 The role of the manifold-informed loss
+
+6.2 The central limitation: topology change
+
+6.3 Alternatives considered
+
+6.4 Negative results
+
+6.5 Suitability of an isometry penalty
+
+Local versus global structure.
+
+Isometry with respect to the wrong geometry.
+
+6.6 Latent compression relative to the data dimension
+
+6.7 Limits of a purely geometric representation
+
+6.8 Generality
+
+7 Conclusions
+
+References
+
+A Supplementary material
+
+A.1 Cluster atlas
+
+A.2 Coverage of the sampled parameter space
+
+A.3 Latent trajectories
+
+A.4 Latent connectivity
+
+A.5 Latent geometry diagnostics
+
+A.6 Regularisation-strength study
+
+A.7 Reproducibility
+
+    License: CC BY-SA 4.0
+
+arXiv:2609.37947v1 [physics.flu-dyn] 29 Sep 2026
+
+A shape-similarity latent space for fluid interfaces: invertible
+reduced-order modelling of droplet morphology
+
+A.R. Hashemi
+
+Email: ahashemi@cimne.upc.edu
+
+Address: Centre Internacional de Mètodes Numèrics en
+Enginyeria (CIMNE), C/Gran Capità s/n, Campus Nord UPC, 08034
+Barcelona, Spain
+
+Address: Escola Tècnica Superior d’Enginyers de Camins, Canals i
+Ports, Universitat Politècnica de Catalunya – BarcelonaTech (UPC),
+C/Jordi Girona 1, Campus Nord UPC, 08034 Barcelona, Spain
+
+  
+M.R. Hashemi
+
+Email: mohammad.reza@upc.edu
+
+Address: Escola Politècnica Superior d’Enginyeria de Vilanova i
+la Geltrú (EPSEVG), Fluid Mechanics Department, Universitat
+Politècnica de Catalunya – BarcelonaTech (UPC), Avinguda Víctor
+Balaguer 1, 08800 Vilanova i la Geltrú, Spain
+
+  
+P. Ryzhakov
+
+Email: pavel.ryzhakov@upc.edu
+
+Address: Centre Internacional de Mètodes Numèrics en
+Enginyeria (CIMNE), C/Gran Capità s/n, Campus Nord UPC, 08034
+Barcelona, Spain
+
+Address: Escola Tècnica Superior d’Enginyers de Camins, Canals i
+Ports, Universitat Politècnica de Catalunya – BarcelonaTech (UPC),
+C/Jordi Girona 1, Campus Nord UPC, 08034 Barcelona, Spain
+
+Abstract
+
+A droplet breaks up in tens of microseconds, and a high-speed recording
+captures perhaps a dozen frames of it. The states in between cannot be
+recovered without repeating the experiment, and simulating them is too costly
+to sweep an operating envelope — yet they are present in the data as a whole,
+because a campaign spanning a device’s actuation range produces morphologies
+resembling those any single recording missed. Exploiting that requires a
+representation which is low-dimensional, invertible, and faithful to shape
+rather than to sampling. Proper orthogonal decomposition supplies the first two
+but measures distance in sampled coordinates; manifold learning supplies the
+third but no map back to a shape; elastic shape analysis supplies a shape
+metric but no reduced coordinates.
+
+We present SHROM, which composes all three. Interfaces are represented by
+their square-root velocity functions, a neighbour graph is built over the
+resulting shape space, and an autoencoder is trained to reconstruct while
+penalising latents in which graph neighbours are not latent neighbours. The
+demonstration uses 301,539301{,}539 inkjet droplet contours and four filmed break-up
+sequences held out entirely.
+
+The graph term does not improve reconstruction. It determines whether position
+in the latent carries meaning: clustering the latent of an otherwise identical
+model recovers the shape-space partition at chance
+(ARI=0.063±0.059\mathrm{ARI}=0.063\pm 0.059), and at 0.781±0.0490.781\pm 0.049 with the term
+active. The trained model uses about two of its latent dimensions
+(neff=1.20±0.02n_{\mathrm{eff}}=1.20\pm 0.02) although the shape corpus is of higher
+intrinsic dimension, and raising the latent to that dimension changes no
+downstream result measurably. Waveform parameters predict the full closed
+contour at R2=0.878±0.026R^{2}=0.878\pm 0.026, and interpolation returns plausible
+droplets at arbitrary intermediate times.
+
+Negative results are reported in the same terms. The neighbour-graph metric
+proved immaterial across five choices; interpolation error saturates at the
+reconstruction limit, so a plain autoencoder leads that task by measuring the
+fidelity the graph term trades for organisation. The principal limitation is
+interpolation across a change of interface topology. No connected component of
+the regularised latent contains both a single-component and a post-break-up
+shape, at any regularisation strength or latent dimension tested, whereas an
+unregularised autoencoder mixes them freely — the separation is the
+regulariser reporting a real discontinuity in shape space, not an artefact of
+the embedding.
+
+Keywords: 
+reduced-order modelling , elastic shape analysis , square-root velocity function , autoencoder , shape-space latent organisation , topology change , drop-on-demand inkjet
+
+1 Introduction
+
+An inkjet droplet detaches, stretches into a ligament and breaks up in a few
+tens of microseconds. An engineer choosing an actuation waveform needs to know
+what it will produce, and an engineer diagnosing a failed print needs to know
+what happened between two frames of a high-speed recording. Neither question is
+easy to answer. Simulation resolves the intermediate states but at a cost per
+configuration that rules out searching an operating envelope. Imaging records
+them directly, but every campaign fixes a frame rate, and the states between
+consecutive frames of an existing recording are not available at any price —
+they would require the experiment to be repeated.
+
+The states are missing from any single recording. They are not, however,
+missing from the data as a whole. A campaign that sweeps the achievable range
+of actuation parameters produces hundreds of thousands of droplets, and a
+morphology one droplet passes through unobserved closely resembles one that a
+different setting produced and the camera did capture. The observations
+are sparse in time and dense in shape. If a model could tell which shapes
+resemble which, it could supply from the corpus what any one sequence failed to
+record — and answer the same question in reverse, predicting the shape a
+waveform will produce because similar waveforms produced similar shapes.
+
+That is what this paper builds, and it is why a representation is needed rather
+than a lookup. Such a representation must be low-dimensional, or there
+is nothing compact to interpolate through or regress onto. It must be
+invertible, so that a coordinate can be turned back into an interface
+rather than merely scored. And it must be geometry-faithful, so that
+proximity in the representation means similarity of shape rather than
+similarity of sampling — because resemblance is the entire mechanism by which
+a missing state is recovered.
+
+No established tool supplies all three. Reduced-order models built on
+proper orthogonal decomposition [1] are invertible
+and compact but measure distance between sampled coordinates, where a curve and
+a reparametrisation of it appear far apart. Manifold learning
+[2] respects an arbitrary input metric but provides no map
+back to a shape. Elastic shape analysis [3] supplies a
+genuine shape metric with a full statistical apparatus, but is a representation
+rather than a reduction, and yields no low-dimensional coordinates. Section 2
+develops each of these and what it lacks.
+
+Approach
+
+This work composes the three into one model. Interfaces are represented by
+their square-root velocity functions, so that distance between shapes is a
+geodesic on a sphere rather than a norm on a coordinate vector. A neighbour
+graph is built over that shape space. An autoencoder is then trained with a
+reconstruction term and a term that penalises the latent when graph neighbours
+are not latent neighbours. This supplies the inverse map that manifold learning
+lacks, together with the shape geometry that a plain autoencoder does not
+acquire.
+
+Every ingredient is established, and Section 2 cites the precedent
+for each. The composition achieves what none of the parts achieves alone. Building the
+neighbour graph over an elastic shape space produces a latent in which
+position corresponds to morphology, so that a coordinate between two
+observations decodes to the shape belonging at that coordinate. This is
+what converts density in shape space into predictive power along a sparsely
+sampled trajectory, and it is invisible to reconstruction error — a decoder
+can return every training shape faithfully while the space between those shapes
+holds nothing.
+
+That claim is testable and we test it directly, against an otherwise identical
+model with the graph term removed, and against a baseline that pursues latent
+geometry through a different mechanism.
+
+Demonstration
+
+The method is demonstrated on drop-on-demand inkjet printing, which supplies
+the conditions the argument requires. The morphology family is rich enough that
+resemblance is informative, spanning compact droplets, long ligaments and
+post-break-up satellites. A natural eight-parameter actuation input covers the
+device’s achievable range. The filmed sequences through break-up are sparse in
+time, and can therefore be used to test whether the missing states are
+recoverable. Our own earlier work on this system
+predicted droplet descriptors and accompanying-structure classes from actuation
+parameters [4, 5]; the present model predicts the full
+closed interface geometry, which those approaches do not attempt.
+
+The demonstration is a demonstration. Nothing in the method refers to droplets,
+and Section 6.8 states plainly which properties a different
+domain would need for it to transfer, and that such transfer is untested here.
+
+Contributions
+
+1.
+
+An elastic (SRVF\mathrm{SRVF}) shape representation of a fluid interface used as
+a learning target. The SRVF\mathrm{SRVF} has been used this way before, for
+protein backbones [6]; elastic shape analysis is
+mature for biological and medical shapes generally. We are not aware of
+prior use on fluid interfaces, where data-driven shape work has instead
+used Fourier descriptors or raw images.
+
+2.
+
+A neighbour graph built over that shape space, rather than over raw or
+Fourier coordinates, as the regularisation signal. The claim
+concerns the space, not the distance function: an ablation across five
+graph metrics finds no difference, so what matters is that proximity
+means shape similarity, not which formula computes it.
+
+3.
+
+An invertibility and organisation assessment rather than an assertion:
+the graph term is ablated against an identical model, the latent is
+probed by decoding coordinates never seen in training, and the
+reported diagnostics are defined before they are measured.
+
+4.
+
+Three downstream demonstrations, reported with their null results:
+interpolation through break-up, prediction of geometry from actuation
+parameters, and recovery of morphological structure. On the first, a
+plain autoencoder performs better. The cause is identified rather than
+left open: that task’s residual error is reconstruction error, which the
+manifold term trades for latent organisation. Establishing that a proof
+of concept measures a quantity other than the one it was designed to
+test is itself a result.
+
+We are explicit about what is not claimed. This is not the first autoencoder
+for droplet shapes, the first graph-regularised latent, or a new interpolation
+scheme; Section 2.6 attributes each to its precedent.
+
+Structure
+
+Section 2 reviews the four candidate approaches and identifies what
+each lacks. Section 3 defines the method in domain-independent terms,
+and Section 4 instantiates it, giving every parameter a value and a
+reason. Section 5 reports the ablation first, since it is what
+justifies the method, followed by the three demonstrations, the baseline
+comparison and two configuration studies. Section 6 synthesises,
+including the central limitation — interpolation across a change of interface
+topology — and Section 7 states what was and was not
+established. Appendix A holds the supporting measurements: the latent
+connectivity that underlies the topology argument, and a set of latent-geometry
+diagnostics that turned out not to discriminate between configurations, kept
+because the null is worth recording.
+
+2 Theoretical background
+
+Recovering an unobserved interface state from a corpus of observed ones
+requires four things at once: a representation in which distance between shapes
+is meaningful, a low-dimensional coordinate system, an inverse from those
+coordinates back to a shape, and a latent whose organisation reflects
+shape similarity. The first three are familiar requirements; the fourth is the
+one that makes resemblance usable, and it is the one no established method
+supplies.
+
+This section takes the candidates in turn and asks of each the same question:
+given two observed droplets and a state between them that was never recorded,
+what stops this method from supplying it? The method of Section 3 is
+assembled from precisely these pieces and claims novelty only in their
+composition.
+
+2.1 Elastic shape analysis and the SRVF\mathrm{SRVF}
+
+Comparing two curves requires deciding when they are the same shape. Two
+outlines that differ only by translation, scale, rotation, or by where the
+parametrisation begins and how quickly it traverses the boundary, are
+geometrically identical but numerically far apart. Elastic shape analysis
+removes these by construction [3, 7].
+
+The square-root velocity function of Equation 2 has the property that
+reparametrisation acts on it as an isometry of 𝕃2\mathbb{L}^{2}, so the quotient
+by reparametrisation is well behaved rather than requiring a penalty term.
+After normalisation, shapes are points on a unit Hilbert sphere and the
+distance between them is the great-circle angle. The framework carries a
+developed statistical apparatus — means, geodesics, tangent-space principal
+component analysis, hypothesis tests — and has been applied to proteins,
+neuronal trees, arteries and biological outlines
+[8, 9, 10].
+
+Why this alone is insufficient. The SRVF\mathrm{SRVF} is a representation, not a
+reduced model. It replaces one high-dimensional description of a curve with
+another of the same dimension, in which distances are meaningful. It can tell
+us that two droplets resemble one another; it cannot produce the state between
+them, because there are no coordinates to move along. Everything that follows exists to obtain those
+coordinates without giving up the metric.
+
+2.2 Dimensionality reduction and the invertibility gap
+
+The obvious next step is a dimensionality reduction, and the two families
+available fail in complementary ways.
+
+Linear methods — proper orthogonal decomposition and its equivalents — are
+the standard tool for reduced-order modelling of fluid systems
+[1, 11] and are invertible by
+construction. But they operate on sampled coordinates, and Euclidean distance
+between sampled coordinates is exactly the quantity elastic shape analysis
+exists to avoid: a curve and its reparametrisation are far apart in that
+metric, so the decomposition spends components describing parametrisation
+rather than shape.
+
+Nonlinear manifold learning — Isomap, locally linear embedding, tt-SNE and
+UMAP [12, 13, 2] — can
+respect an arbitrary input metric, including a geodesic one, and produces
+embeddings that capture nonlinear structure well. The obstacle is invertibility. These methods assign coordinates to the points
+they were given and provide no map back: a latent coordinate cannot be turned
+into a curve. They can place the missing state among its neighbours and cannot
+say what it looks like.
+For visualisation this is immaterial. For a reduced-order model, whose entire
+purpose is to be evaluated at coordinates that were never observed, it is
+disqualifying.
+
+2.3 Autoencoders and the geometry gap
+
+An autoencoder closes the invertibility gap by construction: the decoder is the
+inverse map, trained jointly with the encoder [14].
+Autoencoders are now routine in non-intrusive reduced-order modelling
+[15, 16] and have been applied directly
+to droplet outlines, both as convolutional models over boundary images
+[17] and over Fourier coefficients
+[18].
+
+Why this alone is insufficient. A reconstruction objective constrains the
+composition of encoder and decoder at the training points and says nothing
+about the space between them. A model can reconstruct its data faithfully while
+arranging the latent arbitrarily — and, in particular, while mapping the
+regions between clusters of training points to shapes that are not plausible
+members of the family. Reconstruction error cannot detect this, because it is
+never evaluated there.
+
+This is precisely the failure that matters here. The state between two captured
+frames lies, by construction, in the space between observations. An
+autoencoder trained to return its inputs faithfully has been given no reason to
+put anything sensible there, and no reason to place a droplet’s unobserved
+morphology near the similar droplets that were observed. Latent position need
+not carry meaning, and without it the corpus’s density in shape space cannot be
+brought to bear on any one sequence’s sparsity in time.
+Section 5.1 measures the size of this effect directly.
+
+2.4 Graph regularisation of a latent space
+
+The response is to add a term that constrains latent organisation explicitly. A
+neighbour graph is built over the data, and the latent is penalised when
+neighbours in that graph are not neighbours in the latent. Parametric UMAP
+[19] learns a parametric encoder against the UMAP
+objective; topological autoencoders [20] preserve
+persistent-homology features; geometry-regularised autoencoders
+[21] regularise the bottleneck with diffusion-potential
+distances; and isometry-regularised variants
+[22, 23] constrain the decoder Jacobian instead.
+
+This category is not new, and we make no claim on it. The
+architectural idea of regularising an autoencoder latent with a
+neighbourhood-derived term is established, and several of the works above
+predate this one by years. What differs here is the space the graph is built
+over: the neighbours are neighbours in an elastic shape space rather than in
+pixel, Fourier or raw-coordinate space, so the structure the regulariser
+imposes is shape structure. That is the mechanism by which one droplet’s
+recorded morphology can stand in for another’s unrecorded one — the graph is
+what makes resemblance operational rather than merely measurable.
+
+A caution on how narrowly to state even that. Our own ablation
+(Section 5.9) shows that the specific distance function used to build
+the graph is immaterial across five choices — including choices that produce
+demonstrably different graphs. The defensible claim is therefore about the
+space, not the metric: what matters is that proximity in the graph means
+shape similarity, not which formula computes it.
+
+2.5 Multi-component shapes
+
+A closed-curve SRVF\mathrm{SRVF} represents one closed curve. An interface undergoing
+breakup does not remain one, and the moment of breakup is usually the
+phenomenon of interest, so this is not an edge case that can be excluded.
+
+Four approaches exist. Elastic shape graphs
+[24, 25] extend the elastic
+framework to graph-structured objects with nodes and edges, and are the most
+principled available answer. The extended SRVF\mathrm{SRVF}
+[26] admits branch birth and death, developed for
+three-dimensional tree structures such as neurons and vasculature.
+Currents and varifolds [27, 28]
+represent shapes as measures, which accommodates topology change naturally.
+Unbalanced optimal transport in the Wasserstein–Fisher–Rao geometry
+allows mass to be created and destroyed between configurations.
+
+A difficulty common to all four, and to the route taken here, is that a latent
+space is usually Euclidean while a shape space with breakup events is not.
+Syrota et al. [29] identify exactly this mismatch — a compact data
+manifold embedded in a Euclidean latent — as a limitation of pullback-metric
+geodesics, which is the class of method Section 5.4 evaluates. The
+mismatch is not created by any particular construction; it is a property of
+asking one connected coordinate system to hold shapes that are genuinely
+disconnected.
+
+This work takes none of the four. It joins components with a degenerate
+connector (Section 3.3), which is the simplest construction that
+returns a single closed curve and keeps the entire SRVF\mathrm{SRVF} apparatus intact.
+This is a modelling choice with a measurable cost, and it is stated
+here so that the limitation reported in Section 6.2 arrives
+prepared rather than as a late concession. The reasons for setting the
+alternatives aside — implementation availability, dimensional mismatch, and
+loss of the reparametrisation guarantees the results depend on — are given in
+Section 6.3.
+
+2.6 Positioning
+
+Every component of the method described in Section 3 is prior art. The SRVF\mathrm{SRVF} is two decades old, and has already been used as an autoencoder
+target. Huang et al. [6] represent proteins as SRVF\mathrm{SRVF}s of
+three-dimensional open curves and encode them onto a low-dimensional latent
+hypersphere, using a von Mises–Fisher prior because a Gaussian one mismatches
+the spherical geometry. They decode back to structures, and observe that
+geodesics on shape space can be approximated by interpolation in the latent. The interpolation thesis of
+this paper is therefore not new in itself; what differs is the domain — planar
+fluid interfaces rather than protein backbones — and the mechanism. A neighbour graph is a dataset-wide constraint specifying which shapes must
+remain close together, whereas a distributional prior constrains only the shape
+of the latent density. Huang et al. [6] also run no ablation separating
+latent organisation from reconstruction, which is the measurement
+Section 5.1 reports. Autoencoders for reduced-order modelling are
+routine, including for droplet outlines specifically. Graph-regularised latents
+are an established category. Interpolating along a pullback geodesic is a known
+technique. Predicting a reduced representation from process parameters, and
+clustering in a learned latent, have both been done for droplets before
+[18].
+
+The contribution is the composition, together with evidence that it
+buys something measurable. Specifically, building the neighbour graph
+over an elastic shape space, rather than over raw or Fourier coordinates,
+produces a latent in which position corresponds to morphology. Reconstruction
+error does not measure this property, so no autoencoder acquires it by
+default. Section 5.1 isolates it against an otherwise
+identical model, and Section 5.7 against a baseline that optimises
+a different notion of latent geometry.
+
+We are also careful about what is not claimed. This is not the first
+autoencoder for droplet shapes, nor the first use of a neighbourhood term to
+regularise a latent, nor a new interpolation scheme. Where a proof of concept
+has a close precedent, it is cited at the point of use rather than in a
+contributions list.
+
+3 Methodology
+
+This section specifies the method independently of any dataset. It defines the
+shape representation, the neighbour graph built over it, the regularised
+training objective, and the diagnostics and evaluation protocols used later.
+Every parameter introduced here is given a value in Section 4.
+
+3.1 Overview
+
+SHROM turns a corpus of observed interfaces into a space that can be
+navigated: every coordinate in it decodes to an interface, and coordinates near
+one another decode to interfaces that resemble one another. A state that no
+recording captured is then obtainable by moving to where it belongs.
+
+Three components produce this, each individually standard and, to our
+knowledge, not previously combined. These are an elastic shape metric, a
+neighbour graph built over the resulting shape space, and an autoencoder whose
+loss is regularised by that graph. The forward path takes a closed planar interface to
+a low-dimensional code,
+
+β⟶q⟶𝒢⟶z=fθ​(q),\beta\;\longrightarrow\;q\;\longrightarrow\;\mathcal{G}\;\longrightarrow\;z=f_{\theta}(q),
+
+(1)
+
+and the decoder gϕg_{\phi} returns every latent point to a contour. That return
+path is what separates this from manifold learning: an embedding assigns
+coordinates to the data it was given, whereas a reduced-order model must also
+answer what lies at a coordinate it has never seen. Figure 1 shows
+the composition.
+
+The design commits to one idea: that the latent should be organised by shape
+similarity, and that reconstruction error alone will not produce such an
+organisation. A decoder can reconstruct its training data faithfully while
+mapping the space between those points to nothing meaningful — and it is
+exactly that space which holds the states no camera recorded. The graph term
+exists to make position in the latent carry information, and
+Section 5.1 measures what that buys.
+
+Figure 1: The SHROM pipeline. The forward path composes an elastic shape
+metric, a neighbour graph built over that space, and an autoencoder. The
+dashed return path is the decoder: every latent point maps back to a contour,
+which is what distinguishes this from manifold learning.
+
+3.2 Shape representation
+
+A closed planar interface is a curve β:[0,1]→ℝ2\beta:[0,1]\to\mathbb{R}^{2}. Working
+with β\beta directly is unsatisfactory for statistics, because two curves that
+differ only in where the parametrisation starts, or in how fast it traverses
+the outline, are the same shape but different functions. The square-root
+velocity function removes the latter,
+
+q⁡(t)=β˙​(t)∥β˙​(t)∥,q(t)\;=\;\frac{\dot{\beta}(t)}{\sqrt{\lVert\dot{\beta}(t)\rVert}},
+
+(2)
+
+under which a reparametrisation of β\beta acts on qq by an isometry of
+𝕃2\mathbb{L}^{2} [3]. Translation is removed by centring
+on the area-weighted centroid, and scale by dividing out the curve length. What
+remains is normalised to unit 𝕃2\mathbb{L}^{2} norm, so every shape is a point on
+the unit Hilbert sphere 𝒮\mathcal{S}, where the distance between two shapes is
+the great-circle angle
+
+d𝒮​(q1,q2)=arccos⁡⟨q1,q2⟩.d_{\mathcal{S}}(q_{1},q_{2})\;=\;\arccos\langle q_{1},q_{2}\rangle.
+
+(3)
+
+This is the property the rest of the method rests on: distance between shapes
+is a geometric quantity on a sphere, not an arbitrary norm on a coordinate
+vector.
+
+Two consequences follow.
+
+First, normalisation is not lossy. The discarded scale factor is
+retained alongside each code, so a contour is recoverable at its original size;
+the sphere carries shape, and scale travels beside it as a scalar.
+
+Second, Equation 3 is an upper bound on the true elastic
+distance. The elastic metric is defined as an infimum over rotations and
+reparametrisations, and we optimise over neither: the seam is fixed by a
+deterministic rule (Section 3.3) and rotation is left as observed.
+What Equation 3 computes is therefore the unaligned distance
+d0≥dd_{0}\geq d. We use it deliberately — it is deterministic, cheap, and
+comparable across a large dataset, where an alignment search is neither —
+but the gap is a genuine approximation and worth
+quantifying. Optimising jointly over cyclic shift and rotation reduces the
+measured distance by 19.7%19.7\% on average, and allowing a bounded elastic warp
+in addition by 32.4%32.4\%. The gap is smaller between similar shapes
+(14.6%14.6\% within a topology class) than between dissimilar ones (22.2%22.2\%
+across classes), which is the expected behaviour, but it is material in both
+regimes. Distances reported in this paper are therefore consistently
+over-estimates, by a factor that is stable enough not to reorder
+comparisons.
+
+3.3 Assembling multi-component interfaces
+
+An interface undergoing breakup is not one closed curve. After pinch-off the
+outline consists of two or more disjoint components, and the SRVF\mathrm{SRVF}
+representation of Section 3.2 is defined for a single closed curve
+only.
+
+We assemble the components into one closed curve by joining them with a
+degenerate connector: each component is rolled so that its seam vertex
+faces the other, and the components are then traversed as a single closed
+path. The connector is a segment of zero enclosed width, traversed once in each
+direction, so it contributes no area. Each component is resampled to an equal
+share of the point budget before concatenation, so that both bodies carry equal
+parametrisation weight regardless of their relative size — without this, a
+small satellite would occupy a negligible fraction of the curve and be
+effectively invisible to the metric.
+
+The connector is a modelling choice, not an established technique. We
+are not aware of a precedent for representing a multi-component interface this
+way within an elastic metric, and it is not claimed to be the principled
+solution. Its cost is measurable: the connector places shapes of differing
+topology far apart in the resulting space, and Section 6.2
+quantifies that separation. Interpolation across a change of topology is
+correspondingly unreliable, and is the method’s principal limitation.
+
+The construction requires the two seam vertices to remain coincident after
+assembly, which constrains the differencing scheme. Velocities are computed by
+forward differences, assigning to each vertex its outgoing step; a centred
+difference displaces every vertex by half a segment, which separates the
+coincident seam vertices and reopens the connector into two disjoint legs.
+
+3.4 The shape-space neighbour graph
+
+The regulariser needs a notion of which shapes are neighbours. We build a
+kk-nearest-neighbour graph over the SRVF\mathrm{SRVF} coordinates and convert it to a
+fuzzy simplicial set in the manner of UMAP [2], giving a
+weighted graph 𝒢\mathcal{G} whose edge weights express membership strength
+rather than distance.
+
+The graph is built with Euclidean distance on SRVF\mathrm{SRVF} coordinates,
+not with Equation 3. What makes 𝒢\mathcal{G} a shape-space
+graph is the space it is computed over rather than the distance function: the
+coordinates are SRVF\mathrm{SRVF}s, so its neighbours are neighbours in shape space
+rather than in pixel or Fourier space.
+
+The two choices coincide. Because SRVF\mathrm{SRVF}s are unit-norm, the
+chord and the arc are related by
+
+∥q1−q2∥= 2​sin⁡(12​d𝒮​(q1,q2)),\lVert q_{1}-q_{2}\rVert\;=\;2\sin\!\left(\tfrac{1}{2}d_{\mathcal{S}}(q_{1},q_{2})\right),
+
+(4)
+
+which is strictly increasing in d𝒮d_{\mathcal{S}} on [0,π][0,\pi]. A strictly monotone
+transform cannot reorder anything, so the Euclidean kk nearest neighbours
+are the geodesic kk nearest neighbours — the graph is the geodesic’s
+own, obtained without evaluating Equation 3. Section 5.9
+verifies this and further shows that the downstream results are insensitive to
+the choice of graph metric altogether.
+
+3.5 The regularised objective
+
+The encoder fθf_{\theta} and decoder gϕg_{\phi} are trained against
+
+ℒ=ℒrecon+λ​ℒ𝒢,\mathcal{L}\;=\;\mathcal{L}_{\mathrm{recon}}\;+\;\lambda\,\mathcal{L}_{\mathcal{G}},
+
+(5)
+
+where ℒrecon\mathcal{L}_{\mathrm{recon}} is the mean squared error between input
+and reconstructed SRVF\mathrm{SRVF}, and ℒ𝒢\mathcal{L}_{\mathcal{G}} is a graph term
+evaluated on sampled edges.
+
+The graph term is the UMAP cross-entropy. For a latent pair (zi,zj)(z_{i},z_{j}) define the latent-space affinity
+
+qi​j=(1+a​∥zi−zj∥2​b)−1,q_{ij}\;=\;\bigl(1+a\lVert z_{i}-z_{j}\rVert^{2b}\bigr)^{-1},
+
+(6)
+
+and let ℒ𝒢\mathcal{L}_{\mathcal{G}} be
+
+ℒ𝒢=−𝔼(i,j)∼𝒢​log⁡qi​j−ν​𝔼(i,j)∼neg​log⁡(1−qi​j),\mathcal{L}_{\mathcal{G}}\;=\;-\!\!\!\underset{(i,j)\,\sim\,\mathcal{G}}{\mathbb{E}}\!\!\log q_{ij}\;-\;\nu\!\!\underset{(i,j)\,\sim\,\mathrm{neg}}{\mathbb{E}}\!\!\log\bigl(1-q_{ij}\bigr),
+
+(7)
+
+an attraction over edges drawn from 𝒢\mathcal{G} in proportion to their
+weight, and a repulsion over uniformly sampled non-edges with strength ν\nu.
+Sampling edges by weight lets the attraction term omit an explicit weight
+factor: strong edges are simply drawn more often. Both expectations are
+averaged rather than summed, so that λ\lambda retains its meaning when the
+edge-batch size changes.
+
+The kernel parameters aa and bb are not free. They are fitted so that
+Equation 6 approximates a piecewise curve that is flat out to a chosen
+separation min_dist and decays with width spread
+thereafter; min_dist is thus the interpretable knob and (a,b)(a,b)
+follow from it. Its effect is a locality–globality trade-off —
+small values pack neighbours tightly and separate groups, large values
+prioritise a connected embedding — which Section 5.10 examines.
+
+Finally, λ\lambda is annealed rather than held fixed. Training begins with the
+graph term effectively inactive and raises λ\lambda through a sequence of
+phases. The reason is ordering: a randomly initialised decoder produces
+meaningless reconstructions, so a graph term applied from the first step
+organises a latent that does not yet correspond to anything. Letting
+reconstruction establish itself first, then imposing structure, avoids
+optimising the two objectives against each other while both are uninformed.
+
+3.6 Decoding and invertibility
+
+The decoder maps a latent point to a 2​N2N-vector, which is renormalised to
+unit norm, so the output lies on 𝒮\mathcal{S} by construction. A contour is recovered from an SRVF\mathrm{SRVF} by inverting
+Equation 2 — multiplying each velocity by its own magnitude and
+integrating,
+
+β˙​(t)=q⁡(t)​∥q⁡(t)∥,β⁡(t)=β⁡(0)+∫0tβ˙​(s)​𝑑s,\dot{\beta}(t)=q(t)\,\lVert q(t)\rVert,\qquad\beta(t)=\beta(0)+\int_{0}^{t}\dot{\beta}(s)\,\mathrm{d}s,
+
+(8)
+
+discretised as a cumulative sum. Restoring the stored scale factor returns the
+contour at its original size. Every latent point therefore yields a contour;
+whether it yields a plausible one is an empirical question, and
+Section 5.3 answers it by decoding a regular lattice.
+
+3.7 Diagnostics
+
+Four quantities are used to characterise a trained latent. All are defined here
+and measured in Section 5.
+
+Effective dimensionality.
+
+The participation ratio of the squared decoder-Jacobian singular values,
+neff=(∑iσi2)2/∑iσi4n_{\mathrm{eff}}=\bigl(\sum_{i}\sigma_{i}^{2}\bigr)^{2}/\sum_{i}\sigma_{i}^{4},
+which counts how many latent directions the decoder actually uses. Squaring
+weights the ratio by the variance each direction carries rather than by its
+amplitude. A latent of nominal dimension
+dd may have neffn_{\mathrm{eff}} well below dd.
+
+Isometry defect.
+
+The deviation of J⊤​JJ^{\top}J from a scaled identity, measuring how anisotropically
+the decoder stretches latent space. It is reported for its own sake and because
+it is the quantity an isometry-regularised baseline optimises directly
+(Section 4.7).
+
+kkNN structure overlap.
+
+The fraction of each shape’s kk nearest neighbours in shape space that remain
+among its kk nearest in the latent. This is the direct measure of whether the
+latent preserves shape neighbourhoods, and the axis on which we claim an
+advantage.
+
+Trustworthiness.
+
+The standard rank-based penalty for points that are close in the latent but far
+in shape space [30]. It is reported alongside structure
+overlap rather than instead of it, since a good score on either alone does not
+imply a useful embedding [31].
+
+3.8 Reading the reported quantities
+
+Every metric used in this paper is dimensionless, and several are unfamiliar
+outside their own literature. This subsection states what each one measures,
+its range, and what value would count as trivial, so that the numbers in
+Section 5 can be read without reference to their source papers.
+
+Table 1: The reported quantities, their ranges, and their reference points.
+“Chance” is the value a model carrying no information would obtain.
+
+Quantity
+Range
+Chance / trivial
+
+Meaning
+
+Geodesic distance d𝒮d_{\mathcal{S}}
+[0,π][0,\pi] rad
+—
+
+Angle between two shapes on the pre-shape sphere. Zero is identical.
+
+Adjusted Rand index
+[−1,1][-1,1]
+00
+
+Agreement between two partitions, corrected for chance.
+
+kkNN structure overlap
+[0,1][0,1]
+k/n≈0k/n\approx 0
+
+Fraction of a shape’s kk nearest neighbours preserved in the latent.
+
+Trustworthiness
+[0,1][0,1]
+≈0.5\approx 0.5
+
+Penalty for latent neighbours that are distant in shape space.
+
+Silhouette
+[−1,1][-1,1]
+00
+
+Cluster separation relative to within-cluster spread.
+
+Effective dimension neffn_{\mathrm{eff}}
+[1,d][1,d]
+dd
+
+Latent directions the decoder actually uses.
+
+Solidity
+(0,1](0,1]
+11 (convex)
+
+Enclosed area divided by convex-hull area.
+
+Two conventions apply throughout. Reconstruction error is mean squared error on
+unit-norm SRVF\mathrm{SRVF} vectors, so it is small in absolute terms by construction and
+is meaningful only as a ratio between models. And d𝒮d_{\mathcal{S}} is quoted in
+radians, for which the corpus itself supplies the natural scale: two shapes
+drawn at random from the dataset are separated by 1.06±0.551.06\pm 0.55 rad
+(median 1.041.04). A geodesic error of 0.10.1 rad is therefore about a tenth of
+the distance between two arbitrary droplets, and errors are given alongside
+this reference wherever they first appear.
+
+3.9 Evaluation protocol
+
+Interpolation.
+
+Two protocols, answering different questions. In the held-out anchor
+protocol, a path is fitted through a sparse subset of a time series and
+evaluated at the withheld frames, testing whether the latent supports
+reconstruction of unobserved states. In the leave-one-out protocol, a
+single frame is withheld and a path fitted through all remaining frames,
+isolating the error at one point from the sparsity of the fit. Paths are
+compared against a great-circle reference on 𝒮\mathcal{S}, which is the
+geometric baseline the representation itself suggests — not a claim about
+physical evolution.
+
+In the adjacent-pair protocol, two consecutive frames are joined by a
+straight line between their latent codes. Through two points a straight line is
+the exact interpolant, so this protocol has no fitting freedom at all: no
+spline, no anchor spacing, nothing to tune. It therefore separates what the
+representation costs from what the path fit costs, which the other two
+protocols confound.
+
+Averaging latent codes is legitimate in a way that averaging contours is not,
+and the distinction is worth stating. The pointwise mean of two contours is not
+in general a valid interface: it depends on how each curve was sampled, and it
+lies off the shape space rather than on it. The correct notion of a mean on
+𝒮\mathcal{S} is the Fréchet (Karcher) mean, which minimises the summed
+squared geodesic distance and must be found iteratively. The latent, by
+contrast, is an ordinary Euclidean space, so the midpoint of two codes is
+well defined and cheap. The decoder returns from that midpoint a valid shape lying near both
+endpoints, which is what the interpolation tasks require. That shape is not the
+Fréchet mean of the two endpoints. The decoder is nonlinear, so it does not carry Euclidean
+midpoints to geodesic midpoints.
+
+Shape error.
+
+Three metrics, because each is blind to something. The geodesic
+(Equation 3) is the metric the model is trained under and the primary
+figure. The Hausdorff distance reports the single worst point disagreement, so
+a small local defect that the geodesic averages away is visible. The Chamfer
+distance averages nearest-point distances and is therefore forgiving of
+outliers but sensitive to systematic offsets. A prediction that is good on all
+three is good; disagreement among them is diagnostic, and we report all three
+throughout.
+
+4 Experimental setup
+
+The argument of Section 1 rests on a specific condition: that the corpus
+is dense in shape even where any one recording is sparse in time. This section
+instantiates the method on a dataset built to satisfy that condition, and gives
+every parameter of Section 3 a value and a reason.
+
+4.1 Data
+
+The interfaces are drop-on-demand inkjet droplets recorded by high-speed
+imaging. Each frame is a single actuation captured at a fixed delay, so the corpus
+samples the droplet morphology family broadly rather than following any one
+droplet in time. This is the design that makes the corpus dense in shape. A morphology that one
+droplet passes through between two frames of its own sequence is, with high
+probability, close to a morphology produced and captured at some other actuation
+setting. Every frame carries the eight waveform parameters that
+produced it — three voltages V1,V2,V3V_{1},V_{2},V_{3}, three pulse widths w1,w2,w3w_{1},w_{2},w_{3} and two dwell times d1,d2d_{1},d_{2} — which are the inputs for the
+waveform-to-shape task of Section 5.5.
+
+Of the 316,335316{,}335 extracted frames, 44.5%44.5\% contain more than one component:
+a droplet that has already broken up, or is in the act of doing so. These are
+not defects to be discarded but the physically interesting cases, and they are
+retained through the connector of Section 3.3.
+
+Four further sequences, each of roughly 1,0001{,}000 consecutive frames, follow
+individual droplets through time. These form the time-series set used for the
+interpolation task of Section 5.4. They are a separate acquisition and
+appear in no training set; they are held out entirely.
+
+4.2 Two-stage cleaning
+
+Automated contour extraction produces some outlines that are not droplets, and
+some that are droplets but are unusable. Screening happens in two stages
+because the two kinds of defect become visible at different points: stage 1
+judges each raw component before assembly, while stage 2 judges the
+assembled shape, and some defects exist only after assembly.
+
+Stage 1: per-component screening.
+
+Five criteria, applied to each component as extracted. Together they reject
+11,74711{,}747 frames, 3.71%3.71\% of the corpus, leaving 304,588304{,}588
+(Table 2).
+
+Table 2: Stage-1 rejection categories. 11,74711{,}747 of 316,335316{,}335 frames
+rejected (3.71%3.71\%), leaving 304,588304{,}588.
+
+Criterion
+Rejected
+
+Rationale
+
+branched_tail
+10,110
+
+The tail doubles back on itself and encloses no area: an extraction artefact, not a ligament.
+
+area_too_small
+612
+
+Below a lower area cut separated from the bulk of the distribution by a genuine gap.
+
+all_components_defective
+528
+
+Every component of the frame failed one of the other criteria, leaving nothing to assemble.
+
+frame_edge_crop
+287
+
+Part of the outline is the image border rather than the interface.
+
+bare_filament
+210
+
+A ligament with no droplet body attached.
+
+One further criterion, an upper area cut, was applied in an earlier
+configuration and has been removed. Its threshold sat inside the continuous
+bulk of the area distribution rather than beyond a gap, and inspection of the
+shapes it rejected found them to be healthy long-tailed droplets — among the
+most physically interesting in the corpus. Figure 2 shows the
+accepted area distribution with both cuts drawn: the lower cut separates a
+genuinely distinct population, the upper one did not.
+
+Figure 2: Accepted area distribution with the cuts drawn. The lower cut
+separates a genuinely distinct population; the upper cut sat inside the
+continuous bulk and was removed.
+
+Stage 2: per-cluster outlier removal.
+
+Some shapes survive stage 1 as valid components yet assemble into an
+implausible whole. These are not identifiable by any per-component test, so
+stage 2 works in shape space: the corpus is clustered, the geodesic distance
+from each shape to its cluster mean is computed, and shapes beyond a
+percentile of that within-cluster radius are removed. At the 99.099.0th
+percentile this removes 1.00%1.00\% per cluster, 3,0493{,}049 shapes, leaving
+301,539\mathbf{301{,}539}.
+
+The percentile is applied per cluster rather than globally because the
+clusters differ in spread; a single global radius would over-cut the compact
+clusters and under-cut the diffuse ones. A fixed percentile nonetheless removes
+the same fraction from every cluster regardless of how many defects it actually
+contains. A per-cluster adaptive threshold would be preferable and is left to
+future work.
+
+Two criteria are deliberately absent, and both were tried and rejected.
+Size is not a stage-2 criterion, for the reason above. Self-intersection is not
+a criterion either: a shape assembled through the connector of
+Section 3.3 is self-intersecting by construction, so the test
+flags the representation rather than the shape.
+
+4.3 Representation and architecture
+
+Each contour is resampled to N=160N=160 points, giving a 320320-dimensional
+SRVF\mathrm{SRVF} vector; velocities use the forward differencing of
+Section 3.3. Multi-component frames are assembled by the
+legacy policy: the two largest components are ordered left-to-right,
+each is resampled to N/2N/2 points, and they are joined by the connector.
+Components beyond the second are excluded by construction.
+
+The encoder is a fully connected network 320→160→40→10→d320\to 160\to 40\to 10\to d with a mirrored decoder, dropout 0.10.1, and Adam at a learning rate of
+10−410^{-4} with batch size 256256. The architecture is deliberately small: the
+comparison of interest is between loss functions, and a high-capacity network
+would let reconstruction succeed regardless of how the latent is organised,
+which is precisely the effect under test.
+
+The headline latent dimension is d=2d=2, with d=5d=5 reported
+throughout as a robustness check. Two dimensions are chosen on the effective
+dimensionality measured in Section 5.2, not on convenience; that
+the choice costs nothing measurable is a result and is reported there rather
+than assumed here.
+
+4.4 Regularisation
+
+The neighbour graph uses k=50k=50. The kernel is fitted from
+min_dist=0.01\texttt{min\_dist}=0.01 and spread=1.0\texttt{spread}=1.0, giving the (a,b)(a,b) of
+Equation 6; repulsion strength is ν=1\nu=1 with 55 negative samples per
+edge.
+
+Training follows the two-stage curriculum of Section 3.5. A
+reconstruction-only warm-up runs to convergence, up to 4,0004{,}000 epochs under
+early stopping. The graph term is then introduced and λ\lambda raised through
+six phases,
+
+λ: 10−7→10−6→10−5→10−4→10−3→10−2,\lambda:\;10^{-7}\to 10^{-6}\to 10^{-5}\to 10^{-4}\to 10^{-3}\to 10^{-2},
+
+at 200200 epochs each for the first five and up to 3,0003{,}000 for the last. The
+early phases are a fixed curriculum and run in full; the warm-up and the final
+phase target convergence and stop early once the total loss has not improved by
+10−610^{-6} for 150150 epochs.
+
+Section 5.10 reports what min_dist does across four settings,
+and Section 5.9 what the graph metric does across five.
+
+4.5 Neighbour-graph metric
+
+The graph is built with Euclidean distance on SRVF\mathrm{SRVF} coordinates. As
+established in Section 3.4, this is not a departure from the
+geodesic: on unit-norm SRVF\mathrm{SRVF}s the chord is a strictly increasing function of
+the great-circle angle (Equation 4), so the two induce the same
+neighbour sets. Measured over the corpus, the rank correlation between the two
+distances is 1.0000001.000000.
+
+The same holds for cosine distance, which is likewise strictly monotone in the
+angle. None of the three is more faithful to the shape metric than the others,
+and Section 5.9 shows the choice does not propagate to any measured
+outcome.
+
+4.6 Interpolation protocol
+
+The held-out-anchor protocol has one free parameter, the anchor step, and it is
+consequential: at a step of 120120 roughly six anchors must generate 647647
+frames, while at a step of 1010 the model still predicts 90%90\% of the sequence
+from the remainder. Results are reported at a step of 1010 unless stated, with
+the full density sweep in Table 8, because a single density
+cannot distinguish a limitation of the model from a limitation of the sampling.
+
+An anchor is additionally placed on each side of every topology change. Runs
+between changes are often only a few frames long, so a regular grid drops none
+into them and the piecewise scheme has nothing to fit; anchoring the boundaries
+is also what an experimenter would do, since the transition is the event worth
+measuring. A consequence is that held-out frames near a change are scored as
+neighbours of the discontinuity rather than as the discontinuity itself,
+and the reported transition error measures how far the damage spreads either
+side of a change rather than how badly the jump itself is predicted.
+
+4.7 Baselines
+
+Two baselines, both trained on the same data with the same protocol.
+
+POD.
+
+Proper orthogonal decomposition of the SRVF\mathrm{SRVF} vectors: the linear
+reduced-order model against which any nonlinear method should justify its
+added complexity. It is deterministic and therefore quoted without a seed
+spread.
+
+Geometric-AE.
+
+An autoencoder with an isometry penalty on the decoder Jacobian,
+
+ℒ=ℒrecon+μ∥J⊤J−cI∥F2,c=1dtr(J⊤J),\mathcal{L}=\mathcal{L}_{\mathrm{recon}}+\mu\bigl\lVert J^{\top}J-cI\bigr\rVert_{F}^{2},\qquad c=\tfrac{1}{d}\operatorname{tr}(J^{\top}J),
+
+(9)
+
+with μ=10−3\mu=10^{-3}, evaluated on 3232 latent points per batch. This drives the
+decoder towards a local isometry up to a global scale, following
+Atzmon et al. [22] and the scaled-orthonormality argument of
+Kato et al. [23].
+
+It is the natural competitor because it also aims at a geometrically
+well-behaved latent, but by a different mechanism: a pointwise condition on the
+decoder rather than a dataset-wide condition on neighbourhoods. Note that it is
+distinct from the geometry-regularised autoencoder of
+Duque et al. [21], which regularises the bottleneck with diffusion
+potentials and is therefore aware of the data’s neighbourhood structure;
+Equation 9 is not.
+
+4.8 Statistical protocol
+
+Every model is trained at three random seeds, and every reported value is the
+mean over those seeds, quoted as mean ±\pm standard deviation. The standard
+deviation is the sample standard deviation (denominator n−1n-1), since
+the seeds are a sample of the training distribution rather than the whole of
+it; with n=3n=3 this is 1.22×1.22\times the population value, so the distinction
+is not negligible and is applied uniformly. A difference between two
+configurations is called significant only when it exceeds twice the
+pooled standard deviation of the two.
+
+This threshold is applied without exception, and it changes several
+conclusions. Differences that appear decisive at a single seed — including
+some that would make a stronger paper — do not survive it, and are reported
+as null results in the same voice as the positives. Where a comparison fails
+the test but shows a consistent ordering across seeds, it is described as a
+trend and the pooled-sd ratio is given, so the reader can judge it directly.
+
+Three seeds bounds what can be claimed. It establishes the absence of a
+large effect, not the absence of an effect, and where the seed spread is
+comparable to the difference under test this is stated at the point of use.
+
+5 Results
+
+Whether a corpus dense in shape can supply what a recording sparse in time
+omitted turns on one property: that position in the latent carries shape
+meaning. The results are ordered to test that property and then to use it,
+rather than to follow the pipeline.
+
+Section 5.1 establishes the effect itself, by removing the graph
+term from an otherwise identical model. Section 5.2 shows the
+resulting latent is small enough to be drawn on a page, and
+Section 5.3 what the data preparation contributes to that.
+Sections 5.4, 5.5 and 5.6 then ask what such a latent is
+good for: predicting unobserved states in time, generating a full interface
+from process parameters, and recovering morphological structure.
+Section 5.7 places the method against a linear reduction and
+against an autoencoder that pursues latent geometry by a different route.
+Sections 5.8, 5.9 and 5.10 report what turned out not
+to matter, at the same length as what did.
+
+Every value is a mean over three random seeds with its sample standard
+deviation, and a difference is called significant only when it exceeds twice
+the pooled standard deviation of the two configurations compared
+(Section 4.8).
+
+5.1 Ablation of the manifold-informed loss
+
+Every configuration described so far carries the graph term of
+Equation 5. The first question is therefore whether that term does
+anything at all. The ablation removes it and changes nothing else: identical
+architecture, data, schedule and seed, with λ\lambda held at zero throughout
+(Table 3).
+
+Table 3: Ablation of the manifold-informed loss. Identical architecture,
+data, schedule and seed; the only difference is the regularisation term.
+Three seeds, mean ±\pm sd.
+
+Plain AE (V0)
+SHROM (V2)
+pooled sd
+
+ARI, K=4K=4, d=5d=5
+0.063±0.0590.063\pm 0.059
+0.781±0.049\mathbf{0.781\pm 0.049}
+13.2\mathbf{13.2}
+
+ARI, K=4K=4, d=2d=2
+0.085±0.0540.085\pm 0.054
+0.829±0.059\mathbf{0.829\pm 0.059}
+13.2\mathbf{13.2}
+
+ARI, K=8K=8, d=5d=5
+0.092±0.0440.092\pm 0.044
+0.569±0.023\mathbf{0.569\pm 0.023}
+13.613.6
+
+PoC-2 R2R^{2}, d=5d=5
+0.748±0.1420.748\pm 0.142
+0.868±0.0100.868\pm 0.010
+0.60.6
+
+PoC-1 @120, d=5d=5
+0.123±0.005\mathbf{0.123\pm 0.005}
+0.136±0.0100.136\pm 0.010
+1.11.1
+
+An adjusted Rand index of zero is chance-level agreement and one is an exact
+match (Table 1). At
+ARI=0.063±0.059\mathrm{ARI}=0.063\pm 0.059 the plain autoencoder is not distinguishable
+from chance: clustering its latent recovers essentially nothing of the
+partition that clustering the shapes themselves produces. With the graph term
+the same architecture reaches 0.781±0.0490.781\pm 0.049, a separation of 13.213.2 pooled
+standard deviations, and 0.829±0.0590.829\pm 0.059 at d=2d=2. These are the
+largest effects in the study.
+
+Figure 6 shows the same ablation in the latent rather than in
+decoded shapes, and corrects a reading the table invites: the plain
+autoencoder’s latent is not disordered, it is connected. Its clusters
+are separated but joined, where SHROM’s are separated and disjoint. That
+distinction is what the next subsections turn on.
+
+Improvement is confined to the expected proof of concept.
+
+Regression and interpolation are unchanged within noise, and at d=5d=5
+the plain autoencoder is nominally better at interpolation
+(0.123±0.0050.123\pm 0.005 against 0.136±0.0100.136\pm 0.010, 1.11.1 pooled sd). This is not a
+weakness of the ablation but a consequence of what each task measures.
+
+Interpolation and regression read out the latent through a fitted map.
+A readout can compose with any invertible reparametrisation of the latent
+coordinates, so it is largely indifferent to how the space is organised: a
+badly arranged latent that is nonetheless injective can be read out about as
+well as a well-arranged one. Clustering, grid decoding and structure overlap
+ask a different question — whether position in the latent carries
+meaning — and that is the property a generative model depends on. It is also
+where the graph term makes an 1111 to 1616 standard-deviation difference.
+
+Figure 3: Table 3 as a chart. An ARI of zero is chance-level
+agreement; the plain autoencoder does not clear it at any KK.
+
+Figure 4: What grid sampling means. A regular lattice is laid over the latent
+space (left); each node is a coordinate the model never saw in training, and
+the decoder returns a contour for it (right, three marked nodes). The grid
+figures that follow show every node of such a lattice.
+
+Figure 5: The ablation made visible. Decoded shapes on a regular grid over the
+two-dimensional latent; every node is a position never seen in training.
+Left: plain autoencoder. Right: SHROM. The plain model produces fewer
+self-intersecting outlines (2%2\% against 16%16\%), but only because 80%80\%
+of its grid is the same near-circular oval (solidity median 0.9990.999, sd
+0.0760.076); SHROM spans ligaments, necking and satellites, with
+2.2×2.2\times the solidity spread. The 16%16\% is the cost of that coverage and
+occurs where the latent crosses between topology classes.
+
+Figure 6: The ablation seen in the latent itself. Both panels show the same
+shapes, coloured by the same partition of shape space (geodesic kk-means,
+K=4K=4), so neither model is scored on its own terms. The plain autoencoder
+(left) does separate the classes, but joins them: its clusters meet along
+filaments at a central hub, so a path between two regions stays over occupied
+latent. SHROM (right) resolves them into four islands with empty space
+between. The right panel is what recovers the shape-space partition
+(Table 3); the left is what makes interpolation across a class
+boundary easier (Section 5.4). The two proofs of concept want
+opposite things from the same property.
+
+5.2 Latent dimensionality
+
+Two statements, established independently.
+
+First, the latent uses no more than two dimensions. The participation
+ratio of the decoder-Jacobian singular values is neff=1.20±0.02n_{\mathrm{eff}}=1.20\pm 0.02 at d=5d=5, indicating that one direction dominates locally, and
+99.2%99.2\% of the latent variance lies in two principal components. The two
+statistics measure different things — the first is local and derived from the
+decoder, the second global and derived from the latent codes — and together
+they bound the used dimension between one and two. A five-dimensional latent is
+available to the model; it declines most of it.
+
+Second, two dimensions are enough. Table 5 compares the
+headline model at d=2d=2 and d=5d=5 across every task. No
+comparison reaches significance, and d=2d=2 is nominally ahead on three
+of the four.
+
+Neither statement is a claim about the intrinsic dimension of the shape data,
+which is a property of the point cloud rather than of any fitted model, and
+which we measure separately. Three estimators applied to the SRVF\mathrm{SRVF} corpus
+disagree in an informative way. The correlation dimension is 1.91.9 and is stable
+at every sample size tested. The TwoNN estimator [32] rises
+from 9.29.2 to 11.811.8 as the sample grows from 10,00010{,}000 to 40,00040{,}000 points,
+and the maximum-likelihood estimator of Levina and Bickel [33] falls from
+9.79.7 to 7.17.1 as the neighbourhood size kk grows from 55 to 2525. Drift of
+this kind indicates structure at more than one scale: the corpus is close to a
+low-dimensional surface when viewed coarsely, and acquires further degrees of
+freedom when resolved finely. A global principal-component analysis agrees, with
+two components carrying 85%85\% of the variance and eight required for 95%95\%.
+
+The data manifold is therefore not two-dimensional, and we do not claim that it
+is. What the measurements support is the narrower statement made above: the
+trained decoder uses about two latent directions, and two suffice for every
+downstream task reported here. A representation can compress well below the
+intrinsic dimension of its data whenever the discarded directions do not affect
+the quantities being predicted, which is what Table 5 tests
+directly.
+
+That reasoning invites a direct test: train at the measured intrinsic
+dimension. Table 4 reports SHROM at d=8d=8 and
+d=10d=10, three seeds each, otherwise identical to the headline model.
+Interpolation error is 0.0902±0.00640.0902\pm 0.0064 and 0.0954±0.01570.0954\pm 0.0157 against
+0.0972±0.00850.0972\pm 0.0085 at d=2d=2; both are nominally ahead, and the
+largest separation is 0.90.9 pooled standard deviations. The waveform regression
+and the clustering agreement behave the same way, with every comparison against
+d=2d=2 inside twice the pooled standard deviation. The latent dimension
+can therefore be raised to the estimated intrinsic dimension of the data
+without a measurable effect on any of the three tasks. Decoding a sweep along each latent coordinate shows why:
+at d=8d=8 roughly three coordinates produce visible changes in
+morphology and the remainder leave the decoded shape nearly fixed, which is
+neffn_{\mathrm{eff}} in visual form.
+
+Figure 7: Decoded sweep along each latent coordinate at d=8d=8. Each
+row varies one coordinate across its 22–9898 percentile range with the
+others held at the data median; no projection or dimensionality reduction is
+applied. Three coordinates drive visible changes in morphology — ligaments,
+necking, satellite separation — and the remainder leave the decoded shape
+nearly fixed. The model declines most of the capacity it is given, which is
+what neffn_{\mathrm{eff}} reports as a number.
+
+Table 4: Latent dimension against every downstream task, mean ±\pm sample
+standard deviation over three seeds. PoC-1 is interpolation error at anchor
+step 1010 (lower is better); PoC-2 is waveform-to-contour R2R^{2} and PoC-3 the
+adjusted Rand index at K=4K=4 (higher is better). No comparison against
+d=2d=2 reaches twice the pooled standard deviation.
+
+Latent dimension
+PoC-1 geodesic
+PoC-2 R2R^{2}
+PoC-3 ARI
+
+d=2d=2
+0.0972±0.00850.0972\pm 0.0085
+0.878±0.0260.878\pm 0.026
+0.829±0.0590.829\pm 0.059
+
+d=5d=5
+0.1005±0.01380.1005\pm 0.0138
+0.868±0.0100.868\pm 0.010
+0.781±0.0490.781\pm 0.049
+
+d=8d=8
+0.0902±0.0064\mathbf{0.0902\pm 0.0064}
+0.857±0.0160.857\pm 0.016
+0.873±0.0220.873\pm 0.022
+
+d=10d=10
+0.0954±0.01570.0954\pm 0.0157
+0.883±0.024\mathbf{0.883\pm 0.024}
+0.882±0.027\mathbf{0.882\pm 0.027}
+
+Table 5: Dimension study, headline model, three seeds.
+
+Metric
+d=2d=2
+d=5d=5
+verdict
+
+PoC-2 R2R^{2}
+0.878±0.026\mathbf{0.878\pm 0.026}
+0.868±0.0100.868\pm 0.010
+0.40.4 sd
+
+ARI K=4K=4
+0.829±0.059\mathbf{0.829\pm 0.059}
+0.781±0.0490.781\pm 0.049
+0.90.9 sd
+
+ARI K=8K=8
+0.502±0.0460.502\pm 0.046
+0.569±0.023\mathbf{0.569\pm 0.023}
+1.81.8 sd
+
+PoC-1 @120
+0.120±0.001\mathbf{0.120\pm 0.001}
+0.136±0.0100.136\pm 0.010
+1.61.6 sd
+
+reconstruction
+2.07×10−42.07\times 10^{-4}
+1.22×𝟏𝟎−𝟒\mathbf{1.22\times 10^{-4}}
+the one cost
+
+The order of these two statements matters. The latent dimension was not
+selected by tuning on the metrics in Table 5: neffn_{\mathrm{eff}}
+was measured first, indicated that two dimensions would suffice, and the table
+then confirmed it. Selecting dd by scanning downstream scores would make
+that table a fit rather than a test.
+
+There is one real cost. Reconstruction is about 1.7×1.7\times better at
+d=5d=5 (1.22×10−41.22\times 10^{-4} against 2.07×10−42.07\times 10^{-4}; these are
+mean squared errors on unit-norm vectors, so only the ratio carries meaning),
+and this is the only metric on which the larger latent wins. No proof of concept
+required that additional fidelity, which is consistent with the reconstruction
+argument of Section 5.7: reconstruction error and latent
+organisation are close to independent.
+
+5.3 Effect of data cleaning on the latent
+
+Stage-2 filtering removes 1.00%1.00\% of shapes
+(Section 4.2) and changes the latent qualitatively. Before it,
+one quadrant of the decoded grid is unusable; after it, all 216216 grid nodes
+decode to plausible droplets (Figure 8). Latent anisotropy
+rises from 3.23.2 to 33.833.8, concentrating the space onto a single ordered
+morphology axis rather than spreading it across directions that carry little
+shape variation.
+
+The scalar metrics do not improve. Reconstruction, regression and
+clustering are all unchanged within seed noise. The benefit is
+representational: it appears in what the latent decodes to, not in what the
+summary statistics report. For a model whose purpose is to be sampled at unobserved coordinates, that is
+the relevant axis. No scalar reported here captures it, so
+Figure 8 carries this result in place of a table.
+
+(a) One-stage cleaning
+
+(b) Two-stage cleaning
+
+Figure 8: Effect of stage-2 filtering on latent decodability. Decoded shapes
+on a regular grid over the latent, before and after the per-cluster outlier
+removal of Section 4.2.
+
+Figure 9: The latent point cloud with the sampled grid nodes marked. Nodes
+falling inside the cloud are interpolation; those outside it are
+extrapolation, and are decoded on the same terms.
+
+5.4 PoC-1: temporal interpolation
+
+Both protocols of Section 3.9 are reported, because they answer
+different questions and differ substantially in difficulty. The held-out-anchor
+protocol fits a path through a sparse subset of an unseen acquisition and
+evaluates at the withheld frames; the leave-one-out protocol withholds a single
+frame from an otherwise complete series. The latter is the standard
+non-intrusive ROM protocol and is about 1.5×1.5\times easier here. Reporting only
+one would either overstate or understate what the model does.
+
+Error reporting by regime.
+
+A droplet spends most of a sequence in a relaxed state and a small fraction
+actively deforming. Interpolation error differs sharply between the two:
+0.3250.325 rad in the deforming phase against 0.0640.064 rad when relaxed, a
+5.1×5.1\times gap that is consistent across all four trajectories. For scale
+(Table 1), two shapes drawn at random from the corpus differ by
+1.061.06 rad, so even the deforming-phase error is under a third of the
+separation between two arbitrary droplets, and the relaxed-phase error is
+about a sixteenth of it. Because the deforming phase is
+only about 10%10\% of frames, any pooled mean is dominated by the easy regime
+and understates the difficulty of precisely the physics of interest. All
+interpolation results are therefore stratified by regime.
+
+Table 6: Interpolation schemes at anchor step 120, three seeds. Geodesic
+distance to the withheld frame.
+
+Scheme
+SHROM (V2)
+V5
+V6
+
+piecewise
+0.136±0.010\mathbf{0.136\pm 0.010}
+0.143±0.0100.143\pm 0.010
+0.114±0.003\mathbf{0.114\pm 0.003}
+
+SRVF reference
+0.141±0.0150.141\pm 0.015
+0.149±0.0160.149\pm 0.016
+0.121±0.0040.121\pm 0.004
+
+monotone
+0.145±0.0030.145\pm 0.003
+0.161±0.0120.161\pm 0.012
+0.136±0.0070.136\pm 0.007
+
+latent geodesic
+0.222±0.1240.222\pm 0.124
+0.152±0.0110.152\pm 0.011
+0.156±0.0460.156\pm 0.046
+
+naive spline
+0.943±0.0330.943\pm 0.033
+0.819±0.0770.819\pm 0.077
+0.927±0.2140.927\pm 0.214
+
+Two claims follow from Table 6.
+
+First, the naive cubic spline fails decisively — 5.75.7 to 8.1×8.1\times worse
+than any topology-aware scheme. It fits a smooth curve through latent codes
+that straddle a discontinuity, rings across it, and decodes to
+self-intersecting curves. The failure is systematic rather than marginal, and
+it is the clearest evidence that latent paths cannot be fitted without regard
+to topology.
+
+Second, the four topology-aware schemes are statistically
+indistinguishable. The piecewise scheme is lowest in all nine
+model-scheme comparisons, which is a consistent ordering worth reporting, but
+no individual gap clears twice the pooled standard deviation. We therefore
+report the consistency and not the magnitude, and do not claim a best scheme.
+
+Variation across sequences.
+
+Pooling the four filmed sequences hides a factor of two between them, and the
+spread is a property of the data rather than of the model
+(Table 7). The hardest sequence carries seven transition frames in
+the shortest usable window; the easiest contains no topology change at all.
+Every variant we trained ranks them in the same order, so the difficulty is
+intrinsic to the sequence.
+
+Table 7: Interpolation error by sequence at anchor step 1010, piecewise
+scheme. The pooled mean is 0.0920.092; the hardest sequence is more than twice
+the easiest, and is also the one with the most break-up events in the fewest
+frames.
+
+Sequence
+Held-out frames
+Transition frames
+Geodesic error
+
+A
+800800
+00
+0.0670.067
+
+B
+573573
+44
+0.0700.070
+
+C
+386386
+77
+0.1510.151
+
+D
+487487
+44
+0.0790.079
+
+We report all four throughout. Excluding the hardest would improve every
+aggregate in this paper, and choosing to do so after seeing which sequence is
+hardest would not be a defensible protocol.
+
+Composition of the error.
+
+The anchor step is a free parameter of the protocol, not of the model, and the
+error depends on it strongly: Table 8 sweeps it from one anchor
+in 120120 frames down to one in two.
+
+Table 8: Interpolation error against anchor density, piecewise scheme,
+averaged over the four sequences, single seed per row. The error falls
+steeply while anchors are scarce and then saturates: half the trajectory buys
+little over a tenth of it. The anchor-1010 row is reproduced over three seeds
+in Table 10, where the ordering holds in every seed.
+
+Anchor step
+Frames withheld
+SHROM
+plain AE
+
+120120
+99%99\%
+0.1280.128
+0.1250.125
+
+4040
+97%97\%
+0.1020.102
+0.0880.088
+
+1010
+90%90\%
+0.0920.092
+0.0760.076
+
+22
+50%50\%
+0.0890.089
+0.0720.072
+
+The curve saturates rather than falling to zero, and it saturates at a
+value the interpolation cannot reach past. Three independent observations
+identify what sets that floor. At the densest setting the four topology-aware
+schemes agree to three decimals, and the SRVF\mathrm{SRVF} reference — which
+interpolates between decoded anchors and never touches the latent path
+— matches the best of them (0.08850.0885 against 0.08910.0891). Leave-one-out, which
+withholds a single frame from an otherwise complete sequence, gives 0.1000.100:
+no better than withholding half of them.
+
+Isolation by adjacent-frame interpolation.
+
+Joining two consecutive frames by a straight line in the latent removes
+the fitting problem entirely: with two points a straight line is the exact
+interpolant, with no spline, no anchor spacing and no freedom to tune. Whatever
+error remains is not the fit.
+
+Away from a topology change, the shape decoded halfway along that line is
+closer to the true droplet than the endpoints’ own reconstructions are
+— a ratio of 0.910.91 to 0.980.98 across every configuration and sequence tested.
+Interpolating between adjacent frames costs nothing measurable. Across
+a breakup the midpoint error rises to 1.51.5 to 1.81.8 times the reconstruction
+error, but the true separation between those two frames is 1.081.08 rad and even
+the worst midpoint is under half of it: the line does not leave the data
+manifold, it merely cannot represent a discontinuity, which no continuous path
+can.
+
+PoC-1 therefore measures reconstruction fidelity, not interpolation
+quality, and the plain autoencoder leads it for the same reason it leads the
+benchmark of Section 5.7: reconstruction is what SHROM trades
+for latent organisation. This proof of concept supports a narrower claim: that the latent admits
+interpolation at arbitrary temporal resolution and returns plausible droplets at
+every intermediate time, which the naive spline fails to do. It does not support
+the claim that SHROM reconstructs withheld frames more accurately than a
+model optimised for reconstruction alone.
+
+Figure 10: Ten consecutive held-out frames spanning a topology change (a single
+contour through frame 137, two contours from frame 140), with the ground
+truth above every interpolation scheme. At anchor step 120120 the interpolant
+sees 1212 of 653653 frames. The naive cubic spline fails outright, ringing
+across the discontinuity and decoding to self-intersecting curves, while the
+four topology-aware schemes remain plausible throughout and are statistically
+indistinguishable from one another.
+
+Figure 11: The pinch-off interval (frames 136 to 140, across which the
+component count changes) predicted at ten intermediate times, under three
+regularisation strengths. Blue endpoints are captured frames; the red shapes
+are times the camera never observed, and have no ground truth by
+construction. Row labels give the latent jump across the interval as a
+multiple of a typical consecutive step: 620×620\times, 225×225\times,
+71×71\times. The regulariser compresses the discontinuity by an order of
+magnitude without removing it. The strongest setting gives both the smallest
+jump and the worst path through it — it is the only row passing
+through shapes with no tail.
+
+Failure regime.
+
+Within a topology class the model interpolates plausibly at arbitrary sub-frame
+resolution: Figure 11 predicts ten intermediate states between two
+captured frames, and the sequence remains a credible droplet throughout. Across
+a change in component count it does not.
+
+The latent jump across the pinch-off interval is 620×620\times, 225×225\times and
+71×71\times a typical consecutive step under the three regularisation strengths.
+Raising the regularisation compresses the discontinuity by nearly an order of
+magnitude and does not remove it. The strongest setting is also instructive in
+the wrong direction: it gives the smallest jump and the least plausible path
+through it, being the only one that passes through shapes with no tail at all.
+What this implies about the representation is taken up in
+Section 6.2.
+
+5.5 PoC-2: waveform to full contour
+
+A small network maps the eight waveform parameters to the latent code, from
+which the decoder returns a full closed contour. Over three seeds at
+d=2d=2 this reaches R2=0.878±0.026R^{2}=0.878\pm 0.026, with per-dimension values
+between 0.820.82 and 0.930.93: every latent coordinate is predictable, rather than
+one dominant coordinate carrying the score while the others are guessed. No
+variant is separable from any other on this task.
+
+The novelty is in the output, not the accuracy. Prior data-driven inkjet
+surrogates predict scalar quantities — volume, velocity, satellite count —
+or classify a regime. Droplet geometry has been predicted from physical inputs
+elsewhere: Wang et al. [34] relate the shape of a dripping drop at
+pinch-off to fluid properties and flow rate, in both directions, using contours
+and an autoencoder with latent clustering. Their inputs are material and flow
+properties in a dripping rig rather than an actuation waveform in a
+drop-on-demand device, and we are not aware of work predicting full closed
+interface geometry from actuation parameters, which is what the
+composition with the decoder provides here.
+
+Figure 12: Predicted against true latent coordinate on the held-out test set
+(N=45 230N=45\,230), one panel per latent dimension; the dashed line is the
+identity. The cloud stays on the diagonal across the full operating range of
+each coordinate, so the mapping is well-conditioned rather than accurate only
+near the mean. This figure comes from a shorter training run than the
+headline number (800800 epochs, single seed, R2=0.847R^{2}=0.847 and 0.8530.853); the
+reported 0.878±0.0260.878\pm 0.026 is from the full schedule over three seeds.
+
+Figure 13: True (solid) against predicted (dashed) contours, decoded from the
+true and predicted latent codes respectively. Samples are stratified
+by test-set error — the six best, six median and six worst of 45 23045\,230 —
+rather than drawn at random, so the failure modes are shown rather than
+averaged away. Even in the worst stratum the predicted shape retains the
+correct topology and tail: the error is in body size, not in morphology.
+
+5.6 PoC-3: structure recovery
+
+Clustering the latent is compared against clustering the shapes directly under
+the geodesic metric. Three claims, in order of weight.
+
+The ablation.
+
+Reported above (Table 3): agreement with the shape-space partition
+rises from chance level to 0.781±0.0490.781\pm 0.049 when the graph term is active.
+This is the headline result of the study and PoC-3 is where it is measured.
+
+Cluster quality.
+
+A high ARI alone would only show that the latent partition imitates the
+reference. It does more than that: the latent partition is better
+separated than the geodesic reference at every KK, with a silhouette of
+0.8590.859 against 0.6320.632 at K=4K=4 (a silhouette of 00 indicates clusters no
+better separated than chance, 11 perfectly separated). The latent is not reproducing the
+reference’s cluster boundaries so much as finding cleaner ones.
+
+Cost.
+
+Clustering in the latent is 4040 to 80×80\times faster than geodesic
+kk-means on the shapes, since the geodesic reference requires pairwise
+great-circle distances in 320320 dimensions while the latent requires Euclidean
+distances in two.
+
+Figure 14: Decoded cluster representatives: latent clustering beside geodesic
+clustering in shape space. The last row of each block is the member farthest
+from its cluster mean, so each block shows its own worst case rather than
+only its centre.
+
+Limitations of the adjusted Rand index.
+
+The seed-to-seed spread of ARI on this dataset is ±0.04\pm 0.04 to ±0.14\pm 0.14
+depending on configuration. It therefore has ample resolution for the
+twelve-fold ablation effect and none whatever for a few-percent difference
+between two good models. ARI cannot rank models or configurations in
+this study, and no ranking is claimed from it; every ARI value is quoted as
+mean ±\pm sd so that the reader can apply the same test. Differences that
+would be reported as improvements under a single-seed protocol are reported
+here as nulls.
+
+5.7 Benchmark against linear and geometric baselines
+
+SHROM recovers the structure of shape space where the alternatives
+do not, and it does so at a reconstruction cost of four percent. Against a
+linear reduced-order model and against an autoencoder built to make its latent
+geometrically well behaved, SHROM preserves 7070 to 104%104\% more of each
+shape’s neighbourhood and recovers a partition of shape space that the
+baselines miss almost entirely (Table 9).
+
+The one axis on which a baseline leads is reconstruction, and it should: an
+isometry-regularised autoencoder optimises for exactly that. What follows sets
+out how large that lead actually is, and why it does not transfer to any task a
+reduced-order model is built for.
+
+Table 9: Benchmark on the current dataset (301,539301{,}539 shapes). Each baseline
+is fitted at the latent dimension it is compared against, in a single run.
+POD is deterministic; Geometric-AE is quoted as mean ±\pm sd over three
+seeds, as is the SHROM clustering column.
+
+Model
+Recon. MSE
+kkNN overlap
+ARI (K=4K{=}4)
+
+at d=5d=5
+
+PCA/POD
+1.386×10−41.386\times 10^{-4}
+0.5140.514
+—
+
+Geometric-AE
+5.51×𝟏𝟎−𝟓±4.2×10−6\mathbf{5.51\times 10^{-5}}\pm 4.2\times 10^{-6}
+0.310±0.0640.310\pm 0.064
+0.057±0.0190.057\pm 0.019
+
+SHROM
+1.217×10−41.217\times 10^{-4}
+0.527\mathbf{0.527}
+0.781±0.049\mathbf{0.781\pm 0.049}
+
+at d=2d=2
+
+PCA/POD
+2.821×10−42.821\times 10^{-4}
+0.2030.203
+—
+
+Geometric-AE
+6.57×𝟏𝟎−𝟓±4.4×10−7\mathbf{6.57\times 10^{-5}}\pm 4.4\times 10^{-7}
+0.244±0.0250.244\pm 0.025
+0.096±0.0740.096\pm 0.074
+
+SHROM
+2.070×10−42.070\times 10^{-4}
+0.498\mathbf{0.498}
+0.829±0.059\mathbf{0.829\pm 0.059}
+
+Geometric-AE reconstructs better than SHROM at both latent dimensions, by
+factors of 2.22.2 to 3.23.2. It preserves neighbourhood structure — the fraction of each shape’s
+nearest neighbours that remain nearest in the latent — 70%70\% worse at
+d=5d=5 and 104%104\% worse at d=2d=2, gaps of 3.43.4 and 10.110.1
+baseline standard deviations — and recovers the shape-space partition far worse: ARI
+0.057±0.0190.057\pm 0.019 against 0.781±0.0490.781\pm 0.049 at d=5d=5, and
+0.096±0.0740.096\pm 0.074 against 0.829±0.0590.829\pm 0.059 at d=2d=2 — separations of
+9.79.7 and 5.55.5 times the pooled standard deviation. At d=5d=5 the
+baseline is close to the chance level of zero.
+
+The two gaps are not comparable in size, and the ratios disguise that.
+On unit-norm SRVF\mathrm{SRVF} vectors a mean squared error of 5.5×10−55.5\times 10^{-5}
+corresponds to a geodesic of 0.1330.133 rad and one of 1.2×10−41.2\times 10^{-4} to
+0.1980.198 rad. Against the 1.061.06 rad separating two shapes drawn at random from
+the corpus (Table 1), both models reconstruct to within about two
+percent, and the difference between them is four percent of that separation.
+The clustering gap, on a scale where 00 is chance and 11 is exact, is 0.0570.057
+against 0.7810.781. A model that reconstructs four percent better and recovers
+almost none of the shape-space structure is not a better shape model.
+
+These are not in tension. Reconstruction error measures whether the decoder
+returns a shape it was given; it says nothing about whether the latent between
+those points is organised. An isometry penalty on the decoder Jacobian
+(Equation 9) produces a well-conditioned map and therefore good
+reconstruction, without any mechanism that would arrange the latent by shape
+similarity. The two objectives are close to orthogonal, and the benchmark
+reports both rather than the one on which the method leads.
+
+The margin is large enough to survive a substantial handicap: SHROM at
+d=2d=2 exceeds Geometric-AE at d=5d=5 on structure overlap
+(0.4980.498 against 0.3100.310) using 2.5×2.5\times fewer latent dimensions.
+
+The baseline was fitted twice, from independent initialisations, as a check on
+the comparison itself: reconstruction 5.515.51 against 5.71×10−55.71\times 10^{-5},
+neighbourhood overlap 0.3100.310 against 0.3380.338, and clustering 0.0570.057 against
+0.0550.055. Every quantity reproduces within its seed spread, so the gaps reported
+here are properties of the two methods rather than of a particular fit.
+
+Transfer of the reconstruction advantage to interpolation.
+
+Put through the interpolation protocol at anchor step 1010, over three seeds
+each, Geometric-AE reaches 0.0776±0.00200.0776\pm 0.0020 and the plain autoencoder
+0.0784±0.00290.0784\pm 0.0029, against 0.1005±0.01380.1005\pm 0.0138 for SHROM
+(Table 10). The two models optimised for fidelity are
+indistinguishable from one another — a gap of 0.00080.0008 against a pooled
+standard deviation of 0.00250.0025 — and both lead SHROM, which is behind the
+plain autoencoder in every one of the three seeds, by 0.02210.0221 on average at
+d=5d=5. That gap clears twice the pooled standard deviation. The
+ordering is identical at d=2d=2 and in every seed there too, though only
+the Geometric-AE margin over SHROM (0.01790.0179) clears the bar; the plain
+autoencoder’s (0.01010.0101) does not.
+
+The comparison that matters here is not against Geometric-AE but against the
+plain autoencoder, because the two differ only in the graph term. Removing the
+term improves interpolation error on this protocol. The isometry penalty
+neither helps nor hurts: Geometric-AE and the unregularised autoencoder are
+within a pooled standard deviation of each other at both latent dimensions. What the protocol responds to is reconstruction accuracy alone,
+and the three models rank exactly as their reconstruction errors do.
+
+This is the prediction of Section 5.4 — that the task rewards
+reconstruction — confirmed by a third route, after the density sweep and the
+adjacent-pair test. Those three arguments together establish that the protocol saturates at the
+reconstruction limit. The error stops falling as anchors are added. A reference
+path that bypasses the latent entirely matches the model path. Interpolating
+between adjacent frames is more accurate than the round trip through the
+autoencoder at the same two frames. A benchmark whose
+score is set by how well the decoder returns a shape it was given cannot
+discriminate between latents on the basis of how they are organised, which is
+the property SHROM is built to supply. We report the numbers because they
+are the honest outcome of a stated protocol, and read them as a measurement of
+that protocol rather than as a ranking of the models on interpolation.
+
+The trade-off is explicit. The graph term produces the latent structure of
+Table 9 — 7070 to 104%104\% more neighbourhood
+preservation and an ARI of 0.7810.781 against 0.0570.057 — and it costs
+approximately 0.0220.022 rad of reconstruction-driven interpolation error at
+d=5d=5, about two percent of the 1.061.06 rad separating two shapes drawn
+at random. It also costs reproducibility on this particular measure: SHROM’s
+seed spread here is 4.8×4.8\times the plain autoencoder’s, the one axis on which
+our seed stability is worse rather than better.
+
+Table 10: Interpolation error at anchor step 1010, mean ±\pm sample standard
+deviation over three seeds. Lower is better. The protocol saturates at the
+reconstruction limit (Section 5.4), so it orders the models by
+reconstruction accuracy rather than by latent organisation.
+
+Model
+d=5d=5
+d=2d=2
+
+Geometric-AE
+0.0776±0.0020\mathbf{0.0776\pm 0.0020}
+0.0794±0.0016\mathbf{0.0794\pm 0.0016}
+
+Plain autoencoder
+0.0784±0.00290.0784\pm 0.0029
+0.0871±0.00590.0871\pm 0.0059
+
+SHROM
+0.1005±0.01380.1005\pm 0.0138
+0.0972±0.00850.0972\pm 0.0085
+
+Reconstruction is otherwise the only axis on which the baseline leads. Put through the
+same downstream evaluations as SHROM, it recovers the shape-space partition
+at close to chance (Table 9) and predicts the latent from waveform
+parameters less accurately at both dimensions (R2=0.804±0.087R^{2}=0.804\pm 0.087 against
+0.868±0.0100.868\pm 0.010 at d=5d=5; 0.710±0.1340.710\pm 0.134 against
+0.878±0.0260.878\pm 0.026 at d=2d=2). Neither regression gap clears twice the pooled standard deviation, so no
+advantage is claimed there. The baseline’s seed spread is nonetheless five to
+nine times ours. A latent organised only by a pointwise smoothness condition is
+therefore not reproducible between random initialisations, and a reduced-order
+model that changes with its seed is difficult to rely on.
+
+Similarity graph versus additional capacity.
+
+A model optimised for reconstruction alone will always win a reconstruction
+contest; that is what it is for. The question this section settles is whether
+winning it is sufficient, and the grid figures answer directly.
+Figure 5 decodes a regular lattice over each latent: without
+the graph term four fifths of the lattice is the same near-circular oval, so
+the space between the training points holds no information about shape.
+Figure 6 shows the same contrast in the latent rather than in
+decoded shapes.
+
+This is what the graph term is for, and it cannot be bought with capacity or
+with a smoother decoder. The reconstruction objective constrains
+gϕ∘fθg_{\phi}\circ f_{\theta} at the observed points and is indifferent everywhere else; a
+Jacobian penalty adds a pointwise smoothness condition but still says nothing
+about which shapes should be near which.
+
+That distinction is what makes the interpolation task of Section 5.4
+possible at all. A filmed sequence is sparse in time, but the corpus is dense
+in shape: a state the camera missed between two frames is not a novel
+morphology, it resembles shapes that other actuation settings produced and that
+were recorded. Supplying it means recognising that resemblance, which requires
+a term that encodes which shapes are alike. No amount of reconstruction
+accuracy on the frames that were captured provides that. Only a term that encodes the neighbourhood structure of the data can make
+latent position correspond to morphology. Every downstream use of a
+reduced-order model reads that position: sampling a grid, interpolating a
+trajectory, inverting from a design parameter. None of them reads the
+reconstruction of an already-observed point.
+
+Grid occupancy, where the baseline leads.
+
+By grid occupancy, Geometric-AE’s latent is less sparse than ours:
+77.8%77.8\% of its grid lies far from any training point, against 98.1%98.1\% for
+SHROM. The isometry penalty spreads points evenly across the latent, whereas
+the graph term deliberately clusters them and leaves the space between clusters
+empty. Even spreading and meaningful structure are different properties, and a
+reader may reasonably prefer the former for some purposes; the number is
+reported rather than omitted.
+
+5.8 Variants
+
+Two architectural variants were tested and neither is adopted.
+
+Rarity-weighted reconstruction, which up-weights infrequent morphologies in the
+reconstruction term, improves nothing measurably on any task. A wider decoder
+is nominally better at interpolation but does not reach significance, and costs
+four times the decoder parameters; the narrower network is therefore the
+headline on parsimony. Both are reported here as null results, in the same
+terms as the positive ones.
+
+5.9 Sensitivity to the neighbour-graph metric
+
+The regulariser needs a distance from which to build its neighbour graph, and
+SRVF\mathrm{SRVF}s lie on a sphere, so the choice of Euclidean distance
+(Section 4.5) invites the objection that a spherical metric would
+be more appropriate. Table 11 tests it across five choices, two latent
+dimensions and three seeds.
+
+Table 11: Five neighbour-graph metrics, two latent dimensions, three seeds
+each. Every comparison against Euclidean is non-significant under the
+two-pooled-sd rule of Section 4.8: 00 of 5252.
+
+Graph metric
+PoC-1 geodesic err.
+PoC-2 R2R^{2}
+ARI K=4K{=}4
+edge Jaccard vs. Euclid.
+
+Euclidean
+0.107±0.0080.107\pm 0.008
+0.878±0.0260.878\pm 0.026
+0.829±0.0590.829\pm 0.059
+1.0000001.000000
+
+cosine
+0.119±0.0140.119\pm 0.014
+0.884±0.0070.884\pm 0.007
+0.844±0.0280.844\pm 0.028
+1.0000001.000000
+
+exact geodesic
+0.113±0.0150.113\pm 0.015
+0.886±0.0190.886\pm 0.019
+0.875±0.0200.875\pm 0.020
+1.0000001.000000
+
+Minkowski p=3p{=}3
+0.113±0.0030.113\pm 0.003
+0.884±0.0250.884\pm 0.025
+0.818±0.0340.818\pm 0.034
+0.5020.502
+
+Minkowski p=1p{=}1
+0.111±0.0150.111\pm 0.015
+0.886±0.0080.886\pm 0.008
+0.839±0.0360.839\pm 0.036
+0.3890.389
+
+Not one of the 5252 comparisons against Euclidean reaches
+significance, and none approaches it: the largest ratio of gap to threshold is
+0.850.85, where 1.01.0 is the bar.
+
+Two readings follow, of unequal interest.
+
+The first is expected. Euclidean, cosine and the exact geodesic build the
+identical neighbour graph — each is strictly monotone in the
+great-circle angle, so the edge sets coincide exactly and only the fuzzy edge
+weights differ, by around 10−510^{-5}. That these three agree confirms what
+Section 3.4 argues analytically: the regulariser consumes the
+graph, not the distance values that produced it.
+
+The second is not expected. The Minkowski arms build genuinely different
+graphs, sharing only 39%39\% and 50%50\% of their edges with Euclidean and
+ranking neighbours differently (rank correlation 0.8780.878 and 0.9160.916 against
+the geodesic, against 1.0000001.000000 for the other three). They were predicted to
+perform worse. They do not. The supportable claim is therefore stronger than
+the monotonicity argument alone would give: the downstream tasks are
+insensitive to changing half the edges of the neighbour graph.
+
+Euclidean is retained on parsimony rather than superiority. Two cautions
+belong with this result. Three seeds establishes the absence of a large effect
+and not the absence of an effect, and here the seed spread is comparable to
+every gap under test. And the nominally best clustering figure in
+Table 11 belongs to the geodesic arm; at 0.550.55 of the significance
+threshold it is seed noise, and is not a result.
+
+Interpretation of the per-metric grids.
+
+Latent grids for the individual metric arms are single-seed illustrations and
+should be read as such. On the Euclidean and cosine pair, the count of
+self-intersecting grid nodes across the three seeds was 13/33/1213/33/12 and
+2/23/182/23/18 respectively — a difference of 55 against a pooled spread of
+22.822.8 — yet the first seed alone would read as a sixfold improvement. The
+verdict on this question comes from Table 11, not from the figures.
+
+5.10 Regularisation strength and the locality–globality trade-off
+
+The kernel of Equation 6 has an effective width, set through
+min_dist, controlling how firmly non-neighbours are pushed apart.
+Unlike the graph metric, this parameter does have an effect — and the three
+proofs of concept want opposite things from it, so no single setting serves all
+three.
+
+Table 12: Four regularisation strengths, three seeds each. The kernel
+parameter aa spans an 8×8\times range; similarity at unit latent distance
+spans 0.350.35 to 0.810.81.
+
+Config
+min_dist
+PoC-1 @120
+PoC-2 R2R^{2}
+ARI K=4K{=}4
+anisotropy
+
+continuous
+0.80.8
+0.114±0.007\mathbf{0.114\pm 0.007}
+0.870±0.0230.870\pm 0.023
+0.743±0.0410.743\pm 0.041
+4.54.5
+
+mid
+0.30.3
+0.122±0.0050.122\pm 0.005
+0.853±0.0190.853\pm 0.019
+0.755±0.0330.755\pm 0.033
+13.113.1
+
+default
+0.10.1
+0.123±0.0030.123\pm 0.003
+0.864±0.0130.864\pm 0.013
+0.851±0.014\mathbf{0.851\pm 0.014}
+41.141.1
+
+manuscript
+0.010.01
+0.125±0.0020.125\pm 0.002
+0.867±0.0080.867\pm 0.008
+0.846±0.0210.846\pm 0.021
+36.936.9
+
+Three readings of Table 12.
+
+Interpolation error falls monotonically with min_dist, from
+0.1250.125 to 0.1140.114, a reduction of 9.1%9.1\%, and the ordering reproduces across
+seeds. The best-versus-baseline gap is nonetheless only 1.51.5 pooled standard
+deviations. We therefore report the trend rather than the gap: a monotone
+ordering across four configurations has a probability of about 4%4\% under the
+null, which is evidence, while the individual difference is not.
+
+Clustering runs the other way, leading at low min_dist. This is the
+locality–globality trade-off the parameter is expected to produce: a tightly
+packed embedding separates groups and a loosely packed one connects them, and
+the two tasks reward opposite ends of that scale. Regression is insensitive to
+the choice.
+
+Effect of a more continuous latent.
+
+Figure 15 repeats Figure 11 — the same frames
+and sub-steps — under the most continuous setting. Intervals within a
+topology class are visibly smoother. The pinch-off still collapses. Quantified,
+the latent jump falls from 513×513\times a normal step to 60×60\times, an
+8.6×8.6\times improvement that nonetheless leaves a discontinuity of two orders
+of magnitude.
+
+This is the cleanest evidence that the separation is a property of the
+representation rather than of the embedding. The regulariser is the only
+mechanism available for connecting the latent, it compresses the gap by nearly
+an order of magnitude, and it cannot remove it.
+
+(a) latent cloud and sampled grid
+
+(b) the four sequences through the latent
+
+Figure 15: The continuous configuration (min_dist=0.8\texttt{min\_dist}=0.8): the latent
+cloud with the sampled grid, and the four filmed sequences drawn through it.
+The pinch-off behaviour of all three configurations is in
+Figure 11.
+
+6 Discussion
+
+The results establish that the graph term determines whether latent position
+corresponds to morphology. This section asks what follows from that: why the
+term is necessary, where the method stops working, which alternatives were
+considered and rejected, and what the negative results indicate. No new
+measurements are introduced.
+
+6.1 The role of the manifold-informed loss
+
+A corpus dense in shape is only useful if the model knows which shapes are
+alike, and the results say that knowledge has to be asked for explicitly. The
+graph term affects one quantity, narrowly. It does not improve reconstruction
+or regression accuracy. It determines whether clustering the latent recovers the
+structure that clustering the shapes themselves would find, and it does so by
+more than thirteen pooled standard deviations.
+
+The reason is that a reconstruction objective is indifferent to how the latent
+is arranged. It constrains the composition gϕ∘fθg_{\phi}\circ f_{\theta} at the training
+points and says nothing about the space between them. A model can satisfy it
+completely while filling the gaps between its data with copies of the mean,
+which is what the plain autoencoder does: four fifths of its decoded grid is
+the same oval, and its latent partition is indistinguishable from chance.
+
+The graph term supplies the missing constraint. It does not make
+reconstruction better — it makes position in the latent carry
+information. For a model that will only ever be evaluated at observed points,
+this is a distinction without a difference. For a model intended to be
+sampled — interpolated through, gridded over, inverted from a design
+parameter — it is the property that decides whether the output is meaningful,
+and it is invisible to reconstruction error.
+
+6.2 The central limitation: topology change
+
+The degenerate connector of Section 3.3 makes a multi-component
+interface representable, and the two topology classes it distinguishes end up
+far apart in the latent. The measurements make the gap explicit: the classes sit
+thirty-three times further apart than the typical within-class spacing,
+consecutive frames move thirty-six times further across a change than within
+one, and at pinch-off the latent jumps by up to two orders of magnitude more
+than a normal step. Whether the connector causes that gap or merely
+makes it visible is settled below.
+
+This is a representational failure, not an interpolation failure, and
+the distinction matters for anyone trying to fix it. The fitted paths through
+these intervals are well behaved — monotone between their endpoints,
+overshooting nowhere, verified numerically. The problem is that the latent
+region they traverse contains no valid intermediate shapes. No interpolation
+scheme can produce intermediates that the representation does not contain, so
+no better path-fitting method will help.
+
+The regularisation experiments sharpen this. Increasing
+min_dist compresses the pinch-off discontinuity by nearly an order
+of magnitude and cannot remove it, and the setting that compresses it most
+produces the least plausible path through it. The separation is a property of
+the shape representation, and the embedding can only attenuate it.
+
+Three further measurements make the same point from different directions.
+First, the separation in the latent neighbour graph is absolute: across four
+regularisation strengths and four latent dimensions, no connected component
+contains both a single-component and a bridged shape
+(Table 13). Raising min_dist reconnects fragments
+within a topology class and never across one, and raising the latent
+dimension to the estimated intrinsic dimension of the data
+(Section 5.2) does not merge them either.
+
+Second, a variant trained as one model per topology class, which removes the
+divide by making it unrepresentable, interpolates roughly seven times worse
+than any other configuration: a trajectory crosses the divide partway through,
+so no such model ever sees a whole sequence.
+
+Third, and most directly, the plain autoencoder does not separate the two
+families at all. Its largest component holds 95.3%95.3\% of the points and mixes
+the single-component and bridged populations freely. That contrast locates the
+divide precisely. It is not produced by the connector, nor by the embedding
+dimension, nor by the kernel: it appears exactly when the loss is told which
+shapes are alike, and it is absent when the loss is indifferent to shape
+similarity. The plain autoencoder merges the two families only because position
+in its latent carries no shape meaning — the same defect the ablation of
+Section 5.1 measures on clustering.
+
+The divide is therefore not an artefact to be engineered away. It is the
+regulariser reporting a genuine separation between two shape fami

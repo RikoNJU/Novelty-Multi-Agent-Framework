@@ -1,0 +1,536 @@
+{
+  "alias": "local-qwen2.5-7b",
+  "billing": {
+    "amount": null,
+    "currency": "RMB",
+    "pricing_table": "/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/config/llm_pricing.json",
+    "rate_name": null,
+    "rates_per_unit": null,
+    "status": "UNPRICED",
+    "unit_tokens": 1000000
+  },
+  "chat_transport_invoked": true,
+  "client_call_id": "f197501d2d544747a29b4db8ce1ab3b6",
+  "context_admission": {
+    "code": "CONTEXT_ADMITTED",
+    "counter": "vllm",
+    "decision": "allow",
+    "effective_context_window": 32768,
+    "exact": true,
+    "input_tokens": 11168,
+    "measurement_details": {
+      "endpoint": "http://127.0.0.1:8000/tokenize",
+      "schema_verified": true,
+      "server_version": "0.8.5.post1",
+      "template_fields": [
+        "add_generation_prompt",
+        "add_special_tokens",
+        "chat_template_kwargs",
+        "continue_final_message",
+        "messages",
+        "model"
+      ],
+      "tokenize_payload_sha256": "eb895dc4a986804136ed4e494ab018b08fc2d096cf00f60cf306968c0e576ea7",
+      "vllm_tools_mode": "v0_8_5_kwargs"
+    },
+    "mode": "enforce",
+    "on_unavailable": "reject",
+    "output_reservation_field": "max_tokens",
+    "output_tokens_reserved": 4096,
+    "payload_sha256": "e08565709d6274bd5cfa6db91a470705b647b43847fa6365ba708d97df76661b",
+    "profile_context_window": 32768,
+    "requested_total_tokens": 15264,
+    "server_context_window": 32768,
+    "source": "vllm_tokenize",
+    "status": "admitted",
+    "vllm_tools_mode": "v0_8_5_kwargs",
+    "window_source": "minimum_of_profile_and_server",
+    "would_reject": false
+  },
+  "context_measurement_requests": 3,
+  "context_measurement_verification": {
+    "measured_input_tokens": 11168,
+    "payload_sha256": "e08565709d6274bd5cfa6db91a470705b647b43847fa6365ba708d97df76661b",
+    "provider_input_tokens": 11168,
+    "status": "matched"
+  },
+  "duration_ms": 9147,
+  "error": null,
+  "finish_reason": "stop",
+  "llm_call_id": "llm_0031",
+  "message_count": 7,
+  "model": "qwen2.5-7b-instruct",
+  "parent_stage_id": "stage_0021",
+  "provider": "openai_compatible",
+  "provider_usage": {
+    "completion_tokens": 297,
+    "prompt_tokens": 11168,
+    "prompt_tokens_details": null,
+    "total_tokens": 11465
+  },
+  "request_id": "chatcmpl-46f4c62f4eed49b4870b977585a7cc36",
+  "request_options": {
+    "endpoint": "http://127.0.0.1:8000/v1/chat/completions",
+    "timeout_seconds": 300.0
+  },
+  "request_payload": {
+    "max_tokens": 4096,
+    "messages": [
+      {
+        "content": "You are the formal Researcher for one bounded research task.\nUse only tools present in the registered tool definitions. Never guess an\nunlisted database source_id; use only source_id values stated in the\ndatabase_search tool description.\nCall at most one tool in each assistant response; wait for its result before the next call.\nCore responsibility:\n- Gather traceable source evidence for the assigned novelty point and task,\ncompare technical overlap and differences, and expose coverage limitations.\nThe Reviewer owns novelty adjudication; do not make a global novelty conclusion.\n- Apply database_research as the default skill for all task languages.\nMain path: Database -> source artifact -> text -> Reader -> Evidence.\n- When reference_search is available, inspect the author's reference corpus first\nas a recall aid only; it neither replaces database coverage nor increases weight.\n- Rely on database_search for scholarly discovery. Revise queries within the\nsupplied SearchPlan and remaining budget when appropriate; do not loop on an\nunavailable provider or displace readable candidates with repeated discovery.\n- Enter web_supplement only when paper retrieval is unavailable or has yielded\nno papers. Existing papers with insufficient evidence do not satisfy this condition.\nWeb is supplementary search advice only: never create Evidence or cards from it,\neven after browser/Reader. Do not enumerate Web sources as related literature.\nOnly the report-wide absence of retrieved papers permits a short Web-based\nfollow-up search recommendation in the report; language alone is not a trigger.\n- Search results and snippets are discovery metadata, not evidence.\n- Prefer source originals and extracted source text over summaries. LLM summaries\nare derived information, never original Evidence, even when exposed by Reader.\n- Web materials retain source_kind=web_supplement. It is not paper evidence. The workflow binds provenance;\ndo not author evidence_type or source_kind in the finish draft.\nAcquisition and evaluation policy:\n- Identify this task's core mechanism, then use database discovery and Reader\nto inspect relevant abstracts. Batch-read up to four returned artifacts.\nSeparate explicit overlap or difference from features the read text has not\nestablished. An unmentioned feature is unknown, not absent.\n- If a candidate substantially overlaps the core mechanism and an unresolved\nfeature could change the comparison, prioritize its original text over another\nbroad discovery search. Call database_search with the same registered source_id\nand up to four returned full_text_source_record_ids. This acquires originals\nwithout a new search. Then read each relevant full_text_artifact_id with Reader\nbefore quoting it or relying on its contents. Reuse readable full text already\nreturned; never treat downloading alone as having verified the feature.\n- Do not download full text to satisfy a quota. An abstract can support facts it\nexplicitly states; clearly irrelevant candidates need no upgrade. If full text\nis unavailable, or the remaining tool/read budget prevents verification, keep\nthe supported facts and name the unresolved comparison in the finish analysis\nor no_evidence_reason. Do not claim the paper lacks an unverified feature.\nCard count alone never establishes semantic sufficiency. Stop when the evidence\nsupports a bounded conclusion and remaining unknowns would not change it.\n- Web search is advice-only. Do not call browser or reader to turn Web materials\ninto evidence. Never issue consecutive web_search calls merely to expand recall.\nRetain internal source records, but do not enumerate them in the report.\n- If database_search already returns a readable Artifact or artifact_id,\nthe next tool call MUST be reader for one returned artifact_id. Do not call\ndatabase_search, web_search, or browser again until that Artifact has been\nread and evaluated. Browser is not required for this path.\n- If database_search returns only discovery metadata, acquire readable content\nthrough an appropriate tool before treating the source as evidence.\n- Do not decide whether a source is evidentiary based only on search snippets.\n- Prioritize unread candidates already returned before expanding discovery.\nUse the remaining budget information to reserve time for the final JSON.\nQuery constraints:\n- Only put short search keywords in query; never reasoning, explanations or the full task. For Baidu, the limit is 72 units: ASCII (including spaces) counts 1, non-ASCII counts 2. Aim below 60 units. Good queries: \"图摘要 分布式GNN\"; \"graph summarization distributed GNN\". Bad query: a sentence explaining why to search followed by all task features. On INVALID_QUERY, shorten to two or three core concepts; do not repeat the same query. A successful zero-hit result is valid and marked zero_hits; keep it in the audit, never call it a service failure.\nEvidenceCard quoting rules:\n- Every quote in a card must be copied verbatim from a successful Reader observation.\n- Do not paraphrase, summarize, translate, normalize, rewrite, or reconstruct\nquoted text.\n- If you cannot identify an exact supporting span in Reader text, do not create\nthat card.\n- Use your own prose only in analysis fields; quoted evidence must remain exact\nReader text.\nProduce at most one card per source work and do not make a global novelty conclusion.\nNever invent, copy into the finish payload, or otherwise author provenance handles\nsuch as work_id, artifact_id, source_record_id, or read_id.\nIt is valid to finish with cards=[] and a concrete no_evidence_reason when no\nReader text provides exact support. Never force a card merely to complete the task.\nIf cards is nonempty, omit no_evidence_reason or set it to null.\nIf cards is empty, provide a nonempty no_evidence_reason. These forms are mutually exclusive.\nWhen finished, return only one JSON object conforming exactly to the supplied\nResearchFinishDraft schema. Do not wrap it in Markdown.\n\n# Database research\n\nUse for scholarly research tasks in every language. Follow:\n\nDatabase → source artifact → text → Reader → Evidence\n\n- Use registered databases and the supplied SearchPlan. Reference search provides candidate leads, not proof of database coverage.\n- Prefer publisher or repository source documents and text extracted from them. Preserve available URL, source record, artifact and extraction lineage; never claim an original file was saved when only extracted text is available. Full original-artifact storage is outside this phase.\n- Read a returned readable artifact before further discovery. Evaluate existing unread candidates before expanding queries. Metadata and snippets are not Evidence; a source-authored abstract may support only what it explicitly states.\n- Quote exact successful Reader spans. LLM summaries, translations and generated interpretations are derived information, not original Evidence. Do not quote them as source text.\n- Emit semantic drafts only; the Builder assigns provenance and database_evidence for verified database sources. Subject references keep their own namespace and do not imply successful database retrieval.\n- If no papers can be retrieved, record the limitation and optionally use web_supplement for search advice only. Existing paper candidates with insufficient support do not qualify as no papers. Distinguish provider failure from successful zero hits and from unread or unsupported candidates.\n- Reserve time for finalization. A candidate need not produce a card; explain gaps rather than fabricate evidence or conclude absence of prior work.\n\n# Web supplementary material\n\nUse only after paper retrieval is unavailable or has yielded no papers. First try registered databases and available reference papers within budget. Existing paper candidates with weak evidence, missing full text, language preferences or external-context requests alone do not authorize replacing literature with Web evidence.\n\nWeb search results are supplementary material. Keep source_kind = web_supplement for internal audit. Do not create Evidence, EvidenceCard, related-literature entries, citations or attachment lists from Web content. Even Reader-accessible web text and LLM summaries remain supplementary or derived information, not original Evidence. Do not run browser/reader solely to promote Web material into a paper.\n\nIf any paper was retrieved anywhere in the report scope, omit Web advice from the report. Zero cards does not mean zero papers. If no papers were retrieved and Web material exists, offer a short recommendation for refining scholarly queries using terminology or search directions from that material. Do not enumerate webpages, titles or URLs; do not treat web claims as established facts or use them to adjudicate novelty. Retrieval failures must not be called successful zero-hit searches or proof of non-existence.\n\nAvoid repeated Web searches: one supplementary search is normally sufficient for advice. Return cards=[] and a concrete no_evidence_reason when no paper Reader text supports a card. The report renderer decides whether the report-wide no-paper condition holds.\n\n## Query examples\n\nOnly put short search keywords in query; never reasoning, explanations or the full task. For Baidu, the limit is 72 units: ASCII (including spaces) counts 1, non-ASCII counts 2. Aim below 60 units. Good queries: \"图摘要 分布式GNN\"; \"graph summarization distributed GNN\". Bad query: a sentence explaining why to search followed by all task features. On INVALID_QUERY, shorten to two or three core concepts; do not repeat the same query. A successful zero-hit result is valid and marked zero_hits; keep it in the audit, never call it a service failure.",
+        "role": "system"
+      },
+      {
+        "content": "MACHINE_RUNTIME_STATE\n{\"budget\": {\"charged_read_chars\": 16000, \"charged_tool_calls\": 2, \"current_call_tool_execution_allowed\": true, \"exploration_call_limit\": 28, \"finalization_enabled\": true, \"finalization_inside_max_turns\": false, \"global_runtime_budget\": \"not_owned_by_this_harness\", \"remaining_exploration_calls_including_current\": 26, \"remaining_exploration_seconds\": null, \"remaining_per_tool\": {\"browser\": 3, \"database_search\": 7, \"reader\": 15, \"reference_search\": 8, \"web_search\": 5}, \"remaining_read_chars\": 176000, \"remaining_tool_calls\": 22}, \"evidence_checkpoints\": [], \"history_policy\": \"complete_original_task_assistant_tool_messages_preserved\", \"invocation_id\": \"af258b7ad768461b9722f34227b73bae\", \"phase\": \"exploration\", \"provider_failure_means_no_matching_literature\": false, \"providers\": [{\"failed_tool_results\": 0, \"first_failure\": {\"error\": \"数据库检索召回 4 个候选作品\", \"error_truncated\": false, \"execution_summary\": {\"all_failed\": false, \"degraded\": false, \"failed\": 0, \"no_execution\": false, \"not_run\": 0, \"partial\": 1, \"provider_failed\": false, \"requires_human\": 0, \"retrieval_incomplete_budget\": false, \"succeeded\": 5, \"total\": 6}, \"origin\": \"tool_or_provider_unknown\", \"status\": \"partial\", \"tool_call_id\": \"chatcmpl-tool-bd2260abf492462e83801c0a071890ed\"}, \"last_failure\": {\"error\": \"数据库检索召回 4 个候选作品\", \"error_truncated\": false, \"execution_summary\": {\"all_failed\": false, \"degraded\": false, \"failed\": 0, \"no_execution\": false, \"not_run\": 0, \"partial\": 1, \"provider_failed\": false, \"requires_human\": 0, \"retrieval_incomplete_budget\": false, \"succeeded\": 5, \"total\": 6}, \"origin\": \"tool_or_provider_unknown\", \"status\": \"partial\", \"tool_call_id\": \"chatcmpl-tool-bd2260abf492462e83801c0a071890ed\"}, \"latest\": {\"execution_summary\": {\"all_failed\": false, \"degraded\": false, \"failed\": 0, \"no_execution\": false, \"not_run\": 0, \"partial\": 1, \"provider_failed\": false, \"requires_human\": 0, \"retrieval_incomplete_budget\": false, \"succeeded\": 5, \"total\": 6}, \"reused_result\": false, \"status\": \"partial\", \"successful_call_returned_zero_candidates\": false, \"tool_call_id\": \"chatcmpl-tool-bd2260abf492462e83801c0a071890ed\"}, \"observed_tool_results\": 1, \"partial_tool_results\": 1, \"replayed_results\": 0, \"source_id\": \"arxiv\", \"successful_tool_results\": 0}], \"reader_artifacts\": [{\"artifact_id\": \"art_c267ce406cece92a2e4a339c\", \"empty_read_count\": 0, \"end_status\": \"unknown\", \"namespace\": \"research_reference\", \"read_ranges\": [{\"char_end\": 16000, \"char_start\": 0, \"read_id\": \"read_44f26b9366765f4df1c9b84c\"}], \"sha256\": \"b96af1f16c88981a5c2f2faff9694fa2f8985a0324b099eeda2133a48e114d84\", \"verified_artifact_end\": null, \"whole_artifact_read\": false, \"whole_paper_read\": \"not_inferred_from_artifact\"}], \"required_reader_artifact_ids\": [], \"schema_version\": \"1.0\", \"scope\": {\"attempt\": 2, \"paper_id\": \"MF2033k6lC\", \"point_id\": \"NP-1\", \"run_id\": \"run-480a9f6d8a59475f860887c3a6f45324\", \"task_id\": \"T-R2-1\"}, \"semantic_evidence_sufficiency\": \"not_determined_by_harness\", \"stop_reason\": null}",
+        "role": "system"
+      },
+      {
+        "content": "NoveltyPoint:\n{\"point_id\": \"NP-1\", \"claim\": \"提出了一种新的图表示学习模型——GSAERU，用于大规模时序图数据上的节点表征学习。\", \"claim_en\": \"Proposed a new graph representation learning model - GSAERU, for node representation learning on large-scale sequential graphs.\", \"technical_features\": [\"通过引入图摘要技术将原图映射到固定规模的新图中，解决了GNN模型输出无法直接输入到RNN模型中进行训练的问题。\", \"利用图摘要技术加速模型训练和减少模型占用的计算资源。\"], \"technical_features_en\": [\"By introducing graph summarization technology to map the original graph to a fixed-size new graph, solving the problem that the output of the GNN model cannot be directly input into the RNN model for training.\", \"Utilizing graph summarization technology to accelerate model training and reduce computational resource consumption.\"]}\n\nResearchTask:\n{\"task_id\": \"T-R2-1\", \"novelty_point_id\": \"NP-1\", \"task_type\": \"replan_query\", \"language\": \"en\", \"description\": \"Successful queries returned zero candidates; a new semantic search direction is needed.\\n{\\\"missing_feature_ids\\\": [], \\\"missing_aspects\\\": []}\", \"attempt\": 2}\n\nSearchPlan:\n{\"concepts\": [{\"terms\": [\"graph summarization technology\"], \"role\": \"method\", \"alias\": []}, {\"terms\": [\"graph representation learning model\"], \"role\": \"method\", \"alias\": [\"GRLM\"]}, {\"terms\": [\"node representation learning\"], \"role\": \"feature\", \"alias\": []}, {\"terms\": [\"large-scale sequential graphs\"], \"role\": \"setting\", \"alias\": []}], \"strategies\": [{\"expression\": \"C1 AND C2\"}, {\"expression\": \"C1 AND C2\"}, {\"expression\": \"C1\"}]}\n\nRequired finish schema:\n{\"$defs\": {\"EvidenceCardDraft\": {\"additionalProperties\": false, \"description\": \"One model-authored semantic assessment to be bound by the runtime.\", \"properties\": {\"main_contribution\": {\"minLength\": 1, \"title\": \"Main Contribution\", \"type\": \"string\"}, \"overlaps\": {\"items\": {\"minLength\": 1, \"type\": \"string\"}, \"title\": \"Overlaps\", \"type\": \"array\"}, \"differences\": {\"items\": {\"minLength\": 1, \"type\": \"string\"}, \"title\": \"Differences\", \"type\": \"array\"}, \"quotes\": {\"items\": {\"$ref\": \"#/$defs/EvidenceQuoteDraft\"}, \"minItems\": 1, \"title\": \"Quotes\", \"type\": \"array\"}, \"possible_baseline\": {\"default\": false, \"title\": \"Possible Baseline\", \"type\": \"boolean\"}, \"relevance\": {\"maximum\": 1.0, \"minimum\": 0.0, \"title\": \"Relevance\", \"type\": \"number\"}, \"confidence\": {\"maximum\": 1.0, \"minimum\": 0.0, \"title\": \"Confidence\", \"type\": \"number\"}}, \"required\": [\"main_contribution\", \"quotes\", \"relevance\", \"confidence\"], \"title\": \"EvidenceCardDraft\", \"type\": \"object\"}, \"EvidenceQuoteDraft\": {\"additionalProperties\": false, \"description\": \"A semantic quote selection without model-supplied provenance handles.\", \"properties\": {\"quote\": {\"minLength\": 1, \"title\": \"Quote\", \"type\": \"string\"}, \"interpretation\": {\"minLength\": 1, \"title\": \"Interpretation\", \"type\": \"string\"}, \"confidence\": {\"maximum\": 1.0, \"minimum\": 0.0, \"title\": \"Confidence\", \"type\": \"number\"}}, \"required\": [\"quote\", \"interpretation\", \"confidence\"], \"title\": \"EvidenceQuoteDraft\", \"type\": \"object\"}}, \"additionalProperties\": false, \"properties\": {\"cards\": {\"items\": {\"$ref\": \"#/$defs/EvidenceCardDraft\"}, \"title\": \"Cards\", \"type\": \"array\"}, \"no_evidence_reason\": {\"anyOf\": [{\"minLength\": 1, \"type\": \"string\"}, {\"type\": \"null\"}], \"default\": null, \"title\": \"No Evidence Reason\"}}, \"title\": \"ResearchFinishDraft\", \"type\": \"object\"}\n\nAvailable tools: reference_search, database_search, reader, submit_evidence. browser is unavailable. Web search is discovery only: do not attempt browser or pass a source_record_id to reader. Read only actual artifact IDs from available tools; prefer database/reference artifacts. Do not repeat web searches when there is no acquisition path. Finish with available evidence or explain the acquisition limitation. After a useful Reader result, submit grounded partial cards with submit_evidence before further exploration; accepted cards survive later execution failure. This shares the existing tool-call budget and does not imply final Validator/Reviewer approval. The original ResearchFinishDraft final response is still required.\nRuntime-owned recovery directive (tool permissions are enforced): {\"point_id\":\"NP-1\",\"action\":\"replan_query\",\"reason\":\"Successful queries returned zero candidates; a new semantic search direction is needed.\",\"cause_event_ids\":[\"failure_bc7b3766eb598db523924930\",\"failure_69f85510b6d765e090742b0f\"],\"source_id\":null,\"artifacts\":[],\"source_record_ids\":[],\"missing_feature_ids\":[],\"missing_aspects\":[],\"max_additional_attempts\":1}",
+        "role": "user"
+      },
+      {
+        "content": null,
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "function": {
+              "arguments": "{\"source_id\": \"arxiv\", \"full_text_source_record_ids\": []}",
+              "name": "database_search"
+            },
+            "id": "chatcmpl-tool-bd2260abf492462e83801c0a071890ed",
+            "type": "function"
+          }
+        ]
+      },
+      {
+        "content": "{\"error\": null, \"execution_issues\": [], \"execution_summary\": {\"all_failed\": false, \"degraded\": false, \"failed\": 0, \"no_execution\": false, \"not_run\": 0, \"partial\": 1, \"provider_failed\": false, \"requires_human\": 0, \"retrieval_incomplete_budget\": false, \"succeeded\": 5, \"total\": 6}, \"result_marker\": \"has_hits\", \"results\": [{\"abstract_preview\": \"A droplet breaks up in tens of microseconds, and a recording captures perhaps a dozen frames. The states in between cannot be recovered without repeating the experiment, and simulating them is too costly to sweep an operating envelope. Yet they are present in the corpus as a whole: a campaign spanning a device's actuation range produces morphologies resembling those any single recording missed. Exploiting that requires a representation that is low-dimensional, invertible, and faithful to shape r\", \"access_status\": \"full_text_acquired\", \"artifact_ids\": [\"art_340d89f3f11d73e566a6e82d\", \"art_c267ce406cece92a2e4a339c\"], \"authors\": [\"Ali R. Hashemi\", \"Mohammad R. Hashemi\", \"Pavel B. Ryzhakov\"], \"full_text_artifact_ids\": [\"art_c267ce406cece92a2e4a339c\"], \"publication_year\": 2026, \"source_id\": \"arxiv\", \"source_record_id\": \"src_64d056dc75e9a10303c8e26a\", \"title\": \"A shape-similarity latent space for fluid interfaces: invertible reduced-order modelling of droplet morphology\", \"work_id\": \"wrk_b5c0a8cfb27d1353f50e7857\"}, {\"abstract_preview\": \"Forecasting time-varying functional connectivity from electroencephalography (EEG) requires modeling both history-dependent trends and structured variability across channels. Conditional flow matching provides a framework for distributional forecasting, yet it remains unclear whether graph-informed source distributions offer practical advantages over isotropic noise and strong deterministic predictors. We introduce a graph-structured residual flow framework that separates conditional mean predic\", \"access_status\": \"metadata_only\", \"artifact_ids\": [\"art_e2bf97b53ba9287fb1b7839a\"], \"authors\": [\"Haohui Jia\", \"Zheng Chen\", \"Jathurshan Pradeepkumar\", \"Xu Cao\", \"Yasuko Matsubara\", \"Yasushi Sakurai\", \"Takashi Matsubara\"], \"full_text_artifact_ids\": [], \"publication_year\": 2026, \"source_id\": \"arxiv\", \"source_record_id\": \"src_3a7bdd0a583052bba011b429\", \"title\": \"GRFBrain: Graph-Structured Rectified Flows for EEG Dynamic Modeling\", \"work_id\": \"wrk_efec2dd463d17f394aa7cfbe\"}, {\"abstract_preview\": \"Topological structures such as simplicial complexes, hypergraphs, and cell complexes extend standard graph models by modeling higher-order relationships. These structures appear in many modern datasets and require specialized methods for generating meaningful embeddings. In this paper, we introduce TopoEmbedX, a unified framework for embedding a wide range of topological domains into Euclidean spaces. The package brings together several existing topological embedding algorithms---DeepCell, Cell2\", \"access_status\": \"metadata_only\", \"artifact_ids\": [\"art_5e60dbc3a947f54778ace901\"], \"authors\": [\"Florian Frantzen\", \"Ibrahem AlJabea\", \"Ines Henriques-Cadby\", \"Theodore Papamarkou\", \"Mustafa Hajij\", \"Michael T. Schaub\"], \"full_text_artifact_ids\": [], \"publication_year\": 2026, \"source_id\": \"arxiv\", \"source_record_id\": \"src_7cba12343e62622388137a16\", \"title\": \"TopoEmbedX: A General Framework for Representation Learning on Topological Domains\", \"work_id\": \"wrk_f93feeba9ec97efd446b0ea6\"}, {\"abstract_preview\": \"Production machine learning (ML) stacks often split graph compilation and kernel execution across different layers and languages, making backend behavior, deployment guarantees, and performance fallbacks hard to reason about end-to-end. RLX addresses this gap with a single Rust codebase that combines compiler and runtime roles around one primitive-level, three-level intermediate representation (IR), plus a transparent dispatch contract that resolves each operator to native, common-IR, or rewritt\", \"access_status\": \"metadata_only\", \"artifact_ids\": [\"art_25b0df1f8fc3768dc61070bb\"], \"authors\": [\"Eugene Hauptmann\", \"Nataliya Kosmyna\"], \"full_text_artifact_ids\": [], \"publication_year\": 2026, \"source_id\": \"arxiv\", \"source_record_id\": \"src_59d74a9bc44aececcff98d32\", \"title\": \"RLX: A Unified Multi-Backend Tensor Compiler and Distributed Runtime in Rust\", \"work_id\": \"wrk_46ee8171ec551314954093c6\"}], \"retrieval_status\": \"HAS_RESULTS\", \"source_id\": \"arxiv\", \"succeeded\": true, \"summary\": \"数据库检索召回 4 个候选作品\", \"warnings\": []}",
+        "role": "tool",
+        "tool_call_id": "chatcmpl-tool-bd2260abf492462e83801c0a071890ed"
+      },
+      {
+        "content": null,
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "function": {
+              "arguments": "{\"artifact_id\": \"art_c267ce406cece92a2e4a339c\", \"max_chars\": 16000}",
+              "name": "reader"
+            },
+            "id": "chatcmpl-tool-6e032f1bbc614f808da3a7e818b81237",
+            "type": "function"
+          }
+        ]
+      },
+      {
+        "content": "{\"material_catalog\": [], \"read_result\": {\"artifact_id\": \"art_c267ce406cece92a2e4a339c\", \"char_end\": 16000, \"char_start\": 0, \"has_more\": true, \"namespace\": \"research_reference\", \"read_id\": \"read_44f26b9366765f4df1c9b84c\", \"role\": \"extracted_text\", \"text\": \"A shape-similarity latent space for fluid interfaces: invertible reduced-order modelling of droplet morphology\\n\\n      Report GitHub Issue\\n      ×\\n\\n      Title:\\n\\nContent selection saved. Describe the issue below:\\n\\n      Description:\\n\\n      Submit without GitHub\\n      Submit in GitHub\\n\\n    arXiv is now an independent nonprofit!\\n    Learn more\\n    ×\\n\\n      Back to arXiv\\n\\n    Why HTML?\\n\\n      Report Issue\\n\\n      Back to Abstract\\n\\n      Download PDF\\n\\nAbstract\\n\\n1 Introduction\\n\\n2 Theoretical background\\n\\n2.1 Elastic shape analysis and the SRVF\\\\mathrm{SRVF}\\n\\n2.2 Dimensionality reduction and the invertibility gap\\n\\n2.3 Autoencoders and the geometry gap\\n\\n2.4 Graph regularisation of a latent space\\n\\n2.5 Multi-component shapes\\n\\n2.6 Positioning\\n\\n3 Methodology\\n\\n3.1 Overview\\n\\n3.2 Shape representation\\n\\n3.3 Assembling multi-component interfaces\\n\\n3.4 The shape-space neighbour graph\\n\\n3.5 The regularised objective\\n\\n3.6 Decoding and invertibility\\n\\n3.7 Diagnostics\\n\\nEffective dimensionality.\\n\\nIsometry defect.\\n\\nkkNN structure overlap.\\n\\nTrustworthiness.\\n\\n3.8 Reading the reported quantities\\n\\n3.9 Evaluation protocol\\n\\nInterpolation.\\n\\nShape error.\\n\\n4 Experimental setup\\n\\n4.1 Data\\n\\n4.2 Two-stage cleaning\\n\\nStage 1: per-component screening.\\n\\nStage 2: per-cluster outlier removal.\\n\\n4.3 Representation and architecture\\n\\n4.4 Regularisation\\n\\n4.5 Neighbour-graph metric\\n\\n4.6 Interpolation protocol\\n\\n4.7 Baselines\\n\\nPOD.\\n\\nGeometric-AE.\\n\\n4.8 Statistical protocol\\n\\n5 Results\\n\\n5.1 Ablation of the manifold-informed loss\\n\\nImprovement is confined to the expected proof of concept.\\n\\n5.2 Latent dimensionality\\n\\n5.3 Effect of data cleaning on the latent\\n\\n5.4 PoC-1: temporal interpolation\\n\\nError reporting by regime.\\n\\nVariation across sequences.\\n\\nComposition of the error.\\n\\nIsolation by adjacent-frame interpolation.\\n\\nFailure regime.\\n\\n5.5 PoC-2: waveform to full contour\\n\\n5.6 PoC-3: structure recovery\\n\\nThe ablation.\\n\\nCluster quality.\\n\\nCost.\\n\\nLimitations of the adjusted Rand index.\\n\\n5.7 Benchmark against linear and geometric baselines\\n\\nTransfer of the reconstruction advantage to interpolation.\\n\\nSimilarity graph versus additional capacity.\\n\\nGrid occupancy, where the baseline leads.\\n\\n5.8 Variants\\n\\n5.9 Sensitivity to the neighbour-graph metric\\n\\nInterpretation of the per-metric grids.\\n\\n5.10 Regularisation strength and the locality–globality trade-off\\n\\nEffect of a more continuous latent.\\n\\n6 Discussion\\n\\n6.1 The role of the manifold-informed loss\\n\\n6.2 The central limitation: topology change\\n\\n6.3 Alternatives considered\\n\\n6.4 Negative results\\n\\n6.5 Suitability of an isometry penalty\\n\\nLocal versus global structure.\\n\\nIsometry with respect to the wrong geometry.\\n\\n6.6 Latent compression relative to the data dimension\\n\\n6.7 Limits of a purely geometric representation\\n\\n6.8 Generality\\n\\n7 Conclusions\\n\\nReferences\\n\\nA Supplementary material\\n\\nA.1 Cluster atlas\\n\\nA.2 Coverage of the sampled parameter space\\n\\nA.3 Latent trajectories\\n\\nA.4 Latent connectivity\\n\\nA.5 Latent geometry diagnostics\\n\\nA.6 Regularisation-strength study\\n\\nA.7 Reproducibility\\n\\n    License: CC BY-SA 4.0\\n\\narXiv:2609.37947v1 [physics.flu-dyn] 29 Sep 2026\\n\\nA shape-similarity latent space for fluid interfaces: invertible\\nreduced-order modelling of droplet morphology\\n\\nA.R. Hashemi\\n\\nEmail: ahashemi@cimne.upc.edu\\n\\nAddress: Centre Internacional de Mètodes Numèrics en\\nEnginyeria (CIMNE), C/Gran Capità s/n, Campus Nord UPC, 08034\\nBarcelona, Spain\\n\\nAddress: Escola Tècnica Superior d’Enginyers de Camins, Canals i\\nPorts, Universitat Politècnica de Catalunya – BarcelonaTech (UPC),\\nC/Jordi Girona 1, Campus Nord UPC, 08034 Barcelona, Spain\\n\\n  \\nM.R. Hashemi\\n\\nEmail: mohammad.reza@upc.edu\\n\\nAddress: Escola Politècnica Superior d’Enginyeria de Vilanova i\\nla Geltrú (EPSEVG), Fluid Mechanics Department, Universitat\\nPolitècnica de Catalunya – BarcelonaTech (UPC), Avinguda Víctor\\nBalaguer 1, 08800 Vilanova i la Geltrú, Spain\\n\\n  \\nP. Ryzhakov\\n\\nEmail: pavel.ryzhakov@upc.edu\\n\\nAddress: Centre Internacional de Mètodes Numèrics en\\nEnginyeria (CIMNE), C/Gran Capità s/n, Campus Nord UPC, 08034\\nBarcelona, Spain\\n\\nAddress: Escola Tècnica Superior d’Enginyers de Camins, Canals i\\nPorts, Universitat Politècnica de Catalunya – BarcelonaTech (UPC),\\nC/Jordi Girona 1, Campus Nord UPC, 08034 Barcelona, Spain\\n\\nAbstract\\n\\nA droplet breaks up in tens of microseconds, and a high-speed recording\\ncaptures perhaps a dozen frames of it. The states in between cannot be\\nrecovered without repeating the experiment, and simulating them is too costly\\nto sweep an operating envelope — yet they are present in the data as a whole,\\nbecause a campaign spanning a device’s actuation range produces morphologies\\nresembling those any single recording missed. Exploiting that requires a\\nrepresentation which is low-dimensional, invertible, and faithful to shape\\nrather than to sampling. Proper orthogonal decomposition supplies the first two\\nbut measures distance in sampled coordinates; manifold learning supplies the\\nthird but no map back to a shape; elastic shape analysis supplies a shape\\nmetric but no reduced coordinates.\\n\\nWe present SHROM, which composes all three. Interfaces are represented by\\ntheir square-root velocity functions, a neighbour graph is built over the\\nresulting shape space, and an autoencoder is trained to reconstruct while\\npenalising latents in which graph neighbours are not latent neighbours. The\\ndemonstration uses 301,539301{,}539 inkjet droplet contours and four filmed break-up\\nsequences held out entirely.\\n\\nThe graph term does not improve reconstruction. It determines whether position\\nin the latent carries meaning: clustering the latent of an otherwise identical\\nmodel recovers the shape-space partition at chance\\n(ARI=0.063±0.059\\\\mathrm{ARI}=0.063\\\\pm 0.059), and at 0.781±0.0490.781\\\\pm 0.049 with the term\\nactive. The trained model uses about two of its latent dimensions\\n(neff=1.20±0.02n_{\\\\mathrm{eff}}=1.20\\\\pm 0.02) although the shape corpus is of higher\\nintrinsic dimension, and raising the latent to that dimension changes no\\ndownstream result measurably. Waveform parameters predict the full closed\\ncontour at R2=0.878±0.026R^{2}=0.878\\\\pm 0.026, and interpolation returns plausible\\ndroplets at arbitrary intermediate times.\\n\\nNegative results are reported in the same terms. The neighbour-graph metric\\nproved immaterial across five choices; interpolation error saturates at the\\nreconstruction limit, so a plain autoencoder leads that task by measuring the\\nfidelity the graph term trades for organisation. The principal limitation is\\ninterpolation across a change of interface topology. No connected component of\\nthe regularised latent contains both a single-component and a post-break-up\\nshape, at any regularisation strength or latent dimension tested, whereas an\\nunregularised autoencoder mixes them freely — the separation is the\\nregulariser reporting a real discontinuity in shape space, not an artefact of\\nthe embedding.\\n\\nKeywords: \\nreduced-order modelling , elastic shape analysis , square-root velocity function , autoencoder , shape-space latent organisation , topology change , drop-on-demand inkjet\\n\\n1 Introduction\\n\\nAn inkjet droplet detaches, stretches into a ligament and breaks up in a few\\ntens of microseconds. An engineer choosing an actuation waveform needs to know\\nwhat it will produce, and an engineer diagnosing a failed print needs to know\\nwhat happened between two frames of a high-speed recording. Neither question is\\neasy to answer. Simulation resolves the intermediate states but at a cost per\\nconfiguration that rules out searching an operating envelope. Imaging records\\nthem directly, but every campaign fixes a frame rate, and the states between\\nconsecutive frames of an existing recording are not available at any price —\\nthey would require the experiment to be repeated.\\n\\nThe states are missing from any single recording. They are not, however,\\nmissing from the data as a whole. A campaign that sweeps the achievable range\\nof actuation parameters produces hundreds of thousands of droplets, and a\\nmorphology one droplet passes through unobserved closely resembles one that a\\ndifferent setting produced and the camera did capture. The observations\\nare sparse in time and dense in shape. If a model could tell which shapes\\nresemble which, it could supply from the corpus what any one sequence failed to\\nrecord — and answer the same question in reverse, predicting the shape a\\nwaveform will produce because similar waveforms produced similar shapes.\\n\\nThat is what this paper builds, and it is why a representation is needed rather\\nthan a lookup. Such a representation must be low-dimensional, or there\\nis nothing compact to interpolate through or regress onto. It must be\\ninvertible, so that a coordinate can be turned back into an interface\\nrather than merely scored. And it must be geometry-faithful, so that\\nproximity in the representation means similarity of shape rather than\\nsimilarity of sampling — because resemblance is the entire mechanism by which\\na missing state is recovered.\\n\\nNo established tool supplies all three. Reduced-order models built on\\nproper orthogonal decomposition [1] are invertible\\nand compact but measure distance between sampled coordinates, where a curve and\\na reparametrisation of it appear far apart. Manifold learning\\n[2] respects an arbitrary input metric but provides no map\\nback to a shape. Elastic shape analysis [3] supplies a\\ngenuine shape metric with a full statistical apparatus, but is a representation\\nrather than a reduction, and yields no low-dimensional coordinates. Section 2\\ndevelops each of these and what it lacks.\\n\\nApproach\\n\\nThis work composes the three into one model. Interfaces are represented by\\ntheir square-root velocity functions, so that distance between shapes is a\\ngeodesic on a sphere rather than a norm on a coordinate vector. A neighbour\\ngraph is built over that shape space. An autoencoder is then trained with a\\nreconstruction term and a term that penalises the latent when graph neighbours\\nare not latent neighbours. This supplies the inverse map that manifold learning\\nlacks, together with the shape geometry that a plain autoencoder does not\\nacquire.\\n\\nEvery ingredient is established, and Section 2 cites the precedent\\nfor each. The composition achieves what none of the parts achieves alone. Building the\\nneighbour graph over an elastic shape space produces a latent in which\\nposition corresponds to morphology, so that a coordinate between two\\nobservations decodes to the shape belonging at that coordinate. This is\\nwhat converts density in shape space into predictive power along a sparsely\\nsampled trajectory, and it is invisible to reconstruction error — a decoder\\ncan return every training shape faithfully while the space between those shapes\\nholds nothing.\\n\\nThat claim is testable and we test it directly, against an otherwise identical\\nmodel with the graph term removed, and against a baseline that pursues latent\\ngeometry through a different mechanism.\\n\\nDemonstration\\n\\nThe method is demonstrated on drop-on-demand inkjet printing, which supplies\\nthe conditions the argument requires. The morphology family is rich enough that\\nresemblance is informative, spanning compact droplets, long ligaments and\\npost-break-up satellites. A natural eight-parameter actuation input covers the\\ndevice’s achievable range. The filmed sequences through break-up are sparse in\\ntime, and can therefore be used to test whether the missing states are\\nrecoverable. Our own earlier work on this system\\npredicted droplet descriptors and accompanying-structure classes from actuation\\nparameters [4, 5]; the present model predicts the full\\nclosed interface geometry, which those approaches do not attempt.\\n\\nThe demonstration is a demonstration. Nothing in the method refers to droplets,\\nand Section 6.8 states plainly which properties a different\\ndomain would need for it to transfer, and that such transfer is untested here.\\n\\nContributions\\n\\n1.\\n\\nAn elastic (SRVF\\\\mathrm{SRVF}) shape representation of a fluid interface used as\\na learning target. The SRVF\\\\mathrm{SRVF} has been used this way before, for\\nprotein backbones [6]; elastic shape analysis is\\nmature for biological and medical shapes generally. We are not aware of\\nprior use on fluid interfaces, where data-driven shape work has instead\\nused Fourier descriptors or raw images.\\n\\n2.\\n\\nA neighbour graph built over that shape space, rather than over raw or\\nFourier coordinates, as the regularisation signal. The claim\\nconcerns the space, not the distance function: an ablation across five\\ngraph metrics finds no difference, so what matters is that proximity\\nmeans shape similarity, not which formula computes it.\\n\\n3.\\n\\nAn invertibility and organisation assessment rather than an assertion:\\nthe graph term is ablated against an identical model, the latent is\\nprobed by decoding coordinates never seen in training, and the\\nreported diagnostics are defined before they are measured.\\n\\n4.\\n\\nThree downstream demonstrations, reported with their null results:\\ninterpolation through break-up, prediction of geometry from actuation\\nparameters, and recovery of morphological structure. On the first, a\\nplain autoencoder performs better. The cause is identified rather than\\nleft open: that task’s residual error is reconstruction error, which the\\nmanifold term trades for latent organisation. Establishing that a proof\\nof concept measures a quantity other than the one it was designed to\\ntest is itself a result.\\n\\nWe are explicit about what is not claimed. This is not the first autoencoder\\nfor droplet shapes, the first graph-regularised latent, or a new interpolation\\nscheme; Section 2.6 attributes each to its precedent.\\n\\nStructure\\n\\nSection 2 reviews the four candidate approaches and identifies what\\neach lacks. Section 3 defines the method in domain-independent terms,\\nand Section 4 instantiates it, giving every parameter a value and a\\nreason. Section 5 reports the ablation first, since it is what\\njustifies the method, followed by the three demonstrations, the baseline\\ncomparison and two configuration studies. Section 6 synthesises,\\nincluding the central limitation — interpolation across a change of interface\\ntopology — and Section 7 states what was and was not\\nestablished. Appendix A holds the supporting measurements: the latent\\nconnectivity that underlies the topology argument, and a set of latent-geometry\\ndiagnostics that turned out not to discriminate between configurations, kept\\nbecause the null is worth recording.\\n\\n2 Theoretical background\\n\\nRecovering an unobserved interface state from a corpus of observed ones\\nrequires four things at once: a representation in which distance between shapes\\nis meaningful, a low-dimensional coordinate system, an inverse from those\\ncoordinates back to a shape, and a latent whose organisation reflects\\nshape similarity. The first three are familiar requirements; the fourth is the\\none that makes resemblance usable, and it is the one no established method\\nsupplies.\\n\\nThis section takes the candidates in turn and asks of each the same question:\\ngiven two observed droplets and a state between them that was never recorded,\\nwhat stops this method from supplying it? The method of Section 3 is\\nassembled from precisely these pieces and claims novelty only in their\\ncomposition.\\n\\n2.1 Elastic shape analysis and the SRVF\\\\mathrm{SRVF}\\n\\nComparing two curves requires deciding when they are the same shape. Two\\noutlines that differ only by translation, scale, rotation, or by where the\\nparametrisation begins and how quickly it traverses the boundary, are\\ngeometrically identical but numerically far apart. Elastic shape analysis\\nremoves these by construction [3, 7].\\n\\nThe square-root velocity function of Equation 2 has the property that\\nreparametrisation acts on it as an isometry of 𝕃2\\\\mathbb{L}^{2}, so the quotient\\nby reparametrisation is well behaved rather than requiring a penalty term.\\nAfter normalisation, shapes are points on a unit Hilbert sphere and the\\ndistance between them is the great-circle angle. The framework carries a\\ndeveloped statistical apparatus — means, geodesics,\", \"work_id\": \"wrk_b5c0a8cfb27d1353f50e7857\"}, \"read_status\": \"content\", \"succeeded\": true, \"summary\": \"读取 artifact art_c267ce406cece92a2e4a339c 字符 [0, 16000)\"}",
+        "role": "tool",
+        "tool_call_id": "chatcmpl-tool-6e032f1bbc614f808da3a7e818b81237"
+      }
+    ],
+    "model": "qwen2.5-7b-instruct",
+    "temperature": 0.3,
+    "tool_choice": "auto",
+    "tools": [
+      {
+        "function": {
+          "description": "在论文作者自带的参考文献池中进行本地关键词检索。",
+          "name": "reference_search",
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "max_results": {
+                "default": 10,
+                "maximum": 100,
+                "minimum": 1,
+                "title": "Max Results",
+                "type": "integer"
+              },
+              "query": {
+                "minLength": 1,
+                "title": "Query",
+                "type": "string"
+              }
+            },
+            "required": [
+              "query"
+            ],
+            "title": "ReferenceSearchArguments",
+            "type": "object"
+          }
+        },
+        "type": "function"
+      },
+      {
+        "function": {
+          "description": "搜索已配置的结构化文献数据库并保存候选作品；source_id 只能使用以下值：arxiv, springer。候选来源本身不是证据；结果包含 artifact_ids 时，下一次工具调用必须优先使用 reader 读取其中一个 Artifact，不得继续搜索。同一任务的检索计划固定；重复调用相同 source_id 仅复用完整成功结果（含零命中）。失败或部分成功不缓存；临时错误按 provider 退避重试，其他错误优先换库。成功后优先批量读取已有候选；新一轮任务可重新检索。默认先返回候选摘要。如摘要不足以核验具体特征，可传入full_text_source_record_ids（至多4个已返回的同库文献句柄）按需获取全文；此模式不重新检索。获取后必须通过 reader 读取原文，才能作为证据。",
+          "name": "database_search",
+          "parameters": {
+            "additionalProperties": false,
+            "description": "Select one configured database; task and query scope stay runtime-owned.",
+            "properties": {
+              "full_text_source_record_ids": {
+                "items": {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "maxItems": 4,
+                "title": "Full Text Source Record Ids",
+                "type": "array"
+              },
+              "source_id": {
+                "minLength": 1,
+                "title": "Source Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "source_id"
+            ],
+            "title": "DatabaseSearchArguments",
+            "type": "object"
+          }
+        },
+        "type": "function"
+      },
+      {
+        "function": {
+          "description": "按 Artifact ID 读取可验证文本。发现多个候选后优先一次批量读取必要片段：reads=[{\"artifact_id\":\"...\",\"max_chars\":2000}, ...]，最多4段；每段保留独立 read_id、来源和字符范围。也支持单个 artifact_id。",
+          "name": "reader",
+          "parameters": {
+            "$defs": {
+              "ConfiguredReaderArguments8000_16000": {
+                "additionalProperties": false,
+                "properties": {
+                  "artifact_id": {
+                    "minLength": 1,
+                    "title": "Artifact Id",
+                    "type": "string"
+                  },
+                  "char_start": {
+                    "default": 0,
+                    "minimum": 0,
+                    "title": "Char Start",
+                    "type": "integer"
+                  },
+                  "max_chars": {
+                    "default": 8000,
+                    "maximum": 16000,
+                    "minimum": 1,
+                    "title": "Max Chars",
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "artifact_id"
+                ],
+                "title": "ConfiguredReaderArguments8000_16000",
+                "type": "object"
+              }
+            },
+            "additionalProperties": false,
+            "properties": {
+              "artifact_id": {
+                "anyOf": [
+                  {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Artifact Id"
+              },
+              "char_start": {
+                "default": 0,
+                "minimum": 0,
+                "title": "Char Start",
+                "type": "integer"
+              },
+              "max_chars": {
+                "default": 8000,
+                "maximum": 16000,
+                "minimum": 1,
+                "title": "Max Chars",
+                "type": "integer"
+              },
+              "reads": {
+                "anyOf": [
+                  {
+                    "items": {
+                      "$ref": "#/$defs/ConfiguredReaderArguments8000_16000"
+                    },
+                    "maxItems": 4,
+                    "minItems": 1,
+                    "type": "array"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Reads"
+              }
+            },
+            "title": "ConfiguredReaderCall8000_16000",
+            "type": "object"
+          }
+        },
+        "type": "function"
+      },
+      {
+        "function": {
+          "description": "Checkpoint partial evidence drafts grounded in successful Reader text. Original Builder validation applies; this does not finish the task or imply Reviewer approval.",
+          "name": "submit_evidence",
+          "parameters": {
+            "$defs": {
+              "EvidenceCardDraft": {
+                "additionalProperties": false,
+                "description": "One model-authored semantic assessment to be bound by the runtime.",
+                "properties": {
+                  "confidence": {
+                    "maximum": 1.0,
+                    "minimum": 0.0,
+                    "title": "Confidence",
+                    "type": "number"
+                  },
+                  "differences": {
+                    "items": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "title": "Differences",
+                    "type": "array"
+                  },
+                  "main_contribution": {
+                    "minLength": 1,
+                    "title": "Main Contribution",
+                    "type": "string"
+                  },
+                  "overlaps": {
+                    "items": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "title": "Overlaps",
+                    "type": "array"
+                  },
+                  "possible_baseline": {
+                    "default": false,
+                    "title": "Possible Baseline",
+                    "type": "boolean"
+                  },
+                  "quotes": {
+                    "items": {
+                      "$ref": "#/$defs/EvidenceQuoteDraft"
+                    },
+                    "minItems": 1,
+                    "title": "Quotes",
+                    "type": "array"
+                  },
+                  "relevance": {
+                    "maximum": 1.0,
+                    "minimum": 0.0,
+                    "title": "Relevance",
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "main_contribution",
+                  "quotes",
+                  "relevance",
+                  "confidence"
+                ],
+                "title": "EvidenceCardDraft",
+                "type": "object"
+              },
+              "EvidenceQuoteDraft": {
+                "additionalProperties": false,
+                "description": "A semantic quote selection without model-supplied provenance handles.",
+                "properties": {
+                  "confidence": {
+                    "maximum": 1.0,
+                    "minimum": 0.0,
+                    "title": "Confidence",
+                    "type": "number"
+                  },
+                  "interpretation": {
+                    "minLength": 1,
+                    "title": "Interpretation",
+                    "type": "string"
+                  },
+                  "quote": {
+                    "minLength": 1,
+                    "title": "Quote",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "quote",
+                  "interpretation",
+                  "confidence"
+                ],
+                "title": "EvidenceQuoteDraft",
+                "type": "object"
+              }
+            },
+            "additionalProperties": false,
+            "description": "Submit semantic drafts only; all provenance and scope stay runtime-owned.",
+            "properties": {
+              "cards": {
+                "items": {
+                  "$ref": "#/$defs/EvidenceCardDraft"
+                },
+                "maxItems": 16,
+                "minItems": 1,
+                "title": "Cards",
+                "type": "array"
+              }
+            },
+            "required": [
+              "cards"
+            ],
+            "title": "EvidenceCheckpointArguments",
+            "type": "object"
+          }
+        },
+        "type": "function"
+      }
+    ]
+  },
+  "response": {
+    "content": "<tool_call>\n{\"name\": \"submit_evidence\", \"arguments\": {\"cards\": [{\"main_contribution\": \"The paper introduces SHROM, a model that combines square-root velocity functions, a neighbor graph, and an autoencoder for representing and reconstructing fluid interfaces in a low-dimensional, invertible, and shape-faithful manner.\", \"overlaps\": [\"The proposed model utilizes a combination of techniques including shape analysis and autoencoding, which are also used in other works.\", \"The approach involves building a neighbor graph over a shape space, similar to some previous works in manifold learning.\"], \"differences\": [\"SHROM specifically targets fluid interfaces and uses square-root velocity functions, which are not commonly used in other works.\", \"The model includes a regularization term that ensures latent neighbors correspond to graph neighbors, a feature not present in other works.\"], \"quotes\": [{\"quote\": \"Interfaces are represented by their square-root velocity functions, a neighbor graph is built over the resulting shape space, and an autoencoder is trained to reconstruct while penalising latents in which graph neighbors are not latent neighbors.\", \"interpretation\": \"The model uses square-root velocity functions for shape representation, a neighbor graph for latent organization, and an autoencoder for reconstruction, with a regularization term ensuring latent and graph neighbors align.\", \"confidence\": 0.95}], \"possible_baseline\": false, \"relevance\": 0.9, \"confidence\": 0.9}}]}\n</tool_call>",
+    "tool_calls": []
+  },
+  "run_id": "run-480a9f6d8a59475f860887c3a6f45324",
+  "scope": {
+    "attempt": 2,
+    "point_id": "NP-1",
+    "task_id": "T-R2-1"
+  },
+  "stage_name": "run_research_task",
+  "started_at": "2026-09-30T07:07:22.752233+00:00",
+  "status": "SUCCESS",
+  "timeline": [
+    {
+      "at": "2026-09-30T07:07:22.752233+00:00",
+      "endpoint": "http://127.0.0.1:8000/openapi.json",
+      "kind": "schema",
+      "method": "GET",
+      "payload_sha256": null,
+      "phase": "CONTEXT_MEASUREMENT_REQUEST"
+    },
+    {
+      "at": "2026-09-30T07:07:22.752233+00:00",
+      "kind": "schema",
+      "phase": "CONTEXT_MEASUREMENT_RESPONSE"
+    },
+    {
+      "at": "2026-09-30T07:07:22.752233+00:00",
+      "endpoint": "http://127.0.0.1:8000/version",
+      "kind": "version",
+      "method": "GET",
+      "payload_sha256": null,
+      "phase": "CONTEXT_MEASUREMENT_REQUEST"
+    },
+    {
+      "at": "2026-09-30T07:07:22.752233+00:00",
+      "kind": "version",
+      "phase": "CONTEXT_MEASUREMENT_RESPONSE"
+    },
+    {
+      "at": "2026-09-30T07:07:22.752233+00:00",
+      "endpoint": "http://127.0.0.1:8000/tokenize",
+      "kind": "tokenize",
+      "method": "POST",
+      "payload_sha256": "eb895dc4a986804136ed4e494ab018b08fc2d096cf00f60cf306968c0e576ea7",
+      "phase": "CONTEXT_MEASUREMENT_REQUEST"
+    },
+    {
+      "at": "2026-09-30T07:07:22.752233+00:00",
+      "count": 11168,
+      "kind": "tokenize",
+      "max_model_len": 32768,
+      "phase": "CONTEXT_MEASUREMENT_RESPONSE"
+    },
+    {
+      "at": "2026-09-30T07:07:22.752233+00:00",
+      "code": "CONTEXT_ADMITTED",
+      "counter": "vllm",
+      "decision": "allow",
+      "effective_context_window": 32768,
+      "exact": true,
+      "input_tokens": 11168,
+      "measurement_details": {
+        "endpoint": "http://127.0.0.1:8000/tokenize",
+        "schema_verified": true,
+        "server_version": "0.8.5.post1",
+        "template_fields": [
+          "add_generation_prompt",
+          "add_special_tokens",
+          "chat_template_kwargs",
+          "continue_final_message",
+          "messages",
+          "model"
+        ],
+        "tokenize_payload_sha256": "eb895dc4a986804136ed4e494ab018b08fc2d096cf00f60cf306968c0e576ea7",
+        "vllm_tools_mode": "v0_8_5_kwargs"
+      },
+      "mode": "enforce",
+      "on_unavailable": "reject",
+      "output_reservation_field": "max_tokens",
+      "output_tokens_reserved": 4096,
+      "payload_sha256": "e08565709d6274bd5cfa6db91a470705b647b43847fa6365ba708d97df76661b",
+      "phase": "CONTEXT_ADMISSION",
+      "profile_context_window": 32768,
+      "requested_total_tokens": 15264,
+      "server_context_window": 32768,
+      "source": "vllm_tokenize",
+      "status": "admitted",
+      "vllm_tools_mode": "v0_8_5_kwargs",
+      "window_source": "minimum_of_profile_and_server",
+      "would_reject": false
+    },
+    {
+      "at": "2026-09-30T07:07:22.910842+00:00",
+      "phase": "TRANSPORT_INVOKED",
+      "timeout_seconds": 300.0
+    },
+    {
+      "at": "2026-09-30T07:07:31.882222+00:00",
+      "http_status": 200,
+      "phase": "RESPONSE_HEADERS",
+      "provider_request_id": null
+    },
+    {
+      "at": "2026-09-30T07:07:31.888283+00:00",
+      "body_bytes": 1975,
+      "phase": "RESPONSE_BODY_COMPLETE"
+    },
+    {
+      "at": "2026-09-30T07:07:31.892238+00:00",
+      "phase": "RESPONSE_PARSED",
+      "response_id": "chatcmpl-46f4c62f4eed49b4870b977585a7cc36",
+      "usage_available": true
+    },
+    {
+      "at": "2026-09-30T07:07:22.752233+00:00",
+      "measured_input_tokens": 11168,
+      "payload_sha256": "e08565709d6274bd5cfa6db91a470705b647b43847fa6365ba708d97df76661b",
+      "phase": "CONTEXT_MEASUREMENT_VERIFIED",
+      "provider_input_tokens": 11168,
+      "status": "matched"
+    }
+  ],
+  "tokens": {
+    "available": true,
+    "billable_breakdown_available": true,
+    "cached_input_tokens": 0,
+    "input_tokens": 11168,
+    "output_tokens": 297,
+    "reasoning_tokens": 0,
+    "total_tokens": 11465
+  },
+  "transport_inflight_unknown": false
+}

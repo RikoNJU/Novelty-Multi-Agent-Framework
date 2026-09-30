@@ -1,0 +1,465 @@
+{
+  "alias": "local-qwen2.5-7b",
+  "billing": {
+    "amount": null,
+    "currency": "RMB",
+    "pricing_table": "/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/config/llm_pricing.json",
+    "rate_name": null,
+    "rates_per_unit": null,
+    "status": "UNPRICED",
+    "unit_tokens": 1000000
+  },
+  "chat_transport_invoked": true,
+  "client_call_id": "3ea682db27674a5ea516a851b02045a3",
+  "context_admission": {
+    "code": "CONTEXT_ADMITTED",
+    "counter": "vllm",
+    "decision": "allow",
+    "effective_context_window": 32768,
+    "exact": true,
+    "input_tokens": 5475,
+    "measurement_details": {
+      "endpoint": "http://127.0.0.1:8000/tokenize",
+      "schema_verified": true,
+      "server_version": "0.8.5.post1",
+      "template_fields": [
+        "add_generation_prompt",
+        "add_special_tokens",
+        "chat_template_kwargs",
+        "continue_final_message",
+        "messages",
+        "model"
+      ],
+      "tokenize_payload_sha256": "ca56bc502bf48b3852c39aceb24154ec0c0607c0e0af62ddbaefaf665d1c7795",
+      "vllm_tools_mode": "v0_8_5_kwargs"
+    },
+    "mode": "enforce",
+    "on_unavailable": "reject",
+    "output_reservation_field": "max_tokens",
+    "output_tokens_reserved": 4096,
+    "payload_sha256": "ca3e9fcefc99879c6540743c9b89c7d678b6d366ba816252355a5564295c3592",
+    "profile_context_window": 32768,
+    "requested_total_tokens": 9571,
+    "server_context_window": 32768,
+    "source": "vllm_tokenize",
+    "status": "admitted",
+    "vllm_tools_mode": "v0_8_5_kwargs",
+    "window_source": "minimum_of_profile_and_server",
+    "would_reject": false
+  },
+  "context_measurement_requests": 3,
+  "context_measurement_verification": {
+    "measured_input_tokens": 5475,
+    "payload_sha256": "ca3e9fcefc99879c6540743c9b89c7d678b6d366ba816252355a5564295c3592",
+    "provider_input_tokens": 5475,
+    "status": "matched"
+  },
+  "duration_ms": 1878,
+  "error": null,
+  "finish_reason": "tool_calls",
+  "llm_call_id": "llm_0035",
+  "message_count": 5,
+  "model": "qwen2.5-7b-instruct",
+  "parent_stage_id": "stage_0022",
+  "provider": "openai_compatible",
+  "provider_usage": {
+    "completion_tokens": 50,
+    "prompt_tokens": 5475,
+    "prompt_tokens_details": null,
+    "total_tokens": 5525
+  },
+  "request_id": "chatcmpl-d6862aba8bb146de9052965f104313a9",
+  "request_options": {
+    "endpoint": "http://127.0.0.1:8000/v1/chat/completions",
+    "timeout_seconds": 300.0
+  },
+  "request_payload": {
+    "max_tokens": 4096,
+    "messages": [
+      {
+        "content": "You are the formal Researcher for one bounded research task.\nUse only tools present in the registered tool definitions. Never guess an\nunlisted database source_id; use only source_id values stated in the\ndatabase_search tool description.\nCall at most one tool in each assistant response; wait for its result before the next call.\nCore responsibility:\n- Gather traceable source evidence for the assigned novelty point and task,\ncompare technical overlap and differences, and expose coverage limitations.\nThe Reviewer owns novelty adjudication; do not make a global novelty conclusion.\n- Apply database_research as the default skill for all task languages.\nMain path: Database -> source artifact -> text -> Reader -> Evidence.\n- When reference_search is available, inspect the author's reference corpus first\nas a recall aid only; it neither replaces database coverage nor increases weight.\n- Rely on database_search for scholarly discovery. Revise queries within the\nsupplied SearchPlan and remaining budget when appropriate; do not loop on an\nunavailable provider or displace readable candidates with repeated discovery.\n- Enter web_supplement only when paper retrieval is unavailable or has yielded\nno papers. Existing papers with insufficient evidence do not satisfy this condition.\nWeb is supplementary search advice only: never create Evidence or cards from it,\neven after browser/Reader. Do not enumerate Web sources as related literature.\nOnly the report-wide absence of retrieved papers permits a short Web-based\nfollow-up search recommendation in the report; language alone is not a trigger.\n- Search results and snippets are discovery metadata, not evidence.\n- Prefer source originals and extracted source text over summaries. LLM summaries\nare derived information, never original Evidence, even when exposed by Reader.\n- Web materials retain source_kind=web_supplement. It is not paper evidence. The workflow binds provenance;\ndo not author evidence_type or source_kind in the finish draft.\nAcquisition and evaluation policy:\n- Identify this task's core mechanism, then use database discovery and Reader\nto inspect relevant abstracts. Batch-read up to four returned artifacts.\nSeparate explicit overlap or difference from features the read text has not\nestablished. An unmentioned feature is unknown, not absent.\n- If a candidate substantially overlaps the core mechanism and an unresolved\nfeature could change the comparison, prioritize its original text over another\nbroad discovery search. Call database_search with the same registered source_id\nand up to four returned full_text_source_record_ids. This acquires originals\nwithout a new search. Then read each relevant full_text_artifact_id with Reader\nbefore quoting it or relying on its contents. Reuse readable full text already\nreturned; never treat downloading alone as having verified the feature.\n- Do not download full text to satisfy a quota. An abstract can support facts it\nexplicitly states; clearly irrelevant candidates need no upgrade. If full text\nis unavailable, or the remaining tool/read budget prevents verification, keep\nthe supported facts and name the unresolved comparison in the finish analysis\nor no_evidence_reason. Do not claim the paper lacks an unverified feature.\nCard count alone never establishes semantic sufficiency. Stop when the evidence\nsupports a bounded conclusion and remaining unknowns would not change it.\n- Web search is advice-only. Do not call browser or reader to turn Web materials\ninto evidence. Never issue consecutive web_search calls merely to expand recall.\nRetain internal source records, but do not enumerate them in the report.\n- If database_search already returns a readable Artifact or artifact_id,\nthe next tool call MUST be reader for one returned artifact_id. Do not call\ndatabase_search, web_search, or browser again until that Artifact has been\nread and evaluated. Browser is not required for this path.\n- If database_search returns only discovery metadata, acquire readable content\nthrough an appropriate tool before treating the source as evidence.\n- Do not decide whether a source is evidentiary based only on search snippets.\n- Prioritize unread candidates already returned before expanding discovery.\nUse the remaining budget information to reserve time for the final JSON.\nQuery constraints:\n- Only put short search keywords in query; never reasoning, explanations or the full task. For Baidu, the limit is 72 units: ASCII (including spaces) counts 1, non-ASCII counts 2. Aim below 60 units. Good queries: \"图摘要 分布式GNN\"; \"graph summarization distributed GNN\". Bad query: a sentence explaining why to search followed by all task features. On INVALID_QUERY, shorten to two or three core concepts; do not repeat the same query. A successful zero-hit result is valid and marked zero_hits; keep it in the audit, never call it a service failure.\nEvidenceCard quoting rules:\n- Every quote in a card must be copied verbatim from a successful Reader observation.\n- Do not paraphrase, summarize, translate, normalize, rewrite, or reconstruct\nquoted text.\n- If you cannot identify an exact supporting span in Reader text, do not create\nthat card.\n- Use your own prose only in analysis fields; quoted evidence must remain exact\nReader text.\nProduce at most one card per source work and do not make a global novelty conclusion.\nNever invent, copy into the finish payload, or otherwise author provenance handles\nsuch as work_id, artifact_id, source_record_id, or read_id.\nIt is valid to finish with cards=[] and a concrete no_evidence_reason when no\nReader text provides exact support. Never force a card merely to complete the task.\nIf cards is nonempty, omit no_evidence_reason or set it to null.\nIf cards is empty, provide a nonempty no_evidence_reason. These forms are mutually exclusive.\nWhen finished, return only one JSON object conforming exactly to the supplied\nResearchFinishDraft schema. Do not wrap it in Markdown.\n\n# Database research\n\nUse for scholarly research tasks in every language. Follow:\n\nDatabase → source artifact → text → Reader → Evidence\n\n- Use registered databases and the supplied SearchPlan. Reference search provides candidate leads, not proof of database coverage.\n- Prefer publisher or repository source documents and text extracted from them. Preserve available URL, source record, artifact and extraction lineage; never claim an original file was saved when only extracted text is available. Full original-artifact storage is outside this phase.\n- Read a returned readable artifact before further discovery. Evaluate existing unread candidates before expanding queries. Metadata and snippets are not Evidence; a source-authored abstract may support only what it explicitly states.\n- Quote exact successful Reader spans. LLM summaries, translations and generated interpretations are derived information, not original Evidence. Do not quote them as source text.\n- Emit semantic drafts only; the Builder assigns provenance and database_evidence for verified database sources. Subject references keep their own namespace and do not imply successful database retrieval.\n- If no papers can be retrieved, record the limitation and optionally use web_supplement for search advice only. Existing paper candidates with insufficient support do not qualify as no papers. Distinguish provider failure from successful zero hits and from unread or unsupported candidates.\n- Reserve time for finalization. A candidate need not produce a card; explain gaps rather than fabricate evidence or conclude absence of prior work.\n\n# Web supplementary material\n\nUse only after paper retrieval is unavailable or has yielded no papers. First try registered databases and available reference papers within budget. Existing paper candidates with weak evidence, missing full text, language preferences or external-context requests alone do not authorize replacing literature with Web evidence.\n\nWeb search results are supplementary material. Keep source_kind = web_supplement for internal audit. Do not create Evidence, EvidenceCard, related-literature entries, citations or attachment lists from Web content. Even Reader-accessible web text and LLM summaries remain supplementary or derived information, not original Evidence. Do not run browser/reader solely to promote Web material into a paper.\n\nIf any paper was retrieved anywhere in the report scope, omit Web advice from the report. Zero cards does not mean zero papers. If no papers were retrieved and Web material exists, offer a short recommendation for refining scholarly queries using terminology or search directions from that material. Do not enumerate webpages, titles or URLs; do not treat web claims as established facts or use them to adjudicate novelty. Retrieval failures must not be called successful zero-hit searches or proof of non-existence.\n\nAvoid repeated Web searches: one supplementary search is normally sufficient for advice. Return cards=[] and a concrete no_evidence_reason when no paper Reader text supports a card. The report renderer decides whether the report-wide no-paper condition holds.\n\n## Query examples\n\nOnly put short search keywords in query; never reasoning, explanations or the full task. For Baidu, the limit is 72 units: ASCII (including spaces) counts 1, non-ASCII counts 2. Aim below 60 units. Good queries: \"图摘要 分布式GNN\"; \"graph summarization distributed GNN\". Bad query: a sentence explaining why to search followed by all task features. On INVALID_QUERY, shorten to two or three core concepts; do not repeat the same query. A successful zero-hit result is valid and marked zero_hits; keep it in the audit, never call it a service failure.",
+        "role": "system"
+      },
+      {
+        "content": "MACHINE_RUNTIME_STATE\n{\"budget\": {\"charged_read_chars\": 1558, \"charged_tool_calls\": 1, \"current_call_tool_execution_allowed\": true, \"exploration_call_limit\": 28, \"finalization_enabled\": true, \"finalization_inside_max_turns\": false, \"global_runtime_budget\": \"not_owned_by_this_harness\", \"remaining_exploration_calls_including_current\": 27, \"remaining_exploration_seconds\": null, \"remaining_per_tool\": {\"browser\": 3, \"database_search\": 8, \"reader\": 15, \"reference_search\": 8, \"web_search\": 5}, \"remaining_read_chars\": 190442, \"remaining_tool_calls\": 23}, \"evidence_checkpoints\": [], \"history_policy\": \"complete_original_task_assistant_tool_messages_preserved\", \"invocation_id\": \"6477bdb5751b449ba98644b0348fea3c\", \"phase\": \"exploration\", \"provider_failure_means_no_matching_literature\": false, \"providers\": [], \"reader_artifacts\": [{\"artifact_id\": \"art_4513013cd6ada18c0924766e\", \"empty_read_count\": 0, \"end_status\": \"verified\", \"namespace\": \"research_reference\", \"read_ranges\": [{\"char_end\": 1558, \"char_start\": 0, \"read_id\": \"read_bb179c4a719dd94fea78dbd5\"}], \"sha256\": \"a91c33c039707804324b9193c627ae921e684355b3f974bbaac4611c3bcd8aa6\", \"verified_artifact_end\": 1558, \"whole_artifact_read\": true, \"whole_paper_read\": \"not_inferred_from_artifact\"}], \"required_reader_artifact_ids\": [], \"schema_version\": \"1.0\", \"scope\": {\"attempt\": 2, \"paper_id\": \"MF2033k6lC\", \"point_id\": \"NP-2\", \"run_id\": \"run-480a9f6d8a59475f860887c3a6f45324\", \"task_id\": \"T-R2-1\"}, \"semantic_evidence_sufficiency\": \"not_determined_by_harness\", \"stop_reason\": null}",
+        "role": "system"
+      },
+      {
+        "content": "NoveltyPoint:\n{\"point_id\": \"NP-2\", \"claim\": \"提出了一种新的基于图摘要的分布式图神经网络训练框架，称为DSGNN，用于分布式场景下的基于图神经网络的图表示学习。\", \"claim_en\": \"Proposed a new distributed graph neural network training framework based on graph summarization, called DSGNN, for graph representation learning based on graph neural networks in distributed scenarios.\", \"technical_features\": [\"可以在工作节点上对子图进行小批量样本的学习，而不是让领导节点完成子图生成。\", \"使用图摘要技术生成的子图规模远远小于原图，在其基础上进行模型训练可以大大提升效率。\"], \"technical_features_en\": [\"Can perform mini-batch sample learning on subgraphs at worker nodes instead of having the leader node complete subgraph generation.\", \"The subgraphs generated using graph summarization technology have a much smaller scale than the original graph, allowing for efficient model training based on them.\"]}\n\nResearchTask:\n{\"task_id\": \"T-R2-1\", \"novelty_point_id\": \"NP-2\", \"task_type\": \"read_artifact\", \"language\": \"en\", \"description\": \"Known candidate material has not been read; no new search is needed.\\n{\\\"missing_feature_ids\\\": [], \\\"missing_aspects\\\": [\\\"可以在工作节点上对子图进行小批量样本的学习，而不是让领导节点完成子图生成。\\\", \\\"使用图摘要技术生成的子图规模远远小于原图，在其基础上进行模型训练可以大大提升效率。\\\"]}\", \"attempt\": 2}\n\nSearchPlan:\n{\"concepts\": [{\"terms\": [\"distributed graph neural network training framework\"], \"role\": \"method\", \"alias\": [\"Distributed GNN Training Framework\"]}, {\"terms\": [\"mini-batch sample learning\"], \"role\": \"feature\", \"alias\": []}, {\"terms\": [\"graph summarization technology\"], \"role\": \"feature\", \"alias\": [\"Graph Summarization Tech\"]}, {\"terms\": [\"subgraph generation\"], \"role\": \"feature\", \"alias\": []}], \"strategies\": [{\"expression\": \"C1\"}, {\"expression\": \"C1\"}, {\"expression\": \"C1\"}]}\n\nRequired finish schema:\n{\"$defs\": {\"EvidenceCardDraft\": {\"additionalProperties\": false, \"description\": \"One model-authored semantic assessment to be bound by the runtime.\", \"properties\": {\"main_contribution\": {\"minLength\": 1, \"title\": \"Main Contribution\", \"type\": \"string\"}, \"overlaps\": {\"items\": {\"minLength\": 1, \"type\": \"string\"}, \"title\": \"Overlaps\", \"type\": \"array\"}, \"differences\": {\"items\": {\"minLength\": 1, \"type\": \"string\"}, \"title\": \"Differences\", \"type\": \"array\"}, \"quotes\": {\"items\": {\"$ref\": \"#/$defs/EvidenceQuoteDraft\"}, \"minItems\": 1, \"title\": \"Quotes\", \"type\": \"array\"}, \"possible_baseline\": {\"default\": false, \"title\": \"Possible Baseline\", \"type\": \"boolean\"}, \"relevance\": {\"maximum\": 1.0, \"minimum\": 0.0, \"title\": \"Relevance\", \"type\": \"number\"}, \"confidence\": {\"maximum\": 1.0, \"minimum\": 0.0, \"title\": \"Confidence\", \"type\": \"number\"}}, \"required\": [\"main_contribution\", \"quotes\", \"relevance\", \"confidence\"], \"title\": \"EvidenceCardDraft\", \"type\": \"object\"}, \"EvidenceQuoteDraft\": {\"additionalProperties\": false, \"description\": \"A semantic quote selection without model-supplied provenance handles.\", \"properties\": {\"quote\": {\"minLength\": 1, \"title\": \"Quote\", \"type\": \"string\"}, \"interpretation\": {\"minLength\": 1, \"title\": \"Interpretation\", \"type\": \"string\"}, \"confidence\": {\"maximum\": 1.0, \"minimum\": 0.0, \"title\": \"Confidence\", \"type\": \"number\"}}, \"required\": [\"quote\", \"interpretation\", \"confidence\"], \"title\": \"EvidenceQuoteDraft\", \"type\": \"object\"}}, \"additionalProperties\": false, \"properties\": {\"cards\": {\"items\": {\"$ref\": \"#/$defs/EvidenceCardDraft\"}, \"title\": \"Cards\", \"type\": \"array\"}, \"no_evidence_reason\": {\"anyOf\": [{\"minLength\": 1, \"type\": \"string\"}, {\"type\": \"null\"}], \"default\": null, \"title\": \"No Evidence Reason\"}}, \"title\": \"ResearchFinishDraft\", \"type\": \"object\"}\n\nAvailable tools: reader, submit_evidence. browser is unavailable. Web search is discovery only: do not attempt browser or pass a source_record_id to reader. Read only actual artifact IDs from available tools; prefer database/reference artifacts. Do not repeat web searches when there is no acquisition path. Finish with available evidence or explain the acquisition limitation. After a useful Reader result, submit grounded partial cards with submit_evidence before further exploration; accepted cards survive later execution failure. This shares the existing tool-call budget and does not imply final Validator/Reviewer approval. The original ResearchFinishDraft final response is still required.\nRuntime-owned recovery directive (tool permissions are enforced): {\"point_id\":\"NP-2\",\"action\":\"read_artifact\",\"reason\":\"Known candidate material has not been read; no new search is needed.\",\"cause_event_ids\":[\"failure_9eefbc046b3412f30566a7a9\",\"failure_fbdd2d5c70fee10db35a99a9\"],\"source_id\":null,\"artifacts\":[{\"namespace\":\"research_reference\",\"artifact_id\":\"art_4513013cd6ada18c0924766e\"},{\"namespace\":\"research_reference\",\"artifact_id\":\"art_0446bb46fbcfea78eb5f5c57\"},{\"namespace\":\"research_reference\",\"artifact_id\":\"art_03f456c55e190ba7e00ccf30\"},{\"namespace\":\"research_reference\",\"artifact_id\":\"art_e388adc47c503e5bc5fbe2b2\"}],\"source_record_ids\":[],\"missing_feature_ids\":[],\"missing_aspects\":[\"可以在工作节点上对子图进行小批量样本的学习，而不是让领导节点完成子图生成。\",\"使用图摘要技术生成的子图规模远远小于原图，在其基础上进行模型训练可以大大提升效率。\"],\"max_additional_attempts\":1}",
+        "role": "user"
+      },
+      {
+        "content": null,
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "function": {
+              "arguments": "{\"artifact_id\": \"art_4513013cd6ada18c0924766e\", \"max_chars\": 8000}",
+              "name": "reader"
+            },
+            "id": "chatcmpl-tool-9184abb35b404f358f5947a2adfe0e2c",
+            "type": "function"
+          }
+        ]
+      },
+      {
+        "content": "{\"material_catalog\": [], \"read_result\": {\"artifact_id\": \"art_4513013cd6ada18c0924766e\", \"char_end\": 1558, \"char_start\": 0, \"has_more\": false, \"namespace\": \"research_reference\", \"read_id\": \"read_bb179c4a719dd94fea78dbd5\", \"role\": \"abstract\", \"text\": \"The boundary element method (BEM) provides an efficient numerical framework for solving multiple scattering problems in unbounded homogeneous domains. By restricting the discretization to the domain boundaries, it substantially reduces computational complexity. The procedure first consists in determining the solution trace on the boundaries of the domain by solving a boundary integral equation. Then, the volumetric solution can be recovered at low computational cost using a boundary integral representation. As the first step of the BEM represents the main computational bottleneck, we present ScaGNN, a learning-based approach designed to approximate the solution trace. It relies on a graph neural network architecture that incorporates a dynamic adaptive edge sampling mechanism for selecting the most relevant interactions to model. Guided by intermediate predictions of expected error and edge length, this mechanism selects, at various stages of the forward pass, the most relevant distant interactions to model. The proposed method is tailored to achieve linear complexity with the number of nodes in the input graph. To train and evaluate our network, we present a benchmark consisting of several datasets with different types of multiple scattering problems. Our experiments show that our approach surpasses existing state-of-the-art learning-based methods on the considered tasks and investigate the generalization capabilities to settings with an increased number of obstacles and out-of-distribution obstacle shapes. github.com/LARIAD/ScaGNN\", \"work_id\": \"wrk_09214cbbc59fe401d9d390c5\"}, \"read_status\": \"content\", \"succeeded\": true, \"summary\": \"读取 artifact art_4513013cd6ada18c0924766e 字符 [0, 1558)\"}",
+        "role": "tool",
+        "tool_call_id": "chatcmpl-tool-9184abb35b404f358f5947a2adfe0e2c"
+      }
+    ],
+    "model": "qwen2.5-7b-instruct",
+    "temperature": 0.3,
+    "tool_choice": "auto",
+    "tools": [
+      {
+        "function": {
+          "description": "按 Artifact ID 读取可验证文本。发现多个候选后优先一次批量读取必要片段：reads=[{\"artifact_id\":\"...\",\"max_chars\":2000}, ...]，最多4段；每段保留独立 read_id、来源和字符范围。也支持单个 artifact_id。",
+          "name": "reader",
+          "parameters": {
+            "$defs": {
+              "ConfiguredReaderArguments8000_16000": {
+                "additionalProperties": false,
+                "properties": {
+                  "artifact_id": {
+                    "minLength": 1,
+                    "title": "Artifact Id",
+                    "type": "string"
+                  },
+                  "char_start": {
+                    "default": 0,
+                    "minimum": 0,
+                    "title": "Char Start",
+                    "type": "integer"
+                  },
+                  "max_chars": {
+                    "default": 8000,
+                    "maximum": 16000,
+                    "minimum": 1,
+                    "title": "Max Chars",
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "artifact_id"
+                ],
+                "title": "ConfiguredReaderArguments8000_16000",
+                "type": "object"
+              }
+            },
+            "additionalProperties": false,
+            "properties": {
+              "artifact_id": {
+                "anyOf": [
+                  {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Artifact Id"
+              },
+              "char_start": {
+                "default": 0,
+                "minimum": 0,
+                "title": "Char Start",
+                "type": "integer"
+              },
+              "max_chars": {
+                "default": 8000,
+                "maximum": 16000,
+                "minimum": 1,
+                "title": "Max Chars",
+                "type": "integer"
+              },
+              "reads": {
+                "anyOf": [
+                  {
+                    "items": {
+                      "$ref": "#/$defs/ConfiguredReaderArguments8000_16000"
+                    },
+                    "maxItems": 4,
+                    "minItems": 1,
+                    "type": "array"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Reads"
+              }
+            },
+            "title": "ConfiguredReaderCall8000_16000",
+            "type": "object"
+          }
+        },
+        "type": "function"
+      },
+      {
+        "function": {
+          "description": "Checkpoint partial evidence drafts grounded in successful Reader text. Original Builder validation applies; this does not finish the task or imply Reviewer approval.",
+          "name": "submit_evidence",
+          "parameters": {
+            "$defs": {
+              "EvidenceCardDraft": {
+                "additionalProperties": false,
+                "description": "One model-authored semantic assessment to be bound by the runtime.",
+                "properties": {
+                  "confidence": {
+                    "maximum": 1.0,
+                    "minimum": 0.0,
+                    "title": "Confidence",
+                    "type": "number"
+                  },
+                  "differences": {
+                    "items": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "title": "Differences",
+                    "type": "array"
+                  },
+                  "main_contribution": {
+                    "minLength": 1,
+                    "title": "Main Contribution",
+                    "type": "string"
+                  },
+                  "overlaps": {
+                    "items": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "title": "Overlaps",
+                    "type": "array"
+                  },
+                  "possible_baseline": {
+                    "default": false,
+                    "title": "Possible Baseline",
+                    "type": "boolean"
+                  },
+                  "quotes": {
+                    "items": {
+                      "$ref": "#/$defs/EvidenceQuoteDraft"
+                    },
+                    "minItems": 1,
+                    "title": "Quotes",
+                    "type": "array"
+                  },
+                  "relevance": {
+                    "maximum": 1.0,
+                    "minimum": 0.0,
+                    "title": "Relevance",
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "main_contribution",
+                  "quotes",
+                  "relevance",
+                  "confidence"
+                ],
+                "title": "EvidenceCardDraft",
+                "type": "object"
+              },
+              "EvidenceQuoteDraft": {
+                "additionalProperties": false,
+                "description": "A semantic quote selection without model-supplied provenance handles.",
+                "properties": {
+                  "confidence": {
+                    "maximum": 1.0,
+                    "minimum": 0.0,
+                    "title": "Confidence",
+                    "type": "number"
+                  },
+                  "interpretation": {
+                    "minLength": 1,
+                    "title": "Interpretation",
+                    "type": "string"
+                  },
+                  "quote": {
+                    "minLength": 1,
+                    "title": "Quote",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "quote",
+                  "interpretation",
+                  "confidence"
+                ],
+                "title": "EvidenceQuoteDraft",
+                "type": "object"
+              }
+            },
+            "additionalProperties": false,
+            "description": "Submit semantic drafts only; all provenance and scope stay runtime-owned.",
+            "properties": {
+              "cards": {
+                "items": {
+                  "$ref": "#/$defs/EvidenceCardDraft"
+                },
+                "maxItems": 16,
+                "minItems": 1,
+                "title": "Cards",
+                "type": "array"
+              }
+            },
+            "required": [
+              "cards"
+            ],
+            "title": "EvidenceCheckpointArguments",
+            "type": "object"
+          }
+        },
+        "type": "function"
+      }
+    ]
+  },
+  "response": {
+    "content": null,
+    "tool_calls": [
+      {
+        "arguments": {
+          "artifact_id": "art_0446bb46fbcfea78eb5f5c57",
+          "max_chars": 8000
+        },
+        "id": "chatcmpl-tool-53915b5daa18486b96e642f3f48bcc47",
+        "name": "reader"
+      }
+    ]
+  },
+  "run_id": "run-480a9f6d8a59475f860887c3a6f45324",
+  "scope": {
+    "attempt": 2,
+    "point_id": "NP-2",
+    "task_id": "T-R2-1"
+  },
+  "stage_name": "run_research_task",
+  "started_at": "2026-09-30T07:07:49.940285+00:00",
+  "status": "SUCCESS",
+  "timeline": [
+    {
+      "at": "2026-09-30T07:07:49.940285+00:00",
+      "endpoint": "http://127.0.0.1:8000/openapi.json",
+      "kind": "schema",
+      "method": "GET",
+      "payload_sha256": null,
+      "phase": "CONTEXT_MEASUREMENT_REQUEST"
+    },
+    {
+      "at": "2026-09-30T07:07:49.940285+00:00",
+      "kind": "schema",
+      "phase": "CONTEXT_MEASUREMENT_RESPONSE"
+    },
+    {
+      "at": "2026-09-30T07:07:49.940285+00:00",
+      "endpoint": "http://127.0.0.1:8000/version",
+      "kind": "version",
+      "method": "GET",
+      "payload_sha256": null,
+      "phase": "CONTEXT_MEASUREMENT_REQUEST"
+    },
+    {
+      "at": "2026-09-30T07:07:49.940285+00:00",
+      "kind": "version",
+      "phase": "CONTEXT_MEASUREMENT_RESPONSE"
+    },
+    {
+      "at": "2026-09-30T07:07:49.940285+00:00",
+      "endpoint": "http://127.0.0.1:8000/tokenize",
+      "kind": "tokenize",
+      "method": "POST",
+      "payload_sha256": "ca56bc502bf48b3852c39aceb24154ec0c0607c0e0af62ddbaefaf665d1c7795",
+      "phase": "CONTEXT_MEASUREMENT_REQUEST"
+    },
+    {
+      "at": "2026-09-30T07:07:49.940285+00:00",
+      "count": 5475,
+      "kind": "tokenize",
+      "max_model_len": 32768,
+      "phase": "CONTEXT_MEASUREMENT_RESPONSE"
+    },
+    {
+      "at": "2026-09-30T07:07:49.940285+00:00",
+      "code": "CONTEXT_ADMITTED",
+      "counter": "vllm",
+      "decision": "allow",
+      "effective_context_window": 32768,
+      "exact": true,
+      "input_tokens": 5475,
+      "measurement_details": {
+        "endpoint": "http://127.0.0.1:8000/tokenize",
+        "schema_verified": true,
+        "server_version": "0.8.5.post1",
+        "template_fields": [
+          "add_generation_prompt",
+          "add_special_tokens",
+          "chat_template_kwargs",
+          "continue_final_message",
+          "messages",
+          "model"
+        ],
+        "tokenize_payload_sha256": "ca56bc502bf48b3852c39aceb24154ec0c0607c0e0af62ddbaefaf665d1c7795",
+        "vllm_tools_mode": "v0_8_5_kwargs"
+      },
+      "mode": "enforce",
+      "on_unavailable": "reject",
+      "output_reservation_field": "max_tokens",
+      "output_tokens_reserved": 4096,
+      "payload_sha256": "ca3e9fcefc99879c6540743c9b89c7d678b6d366ba816252355a5564295c3592",
+      "phase": "CONTEXT_ADMISSION",
+      "profile_context_window": 32768,
+      "requested_total_tokens": 9571,
+      "server_context_window": 32768,
+      "source": "vllm_tokenize",
+      "status": "admitted",
+      "vllm_tools_mode": "v0_8_5_kwargs",
+      "window_source": "minimum_of_profile_and_server",
+      "would_reject": false
+    },
+    {
+      "at": "2026-09-30T07:07:50.048752+00:00",
+      "phase": "TRANSPORT_INVOKED",
+      "timeout_seconds": 300.0
+    },
+    {
+      "at": "2026-09-30T07:07:51.805124+00:00",
+      "http_status": 200,
+      "phase": "RESPONSE_HEADERS",
+      "provider_request_id": null
+    },
+    {
+      "at": "2026-09-30T07:07:51.809826+00:00",
+      "body_bytes": 618,
+      "phase": "RESPONSE_BODY_COMPLETE"
+    },
+    {
+      "at": "2026-09-30T07:07:51.812552+00:00",
+      "phase": "RESPONSE_PARSED",
+      "response_id": "chatcmpl-d6862aba8bb146de9052965f104313a9",
+      "usage_available": true
+    },
+    {
+      "at": "2026-09-30T07:07:49.940285+00:00",
+      "measured_input_tokens": 5475,
+      "payload_sha256": "ca3e9fcefc99879c6540743c9b89c7d678b6d366ba816252355a5564295c3592",
+      "phase": "CONTEXT_MEASUREMENT_VERIFIED",
+      "provider_input_tokens": 5475,
+      "status": "matched"
+    }
+  ],
+  "tokens": {
+    "available": true,
+    "billable_breakdown_available": true,
+    "cached_input_tokens": 0,
+    "input_tokens": 5475,
+    "output_tokens": 50,
+    "reasoning_tokens": 0,
+    "total_tokens": 5525
+  },
+  "transport_inflight_unknown": false
+}

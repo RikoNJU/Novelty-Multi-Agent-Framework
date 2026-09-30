@@ -1,0 +1,310 @@
+{
+  "alias": "local-qwen2.5-7b",
+  "billing": {
+    "amount": null,
+    "currency": "RMB",
+    "pricing_table": "/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/config/llm_pricing.json",
+    "rate_name": null,
+    "rates_per_unit": null,
+    "status": "UNPRICED",
+    "unit_tokens": 1000000
+  },
+  "chat_transport_invoked": true,
+  "client_call_id": "13fb2a6688a047adaed0715bfc11b207",
+  "context_admission": {
+    "code": "CONTEXT_ADMITTED",
+    "counter": "vllm",
+    "decision": "allow",
+    "effective_context_window": 32768,
+    "exact": true,
+    "input_tokens": 4556,
+    "measurement_details": {
+      "endpoint": "http://127.0.0.1:8000/tokenize",
+      "schema_verified": true,
+      "server_version": "0.8.5.post1",
+      "template_fields": [
+        "add_generation_prompt",
+        "add_special_tokens",
+        "chat_template_kwargs",
+        "continue_final_message",
+        "messages",
+        "model"
+      ],
+      "tokenize_payload_sha256": "b47efdf022f456469856fff33136c613cd263d3978e05039369b4055b29de68f",
+      "vllm_tools_mode": "v0_8_5_kwargs"
+    },
+    "mode": "enforce",
+    "on_unavailable": "reject",
+    "output_reservation_field": "max_tokens",
+    "output_tokens_reserved": 8192,
+    "payload_sha256": "be0ae0d6c95099443f5d85cb85343b729c5915b69fcdcf6e713cd1a14f8c378e",
+    "profile_context_window": 32768,
+    "requested_total_tokens": 12748,
+    "server_context_window": 32768,
+    "source": "vllm_tokenize",
+    "status": "admitted",
+    "vllm_tools_mode": "v0_8_5_kwargs",
+    "window_source": "minimum_of_profile_and_server",
+    "would_reject": false
+  },
+  "context_measurement_requests": 3,
+  "context_measurement_verification": {
+    "measured_input_tokens": 4556,
+    "payload_sha256": "be0ae0d6c95099443f5d85cb85343b729c5915b69fcdcf6e713cd1a14f8c378e",
+    "provider_input_tokens": 4556,
+    "status": "matched"
+  },
+  "duration_ms": 14346,
+  "error": null,
+  "finish_reason": "stop",
+  "llm_call_id": "llm_0043",
+  "message_count": 2,
+  "model": "qwen2.5-7b-instruct",
+  "parent_stage_id": "stage_0025",
+  "provider": "openai_compatible",
+  "provider_usage": {
+    "completion_tokens": 598,
+    "prompt_tokens": 4556,
+    "prompt_tokens_details": null,
+    "total_tokens": 5154
+  },
+  "request_id": "chatcmpl-a4bd68fcba29468090b84e0d8b513f61",
+  "request_options": {
+    "endpoint": "http://127.0.0.1:8000/v1/chat/completions",
+    "timeout_seconds": 90.0
+  },
+  "request_payload": {
+    "max_tokens": 8192,
+    "messages": [
+      {
+        "content": "仅以可追溯论文 Evidence 评审。Web 内容仅是补充资料，不属于相关文献或原始 Evidence。\nsource_kind=web_supplement 或旧 web_supplement_evidence 不得用于查新裁定；\n发现此类旧证据时按不可用处理，证据不足则明确返回不足，不将网页事实升级为论文证据。\nLLM summary 是派生信息，不能替代原始 Evidence。\n你是论文查新系统的查新点级信息判定 Agent，而不是 EvidenceCard 过滤器。\n本轮只核验一张 Card 对应的一篇论文，是中间结果，不作最终查新裁定。\n按输入的 ReviewerCardDraft schema 输出；verdict 仅描述该文献与查新点的关系。\n记录已覆盖特征、已证实的差异、引用可靠性和证据局限；部分相关文献也必须保留。\n优先使用输入 Evidence 原文，仅在存在具体疑问时回读，避免重复读取同一片段。\n摘要未提及的特征是未知，不是文献未采用；如果该未知决定关系判断，应返回\ninsufficient_evidence，说明需要核验的特征。理由简洁，不超过300字。\n材料目录列出的同论文正文可受控回读。引用新片段时输出真实 read_id 或\nread_citations；原文 quote 由系统登记，不能自行编造证据 ID。\n不要输出 review_evidence、incomplete_reason、exact_quote 或 review_id；这些由系统登记。\n对不同术语比较对象、操作、作用位置与约束，并说明作者方案或基线归属。\n每项 feature_comparisons 应引用直接支持该项关系的 evidence_id 或真实 read_id，\n在 reason 中说明原文、机制对应及判断范围。导航或背景回读可登记，不能充当技术断言依据；\n摘要足以支持的有限事实仍可引用摘要。例：feature_id=F1、relation=supported、\nevidence_refs=[实际读到的 read_id]，仅当该片段确实支持 F1 时使用。\ncontradicted 需要同一对象和条件下不相容的依据；未提及属于 unknown。\n采用一种方法不自动排除可共存的另一方法。次要 unknown 不自动否决有依据的有限结论。\n区分原文明确支持的事实与未核验的特征。摘要、局部片段或截短引文未提及某特征，不能证明文献未采用该特征；取得全文也不等于已读到关键段落。若最终裁定依赖尚未核验的关键差异，返回 status=insufficient_evidence，说明缺少的比较证据，不得仅降低 confidence 后继续裁定。保留已证实的局部重合；多篇分别覆盖部分特征不等于单篇公开完整组合。检索或获取失败、零命中、未展示证据均不能支持新颖性。不影响当前有限结论的次要未知可以作为局限保留。read_citations 只能填写本轮 reader 工具实际返回的 read_id；本轮未调用 reader 时必须输出空数组，不得复制输入 Evidence.provenance.read_id。\nBudget context: {\"remaining_research_turns\": 13, \"remaining_exploration_turns\": 13, \"remaining_tool_calls\": 12, \"remaining_read_chars\": 96000, \"remaining_exploration_seconds\": 240.0, \"finalization_reserved\": true, \"remaining_per_tool\": {\"reader\": 12}, \"instruction\": \"Finish within the remaining exploration budget; a reserved tool-free final turn follows if needed.\"}",
+        "role": "system"
+      },
+      {
+        "content": "请对以下单个查新点进行信息综合与新颖性判定。\n\n当前可信日期（UTC）：2026-09-30\n\n查新点：\n{\"point_id\": \"NP-3\", \"claim\": \"提出了一种新的基于边分割的图流划分算法——Sketch-DBH，用于处理大规模图流数据下的子图划分问题。\", \"claim_en\": \"Proposed a new edge-segmentation-based graph stream partitioning algorithm, called Sketch-DBH, for handling subgraph partitioning problems in large-scale graph stream data.\", \"technical_features\": [\"通过Count-Min Sketch这一概率数据结构存储每个节点的度数信息，并使用一个最小堆维护图流数据中的高频节点信息，使其可以在常数时间内返回查询结果并以此根据节点度数信息生成单条图流数据即将被分配到的子图编号。\", \"可以高效完成大规模图流数据的划分且确保负载均衡，从而加速整个框架的模型训练速度。\"], \"technical_features_en\": [\"Storing degree information of each node using Count-Min Sketch probabilistic data structure and maintaining high-frequency node information of graph stream data using a minimum heap, enabling constant-time query results and generating subgraph numbers based on node degree information.\", \"Efficiently partitioning large-scale graph stream data and ensuring load balancing, thereby accelerating the entire framework's model training speed.\"], \"source_locations\": [\"Page 20\"]}\n\n相关调研任务：\n[{\"task_id\": \"T-1\", \"novelty_point_id\": \"NP-3\", \"task_type\": \"literature_search\", \"language\": \"en\", \"description\": \"针对该查新点执行英文文献检索。\", \"attempt\": 1}, {\"task_id\": \"T-R2-1\", \"novelty_point_id\": \"NP-3\", \"task_type\": \"read_artifact\", \"language\": \"en\", \"description\": \"Known candidate material has not been read; no new search is needed.\\n{\\\"missing_feature_ids\\\": [], \\\"missing_aspects\\\": []}\", \"attempt\": 2}]\n\nEvidenceCard：\n[{\"card_id\": \"card_8ba33651c1b41b8432c27c59\", \"task_id\": \"T-R2-1\", \"novelty_point_id\": \"NP-3\", \"document_title\": \"EvoFormer: Learning Dynamic Graph-Level Representations with Structural and Temporal Bias Correction\", \"main_contribution\": \"Proposed a new edge-segmentation-based graph stream partitioning algorithm, called Sketch-DBH, for handling subgraph partitioning problems in large-scale graph stream data.\", \"overlaps\": [], \"differences\": [\"The proposed method focuses on dynamic graph-level embedding and addressing structural visit bias and abrupt evolution blindness, while Sketch-DBH targets subgraph partitioning in graph streams.\", \"EvoFormer uses a Structure-Aware Transformer Module and an Evolution-Sensitive Temporal Module, whereas Sketch-DBH employs Count-Min Sketch and a minimum heap for efficient partitioning.\"], \"sources\": [{\"title\": \"EvoFormer: Learning Dynamic Graph-Level Representations with Structural and Temporal Bias Correction\", \"quote\": \"To overcome these challenges, we propose EvoFormer, an evolution-aware Transformer framework tailored for dynamic graph-level representation learning.\", \"location\": \"artifact art_ebfbc362d98aa3c6b0b68878 chars:566-716\", \"doi\": \"10.1145/3746252.3761134\", \"url\": \"https://arxiv.org/pdf/2508.15378\"}], \"cited_by_paper\": null, \"possible_baseline\": false, \"relevance\": 0.8, \"confidence\": 0.9, \"evidence_ids\": [\"ev_26b14bd0927586ee69b347f8\"]}]\n\nEvidence（包含允许 reader 回读的 artifact_id）：\n[{\"evidence_id\": \"ev_26b14bd0927586ee69b347f8\", \"work_id\": \"wrk_a4bb8b2dd5bac985dbce70db\", \"artifact_id\": \"art_ebfbc362d98aa3c6b0b68878\", \"novelty_point_id\": \"NP-3\", \"task_id\": \"T-R2-1\", \"quote\": \"To overcome these challenges, we propose EvoFormer, an evolution-aware Transformer framework tailored for dynamic graph-level representation learning.\", \"locator\": {\"page_start\": null, \"page_end\": null, \"section\": null, \"block_id\": null, \"paragraph_start\": null, \"paragraph_end\": null, \"char_start\": 566, \"char_end\": 716, \"selector\": null}, \"interpretation\": \"EvoFormer is designed to address specific challenges in dynamic graph-level representation learning, such as structural visit bias and abrupt evolution blindness.\", \"confidence\": 1.0, \"provenance\": {\"source_kind\": \"structured_database\", \"evidence_type\": \"database_evidence\", \"builder\": \"evidence_card_builder\", \"artifact_namespace\": \"research_reference\", \"read_id\": \"read_2458f01d46bb561e0e774f2b\", \"read_char_start\": 0, \"read_char_end\": 1896, \"quote_char_start\": 566, \"quote_char_end\": 716, \"source_record_id\": \"src_a44acc500d9eb59f8bc2ddc0\"}}]\n\n输出 schema：\n{\"$defs\": {\"FeatureComparison\": {\"additionalProperties\": false, \"properties\": {\"feature_id\": {\"minLength\": 1, \"title\": \"Feature Id\", \"type\": \"string\"}, \"work_id\": {\"minLength\": 1, \"title\": \"Work Id\", \"type\": \"string\"}, \"relation\": {\"enum\": [\"supported\", \"partially_supported\", \"contradicted\", \"unknown\"], \"title\": \"Relation\", \"type\": \"string\"}, \"basis_type\": {\"enum\": [\"direct_statement\", \"semantic_equivalence\", \"grounded_inference\", \"insufficient\"], \"title\": \"Basis Type\", \"type\": \"string\"}, \"evidence_refs\": {\"items\": {\"type\": \"string\"}, \"title\": \"Evidence Refs\", \"type\": \"array\"}, \"reason\": {\"minLength\": 1, \"title\": \"Reason\", \"type\": \"string\"}, \"source_context\": {\"default\": \"unknown\", \"enum\": [\"author_method\", \"related_work\", \"baseline\", \"ablation\", \"unknown\"], \"title\": \"Source Context\", \"type\": \"string\"}}, \"required\": [\"feature_id\", \"work_id\", \"relation\", \"basis_type\", \"reason\"], \"title\": \"FeatureComparison\", \"type\": \"object\"}, \"NoveltyVerdict\": {\"description\": \"Reviewer 对单个查新点给出的新颖性评价。\", \"enum\": [\"novel\", \"partially_novel\", \"not_novel\"], \"title\": \"NoveltyVerdict\", \"type\": \"string\"}, \"RelevantWork\": {\"additionalProperties\": false, \"description\": \"对查新点结论高度相关、且仅以可信句柄引用的 Work。\", \"properties\": {\"work_id\": {\"minLength\": 1, \"title\": \"Work Id\", \"type\": \"string\"}, \"card_ids\": {\"items\": {\"type\": \"string\"}, \"minItems\": 1, \"title\": \"Card Ids\", \"type\": \"array\"}, \"evidence_ids\": {\"items\": {\"type\": \"string\"}, \"minItems\": 1, \"title\": \"Evidence Ids\", \"type\": \"array\"}, \"relevance_reason\": {\"minLength\": 1, \"title\": \"Relevance Reason\", \"type\": \"string\"}}, \"required\": [\"work_id\", \"card_ids\", \"evidence_ids\", \"relevance_reason\"], \"title\": \"RelevantWork\", \"type\": \"object\"}, \"ReviewReadCitation\": {\"additionalProperties\": false, \"description\": \"Model-selected read; the harness resolves its exact quote and evidence ID.\", \"properties\": {\"read_id\": {\"minLength\": 1, \"title\": \"Read Id\", \"type\": \"string\"}, \"char_start\": {\"anyOf\": [{\"minimum\": 0, \"type\": \"integer\"}, {\"type\": \"null\"}], \"default\": null, \"title\": \"Char Start\"}, \"char_end\": {\"anyOf\": [{\"minimum\": 0, \"type\": \"integer\"}, {\"type\": \"null\"}], \"default\": null, \"title\": \"Char End\"}}, \"required\": [\"read_id\"], \"title\": \"ReviewReadCitation\", \"type\": \"object\"}, \"ReviewStatus\": {\"description\": \"查新点级 Reviewer 的完成状态。\", \"enum\": [\"reviewed\", \"insufficient_evidence\"], \"title\": \"ReviewStatus\", \"type\": \"string\"}, \"SupplementRequest\": {\"additionalProperties\": false, \"description\": \"Reviewer 的补检语义建议；V0 不拥有工作流路由权。\", \"properties\": {\"reason\": {\"minLength\": 1, \"title\": \"Reason\", \"type\": \"string\"}, \"missing_aspects\": {\"items\": {\"type\": \"string\"}, \"title\": \"Missing Aspects\", \"type\": \"array\"}, \"suggested_focus\": {\"items\": {\"type\": \"string\"}, \"title\": \"Suggested Focus\", \"type\": \"array\"}}, \"required\": [\"reason\"], \"title\": \"SupplementRequest\", \"type\": \"object\"}}, \"additionalProperties\": false, \"description\": \"Model-owned single-card judgment; provenance is registered by the harness.\", \"properties\": {\"novelty_point_id\": {\"minLength\": 1, \"title\": \"Novelty Point Id\", \"type\": \"string\"}, \"status\": {\"$ref\": \"#/$defs/ReviewStatus\"}, \"verdict\": {\"anyOf\": [{\"$ref\": \"#/$defs/NoveltyVerdict\"}, {\"type\": \"null\"}], \"default\": null}, \"verdict_reason\": {\"anyOf\": [{\"type\": \"string\"}, {\"type\": \"null\"}], \"default\": null, \"title\": \"Verdict Reason\"}, \"confidence\": {\"anyOf\": [{\"maximum\": 1.0, \"minimum\": 0.0, \"type\": \"number\"}, {\"type\": \"null\"}], \"default\": null, \"title\": \"Confidence\"}, \"highly_relevant_works\": {\"items\": {\"$ref\": \"#/$defs/RelevantWork\"}, \"title\": \"Highly Relevant Works\", \"type\": \"array\"}, \"supplement_request\": {\"anyOf\": [{\"$ref\": \"#/$defs/SupplementRequest\"}, {\"type\": \"null\"}], \"default\": null}, \"read_citations\": {\"items\": {\"$ref\": \"#/$defs/ReviewReadCitation\"}, \"title\": \"Read Citations\", \"type\": \"array\"}, \"feature_comparisons\": {\"items\": {\"$ref\": \"#/$defs/FeatureComparison\"}, \"title\": \"Feature Comparisons\", \"type\": \"array\"}}, \"required\": [\"novelty_point_id\", \"status\"], \"title\": \"ReviewerCardDraft\", \"type\": \"object\"}\n已授权材料目录（只可读取这些 Artifact）：\n[{\"work_id\": \"wrk_a4bb8b2dd5bac985dbce70db\", \"artifact_id\": \"art_ebfbc362d98aa3c6b0b68878\", \"namespace\": \"research_reference\", \"source_record_id\": \"src_a44acc500d9eb59f8bc2ddc0\", \"role\": \"abstract\", \"content_extent\": \"full\", \"content_hash\": \"a37cb0613c2ab354d4d0766d3030c0bc8fabc27d44998010088cace9fd65c535\", \"readable_chars\": 1896, \"version_label\": null, \"readable\": true, \"section_hints\": []}, {\"work_id\": \"wrk_a4bb8b2dd5bac985dbce70db\", \"artifact_id\": \"art_11528a2410cde1f509d5bca4\", \"namespace\": \"research_reference\", \"source_record_id\": \"src_a44acc500d9eb59f8bc2ddc0\", \"role\": \"extracted_text\", \"content_extent\": \"unknown\", \"content_hash\": \"f9c49b2387eb0bd7fc40cbac9a5dc6d12e8000d85bc793d365f8715f70f78e0d\", \"readable_chars\": 70701, \"version_label\": null, \"readable\": true, \"section_hints\": [{\"char_start\": 467, \"heading\": \"2 Related Work\"}, {\"char_start\": 504, \"heading\": \"4 Proposed method\"}, {\"char_start\": 12480, \"heading\": \"2. Related Work\"}, {\"char_start\": 18489, \"heading\": \"4. Proposed method\"}, {\"char_start\": 60245, \"heading\": \"Dyngem: Deep embedding method for dynamic graphs.\"}, {\"char_start\": 61041, \"heading\": \"Representation learning on graphs: Methods and applications.\"}, {\"char_start\": 69565, \"heading\": \"methods listed below:\"}]}]\n固定特征 ID：\n[{\"feature_id\": \"F1\", \"text\": \"通过Count-Min Sketch这一概率数据结构存储每个节点的度数信息，并使用一个最小堆维护图流数据中的高频节点信息，使其可以在常数时间内返回查询结果并以此根据节点度数信息生成单条图流数据即将被分配到的子图编号。\", \"sha256\": \"b7d0a12fdaf2649408cfb08ccea9194949d1ea8d644bd5582cf091ec83fa5af6\"}, {\"feature_id\": \"F2\", \"text\": \"可以高效完成大规模图流数据的划分且确保负载均衡，从而加速整个框架的模型训练速度。\", \"sha256\": \"4546d8c0cd10ec3f4e2795a3bc838310735e0b22c830e020f63dcd209cbc8d00\"}]",
+        "role": "user"
+      }
+    ],
+    "model": "qwen2.5-7b-instruct",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "function": {
+          "description": "仅回读当前 Card 所绑定 Work 的已验证材料。按 Artifact ID 读取可验证文本。发现多个候选后优先一次批量读取必要片段：reads=[{\"artifact_id\":\"...\",\"max_chars\":2000}, ...]，最多4段；每段保留独立 read_id、来源和字符范围。也支持单个 artifact_id。",
+          "name": "reader",
+          "parameters": {
+            "$defs": {
+              "ConfiguredReaderArguments8000_16000": {
+                "additionalProperties": false,
+                "properties": {
+                  "artifact_id": {
+                    "minLength": 1,
+                    "title": "Artifact Id",
+                    "type": "string"
+                  },
+                  "char_start": {
+                    "default": 0,
+                    "minimum": 0,
+                    "title": "Char Start",
+                    "type": "integer"
+                  },
+                  "max_chars": {
+                    "default": 8000,
+                    "maximum": 16000,
+                    "minimum": 1,
+                    "title": "Max Chars",
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "artifact_id"
+                ],
+                "title": "ConfiguredReaderArguments8000_16000",
+                "type": "object"
+              }
+            },
+            "additionalProperties": false,
+            "properties": {
+              "artifact_id": {
+                "anyOf": [
+                  {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Artifact Id"
+              },
+              "char_start": {
+                "default": 0,
+                "minimum": 0,
+                "title": "Char Start",
+                "type": "integer"
+              },
+              "max_chars": {
+                "default": 8000,
+                "maximum": 16000,
+                "minimum": 1,
+                "title": "Max Chars",
+                "type": "integer"
+              },
+              "reads": {
+                "anyOf": [
+                  {
+                    "items": {
+                      "$ref": "#/$defs/ConfiguredReaderArguments8000_16000"
+                    },
+                    "maxItems": 4,
+                    "minItems": 1,
+                    "type": "array"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Reads"
+              }
+            },
+            "title": "ConfiguredReaderCall8000_16000",
+            "type": "object"
+          }
+        },
+        "type": "function"
+      }
+    ]
+  },
+  "response": {
+    "content": "{\n    \"novelty_point_id\": \"NP-3\",\n    \"status\": \"reviewed\",\n    \"verdict\": \"not_novel\",\n    \"verdict_reason\": \"The proposed Sketch-DBH algorithm, which uses Count-Min Sketch and a minimum heap for efficient partitioning, is contradicted by the EvoFormer method described in the literature, which also addresses subgraph partitioning in large-scale graph stream data but focuses on dynamic graph-level embedding and addressing structural visit bias and abrupt evolution blindness.\",\n    \"confidence\": 0.9,\n    \"highly_relevant_works\": [\n        {\n            \"work_id\": \"wrk_a4bb8b2dd5bac985dbce70db\",\n            \"card_ids\": [\"card_8ba33651c1b41b8432c27c59\"],\n            \"evidence_ids\": [\"ev_26b14bd0927586ee69b347f8\"],\n            \"relevance_reason\": \"The EvoFormer method directly addresses the same problem domain as Sketch-DBH, focusing on subgraph partitioning in large-scale graph stream data.\"\n        }\n    ],\n    \"supplement_request\": null,\n    \"read_citations\": [\n        {\n            \"read_id\": \"read_2458f01d46bb561e0e774f2b\",\n            \"char_start\": 566,\n            \"char_end\": 716\n        }\n    ],\n    \"feature_comparisons\": [\n        {\n            \"feature_id\": \"F1\",\n            \"work_id\": \"wrk_a4bb8b2dd5bac985dbce70db\",\n            \"relation\": \"contradicted\",\n            \"basis_type\": \"semantic_equivalence\",\n            \"evidence_refs\": [\"ev_26b14bd0927586ee69b347f8\"],\n            \"reason\": \"Both methods use Count-Min Sketch and a minimum heap for efficient partitioning, but EvoFormer focuses on dynamic graph-level embedding and addressing structural visit bias and abrupt evolution blindness, while Sketch-DBH targets subgraph partitioning in graph streams.\",\n            \"source_context\": \"related_work\"\n        },\n        {\n            \"feature_id\": \"F2\",\n            \"work_id\": \"wrk_a4bb8b2dd5bac985dbce70db\",\n            \"relation\": \"unknown\",\n            \"basis_type\": \"grounded_inference\",\n            \"evidence_refs\": [],\n            \"reason\": \"The efficiency and load balancing of Sketch-DBH are not explicitly mentioned in the provided evidence, making it difficult to confirm this feature.\",\n            \"source_context\": \"unknown\"\n        }\n    ]\n}",
+    "tool_calls": []
+  },
+  "run_id": "run-480a9f6d8a59475f860887c3a6f45324",
+  "scope": {},
+  "stage_name": "review_evidence",
+  "started_at": "2026-09-30T07:08:46.481430+00:00",
+  "status": "SUCCESS",
+  "timeline": [
+    {
+      "at": "2026-09-30T07:08:46.481430+00:00",
+      "endpoint": "http://127.0.0.1:8000/openapi.json",
+      "kind": "schema",
+      "method": "GET",
+      "payload_sha256": null,
+      "phase": "CONTEXT_MEASUREMENT_REQUEST"
+    },
+    {
+      "at": "2026-09-30T07:08:46.481430+00:00",
+      "kind": "schema",
+      "phase": "CONTEXT_MEASUREMENT_RESPONSE"
+    },
+    {
+      "at": "2026-09-30T07:08:46.481430+00:00",
+      "endpoint": "http://127.0.0.1:8000/version",
+      "kind": "version",
+      "method": "GET",
+      "payload_sha256": null,
+      "phase": "CONTEXT_MEASUREMENT_REQUEST"
+    },
+    {
+      "at": "2026-09-30T07:08:46.481430+00:00",
+      "kind": "version",
+      "phase": "CONTEXT_MEASUREMENT_RESPONSE"
+    },
+    {
+      "at": "2026-09-30T07:08:46.481430+00:00",
+      "endpoint": "http://127.0.0.1:8000/tokenize",
+      "kind": "tokenize",
+      "method": "POST",
+      "payload_sha256": "b47efdf022f456469856fff33136c613cd263d3978e05039369b4055b29de68f",
+      "phase": "CONTEXT_MEASUREMENT_REQUEST"
+    },
+    {
+      "at": "2026-09-30T07:08:46.481430+00:00",
+      "count": 4556,
+      "kind": "tokenize",
+      "max_model_len": 32768,
+      "phase": "CONTEXT_MEASUREMENT_RESPONSE"
+    },
+    {
+      "at": "2026-09-30T07:08:46.481430+00:00",
+      "code": "CONTEXT_ADMITTED",
+      "counter": "vllm",
+      "decision": "allow",
+      "effective_context_window": 32768,
+      "exact": true,
+      "input_tokens": 4556,
+      "measurement_details": {
+        "endpoint": "http://127.0.0.1:8000/tokenize",
+        "schema_verified": true,
+        "server_version": "0.8.5.post1",
+        "template_fields": [
+          "add_generation_prompt",
+          "add_special_tokens",
+          "chat_template_kwargs",
+          "continue_final_message",
+          "messages",
+          "model"
+        ],
+        "tokenize_payload_sha256": "b47efdf022f456469856fff33136c613cd263d3978e05039369b4055b29de68f",
+        "vllm_tools_mode": "v0_8_5_kwargs"
+      },
+      "mode": "enforce",
+      "on_unavailable": "reject",
+      "output_reservation_field": "max_tokens",
+      "output_tokens_reserved": 8192,
+      "payload_sha256": "be0ae0d6c95099443f5d85cb85343b729c5915b69fcdcf6e713cd1a14f8c378e",
+      "phase": "CONTEXT_ADMISSION",
+      "profile_context_window": 32768,
+      "requested_total_tokens": 12748,
+      "server_context_window": 32768,
+      "source": "vllm_tokenize",
+      "status": "admitted",
+      "vllm_tools_mode": "v0_8_5_kwargs",
+      "window_source": "minimum_of_profile_and_server",
+      "would_reject": false
+    },
+    {
+      "at": "2026-09-30T07:08:46.577961+00:00",
+      "phase": "TRANSPORT_INVOKED",
+      "timeout_seconds": 90.0
+    },
+    {
+      "at": "2026-09-30T07:09:00.817252+00:00",
+      "http_status": 200,
+      "phase": "RESPONSE_HEADERS",
+      "provider_request_id": null
+    },
+    {
+      "at": "2026-09-30T07:09:00.821616+00:00",
+      "body_bytes": 2757,
+      "phase": "RESPONSE_BODY_COMPLETE"
+    },
+    {
+      "at": "2026-09-30T07:09:00.823882+00:00",
+      "phase": "RESPONSE_PARSED",
+      "response_id": "chatcmpl-a4bd68fcba29468090b84e0d8b513f61",
+      "usage_available": true
+    },
+    {
+      "at": "2026-09-30T07:08:46.481430+00:00",
+      "measured_input_tokens": 4556,
+      "payload_sha256": "be0ae0d6c95099443f5d85cb85343b729c5915b69fcdcf6e713cd1a14f8c378e",
+      "phase": "CONTEXT_MEASUREMENT_VERIFIED",
+      "provider_input_tokens": 4556,
+      "status": "matched"
+    }
+  ],
+  "tokens": {
+    "available": true,
+    "billable_breakdown_available": true,
+    "cached_input_tokens": 0,
+    "input_tokens": 4556,
+    "output_tokens": 598,
+    "reasoning_tokens": 0,
+    "total_tokens": 5154
+  },
+  "transport_inflight_unknown": false
+}

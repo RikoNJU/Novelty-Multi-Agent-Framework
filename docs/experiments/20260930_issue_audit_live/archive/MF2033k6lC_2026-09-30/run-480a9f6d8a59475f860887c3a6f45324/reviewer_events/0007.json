@@ -1,0 +1,529 @@
+{
+  "actual_model_input": "{\"today\": \"2026-09-30\", \"novelty_point\": {\"point_id\": \"NP-2\", \"claim\": \"提出了一种新的基于图摘要的分布式图神经网络训练框架，称为DSGNN，用于分布式场景下的基于图神经网络的图表示学习。\", \"claim_en\": \"Proposed a new distributed graph neural network training framework based on graph summarization, called DSGNN, for graph representation learning based on graph neural networks in distributed scenarios.\", \"technical_features\": [\"可以在工作节点上对子图进行小批量样本的学习，而不是让领导节点完成子图生成。\", \"使用图摘要技术生成的子图规模远远小于原图，在其基础上进行模型训练可以大大提升效率。\"], \"technical_features_en\": [\"Can perform mini-batch sample learning on subgraphs at worker nodes instead of having the leader node complete subgraph generation.\", \"The subgraphs generated using graph summarization technology have a much smaller scale than the original graph, allowing for efficient model training based on them.\"], \"source_locations\": [\"Page 7\", \"Page 20\"]}, \"card_reviews\": [{\"index\": 1, \"card_id\": \"card_5f340eac084149c20c484d9b\", \"novelty_point_id\": \"NP-2\", \"status\": \"completed\", \"document_title\": \"ScaGNN: a Graph Neural Network for Multiple Scattering Simulations\", \"review\": {\"novelty_point_id\": \"NP-2\", \"status\": \"insufficient_evidence\", \"verdict\": null, \"verdict_reason\": null, \"confidence\": null, \"highly_relevant_works\": [{\"work_id\": \"wrk_09214cbbc59fe401d9d390c5\", \"card_ids\": [\"card_5f340eac084149c20c484d9b\"], \"evidence_ids\": [\"ev_c4ae13507cef2b8297d677e9\"], \"relevance_reason\": \"The work presents a learning-based approach for simulating multiple scattering phenomena using a GNN as a surrogate model, which is different from the DSGNN framework.\"}], \"supplement_request\": {\"reason\": \"尚无单篇文献对全部明确技术特征的完整支持，不能形成 not_novel 裁定；已登记局部核验结果保留。\", \"missing_aspects\": [\"可以在工作节点上对子图进行小批量样本的学习，而不是让领导节点完成子图生成。\", \"使用图摘要技术生成的子图规模远远小于原图，在其基础上进行模型训练可以大大提升效率。\"], \"suggested_focus\": []}, \"feature_comparisons\": [{\"feature_id\": \"F1\", \"work_id\": \"wrk_09214cbbc59fe401d9d390c5\", \"relation\": \"contradicted\", \"basis_type\": \"semantic_equivalence\", \"evidence_refs\": [\"ev_c4ae13507cef2b8297d677e9\"], \"reason\": \"The work does not mention performing mini-batch sample learning on subgraphs at worker nodes. It focuses on using a GNN as a surrogate model for the BIE solver.\", \"source_context\": \"related_work\"}, {\"feature_id\": \"F2\", \"work_id\": \"wrk_09214cbbc59fe401d9d390c5\", \"relation\": \"contradicted\", \"basis_type\": \"semantic_equivalence\", \"evidence_refs\": [\"ev_c4ae13507cef2b8297d677e9\"], \"reason\": \"The work does not mention the use of graph summarization to generate subgraphs with a much smaller scale than the original graph. It focuses on using a GNN as a surrogate model for the BIE solver.\", \"source_context\": \"related_work\"}], \"incomplete_reason\": \"semantic_evidence\", \"execution_issues\": [{\"schema_version\": 1, \"event_id\": \"failure_9eefbc046b3412f30566a7a9\", \"code\": \"review.missing_features\", \"layer\": \"reviewer\", \"category\": \"semantic\", \"scope\": {\"paper_id\": \"MF2033k6lC\", \"run_id\": null, \"point_id\": \"NP-2\", \"task_id\": null, \"attempt\": null, \"card_id\": null, \"artifact_id\": null, \"provider\": null, \"feature_ids\": [\"F1\", \"F2\"]}, \"execution_status\": \"incomplete\", \"semantic_status\": \"not_adjudicated\", \"retry\": {\"allowed\": false, \"max_additional_attempts\": 0, \"requires_input_change\": false, \"retry_after_seconds\": null}, \"recovery\": \"read_artifact\", \"conclusion_effect\": \"blocks_point\", \"evidence_refs\": [], \"cause_event_ids\": [], \"message\": \"not_novel requires one Work with a unique supported, cited comparison for every declared feature\"}]}, \"key_quotes\": [{\"evidence_id\": \"ev_c4ae13507cef2b8297d677e9\", \"work_id\": \"wrk_09214cbbc59fe401d9d390c5\", \"artifact_id\": \"art_7a8f7ee2ba744847bdfb3edb\", \"quote\": \"We present a novel learning-based approach for simulating Multiple Scattering phenomena using the BEM framework in which a GNN is leveraged as a surrogate model for replacing the BIE solver. This leads to a reduction of the simulation runtime by two orders of magnitude.\", \"quote_truncated\": false, \"display_status\": \"full\", \"displayed_chars\": 270, \"original_chars\": 270, \"quote_sha256\": \"da661cc22994b25d3d6c41fbd6d426b19802de505a9ed40e2fbfe459ba76431d\", \"displayed_sha256\": \"da661cc22994b25d3d6c41fbd6d426b19802de505a9ed40e2fbfe459ba76431d\", \"selected\": false, \"cited_by_card\": true, \"semantic_support\": \"unassessed\"}], \"omitted_quote_count\": 0, \"summary_input_complete\": true}], \"review_schema\": {\"$defs\": {\"FeatureComparison\": {\"additionalProperties\": false, \"properties\": {\"feature_id\": {\"minLength\": 1, \"title\": \"Feature Id\", \"type\": \"string\"}, \"work_id\": {\"minLength\": 1, \"title\": \"Work Id\", \"type\": \"string\"}, \"relation\": {\"enum\": [\"supported\", \"partially_supported\", \"contradicted\", \"unknown\"], \"title\": \"Relation\", \"type\": \"string\"}, \"basis_type\": {\"enum\": [\"direct_statement\", \"semantic_equivalence\", \"grounded_inference\", \"insufficient\"], \"title\": \"Basis Type\", \"type\": \"string\"}, \"evidence_refs\": {\"items\": {\"type\": \"string\"}, \"title\": \"Evidence Refs\", \"type\": \"array\"}, \"reason\": {\"minLength\": 1, \"title\": \"Reason\", \"type\": \"string\"}, \"source_context\": {\"default\": \"unknown\", \"enum\": [\"author_method\", \"related_work\", \"baseline\", \"ablation\", \"unknown\"], \"title\": \"Source Context\", \"type\": \"string\"}}, \"required\": [\"feature_id\", \"work_id\", \"relation\", \"basis_type\", \"reason\"], \"title\": \"FeatureComparison\", \"type\": \"object\"}, \"NoveltyVerdict\": {\"description\": \"Reviewer 对单个查新点给出的新颖性评价。\", \"enum\": [\"novel\", \"partially_novel\", \"not_novel\"], \"title\": \"NoveltyVerdict\", \"type\": \"string\"}, \"RelevantWork\": {\"additionalProperties\": false, \"description\": \"对查新点结论高度相关、且仅以可信句柄引用的 Work。\", \"properties\": {\"work_id\": {\"minLength\": 1, \"title\": \"Work Id\", \"type\": \"string\"}, \"card_ids\": {\"items\": {\"type\": \"string\"}, \"minItems\": 1, \"title\": \"Card Ids\", \"type\": \"array\"}, \"evidence_ids\": {\"items\": {\"type\": \"string\"}, \"minItems\": 1, \"title\": \"Evidence Ids\", \"type\": \"array\"}, \"relevance_reason\": {\"minLength\": 1, \"title\": \"Relevance Reason\", \"type\": \"string\"}}, \"required\": [\"work_id\", \"card_ids\", \"evidence_ids\", \"relevance_reason\"], \"title\": \"RelevantWork\", \"type\": \"object\"}, \"ReviewStatus\": {\"description\": \"查新点级 Reviewer 的完成状态。\", \"enum\": [\"reviewed\", \"insufficient_evidence\"], \"title\": \"ReviewStatus\", \"type\": \"string\"}, \"SupplementRequest\": {\"additionalProperties\": false, \"description\": \"Reviewer 的补检语义建议；V0 不拥有工作流路由权。\", \"properties\": {\"reason\": {\"minLength\": 1, \"title\": \"Reason\", \"type\": \"string\"}, \"missing_aspects\": {\"items\": {\"type\": \"string\"}, \"title\": \"Missing Aspects\", \"type\": \"array\"}, \"suggested_focus\": {\"items\": {\"type\": \"string\"}, \"title\": \"Suggested Focus\", \"type\": \"array\"}}, \"required\": [\"reason\"], \"title\": \"SupplementRequest\", \"type\": \"object\"}}, \"additionalProperties\": false, \"description\": \"Model-owned point synthesis; it cannot introduce reads or evidence objects.\", \"properties\": {\"novelty_point_id\": {\"minLength\": 1, \"title\": \"Novelty Point Id\", \"type\": \"string\"}, \"status\": {\"$ref\": \"#/$defs/ReviewStatus\"}, \"verdict\": {\"anyOf\": [{\"$ref\": \"#/$defs/NoveltyVerdict\"}, {\"type\": \"null\"}], \"default\": null}, \"verdict_reason\": {\"anyOf\": [{\"type\": \"string\"}, {\"type\": \"null\"}], \"default\": null, \"title\": \"Verdict Reason\"}, \"confidence\": {\"anyOf\": [{\"maximum\": 1.0, \"minimum\": 0.0, \"type\": \"number\"}, {\"type\": \"null\"}], \"default\": null, \"title\": \"Confidence\"}, \"highly_relevant_works\": {\"items\": {\"$ref\": \"#/$defs/RelevantWork\"}, \"title\": \"Highly Relevant Works\", \"type\": \"array\"}, \"supplement_request\": {\"anyOf\": [{\"$ref\": \"#/$defs/SupplementRequest\"}, {\"type\": \"null\"}], \"default\": null}, \"feature_comparisons\": {\"items\": {\"$ref\": \"#/$defs/FeatureComparison\"}, \"title\": \"Feature Comparisons\", \"type\": \"array\"}}, \"required\": [\"novelty_point_id\", \"status\"], \"title\": \"ReviewerSummaryDraft\", \"type\": \"object\"}}",
+  "card_ids": [
+    "card_5f340eac084149c20c484d9b"
+  ],
+  "draft_schema": {
+    "$defs": {
+      "FeatureComparison": {
+        "additionalProperties": false,
+        "properties": {
+          "basis_type": {
+            "enum": [
+              "direct_statement",
+              "semantic_equivalence",
+              "grounded_inference",
+              "insufficient"
+            ],
+            "title": "Basis Type",
+            "type": "string"
+          },
+          "evidence_refs": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Evidence Refs",
+            "type": "array"
+          },
+          "feature_id": {
+            "minLength": 1,
+            "title": "Feature Id",
+            "type": "string"
+          },
+          "reason": {
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          },
+          "relation": {
+            "enum": [
+              "supported",
+              "partially_supported",
+              "contradicted",
+              "unknown"
+            ],
+            "title": "Relation",
+            "type": "string"
+          },
+          "source_context": {
+            "default": "unknown",
+            "enum": [
+              "author_method",
+              "related_work",
+              "baseline",
+              "ablation",
+              "unknown"
+            ],
+            "title": "Source Context",
+            "type": "string"
+          },
+          "work_id": {
+            "minLength": 1,
+            "title": "Work Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "feature_id",
+          "work_id",
+          "relation",
+          "basis_type",
+          "reason"
+        ],
+        "title": "FeatureComparison",
+        "type": "object"
+      },
+      "NoveltyVerdict": {
+        "description": "Reviewer 对单个查新点给出的新颖性评价。",
+        "enum": [
+          "novel",
+          "partially_novel",
+          "not_novel"
+        ],
+        "title": "NoveltyVerdict",
+        "type": "string"
+      },
+      "RelevantWork": {
+        "additionalProperties": false,
+        "description": "对查新点结论高度相关、且仅以可信句柄引用的 Work。",
+        "properties": {
+          "card_ids": {
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "title": "Card Ids",
+            "type": "array"
+          },
+          "evidence_ids": {
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "title": "Evidence Ids",
+            "type": "array"
+          },
+          "relevance_reason": {
+            "minLength": 1,
+            "title": "Relevance Reason",
+            "type": "string"
+          },
+          "work_id": {
+            "minLength": 1,
+            "title": "Work Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "work_id",
+          "card_ids",
+          "evidence_ids",
+          "relevance_reason"
+        ],
+        "title": "RelevantWork",
+        "type": "object"
+      },
+      "ReviewStatus": {
+        "description": "查新点级 Reviewer 的完成状态。",
+        "enum": [
+          "reviewed",
+          "insufficient_evidence"
+        ],
+        "title": "ReviewStatus",
+        "type": "string"
+      },
+      "SupplementRequest": {
+        "additionalProperties": false,
+        "description": "Reviewer 的补检语义建议；V0 不拥有工作流路由权。",
+        "properties": {
+          "missing_aspects": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Missing Aspects",
+            "type": "array"
+          },
+          "reason": {
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          },
+          "suggested_focus": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Suggested Focus",
+            "type": "array"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "title": "SupplementRequest",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "description": "Model-owned point synthesis; it cannot introduce reads or evidence objects.",
+    "properties": {
+      "confidence": {
+        "anyOf": [
+          {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "type": "number"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Confidence"
+      },
+      "feature_comparisons": {
+        "items": {
+          "$ref": "#/$defs/FeatureComparison"
+        },
+        "title": "Feature Comparisons",
+        "type": "array"
+      },
+      "highly_relevant_works": {
+        "items": {
+          "$ref": "#/$defs/RelevantWork"
+        },
+        "title": "Highly Relevant Works",
+        "type": "array"
+      },
+      "novelty_point_id": {
+        "minLength": 1,
+        "title": "Novelty Point Id",
+        "type": "string"
+      },
+      "status": {
+        "$ref": "#/$defs/ReviewStatus"
+      },
+      "supplement_request": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/SupplementRequest"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "verdict": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/NoveltyVerdict"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "verdict_reason": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Verdict Reason"
+      }
+    },
+    "required": [
+      "novelty_point_id",
+      "status"
+    ],
+    "title": "ReviewerSummaryDraft",
+    "type": "object"
+  },
+  "legacy_guard_shadow": {
+    "assertion_matches": [],
+    "formal_status": "insufficient_evidence",
+    "input_quote_matches": [],
+    "old_relevance_reasons": [
+      "The work presents a learning-based approach for simulating multiple scattering phenomena using a GNN as a surrogate model, which is different from the DSGNN framework."
+    ],
+    "old_status": "insufficient_evidence",
+    "old_verdict": null,
+    "variant_id": "G0_shadow",
+    "would_change": false
+  },
+  "parent_stage_id": "stage_0012",
+  "phase": "summary_result",
+  "point_id": "NP-2",
+  "raw_draft": {
+    "confidence": null,
+    "feature_comparisons": [
+      {
+        "basis_type": "semantic_equivalence",
+        "evidence_refs": [
+          "ev_c4ae13507cef2b8297d677e9"
+        ],
+        "feature_id": "F1",
+        "reason": "The work does not mention performing mini-batch sample learning on subgraphs at worker nodes. It focuses on using a GNN as a surrogate model for the BIE solver.",
+        "relation": "contradicted",
+        "source_context": "related_work",
+        "work_id": "wrk_09214cbbc59fe401d9d390c5"
+      },
+      {
+        "basis_type": "semantic_equivalence",
+        "evidence_refs": [
+          "ev_c4ae13507cef2b8297d677e9"
+        ],
+        "feature_id": "F2",
+        "reason": "The work does not mention the use of graph summarization to generate subgraphs with a much smaller scale than the original graph. It focuses on using a GNN as a surrogate model for the BIE solver.",
+        "relation": "contradicted",
+        "source_context": "related_work",
+        "work_id": "wrk_09214cbbc59fe401d9d390c5"
+      }
+    ],
+    "highly_relevant_works": [
+      {
+        "card_ids": [
+          "card_5f340eac084149c20c484d9b"
+        ],
+        "evidence_ids": [
+          "ev_c4ae13507cef2b8297d677e9"
+        ],
+        "relevance_reason": "The work presents a learning-based approach for simulating multiple scattering phenomena using a GNN as a surrogate model, which is different from the DSGNN framework.",
+        "work_id": "wrk_09214cbbc59fe401d9d390c5"
+      }
+    ],
+    "novelty_point_id": "NP-2",
+    "status": "insufficient_evidence",
+    "supplement_request": {
+      "missing_aspects": [
+        "可以在工作节点上对子图进行小批量样本的学习，而不是让领导节点完成子图生成。",
+        "使用图摘要技术生成的子图规模远远小于原图，在其基础上进行模型训练可以大大提升效率。"
+      ],
+      "reason": "尚无单篇文献对全部明确技术特征的完整支持，不能形成 not_novel 裁定；已登记局部核验结果保留。",
+      "suggested_focus": []
+    },
+    "verdict": null,
+    "verdict_reason": "尚无单篇文献对全部明确技术特征的完整支持，不能形成 not_novel 裁定；已登记局部核验结果保留。"
+  },
+  "raw_model_output": "{\n  \"novelty_point_id\": \"NP-2\",\n  \"status\": \"insufficient_evidence\",\n  \"verdict\": null,\n  \"verdict_reason\": \"尚无单篇文献对全部明确技术特征的完整支持，不能形成 not_novel 裁定；已登记局部核验结果保留。\",\n  \"confidence\": null,\n  \"highly_relevant_works\": [\n    {\n      \"work_id\": \"wrk_09214cbbc59fe401d9d390c5\",\n      \"card_ids\": [\n        \"card_5f340eac084149c20c484d9b\"\n      ],\n      \"evidence_ids\": [\n        \"ev_c4ae13507cef2b8297d677e9\"\n      ],\n      \"relevance_reason\": \"The work presents a learning-based approach for simulating multiple scattering phenomena using a GNN as a surrogate model, which is different from the DSGNN framework.\"\n    }\n  ],\n  \"supplement_request\": {\n    \"reason\": \"尚无单篇文献对全部明确技术特征的完整支持，不能形成 not_novel 裁定；已登记局部核验结果保留。\",\n    \"missing_aspects\": [\n      \"可以在工作节点上对子图进行小批量样本的学习，而不是让领导节点完成子图生成。\",\n      \"使用图摘要技术生成的子图规模远远小于原图，在其基础上进行模型训练可以大大提升效率。\"\n    ],\n    \"suggested_focus\": []\n  },\n  \"feature_comparisons\": [\n    {\n      \"feature_id\": \"F1\",\n      \"work_id\": \"wrk_09214cbbc59fe401d9d390c5\",\n      \"relation\": \"contradicted\",\n      \"basis_type\": \"semantic_equivalence\",\n      \"evidence_refs\": [\n        \"ev_c4ae13507cef2b8297d677e9\"\n      ],\n      \"reason\": \"The work does not mention performing mini-batch sample learning on subgraphs at worker nodes. It focuses on using a GNN as a surrogate model for the BIE solver.\",\n      \"source_context\": \"related_work\"\n    },\n    {\n      \"feature_id\": \"F2\",\n      \"work_id\": \"wrk_09214cbbc59fe401d9d390c5\",\n      \"relation\": \"contradicted\",\n      \"basis_type\": \"semantic_equivalence\",\n      \"evidence_refs\": [\n        \"ev_c4ae13507cef2b8297d677e9\"\n      ],\n      \"reason\": \"The work does not mention the use of graph summarization to generate subgraphs with a much smaller scale than the original graph. It focuses on using a GNN as a surrogate model for the BIE solver.\",\n      \"source_context\": \"related_work\"\n    }\n  ]\n}",
+  "recorded_at": "2026-09-30T07:06:22.870908+00:00",
+  "review": {
+    "confidence": null,
+    "execution_issues": [
+      {
+        "category": "semantic",
+        "cause_event_ids": [],
+        "code": "review.missing_features",
+        "conclusion_effect": "blocks_point",
+        "event_id": "failure_9eefbc046b3412f30566a7a9",
+        "evidence_refs": [],
+        "execution_status": "incomplete",
+        "layer": "reviewer",
+        "message": "not_novel requires one Work with a unique supported, cited comparison for every declared feature",
+        "recovery": "read_artifact",
+        "retry": {
+          "allowed": false,
+          "max_additional_attempts": 0,
+          "requires_input_change": false,
+          "retry_after_seconds": null
+        },
+        "schema_version": 1,
+        "scope": {
+          "artifact_id": null,
+          "attempt": null,
+          "card_id": null,
+          "feature_ids": [
+            "F1",
+            "F2"
+          ],
+          "paper_id": "MF2033k6lC",
+          "point_id": "NP-2",
+          "provider": null,
+          "run_id": null,
+          "task_id": null
+        },
+        "semantic_status": "not_adjudicated"
+      }
+    ],
+    "feature_comparisons": [
+      {
+        "basis_type": "semantic_equivalence",
+        "evidence_refs": [
+          "ev_c4ae13507cef2b8297d677e9"
+        ],
+        "feature_id": "F1",
+        "reason": "The work does not mention performing mini-batch sample learning on subgraphs at worker nodes. It focuses on using a GNN as a surrogate model for the BIE solver.",
+        "relation": "contradicted",
+        "source_context": "related_work",
+        "work_id": "wrk_09214cbbc59fe401d9d390c5"
+      },
+      {
+        "basis_type": "semantic_equivalence",
+        "evidence_refs": [
+          "ev_c4ae13507cef2b8297d677e9"
+        ],
+        "feature_id": "F2",
+        "reason": "The work does not mention the use of graph summarization to generate subgraphs with a much smaller scale than the original graph. It focuses on using a GNN as a surrogate model for the BIE solver.",
+        "relation": "contradicted",
+        "source_context": "related_work",
+        "work_id": "wrk_09214cbbc59fe401d9d390c5"
+      }
+    ],
+    "highly_relevant_works": [
+      {
+        "card_ids": [
+          "card_5f340eac084149c20c484d9b"
+        ],
+        "evidence_ids": [
+          "ev_c4ae13507cef2b8297d677e9"
+        ],
+        "relevance_reason": "The work presents a learning-based approach for simulating multiple scattering phenomena using a GNN as a surrogate model, which is different from the DSGNN framework.",
+        "work_id": "wrk_09214cbbc59fe401d9d390c5"
+      }
+    ],
+    "incomplete_reason": "semantic_evidence",
+    "novelty_point_id": "NP-2",
+    "read_citations": [],
+    "reader_observations": [],
+    "review_evidence": [],
+    "status": "insufficient_evidence",
+    "supplement_request": {
+      "missing_aspects": [
+        "可以在工作节点上对子图进行小批量样本的学习，而不是让领导节点完成子图生成。",
+        "使用图摘要技术生成的子图规模远远小于原图，在其基础上进行模型训练可以大大提升效率。"
+      ],
+      "reason": "尚无单篇文献对全部明确技术特征的完整支持，不能形成 not_novel 裁定；已登记局部核验结果保留。",
+      "suggested_focus": []
+    },
+    "verdict": null,
+    "verdict_reason": "尚无单篇文献对全部明确技术特征的完整支持，不能形成 not_novel 裁定；已登记局部核验结果保留。"
+  },
+  "reviewer_event_id": "reviewer_0007",
+  "rows": [
+    {
+      "card_id": "card_5f340eac084149c20c484d9b",
+      "document_title": "ScaGNN: a Graph Neural Network for Multiple Scattering Simulations",
+      "index": 1,
+      "key_quotes": [
+        {
+          "artifact_id": "art_7a8f7ee2ba744847bdfb3edb",
+          "cited_by_card": true,
+          "display_status": "full",
+          "displayed_chars": 270,
+          "displayed_sha256": "da661cc22994b25d3d6c41fbd6d426b19802de505a9ed40e2fbfe459ba76431d",
+          "evidence_id": "ev_c4ae13507cef2b8297d677e9",
+          "original_chars": 270,
+          "quote": "We present a novel learning-based approach for simulating Multiple Scattering phenomena using the BEM framework in which a GNN is leveraged as a surrogate model for replacing the BIE solver. This leads to a reduction of the simulation runtime by two orders of magnitude.",
+          "quote_sha256": "da661cc22994b25d3d6c41fbd6d426b19802de505a9ed40e2fbfe459ba76431d",
+          "quote_truncated": false,
+          "selected": false,
+          "semantic_support": "unassessed",
+          "work_id": "wrk_09214cbbc59fe401d9d390c5"
+        }
+      ],
+      "novelty_point_id": "NP-2",
+      "omitted_quote_count": 0,
+      "review": {
+        "confidence": null,
+        "execution_issues": [
+          {
+            "category": "semantic",
+            "cause_event_ids": [],
+            "code": "review.missing_features",
+            "conclusion_effect": "blocks_point",
+            "event_id": "failure_9eefbc046b3412f30566a7a9",
+            "evidence_refs": [],
+            "execution_status": "incomplete",
+            "layer": "reviewer",
+            "message": "not_novel requires one Work with a unique supported, cited comparison for every declared feature",
+            "recovery": "read_artifact",
+            "retry": {
+              "allowed": false,
+              "max_additional_attempts": 0,
+              "requires_input_change": false,
+              "retry_after_seconds": null
+            },
+            "schema_version": 1,
+            "scope": {
+              "artifact_id": null,
+              "attempt": null,
+              "card_id": null,
+              "feature_ids": [
+                "F1",
+                "F2"
+              ],
+              "paper_id": "MF2033k6lC",
+              "point_id": "NP-2",
+              "provider": null,
+              "run_id": null,
+              "task_id": null
+            },
+            "semantic_status": "not_adjudicated"
+          }
+        ],
+        "feature_comparisons": [
+          {
+            "basis_type": "semantic_equivalence",
+            "evidence_refs": [
+              "ev_c4ae13507cef2b8297d677e9"
+            ],
+            "feature_id": "F1",
+            "reason": "The work does not mention performing mini-batch sample learning on subgraphs at worker nodes. It focuses on using a GNN as a surrogate model for the BIE solver.",
+            "relation": "contradicted",
+            "source_context": "related_work",
+            "work_id": "wrk_09214cbbc59fe401d9d390c5"
+          },
+          {
+            "basis_type": "semantic_equivalence",
+            "evidence_refs": [
+              "ev_c4ae13507cef2b8297d677e9"
+            ],
+            "feature_id": "F2",
+            "reason": "The work does not mention the use of graph summarization to generate subgraphs with a much smaller scale than the original graph. It focuses on using a GNN as a surrogate model for the BIE solver.",
+            "relation": "contradicted",
+            "source_context": "related_work",
+            "work_id": "wrk_09214cbbc59fe401d9d390c5"
+          }
+        ],
+        "highly_relevant_works": [
+          {
+            "card_ids": [
+              "card_5f340eac084149c20c484d9b"
+            ],
+            "evidence_ids": [
+              "ev_c4ae13507cef2b8297d677e9"
+            ],
+            "relevance_reason": "The work presents a learning-based approach for simulating multiple scattering phenomena using a GNN as a surrogate model, which is different from the DSGNN framework.",
+            "work_id": "wrk_09214cbbc59fe401d9d390c5"
+          }
+        ],
+        "incomplete_reason": "semantic_evidence",
+        "novelty_point_id": "NP-2",
+        "read_citations": [],
+        "reader_observations": [],
+        "review_evidence": [],
+        "status": "insufficient_evidence",
+        "supplement_request": {
+          "missing_aspects": [
+            "可以在工作节点上对子图进行小批量样本的学习，而不是让领导节点完成子图生成。",
+            "使用图摘要技术生成的子图规模远远小于原图，在其基础上进行模型训练可以大大提升效率。"
+          ],
+          "reason": "尚无单篇文献对全部明确技术特征的完整支持，不能形成 not_novel 裁定；已登记局部核验结果保留。",
+          "suggested_focus": []
+        },
+        "verdict": null,
+        "verdict_reason": null
+      },
+      "review_evidence": [],
+      "status": "completed",
+      "summary_input_complete": true
+    }
+  ],
+  "run_id": "run-480a9f6d8a59475f860887c3a6f45324",
+  "scope": {}
+}

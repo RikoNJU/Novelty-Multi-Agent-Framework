@@ -1,0 +1,224 @@
+{
+  "alias": "local-qwen2.5-7b",
+  "billing": {
+    "amount": null,
+    "currency": "RMB",
+    "pricing_table": "/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/config/llm_pricing.json",
+    "rate_name": null,
+    "rates_per_unit": null,
+    "status": "UNPRICED",
+    "unit_tokens": 1000000
+  },
+  "chat_transport_invoked": true,
+  "client_call_id": "942c864aa80f47d2a7bb8c21dec71526",
+  "context_admission": {
+    "code": "CONTEXT_ADMITTED",
+    "counter": "vllm",
+    "decision": "allow",
+    "effective_context_window": 32768,
+    "exact": true,
+    "input_tokens": 908,
+    "measurement_details": {
+      "endpoint": "http://127.0.0.1:8000/tokenize",
+      "schema_verified": true,
+      "server_version": "0.8.5.post1",
+      "template_fields": [
+        "add_generation_prompt",
+        "add_special_tokens",
+        "continue_final_message",
+        "messages",
+        "model"
+      ],
+      "tokenize_payload_sha256": "90b2bc3492daa352172ea74c39e9203cc9898081880ffd2b6b8e469bc94e4f2c",
+      "vllm_tools_mode": "v0_8_5_kwargs"
+    },
+    "mode": "enforce",
+    "on_unavailable": "reject",
+    "output_reservation_field": "max_tokens",
+    "output_tokens_reserved": 4096,
+    "payload_sha256": "027979845602c26c9c24b384ae637be6e221b908143a48261a5920c55c333e9c",
+    "profile_context_window": 32768,
+    "requested_total_tokens": 5004,
+    "server_context_window": 32768,
+    "source": "vllm_tokenize",
+    "status": "admitted",
+    "vllm_tools_mode": "v0_8_5_kwargs",
+    "window_source": "minimum_of_profile_and_server",
+    "would_reject": false
+  },
+  "context_measurement_requests": 3,
+  "context_measurement_verification": {
+    "measured_input_tokens": 908,
+    "payload_sha256": "027979845602c26c9c24b384ae637be6e221b908143a48261a5920c55c333e9c",
+    "provider_input_tokens": 908,
+    "status": "matched"
+  },
+  "duration_ms": 7335,
+  "error": null,
+  "finish_reason": "stop",
+  "llm_call_id": "llm_0032",
+  "message_count": 2,
+  "model": "qwen2.5-7b-instruct",
+  "parent_stage_id": "stage_0021",
+  "provider": "openai_compatible",
+  "provider_usage": {
+    "completion_tokens": 317,
+    "prompt_tokens": 908,
+    "prompt_tokens_details": null,
+    "total_tokens": 1225
+  },
+  "request_id": "chatcmpl-49566b4b48c44c049ad6aa7ffb7796f9",
+  "request_options": {
+    "endpoint": "http://127.0.0.1:8000/v1/chat/completions",
+    "timeout_seconds": 60
+  },
+  "request_payload": {
+    "max_tokens": 4096,
+    "messages": [
+      {
+        "content": "Repair the format of the previous output into the supplied JSON schema. Return only JSON. Do not add facts, quotes, identifiers or stronger conclusions. Preserve the existing meaning and exact quotations. Do not call tools. If the output does not support a verdict, use the schema's insufficient-evidence form.",
+        "role": "system"
+      },
+      {
+        "content": "{\"previous_output\": \"<tool_call>\\n{\\\"name\\\": \\\"submit_evidence\\\", \\\"arguments\\\": {\\\"cards\\\": [{\\\"main_contribution\\\": \\\"The paper introduces SHROM, a model that combines square-root velocity functions, a neighbor graph, and an autoencoder for representing and reconstructing fluid interfaces in a low-dimensional, invertible, and shape-faithful manner.\\\", \\\"overlaps\\\": [\\\"The proposed model utilizes a combination of techniques including shape analysis and autoencoding, which are also used in other works.\\\", \\\"The approach involves building a neighbor graph over a shape space, similar to some previous works in manifold learning.\\\"], \\\"differences\\\": [\\\"SHROM specifically targets fluid interfaces and uses square-root velocity functions, which are not commonly used in other works.\\\", \\\"The model includes a regularization term that ensures latent neighbors correspond to graph neighbors, a feature not present in other works.\\\"], \\\"quotes\\\": [{\\\"quote\\\": \\\"Interfaces are represented by their square-root velocity functions, a neighbor graph is built over the resulting shape space, and an autoencoder is trained to reconstruct while penalising latents in which graph neighbors are not latent neighbors.\\\", \\\"interpretation\\\": \\\"The model uses square-root velocity functions for shape representation, a neighbor graph for latent organization, and an autoencoder for reconstruction, with a regularization term ensuring latent and graph neighbors align.\\\", \\\"confidence\\\": 0.95}], \\\"possible_baseline\\\": false, \\\"relevance\\\": 0.9, \\\"confidence\\\": 0.9}}]}\\n</tool_call>\", \"schema\": {\"$defs\": {\"EvidenceCardDraft\": {\"additionalProperties\": false, \"description\": \"One model-authored semantic assessment to be bound by the runtime.\", \"properties\": {\"main_contribution\": {\"minLength\": 1, \"title\": \"Main Contribution\", \"type\": \"string\"}, \"overlaps\": {\"items\": {\"minLength\": 1, \"type\": \"string\"}, \"title\": \"Overlaps\", \"type\": \"array\"}, \"differences\": {\"items\": {\"minLength\": 1, \"type\": \"string\"}, \"title\": \"Differences\", \"type\": \"array\"}, \"quotes\": {\"items\": {\"$ref\": \"#/$defs/EvidenceQuoteDraft\"}, \"minItems\": 1, \"title\": \"Quotes\", \"type\": \"array\"}, \"possible_baseline\": {\"default\": false, \"title\": \"Possible Baseline\", \"type\": \"boolean\"}, \"relevance\": {\"maximum\": 1.0, \"minimum\": 0.0, \"title\": \"Relevance\", \"type\": \"number\"}, \"confidence\": {\"maximum\": 1.0, \"minimum\": 0.0, \"title\": \"Confidence\", \"type\": \"number\"}}, \"required\": [\"main_contribution\", \"quotes\", \"relevance\", \"confidence\"], \"title\": \"EvidenceCardDraft\", \"type\": \"object\"}, \"EvidenceQuoteDraft\": {\"additionalProperties\": false, \"description\": \"A semantic quote selection without model-supplied provenance handles.\", \"properties\": {\"quote\": {\"minLength\": 1, \"title\": \"Quote\", \"type\": \"string\"}, \"interpretation\": {\"minLength\": 1, \"title\": \"Interpretation\", \"type\": \"string\"}, \"confidence\": {\"maximum\": 1.0, \"minimum\": 0.0, \"title\": \"Confidence\", \"type\": \"number\"}}, \"required\": [\"quote\", \"interpretation\", \"confidence\"], \"title\": \"EvidenceQuoteDraft\", \"type\": \"object\"}}, \"additionalProperties\": false, \"properties\": {\"cards\": {\"items\": {\"$ref\": \"#/$defs/EvidenceCardDraft\"}, \"title\": \"Cards\", \"type\": \"array\"}, \"no_evidence_reason\": {\"anyOf\": [{\"minLength\": 1, \"type\": \"string\"}, {\"type\": \"null\"}], \"default\": null, \"title\": \"No Evidence Reason\"}}, \"title\": \"ResearchFinishDraft\", \"type\": \"object\"}}",
+        "role": "user"
+      }
+    ],
+    "model": "qwen2.5-7b-instruct",
+    "temperature": 0.3,
+    "tool_choice": "none"
+  },
+  "response": {
+    "content": "{\n  \"cards\": [\n    {\n      \"main_contribution\": \"The paper introduces SHROM, a model that combines square-root velocity functions, a neighbor graph, and an autoencoder for representing and reconstructing fluid interfaces in a low-dimensional, invertible, and shape-faithful manner.\",\n      \"overlaps\": [\n        \"The proposed model utilizes a combination of techniques including shape analysis and autoencoding, which are also used in other works.\",\n        \"The approach involves building a neighbor graph over a shape space, similar to some previous works in manifold learning.\"\n      ],\n      \"differences\": [\n        \"SHROM specifically targets fluid interfaces and uses square-root velocity functions, which are not commonly used in other works.\",\n        \"The model includes a regularization term that ensures latent neighbors correspond to graph neighbors, a feature not present in other works.\"\n      ],\n      \"quotes\": [\n        {\n          \"quote\": \"Interfaces are represented by their square-root velocity functions, a neighbor graph is built over the resulting shape space, and an autoencoder is trained to reconstruct while penalising latents in which graph neighbors are not latent neighbors.\",\n          \"interpretation\": \"The model uses square-root velocity functions for shape representation, a neighbor graph for latent organization, and an autoencoder for reconstruction, with a regularization term ensuring latent and graph neighbors align.\",\n          \"confidence\": 0.95\n        }\n      ],\n      \"possible_baseline\": false,\n      \"relevance\": 0.9,\n      \"confidence\": 0.9\n    }\n  ]\n}",
+    "tool_calls": []
+  },
+  "run_id": "run-480a9f6d8a59475f860887c3a6f45324",
+  "scope": {
+    "attempt": 2,
+    "point_id": "NP-1",
+    "task_id": "T-R2-1"
+  },
+  "stage_name": "run_research_task",
+  "started_at": "2026-09-30T07:07:31.908384+00:00",
+  "status": "SUCCESS",
+  "timeline": [
+    {
+      "at": "2026-09-30T07:07:31.908384+00:00",
+      "endpoint": "http://127.0.0.1:8000/openapi.json",
+      "kind": "schema",
+      "method": "GET",
+      "payload_sha256": null,
+      "phase": "CONTEXT_MEASUREMENT_REQUEST"
+    },
+    {
+      "at": "2026-09-30T07:07:31.908384+00:00",
+      "kind": "schema",
+      "phase": "CONTEXT_MEASUREMENT_RESPONSE"
+    },
+    {
+      "at": "2026-09-30T07:07:31.908384+00:00",
+      "endpoint": "http://127.0.0.1:8000/version",
+      "kind": "version",
+      "method": "GET",
+      "payload_sha256": null,
+      "phase": "CONTEXT_MEASUREMENT_REQUEST"
+    },
+    {
+      "at": "2026-09-30T07:07:31.908384+00:00",
+      "kind": "version",
+      "phase": "CONTEXT_MEASUREMENT_RESPONSE"
+    },
+    {
+      "at": "2026-09-30T07:07:31.908384+00:00",
+      "endpoint": "http://127.0.0.1:8000/tokenize",
+      "kind": "tokenize",
+      "method": "POST",
+      "payload_sha256": "90b2bc3492daa352172ea74c39e9203cc9898081880ffd2b6b8e469bc94e4f2c",
+      "phase": "CONTEXT_MEASUREMENT_REQUEST"
+    },
+    {
+      "at": "2026-09-30T07:07:31.908384+00:00",
+      "count": 908,
+      "kind": "tokenize",
+      "max_model_len": 32768,
+      "phase": "CONTEXT_MEASUREMENT_RESPONSE"
+    },
+    {
+      "at": "2026-09-30T07:07:31.908384+00:00",
+      "code": "CONTEXT_ADMITTED",
+      "counter": "vllm",
+      "decision": "allow",
+      "effective_context_window": 32768,
+      "exact": true,
+      "input_tokens": 908,
+      "measurement_details": {
+        "endpoint": "http://127.0.0.1:8000/tokenize",
+        "schema_verified": true,
+        "server_version": "0.8.5.post1",
+        "template_fields": [
+          "add_generation_prompt",
+          "add_special_tokens",
+          "continue_final_message",
+          "messages",
+          "model"
+        ],
+        "tokenize_payload_sha256": "90b2bc3492daa352172ea74c39e9203cc9898081880ffd2b6b8e469bc94e4f2c",
+        "vllm_tools_mode": "v0_8_5_kwargs"
+      },
+      "mode": "enforce",
+      "on_unavailable": "reject",
+      "output_reservation_field": "max_tokens",
+      "output_tokens_reserved": 4096,
+      "payload_sha256": "027979845602c26c9c24b384ae637be6e221b908143a48261a5920c55c333e9c",
+      "phase": "CONTEXT_ADMISSION",
+      "profile_context_window": 32768,
+      "requested_total_tokens": 5004,
+      "server_context_window": 32768,
+      "source": "vllm_tokenize",
+      "status": "admitted",
+      "vllm_tools_mode": "v0_8_5_kwargs",
+      "window_source": "minimum_of_profile_and_server",
+      "would_reject": false
+    },
+    {
+      "at": "2026-09-30T07:07:31.980397+00:00",
+      "phase": "TRANSPORT_INVOKED",
+      "timeout_seconds": 60
+    },
+    {
+      "at": "2026-09-30T07:07:39.234590+00:00",
+      "http_status": 200,
+      "phase": "RESPONSE_HEADERS",
+      "provider_request_id": null
+    },
+    {
+      "at": "2026-09-30T07:07:39.238384+00:00",
+      "body_bytes": 2085,
+      "phase": "RESPONSE_BODY_COMPLETE"
+    },
+    {
+      "at": "2026-09-30T07:07:39.240241+00:00",
+      "phase": "RESPONSE_PARSED",
+      "response_id": "chatcmpl-49566b4b48c44c049ad6aa7ffb7796f9",
+      "usage_available": true
+    },
+    {
+      "at": "2026-09-30T07:07:31.908384+00:00",
+      "measured_input_tokens": 908,
+      "payload_sha256": "027979845602c26c9c24b384ae637be6e221b908143a48261a5920c55c333e9c",
+      "phase": "CONTEXT_MEASUREMENT_VERIFIED",
+      "provider_input_tokens": 908,
+      "status": "matched"
+    }
+  ],
+  "tokens": {
+    "available": true,
+    "billable_breakdown_available": true,
+    "cached_input_tokens": 0,
+    "input_tokens": 908,
+    "output_tokens": 317,
+    "reasoning_tokens": 0,
+    "total_tokens": 1225
+  },
+  "transport_inflight_unknown": false
+}
