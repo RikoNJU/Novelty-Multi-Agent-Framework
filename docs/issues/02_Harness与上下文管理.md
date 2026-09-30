@@ -1,5 +1,7 @@
 # 02｜Harness 与上下文管理：当前项目核查
 
+> **补测更新（2026-09-30）**：用户已授权离线、真实本地模型及 arXiv/Springer 实验，最新结果见文末“授权补测”及[实验总表](../experiments/20260930_issue_audit_live/README.md)。下方原正文保留第一阶段静态核查记录，其中“未测试/需另行询问”仅描述当时状态。
+
 核查日期：2026-09-30；源码 `3bd1d7f282e61fb2b3b599c4f37ca586da1e8238`。对应 [任务 02](../../task/2026-09-27/分卷/02_Harness与上下文管理.md)。仅静态分析和既有记录阅读，未执行测试或补充实验。
 
 ## 逐项核对
@@ -42,3 +44,15 @@ Researcher 固定 `finalize_on_budget=True`，却未传 `reserve_final_turn`，�
 检查点恢复会重读并核对资产、原始切片和 Builder 约束；它保存的是已提交成果，不是整个进程的模型/工具预算账本。默认关闭时，终态格式失败仍可能只有 reads 而无 cards。
 
 已有 [Reader 重复实验](../experiments/20260927_harness_config_closure/reader_repeated_local.md)和 [上下文投影记录](../experiments/20260927_harness_config_closure/context_projection.md)不能证明稳定自主成证或长上下文净改善。当前无需实验即可定位上述分支；若以后要验证重复参数变体、收尾预算或长轨迹收益，应先取得用户同意，再做离线用例或受控模型对照。本轮未运行。
+
+## 2026-09-30 授权补测：上下文和收尾边界
+
+[边界结果](../experiments/20260930_issue_audit_live/boundary-results.json) 使用真实 ReferenceStore/Reader 与脚本化模型驱动，未模拟被测 Reader 行为：
+
+- 完全相同读取参数：物理读取 1 次，复用标记 true，但最终模型输入中正文仍出现 2 次；复用解决 I/O，未消除重复上下文。
+- 同一短文改 max_chars 1000→2000：实际读取范围和正文相同，仍物理读取 2 次，未复用。
+- max_turns=2、finalize_on_budget=true：reserve_final_turn=false 实际调用 3 次，true 时 2 次。确认 H-03 的收尾超额；这是调用次序对照，不是模型能力实验。
+
+[真实上下文实验](../experiments/20260930_issue_audit_live/local-context-results.json)：32768 窗口收到 34030 input + 3 reserved output 时，关闭准入的服务端请求返回 400；enforce 使用真实 /tokenize 在 chat 前拒绝。两种情况下 cap=1 的下一次短请求均被预算阻断，证明本地拒绝也占一次 Runtime 额度。debug=false 的两个短请求都返回 finish_reason=length 和成功 ModelResponse，证明适配层不将截断独立拒绝；不据此推断所有上层组件都忽略 length。
+
+完整真实链路在开启复用/checkpoint/投影/enforce 后仍调用 46 次并全点无法裁定；没有与禁用版进行同输入随机性控制，不能将结果解释成这些机制毫无作用，也不能宣称压缩收益已验证。

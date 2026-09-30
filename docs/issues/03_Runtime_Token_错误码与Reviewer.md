@@ -1,5 +1,7 @@
 # 03｜Runtime、Token、错误码与 Reviewer：当前项目核查
 
+> **补测更新（2026-09-30）**：用户已授权离线、真实本地模型及 arXiv/Springer 实验，最新结果见文末“授权补测”及[实验总表](../experiments/20260930_issue_audit_live/README.md)。下方原正文保留第一阶段静态核查记录，其中“未测试/需另行询问”仅描述当时状态。
+
 核查日期：2026-09-30；源码 `3bd1d7f282e61fb2b3b599c4f37ca586da1e8238`。对应 [任务 03](../../task/2026-09-27/分卷/03_Runtime_Token_错误码与Reviewer.md)。仅静态分析、阅读既有产物；未执行测试或补充实验。
 
 ## 已处理部分与边界
@@ -54,3 +56,31 @@ START 在上下文准入前发出；RunModelBudget 在 START 就增加次数和�
 Reviewer 的一致性门控不替代全文语义、版本/时间、完整组合关系检查。报告 Gate B 仍非阻断，详见 [05](05_报告编辑与输出.md)。执行成功、artifact 合法、业务充分、review 完成仍未统一为任务书提出的四轴运行终态；已有局部状态不能当作统一契约已完成。
 
 本轮不需要补充实验才能定位上述路径。若要验证本地 HTTP、复现模型引用行为或比较恢复效果，需先征得用户同意；没有把历史通过的测试数当作当前新测结果。
+
+## 2026-09-30 授权补测结果
+
+[确定性反例](../experiments/20260930_issue_audit_live/boundary-results.json) 已复现：自动 namespace 成功读取却报 mismatch/invalid，批读漏展开；卡数达标的 Reviewer 技术失败无 recovery decision，而数量不足对照有 STOP；全部单卡技术失败汇总丢 model.transport 事件。完整真实链路也出现 6 个成功 Reader 调用被 namespace 诊断报 12 个错误；NP-3 一卡达标且技术失败，最终恢复列表没有该点，point execution_issues 为空。
+
+[真实 context 400](../experiments/20260930_issue_audit_live/local-context-results.json) 被 `_execution_failure` 归 model.transport；enforce 拒绝归 model.context_limit，但仍占 Runtime 次数。离线事件对照显示 Runtime 保留 10 input + 2 output usage，Web ledger 忽略 RESPONSE_PARSED，随后业务解析异常仍记 failed_billing_unknown；本地未定价模型被 Web budget 拒绝。没有云模型或实付实验。
+
+[独立 Provider 探针](../experiments/20260930_issue_audit_live/provider-results.json) 实测 arXiv 全文 1 次 HTTP / 2 次预算预留；本次 API/Web 检索均成功，历史 406 不能继续当作当前状态。Springer 普通检索成功；显式 OA 条件查询返回 403、公开 DOI 的 OA 请求返回 404。仅记录状态，不推定无权限、限额或论文不存在为唯一根因。
+
+### R-06：未提及特征被当作矛盾，且引用修复仍不闭合（P1，真实模型复现）
+
+位置：[evidence_reviewer.py](../../backend/src/novelty_agent_framework/agents/evidence_reviewer.py) 的单卡解析/引用注册、`_validate_verdict_coverage` 附近（第 303–305、1135–1171 行）；数据结构 [domain.py](../../backend/src/novelty_agent_framework/schemas/domain.py) 第 329–336 行。
+
+完整链路 NP-2 的四条 feature_comparisons 以 does not mention / different approach 等理由给 contradicted。这些理由只能证明所给片段未建立支持，不能自动证明机制矛盾。结构模型允许合法枚举和已绑定 evidence ID，覆盖门控主要约束 not_novel，未核实 relation 与引文语义。
+
+[修正后的固定材料对照](../experiments/20260930_issue_audit_live/semantic-controls-v2/results.json) 使用当天获取的《Attention Is All You Need》全文和真实 Reader 溯源，三类关系各重复两次：明确支持和明确矛盾共四次均因引用未读 read_id 变技术失败；材料未涉及的蛋白质定位评估两次均判 contradicted，并在 summary 保留。0/6 符合预声明关系标准；这是小样本契约/语义反例，不是总体模型准确率。四次失败的 coverage/引用拒绝发挥了保守保护，不能称错误最终裁定已经发布。
+
+### R-07：跨 Provider 的物理请求统计不完整（P1，新发现）
+
+位置：[common.py](../../backend/src/novelty_agent_framework/tools/database_search/providers/common.py) 第 116–137 行，[runtime_artifacts.py](../../backend/src/novelty_agent_framework/core/runtime_artifacts.py) 第 1287–1316 行。
+
+通用鉴权数据库客户端只 reserve `authenticated_database`，没有与 arXiv 一致的 physical_request 事件。真实完整链路预算为 arxiv_web=21、authenticated_database=6、arxiv_auxiliary=3，而 provider_requests 摘要仅 arXiv 21。Springer 六次成功检索在业务记录中可见，但物理事件摘要不计入；不能拿 21 或 30 当全部外部实际请求数。详见 [对账](../experiments/20260930_issue_audit_live/workflow-analysis.json)。
+
+### R-08：Springer 冷实例无法解析自身检索产出的裸 DOI（P2，新发现）
+
+位置：[springer.py](../../backend/src/novelty_agent_framework/tools/database_search/providers/springer.py) 第 104–116、350 附近和 433–439 行。搜索结果 document_id 取裸 DOI；同实例依赖 `_records` 取回 doi，缓存未持久化；冷实例 `_doi_from_identifier` 只接收 doi: 或 URL 前缀。
+
+[实测](../experiments/20260930_issue_audit_live/springer-identifier-results.json)：裸 DOI 零 HTTP 直接 None；同值添加 doi: 才真正请求，收到 404。该对照证明地址处理不一致，不证明该 DOI 全文应可得。重建适配器后的已保存裸 DOI 存在获取被静默跳过风险；尚未运行完整进程重启恢复场景。
