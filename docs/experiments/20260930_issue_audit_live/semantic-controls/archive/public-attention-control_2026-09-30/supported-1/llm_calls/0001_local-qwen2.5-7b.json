@@ -1,0 +1,310 @@
+{
+  "alias": "local-qwen2.5-7b",
+  "billing": {
+    "amount": null,
+    "currency": "RMB",
+    "pricing_table": "/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/config/llm_pricing.json",
+    "rate_name": null,
+    "rates_per_unit": null,
+    "status": "UNPRICED",
+    "unit_tokens": 1000000
+  },
+  "chat_transport_invoked": true,
+  "client_call_id": "fb6ce1a5d0064510931c40baea7958d3",
+  "context_admission": {
+    "code": "CONTEXT_ADMITTED",
+    "counter": "vllm",
+    "decision": "allow",
+    "effective_context_window": 32768,
+    "exact": true,
+    "input_tokens": 3958,
+    "measurement_details": {
+      "endpoint": "http://127.0.0.1:8000/tokenize",
+      "schema_verified": true,
+      "server_version": "0.8.5.post1",
+      "template_fields": [
+        "add_generation_prompt",
+        "add_special_tokens",
+        "chat_template_kwargs",
+        "continue_final_message",
+        "messages",
+        "model"
+      ],
+      "tokenize_payload_sha256": "60db8757c75ee395955a4574ed0189db431a14209f4bcbaeb547c993cac1f191",
+      "vllm_tools_mode": "v0_8_5_kwargs"
+    },
+    "mode": "enforce",
+    "on_unavailable": "reject",
+    "output_reservation_field": "max_tokens",
+    "output_tokens_reserved": 2048,
+    "payload_sha256": "3eda542cb6bc51a06caef572a962200cc954843dddeb5172689c2fb8da415fed",
+    "profile_context_window": 32768,
+    "requested_total_tokens": 6006,
+    "server_context_window": 32768,
+    "source": "vllm_tokenize",
+    "status": "admitted",
+    "vllm_tools_mode": "v0_8_5_kwargs",
+    "window_source": "minimum_of_profile_and_server",
+    "would_reject": false
+  },
+  "context_measurement_requests": 3,
+  "context_measurement_verification": {
+    "measured_input_tokens": 3958,
+    "payload_sha256": "3eda542cb6bc51a06caef572a962200cc954843dddeb5172689c2fb8da415fed",
+    "provider_input_tokens": 3958,
+    "status": "matched"
+  },
+  "duration_ms": 8519,
+  "error": null,
+  "finish_reason": "stop",
+  "llm_call_id": "llm_0001",
+  "message_count": 2,
+  "model": "qwen2.5-7b-instruct",
+  "parent_stage_id": "stage_0001",
+  "provider": "openai_compatible",
+  "provider_usage": {
+    "completion_tokens": 309,
+    "prompt_tokens": 3958,
+    "prompt_tokens_details": null,
+    "total_tokens": 4267
+  },
+  "request_id": "chatcmpl-3d2a8fcb96244228b25899b49055d678",
+  "request_options": {
+    "endpoint": "http://127.0.0.1:8000/v1/chat/completions",
+    "timeout_seconds": 90.0
+  },
+  "request_payload": {
+    "max_tokens": 2048,
+    "messages": [
+      {
+        "content": "仅以可追溯论文 Evidence 评审。Web 内容仅是补充资料，不属于相关文献或原始 Evidence。\nsource_kind=web_supplement 或旧 web_supplement_evidence 不得用于查新裁定；\n发现此类旧证据时按不可用处理，证据不足则明确返回不足，不将网页事实升级为论文证据。\nLLM summary 是派生信息，不能替代原始 Evidence。\n你是论文查新系统的查新点级信息判定 Agent，而不是 EvidenceCard 过滤器。\n本轮只核验一张 Card 对应的一篇论文，是中间结果，不作最终查新裁定。\n按输入的 ReviewerCardDraft schema 输出；verdict 仅描述该文献与查新点的关系。\n记录已覆盖特征、已证实的差异、引用可靠性和证据局限；部分相关文献也必须保留。\n优先使用输入 Evidence 原文，仅在存在具体疑问时回读，避免重复读取同一片段。\n摘要未提及的特征是未知，不是文献未采用；如果该未知决定关系判断，应返回\ninsufficient_evidence，说明需要核验的特征。理由简洁，不超过300字。\n材料目录列出的同论文正文可受控回读。引用新片段时输出真实 read_id 或\nread_citations；原文 quote 由系统登记，不能自行编造证据 ID。\n不要输出 review_evidence、incomplete_reason、exact_quote 或 review_id；这些由系统登记。\n对不同术语比较对象、操作、作用位置与约束，并说明作者方案或基线归属。\n每项 feature_comparisons 应引用直接支持该项关系的 evidence_id 或真实 read_id，\n在 reason 中说明原文、机制对应及判断范围。导航或背景回读可登记，不能充当技术断言依据；\n摘要足以支持的有限事实仍可引用摘要。例：feature_id=F1、relation=supported、\nevidence_refs=[实际读到的 read_id]，仅当该片段确实支持 F1 时使用。\ncontradicted 需要同一对象和条件下不相容的依据；未提及属于 unknown。\n采用一种方法不自动排除可共存的另一方法。次要 unknown 不自动否决有依据的有限结论。\n区分原文明确支持的事实与未核验的特征。摘要、局部片段或截短引文未提及某特征，不能证明文献未采用该特征；取得全文也不等于已读到关键段落。若最终裁定依赖尚未核验的关键差异，返回 status=insufficient_evidence，说明缺少的比较证据，不得仅降低 confidence 后继续裁定。保留已证实的局部重合；多篇分别覆盖部分特征不等于单篇公开完整组合。检索或获取失败、零命中、未展示证据均不能支持新颖性。不影响当前有限结论的次要未知可以作为局限保留。read_citations 只能填写本轮 reader 工具实际返回的 read_id；本轮未调用 reader 时必须输出空数组，不得复制输入 Evidence.provenance.read_id。\nBudget context: {\"remaining_research_turns\": 3, \"remaining_exploration_turns\": 3, \"remaining_tool_calls\": 2, \"remaining_read_chars\": 24000, \"remaining_exploration_seconds\": 120.0, \"finalization_reserved\": true, \"remaining_per_tool\": {\"reader\": 2}, \"instruction\": \"Finish within the remaining exploration budget; a reserved tool-free final turn follows if needed.\"}",
+        "role": "system"
+      },
+      {
+        "content": "请对以下单个查新点进行信息综合与新颖性判定。\n\n当前可信日期（UTC）：2026-09-30\n\n查新点：\n{\"point_id\": \"NP-supported\", \"claim\": \"The Transformer uses attention mechanisms without recurrence or convolution.\", \"claim_en\": \"\", \"technical_features\": [\"The Transformer uses attention mechanisms without recurrence or convolution.\"], \"technical_features_en\": [], \"source_locations\": []}\n\n相关调研任务：\n[{\"task_id\": \"task-supported\", \"novelty_point_id\": \"NP-supported\", \"task_type\": \"semantic_control\", \"language\": \"en\", \"description\": \"\", \"attempt\": 1}]\n\nEvidenceCard：\n[{\"card_id\": \"card-supported\", \"task_id\": \"task-supported\", \"novelty_point_id\": \"NP-supported\", \"document_title\": \"Attention Is All You Need\", \"main_contribution\": \"The dominant sequence transduction models are based on complex recurrent or convolutional neural networks that include an encoder and a decoder. The best performing models also connect the encoder and decoder through an attention mechanism. We propose a new simple network architecture, the Transformer, based solely on attention mechanisms, dispensing with recurrence and convolutions entirely. Experiments on two machine translation tasks show these models to be superior in quality while being more parallelizable and requiring significantly less time to train. Our model achieves 28.4 BLEU on the WMT 2014 English-to-German translation task, improving over the existing best results, including ensembles, by over 2 BLEU. On the WMT 2014 English-to-French translation task, our model establishes a new single-model state-of-the-art BLEU score of 41.8 after training for 3.5 days on eight GPUs, a small fraction of the training costs of the best models from the literature. We show that the Transformer generalizes well to other tasks by applying it successfully to English constituency parsing both with large and limited training data.\", \"overlaps\": [], \"differences\": [], \"sources\": [{\"title\": \"Attention Is All You Need\", \"quote\": \"The dominant sequence transduction models are based on complex recurrent or convolutional neural networks that include an encoder and a decoder. The best performing models also connect the encoder and decoder through an attention mechanism. We propose a new simple network architecture, the Transformer, based solely on attention mechanisms, dispensing with recurrence and convolutions entirely. Experiments on two machine translation tasks show these models to be superior in quality while being more parallelizable and requiring significantly less time to train. Our model achieves 28.4 BLEU on the WMT 2014 English-to-German translation task, improving over the existing best results, including ensembles, by over 2 BLEU. On the WMT 2014 English-to-French translation task, our model establishes a new single-model state-of-the-art BLEU score of 41.8 after training for 3.5 days on eight GPUs, a small fraction of the training costs of the best models from the literature. We show that the Transformer generalizes well to other tasks by applying it successfully to English constituency parsing both with large and limited training data.\", \"location\": \"Abstract\", \"doi\": null, \"url\": \"https://arxiv.org/abs/1706.03762\"}], \"cited_by_paper\": null, \"possible_baseline\": false, \"relevance\": 1.0, \"confidence\": 1.0, \"evidence_ids\": [\"evidence-supported\"]}]\n\nEvidence（包含允许 reader 回读的 artifact_id）：\n[{\"evidence_id\": \"evidence-supported\", \"work_id\": \"attention-1706\", \"artifact_id\": \"attention-fulltext\", \"novelty_point_id\": \"NP-supported\", \"task_id\": \"task-supported\", \"quote\": \"The dominant sequence transduction models are based on complex recurrent or convolutional neural networks that include an encoder and a decoder. The best performing models also connect the encoder and decoder through an attention mechanism. We propose a new simple network architecture, the Transformer, based solely on attention mechanisms, dispensing with recurrence and convolutions entirely. Experiments on two machine translation tasks show these models to be superior in quality while being more parallelizable and requiring significantly less time to train. Our model achieves 28.4 BLEU on the WMT 2014 English-to-German translation task, improving over the existing best results, including ensembles, by over 2 BLEU. On the WMT 2014 English-to-French translation task, our model establishes a new single-model state-of-the-art BLEU score of 41.8 after training for 3.5 days on eight GPUs, a small fraction of the training costs of the best models from the literature. We show that the Transformer generalizes well to other tasks by applying it successfully to English constituency parsing both with large and limited training data.\", \"locator\": null, \"interpretation\": \"Exact source abstract; feature relation is deliberately unassessed.\", \"confidence\": 1.0, \"provenance\": {\"artifact_namespace\": \"research_reference\"}}]\n\n输出 schema：\n{\"$defs\": {\"FeatureComparison\": {\"additionalProperties\": false, \"properties\": {\"feature_id\": {\"minLength\": 1, \"title\": \"Feature Id\", \"type\": \"string\"}, \"work_id\": {\"minLength\": 1, \"title\": \"Work Id\", \"type\": \"string\"}, \"relation\": {\"enum\": [\"supported\", \"partially_supported\", \"contradicted\", \"unknown\"], \"title\": \"Relation\", \"type\": \"string\"}, \"basis_type\": {\"enum\": [\"direct_statement\", \"semantic_equivalence\", \"grounded_inference\", \"insufficient\"], \"title\": \"Basis Type\", \"type\": \"string\"}, \"evidence_refs\": {\"items\": {\"type\": \"string\"}, \"title\": \"Evidence Refs\", \"type\": \"array\"}, \"reason\": {\"minLength\": 1, \"title\": \"Reason\", \"type\": \"string\"}, \"source_context\": {\"default\": \"unknown\", \"enum\": [\"author_method\", \"related_work\", \"baseline\", \"ablation\", \"unknown\"], \"title\": \"Source Context\", \"type\": \"string\"}}, \"required\": [\"feature_id\", \"work_id\", \"relation\", \"basis_type\", \"reason\"], \"title\": \"FeatureComparison\", \"type\": \"object\"}, \"NoveltyVerdict\": {\"description\": \"Reviewer 对单个查新点给出的新颖性评价。\", \"enum\": [\"novel\", \"partially_novel\", \"not_novel\"], \"title\": \"NoveltyVerdict\", \"type\": \"string\"}, \"RelevantWork\": {\"additionalProperties\": false, \"description\": \"对查新点结论高度相关、且仅以可信句柄引用的 Work。\", \"properties\": {\"work_id\": {\"minLength\": 1, \"title\": \"Work Id\", \"type\": \"string\"}, \"card_ids\": {\"items\": {\"type\": \"string\"}, \"minItems\": 1, \"title\": \"Card Ids\", \"type\": \"array\"}, \"evidence_ids\": {\"items\": {\"type\": \"string\"}, \"minItems\": 1, \"title\": \"Evidence Ids\", \"type\": \"array\"}, \"relevance_reason\": {\"minLength\": 1, \"title\": \"Relevance Reason\", \"type\": \"string\"}}, \"required\": [\"work_id\", \"card_ids\", \"evidence_ids\", \"relevance_reason\"], \"title\": \"RelevantWork\", \"type\": \"object\"}, \"ReviewReadCitation\": {\"additionalProperties\": false, \"description\": \"Model-selected read; the harness resolves its exact quote and evidence ID.\", \"properties\": {\"read_id\": {\"minLength\": 1, \"title\": \"Read Id\", \"type\": \"string\"}, \"char_start\": {\"anyOf\": [{\"minimum\": 0, \"type\": \"integer\"}, {\"type\": \"null\"}], \"default\": null, \"title\": \"Char Start\"}, \"char_end\": {\"anyOf\": [{\"minimum\": 0, \"type\": \"integer\"}, {\"type\": \"null\"}], \"default\": null, \"title\": \"Char End\"}}, \"required\": [\"read_id\"], \"title\": \"ReviewReadCitation\", \"type\": \"object\"}, \"ReviewStatus\": {\"description\": \"查新点级 Reviewer 的完成状态。\", \"enum\": [\"reviewed\", \"insufficient_evidence\"], \"title\": \"ReviewStatus\", \"type\": \"string\"}, \"SupplementRequest\": {\"additionalProperties\": false, \"description\": \"Reviewer 的补检语义建议；V0 不拥有工作流路由权。\", \"properties\": {\"reason\": {\"minLength\": 1, \"title\": \"Reason\", \"type\": \"string\"}, \"missing_aspects\": {\"items\": {\"type\": \"string\"}, \"title\": \"Missing Aspects\", \"type\": \"array\"}, \"suggested_focus\": {\"items\": {\"type\": \"string\"}, \"title\": \"Suggested Focus\", \"type\": \"array\"}}, \"required\": [\"reason\"], \"title\": \"SupplementRequest\", \"type\": \"object\"}}, \"additionalProperties\": false, \"description\": \"Model-owned single-card judgment; provenance is registered by the harness.\", \"properties\": {\"novelty_point_id\": {\"minLength\": 1, \"title\": \"Novelty Point Id\", \"type\": \"string\"}, \"status\": {\"$ref\": \"#/$defs/ReviewStatus\"}, \"verdict\": {\"anyOf\": [{\"$ref\": \"#/$defs/NoveltyVerdict\"}, {\"type\": \"null\"}], \"default\": null}, \"verdict_reason\": {\"anyOf\": [{\"type\": \"string\"}, {\"type\": \"null\"}], \"default\": null, \"title\": \"Verdict Reason\"}, \"confidence\": {\"anyOf\": [{\"maximum\": 1.0, \"minimum\": 0.0, \"type\": \"number\"}, {\"type\": \"null\"}], \"default\": null, \"title\": \"Confidence\"}, \"highly_relevant_works\": {\"items\": {\"$ref\": \"#/$defs/RelevantWork\"}, \"title\": \"Highly Relevant Works\", \"type\": \"array\"}, \"supplement_request\": {\"anyOf\": [{\"$ref\": \"#/$defs/SupplementRequest\"}, {\"type\": \"null\"}], \"default\": null}, \"read_citations\": {\"items\": {\"$ref\": \"#/$defs/ReviewReadCitation\"}, \"title\": \"Read Citations\", \"type\": \"array\"}, \"feature_comparisons\": {\"items\": {\"$ref\": \"#/$defs/FeatureComparison\"}, \"title\": \"Feature Comparisons\", \"type\": \"array\"}}, \"required\": [\"novelty_point_id\", \"status\"], \"title\": \"ReviewerCardDraft\", \"type\": \"object\"}\n已授权材料目录（只可读取这些 Artifact）：\n[{\"work_id\": \"attention-1706\", \"artifact_id\": \"attention-fulltext\", \"namespace\": \"research_reference\", \"source_record_id\": \"arxiv-1706\", \"role\": \"full_text\", \"content_extent\": \"unknown\", \"content_hash\": \"65398398024849f7f4fcef583a3eacca9b897fed32c5847ea38150db1ad63332\", \"readable_chars\": 43348, \"version_label\": null, \"readable\": true, \"section_hints\": [{\"char_start\": 36363, \"heading\": \"Neural GPUs learn algorithms.\"}, {\"char_start\": 36863, \"heading\": \"Adam: A method for stochastic optimization.\"}, {\"char_start\": 38104, \"heading\": \"In Empirical Methods in Natural Language Processing, 2016.\"}, {\"char_start\": 42212, \"heading\": \"methods listed below:\"}]}]\n固定特征 ID：\n[{\"feature_id\": \"F1\", \"text\": \"The Transformer uses attention mechanisms without recurrence or convolution.\", \"sha256\": \"1d915011fb06a32cc497dacfcc91ca48214883f858ec166d4474ba6a1ab6db1d\"}]",
+        "role": "user"
+      }
+    ],
+    "model": "qwen2.5-7b-instruct",
+    "temperature": 0.0,
+    "tools": [
+      {
+        "function": {
+          "description": "仅回读当前 Card 所绑定 Work 的已验证材料。按 Artifact ID 读取可验证文本。发现多个候选后优先一次批量读取必要片段：reads=[{\"artifact_id\":\"...\",\"max_chars\":2000}, ...]，最多4段；每段保留独立 read_id、来源和字符范围。也支持单个 artifact_id。",
+          "name": "reader",
+          "parameters": {
+            "$defs": {
+              "ConfiguredReaderArguments8000_16000": {
+                "additionalProperties": false,
+                "properties": {
+                  "artifact_id": {
+                    "minLength": 1,
+                    "title": "Artifact Id",
+                    "type": "string"
+                  },
+                  "char_start": {
+                    "default": 0,
+                    "minimum": 0,
+                    "title": "Char Start",
+                    "type": "integer"
+                  },
+                  "max_chars": {
+                    "default": 8000,
+                    "maximum": 16000,
+                    "minimum": 1,
+                    "title": "Max Chars",
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "artifact_id"
+                ],
+                "title": "ConfiguredReaderArguments8000_16000",
+                "type": "object"
+              }
+            },
+            "additionalProperties": false,
+            "properties": {
+              "artifact_id": {
+                "anyOf": [
+                  {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Artifact Id"
+              },
+              "char_start": {
+                "default": 0,
+                "minimum": 0,
+                "title": "Char Start",
+                "type": "integer"
+              },
+              "max_chars": {
+                "default": 8000,
+                "maximum": 16000,
+                "minimum": 1,
+                "title": "Max Chars",
+                "type": "integer"
+              },
+              "reads": {
+                "anyOf": [
+                  {
+                    "items": {
+                      "$ref": "#/$defs/ConfiguredReaderArguments8000_16000"
+                    },
+                    "maxItems": 4,
+                    "minItems": 1,
+                    "type": "array"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Reads"
+              }
+            },
+            "title": "ConfiguredReaderCall8000_16000",
+            "type": "object"
+          }
+        },
+        "type": "function"
+      }
+    ]
+  },
+  "response": {
+    "content": "{\n    \"novelty_point_id\": \"NP-supported\",\n    \"status\": \"reviewed\",\n    \"verdict\": \"novel\",\n    \"verdict_reason\": \"The Transformer explicitly dispenses with recurrence and convolutions, supporting the claim that it uses attention mechanisms without recurrence or convolution.\",\n    \"confidence\": 1.0,\n    \"highly_relevant_works\": [\n        {\n            \"work_id\": \"attention-1706\",\n            \"card_ids\": [\"card-supported\"],\n            \"evidence_ids\": [\"evidence-supported\"],\n            \"relevance_reason\": \"The paper directly supports the novelty point by stating that the Transformer is based solely on attention mechanisms, without recurrence or convolutions.\"\n        }\n    ],\n    \"supplement_request\": null,\n    \"read_citations\": [\n        {\n            \"read_id\": \"attention-fulltext\",\n            \"char_start\": 36363,\n            \"char_end\": 36863\n        }\n    ],\n    \"feature_comparisons\": [\n        {\n            \"feature_id\": \"F1\",\n            \"work_id\": \"attention-1706\",\n            \"relation\": \"supported\",\n            \"basis_type\": \"direct_statement\",\n            \"evidence_refs\": [\"evidence-supported\"],\n            \"reason\": \"The paper explicitly states that the Transformer is based on attention mechanisms, without recurrence or convolutions, directly supporting the claim.\",\n            \"source_context\": \"author_method\"\n        }\n    ]\n}",
+    "tool_calls": []
+  },
+  "run_id": "supported-1",
+  "scope": {},
+  "stage_name": "review_card",
+  "started_at": "2026-09-30T07:09:30.637497+00:00",
+  "status": "SUCCESS",
+  "timeline": [
+    {
+      "at": "2026-09-30T07:09:30.637497+00:00",
+      "endpoint": "http://127.0.0.1:8000/openapi.json",
+      "kind": "schema",
+      "method": "GET",
+      "payload_sha256": null,
+      "phase": "CONTEXT_MEASUREMENT_REQUEST"
+    },
+    {
+      "at": "2026-09-30T07:09:30.637497+00:00",
+      "kind": "schema",
+      "phase": "CONTEXT_MEASUREMENT_RESPONSE"
+    },
+    {
+      "at": "2026-09-30T07:09:30.637497+00:00",
+      "endpoint": "http://127.0.0.1:8000/version",
+      "kind": "version",
+      "method": "GET",
+      "payload_sha256": null,
+      "phase": "CONTEXT_MEASUREMENT_REQUEST"
+    },
+    {
+      "at": "2026-09-30T07:09:30.637497+00:00",
+      "kind": "version",
+      "phase": "CONTEXT_MEASUREMENT_RESPONSE"
+    },
+    {
+      "at": "2026-09-30T07:09:30.637497+00:00",
+      "endpoint": "http://127.0.0.1:8000/tokenize",
+      "kind": "tokenize",
+      "method": "POST",
+      "payload_sha256": "60db8757c75ee395955a4574ed0189db431a14209f4bcbaeb547c993cac1f191",
+      "phase": "CONTEXT_MEASUREMENT_REQUEST"
+    },
+    {
+      "at": "2026-09-30T07:09:30.637497+00:00",
+      "count": 3958,
+      "kind": "tokenize",
+      "max_model_len": 32768,
+      "phase": "CONTEXT_MEASUREMENT_RESPONSE"
+    },
+    {
+      "at": "2026-09-30T07:09:30.637497+00:00",
+      "code": "CONTEXT_ADMITTED",
+      "counter": "vllm",
+      "decision": "allow",
+      "effective_context_window": 32768,
+      "exact": true,
+      "input_tokens": 3958,
+      "measurement_details": {
+        "endpoint": "http://127.0.0.1:8000/tokenize",
+        "schema_verified": true,
+        "server_version": "0.8.5.post1",
+        "template_fields": [
+          "add_generation_prompt",
+          "add_special_tokens",
+          "chat_template_kwargs",
+          "continue_final_message",
+          "messages",
+          "model"
+        ],
+        "tokenize_payload_sha256": "60db8757c75ee395955a4574ed0189db431a14209f4bcbaeb547c993cac1f191",
+        "vllm_tools_mode": "v0_8_5_kwargs"
+      },
+      "mode": "enforce",
+      "on_unavailable": "reject",
+      "output_reservation_field": "max_tokens",
+      "output_tokens_reserved": 2048,
+      "payload_sha256": "3eda542cb6bc51a06caef572a962200cc954843dddeb5172689c2fb8da415fed",
+      "phase": "CONTEXT_ADMISSION",
+      "profile_context_window": 32768,
+      "requested_total_tokens": 6006,
+      "server_context_window": 32768,
+      "source": "vllm_tokenize",
+      "status": "admitted",
+      "vllm_tools_mode": "v0_8_5_kwargs",
+      "window_source": "minimum_of_profile_and_server",
+      "would_reject": false
+    },
+    {
+      "at": "2026-09-30T07:09:30.727514+00:00",
+      "phase": "TRANSPORT_INVOKED",
+      "timeout_seconds": 90.0
+    },
+    {
+      "at": "2026-09-30T07:09:39.145299+00:00",
+      "http_status": 200,
+      "phase": "RESPONSE_HEADERS",
+      "provider_request_id": null
+    },
+    {
+      "at": "2026-09-30T07:09:39.149620+00:00",
+      "body_bytes": 1895,
+      "phase": "RESPONSE_BODY_COMPLETE"
+    },
+    {
+      "at": "2026-09-30T07:09:39.152071+00:00",
+      "phase": "RESPONSE_PARSED",
+      "response_id": "chatcmpl-3d2a8fcb96244228b25899b49055d678",
+      "usage_available": true
+    },
+    {
+      "at": "2026-09-30T07:09:30.637497+00:00",
+      "measured_input_tokens": 3958,
+      "payload_sha256": "3eda542cb6bc51a06caef572a962200cc954843dddeb5172689c2fb8da415fed",
+      "phase": "CONTEXT_MEASUREMENT_VERIFIED",
+      "provider_input_tokens": 3958,
+      "status": "matched"
+    }
+  ],
+  "tokens": {
+    "available": true,
+    "billable_breakdown_available": true,
+    "cached_input_tokens": 0,
+    "input_tokens": 3958,
+    "output_tokens": 309,
+    "reasoning_tokens": 0,
+    "total_tokens": 4267
+  },
+  "transport_inflight_unknown": false
+}

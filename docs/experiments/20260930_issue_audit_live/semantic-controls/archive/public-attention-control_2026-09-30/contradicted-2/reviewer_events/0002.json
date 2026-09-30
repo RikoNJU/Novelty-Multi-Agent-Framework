@@ -1,0 +1,304 @@
+{
+  "card_ids": [
+    "card-contradicted"
+  ],
+  "draft_schema": {
+    "$defs": {
+      "FeatureComparison": {
+        "additionalProperties": false,
+        "properties": {
+          "basis_type": {
+            "enum": [
+              "direct_statement",
+              "semantic_equivalence",
+              "grounded_inference",
+              "insufficient"
+            ],
+            "title": "Basis Type",
+            "type": "string"
+          },
+          "evidence_refs": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Evidence Refs",
+            "type": "array"
+          },
+          "feature_id": {
+            "minLength": 1,
+            "title": "Feature Id",
+            "type": "string"
+          },
+          "reason": {
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          },
+          "relation": {
+            "enum": [
+              "supported",
+              "partially_supported",
+              "contradicted",
+              "unknown"
+            ],
+            "title": "Relation",
+            "type": "string"
+          },
+          "source_context": {
+            "default": "unknown",
+            "enum": [
+              "author_method",
+              "related_work",
+              "baseline",
+              "ablation",
+              "unknown"
+            ],
+            "title": "Source Context",
+            "type": "string"
+          },
+          "work_id": {
+            "minLength": 1,
+            "title": "Work Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "feature_id",
+          "work_id",
+          "relation",
+          "basis_type",
+          "reason"
+        ],
+        "title": "FeatureComparison",
+        "type": "object"
+      },
+      "NoveltyVerdict": {
+        "description": "Reviewer 对单个查新点给出的新颖性评价。",
+        "enum": [
+          "novel",
+          "partially_novel",
+          "not_novel"
+        ],
+        "title": "NoveltyVerdict",
+        "type": "string"
+      },
+      "RelevantWork": {
+        "additionalProperties": false,
+        "description": "对查新点结论高度相关、且仅以可信句柄引用的 Work。",
+        "properties": {
+          "card_ids": {
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "title": "Card Ids",
+            "type": "array"
+          },
+          "evidence_ids": {
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "title": "Evidence Ids",
+            "type": "array"
+          },
+          "relevance_reason": {
+            "minLength": 1,
+            "title": "Relevance Reason",
+            "type": "string"
+          },
+          "work_id": {
+            "minLength": 1,
+            "title": "Work Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "work_id",
+          "card_ids",
+          "evidence_ids",
+          "relevance_reason"
+        ],
+        "title": "RelevantWork",
+        "type": "object"
+      },
+      "ReviewReadCitation": {
+        "additionalProperties": false,
+        "description": "Model-selected read; the harness resolves its exact quote and evidence ID.",
+        "properties": {
+          "char_end": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Char End"
+          },
+          "char_start": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Char Start"
+          },
+          "read_id": {
+            "minLength": 1,
+            "title": "Read Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "read_id"
+        ],
+        "title": "ReviewReadCitation",
+        "type": "object"
+      },
+      "ReviewStatus": {
+        "description": "查新点级 Reviewer 的完成状态。",
+        "enum": [
+          "reviewed",
+          "insufficient_evidence"
+        ],
+        "title": "ReviewStatus",
+        "type": "string"
+      },
+      "SupplementRequest": {
+        "additionalProperties": false,
+        "description": "Reviewer 的补检语义建议；V0 不拥有工作流路由权。",
+        "properties": {
+          "missing_aspects": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Missing Aspects",
+            "type": "array"
+          },
+          "reason": {
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          },
+          "suggested_focus": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Suggested Focus",
+            "type": "array"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "title": "SupplementRequest",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "description": "Model-owned single-card judgment; provenance is registered by the harness.",
+    "properties": {
+      "confidence": {
+        "anyOf": [
+          {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "type": "number"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Confidence"
+      },
+      "feature_comparisons": {
+        "items": {
+          "$ref": "#/$defs/FeatureComparison"
+        },
+        "title": "Feature Comparisons",
+        "type": "array"
+      },
+      "highly_relevant_works": {
+        "items": {
+          "$ref": "#/$defs/RelevantWork"
+        },
+        "title": "Highly Relevant Works",
+        "type": "array"
+      },
+      "novelty_point_id": {
+        "minLength": 1,
+        "title": "Novelty Point Id",
+        "type": "string"
+      },
+      "read_citations": {
+        "items": {
+          "$ref": "#/$defs/ReviewReadCitation"
+        },
+        "title": "Read Citations",
+        "type": "array"
+      },
+      "status": {
+        "$ref": "#/$defs/ReviewStatus"
+      },
+      "supplement_request": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/SupplementRequest"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "verdict": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/NoveltyVerdict"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "verdict_reason": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Verdict Reason"
+      }
+    },
+    "required": [
+      "novelty_point_id",
+      "status"
+    ],
+    "title": "ReviewerCardDraft",
+    "type": "object"
+  },
+  "error": "1 validation error for ReviewerCardDraft\nverdict\n  Input should be 'novel', 'partially_novel' or 'not_novel' [type=enum, input_value='contradicted', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/enum",
+  "parent_stage_id": "stage_0001",
+  "phase": "model_output_contract_violation",
+  "point_id": "NP-contradicted",
+  "raw_model_output": "{\n    \"novelty_point_id\": \"NP-contradicted\",\n    \"status\": \"reviewed\",\n    \"verdict\": \"contradicted\",\n    \"verdict_reason\": \"The paper explicitly states that the Transformer does not use recurrent or convolutional layers, which contradicts the claim.\",\n    \"confidence\": 1.0,\n    \"highly_relevant_works\": [\n        {\n            \"work_id\": \"attention-1706\",\n            \"card_ids\": [\"card-contradicted\"],\n            \"evidence_ids\": [\"evidence-contradicted\"],\n            \"relevance_reason\": \"The paper directly addresses the core architecture of the Transformer and explicitly states that it does not use recurrent or convolutional layers.\"\n        }\n    ],\n    \"supplement_request\": null,\n    \"read_citations\": [],\n    \"feature_comparisons\": [\n        {\n            \"feature_id\": \"F1\",\n            \"work_id\": \"attention-1706\",\n            \"relation\": \"contradicted\",\n            \"basis_type\": \"direct_statement\",\n            \"evidence_refs\": [\"evidence-contradicted\"],\n            \"reason\": \"The paper explicitly states that the Transformer is based solely on attention mechanisms, dispensing with recurrence and convolutions entirely.\",\n            \"source_context\": \"author_method\"\n        }\n    ]\n}",
+  "recorded_at": "2026-09-30T07:10:23.588823+00:00",
+  "reviewer_event_id": "reviewer_0002",
+  "run_id": "contradicted-2",
+  "scope": {}
+}

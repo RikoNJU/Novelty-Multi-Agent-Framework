@@ -1,0 +1,220 @@
+{
+  "alias": "local-qwen2.5-7b",
+  "billing": {
+    "amount": null,
+    "currency": "RMB",
+    "pricing_table": "/home/lya3106643285/projects/Novelty-Multi-Agent-Framework/backend/src/novelty_agent_framework/config/llm_pricing.json",
+    "rate_name": null,
+    "rates_per_unit": null,
+    "status": "UNPRICED",
+    "unit_tokens": 1000000
+  },
+  "chat_transport_invoked": true,
+  "client_call_id": "461e8e2bcb6d4d94b8068e8b4f7fd8ec",
+  "context_admission": {
+    "code": "CONTEXT_ADMITTED",
+    "counter": "vllm",
+    "decision": "allow",
+    "effective_context_window": 32768,
+    "exact": true,
+    "input_tokens": 1618,
+    "measurement_details": {
+      "endpoint": "http://127.0.0.1:8000/tokenize",
+      "schema_verified": true,
+      "server_version": "0.8.5.post1",
+      "template_fields": [
+        "add_generation_prompt",
+        "add_special_tokens",
+        "continue_final_message",
+        "messages",
+        "model"
+      ],
+      "tokenize_payload_sha256": "8b8f61c799c532a3377974a54dedf2b2d5c0c20c3bcfb9908c2107918187a09c",
+      "vllm_tools_mode": "v0_8_5_kwargs"
+    },
+    "mode": "enforce",
+    "on_unavailable": "reject",
+    "output_reservation_field": "max_tokens",
+    "output_tokens_reserved": 2048,
+    "payload_sha256": "ee2b59713457866647d60152e2e90111808ec9eae0c5d7ece6e4bb552f291e74",
+    "profile_context_window": 32768,
+    "requested_total_tokens": 3666,
+    "server_context_window": 32768,
+    "source": "vllm_tokenize",
+    "status": "admitted",
+    "vllm_tools_mode": "v0_8_5_kwargs",
+    "window_source": "minimum_of_profile_and_server",
+    "would_reject": false
+  },
+  "context_measurement_requests": 3,
+  "context_measurement_verification": {
+    "measured_input_tokens": 1618,
+    "payload_sha256": "ee2b59713457866647d60152e2e90111808ec9eae0c5d7ece6e4bb552f291e74",
+    "provider_input_tokens": 1618,
+    "status": "matched"
+  },
+  "duration_ms": 7628,
+  "error": null,
+  "finish_reason": "stop",
+  "llm_call_id": "llm_0002",
+  "message_count": 2,
+  "model": "qwen2.5-7b-instruct",
+  "parent_stage_id": "stage_0001",
+  "provider": "openai_compatible",
+  "provider_usage": {
+    "completion_tokens": 292,
+    "prompt_tokens": 1618,
+    "prompt_tokens_details": null,
+    "total_tokens": 1910
+  },
+  "request_id": "chatcmpl-85c2566a92d84206bd4869e8648b5ae2",
+  "request_options": {
+    "endpoint": "http://127.0.0.1:8000/v1/chat/completions",
+    "timeout_seconds": 60
+  },
+  "request_payload": {
+    "max_tokens": 2048,
+    "messages": [
+      {
+        "content": "Repair the format of the previous output into the supplied JSON schema. Return only JSON. Do not add facts, quotes, identifiers or stronger conclusions. Preserve the existing meaning and exact quotations. Do not call tools. If the output does not support a verdict, use the schema's insufficient-evidence form.",
+        "role": "system"
+      },
+      {
+        "content": "{\"previous_output\": \"{\\n    \\\"novelty_point_id\\\": \\\"NP-contradicted\\\",\\n    \\\"status\\\": \\\"reviewed\\\",\\n    \\\"verdict\\\": \\\"contradicted\\\",\\n    \\\"verdict_reason\\\": \\\"The paper explicitly states that the Transformer does not use recurrent or convolutional layers, which contradicts the claim.\\\",\\n    \\\"confidence\\\": 1.0,\\n    \\\"highly_relevant_works\\\": [\\n        {\\n            \\\"work_id\\\": \\\"attention-1706\\\",\\n            \\\"card_ids\\\": [\\\"card-contradicted\\\"],\\n            \\\"evidence_ids\\\": [\\\"evidence-contradicted\\\"],\\n            \\\"relevance_reason\\\": \\\"The paper directly addresses the core architecture of the Transformer and explicitly states that it does not use recurrent or convolutional layers.\\\"\\n        }\\n    ],\\n    \\\"supplement_request\\\": null,\\n    \\\"read_citations\\\": [],\\n    \\\"feature_comparisons\\\": [\\n        {\\n            \\\"feature_id\\\": \\\"F1\\\",\\n            \\\"work_id\\\": \\\"attention-1706\\\",\\n            \\\"relation\\\": \\\"contradicted\\\",\\n            \\\"basis_type\\\": \\\"direct_statement\\\",\\n            \\\"evidence_refs\\\": [\\\"evidence-contradicted\\\"],\\n            \\\"reason\\\": \\\"The paper explicitly states that the Transformer is based solely on attention mechanisms, dispensing with recurrence and convolutions entirely.\\\",\\n            \\\"source_context\\\": \\\"author_method\\\"\\n        }\\n    ]\\n}\", \"schema\": {\"$defs\": {\"FeatureComparison\": {\"additionalProperties\": false, \"properties\": {\"feature_id\": {\"minLength\": 1, \"title\": \"Feature Id\", \"type\": \"string\"}, \"work_id\": {\"minLength\": 1, \"title\": \"Work Id\", \"type\": \"string\"}, \"relation\": {\"enum\": [\"supported\", \"partially_supported\", \"contradicted\", \"unknown\"], \"title\": \"Relation\", \"type\": \"string\"}, \"basis_type\": {\"enum\": [\"direct_statement\", \"semantic_equivalence\", \"grounded_inference\", \"insufficient\"], \"title\": \"Basis Type\", \"type\": \"string\"}, \"evidence_refs\": {\"items\": {\"type\": \"string\"}, \"title\": \"Evidence Refs\", \"type\": \"array\"}, \"reason\": {\"minLength\": 1, \"title\": \"Reason\", \"type\": \"string\"}, \"source_context\": {\"default\": \"unknown\", \"enum\": [\"author_method\", \"related_work\", \"baseline\", \"ablation\", \"unknown\"], \"title\": \"Source Context\", \"type\": \"string\"}}, \"required\": [\"feature_id\", \"work_id\", \"relation\", \"basis_type\", \"reason\"], \"title\": \"FeatureComparison\", \"type\": \"object\"}, \"NoveltyVerdict\": {\"description\": \"Reviewer 对单个查新点给出的新颖性评价。\", \"enum\": [\"novel\", \"partially_novel\", \"not_novel\"], \"title\": \"NoveltyVerdict\", \"type\": \"string\"}, \"RelevantWork\": {\"additionalProperties\": false, \"description\": \"对查新点结论高度相关、且仅以可信句柄引用的 Work。\", \"properties\": {\"work_id\": {\"minLength\": 1, \"title\": \"Work Id\", \"type\": \"string\"}, \"card_ids\": {\"items\": {\"type\": \"string\"}, \"minItems\": 1, \"title\": \"Card Ids\", \"type\": \"array\"}, \"evidence_ids\": {\"items\": {\"type\": \"string\"}, \"minItems\": 1, \"title\": \"Evidence Ids\", \"type\": \"array\"}, \"relevance_reason\": {\"minLength\": 1, \"title\": \"Relevance Reason\", \"type\": \"string\"}}, \"required\": [\"work_id\", \"card_ids\", \"evidence_ids\", \"relevance_reason\"], \"title\": \"RelevantWork\", \"type\": \"object\"}, \"ReviewReadCitation\": {\"additionalProperties\": false, \"description\": \"Model-selected read; the harness resolves its exact quote and evidence ID.\", \"properties\": {\"read_id\": {\"minLength\": 1, \"title\": \"Read Id\", \"type\": \"string\"}, \"char_start\": {\"anyOf\": [{\"minimum\": 0, \"type\": \"integer\"}, {\"type\": \"null\"}], \"default\": null, \"title\": \"Char Start\"}, \"char_end\": {\"anyOf\": [{\"minimum\": 0, \"type\": \"integer\"}, {\"type\": \"null\"}], \"default\": null, \"title\": \"Char End\"}}, \"required\": [\"read_id\"], \"title\": \"ReviewReadCitation\", \"type\": \"object\"}, \"ReviewStatus\": {\"description\": \"查新点级 Reviewer 的完成状态。\", \"enum\": [\"reviewed\", \"insufficient_evidence\"], \"title\": \"ReviewStatus\", \"type\": \"string\"}, \"SupplementRequest\": {\"additionalProperties\": false, \"description\": \"Reviewer 的补检语义建议；V0 不拥有工作流路由权。\", \"properties\": {\"reason\": {\"minLength\": 1, \"title\": \"Reason\", \"type\": \"string\"}, \"missing_aspects\": {\"items\": {\"type\": \"string\"}, \"title\": \"Missing Aspects\", \"type\": \"array\"}, \"suggested_focus\": {\"items\": {\"type\": \"string\"}, \"title\": \"Suggested Focus\", \"type\": \"array\"}}, \"required\": [\"reason\"], \"title\": \"SupplementRequest\", \"type\": \"object\"}}, \"additionalProperties\": false, \"description\": \"Model-owned single-card judgment; provenance is registered by the harness.\", \"properties\": {\"novelty_point_id\": {\"minLength\": 1, \"title\": \"Novelty Point Id\", \"type\": \"string\"}, \"status\": {\"$ref\": \"#/$defs/ReviewStatus\"}, \"verdict\": {\"anyOf\": [{\"$ref\": \"#/$defs/NoveltyVerdict\"}, {\"type\": \"null\"}], \"default\": null}, \"verdict_reason\": {\"anyOf\": [{\"type\": \"string\"}, {\"type\": \"null\"}], \"default\": null, \"title\": \"Verdict Reason\"}, \"confidence\": {\"anyOf\": [{\"maximum\": 1.0, \"minimum\": 0.0, \"type\": \"number\"}, {\"type\": \"null\"}], \"default\": null, \"title\": \"Confidence\"}, \"highly_relevant_works\": {\"items\": {\"$ref\": \"#/$defs/RelevantWork\"}, \"title\": \"Highly Relevant Works\", \"type\": \"array\"}, \"supplement_request\": {\"anyOf\": [{\"$ref\": \"#/$defs/SupplementRequest\"}, {\"type\": \"null\"}], \"default\": null}, \"read_citations\": {\"items\": {\"$ref\": \"#/$defs/ReviewReadCitation\"}, \"title\": \"Read Citations\", \"type\": \"array\"}, \"feature_comparisons\": {\"items\": {\"$ref\": \"#/$defs/FeatureComparison\"}, \"title\": \"Feature Comparisons\", \"type\": \"array\"}}, \"required\": [\"novelty_point_id\", \"status\"], \"title\": \"ReviewerCardDraft\", \"type\": \"object\"}}",
+        "role": "user"
+      }
+    ],
+    "model": "qwen2.5-7b-instruct",
+    "temperature": 0.0,
+    "tool_choice": "none"
+  },
+  "response": {
+    "content": "{\n    \"novelty_point_id\": \"NP-contradicted\",\n    \"status\": \"reviewed\",\n    \"verdict\": \"contradicted\",\n    \"verdict_reason\": \"The paper explicitly states that the Transformer does not use recurrent or convolutional layers, which contradicts the claim.\",\n    \"confidence\": 1.0,\n    \"highly_relevant_works\": [\n        {\n            \"work_id\": \"attention-1706\",\n            \"card_ids\": [\n                \"card-contradicted\"\n            ],\n            \"evidence_ids\": [\n                \"evidence-contradicted\"\n            ],\n            \"relevance_reason\": \"The paper directly addresses the core architecture of the Transformer and explicitly states that it does not use recurrent or convolutional layers.\"\n        }\n    ],\n    \"supplement_request\": null,\n    \"read_citations\": [],\n    \"feature_comparisons\": [\n        {\n            \"feature_id\": \"F1\",\n            \"work_id\": \"attention-1706\",\n            \"relation\": \"contradicted\",\n            \"basis_type\": \"direct_statement\",\n            \"evidence_refs\": [\n                \"evidence-contradicted\"\n            ],\n            \"reason\": \"The paper explicitly states that the Transformer is based solely on attention mechanisms, dispensing with recurrence and convolutions entirely.\",\n            \"source_context\": \"author_method\"\n        }\n    ]\n}",
+    "tool_calls": []
+  },
+  "run_id": "contradicted-1",
+  "scope": {},
+  "stage_name": "review_card",
+  "started_at": "2026-09-30T07:09:47.039657+00:00",
+  "status": "SUCCESS",
+  "timeline": [
+    {
+      "at": "2026-09-30T07:09:47.039657+00:00",
+      "endpoint": "http://127.0.0.1:8000/openapi.json",
+      "kind": "schema",
+      "method": "GET",
+      "payload_sha256": null,
+      "phase": "CONTEXT_MEASUREMENT_REQUEST"
+    },
+    {
+      "at": "2026-09-30T07:09:47.039657+00:00",
+      "kind": "schema",
+      "phase": "CONTEXT_MEASUREMENT_RESPONSE"
+    },
+    {
+      "at": "2026-09-30T07:09:47.039657+00:00",
+      "endpoint": "http://127.0.0.1:8000/version",
+      "kind": "version",
+      "method": "GET",
+      "payload_sha256": null,
+      "phase": "CONTEXT_MEASUREMENT_REQUEST"
+    },
+    {
+      "at": "2026-09-30T07:09:47.039657+00:00",
+      "kind": "version",
+      "phase": "CONTEXT_MEASUREMENT_RESPONSE"
+    },
+    {
+      "at": "2026-09-30T07:09:47.039657+00:00",
+      "endpoint": "http://127.0.0.1:8000/tokenize",
+      "kind": "tokenize",
+      "method": "POST",
+      "payload_sha256": "8b8f61c799c532a3377974a54dedf2b2d5c0c20c3bcfb9908c2107918187a09c",
+      "phase": "CONTEXT_MEASUREMENT_REQUEST"
+    },
+    {
+      "at": "2026-09-30T07:09:47.039657+00:00",
+      "count": 1618,
+      "kind": "tokenize",
+      "max_model_len": 32768,
+      "phase": "CONTEXT_MEASUREMENT_RESPONSE"
+    },
+    {
+      "at": "2026-09-30T07:09:47.039657+00:00",
+      "code": "CONTEXT_ADMITTED",
+      "counter": "vllm",
+      "decision": "allow",
+      "effective_context_window": 32768,
+      "exact": true,
+      "input_tokens": 1618,
+      "measurement_details": {
+        "endpoint": "http://127.0.0.1:8000/tokenize",
+        "schema_verified": true,
+        "server_version": "0.8.5.post1",
+        "template_fields": [
+          "add_generation_prompt",
+          "add_special_tokens",
+          "continue_final_message",
+          "messages",
+          "model"
+        ],
+        "tokenize_payload_sha256": "8b8f61c799c532a3377974a54dedf2b2d5c0c20c3bcfb9908c2107918187a09c",
+        "vllm_tools_mode": "v0_8_5_kwargs"
+      },
+      "mode": "enforce",
+      "on_unavailable": "reject",
+      "output_reservation_field": "max_tokens",
+      "output_tokens_reserved": 2048,
+      "payload_sha256": "ee2b59713457866647d60152e2e90111808ec9eae0c5d7ece6e4bb552f291e74",
+      "phase": "CONTEXT_ADMISSION",
+      "profile_context_window": 32768,
+      "requested_total_tokens": 3666,
+      "server_context_window": 32768,
+      "source": "vllm_tokenize",
+      "status": "admitted",
+      "vllm_tools_mode": "v0_8_5_kwargs",
+      "window_source": "minimum_of_profile_and_server",
+      "would_reject": false
+    },
+    {
+      "at": "2026-09-30T07:09:47.108164+00:00",
+      "phase": "TRANSPORT_INVOKED",
+      "timeout_seconds": 60
+    },
+    {
+      "at": "2026-09-30T07:09:54.658989+00:00",
+      "http_status": 200,
+      "phase": "RESPONSE_HEADERS",
+      "provider_request_id": null
+    },
+    {
+      "at": "2026-09-30T07:09:54.661544+00:00",
+      "body_bytes": 1818,
+      "phase": "RESPONSE_BODY_COMPLETE"
+    },
+    {
+      "at": "2026-09-30T07:09:54.663570+00:00",
+      "phase": "RESPONSE_PARSED",
+      "response_id": "chatcmpl-85c2566a92d84206bd4869e8648b5ae2",
+      "usage_available": true
+    },
+    {
+      "at": "2026-09-30T07:09:47.039657+00:00",
+      "measured_input_tokens": 1618,
+      "payload_sha256": "ee2b59713457866647d60152e2e90111808ec9eae0c5d7ece6e4bb552f291e74",
+      "phase": "CONTEXT_MEASUREMENT_VERIFIED",
+      "provider_input_tokens": 1618,
+      "status": "matched"
+    }
+  ],
+  "tokens": {
+    "available": true,
+    "billable_breakdown_available": true,
+    "cached_input_tokens": 0,
+    "input_tokens": 1618,
+    "output_tokens": 292,
+    "reasoning_tokens": 0,
+    "total_tokens": 1910
+  },
+  "transport_inflight_unknown": false
+}
